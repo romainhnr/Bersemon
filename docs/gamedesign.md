@@ -4,7 +4,7 @@ Bersemon est le nom du projet et du jeu.
 
 Statut : document de référence du projet. Il décrit ce qui est décidé ; les points non tranchés sont regroupés dans la section 16 "Questions ouvertes et valeurs à définir", et l'historique des décisions dans la section 17.
 
-Dernière mise à jour : 16/10/2026
+Dernière mise à jour : 17/10/2026
 
 ## Sommaire
 
@@ -390,6 +390,41 @@ Les numéros des questions résolues ne sont pas réattribués, pour que les ré
 - Q12. Destination d'un monstre capturé quand l'équipe (3) ou le camp (30) est plein.
 - Q13. La perte de PV lors d'une fuite peut-elle mettre un monstre KO, et donc provoquer une défaite ?
 - Q15. Contenu de la V1 à trancher : évolution, codex, habiletés, shiny, valeurs internes, objets de soin.
+
+Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découpage de la V1 en étapes. Chacune indique l'étape de développement qui en a besoin : 1 fondations (types, stats, monstres), 2 combat 1 contre 1, 3 combat complet (changement, statuts, fuite, capture), 4 progression, 5 héros, équipe et camp, 6 expédition manuelle, 7 sauvegarde, 8 contenu et boucle de jeu complète. Q15 est à trancher avant l'étape 1, car elle conditionne le modèle des monstres.
+
+- Q16. (Étape 1) Liste des stats des monstres (par exemple PV, Attaque, Défense, Attaque spéciale, Défense spéciale, Vitesse, comme dans Pokémon) et distinction ou non entre attaques physiques et spéciales.
+- Q17. (Étape 1) Formule de calcul des stats d'un monstre à partir de son espèce, de son niveau et de ses valeurs internes, et amplitude de ces valeurs si elles sont retenues dans la V1 (Q15).
+- Q18. (Étape 1) Efficacité contre un monstre à 2 ou 3 types : multiplication des coefficients comme dans Pokémon (jusqu'à x8 et x0,125 avec 3 types) ou autre règle ; maintien des immunités (x0) de la table de Pokémon ; une attaque a-t-elle un seul type ?
+- Q19. (Étape 1) Effet concret du rôle soutien ou offensif, en combat et en expédition.
+- Q20. (Étape 2) Formule de dégâts et largeur de la fourchette aléatoire (section 1.4) : reprise de la formule de Pokémon ou formule propre.
+- Q21. (Étape 2) Précision des attaques (une attaque peut-elle échouer ?), coups critiques, et bonus lorsqu'une attaque a le type du monstre qui l'utilise.
+- Q22. (Étape 2) Nombre d'utilisations limité par attaque (équivalent des PP de Pokémon) ou non.
+- Q23. (Étape 2) Départage de deux monstres de même vitesse.
+- Q24. (Étape 2) Comportement de l'IA adverse dans la V1 : attaque au hasard, attaque la plus efficace ou autre.
+- Q25. (Étape 3) Le changement volontaire de monstre actif consomme-t-il le tour ? Le remplacement d'un monstre KO est-il gratuit ?
+- Q26. (Étape 3) Effets de statut présents dans la V1 (par exemple poison, brûlure, paralysie, sommeil, gel) et leurs règles.
+- Q27. (Étape 3) Fuite : réussit-elle toujours ? Quels monstres perdent des PV (le monstre actif ou toute l'équipe) ? Comment se mesure la "difficulté de l'adversaire" qui fixe la perte (complète Q13) ?
+- Q28. (Étape 3) Formule de capture d'un monstre non KO : poids des PV restants, et référence de la comparaison "faible par rapport au joueur" (niveau du monstre actif, niveau moyen de l'équipe ou autre).
+- Q29. (Étape 3) Déroulement d'une capture : une tentative ratée consomme-t-elle le tour ? La capture d'un monstre KO se fait-elle après la victoire ? Face à plusieurs monstres sauvages, peut-on les capturer tous ?
+- Q30. (Étape 3) Filets de capture dans la V1 : nombre limité ou illimité et, s'ils sont limités, leur provenance, puisque marchands et fabrication sont hors V1.
+- Q31. (Étape 3) Combats contre des humains (sections 10.1 et 11.3) inclus ou non dans la V1.
+- Q32. (Étape 4) Formule de gain d'expérience après un combat, et monstres qui en bénéficient : monstre actif, monstres ayant participé ou toute l'équipe.
+- Q33. (Étape 4) Apprentissage des attaques : à quels niveaux, et choix de l'attaque remplacée lorsque la limite de Q4 est atteinte.
+- Q34. (Étape 5) Effet de la classe du héros dans la V1 : bonus accordés aux monstres et actions de soutien (section 4.2). Sans effet, le choix de la classe serait purement descriptif.
+- Q35. (Étape 5) Stats et équipement du héros présents ou non dans la V1 (complète Q6 et Q9).
+- Q36. (Étape 5) Gestion des monstres dans la V1 : nombre minimal de monstres pour partir en expédition, possibilité de relâcher un monstre, possibilité de le renommer (section 5.5).
+- Q37. (Étape 6) Structure d'une expédition manuelle : nombre d'événements, possibilité de continuer ou de rentrer au camp entre deux événements, condition de fin.
+- Q38. (Étape 6) Événements présents dans la V1 parmi le combat, le monstre rare et le coffre (le marchand est hors V1), et probabilité de chacun.
+- Q39. (Étape 6) Contenu des coffres dans la V1, alors que les ressources n'y ont pas d'usage (fabrication et améliorations hors V1).
+- Q40. (Étape 6) Carte du monde dans la V1 avec 1 ou 2 zones : la deuxième zone se débloque-t-elle, et à quelle condition ?
+- Q41. (Étape 6) Les PV perdus sont-ils conservés d'un combat à l'autre pendant une expédition, le soin n'ayant lieu qu'au camp (section 13.1) ou par un objet de soin ?
+- Q42. (Étape 7) Nombre d'emplacements de sauvegarde : une seule partie ou plusieurs.
+- Q43. (Étape 7) Moment de la sauvegarde : uniquement au camp (section 3.1), manuelle, automatique au retour au camp, ou les deux.
+- Q44. (Étape 8) Bestiaire de la V1 : une dizaine d'espèces (nom, types, rôle, stats, attaques), dont les 3 monstres de départ, et liste des attaques.
+- Q45. (Étape 8) Espèces rencontrées dans chaque zone de la V1 et fourchette de niveaux (complète Q3).
+- Q46. (Étape 8) Histoire et tutoriel (section 6) inclus ou non dans la V1, et leur étendue.
+- Q47. (Étape 8) Représentation des sprites dans la console (art ASCII ou aucune image) et signalement d'un monstre shiny à l'écran.
 
 ## 17. Journal des décisions
 

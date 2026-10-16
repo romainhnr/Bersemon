@@ -1,0 +1,19 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/bersemon-core",
+    "crates/bersemon-storage",
+    "crates/bersemon-console",
+]
+
+# rust-version suit le poste Windows 10 (Rust installé par MSI, sans rustup) :
+# c'est la version la plus ancienne sur laquelle le projet doit compiler.
+# Avec le resolver 3, cargo choisit des dépendances compatibles avec elle.
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+publish = false
+
+[workspace.lints.rust]
+unsafe_code = "forbid"

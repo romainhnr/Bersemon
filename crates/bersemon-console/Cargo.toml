@@ -1,0 +1,13 @@
+[package]
+name = "bersemon-console"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+bersemon-core = { path = "../bersemon-core" }
+bersemon-storage = { path = "../bersemon-storage" }
+
+[lints]
+workspace = true
