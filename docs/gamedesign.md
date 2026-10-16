@@ -73,6 +73,7 @@ L'objectif du jeu est de proposer des boucles de gameplay intéressantes et stim
 - 1 ou 2 zones d'expédition manuelle (voir Q3).
 - Combat au tour par tour (format Pokémon, section 10), capture au filet et fuite.
 - Camp de base réduit à l'essentiel : soin, gestion de l'équipe (3 monstres avec soi, 30 au camp) et sauvegarde.
+- Valeurs internes et shiny des monstres (section 5.1).
 
 ### 3.2 Hors V1
 
@@ -81,10 +82,11 @@ L'objectif du jeu est de proposer des boucles de gameplay intéressantes et stim
 - Expéditions automatiques.
 - Marchands, location de monstres, fabrication, améliorations, automatisation, pêche et services rares du camp.
 - Les types Stellaire, Obscur, Lumière et Son, traités dans un second temps (section 5.2).
+- Habiletés et évolution des monstres (sections 5.1 et 5.4).
 
 ### 3.3 À trancher pour la V1
 
-- Évolution, codex, habiletés, shiny, valeurs internes et objets de soin : présents ou non dans la V1 (voir Q15).
+- Codex et objets de soin : présents ou non dans la V1 (voir Q15).
 
 ## 4. Le héros
 
@@ -111,10 +113,10 @@ Chaque monstre possède :
 - un niveau, de 1 à 100 (section 7) ;
 - un à trois types ;
 - un rôle : soutien ou offensif. Ce rôle s'ajoute aux types ;
-- des stats (comme dans Pokémon) ;
-- des attaques (limite du nombre d'attaques utilisables à définir, voir Q4) ;
-- des valeurs internes aléatoires qui influent sur ses stats (similaires aux IV de Pokémon), ce qui rend chaque monstre unique. Ces valeurs sont visibles dans le résumé du monstre ;
-- une habileté unique (équivalent des talents de Pokémon), qui a un effet secondaire lors des expéditions, des combats, etc. ;
+- six stats, comme dans Pokémon : PV, Attaque, Défense, Attaque spéciale, Défense spéciale, Vitesse (section 5.8) ;
+- des attaques, chacune d'un seul type, physique ou spéciale (limite du nombre d'attaques utilisables à définir, voir Q4) ;
+- des valeurs internes aléatoires, de 0 à 31 pour chaque stat, qui influent sur ses stats (similaires aux IV de Pokémon), ce qui rend chaque monstre unique. Ces valeurs sont visibles dans le résumé du monstre ;
+- une habileté unique (équivalent des talents de Pokémon), qui a un effet secondaire lors des expéditions, des combats, etc. Les habiletés sont hors V1 ;
 - une faible chance d'être "shiny" : sa couleur change, sans incidence sur les stats ;
 - un sprite (une image), pour rendre le jeu plus vivant.
 
@@ -123,6 +125,7 @@ Chaque monstre possède :
 - Les types reprennent ceux de Pokémon, avec l'ajout de nouveaux types.
 - Liste des types : Normal, Combat, Vol, Poison, Sol, Roche, Insecte, Spectre, Acier, Feu, Eau, Plante, Électrique, Psychique, Glace, Dragon, Ténèbres, Féérique, Stellaire, Obscur, Lumière, Son.
 - Table d'efficacité : celle de Pokémon, avec une modification : le type Glace résiste au type Eau.
+- Une attaque a un seul type. Contre un monstre à 2 ou 3 types, les coefficients de chacun de ses types se multiplient, puis le résultat est borné entre x0,25 et x4. Une immunité (x0) l'emporte sur tout le reste. Exemple : une attaque Roche contre un monstre Feu, Vol et Glace vaudrait x8 ; elle inflige x4.
 - Les types Stellaire, Obscur, Lumière et Son sont traités dans un second temps : leurs relations d'efficacité restent à définir et ils ne font pas partie de la V1 (voir Q5).
 
 ### 5.3 Bestiaire
@@ -158,6 +161,16 @@ Le joueur peut :
 - Un monstre dont les PV tombent à 0 est KO, comme dans Pokémon. Il est soigné automatiquement au retour au camp.
 - Une défaite totale, lorsque tous les monstres engagés sont KO, n'entraîne pas de mort : les monstres restent simplement KO, en expédition manuelle (section 9.3) comme en expédition automatique (section 12.3).
 - Il n'existe pas de mort définitive pour le moment. Elle pourra être introduite plus tard, avec une ressource de réanimation (section 13.7).
+
+### 5.8 Stats
+
+- Six stats : PV, Attaque, Défense, Attaque spéciale, Défense spéciale, Vitesse.
+- Une attaque physique oppose l'Attaque de l'attaquant à la Défense du défenseur ; une attaque spéciale oppose l'Attaque spéciale à la Défense spéciale.
+- Chaque espèce a ses stats de base. Les stats d'un monstre en découlent par la formule de Pokémon, sans EV ni nature, en divisions entières :
+  - PV = (2 x base + valeur interne) x niveau / 100 + niveau + 10 ;
+  - autres stats = (2 x base + valeur interne) x niveau / 100 + 5.
+- Les valeurs internes vont de 0 à 31. Elles sont tirées uniformément, une par stat, à la création du monstre.
+- Exemple pour une stat de base 50 : au niveau 100, avec une valeur interne de 0, 210 PV ou 105 pour une autre stat ; avec une valeur interne de 31, 241 PV ou 136.
 
 ## 6. Histoire et démarrage
 
@@ -389,14 +402,11 @@ Les numéros des questions résolues ne sont pas réattribués, pour que les ré
 - Q10. Courbe d'expérience des monstres.
 - Q12. Destination d'un monstre capturé quand l'équipe (3) ou le camp (30) est plein.
 - Q13. La perte de PV lors d'une fuite peut-elle mettre un monstre KO, et donc provoquer une défaite ?
-- Q15. Contenu de la V1 à trancher : évolution, codex, habiletés, shiny, valeurs internes, objets de soin.
+- Q15. Contenu de la V1 à trancher : codex, objets de soin.
 
-Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découpage de la V1 en étapes. Chacune indique l'étape de développement qui en a besoin : 1 fondations (types, stats, monstres), 2 combat 1 contre 1, 3 combat complet (changement, statuts, fuite, capture), 4 progression, 5 héros, équipe et camp, 6 expédition manuelle, 7 sauvegarde, 8 contenu et boucle de jeu complète. Q15 est à trancher avant l'étape 1, car elle conditionne le modèle des monstres.
+Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découpage de la V1 en étapes. Chacune indique l'étape de développement qui en a besoin : 1 fondations (types, stats, monstres), 2 combat 1 contre 1, 3 combat complet (changement, statuts, fuite, capture), 4 progression, 5 héros, équipe et camp, 6 expédition manuelle, 7 sauvegarde, 8 contenu et boucle de jeu complète. Le reste de Q15 (codex, objets de soin) concerne les étapes 6 et 8.
 
-- Q16. (Étape 1) Liste des stats des monstres (par exemple PV, Attaque, Défense, Attaque spéciale, Défense spéciale, Vitesse, comme dans Pokémon) et distinction ou non entre attaques physiques et spéciales.
-- Q17. (Étape 1) Formule de calcul des stats d'un monstre à partir de son espèce, de son niveau et de ses valeurs internes, et amplitude de ces valeurs si elles sont retenues dans la V1 (Q15).
-- Q18. (Étape 1) Efficacité contre un monstre à 2 ou 3 types : multiplication des coefficients comme dans Pokémon (jusqu'à x8 et x0,125 avec 3 types) ou autre règle ; maintien des immunités (x0) de la table de Pokémon ; une attaque a-t-elle un seul type ?
-- Q19. (Étape 1) Effet concret du rôle soutien ou offensif, en combat et en expédition.
+- Q19. (Étape 2) Effet concret du rôle soutien ou offensif, en combat et en expédition. Le code suppose pour l'instant que le rôle est porté par l'espèce, et non par chaque monstre : à confirmer.
 - Q20. (Étape 2) Formule de dégâts et largeur de la fourchette aléatoire (section 1.4) : reprise de la formule de Pokémon ou formule propre.
 - Q21. (Étape 2) Précision des attaques (une attaque peut-elle échouer ?), coups critiques, et bonus lorsqu'une attaque a le type du monstre qui l'utilise.
 - Q22. (Étape 2) Nombre d'utilisations limité par attaque (équivalent des PP de Pokémon) ou non.
@@ -459,3 +469,10 @@ Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découp
 - Les types Stellaire, Obscur, Lumière et Son sont traités dans un second temps et ne font pas partie de la V1.
 - Sauvegarde au format JSON.
 - Bersemon devient le nom définitif du jeu.
+
+17/10/2026 :
+
+- Q15 en partie : valeurs internes et shiny font partie de la V1 ; habiletés et évolution n'en font pas partie. Codex et objets de soin restent à trancher.
+- Q16 : six stats, comme dans Pokémon (PV, Attaque, Défense, Attaque spéciale, Défense spéciale, Vitesse) ; chaque attaque est physique ou spéciale.
+- Q17 : stats calculées par la formule de Pokémon, sans EV ni nature ; valeurs internes de 0 à 31, tirées uniformément pour chaque stat.
+- Q18 : une attaque a un seul type ; contre plusieurs types, les coefficients se multiplient puis sont bornés entre x0,25 et x4 ; les immunités sont conservées.
