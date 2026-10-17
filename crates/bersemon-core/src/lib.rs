@@ -8,6 +8,7 @@
 pub mod aleatoire;
 pub mod attaque;
 pub mod capture;
+pub mod catalogue;
 pub mod codex;
 pub mod collection;
 pub mod combat;
@@ -21,6 +22,7 @@ pub mod monstre;
 pub mod niveau;
 pub mod nom;
 pub mod partie;
+pub mod sauvegarde;
 pub mod stats;
 pub mod statut;
 pub mod types;

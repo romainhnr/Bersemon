@@ -32,6 +32,15 @@ impl Codex {
         }
     }
 
+    /// Dans l'ordre des rencontres, captures comprises.
+    pub fn rencontrees(&self) -> &[EspeceId] {
+        &self.rencontrees
+    }
+
+    pub fn capturees(&self) -> &[EspeceId] {
+        &self.capturees
+    }
+
     pub fn etat(&self, id: &EspeceId) -> EtatCodex {
         if self.capturees.contains(id) {
             EtatCodex::Capturee

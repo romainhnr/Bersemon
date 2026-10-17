@@ -59,6 +59,28 @@ impl Partie {
         self.zones_explorees.contains(zone)
     }
 
+    pub fn zones_explorees(&self) -> &[ZoneId] {
+        &self.zones_explorees
+    }
+
+    /// Reconstitue une partie depuis une sauvegarde : chaque morceau a déjà
+    /// été revérifié par sa propre restauration.
+    pub fn restaurer(
+        heros: Heros,
+        collection: Collection,
+        inventaire: Inventaire,
+        codex: Codex,
+        zones_explorees: Vec<ZoneId>,
+    ) -> Self {
+        Self {
+            heros,
+            collection,
+            inventaire,
+            codex,
+            zones_explorees,
+        }
+    }
+
     /// La première zone est toujours accessible ; chacune des suivantes
     /// apparaît sur la carte une fois la précédente explorée (Q40).
     pub fn zones_accessibles<'a>(&self, zones: &'a [Zone]) -> Vec<&'a Zone> {

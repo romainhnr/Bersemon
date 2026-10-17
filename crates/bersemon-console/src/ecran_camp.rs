@@ -4,13 +4,21 @@
 
 use bersemon_core::collection::{Collection, Emplacement, ErreurCollection};
 use bersemon_core::nom::Nom;
+use bersemon_core::partie::Partie;
+use bersemon_core::sauvegarde::SauvegardeRepository;
 
 use crate::affichage;
 use crate::saisie::Entree;
 
-/// Rend `false` si l'entrée est fermée.
-pub fn gerer_monstres(collection: &mut Collection, entree: &mut Entree) -> bool {
+/// La partie est sauvegardée après chaque action (section 13.9). Rend
+/// `false` si l'entrée est fermée.
+pub fn gerer_monstres(
+    partie: &mut Partie,
+    depot: &dyn SauvegardeRepository,
+    entree: &mut Entree,
+) -> bool {
     loop {
+        let collection = partie.collection_mut();
         println!();
         println!("{}", affichage::collection(collection));
         println!("Que faire ?");
@@ -33,6 +41,7 @@ pub fn gerer_monstres(collection: &mut Collection, entree: &mut Entree) -> bool 
             5 => renommer(collection, entree),
             _ => relacher(collection, entree),
         };
+        crate::sauvegarder(depot, partie);
         if !continuer {
             return false;
         }

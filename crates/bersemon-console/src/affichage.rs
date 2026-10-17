@@ -11,6 +11,7 @@ use bersemon_core::espece::Espece;
 use bersemon_core::inventaire::ErreurPotion;
 use bersemon_core::monstre::{Monstre, RapportExperience};
 use bersemon_core::partie::Partie;
+use bersemon_core::sauvegarde::ErreurSauvegarde;
 use bersemon_core::statut::Statut;
 use bersemon_core::types::Efficacite;
 use bersemon_core::zone::Zone;
@@ -325,6 +326,26 @@ pub fn remplacement(monstre: &Monstre, oubliee: &Attaque, nouvelle: &Attaque) ->
         oubliee.nom(),
         nouvelle.nom()
     )
+}
+
+/// Le détail technique, parfois en anglais, n'est pas montré au joueur.
+pub fn erreur_sauvegarde(erreur: &ErreurSauvegarde) -> String {
+    match erreur {
+        ErreurSauvegarde::Acces(_) => "le fichier est inaccessible".to_string(),
+        ErreurSauvegarde::Illisible(_) => {
+            "le fichier est abîmé ou n'est pas une sauvegarde".to_string()
+        }
+        ErreurSauvegarde::VersionInconnue(_) => "elle vient d'une autre version du jeu".to_string(),
+        ErreurSauvegarde::EspeceInconnue(espece) => {
+            format!("elle cite une espèce qui n'existe plus ({espece})")
+        }
+        ErreurSauvegarde::AttaqueInconnue { attaque, .. } => {
+            format!("elle cite une attaque qui n'existe plus ({attaque})")
+        }
+        ErreurSauvegarde::Incoherente(_) => {
+            "ses données ne respectent pas les règles du jeu".to_string()
+        }
+    }
 }
 
 pub fn erreur_potion(erreur: &ErreurPotion) -> String {

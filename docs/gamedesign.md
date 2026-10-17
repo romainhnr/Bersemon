@@ -60,7 +60,7 @@ L'objectif du jeu est de proposer des boucles de gameplay intéressantes et stim
   2. Bot Discord (inspiration possible : le bot Discord Koya).
 - Multijoueur : après l'adaptation à Discord (section 15).
 - Hors périmètre pour le moment : version mobile et vrai jeu PC.
-- Sauvegarde : dans un fichier JSON pour commencer, puis migration vers une base de données, probablement SQLite.
+- Sauvegarde : dans un fichier JSON pour commencer, puis migration vers une base de données, probablement SQLite. Dans la V1, le fichier se trouve dans le dossier de données de l'utilisateur, %APPDATA%\Bersemon sous Windows (section 13.9).
 
 ## 3. Périmètre de la V1
 
@@ -408,6 +408,13 @@ Le joueur peut construire des machines pour automatiser certaines tâches, par e
 
 - Le joueur peut pêcher pour trouver des monstres aquatiques ou des objets plus ou moins rares.
 
+### 13.9 Sauvegarde (V1)
+
+- Un seul emplacement : une seule partie en cours, reprise au lancement du jeu. Commencer une nouvelle partie remplace l'ancienne, après confirmation.
+- La sauvegarde est automatique : à la création de la partie, à chaque retour au camp et après chaque action de gestion au camp.
+- On ne sauvegarde qu'au camp : quitter le jeu en pleine expédition ramène à la dernière sauvegarde.
+- La sauvegarde garde l'identifiant des espèces, des attaques et des zones, pas leurs données : un rééquilibrage s'applique aux monstres déjà capturés.
+
 ## 14. Économie, marchands, objets et ressources
 
 ### 14.1 Monnaie
@@ -460,8 +467,6 @@ Les numéros des questions résolues ne sont pas réattribués, pour que les ré
 Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découpage de la V1 en étapes. Chacune indique l'étape de développement qui en a besoin : 1 fondations (types, stats, monstres), 2 combat 1 contre 1, 3 combat complet (changement, statuts, fuite, capture), 4 progression, 5 héros, équipe et camp, 6 expédition manuelle, 7 sauvegarde, 8 contenu et boucle de jeu complète.
 
 - Q19. (Après la V1) Effet du rôle soutien ou offensif, en combat et en expédition. Le code porte le rôle sur l'espèce, et non sur chaque monstre : à confirmer.
-- Q42. (Étape 7) Nombre d'emplacements de sauvegarde : une seule partie ou plusieurs.
-- Q43. (Étape 7) Moment de la sauvegarde : uniquement au camp (section 3.1), manuelle, automatique au retour au camp, ou les deux.
 - Q44. (Étape 8) Bestiaire de la V1 : une dizaine d'espèces (nom, types, rôle, stats, rendement d'XP, liste d'attaques apprises par niveau), dont les 3 monstres de départ, et liste des attaques.
 - Q45. (Étape 8) Pour chacune des 2 zones de la V1 : nom, espèces rencontrées, monstres rares (et s'ils attaquent ou non), fourchette de niveaux.
 - Q46. (Étape 8) Histoire et tutoriel (section 6) inclus ou non dans la V1, et leur étendue.
@@ -474,6 +479,7 @@ Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découp
 - Q53. (Étape 6) Peut-on utiliser une potion sur un monstre qui a tous ses PV ? Le code le refuse, pour ne pas gaspiller la potion : à confirmer.
 - Q54. (Étape 6) Le monstre de départ compte-t-il comme capturé dans le codex ? Le code l'inscrit comme capturé : à confirmer.
 - Q55. (Étape 6) Peut-on changer l'ordre de son équipe entre deux étapes d'une expédition ? Le code ne le permet qu'au camp (section 13.2) : à confirmer.
+- Q56. (Étape 7) Que faire d'une sauvegarde qui cite une espèce ou une attaque disparue du jeu, ou qui est illisible ? Le code refuse de la charger, l'explique au joueur et lui propose une nouvelle partie, sans rien effacer sans sa confirmation : à confirmer. Les sauvegardes faites avec le contenu provisoire ne se chargeront plus une fois le bestiaire définitif en place (étape 8).
 
 ## 17. Journal des décisions
 
@@ -566,3 +572,9 @@ Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découp
 - Groupes sauvages de 1 à 2 monstres en zone facile, de 1 à 3 en zone difficile.
 - Q15 : potions de soin dans la V1 (40 % à 60 % des PV max, ni réanimation ni soin des statuts), utilisables en combat ou entre deux étapes, toutes perdues en cas de défaite ; codex simple dans la V1.
 - Q39 : un coffre contient 1 à 2 potions.
+
+17/10/2026 (étape 7) :
+
+- Q42 : un seul emplacement de sauvegarde ; une nouvelle partie remplace l'ancienne après confirmation.
+- Q43 : sauvegarde automatique à la création, à chaque retour au camp et après chaque action au camp ; jamais en expédition.
+- Fichier de sauvegarde JSON dans %APPDATA%\Bersemon.

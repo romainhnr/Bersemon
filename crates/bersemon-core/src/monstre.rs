@@ -245,7 +245,72 @@ impl Monstre {
     ) -> Result<(), ErreurAttaquesMonstre> {
         self.attaques.remplacer(position, attaque)
     }
+
+    /// Reconstitue un monstre depuis une sauvegarde. L'XP doit correspondre
+    /// au niveau. Les PV sont ramenés aux PV max s'ils les dépassent, ce qui
+    /// arrive quand une espèce a été rééquilibrée depuis la sauvegarde.
+    pub fn restaurer(etat: EtatMonstre) -> Result<Self, ErreurRestauration> {
+        let minimum = experience_requise(etat.niveau);
+        let suivant = Niveau::new(etat.niveau.valeur() + 1).ok();
+        let coherente = etat.experience >= minimum
+            && match suivant {
+                Some(suivant) => etat.experience < experience_requise(suivant),
+                None => etat.experience == minimum,
+            };
+        if !coherente {
+            return Err(ErreurRestauration::ExperienceIncoherente {
+                niveau: etat.niveau,
+                experience: etat.experience,
+            });
+        }
+        let mut monstre = Self {
+            espece: etat.espece,
+            surnom: etat.surnom,
+            niveau: etat.niveau,
+            experience: etat.experience,
+            valeurs_internes: etat.valeurs_internes,
+            attaques: etat.attaques,
+            shiny: etat.shiny,
+            pv_actuels: 0,
+            statut: etat.statut,
+        };
+        monstre.pv_actuels = etat.pv_actuels.min(monstre.stats().pv);
+        Ok(monstre)
+    }
 }
+
+/// Tout ce qu'une sauvegarde garde d'un monstre (section 13.9).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EtatMonstre {
+    pub espece: Espece,
+    pub surnom: Option<Nom>,
+    pub niveau: Niveau,
+    pub experience: u32,
+    pub valeurs_internes: ValeursInternes,
+    pub attaques: AttaquesMonstre,
+    pub shiny: bool,
+    pub pv_actuels: u32,
+    pub statut: Option<Statut>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ErreurRestauration {
+    ExperienceIncoherente { niveau: Niveau, experience: u32 },
+}
+
+impl std::fmt::Display for ErreurRestauration {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ErreurRestauration::ExperienceIncoherente { niveau, experience } => write!(
+                f,
+                "{experience} XP ne correspondent pas au niveau {}",
+                niveau.valeur()
+            ),
+        }
+    }
+}
+
+impl std::error::Error for ErreurRestauration {}
 
 #[cfg(test)]
 mod tests {
@@ -529,5 +594,52 @@ mod tests {
         monstre.subir_degats(u32::MAX);
         assert_eq!(monstre.soigner(50), 0);
         assert!(monstre.est_ko());
+    }
+
+    fn etat_de(monstre: &Monstre) -> EtatMonstre {
+        EtatMonstre {
+            espece: monstre.espece().clone(),
+            surnom: monstre.surnom().cloned(),
+            niveau: monstre.niveau(),
+            experience: monstre.experience(),
+            valeurs_internes: *monstre.valeurs_internes(),
+            attaques: monstre.attaques().clone(),
+            shiny: monstre.est_shiny(),
+            pv_actuels: monstre.pv_actuels(),
+            statut: monstre.statut(),
+        }
+    }
+
+    #[test]
+    fn restaurer_rend_le_meme_monstre() {
+        let mut monstre = cree(5);
+        monstre.gagner_experience(40);
+        monstre.subir_degats(7);
+        monstre.infliger_statut(Statut::Poison);
+        monstre.renommer(Some(Nom::new("Braise").unwrap()));
+        assert_eq!(Monstre::restaurer(etat_de(&monstre)), Ok(monstre));
+    }
+
+    #[test]
+    fn restaurer_refuse_une_xp_incoherente_avec_le_niveau() {
+        let mut etat = etat_de(&cree(5));
+        etat.experience = 216;
+        assert_eq!(
+            Monstre::restaurer(etat),
+            Err(ErreurRestauration::ExperienceIncoherente {
+                niveau: Niveau::new(5).unwrap(),
+                experience: 216,
+            })
+        );
+        let mut niveau_100 = etat_de(&monstre_de_test(100));
+        niveau_100.experience += 1;
+        assert!(Monstre::restaurer(niveau_100).is_err());
+    }
+
+    #[test]
+    fn restaurer_ramene_les_pv_aux_pv_max() {
+        let mut etat = etat_de(&cree(5));
+        etat.pv_actuels = 500;
+        assert_eq!(Monstre::restaurer(etat).unwrap().pv_actuels(), 21);
     }
 }

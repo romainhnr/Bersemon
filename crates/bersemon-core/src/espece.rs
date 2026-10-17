@@ -1,7 +1,7 @@
 //! Espèces de monstres : ce que tous les monstres d'une même espèce ont en
 //! commun (sections 5.1 et 7).
 
-use crate::attaque::Attaque;
+use crate::attaque::{Attaque, AttaqueId};
 use crate::niveau::Niveau;
 use crate::stats::StatsDeBase;
 use crate::types::TypesMonstre;
@@ -108,6 +108,15 @@ impl Espece {
             .iter()
             .filter(move |apprise| apprise.niveau == niveau)
             .map(|apprise| &apprise.attaque)
+    }
+
+    /// Dans la V1, un monstre n'apprend que les attaques de la liste de son
+    /// espèce : c'est là qu'on retrouve une attaque d'après son identifiant.
+    pub fn attaque_apprise(&self, id: &AttaqueId) -> Option<&Attaque> {
+        self.apprentissage
+            .iter()
+            .map(|apprise| &apprise.attaque)
+            .find(|attaque| attaque.id() == id)
     }
 }
 

@@ -83,6 +83,21 @@ impl Collection {
         }
     }
 
+    /// Reconstitue la collection depuis une sauvegarde, en revérifiant les
+    /// tailles de l'équipe et du camp.
+    pub fn restaurer(equipe: Vec<Monstre>, camp: Vec<Monstre>) -> Result<Self, ErreurCollection> {
+        if equipe.is_empty() {
+            return Err(ErreurCollection::DernierMonstreDeLEquipe);
+        }
+        if equipe.len() > Self::TAILLE_EQUIPE {
+            return Err(ErreurCollection::EquipePleine);
+        }
+        if camp.len() > Self::TAILLE_CAMP {
+            return Err(ErreurCollection::CampPlein);
+        }
+        Ok(Self { equipe, camp })
+    }
+
     pub fn equipe(&self) -> &[Monstre] {
         &self.equipe
     }
@@ -415,6 +430,29 @@ mod tests {
                 attendue: 1,
                 recue: 0,
             })
+        );
+    }
+
+    #[test]
+    fn restaurer_reverifie_les_tailles() {
+        let trois = || vec![monstre_nomme("a"), monstre_nomme("b"), monstre_nomme("c")];
+        assert!(Collection::restaurer(trois(), trois()).is_ok());
+        assert_eq!(
+            Collection::restaurer(vec![], trois()),
+            Err(ErreurCollection::DernierMonstreDeLEquipe)
+        );
+        let mut quatre = trois();
+        quatre.push(monstre_nomme("d"));
+        assert_eq!(
+            Collection::restaurer(quatre, vec![]),
+            Err(ErreurCollection::EquipePleine)
+        );
+        let trente_et_un = (0..31)
+            .map(|numero| monstre_nomme(&format!("c{numero}")))
+            .collect();
+        assert_eq!(
+            Collection::restaurer(trois(), trente_et_un),
+            Err(ErreurCollection::CampPlein)
         );
     }
 }

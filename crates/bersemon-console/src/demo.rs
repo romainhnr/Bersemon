@@ -4,6 +4,7 @@
 
 use bersemon_core::aleatoire::Aleatoire;
 use bersemon_core::attaque::{Attaque, AttaqueId, Categorie, EffetSecondaire};
+use bersemon_core::catalogue::Catalogue;
 use bersemon_core::espece::{AttaqueApprise, Espece, EspeceId, Role};
 use bersemon_core::monstre::Monstre;
 use bersemon_core::niveau::Niveau;
@@ -11,6 +12,26 @@ use bersemon_core::stats::{Stats, StatsDeBase, ValeursInternes};
 use bersemon_core::statut::Statut;
 use bersemon_core::types::{Type, TypesMonstre};
 use bersemon_core::zone::{EspeceRare, Zone, ZoneId};
+
+/// Espèces de démonstration, retrouvées par identifiant au chargement d'une
+/// sauvegarde et listées dans l'ordre du codex.
+pub struct CatalogueDemo(Vec<Espece>);
+
+impl CatalogueDemo {
+    pub fn especes(&self) -> &[Espece] {
+        &self.0
+    }
+}
+
+impl Catalogue for CatalogueDemo {
+    fn espece(&self, id: &EspeceId) -> Option<Espece> {
+        self.0.iter().find(|espece| espece.id() == id).cloned()
+    }
+}
+
+pub fn catalogue() -> CatalogueDemo {
+    CatalogueDemo(toutes_les_especes())
+}
 
 /// Le monstre de départ est au niveau 5 (section 6).
 const NIVEAU_DE_DEPART: u8 = 5;
@@ -32,7 +53,7 @@ pub fn monstre_de_depart(espece: Espece, aleatoire: &mut dyn Aleatoire) -> Monst
 }
 
 /// Toutes les espèces du jeu, dans l'ordre du codex.
-pub fn toutes_les_especes() -> Vec<Espece> {
+fn toutes_les_especes() -> Vec<Espece> {
     vec![
         salamandre(),
         crapaud(),
