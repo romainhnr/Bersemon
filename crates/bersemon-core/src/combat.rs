@@ -22,7 +22,8 @@ use crate::aleatoire::Aleatoire;
 use crate::attaque::{Attaque, EffetSecondaire};
 use crate::capture::calculer_chance_capture;
 use crate::degats::{ResultatAttaque, resoudre_attaque};
-use crate::monstre::Monstre;
+use crate::experience::tirer_gain_experience;
+use crate::monstre::{Monstre, RapportExperience};
 use crate::statut::{CHANCES_BLOCAGE_PARALYSIE, Statut, degats_de_poison};
 use crate::types::Efficacite;
 
@@ -170,12 +171,15 @@ impl fmt::Display for ErreurCombat {
 impl std::error::Error for ErreurCombat {}
 
 /// Ce que le combat laisse derrière lui. `issue` vaut `None` si le combat a
-/// été interrompu avant la fin ; `captures` suit l'ordre des captures.
+/// été interrompu avant la fin ; `captures` suit l'ordre des captures ;
+/// `experience` suit l'ordre de l'équipe, avec `None` pour un monstre qui n'a
+/// rien gagné.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BilanCombat {
     pub issue: Option<Issue>,
     pub equipe: Vec<Monstre>,
     pub captures: Vec<Monstre>,
+    pub experience: Vec<Option<RapportExperience>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -188,6 +192,9 @@ pub struct Combat {
     /// ils restent dans la liste pour que les positions ne changent pas, mais
     /// ne combattent plus.
     captures: Vec<usize>,
+    /// Pour chaque monstre adverse, les monstres de l'équipe qui ont été
+    /// actifs face à lui : ce sont eux qui reçoivent son XP (section 7).
+    participants: Vec<Vec<usize>>,
     phase: Phase,
 }
 
@@ -206,14 +213,17 @@ impl Combat {
         if let Some(index) = adversaires.iter().position(Monstre::est_ko) {
             return Err(ErreurCombat::AdversaireKo(index));
         }
-        Ok(Self {
+        let mut combat = Self {
             equipe,
             actif_joueur,
+            participants: vec![Vec::new(); adversaires.len()],
             adversaires,
             actif_adversaire: 0,
             captures: Vec::new(),
             phase: Phase::ChoixAction,
-        })
+        };
+        combat.noter_participation();
+        Ok(combat)
     }
 
     pub fn phase(&self) -> Phase {
@@ -284,6 +294,7 @@ impl Combat {
             // comme dans Pokémon, et laisse l'adversaire agir.
             Action::Changer(index) => {
                 self.actif_joueur = index;
+                self.noter_participation();
                 evenements.push(Evenement::MonstreEnvoye(self.actif(Cote::Joueur)));
                 self.attaquer(
                     Cote::Adversaire,
@@ -329,6 +340,7 @@ impl Combat {
         }
         self.verifier_remplacant(index)?;
         self.actif_joueur = index;
+        self.noter_participation();
         self.phase = Phase::ChoixAction;
         Ok(vec![Evenement::MonstreEnvoye(self.actif(Cote::Joueur))])
     }
@@ -357,10 +369,17 @@ impl Combat {
         })])
     }
 
-    pub fn terminer(self) -> BilanCombat {
+    /// Verse l'XP des monstres vaincus si le combat est allé à son terme, quelle
+    /// que soit son issue (Q32), puis rend l'équipe et les captures. Un combat
+    /// interrompu ne rapporte rien.
+    pub fn terminer(mut self, aleatoire: &mut dyn Aleatoire) -> BilanCombat {
         let issue = match self.phase {
             Phase::Termine(issue) => Some(issue),
             Phase::ChoixAction | Phase::Remplacement => None,
+        };
+        let experience = match issue {
+            Some(_) => self.verser_experience(aleatoire),
+            None => vec![None; self.equipe.len()],
         };
         let mut adversaires: Vec<Option<Monstre>> =
             self.adversaires.into_iter().map(Some).collect();
@@ -373,6 +392,56 @@ impl Combat {
             issue,
             equipe: self.equipe,
             captures,
+            experience,
+        }
+    }
+
+    /// Un monstre adverse KO ou capturé rapporte son XP, en entier, à chaque
+    /// monstre de l'équipe qui l'a affronté et n'est pas KO (section 7). Un
+    /// tirage par monstre vaincu qui a au moins un bénéficiaire, dans l'ordre
+    /// du groupe.
+    fn verser_experience(
+        &mut self,
+        aleatoire: &mut dyn Aleatoire,
+    ) -> Vec<Option<RapportExperience>> {
+        let mut gains = vec![0u32; self.equipe.len()];
+        for (index, vaincu) in self.adversaires.iter().enumerate() {
+            if !vaincu.est_ko() && !self.captures.contains(&index) {
+                continue;
+            }
+            let beneficiaires: Vec<usize> = self.participants[index]
+                .iter()
+                .copied()
+                .filter(|&membre| !self.equipe[membre].est_ko())
+                .collect();
+            if beneficiaires.is_empty() {
+                continue;
+            }
+            let gain = tirer_gain_experience(
+                vaincu.espece().rendement_experience(),
+                vaincu.niveau(),
+                aleatoire,
+            );
+            for membre in beneficiaires {
+                gains[membre] = gains[membre].saturating_add(gain);
+            }
+        }
+        self.equipe
+            .iter_mut()
+            .zip(gains)
+            .map(|(monstre, gain)| (gain > 0).then(|| monstre.gagner_experience(gain)))
+            .collect()
+    }
+
+    /// Retient que le monstre actif du joueur affronte le monstre adverse
+    /// actif. Un monstre KO, qui attend d'être remplacé, n'affronte personne.
+    fn noter_participation(&mut self) {
+        if self.equipe[self.actif_joueur].est_ko() {
+            return;
+        }
+        let participants = &mut self.participants[self.actif_adversaire];
+        if !participants.contains(&self.actif_joueur) {
+            participants.push(self.actif_joueur);
         }
     }
 
@@ -571,6 +640,7 @@ impl Combat {
             match self.prochain_adversaire() {
                 Some(index) => {
                     self.actif_adversaire = index;
+                    self.noter_participation();
                     evenements.push(Evenement::MonstreEnvoye(self.actif(Cote::Adversaire)));
                 }
                 None => {
@@ -637,6 +707,7 @@ mod tests {
     use crate::aleatoire::AleatoireScripte;
     use crate::attaque::Categorie;
     use crate::donnees_de_test::{attaque, monstre, stats_uniformes};
+    use crate::niveau::Niveau;
     use crate::stats::Stats;
     use crate::types::Type;
 
@@ -664,6 +735,25 @@ mod tests {
 
     fn lent() -> Monstre {
         monstre(&[Type::Feu], stats_uniformes(50), 5, vec![coup()])
+    }
+
+    /// Base de vitesse 70 : 12 au niveau 5, plus rapide que `rapide`.
+    fn tres_rapide() -> Monstre {
+        let base = Stats {
+            vitesse: 70,
+            ..stats_uniformes(50)
+        };
+        monstre(&[Type::Feu], base, 5, vec![coup()])
+    }
+
+    fn terminer(combat: Combat, tirages: &[u32]) -> BilanCombat {
+        combat.terminer(&mut AleatoireScripte::new(tirages.iter().copied()))
+    }
+
+    fn xp_gagnee(bilan: &BilanCombat, membre: usize) -> Option<u32> {
+        bilan.experience[membre]
+            .as_ref()
+            .map(|rapport| rapport.experience_gagnee)
     }
 
     fn affaibli(mut monstre: Monstre, pv_restants: u32) -> Monstre {
@@ -1030,7 +1120,8 @@ mod tests {
             ]
         );
         assert!(combat.adversaires_capturables().is_empty());
-        let bilan = combat.terminer();
+        let bilan = terminer(combat, &[100]);
+        assert_eq!(xp_gagnee(&bilan, 0), Some(50));
         assert_eq!(bilan.issue, Some(Issue::Victoire));
         let pv_des_captures: Vec<u32> = bilan.captures.iter().map(Monstre::pv_actuels).collect();
         assert_eq!(pv_des_captures, vec![2]);
@@ -1049,7 +1140,7 @@ mod tests {
             evenements.last(),
             Some(&Evenement::FinDuCombat(Issue::Victoire))
         );
-        assert_eq!(combat.terminer().captures.len(), 2);
+        assert_eq!(terminer(combat, &[100, 100]).captures.len(), 2);
     }
 
     #[test]
@@ -1075,7 +1166,7 @@ mod tests {
             combat.capturer_ko(0),
             Err(ErreurCombat::CaptureImpossible(0))
         );
-        let captures = combat.terminer().captures;
+        let captures = terminer(combat, &[100, 100]).captures;
         assert_eq!(captures.len(), 2);
         assert!(captures.iter().all(Monstre::est_ko));
     }
@@ -1091,8 +1182,7 @@ mod tests {
         assert_eq!(combat.phase(), Phase::Termine(Issue::Victoire));
         assert_eq!(combat.adversaires_capturables(), vec![1]);
         combat.capturer_ko(1).unwrap();
-        let pv_des_captures: Vec<u32> = combat
-            .terminer()
+        let pv_des_captures: Vec<u32> = terminer(combat, &[100, 100])
             .captures
             .iter()
             .map(Monstre::pv_actuels)
@@ -1130,9 +1220,64 @@ mod tests {
     fn terminer_un_combat_interrompu_rend_l_equipe() {
         let mut combat = combat(vec![rapide()], vec![lent()]);
         tour(&mut combat, Action::Attaquer(0), &[2, 100, 2, 85]);
-        let bilan = combat.terminer();
+        // Aucun tirage d'XP : un combat interrompu ne rapporte rien.
+        let bilan = terminer(combat, &[]);
         assert_eq!(bilan.issue, None);
         assert_eq!(bilan.equipe[0].pv_actuels(), 16);
         assert!(bilan.captures.is_empty());
+        assert_eq!(bilan.experience, vec![None]);
+    }
+
+    #[test]
+    fn xp_versee_en_entier_a_chaque_participant() {
+        let mut combat = combat(vec![lent(), rapide()], vec![affaibli(lent(), 3)]);
+        tour(&mut combat, Action::Changer(1), &[2, 100]);
+        tour(&mut combat, Action::Attaquer(0), &[2, 100]);
+        // Rendement de test 70 au niveau 5 : 50 XP avec un pourcentage de 100.
+        let bilan = terminer(combat, &[100]);
+        assert_eq!(xp_gagnee(&bilan, 0), Some(50));
+        assert_eq!(xp_gagnee(&bilan, 1), Some(50));
+        assert_eq!(bilan.equipe[0].experience(), 175);
+    }
+
+    #[test]
+    fn un_participant_ko_ne_recoit_pas_d_xp() {
+        let mut combat = combat(
+            vec![affaibli(lent(), 3), rapide()],
+            vec![affaibli(tres_rapide(), 3)],
+        );
+        tour(&mut combat, Action::Attaquer(0), &[2, 100]);
+        combat.remplacer(1).unwrap();
+        tour(&mut combat, Action::Attaquer(0), &[2, 100, 2, 100]);
+        assert_eq!(combat.phase(), Phase::Termine(Issue::Victoire));
+        let bilan = terminer(combat, &[100]);
+        assert_eq!(xp_gagnee(&bilan, 0), None);
+        assert_eq!(xp_gagnee(&bilan, 1), Some(50));
+    }
+
+    #[test]
+    fn xp_gagnee_meme_apres_une_fuite() {
+        let mut combat = combat(vec![rapide()], vec![affaibli(lent(), 3), lent()]);
+        tour(&mut combat, Action::Attaquer(0), &[2, 100]);
+        tour(&mut combat, Action::Fuir, &[2, 100]);
+        // Seul le premier monstre a été vaincu : un seul tirage.
+        let bilan = terminer(combat, &[110]);
+        assert_eq!(bilan.issue, Some(Issue::Fuite));
+        assert_eq!(xp_gagnee(&bilan, 0), Some(55));
+    }
+
+    #[test]
+    fn assez_d_xp_pour_monter_de_niveau() {
+        let mut combat = combat(
+            vec![rapide()],
+            vec![affaibli(lent(), 2), affaibli(lent(), 3)],
+        );
+        tour(&mut combat, Action::LancerFilet, &[90]);
+        tour(&mut combat, Action::Attaquer(0), &[2, 100]);
+        // 125 + 2 x 50 = 225 : le niveau 6 demande 216.
+        let bilan = terminer(combat, &[100, 100]);
+        let rapport = bilan.experience[0].as_ref().unwrap();
+        assert_eq!(rapport.experience_gagnee, 100);
+        assert_eq!(rapport.niveau_apres, Niveau::new(6).unwrap());
     }
 }

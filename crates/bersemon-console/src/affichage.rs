@@ -6,7 +6,7 @@ use bersemon_core::attaque::{Attaque, Categorie};
 use bersemon_core::combat::{
     BilanCombat, Combat, Combattant, Cote, ErreurCombat, Evenement, Issue,
 };
-use bersemon_core::monstre::Monstre;
+use bersemon_core::monstre::{Monstre, RapportExperience};
 use bersemon_core::statut::Statut;
 use bersemon_core::types::Efficacite;
 
@@ -193,6 +193,54 @@ pub fn evenement(evenement: &Evenement, combat: &Combat) -> String {
         }
         Evenement::FinDuCombat(Issue::Fuite) => "Le combat est terminé.".to_string(),
     }
+}
+
+pub fn rapport_experience(monstre: &Monstre, rapport: &RapportExperience) -> String {
+    let nom = nom(monstre, Cote::Joueur);
+    let mut lignes = vec![format!("{nom} gagne {} XP.", rapport.experience_gagnee)];
+    if rapport.niveau_apres > rapport.niveau_avant {
+        lignes.push(format!(
+            "{nom} passe au niveau {}.",
+            rapport.niveau_apres.valeur()
+        ));
+    }
+    for attaque in &rapport.attaques_apprises {
+        lignes.push(format!("{nom} apprend {}.", attaque.nom()));
+    }
+    lignes.join("\n")
+}
+
+pub fn question_oubli(monstre: &Monstre, nouvelle: &Attaque) -> String {
+    let mut lignes = vec![
+        format!(
+            "{} veut apprendre {}, mais connaît déjà 4 attaques.",
+            nom(monstre, Cote::Joueur),
+            decrire_attaque(nouvelle)
+        ),
+        "Quelle attaque oublier ?".to_string(),
+    ];
+    for (position, attaque) in monstre.attaques().liste().iter().enumerate() {
+        lignes.push(format!("  {}. {}", position + 1, decrire_attaque(attaque)));
+    }
+    lignes.push(format!("  0. Renoncer à {}", nouvelle.nom()));
+    lignes.join("\n")
+}
+
+pub fn renoncement(monstre: &Monstre, nouvelle: &Attaque) -> String {
+    format!(
+        "{} n'apprend pas {}.",
+        nom(monstre, Cote::Joueur),
+        nouvelle.nom()
+    )
+}
+
+pub fn remplacement(monstre: &Monstre, oubliee: &Attaque, nouvelle: &Attaque) -> String {
+    format!(
+        "{} oublie {} et apprend {}.",
+        nom(monstre, Cote::Joueur),
+        oubliee.nom(),
+        nouvelle.nom()
+    )
 }
 
 pub fn bilan(bilan: &BilanCombat) -> String {

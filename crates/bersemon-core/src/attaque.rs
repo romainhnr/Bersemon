@@ -189,6 +189,41 @@ impl AttaquesMonstre {
     pub fn liste(&self) -> &[Attaque] {
         &self.0
     }
+
+    pub fn connait(&self, id: &AttaqueId) -> bool {
+        self.0.iter().any(|attaque| attaque.id() == id)
+    }
+
+    pub fn est_complete(&self) -> bool {
+        self.0.len() >= Self::MAX
+    }
+
+    pub fn ajouter(&mut self, attaque: Attaque) -> Result<(), ErreurAttaquesMonstre> {
+        if self.connait(attaque.id()) {
+            return Err(ErreurAttaquesMonstre::EnDouble(attaque.id().clone()));
+        }
+        if self.est_complete() {
+            return Err(ErreurAttaquesMonstre::TropNombreuses(self.0.len() + 1));
+        }
+        self.0.push(attaque);
+        Ok(())
+    }
+
+    /// Oublie l'attaque en `position` au profit d'une nouvelle (Q33).
+    pub fn remplacer(
+        &mut self,
+        position: usize,
+        attaque: Attaque,
+    ) -> Result<(), ErreurAttaquesMonstre> {
+        if position >= self.0.len() {
+            return Err(ErreurAttaquesMonstre::PositionInexistante(position));
+        }
+        if self.connait(attaque.id()) {
+            return Err(ErreurAttaquesMonstre::EnDouble(attaque.id().clone()));
+        }
+        self.0[position] = attaque;
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -196,6 +231,7 @@ pub enum ErreurAttaquesMonstre {
     Aucune,
     TropNombreuses(usize),
     EnDouble(AttaqueId),
+    PositionInexistante(usize),
 }
 
 impl fmt::Display for ErreurAttaquesMonstre {
@@ -211,6 +247,9 @@ impl fmt::Display for ErreurAttaquesMonstre {
             ),
             ErreurAttaquesMonstre::EnDouble(id) => {
                 write!(f, "attaque {} présente plusieurs fois", id.as_str())
+            }
+            ErreurAttaquesMonstre::PositionInexistante(position) => {
+                write!(f, "aucune attaque en position {position}")
             }
         }
     }
@@ -280,6 +319,38 @@ mod tests {
         assert!(AttaquesMonstre::new(vec![attaque("a")]).is_ok());
         let quatre = vec![attaque("a"), attaque("b"), attaque("c"), attaque("d")];
         assert_eq!(AttaquesMonstre::new(quatre).unwrap().liste().len(), 4);
+    }
+
+    #[test]
+    fn ajouter_une_attaque_tant_qu_il_reste_de_la_place() {
+        let mut attaques =
+            AttaquesMonstre::new(vec![attaque("a"), attaque("b"), attaque("c")]).unwrap();
+        assert_eq!(
+            attaques.ajouter(attaque("a")),
+            Err(ErreurAttaquesMonstre::EnDouble(AttaqueId::new("a")))
+        );
+        assert_eq!(attaques.ajouter(attaque("d")), Ok(()));
+        assert!(attaques.est_complete());
+        assert_eq!(
+            attaques.ajouter(attaque("e")),
+            Err(ErreurAttaquesMonstre::TropNombreuses(5))
+        );
+    }
+
+    #[test]
+    fn remplacer_une_attaque_connue() {
+        let mut attaques = AttaquesMonstre::new(vec![attaque("a"), attaque("b")]).unwrap();
+        assert_eq!(attaques.remplacer(0, attaque("c")), Ok(()));
+        assert!(attaques.connait(&AttaqueId::new("c")));
+        assert!(!attaques.connait(&AttaqueId::new("a")));
+        assert_eq!(
+            attaques.remplacer(2, attaque("d")),
+            Err(ErreurAttaquesMonstre::PositionInexistante(2))
+        );
+        assert_eq!(
+            attaques.remplacer(0, attaque("b")),
+            Err(ErreurAttaquesMonstre::EnDouble(AttaqueId::new("b")))
+        );
     }
 
     #[test]

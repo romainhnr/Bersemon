@@ -8,7 +8,9 @@ use std::io::{self, BufRead, Write};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use bersemon_core::aleatoire::GenerateurAleatoire;
+use bersemon_core::attaque::Attaque;
 use bersemon_core::combat::{Action, Combat, Cote, ErreurCombat, Evenement, Phase};
+use bersemon_core::monstre::Monstre;
 
 fn main() {
     let mut aleatoire = GenerateurAleatoire::new(graine_depuis_horloge());
@@ -60,8 +62,42 @@ fn main() {
             _ => break,
         }
     }
+
+    let mut bilan = combat.terminer(&mut aleatoire);
+    for (index, rapport) in bilan.experience.iter().enumerate() {
+        let Some(rapport) = rapport else {
+            continue;
+        };
+        let monstre = &mut bilan.equipe[index];
+        println!();
+        println!("{}", affichage::rapport_experience(monstre, rapport));
+        for attaque in &rapport.attaques_en_attente {
+            choisir_attaque_a_oublier(monstre, attaque, &mut lignes);
+        }
+    }
     println!();
-    println!("{}", affichage::bilan(&combat.terminer()));
+    println!("{}", affichage::bilan(&bilan));
+}
+
+/// Le monstre connaît déjà 4 attaques : le joueur en oublie une pour
+/// apprendre la nouvelle, ou y renonce (Q33).
+fn choisir_attaque_a_oublier(
+    monstre: &mut Monstre,
+    nouvelle: &Attaque,
+    lignes: &mut impl Iterator<Item = io::Result<String>>,
+) {
+    println!("{}", affichage::question_oubli(monstre, nouvelle));
+    let nombre = monstre.attaques().liste().len();
+    let choix = lire_choix(lignes, 0, nombre).unwrap_or(0);
+    if choix == 0 {
+        println!("{}", affichage::renoncement(monstre, nouvelle));
+        return;
+    }
+    let oubliee = monstre.attaques().liste()[choix - 1].clone();
+    match monstre.remplacer_attaque(choix - 1, nouvelle.clone()) {
+        Ok(()) => println!("{}", affichage::remplacement(monstre, &oubliee, nouvelle)),
+        Err(erreur) => println!("Impossible d'apprendre cette attaque : {erreur}."),
+    }
 }
 
 /// Rend `None` si l'entrée est fermée. Le choix 0 d'un sous-menu ramène au

@@ -185,7 +185,12 @@ Le joueur peut :
 
 - Les monstres gagnent de l'expérience et montent de niveau, du niveau 1 au niveau 100.
 - Le monstre de départ est au niveau 5.
-- Courbe d'expérience à définir (voir Q10).
+- Courbe d'expérience, la même pour toutes les espèces : il faut n x n x n XP au total pour atteindre le niveau n (125 au niveau 5, 216 au niveau 6, 1 000 000 au niveau 100). Un monstre créé au niveau n commence avec n x n x n XP. Au niveau 100, il ne gagne plus d'XP.
+- À chaque niveau gagné, les stats sont recalculées et les PV actuels augmentent d'autant que les PV max.
+- XP rapportée par un monstre sauvage vaincu, c'est-à-dire mis KO ou capturé : rendement de son espèce x son niveau / 7, multiplié par un pourcentage tiré de 90 % à 110 %, en divisions entières. Exemple : un monstre de niveau 5 et de rendement 64 rapporte de 40 à 49 XP.
+- Chaque monstre de l'équipe qui a été actif face au monstre vaincu et qui n'est pas KO à la fin du combat reçoit cette XP en entier.
+- L'XP est versée à la fin du combat, quelle que soit son issue ; les montées de niveau et l'apprentissage d'attaques se font donc après le combat, jamais pendant.
+- Chaque espèce a une liste d'attaques apprises à des niveaux donnés. En atteignant un de ces niveaux, le monstre apprend l'attaque ; s'il en connaît déjà 4, le joueur choisit l'attaque à oublier ou renonce à la nouvelle. Un monstre créé à un niveau donné connaît les 4 dernières attaques de sa liste jusqu'à ce niveau.
 - Le héros a-t-il un niveau : à définir (voir Q9).
 
 ## 8. Boucle de gameplay
@@ -426,14 +431,11 @@ Les numéros des questions résolues ne sont pas réattribués, pour que les ré
 - Q6. Nombre de talismans équipables.
 - Q7. Réduction de la durée des expéditions automatiques selon le nombre de monstres : division par le nombre de monstres, ou réduction de x% par monstre.
 - Q9. Le héros a-t-il un niveau ?
-- Q10. Courbe d'expérience des monstres.
 - Q15. Contenu de la V1 à trancher : codex, objets de soin.
 
 Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découpage de la V1 en étapes. Chacune indique l'étape de développement qui en a besoin : 1 fondations (types, stats, monstres), 2 combat 1 contre 1, 3 combat complet (changement, statuts, fuite, capture), 4 progression, 5 héros, équipe et camp, 6 expédition manuelle, 7 sauvegarde, 8 contenu et boucle de jeu complète. Le reste de Q15 (codex, objets de soin) concerne les étapes 6 et 8.
 
 - Q19. (Après la V1) Effet du rôle soutien ou offensif, en combat et en expédition. Le code porte le rôle sur l'espèce, et non sur chaque monstre : à confirmer.
-- Q32. (Étape 4) Formule de gain d'expérience après un combat, et monstres qui en bénéficient : monstre actif, monstres ayant participé ou toute l'équipe.
-- Q33. (Étape 4) Apprentissage des attaques : à quels niveaux, et choix de l'attaque remplacée lorsque la limite de 4 attaques est atteinte.
 - Q34. (Étape 5) Effet de la classe du héros dans la V1 : bonus accordés aux monstres et actions de soutien (section 4.2). Sans effet, le choix de la classe serait purement descriptif.
 - Q35. (Étape 5) Stats et équipement du héros présents ou non dans la V1 (complète Q6 et Q9).
 - Q36. (Étape 5) Gestion des monstres dans la V1 : nombre minimal de monstres pour partir en expédition, possibilité de relâcher un monstre en dehors d'une capture avec le camp plein (section 11.2), possibilité de le renommer (section 5.5).
@@ -444,7 +446,7 @@ Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découp
 - Q41. (Étape 6) Les PV perdus sont-ils conservés d'un combat à l'autre pendant une expédition, le soin n'ayant lieu qu'au camp (section 13.1) ou par un objet de soin ?
 - Q42. (Étape 7) Nombre d'emplacements de sauvegarde : une seule partie ou plusieurs.
 - Q43. (Étape 7) Moment de la sauvegarde : uniquement au camp (section 3.1), manuelle, automatique au retour au camp, ou les deux.
-- Q44. (Étape 8) Bestiaire de la V1 : une dizaine d'espèces (nom, types, rôle, stats, attaques), dont les 3 monstres de départ, et liste des attaques.
+- Q44. (Étape 8) Bestiaire de la V1 : une dizaine d'espèces (nom, types, rôle, stats, rendement d'XP, liste d'attaques apprises par niveau), dont les 3 monstres de départ, et liste des attaques.
 - Q45. (Étape 8) Espèces rencontrées dans chaque zone de la V1 et fourchette de niveaux (complète Q3).
 - Q46. (Étape 8) Histoire et tutoriel (section 6) inclus ou non dans la V1, et leur étendue.
 - Q47. (Étape 8) Représentation des sprites dans la console (art ASCII ou aucune image) et signalement d'un monstre shiny à l'écran.
@@ -519,3 +521,9 @@ Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découp
 17/10/2026 (étape 3, suite) :
 
 - Q29 révisée : plusieurs monstres peuvent être capturés dans un même combat ; chaque monstre d'un groupe sauvage peut l'être, au filet pendant le combat ou KO à la fin d'un combat gagné.
+
+17/10/2026 (étape 4) :
+
+- Q10 : courbe d'expérience n x n x n pour toutes les espèces ; stats recalculées et PV actuels augmentés d'autant que les PV max à chaque niveau.
+- Q32 : XP d'un monstre vaincu (KO ou capturé) = rendement de l'espèce x niveau / 7, x un pourcentage de 90 % à 110 % ; versée en entier à chaque participant non KO, à la fin du combat, quelle que soit l'issue.
+- Q33 : attaques apprises à des niveaux fixés par espèce ; avec 4 attaques connues, le joueur oublie une attaque ou renonce à la nouvelle ; un monstre créé connaît les 4 dernières attaques de sa liste jusqu'à son niveau.

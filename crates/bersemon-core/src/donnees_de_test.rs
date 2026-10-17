@@ -37,7 +37,12 @@ pub(crate) fn attaque(
     .unwrap()
 }
 
-/// Monstre aux valeurs internes nulles, non shiny, avec tous ses PV.
+/// Rendement d'XP des espèces de test : 70 x 5 / 7 donne 50 XP de base pour
+/// un monstre vaincu au niveau 5.
+pub(crate) const RENDEMENT_DE_TEST: u16 = 70;
+
+/// Monstre aux valeurs internes nulles, non shiny, avec tous ses PV, d'une
+/// espèce qui n'apprend aucune attaque en montant de niveau.
 pub(crate) fn monstre(
     types: &[Type],
     base: StatsDeBase,
@@ -50,6 +55,8 @@ pub(crate) fn monstre(
         TypesMonstre::new(types).unwrap(),
         Role::Offensif,
         base,
+        RENDEMENT_DE_TEST,
+        Vec::new(),
     );
     let valeurs_internes = ValeursInternes::new(Stats {
         pv: 0,
