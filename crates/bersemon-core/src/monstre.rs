@@ -182,6 +182,18 @@ impl Monstre {
         self.statut = None;
     }
 
+    /// Soin partiel, comme celui d'une potion : ne relève pas un monstre KO,
+    /// ne dépasse pas les PV max et ne touche pas au statut. Rend les PV
+    /// réellement rendus.
+    pub fn soigner(&mut self, pv: u32) -> u32 {
+        if self.est_ko() {
+            return 0;
+        }
+        let rendus = pv.min(self.stats().pv - self.pv_actuels);
+        self.pv_actuels += rendus;
+        rendus
+    }
+
     /// Ajoute l'XP et fait monter le monstre d'autant de niveaux qu'elle le
     /// permet, jusqu'au niveau 100 (section 7). À chaque niveau atteint, il
     /// apprend les attaques prévues tant qu'il lui reste de la place ; les
@@ -504,5 +516,18 @@ mod tests {
         assert_eq!(monstre.nom(), "Braise");
         monstre.renommer(None);
         assert_eq!(monstre.nom(), "Espèce de test");
+    }
+
+    #[test]
+    fn soin_partiel_plafonne_aux_pv_max_et_sans_relever_un_ko() {
+        let mut monstre = monstre_de_test(5);
+        monstre.subir_degats(10);
+        assert_eq!(monstre.soigner(4), 4);
+        assert_eq!(monstre.pv_actuels(), 15);
+        assert_eq!(monstre.soigner(50), 6);
+        assert_eq!(monstre.pv_actuels(), 21);
+        monstre.subir_degats(u32::MAX);
+        assert_eq!(monstre.soigner(50), 0);
+        assert!(monstre.est_ko());
     }
 }

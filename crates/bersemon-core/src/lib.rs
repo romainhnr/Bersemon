@@ -8,18 +8,23 @@
 pub mod aleatoire;
 pub mod attaque;
 pub mod capture;
+pub mod codex;
 pub mod collection;
 pub mod combat;
 mod degats;
 pub mod espece;
+pub mod expedition;
 pub mod experience;
 pub mod heros;
+pub mod inventaire;
 pub mod monstre;
 pub mod niveau;
 pub mod nom;
+pub mod partie;
 pub mod stats;
 pub mod statut;
 pub mod types;
+pub mod zone;
 
 #[cfg(test)]
 mod donnees_de_test;

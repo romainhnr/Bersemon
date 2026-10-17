@@ -1,35 +1,40 @@
 //! Combat contre un groupe sauvage, puis ses suites : XP, apprentissage
-//! d'attaques, placement des captures et retour au camp.
+//! d'attaques et placement des captures.
 
 use bersemon_core::aleatoire::Aleatoire;
 use bersemon_core::attaque::Attaque;
 use bersemon_core::collection::{Collection, Emplacement, Placement};
-use bersemon_core::combat::{Action, Combat, Cote, ErreurCombat, Evenement, Phase};
-use bersemon_core::heros::Heros;
+use bersemon_core::combat::{Action, Combat, Cote, ErreurCombat, Evenement, Issue, Phase};
 use bersemon_core::monstre::Monstre;
+use bersemon_core::partie::Partie;
 
 use crate::affichage;
-use crate::demo;
 use crate::saisie::Entree;
 
-/// Rend `false` si l'entrée a été fermée : la partie s'arrête alors.
+pub struct FinDeCombat {
+    pub issue: Option<Issue>,
+    /// `false` si l'entrée a été fermée : la partie s'arrête alors.
+    pub entree_ouverte: bool,
+}
+
 pub fn combattre(
-    heros: &Heros,
-    collection: &mut Collection,
+    partie: &mut Partie,
+    groupe: Vec<Monstre>,
     aleatoire: &mut dyn Aleatoire,
     entree: &mut Entree,
-) -> bool {
-    let groupe = demo::groupe_sauvage(aleatoire);
-    // Au camp, tous les monstres sont soignés : l'équipe peut combattre.
-    let mut combat = Combat::new(collection.equipe().to_vec(), groupe)
-        .expect("équipe soignée et groupe sauvage valide")
-        .avec_bonus_du_joueur(heros.classe().bonus());
+) -> FinDeCombat {
+    // En expédition, l'équipe garde toujours un monstre en état de combattre
+    // entre deux combats : sinon une défaite l'aurait ramenée au camp.
+    let mut combat = partie
+        .preparer_combat(groupe)
+        .expect("l'équipe a un monstre en état de combattre");
     println!();
     println!("{}", affichage::rencontre(&combat));
     let mut entree_ouverte =
         jouer(&mut combat, aleatoire, entree) && capturer_les_ko(&mut combat, entree);
 
     let mut bilan = combat.terminer(aleatoire);
+    let issue = bilan.issue;
     for (index, rapport) in bilan.experience.iter().enumerate() {
         let Some(rapport) = rapport else {
             continue;
@@ -41,19 +46,84 @@ pub fn combattre(
             entree_ouverte = entree_ouverte && choisir_attaque_a_oublier(monstre, attaque, entree);
         }
     }
-    collection
-        .actualiser_equipe(bilan.equipe)
+    let captures = partie
+        .conclure_combat(bilan)
         .expect("le combat rend l'équipe qu'il a reçue");
-    for capture in bilan.captures {
-        entree_ouverte = placer_capture(collection, capture, entree_ouverte, entree);
+    for capture in captures {
+        let placement = partie.collection_mut().accueillir_capture(capture);
+        entree_ouverte =
+            traiter_placement(partie.collection_mut(), placement, entree_ouverte, entree);
     }
+    FinDeCombat {
+        issue,
+        entree_ouverte,
+    }
+}
 
-    // Retour au camp, où les monstres sont soignés, même après une défaite
-    // (sections 9.3 et 13.1).
-    collection.soigner_tout();
-    println!();
-    println!("Retour au camp : vos monstres sont soignés.");
-    entree_ouverte
+/// Dans l'équipe s'il y a de la place, sinon au camp ; si tout est plein, le
+/// joueur relâche un monstre ou la capture (Q12). Sans entrée, la capture est
+/// relâchée faute de place. Rend `false` si l'entrée est fermée.
+pub fn traiter_placement(
+    collection: &mut Collection,
+    placement: Placement,
+    entree_ouverte: bool,
+    entree: &mut Entree,
+) -> bool {
+    let capture = match placement {
+        Placement::Equipe(index) => {
+            println!("{} rejoint votre équipe.", collection.equipe()[index].nom());
+            return entree_ouverte;
+        }
+        Placement::Camp(index) => {
+            println!("{} part pour le camp.", collection.camp()[index].nom());
+            return entree_ouverte;
+        }
+        Placement::PlaceManquante(capture) => capture,
+    };
+    if !entree_ouverte {
+        return false;
+    }
+    loop {
+        println!();
+        println!(
+            "Votre équipe et le camp sont pleins. Quel monstre relâcher pour garder {} ?",
+            capture.nom()
+        );
+        println!("{}", affichage::collection(collection));
+        println!("  0. Relâcher {}", capture.nom());
+        let taille_equipe = collection.equipe().len();
+        let total = taille_equipe + collection.camp().len();
+        let Some(choix) = entree.choix(0, total) else {
+            return false;
+        };
+        if choix == 0 {
+            println!("Vous relâchez {}.", capture.nom());
+            return true;
+        }
+        let emplacement = if choix <= taille_equipe {
+            Emplacement::Equipe(choix - 1)
+        } else {
+            Emplacement::Camp(choix - 1 - taille_equipe)
+        };
+        let nom = collection
+            .monstre(emplacement)
+            .map(|monstre| monstre.nom().to_string())
+            .unwrap_or_default();
+        match entree.confirmation(&format!("Relâcher définitivement {nom} ?")) {
+            None => return false,
+            Some(false) => continue,
+            Some(true) => {}
+        }
+        let nom_capture = capture.nom().to_string();
+        match collection.relacher_pour_capture(emplacement, capture) {
+            Ok(relache) => println!(
+                "Vous relâchez {}. {nom_capture} prend sa place.",
+                relache.nom()
+            ),
+            Err(erreur) => println!("{}", affichage::erreur_collection(&erreur)),
+        }
+        return true;
+    }
 }
 
 fn jouer(combat: &mut Combat, aleatoire: &mut dyn Aleatoire, entree: &mut Entree) -> bool {
@@ -108,7 +178,7 @@ fn capturer_les_ko(combat: &mut Combat, entree: &mut Entree) -> bool {
 fn choisir_action(combat: &Combat, entree: &mut Entree) -> Option<Action> {
     loop {
         println!("{}", affichage::menu_action(combat));
-        match entree.choix(1, 4)? {
+        match entree.choix(1, 5)? {
             1 => {
                 let monstre = combat.monstre(combat.actif(Cote::Joueur));
                 println!("{}", affichage::liste_attaques(monstre));
@@ -125,6 +195,14 @@ fn choisir_action(combat: &Combat, entree: &mut Entree) -> Option<Action> {
                 }
             }
             3 => return Some(Action::LancerFilet),
+            4 => {
+                println!("Soigner quel monstre ?");
+                println!("{}", affichage::liste_equipe(combat, true));
+                let choix = entree.choix(0, combat.equipe().len())?;
+                if choix > 0 {
+                    return Some(Action::UtiliserPotion(choix - 1));
+                }
+            }
             _ => return Some(Action::Fuir),
         }
     }
@@ -150,77 +228,6 @@ fn choisir_attaque_a_oublier(
         Err(erreur) => println!("Impossible d'apprendre cette attaque : {erreur}."),
     }
     true
-}
-
-/// Dans l'équipe s'il y a de la place, sinon au camp ; si tout est plein, le
-/// joueur relâche un monstre ou la capture (Q12). Sans entrée, la capture est
-/// relâchée faute de place. Rend `false` si l'entrée est fermée.
-fn placer_capture(
-    collection: &mut Collection,
-    capture: Monstre,
-    entree_ouverte: bool,
-    entree: &mut Entree,
-) -> bool {
-    let capture = match collection.accueillir_capture(capture) {
-        Placement::Equipe(index) => {
-            println!("{} rejoint votre équipe.", collection.equipe()[index].nom());
-            return entree_ouverte;
-        }
-        Placement::Camp(index) => {
-            println!("{} part pour le camp.", collection.camp()[index].nom());
-            return entree_ouverte;
-        }
-        Placement::PlaceManquante(capture) => capture,
-    };
-    if !entree_ouverte {
-        return false;
-    }
-    loop {
-        println!();
-        println!(
-            "Votre équipe et le camp sont pleins. Quel monstre relâcher pour garder {} ?",
-            capture.nom()
-        );
-        println!("{}", affichage::collection(collection));
-        println!("  0. Relâcher {}", capture.nom());
-        let taille_equipe = collection.equipe().len();
-        let total = taille_equipe + collection.camp().len();
-        let Some(choix) = entree.choix(0, total) else {
-            return false;
-        };
-        if choix == 0 {
-            println!("Vous relâchez {}.", capture.nom());
-            return true;
-        }
-        let emplacement = if choix <= taille_equipe {
-            Emplacement::Equipe(choix - 1)
-        } else {
-            Emplacement::Camp(choix - 1 - taille_equipe)
-        };
-        let nom = collection
-            .monstre(emplacement)
-            .map(|monstre| monstre.nom().to_string())
-            .unwrap_or_default();
-        match entree.confirmation(&format!("Relâcher définitivement {nom} ?")) {
-            None => return false,
-            Some(false) => continue,
-            Some(true) => {}
-        }
-        let nom_capture = capture.nom().to_string();
-        match collection.relacher_pour_capture(emplacement, capture) {
-            Ok(relache) => {
-                println!(
-                    "Vous relâchez {}. {nom_capture} prend sa place.",
-                    relache.nom()
-                );
-                return true;
-            }
-            Err(erreur) => {
-                println!("{}", affichage::erreur_collection(&erreur));
-                return true;
-            }
-        }
-    }
 }
 
 fn afficher(resultat: Result<Vec<Evenement>, ErreurCombat>, combat: &Combat) {

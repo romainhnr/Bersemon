@@ -218,6 +218,11 @@ impl Collection {
         Ok(())
     }
 
+    /// Pour les soins hors combat, comme une potion entre deux étapes.
+    pub(crate) fn membre_de_l_equipe_mut(&mut self, index: usize) -> Option<&mut Monstre> {
+        self.equipe.get_mut(index)
+    }
+
     fn verifier(&self, emplacement: Emplacement) -> Result<(), ErreurCollection> {
         match self.monstre(emplacement) {
             Some(_) => Ok(()),

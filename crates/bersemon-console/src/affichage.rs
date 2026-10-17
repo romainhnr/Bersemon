@@ -4,12 +4,16 @@
 //! du noyau à 0.
 
 use bersemon_core::attaque::{Attaque, Categorie};
+use bersemon_core::codex::{Codex, EtatCodex};
 use bersemon_core::collection::{Collection, ErreurCollection};
 use bersemon_core::combat::{Combat, Combattant, Cote, ErreurCombat, Evenement, Issue};
 use bersemon_core::espece::Espece;
+use bersemon_core::inventaire::ErreurPotion;
 use bersemon_core::monstre::{Monstre, RapportExperience};
+use bersemon_core::partie::Partie;
 use bersemon_core::statut::Statut;
 use bersemon_core::types::Efficacite;
+use bersemon_core::zone::Zone;
 
 pub fn erreur(erreur: &ErreurCombat) -> String {
     match erreur {
@@ -22,6 +26,10 @@ pub fn erreur(erreur: &ErreurCombat) -> String {
         ErreurCombat::MonstreKo(index) => format!("Le monstre numéro {} est KO.", index + 1),
         ErreurCombat::MonstreDejaActif(index) => {
             format!("Le monstre numéro {} combat déjà.", index + 1)
+        }
+        ErreurCombat::AucunePotion => "Vous n'avez plus de potion.".to_string(),
+        ErreurCombat::PvDejaPleins(index) => {
+            format!("Le monstre numéro {} a déjà tous ses PV.", index + 1)
         }
         // Les autres erreurs ne viennent pas d'une saisie du joueur : la
         // console suit la phase du combat.
@@ -157,8 +165,9 @@ pub fn etat(combat: &Combat) -> String {
 
 pub fn menu_action(combat: &Combat) -> String {
     format!(
-        "Que faire ?\n  1. Attaquer\n  2. Changer de monstre\n  3. Lancer un filet ({} % de chances)\n  4. Fuir",
-        combat.chance_de_capture()
+        "Que faire ?\n  1. Attaquer\n  2. Changer de monstre\n  3. Lancer un filet ({} % de chances)\n  4. Utiliser une potion ({})\n  5. Fuir",
+        combat.chance_de_capture(),
+        combat.potions()
     )
 }
 
@@ -258,6 +267,9 @@ pub fn evenement(evenement: &Evenement, combat: &Combat) -> String {
             format!("Capture réussie : {}.", combat.monstre(*cible).nom())
         }
         Evenement::CaptureRatee(cible) => format!("{} se dégage du filet.", nom_de(*cible)),
+        Evenement::PotionUtilisee { cible, pv_rendus } => {
+            format!("{} récupère {pv_rendus} PV.", nom_de(*cible))
+        }
         Evenement::Fuite => "Vous prenez la fuite.".to_string(),
         Evenement::FinDuCombat(Issue::Victoire) => "Victoire !".to_string(),
         Evenement::FinDuCombat(Issue::Defaite) => {
@@ -313,6 +325,115 @@ pub fn remplacement(monstre: &Monstre, oubliee: &Attaque, nouvelle: &Attaque) ->
         oubliee.nom(),
         nouvelle.nom()
     )
+}
+
+pub fn erreur_potion(erreur: &ErreurPotion) -> String {
+    match erreur {
+        ErreurPotion::AucunePotion => "Vous n'avez plus de potion.".to_string(),
+        ErreurPotion::MonstreInexistant => "Ce monstre n'est pas dans l'équipe.".to_string(),
+        ErreurPotion::MonstreKo => "Une potion ne relève pas un monstre KO.".to_string(),
+        ErreurPotion::PvDejaPleins => "Ce monstre a déjà tous ses PV.".to_string(),
+    }
+}
+
+pub fn nom_sauvage(monstre: &Monstre) -> String {
+    nom(monstre, Cote::Adversaire)
+}
+
+pub fn potions(nombre: u32) -> String {
+    if nombre > 1 {
+        format!("{nombre} potions")
+    } else {
+        format!("{nombre} potion")
+    }
+}
+
+/// Zones accessibles avec leurs niveaux, qui disent leur difficulté (section
+/// 9.1).
+pub fn carte(partie: &Partie, accessibles: &[&Zone]) -> String {
+    let mut lignes = vec!["Carte :".to_string()];
+    for (position, zone) in accessibles.iter().enumerate() {
+        let (minimum, maximum) = zone.niveaux();
+        let exploree = if partie.est_exploree(zone.id()) {
+            ", explorée"
+        } else {
+            ""
+        };
+        lignes.push(format!(
+            "  {}. {} (niveaux {} à {}){exploree}",
+            position + 1,
+            zone.nom(),
+            minimum.valeur(),
+            maximum.valeur()
+        ));
+    }
+    lignes.join("\n")
+}
+
+pub fn equipe_en_expedition(partie: &Partie) -> String {
+    let mut lignes = vec!["Votre équipe :".to_string()];
+    for (index, monstre) in partie.collection().equipe().iter().enumerate() {
+        lignes.push(format!(
+            "  {}. {}",
+            index + 1,
+            ligne_monstre(monstre, Cote::Joueur)
+        ));
+    }
+    lignes.push(format!("Potions : {}", partie.inventaire().potions()));
+    lignes.join("\n")
+}
+
+/// Une espèce inconnue reste masquée ; une espèce capturée montre ses stats de
+/// base et ses attaques (section 5.6).
+pub fn codex(codex: &Codex, especes: &[Espece]) -> String {
+    let mut lignes = vec!["Codex :".to_string()];
+    for (position, espece) in especes.iter().enumerate() {
+        let numero = position + 1;
+        let types: Vec<&str> = espece
+            .types()
+            .liste()
+            .iter()
+            .map(|type_monstre| type_monstre.nom())
+            .collect();
+        match codex.etat(espece.id()) {
+            EtatCodex::Inconnue => lignes.push(format!("  {numero}. ???")),
+            EtatCodex::Rencontree => lignes.push(format!(
+                "  {numero}. {} ({}) : rencontrée",
+                espece.nom(),
+                types.join(", ")
+            )),
+            EtatCodex::Capturee => {
+                let base = espece.stats_de_base();
+                lignes.push(format!(
+                    "  {numero}. {} ({}) : capturée",
+                    espece.nom(),
+                    types.join(", ")
+                ));
+                lignes.push(format!(
+                    "     Stats de base : PV {}, Attaque {}, Défense {}, Attaque spéciale {}, Défense spéciale {}, Vitesse {}",
+                    base.pv,
+                    base.attaque,
+                    base.defense,
+                    base.attaque_speciale,
+                    base.defense_speciale,
+                    base.vitesse
+                ));
+                let attaques: Vec<String> = espece
+                    .apprentissage()
+                    .iter()
+                    .map(|apprise| {
+                        format!(
+                            "{} (niv. {})",
+                            apprise.attaque.nom(),
+                            apprise.niveau.valeur()
+                        )
+                    })
+                    .collect();
+                lignes.push(format!("     Attaques : {}", attaques.join(", ")));
+            }
+        }
+    }
+    lignes.join("\n")
 }
 
 /// Avec un surnom, le nom de l'espèce reste visible entre parenthèses.

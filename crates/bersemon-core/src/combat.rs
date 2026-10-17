@@ -23,6 +23,7 @@ use crate::attaque::{Attaque, EffetSecondaire};
 use crate::capture::calculer_chance_capture;
 use crate::degats::{ResultatAttaque, resoudre_attaque};
 use crate::experience::tirer_gain_experience;
+use crate::inventaire::{ErreurPotion, appliquer_potion, verifier_cible};
 use crate::monstre::{Monstre, RapportExperience};
 use crate::stats::{BonusDeStats, Stats, appliquer_bonus};
 use crate::statut::{CHANCES_BLOCAGE_PARALYSIE, Statut, degats_de_poison};
@@ -76,6 +77,8 @@ pub enum Action {
     /// Position, dans l'équipe, du monstre à envoyer.
     Changer(usize),
     LancerFilet,
+    /// Position, dans l'équipe, du monstre à soigner (section 14.4).
+    UtiliserPotion(usize),
     Fuir,
 }
 
@@ -111,6 +114,10 @@ pub enum Evenement {
     },
     CaptureReussie(Combattant),
     CaptureRatee(Combattant),
+    PotionUtilisee {
+        cible: Combattant,
+        pv_rendus: u32,
+    },
     Fuite,
     FinDuCombat(Issue),
 }
@@ -128,6 +135,8 @@ pub enum ErreurCombat {
     MonstreKo(usize),
     MonstreDejaActif(usize),
     CaptureImpossible(usize),
+    AucunePotion,
+    PvDejaPleins(usize),
 }
 
 impl fmt::Display for ErreurCombat {
@@ -165,6 +174,10 @@ impl fmt::Display for ErreurCombat {
                     "le monstre adverse en position {index} ne peut pas être capturé"
                 )
             }
+            ErreurCombat::AucunePotion => write!(f, "aucune potion"),
+            ErreurCombat::PvDejaPleins(index) => {
+                write!(f, "le monstre en position {index} a déjà tous ses PV")
+            }
         }
     }
 }
@@ -174,13 +187,14 @@ impl std::error::Error for ErreurCombat {}
 /// Ce que le combat laisse derrière lui. `issue` vaut `None` si le combat a
 /// été interrompu avant la fin ; `captures` suit l'ordre des captures ;
 /// `experience` suit l'ordre de l'équipe, avec `None` pour un monstre qui n'a
-/// rien gagné.
+/// rien gagné ; `potions` est le nombre de potions restantes.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BilanCombat {
     pub issue: Option<Issue>,
     pub equipe: Vec<Monstre>,
     pub captures: Vec<Monstre>,
     pub experience: Vec<Option<RapportExperience>>,
+    pub potions: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -199,6 +213,8 @@ pub struct Combat {
     /// Bonus de la classe du héros, appliqué aux stats des monstres du joueur
     /// (section 4.2).
     bonus_joueur: BonusDeStats,
+    /// Potions que le joueur porte (section 14.4).
+    potions: u32,
     phase: Phase,
 }
 
@@ -225,10 +241,22 @@ impl Combat {
             actif_adversaire: 0,
             captures: Vec::new(),
             bonus_joueur: BonusDeStats::default(),
+            potions: 0,
             phase: Phase::ChoixAction,
         };
         combat.noter_participation();
         Ok(combat)
+    }
+
+    /// Potions que le joueur emporte dans le combat ; le bilan rend celles
+    /// qui restent.
+    pub fn avec_potions(mut self, potions: u32) -> Self {
+        self.potions = potions;
+        self
+    }
+
+    pub fn potions(&self) -> u32 {
+        self.potions
     }
 
     /// Bonus appliqué aux stats des monstres du joueur pendant tout le combat,
@@ -312,8 +340,9 @@ impl Combat {
                     self.attaquer(cote, attaque, false, aleatoire, &mut evenements);
                 }
             }
-            // Changer de monstre ou lancer un filet passe avant toute attaque,
-            // comme dans Pokémon, et laisse l'adversaire agir.
+            // Changer de monstre, lancer un filet ou utiliser une potion passe
+            // avant toute attaque, comme dans Pokémon, et laisse l'adversaire
+            // agir.
             Action::Changer(index) => {
                 self.actif_joueur = index;
                 self.noter_participation();
@@ -336,6 +365,24 @@ impl Combat {
                         &mut evenements,
                     );
                 }
+            }
+            Action::UtiliserPotion(index) => {
+                self.potions -= 1;
+                let pv_rendus = appliquer_potion(&mut self.equipe[index], aleatoire);
+                evenements.push(Evenement::PotionUtilisee {
+                    cible: Combattant {
+                        cote: Cote::Joueur,
+                        index,
+                    },
+                    pv_rendus,
+                });
+                self.attaquer(
+                    Cote::Adversaire,
+                    attaque_adversaire,
+                    false,
+                    aleatoire,
+                    &mut evenements,
+                );
             }
             Action::Fuir => {
                 self.attaquer(
@@ -415,6 +462,7 @@ impl Combat {
             equipe: self.equipe,
             captures,
             experience,
+            potions: self.potions,
         }
     }
 
@@ -486,6 +534,20 @@ impl Combat {
                     return Err(ErreurCombat::MonstreDejaActif(index));
                 }
                 self.verifier_remplacant(index)
+            }
+            Action::UtiliserPotion(index) => {
+                if self.potions == 0 {
+                    return Err(ErreurCombat::AucunePotion);
+                }
+                let Some(monstre) = self.equipe.get(index) else {
+                    return Err(ErreurCombat::MonstreInexistant(index));
+                };
+                verifier_cible(monstre).map_err(|erreur| match erreur {
+                    ErreurPotion::MonstreKo => ErreurCombat::MonstreKo(index),
+                    ErreurPotion::PvDejaPleins => ErreurCombat::PvDejaPleins(index),
+                    ErreurPotion::MonstreInexistant => ErreurCombat::MonstreInexistant(index),
+                    ErreurPotion::AucunePotion => ErreurCombat::AucunePotion,
+                })
             }
             Action::LancerFilet | Action::Fuir => Ok(()),
         }
@@ -1342,5 +1404,51 @@ mod tests {
         let evenements = tour(&mut combat, Action::Attaquer(0), &[2, 100, 2, 100]);
         assert_eq!(evenements[1], degats(a(0), 21));
         assert_eq!(evenements[3], degats(j(0), 19));
+    }
+
+    #[test]
+    fn une_potion_soigne_puis_l_adversaire_agit() {
+        let mut combat = combat(vec![affaibli(rapide(), 5)], vec![lent()]).avec_potions(2);
+        // 50 % de 20 PV max : 10 PV rendus.
+        let evenements = tour(&mut combat, Action::UtiliserPotion(0), &[50, 2, 100]);
+        assert_eq!(
+            evenements,
+            vec![
+                Evenement::PotionUtilisee {
+                    cible: j(0),
+                    pv_rendus: 10,
+                },
+                lancee(a(0), coup()),
+                degats(j(0), 5),
+            ]
+        );
+        assert_eq!(combat.equipe()[0].pv_actuels(), 10);
+        assert_eq!(combat.potions(), 1);
+        assert_eq!(terminer(combat, &[]).potions, 1);
+    }
+
+    #[test]
+    fn potion_refusee_sans_rien_changer() {
+        let sans_potion = combat(vec![affaibli(rapide(), 5)], vec![lent()]);
+        let mut aleatoire = AleatoireScripte::new([]);
+        assert_eq!(
+            sans_potion
+                .clone()
+                .jouer_tour(Action::UtiliserPotion(0), &mut aleatoire),
+            Err(ErreurCombat::AucunePotion)
+        );
+        let mut combat = combat(vec![rapide(), affaibli(lent(), 0)], vec![lent()]).avec_potions(1);
+        let avant = combat.clone();
+        for (action, erreur) in [
+            (Action::UtiliserPotion(0), ErreurCombat::PvDejaPleins(0)),
+            (Action::UtiliserPotion(1), ErreurCombat::MonstreKo(1)),
+            (
+                Action::UtiliserPotion(5),
+                ErreurCombat::MonstreInexistant(5),
+            ),
+        ] {
+            assert_eq!(combat.jouer_tour(action, &mut aleatoire), Err(erreur));
+        }
+        assert_eq!(combat, avant);
     }
 }

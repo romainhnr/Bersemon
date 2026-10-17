@@ -1,15 +1,16 @@
-//! Contenu provisoire, en attendant le bestiaire et les zones de la V1 (Q3,
-//! Q44, Q45) : ces espèces, leurs attaques, leurs rendements, les niveaux et
-//! la taille des groupes sauvages ne sont pas des décisions de game design.
+//! Contenu provisoire, en attendant le bestiaire et les zones de la V1 (Q44,
+//! Q45) : ces espèces, leurs attaques, leurs rendements, les noms et les
+//! niveaux des zones ne sont pas des décisions de game design.
 
 use bersemon_core::aleatoire::Aleatoire;
 use bersemon_core::attaque::{Attaque, AttaqueId, Categorie, EffetSecondaire};
 use bersemon_core::espece::{AttaqueApprise, Espece, EspeceId, Role};
-use bersemon_core::monstre::{Monstre, tirer_shiny};
+use bersemon_core::monstre::Monstre;
 use bersemon_core::niveau::Niveau;
 use bersemon_core::stats::{Stats, StatsDeBase, ValeursInternes};
 use bersemon_core::statut::Statut;
 use bersemon_core::types::{Type, TypesMonstre};
+use bersemon_core::zone::{EspeceRare, Zone, ZoneId};
 
 /// Le monstre de départ est au niveau 5 (section 6).
 const NIVEAU_DE_DEPART: u8 = 5;
@@ -21,29 +22,64 @@ pub fn especes_de_depart() -> Vec<Espece> {
 
 /// Valeurs internes tirées au hasard, jamais shiny (Q52).
 pub fn monstre_de_depart(espece: Espece, aleatoire: &mut dyn Aleatoire) -> Monstre {
-    creer(espece, NIVEAU_DE_DEPART, false, aleatoire)
+    Monstre::creer(
+        espece,
+        niveau(NIVEAU_DE_DEPART),
+        ValeursInternes::tirer(aleatoire),
+        false,
+    )
+    .expect("apprentissage de démonstration valide")
 }
 
-/// Un ou deux monstres sauvages, du niveau 3 au niveau 5.
-pub fn groupe_sauvage(aleatoire: &mut dyn Aleatoire) -> Vec<Monstre> {
-    let taille = aleatoire.tirer(1..=2);
-    (0..taille)
-        .map(|_| {
-            let mut especes = vec![loup(), vipere(), corbeau()];
-            let index = aleatoire.tirer(0..=(especes.len() - 1) as u32) as usize;
-            let espece = especes.swap_remove(index);
-            let niveau = aleatoire.tirer(3..=5) as u8;
-            let shiny = tirer_shiny(aleatoire);
-            creer(espece, niveau, shiny, aleatoire)
-        })
-        .collect()
+/// Toutes les espèces du jeu, dans l'ordre du codex.
+pub fn toutes_les_especes() -> Vec<Espece> {
+    vec![
+        salamandre(),
+        crapaud(),
+        mandragore(),
+        loup(),
+        vipere(),
+        corbeau(),
+        cerf_blanc(),
+        basilic(),
+    ]
+}
+
+/// Les deux zones de la V1, de la plus facile à la plus difficile (section
+/// 9.1).
+pub fn zones() -> Vec<Zone> {
+    let lisiere = Zone::new(
+        ZoneId::new("lisiere"),
+        "Lisière du Bois-Sombre",
+        (niveau(3), niveau(6)),
+        2,
+        vec![loup(), vipere(), corbeau()],
+        vec![EspeceRare {
+            espece: cerf_blanc(),
+            pacifique: true,
+        }],
+    )
+    .expect("zone de démonstration valide");
+    let marais = Zone::new(
+        ZoneId::new("marais"),
+        "Marais des Pendus",
+        (niveau(7), niveau(11)),
+        3,
+        vec![loup(), vipere(), corbeau()],
+        vec![EspeceRare {
+            espece: basilic(),
+            pacifique: false,
+        }],
+    )
+    .expect("zone de démonstration valide");
+    vec![lisiere, marais]
 }
 
 fn salamandre() -> Espece {
     espece(
         "salamandre",
         "Salamandre",
-        Type::Feu,
+        &[Type::Feu],
         base(45, 50, 40, 60, 50, 65),
         62,
         vec![
@@ -78,7 +114,7 @@ fn crapaud() -> Espece {
     espece(
         "crapaud",
         "Crapaud",
-        Type::Eau,
+        &[Type::Eau],
         base(50, 50, 55, 50, 50, 45),
         63,
         vec![
@@ -103,7 +139,7 @@ fn mandragore() -> Espece {
     espece(
         "mandragore",
         "Mandragore",
-        Type::Plante,
+        &[Type::Plante],
         base(55, 45, 50, 55, 55, 40),
         64,
         vec![
@@ -134,7 +170,7 @@ fn loup() -> Espece {
     espece(
         "loup",
         "Loup",
-        Type::Normal,
+        &[Type::Normal],
         base(50, 60, 45, 30, 40, 55),
         80,
         vec![
@@ -148,7 +184,7 @@ fn vipere() -> Espece {
     espece(
         "vipere",
         "Vipère",
-        Type::Poison,
+        &[Type::Poison],
         base(40, 50, 40, 45, 45, 60),
         75,
         vec![
@@ -182,7 +218,7 @@ fn corbeau() -> Espece {
     espece(
         "corbeau",
         "Corbeau",
-        Type::Vol,
+        &[Type::Vol],
         base(40, 55, 35, 40, 35, 70),
         58,
         vec![
@@ -193,6 +229,65 @@ fn corbeau() -> Espece {
             apprise(4, physique("pique", "Piqué", Type::Vol, 60, 90)),
         ],
     )
+}
+
+fn cerf_blanc() -> Espece {
+    espece(
+        "cerf-blanc",
+        "Cerf blanc",
+        &[Type::Normal, Type::Feerique],
+        base(60, 60, 55, 50, 55, 70),
+        110,
+        vec![
+            apprise(
+                1,
+                physique("coup-de-bois", "Coup de bois", Type::Normal, 40, 100),
+            ),
+            apprise(5, physique("ruade", "Ruade", Type::Normal, 60, 95)),
+        ],
+    )
+}
+
+fn basilic() -> Espece {
+    espece(
+        "basilic",
+        "Basilic",
+        &[Type::Poison, Type::Dragon],
+        base(70, 65, 60, 70, 60, 55),
+        140,
+        vec![
+            apprise(
+                1,
+                physique(
+                    "morsure-venimeuse",
+                    "Morsure venimeuse",
+                    Type::Poison,
+                    40,
+                    100,
+                )
+                .avec_effet(effet(Statut::Poison, 30)),
+            ),
+            apprise(
+                6,
+                speciale(
+                    "regard-petrifiant",
+                    "Regard pétrifiant",
+                    Type::Normal,
+                    30,
+                    100,
+                )
+                .avec_effet(effet(Statut::Paralysie, 30)),
+            ),
+            apprise(
+                9,
+                speciale("souffle-putride", "Souffle putride", Type::Dragon, 60, 100),
+            ),
+        ],
+    )
+}
+
+fn niveau(valeur: u8) -> Niveau {
+    Niveau::new(valeur).expect("niveau de démonstration valide")
 }
 
 fn base(
@@ -216,7 +311,7 @@ fn base(
 fn espece(
     id: &str,
     nom: &str,
-    type_espece: Type,
+    types: &[Type],
     base: StatsDeBase,
     rendement: u16,
     apprentissage: Vec<AttaqueApprise>,
@@ -224,7 +319,7 @@ fn espece(
     Espece::new(
         EspeceId::new(id),
         nom,
-        TypesMonstre::new(&[type_espece]).expect("types de démonstration valides"),
+        TypesMonstre::new(types).expect("types de démonstration valides"),
         Role::Offensif,
         base,
         rendement,
@@ -232,9 +327,9 @@ fn espece(
     )
 }
 
-fn apprise(niveau: u8, attaque: Attaque) -> AttaqueApprise {
+fn apprise(niveau_appris: u8, attaque: Attaque) -> AttaqueApprise {
     AttaqueApprise {
-        niveau: Niveau::new(niveau).expect("niveau de démonstration valide"),
+        niveau: niveau(niveau_appris),
         attaque,
     }
 }
@@ -282,14 +377,4 @@ fn attaque(
 
 fn effet(statut: Statut, chance: u8) -> EffetSecondaire {
     EffetSecondaire::new(statut, chance).expect("effet de démonstration valide")
-}
-
-fn creer(espece: Espece, niveau: u8, shiny: bool, aleatoire: &mut dyn Aleatoire) -> Monstre {
-    Monstre::creer(
-        espece,
-        Niveau::new(niveau).expect("niveau de démonstration valide"),
-        ValeursInternes::tirer(aleatoire),
-        shiny,
-    )
-    .expect("apprentissage de démonstration valide")
 }

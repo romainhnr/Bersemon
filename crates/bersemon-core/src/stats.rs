@@ -46,8 +46,8 @@ pub fn appliquer_bonus(stats: &Stats<u32>, bonus: &BonusDeStats) -> Stats<u32> {
 }
 
 /// Valeurs internes d'un monstre, de 0 à 31 pour chaque stat (Q17) : elles
-/// rendent chaque monstre unique.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// rendent chaque monstre unique. Par défaut, toutes nulles.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct ValeursInternes(Stats<u8>);
 
 impl ValeursInternes {

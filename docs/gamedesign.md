@@ -70,7 +70,8 @@ L'objectif du jeu est de proposer des boucles de gameplay intéressantes et stim
 - Création du héros : un nom et une classe, Guerrier ou Mage (section 4).
 - Choix du premier monstre parmi 3, au niveau 5.
 - Une dizaine de monstres sauvages.
-- 1 ou 2 zones d'expédition manuelle (voir Q3).
+- 2 zones d'expédition manuelle, une facile puis une difficile (section 9).
+- Potions de soin (section 14.4) et codex simple (section 5.6).
 - Combat au tour par tour (format Pokémon, section 10), avec les statuts poison et paralysie, capture au filet et fuite.
 - Camp de base réduit à l'essentiel : soin, gestion de l'équipe (3 monstres avec soi, 30 au camp) et sauvegarde.
 - Valeurs internes et shiny des monstres (section 5.1).
@@ -89,7 +90,7 @@ L'objectif du jeu est de proposer des boucles de gameplay intéressantes et stim
 
 ### 3.3 À trancher pour la V1
 
-- Codex et objets de soin : présents ou non dans la V1 (voir Q15).
+- Aucun point du périmètre ne reste à trancher.
 
 ## 4. Le héros
 
@@ -160,6 +161,7 @@ Le joueur peut :
 
 - Le codex répertorie tous les monstres du jeu (comme le Pokédex de Pokémon).
 - Une entrée est déverrouillée partiellement à la rencontre d'un monstre, et entièrement à sa capture.
+- Dans la V1, le codex se consulte au camp. Une espèce rencontrée en expédition montre son nom et ses types ; une espèce capturée montre aussi ses stats de base et la liste des attaques qu'elle apprend.
 
 ### 5.7 KO (pas de mort définitive)
 
@@ -194,7 +196,7 @@ Le joueur peut :
 - Chaque monstre de l'équipe qui a été actif face au monstre vaincu et qui n'est pas KO à la fin du combat reçoit cette XP en entier.
 - L'XP est versée à la fin du combat, quelle que soit son issue ; les montées de niveau et l'apprentissage d'attaques se font donc après le combat, jamais pendant.
 - Chaque espèce a une liste d'attaques apprises à des niveaux donnés. En atteignant un de ces niveaux, le monstre apprend l'attaque ; s'il en connaît déjà 4, le joueur choisit l'attaque à oublier ou renonce à la nouvelle. Un monstre créé à un niveau donné connaît les 4 dernières attaques de sa liste jusqu'à ce niveau.
-- Le héros a-t-il un niveau : à définir (voir Q9).
+- Le héros n'a pas de niveau dans la V1 (section 4.1).
 
 ## 8. Boucle de gameplay
 
@@ -210,6 +212,7 @@ Le jeu alterne entre deux phases :
 - Pour rester dans le style propre à l'univers, le monde s'explore sur une carte qui se dévoile au fil des expéditions lancées par le joueur.
 - Le joueur part en expédition vers un lieu choisi, avec ses monstres.
 - Chaque zone a sa propre difficulté, visible sur la carte.
+- La V1 compte 2 zones : une zone facile, accessible dès le départ, et une zone difficile, qui apparaît sur la carte après une première expédition menée jusqu'à sa dernière étape dans la zone facile.
 
 ### 9.2 Événements
 
@@ -220,13 +223,23 @@ Lors d'une expédition, les événements suivants peuvent se produire :
 - rarement, la rencontre d'un monstre rare. Selon son espèce, il attaque (combat, capture possible) ou non (le joueur peut alors le prendre gratuitement ou non) ;
 - rarement, la découverte d'un coffre, que le joueur peut ouvrir pour obtenir des ressources offertes.
 
+Déroulement dans la V1 :
+
+- Une expédition compte de 4 à 6 étapes, nombre tiré au départ et inconnu du joueur.
+- Chaque étape tire un événement : combat contre un groupe sauvage (80 %), coffre (15 %) ou monstre rare (5 %). Le marchand est hors V1.
+- Un groupe sauvage compte de 1 à 2 monstres dans la zone facile, de 1 à 3 dans la zone difficile ; la taille est tirée à chaque combat.
+- Un coffre contient 1 à 2 potions (section 14.4).
+- Entre deux étapes, le joueur continue, rentre au camp en gardant ses gains, ou utilise des potions. Les PV et les statuts sont conservés d'une étape à l'autre.
+- Après la dernière étape, le joueur rentre au camp et la zone compte comme explorée.
+
 ### 9.3 Défaite
 
 Si tous les monstres du joueur sont KO pendant une expédition manuelle :
 
 - le joueur retourne automatiquement au camp ;
-- il perd les objets qu'il avait sur lui ;
-- ses monstres restent KO et sont soignés au camp (section 5.7).
+- il perd les objets qu'il avait sur lui, dont toutes ses potions ;
+- ses monstres restent KO et sont soignés au camp (section 5.7) ;
+- l'expédition ne compte pas comme menée jusqu'au bout.
 
 ## 10. Combat
 
@@ -423,6 +436,12 @@ Le joueur peut aussi vendre ses objets aux marchands contre de l'argent.
 - Ressource très rare permettant de réanimer un monstre (en suspens, section 5.7).
 - Objet extrêmement rare permettant de rendre un monstre shiny.
 
+### 14.4 Potions (V1)
+
+- Seul objet de la V1. Une potion rend à un monstre de l'équipe un pourcentage de ses PV max tiré de 40 % à 60 %, arrondi à l'entier inférieur, sans dépasser ses PV max. Elle ne relève pas un monstre KO et ne guérit pas les statuts.
+- Elle s'utilise en combat, comme action du tour (l'adversaire agit ensuite), ou entre deux étapes d'une expédition.
+- Dans la V1, les potions se trouvent dans les coffres. Il n'y a ni limite de sac ni coffre de stockage au camp : le joueur porte toutes ses potions et les perd toutes en cas de défaite (section 9.3).
+
 ## 15. Multijoueur (après l'adaptation à Discord)
 
 - Combats contre d'autres vrais joueurs. Le vainqueur ne peut pas prendre de monstre à son adversaire.
@@ -434,24 +453,17 @@ Le joueur peut aussi vendre ses objets aux marchands contre de l'argent.
 
 Les numéros des questions résolues ne sont pas réattribués, pour que les références restent stables.
 
-- Q3. Les zones de la V1 : 1 ou 2, leurs noms et leur difficulté.
 - Q5. Types Stellaire, Obscur, Lumière et Son (après la V1) : relations d'efficacité, et différence entre les types Ténèbres et Obscur.
 - Q6. Nombre de talismans équipables.
 - Q7. Réduction de la durée des expéditions automatiques selon le nombre de monstres : division par le nombre de monstres, ou réduction de x% par monstre.
-- Q15. Contenu de la V1 à trancher : codex, objets de soin.
 
-Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découpage de la V1 en étapes. Chacune indique l'étape de développement qui en a besoin : 1 fondations (types, stats, monstres), 2 combat 1 contre 1, 3 combat complet (changement, statuts, fuite, capture), 4 progression, 5 héros, équipe et camp, 6 expédition manuelle, 7 sauvegarde, 8 contenu et boucle de jeu complète. Le reste de Q15 (codex, objets de soin) concerne les étapes 6 et 8.
+Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découpage de la V1 en étapes. Chacune indique l'étape de développement qui en a besoin : 1 fondations (types, stats, monstres), 2 combat 1 contre 1, 3 combat complet (changement, statuts, fuite, capture), 4 progression, 5 héros, équipe et camp, 6 expédition manuelle, 7 sauvegarde, 8 contenu et boucle de jeu complète.
 
 - Q19. (Après la V1) Effet du rôle soutien ou offensif, en combat et en expédition. Le code porte le rôle sur l'espèce, et non sur chaque monstre : à confirmer.
-- Q37. (Étape 6) Structure d'une expédition manuelle : nombre d'événements, possibilité de continuer ou de rentrer au camp entre deux événements, condition de fin.
-- Q38. (Étape 6) Événements présents dans la V1 parmi le combat, le monstre rare et le coffre (le marchand est hors V1), et probabilité de chacun.
-- Q39. (Étape 6) Contenu des coffres dans la V1, alors que les ressources n'y ont pas d'usage (fabrication et améliorations hors V1).
-- Q40. (Étape 6) Carte du monde dans la V1 avec 1 ou 2 zones : la deuxième zone se débloque-t-elle, et à quelle condition ?
-- Q41. (Étape 6) Les PV perdus sont-ils conservés d'un combat à l'autre pendant une expédition, le soin n'ayant lieu qu'au camp (section 13.1) ou par un objet de soin ?
 - Q42. (Étape 7) Nombre d'emplacements de sauvegarde : une seule partie ou plusieurs.
 - Q43. (Étape 7) Moment de la sauvegarde : uniquement au camp (section 3.1), manuelle, automatique au retour au camp, ou les deux.
 - Q44. (Étape 8) Bestiaire de la V1 : une dizaine d'espèces (nom, types, rôle, stats, rendement d'XP, liste d'attaques apprises par niveau), dont les 3 monstres de départ, et liste des attaques.
-- Q45. (Étape 8) Espèces rencontrées dans chaque zone de la V1 et fourchette de niveaux (complète Q3).
+- Q45. (Étape 8) Pour chacune des 2 zones de la V1 : nom, espèces rencontrées, monstres rares (et s'ils attaquent ou non), fourchette de niveaux.
 - Q46. (Étape 8) Histoire et tutoriel (section 6) inclus ou non dans la V1, et leur étendue.
 - Q47. (Étape 8) Représentation des sprites dans la console (art ASCII ou aucune image) et signalement d'un monstre shiny à l'écran.
 - Q48. (Étape 2) Un monstre connaît-il toujours au moins une attaque, et peut-il connaître deux fois la même ? Le code suppose pour l'instant au moins une attaque et aucun doublon, comme dans Pokémon : à confirmer.
@@ -459,6 +471,9 @@ Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découp
 - Q50. (Étape 3) Si le dernier monstre du joueur et le dernier monstre sauvage tombent KO au même tour (par le poison), qui l'emporte ? Le code donne la défaite au joueur, puisque toute son équipe est KO (section 9.3) : à confirmer.
 - Q51. (Étape 5) L'équipe garde-t-elle toujours au moins un monstre, y compris au camp ? Le code l'impose : on ne peut ni envoyer au camp ni relâcher le dernier monstre de l'équipe sans en faire venir un autre d'abord : à confirmer.
 - Q52. (Étape 5) Les monstres de départ ont-ils des valeurs internes tirées au hasard, comme les monstres sauvages ? Le code les tire au hasard, et ils ne sont jamais shiny (la chance de shiny ne concerne que les monstres sauvages) : à confirmer.
+- Q53. (Étape 6) Peut-on utiliser une potion sur un monstre qui a tous ses PV ? Le code le refuse, pour ne pas gaspiller la potion : à confirmer.
+- Q54. (Étape 6) Le monstre de départ compte-t-il comme capturé dans le codex ? Le code l'inscrit comme capturé : à confirmer.
+- Q55. (Étape 6) Peut-on changer l'ordre de son équipe entre deux étapes d'une expédition ? Le code ne le permet qu'au camp (section 13.2) : à confirmer.
 
 ## 17. Journal des décisions
 
@@ -541,3 +556,13 @@ Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découp
 - Q9 et Q35 : dans la V1, le héros n'a ni niveau, ni stats, ni équipement ; il a un nom libre de 1 à 20 caractères et une classe.
 - Q36 : départ en expédition avec 1 à 3 monstres ; au camp, le joueur peut relâcher un monstre (sauf le dernier), le renommer (surnom de 1 à 20 caractères) et choisir l'ordre de son équipe.
 - Q12 précisée : avec l'équipe et le camp pleins, le joueur relâche n'importe lequel de ses monstres, la capture prenant sa place, ou relâche la capture.
+
+17/10/2026 (étape 6) :
+
+- Q3 : 2 zones dans la V1, une facile puis une difficile.
+- Q40 : la zone difficile apparaît après une expédition menée jusqu'au bout dans la zone facile.
+- Q37 et Q41 : une expédition compte de 4 à 6 étapes, nombre tiré au départ et inconnu du joueur ; entre deux étapes, le joueur continue ou rentre en gardant ses gains ; PV et statuts sont conservés ; après la dernière étape, la zone compte comme explorée.
+- Q38 : à chaque étape, combat (80 %), coffre (15 %) ou monstre rare (5 %).
+- Groupes sauvages de 1 à 2 monstres en zone facile, de 1 à 3 en zone difficile.
+- Q15 : potions de soin dans la V1 (40 % à 60 % des PV max, ni réanimation ni soin des statuts), utilisables en combat ou entre deux étapes, toutes perdues en cas de défaite ; codex simple dans la V1.
+- Q39 : un coffre contient 1 à 2 potions.
