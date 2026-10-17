@@ -1,10 +1,20 @@
 //! Monstre : un individu d'une espèce, avec son niveau, ses valeurs internes,
-//! ses attaques et ses PV du moment (section 5).
+//! ses attaques, ses PV et son statut du moment (section 5).
 
+use crate::aleatoire::Aleatoire;
 use crate::attaque::AttaquesMonstre;
 use crate::espece::Espece;
 use crate::niveau::Niveau;
 use crate::stats::{Stats, ValeursInternes, calculer_stats};
+use crate::statut::Statut;
+
+/// Un monstre sauvage sur 512 est shiny (section 5.1).
+pub const CHANCES_SHINY: u32 = 512;
+
+/// Tirage du shiny d'un monstre sauvage, fait à la rencontre.
+pub fn tirer_shiny(aleatoire: &mut dyn Aleatoire) -> bool {
+    aleatoire.tirer(1..=CHANCES_SHINY) == 1
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Monstre {
@@ -14,12 +24,13 @@ pub struct Monstre {
     attaques: AttaquesMonstre,
     shiny: bool,
     pv_actuels: u32,
+    statut: Option<Statut>,
 }
 
 impl Monstre {
-    /// Crée un monstre avec tous ses PV. Le tirage du shiny se fait à la
-    /// rencontre, avec une probabilité encore à fixer : il est donc reçu ici
-    /// déjà décidé.
+    /// Crée un monstre avec tous ses PV et sans statut. Le shiny est reçu
+    /// déjà décidé : il ne se tire que pour un monstre sauvage
+    /// (`tirer_shiny`).
     pub fn new(
         espece: Espece,
         niveau: Niveau,
@@ -34,6 +45,7 @@ impl Monstre {
             attaques,
             shiny,
             pv_actuels: 0,
+            statut: None,
         };
         monstre.soigner_completement();
         monstre
@@ -79,15 +91,36 @@ impl Monstre {
         self.shiny
     }
 
+    pub fn statut(&self) -> Option<Statut> {
+        self.statut
+    }
+
+    /// Un monstre KO, déjà atteint d'un statut ou immunisé ne peut pas en
+    /// recevoir un nouveau (section 10.5).
+    pub fn peut_subir(&self, statut: Statut) -> bool {
+        !self.est_ko() && self.statut.is_none() && !statut.epargne(self.espece.types())
+    }
+
+    /// Rend `false`, sans rien changer, si le monstre ne peut pas subir ce
+    /// statut.
+    pub fn infliger_statut(&mut self, statut: Statut) -> bool {
+        let inflige = self.peut_subir(statut);
+        if inflige {
+            self.statut = Some(statut);
+        }
+        inflige
+    }
+
     /// Les PV ne descendent pas sous 0 : le surplus de dégâts est perdu.
     pub fn subir_degats(&mut self, degats: u32) {
         self.pv_actuels = self.pv_actuels.saturating_sub(degats);
     }
 
-    /// Rend tous les PV, même à un monstre KO, comme au retour au camp
-    /// (section 13.1).
+    /// Rend tous les PV et guérit le statut, même d'un monstre KO, comme au
+    /// retour au camp (section 13.1).
     pub fn soigner_completement(&mut self) {
         self.pv_actuels = self.stats().pv;
+        self.statut = None;
     }
 }
 
@@ -195,5 +228,36 @@ mod tests {
             true,
         );
         assert!(monstre.est_shiny());
+    }
+
+    #[test]
+    fn un_seul_statut_a_la_fois() {
+        let mut monstre = monstre_de_test(5);
+        assert!(monstre.infliger_statut(Statut::Paralysie));
+        assert!(!monstre.infliger_statut(Statut::Poison));
+        assert_eq!(monstre.statut(), Some(Statut::Paralysie));
+    }
+
+    #[test]
+    fn un_monstre_ko_ne_recoit_pas_de_statut() {
+        let mut monstre = monstre_de_test(5);
+        monstre.subir_degats(u32::MAX);
+        assert!(!monstre.infliger_statut(Statut::Poison));
+        assert_eq!(monstre.statut(), None);
+    }
+
+    #[test]
+    fn soin_complet_guerit_le_statut() {
+        let mut monstre = monstre_de_test(5);
+        monstre.infliger_statut(Statut::Poison);
+        monstre.soigner_completement();
+        assert_eq!(monstre.statut(), None);
+    }
+
+    #[test]
+    fn shiny_sur_un_tirage_sur_512() {
+        use crate::aleatoire::AleatoireScripte;
+        assert!(tirer_shiny(&mut AleatoireScripte::new([1])));
+        assert!(!tirer_shiny(&mut AleatoireScripte::new([512])));
     }
 }

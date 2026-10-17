@@ -3,15 +3,16 @@
 //! game design.
 
 use bersemon_core::aleatoire::Aleatoire;
-use bersemon_core::attaque::{Attaque, AttaqueId, AttaquesMonstre, Categorie};
+use bersemon_core::attaque::{Attaque, AttaqueId, AttaquesMonstre, Categorie, EffetSecondaire};
 use bersemon_core::espece::{Espece, EspeceId, Role};
-use bersemon_core::monstre::Monstre;
+use bersemon_core::monstre::{Monstre, tirer_shiny};
 use bersemon_core::niveau::Niveau;
 use bersemon_core::stats::{Stats, StatsDeBase, ValeursInternes};
+use bersemon_core::statut::Statut;
 use bersemon_core::types::{Type, TypesMonstre};
 
-/// Rend le monstre du joueur puis le monstre sauvage, tous deux au niveau 5.
-pub fn monstres(aleatoire: &mut dyn Aleatoire) -> (Monstre, Monstre) {
+/// Rend l'équipe du joueur puis le groupe sauvage, tous au niveau 5.
+pub fn rencontre(aleatoire: &mut dyn Aleatoire) -> (Vec<Monstre>, Vec<Monstre>) {
     let salamandre = espece(
         "salamandre",
         "Salamandre",
@@ -23,6 +24,19 @@ pub fn monstres(aleatoire: &mut dyn Aleatoire) -> (Monstre, Monstre) {
             attaque_speciale: 60,
             defense_speciale: 50,
             vitesse: 65,
+        },
+    );
+    let corbeau = espece(
+        "corbeau",
+        "Corbeau",
+        Type::Vol,
+        Stats {
+            pv: 40,
+            attaque: 55,
+            defense: 35,
+            attaque_speciale: 40,
+            defense_speciale: 35,
+            vitesse: 70,
         },
     );
     let loup = espece(
@@ -38,54 +52,122 @@ pub fn monstres(aleatoire: &mut dyn Aleatoire) -> (Monstre, Monstre) {
             vitesse: 55,
         },
     );
-    let attaques_salamandre = vec![
-        attaque(
-            "coup-de-queue",
-            "Coup de queue",
-            Type::Normal,
-            Categorie::Physique,
-            40,
-            100,
+    let vipere = espece(
+        "vipere",
+        "Vipère",
+        Type::Poison,
+        Stats {
+            pv: 40,
+            attaque: 50,
+            defense: 40,
+            attaque_speciale: 45,
+            defense_speciale: 45,
+            vitesse: 60,
+        },
+    );
+
+    let equipe = vec![
+        creer(
+            salamandre,
+            vec![
+                attaque(
+                    "coup-de-queue",
+                    "Coup de queue",
+                    Type::Normal,
+                    Categorie::Physique,
+                    40,
+                    100,
+                ),
+                attaque(
+                    "crachat-de-braises",
+                    "Crachat de braises",
+                    Type::Feu,
+                    Categorie::Speciale,
+                    40,
+                    100,
+                ),
+                attaque(
+                    "flamme-vive",
+                    "Flamme vive",
+                    Type::Feu,
+                    Categorie::Speciale,
+                    70,
+                    75,
+                ),
+            ],
+            false,
+            aleatoire,
         ),
-        attaque(
-            "crachat-de-braises",
-            "Crachat de braises",
-            Type::Feu,
-            Categorie::Speciale,
-            40,
-            100,
-        ),
-        attaque(
-            "flamme-vive",
-            "Flamme vive",
-            Type::Feu,
-            Categorie::Speciale,
-            70,
-            75,
+        creer(
+            corbeau,
+            vec![
+                attaque(
+                    "coup-de-bec",
+                    "Coup de bec",
+                    Type::Vol,
+                    Categorie::Physique,
+                    35,
+                    100,
+                ),
+                attaque("pique", "Piqué", Type::Vol, Categorie::Physique, 60, 90),
+            ],
+            false,
+            aleatoire,
         ),
     ];
-    let attaques_loup = vec![
-        attaque(
-            "griffure",
-            "Griffure",
-            Type::Normal,
-            Categorie::Physique,
-            40,
-            100,
+    let loup_shiny = tirer_shiny(aleatoire);
+    let vipere_shiny = tirer_shiny(aleatoire);
+    let groupe = vec![
+        creer(
+            loup,
+            vec![
+                attaque(
+                    "griffure",
+                    "Griffure",
+                    Type::Normal,
+                    Categorie::Physique,
+                    40,
+                    100,
+                ),
+                attaque(
+                    "morsure",
+                    "Morsure",
+                    Type::Tenebres,
+                    Categorie::Physique,
+                    60,
+                    90,
+                ),
+            ],
+            loup_shiny,
+            aleatoire,
         ),
-        attaque(
-            "morsure",
-            "Morsure",
-            Type::Tenebres,
-            Categorie::Physique,
-            60,
-            90,
+        creer(
+            vipere,
+            vec![
+                attaque(
+                    "morsure-venimeuse",
+                    "Morsure venimeuse",
+                    Type::Poison,
+                    Categorie::Physique,
+                    40,
+                    100,
+                )
+                .avec_effet(effet(Statut::Poison, 30)),
+                attaque(
+                    "regard-petrifiant",
+                    "Regard pétrifiant",
+                    Type::Normal,
+                    Categorie::Speciale,
+                    30,
+                    100,
+                )
+                .avec_effet(effet(Statut::Paralysie, 30)),
+            ],
+            vipere_shiny,
+            aleatoire,
         ),
     ];
-    (
-        creer(salamandre, attaques_salamandre, aleatoire),
-        creer(loup, attaques_loup, aleatoire),
-    )
+    (equipe, groupe)
 }
 
 fn espece(id: &str, nom: &str, type_espece: Type, base: StatsDeBase) -> Espece {
@@ -117,12 +199,21 @@ fn attaque(
     .expect("attaque de démonstration valide")
 }
 
-fn creer(espece: Espece, attaques: Vec<Attaque>, aleatoire: &mut dyn Aleatoire) -> Monstre {
+fn effet(statut: Statut, chance: u8) -> EffetSecondaire {
+    EffetSecondaire::new(statut, chance).expect("effet de démonstration valide")
+}
+
+fn creer(
+    espece: Espece,
+    attaques: Vec<Attaque>,
+    shiny: bool,
+    aleatoire: &mut dyn Aleatoire,
+) -> Monstre {
     Monstre::new(
         espece,
         Niveau::new(5).expect("niveau de démonstration valide"),
         ValeursInternes::tirer(aleatoire),
         AttaquesMonstre::new(attaques).expect("attaques de démonstration valides"),
-        false,
+        shiny,
     )
 }

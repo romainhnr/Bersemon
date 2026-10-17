@@ -2,6 +2,7 @@
 
 use std::fmt;
 
+use crate::statut::Statut;
 use crate::types::Type;
 
 /// Identifiant stable d'une attaque, enregistré dans les sauvegardes à la
@@ -27,6 +28,34 @@ pub enum Categorie {
     Speciale,
 }
 
+/// Chance, en pourcentage, d'infliger un statut à la cible touchée (section
+/// 10.5).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EffetSecondaire {
+    statut: Statut,
+    chance: u8,
+}
+
+impl EffetSecondaire {
+    pub const CHANCE_MAX: u8 = 100;
+
+    pub fn new(statut: Statut, chance: u8) -> Result<Self, ErreurAttaque> {
+        if (1..=Self::CHANCE_MAX).contains(&chance) {
+            Ok(Self { statut, chance })
+        } else {
+            Err(ErreurAttaque::ChanceInvalide(chance))
+        }
+    }
+
+    pub fn statut(&self) -> Statut {
+        self.statut
+    }
+
+    pub fn chance(&self) -> u8 {
+        self.chance
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Attaque {
     id: AttaqueId,
@@ -35,12 +64,14 @@ pub struct Attaque {
     categorie: Categorie,
     puissance: u16,
     precision: u8,
+    effet: Option<EffetSecondaire>,
 }
 
 impl Attaque {
     pub const PRECISION_MAX: u8 = 100;
 
-    /// `precision` est un pourcentage, de 1 à 100.
+    /// `precision` est un pourcentage, de 1 à 100. L'éventuel effet
+    /// secondaire s'ajoute avec `avec_effet`.
     pub fn new(
         id: AttaqueId,
         nom: impl Into<String>,
@@ -49,8 +80,8 @@ impl Attaque {
         puissance: u16,
         precision: u8,
     ) -> Result<Self, ErreurAttaque> {
-        // Les attaques sans dégâts relèvent des effets de statut (Q26), qui
-        // ne sont pas encore définis.
+        // Dans la V1, un statut n'est infligé que par l'effet secondaire d'une
+        // attaque qui touche (Q26) : toute attaque a donc une puissance.
         if puissance == 0 {
             return Err(ErreurAttaque::PuissanceNulle);
         }
@@ -64,7 +95,13 @@ impl Attaque {
             categorie,
             puissance,
             precision,
+            effet: None,
         })
+    }
+
+    pub fn avec_effet(mut self, effet: EffetSecondaire) -> Self {
+        self.effet = Some(effet);
+        self
     }
 
     pub fn id(&self) -> &AttaqueId {
@@ -90,12 +127,17 @@ impl Attaque {
     pub fn precision(&self) -> u8 {
         self.precision
     }
+
+    pub fn effet(&self) -> Option<EffetSecondaire> {
+        self.effet
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ErreurAttaque {
     PuissanceNulle,
     PrecisionInvalide(u8),
+    ChanceInvalide(u8),
 }
 
 impl fmt::Display for ErreurAttaque {
@@ -106,6 +148,11 @@ impl fmt::Display for ErreurAttaque {
                 f,
                 "précision {precision} hors de la plage 1 à {}",
                 Attaque::PRECISION_MAX
+            ),
+            ErreurAttaque::ChanceInvalide(chance) => write!(
+                f,
+                "chance d'effet secondaire {chance} hors de la plage 1 à {}",
+                EffetSecondaire::CHANCE_MAX
             ),
         }
     }
@@ -213,6 +260,19 @@ mod tests {
             );
             assert_eq!(resultat, Err(ErreurAttaque::PrecisionInvalide(precision)));
         }
+    }
+
+    #[test]
+    fn effet_secondaire_refuse_une_chance_hors_plage() {
+        for chance in [0, 101] {
+            assert_eq!(
+                EffetSecondaire::new(Statut::Poison, chance),
+                Err(ErreurAttaque::ChanceInvalide(chance))
+            );
+        }
+        let effet = EffetSecondaire::new(Statut::Paralysie, 30).unwrap();
+        assert_eq!(attaque("a").avec_effet(effet).effet(), Some(effet));
+        assert_eq!(attaque("a").effet(), None);
     }
 
     #[test]

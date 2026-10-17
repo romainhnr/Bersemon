@@ -1,23 +1,29 @@
-//! Combat au tour par tour entre le monstre du joueur et un monstre sauvage
-//! (section 10). La réserve, le changement de monstre, la fuite et la capture
-//! ne sont pas encore gérés.
+//! Combat au tour par tour entre l'équipe du joueur et un groupe de monstres
+//! sauvages (section 10) : un monstre actif de chaque côté, les autres en
+//! réserve.
 //!
-//! Le combat ne fait aucun affichage : chaque tour rend la liste des
+//! Le combat ne fait aucun affichage : chaque étape rend la liste des
 //! événements survenus, que l'interface met en texte. Il ne bloque pas non
 //! plus en attendant le joueur, ce qui convient à la console comme à un bot
 //! qui traite une commande à la fois.
 //!
-//! Tirages d'un tour, dans l'ordre : attaque choisie par l'IA (si son monstre
-//! en connaît plusieurs), ordre d'action en cas d'égalité de vitesse, puis,
-//! pour chaque attaque lancée, ceux de la résolution d'une attaque.
+//! Tirages d'un tour, dans l'ordre :
+//! - l'attaque choisie par l'IA, si le monstre adverse en connaît plusieurs ;
+//! - pour une attaque du joueur, l'ordre d'action en cas d'égalité de vitesse ;
+//!   pour un filet, la capture, si sa chance n'est ni nulle ni certaine ;
+//! - pour chaque monstre qui attaque : la paralysie s'il est paralysé, ceux de
+//!   la résolution de l'attaque, puis l'effet secondaire si la cible peut le
+//!   subir.
 
 use std::cmp::Ordering;
 use std::fmt;
 
 use crate::aleatoire::Aleatoire;
-use crate::attaque::Attaque;
+use crate::attaque::{Attaque, EffetSecondaire};
+use crate::capture::calculer_chance_capture;
 use crate::degats::{ResultatAttaque, resoudre_attaque};
 use crate::monstre::Monstre;
+use crate::statut::{CHANCES_BLOCAGE_PARALYSIE, Statut, degats_de_poison};
 use crate::types::Efficacite;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -35,63 +41,127 @@ impl Cote {
     }
 }
 
+/// Désigne un monstre du combat par son côté et sa position dans l'équipe du
+/// joueur ou dans le groupe adverse. Les positions ne changent pas pendant le
+/// combat, même après une capture.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Combattant {
+    pub cote: Cote,
+    pub index: usize,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Issue {
     Victoire,
     Defaite,
+    Fuite,
+}
+
+/// Ce que le combat attend du joueur.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Phase {
+    /// L'action du tour, par `jouer_tour`.
+    ChoixAction,
+    /// Le monstre à envoyer à la place du monstre actif KO, par `remplacer`.
+    Remplacement,
+    Termine(Issue),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Action {
-    /// Position de l'attaque dans la liste des attaques du monstre.
+    /// Position de l'attaque dans la liste des attaques du monstre actif.
     Attaquer(usize),
+    /// Position, dans l'équipe, du monstre à envoyer.
+    Changer(usize),
+    LancerFilet,
+    Fuir,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Evenement {
+    MonstreEnvoye(Combattant),
     AttaqueLancee {
-        cote: Cote,
+        lanceur: Combattant,
         attaque: Attaque,
     },
-    AttaqueRatee {
-        cote: Cote,
-    },
-    SansEffet {
-        cible: Cote,
-    },
+    AttaqueRatee(Combattant),
+    SansEffet(Combattant),
+    /// `degats` est la perte réelle de PV, qui ne dépasse pas les PV restants.
     Degats {
-        cible: Cote,
+        cible: Combattant,
         degats: u32,
         critique: bool,
         efficacite: Efficacite,
     },
-    Ko {
-        cote: Cote,
+    StatutInflige {
+        cible: Combattant,
+        statut: Statut,
     },
-    FinDuCombat {
-        issue: Issue,
+    BloqueParLaParalysie(Combattant),
+    DegatsDePoison {
+        cible: Combattant,
+        degats: u32,
     },
+    Ko(Combattant),
+    FiletLance {
+        cible: Combattant,
+        chance: u32,
+    },
+    CaptureReussie(Combattant),
+    CaptureRatee(Combattant),
+    Fuite,
+    FinDuCombat(Issue),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ErreurCombat {
-    MonstreKo(Cote),
+    EquipeSansMonstreApte,
+    AucunAdversaire,
+    AdversaireKo(usize),
     CombatTermine,
+    RemplacementAttendu,
+    AucunRemplacementAttendu,
     AttaqueInexistante(usize),
+    MonstreInexistant(usize),
+    MonstreKo(usize),
+    MonstreDejaActif(usize),
+    CaptureImpossible(usize),
 }
 
 impl fmt::Display for ErreurCombat {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ErreurCombat::MonstreKo(Cote::Joueur) => {
-                write!(f, "le monstre du joueur est KO, il ne peut pas combattre")
+            ErreurCombat::EquipeSansMonstreApte => {
+                write!(f, "l'équipe n'a aucun monstre en état de combattre")
             }
-            ErreurCombat::MonstreKo(Cote::Adversaire) => {
-                write!(f, "le monstre adverse est KO, il ne peut pas combattre")
+            ErreurCombat::AucunAdversaire => write!(f, "le groupe adverse est vide"),
+            ErreurCombat::AdversaireKo(index) => {
+                write!(f, "le monstre adverse en position {index} est déjà KO")
             }
-            ErreurCombat::CombatTermine => write!(f, "le combat est déjà terminé"),
+            ErreurCombat::CombatTermine => write!(f, "le combat est terminé"),
+            ErreurCombat::RemplacementAttendu => {
+                write!(f, "il faut d'abord remplacer le monstre KO")
+            }
+            ErreurCombat::AucunRemplacementAttendu => {
+                write!(f, "aucun monstre n'est à remplacer")
+            }
             ErreurCombat::AttaqueInexistante(index) => {
                 write!(f, "aucune attaque en position {index}")
+            }
+            ErreurCombat::MonstreInexistant(index) => {
+                write!(f, "aucun monstre en position {index} dans l'équipe")
+            }
+            ErreurCombat::MonstreKo(index) => {
+                write!(f, "le monstre en position {index} est KO")
+            }
+            ErreurCombat::MonstreDejaActif(index) => {
+                write!(f, "le monstre en position {index} combat déjà")
+            }
+            ErreurCombat::CaptureImpossible(index) => {
+                write!(
+                    f,
+                    "le monstre adverse en position {index} ne peut pas être capturé"
+                )
             }
         }
     }
@@ -99,87 +169,277 @@ impl fmt::Display for ErreurCombat {
 
 impl std::error::Error for ErreurCombat {}
 
+/// Ce que le combat laisse derrière lui. `issue` vaut `None` si le combat a
+/// été interrompu avant la fin ; `captures` suit l'ordre des captures.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BilanCombat {
+    pub issue: Option<Issue>,
+    pub equipe: Vec<Monstre>,
+    pub captures: Vec<Monstre>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Combat {
-    joueur: Monstre,
-    adversaire: Monstre,
-    issue: Option<Issue>,
+    equipe: Vec<Monstre>,
+    actif_joueur: usize,
+    adversaires: Vec<Monstre>,
+    actif_adversaire: usize,
+    /// Positions des monstres adverses capturés, dans l'ordre des captures :
+    /// ils restent dans la liste pour que les positions ne changent pas, mais
+    /// ne combattent plus.
+    captures: Vec<usize>,
+    phase: Phase,
 }
 
 impl Combat {
-    /// Les monstres sont rendus avec leurs PV par `into_monstres`, une fois le
-    /// combat terminé.
-    pub fn new(joueur: Monstre, adversaire: Monstre) -> Result<Self, ErreurCombat> {
-        if joueur.est_ko() {
-            return Err(ErreurCombat::MonstreKo(Cote::Joueur));
+    /// Le premier monstre apte de l'équipe et le premier monstre du groupe
+    /// commencent le combat. `terminer` rend ensuite l'équipe avec ses PV et
+    /// ses statuts.
+    pub fn new(equipe: Vec<Monstre>, adversaires: Vec<Monstre>) -> Result<Self, ErreurCombat> {
+        let actif_joueur = equipe
+            .iter()
+            .position(|monstre| !monstre.est_ko())
+            .ok_or(ErreurCombat::EquipeSansMonstreApte)?;
+        if adversaires.is_empty() {
+            return Err(ErreurCombat::AucunAdversaire);
         }
-        if adversaire.est_ko() {
-            return Err(ErreurCombat::MonstreKo(Cote::Adversaire));
+        if let Some(index) = adversaires.iter().position(Monstre::est_ko) {
+            return Err(ErreurCombat::AdversaireKo(index));
         }
         Ok(Self {
-            joueur,
-            adversaire,
-            issue: None,
+            equipe,
+            actif_joueur,
+            adversaires,
+            actif_adversaire: 0,
+            captures: Vec::new(),
+            phase: Phase::ChoixAction,
         })
     }
 
-    pub fn joueur(&self) -> &Monstre {
-        &self.joueur
+    pub fn phase(&self) -> Phase {
+        self.phase
     }
 
-    pub fn adversaire(&self) -> &Monstre {
-        &self.adversaire
+    pub fn equipe(&self) -> &[Monstre] {
+        &self.equipe
     }
 
-    pub fn issue(&self) -> Option<Issue> {
-        self.issue
+    pub fn adversaires(&self) -> &[Monstre] {
+        &self.adversaires
     }
 
-    /// Joue un tour complet : l'action du joueur et celle de l'IA, dans
-    /// l'ordre de vitesse. Une action refusée ne consomme aucun tirage et ne
-    /// modifie pas le combat.
+    pub fn actif(&self, cote: Cote) -> Combattant {
+        let index = match cote {
+            Cote::Joueur => self.actif_joueur,
+            Cote::Adversaire => self.actif_adversaire,
+        };
+        Combattant { cote, index }
+    }
+
+    /// Panique si `combattant` ne désigne pas un monstre de ce combat.
+    pub fn monstre(&self, combattant: Combattant) -> &Monstre {
+        match combattant.cote {
+            Cote::Joueur => &self.equipe[combattant.index],
+            Cote::Adversaire => &self.adversaires[combattant.index],
+        }
+    }
+
+    /// Chance, en pourcentage, de capturer le monstre adverse actif.
+    pub fn chance_de_capture(&self) -> u32 {
+        calculer_chance_capture(
+            self.monstre(self.actif(Cote::Joueur)),
+            self.monstre(self.actif(Cote::Adversaire)),
+        )
+    }
+
+    /// Joue un tour complet : l'action du joueur, celle de l'IA, puis la fin
+    /// du tour. Une action refusée ne consomme aucun tirage et ne modifie pas
+    /// le combat.
     pub fn jouer_tour(
         &mut self,
         action: Action,
         aleatoire: &mut dyn Aleatoire,
     ) -> Result<Vec<Evenement>, ErreurCombat> {
-        if self.issue.is_some() {
-            return Err(ErreurCombat::CombatTermine);
+        match self.phase {
+            Phase::ChoixAction => {}
+            Phase::Remplacement => return Err(ErreurCombat::RemplacementAttendu),
+            Phase::Termine(_) => return Err(ErreurCombat::CombatTermine),
         }
-        let attaque_joueur = match action {
-            Action::Attaquer(index) => {
-                if index >= self.joueur.attaques().liste().len() {
-                    return Err(ErreurCombat::AttaqueInexistante(index));
-                }
-                index
-            }
-        };
-        let attaque_adversaire = choisir_attaque_au_hasard(&self.adversaire, aleatoire);
+        self.valider(action)?;
+        let attaque_adversaire =
+            choisir_attaque_au_hasard(self.monstre(self.actif(Cote::Adversaire)), aleatoire);
 
         let mut evenements = Vec::new();
-        for cote in self.ordre_du_tour(aleatoire) {
-            let index = match cote {
-                Cote::Joueur => attaque_joueur,
-                Cote::Adversaire => attaque_adversaire,
-            };
-            self.lancer_attaque(cote, index, aleatoire, &mut evenements);
-            if self.issue.is_some() {
-                break;
+        match action {
+            Action::Attaquer(attaque_joueur) => {
+                for cote in self.ordre_du_tour(aleatoire) {
+                    let attaque = match cote {
+                        Cote::Joueur => attaque_joueur,
+                        Cote::Adversaire => attaque_adversaire,
+                    };
+                    self.attaquer(cote, attaque, false, aleatoire, &mut evenements);
+                }
+            }
+            // Changer de monstre ou lancer un filet passe avant toute attaque,
+            // comme dans Pokémon, et laisse l'adversaire agir.
+            Action::Changer(index) => {
+                self.actif_joueur = index;
+                evenements.push(Evenement::MonstreEnvoye(self.actif(Cote::Joueur)));
+                self.attaquer(
+                    Cote::Adversaire,
+                    attaque_adversaire,
+                    false,
+                    aleatoire,
+                    &mut evenements,
+                );
+            }
+            Action::LancerFilet => {
+                if !self.lancer_filet(aleatoire, &mut evenements) {
+                    self.attaquer(
+                        Cote::Adversaire,
+                        attaque_adversaire,
+                        false,
+                        aleatoire,
+                        &mut evenements,
+                    );
+                }
+            }
+            Action::Fuir => {
+                self.attaquer(
+                    Cote::Adversaire,
+                    attaque_adversaire,
+                    true,
+                    aleatoire,
+                    &mut evenements,
+                );
+                evenements.push(Evenement::Fuite);
+                self.terminer_avec(Issue::Fuite, &mut evenements);
+                return Ok(evenements);
             }
         }
+        self.finir_le_tour(&mut evenements);
         Ok(evenements)
     }
 
-    /// Rend le monstre du joueur puis celui de l'adversaire.
-    pub fn into_monstres(self) -> (Monstre, Monstre) {
-        (self.joueur, self.adversaire)
+    /// Envoie un monstre à la place du monstre actif KO. Ce remplacement est
+    /// gratuit : l'adversaire n'agit pas (Q25).
+    pub fn remplacer(&mut self, index: usize) -> Result<Vec<Evenement>, ErreurCombat> {
+        if self.phase != Phase::Remplacement {
+            return Err(ErreurCombat::AucunRemplacementAttendu);
+        }
+        self.verifier_remplacant(index)?;
+        self.actif_joueur = index;
+        self.phase = Phase::ChoixAction;
+        Ok(vec![Evenement::MonstreEnvoye(self.actif(Cote::Joueur))])
+    }
+
+    /// Monstres adverses KO, pas encore capturés, qu'il est possible de
+    /// capturer après une victoire (Q29).
+    pub fn adversaires_capturables(&self) -> Vec<usize> {
+        if self.phase != Phase::Termine(Issue::Victoire) {
+            return Vec::new();
+        }
+        (0..self.adversaires.len())
+            .filter(|index| self.adversaires[*index].est_ko() && !self.captures.contains(index))
+            .collect()
+    }
+
+    /// Capture garantie d'un monstre adverse KO, après la victoire (section
+    /// 11.2).
+    pub fn capturer_ko(&mut self, index: usize) -> Result<Vec<Evenement>, ErreurCombat> {
+        if !self.adversaires_capturables().contains(&index) {
+            return Err(ErreurCombat::CaptureImpossible(index));
+        }
+        self.captures.push(index);
+        Ok(vec![Evenement::CaptureReussie(Combattant {
+            cote: Cote::Adversaire,
+            index,
+        })])
+    }
+
+    pub fn terminer(self) -> BilanCombat {
+        let issue = match self.phase {
+            Phase::Termine(issue) => Some(issue),
+            Phase::ChoixAction | Phase::Remplacement => None,
+        };
+        let mut adversaires: Vec<Option<Monstre>> =
+            self.adversaires.into_iter().map(Some).collect();
+        let captures = self
+            .captures
+            .iter()
+            .filter_map(|&index| adversaires[index].take())
+            .collect();
+        BilanCombat {
+            issue,
+            equipe: self.equipe,
+            captures,
+        }
+    }
+
+    fn valider(&self, action: Action) -> Result<(), ErreurCombat> {
+        match action {
+            Action::Attaquer(index) => {
+                let nombre = self
+                    .monstre(self.actif(Cote::Joueur))
+                    .attaques()
+                    .liste()
+                    .len();
+                if index < nombre {
+                    Ok(())
+                } else {
+                    Err(ErreurCombat::AttaqueInexistante(index))
+                }
+            }
+            Action::Changer(index) => {
+                if index == self.actif_joueur {
+                    return Err(ErreurCombat::MonstreDejaActif(index));
+                }
+                self.verifier_remplacant(index)
+            }
+            Action::LancerFilet | Action::Fuir => Ok(()),
+        }
+    }
+
+    fn verifier_remplacant(&self, index: usize) -> Result<(), ErreurCombat> {
+        match self.equipe.get(index) {
+            None => Err(ErreurCombat::MonstreInexistant(index)),
+            Some(monstre) if monstre.est_ko() => Err(ErreurCombat::MonstreKo(index)),
+            Some(_) => Ok(()),
+        }
+    }
+
+    /// Le monstre actif de ce côté n'est ni KO ni capturé.
+    fn est_en_jeu(&self, cote: Cote) -> bool {
+        let combattant = self.actif(cote);
+        let capture = cote == Cote::Adversaire && self.captures.contains(&combattant.index);
+        !capture && !self.monstre(combattant).est_ko()
+    }
+
+    fn monstre_mut(&mut self, combattant: Combattant) -> &mut Monstre {
+        match combattant.cote {
+            Cote::Joueur => &mut self.equipe[combattant.index],
+            Cote::Adversaire => &mut self.adversaires[combattant.index],
+        }
+    }
+
+    fn attaquant_et_defenseur(&mut self, cote: Cote) -> (&Monstre, &mut Monstre) {
+        match cote {
+            Cote::Joueur => (
+                &self.equipe[self.actif_joueur],
+                &mut self.adversaires[self.actif_adversaire],
+            ),
+            Cote::Adversaire => (
+                &self.adversaires[self.actif_adversaire],
+                &mut self.equipe[self.actif_joueur],
+            ),
+        }
     }
 
     /// Le plus rapide agit en premier ; à vitesse égale, tirage au sort à
     /// chaque tour (Q23).
     fn ordre_du_tour(&self, aleatoire: &mut dyn Aleatoire) -> [Cote; 2] {
-        let vitesse_joueur = self.joueur.stats().vitesse;
-        let vitesse_adversaire = self.adversaire.stats().vitesse;
+        let vitesse_joueur = vitesse_en_combat(self.monstre(self.actif(Cote::Joueur)));
+        let vitesse_adversaire = vitesse_en_combat(self.monstre(self.actif(Cote::Adversaire)));
         let joueur_en_premier = match vitesse_joueur.cmp(&vitesse_adversaire) {
             Ordering::Greater => true,
             Ordering::Less => false,
@@ -192,29 +452,47 @@ impl Combat {
         }
     }
 
-    fn lancer_attaque(
+    /// `fuite` : l'attaque laisse au moins 1 PV à sa cible (Q13).
+    fn attaquer(
         &mut self,
         cote: Cote,
         index_attaque: usize,
+        fuite: bool,
         aleatoire: &mut dyn Aleatoire,
         evenements: &mut Vec<Evenement>,
     ) {
-        let (attaquant, defenseur) = match cote {
-            Cote::Joueur => (&self.joueur, &mut self.adversaire),
-            Cote::Adversaire => (&self.adversaire, &mut self.joueur),
-        };
-        let cible = cote.oppose();
+        // Un monstre mis KO ou capturé plus tôt dans le tour n'agit pas.
+        if !self.est_en_jeu(cote) || !self.est_en_jeu(cote.oppose()) {
+            return;
+        }
+        let lanceur = self.actif(cote);
+        let cible = self.actif(cote.oppose());
+        if self.monstre(lanceur).statut() == Some(Statut::Paralysie)
+            && aleatoire.tirer(1..=CHANCES_BLOCAGE_PARALYSIE) == 1
+        {
+            evenements.push(Evenement::BloqueParLaParalysie(lanceur));
+            return;
+        }
+
+        let (attaquant, defenseur) = self.attaquant_et_defenseur(cote);
         let attaque = attaquant.attaques().liste()[index_attaque].clone();
         let resultat = resoudre_attaque(attaquant, &attaque, defenseur, aleatoire);
-        evenements.push(Evenement::AttaqueLancee { cote, attaque });
+        let effet = attaque.effet();
+        evenements.push(Evenement::AttaqueLancee { lanceur, attaque });
         match resultat {
-            ResultatAttaque::Ratee => evenements.push(Evenement::AttaqueRatee { cote }),
-            ResultatAttaque::SansEffet => evenements.push(Evenement::SansEffet { cible }),
+            ResultatAttaque::Ratee => evenements.push(Evenement::AttaqueRatee(lanceur)),
+            ResultatAttaque::SansEffet => evenements.push(Evenement::SansEffet(cible)),
             ResultatAttaque::Touchee {
                 degats,
                 critique,
                 efficacite,
             } => {
+                let pv_cedables = if fuite {
+                    defenseur.pv_actuels().saturating_sub(1)
+                } else {
+                    defenseur.pv_actuels()
+                };
+                let degats = degats.min(pv_cedables);
                 defenseur.subir_degats(degats);
                 evenements.push(Evenement::Degats {
                     cible,
@@ -223,17 +501,124 @@ impl Combat {
                     efficacite,
                 });
                 if defenseur.est_ko() {
-                    evenements.push(Evenement::Ko { cote: cible });
-                    let issue = match cible {
-                        Cote::Adversaire => Issue::Victoire,
-                        Cote::Joueur => Issue::Defaite,
-                    };
-                    self.issue = Some(issue);
-                    evenements.push(Evenement::FinDuCombat { issue });
+                    evenements.push(Evenement::Ko(cible));
+                } else if let Some(effet) = effet {
+                    if tenter_effet(defenseur, effet, aleatoire) {
+                        evenements.push(Evenement::StatutInflige {
+                            cible,
+                            statut: effet.statut(),
+                        });
+                    }
                 }
             }
         }
     }
+
+    /// Rend `true` si le monstre adverse actif est capturé.
+    fn lancer_filet(
+        &mut self,
+        aleatoire: &mut dyn Aleatoire,
+        evenements: &mut Vec<Evenement>,
+    ) -> bool {
+        let cible = self.actif(Cote::Adversaire);
+        let chance = self.chance_de_capture();
+        evenements.push(Evenement::FiletLance { cible, chance });
+        let reussie = match chance {
+            0 => false,
+            100.. => true,
+            _ => aleatoire.tirer(1..=100) <= chance,
+        };
+        if reussie {
+            self.captures.push(cible.index);
+            evenements.push(Evenement::CaptureReussie(cible));
+        } else {
+            evenements.push(Evenement::CaptureRatee(cible));
+        }
+        reussie
+    }
+
+    /// Poison des monstres actifs, puis remplacement des monstres KO ou
+    /// capturés, ou fin du combat.
+    fn finir_le_tour(&mut self, evenements: &mut Vec<Evenement>) {
+        for cote in [Cote::Joueur, Cote::Adversaire] {
+            if !self.est_en_jeu(cote) {
+                continue;
+            }
+            let combattant = self.actif(cote);
+            let monstre = self.monstre_mut(combattant);
+            if monstre.statut() != Some(Statut::Poison) {
+                continue;
+            }
+            let degats = degats_de_poison(monstre.stats().pv).min(monstre.pv_actuels());
+            monstre.subir_degats(degats);
+            let ko = monstre.est_ko();
+            evenements.push(Evenement::DegatsDePoison {
+                cible: combattant,
+                degats,
+            });
+            if ko {
+                evenements.push(Evenement::Ko(combattant));
+            }
+        }
+
+        // Une équipe entièrement KO perd, même si le dernier adversaire tombe
+        // au même tour (Q50, section 9.3).
+        if self.equipe.iter().all(Monstre::est_ko) {
+            self.terminer_avec(Issue::Defaite, evenements);
+            return;
+        }
+        if !self.est_en_jeu(Cote::Adversaire) {
+            match self.prochain_adversaire() {
+                Some(index) => {
+                    self.actif_adversaire = index;
+                    evenements.push(Evenement::MonstreEnvoye(self.actif(Cote::Adversaire)));
+                }
+                None => {
+                    self.terminer_avec(Issue::Victoire, evenements);
+                    return;
+                }
+            }
+        }
+        if !self.est_en_jeu(Cote::Joueur) {
+            self.phase = Phase::Remplacement;
+        }
+    }
+
+    /// Les monstres du groupe entrent dans l'ordre de la rencontre (Q49).
+    fn prochain_adversaire(&self) -> Option<usize> {
+        (0..self.adversaires.len())
+            .find(|index| !self.captures.contains(index) && !self.adversaires[*index].est_ko())
+    }
+
+    fn terminer_avec(&mut self, issue: Issue, evenements: &mut Vec<Evenement>) {
+        self.phase = Phase::Termine(issue);
+        evenements.push(Evenement::FinDuCombat(issue));
+    }
+}
+
+/// La paralysie divise la vitesse par 2 (section 10.5).
+fn vitesse_en_combat(monstre: &Monstre) -> u32 {
+    let vitesse = monstre.stats().vitesse;
+    if monstre.statut() == Some(Statut::Paralysie) {
+        vitesse / 2
+    } else {
+        vitesse
+    }
+}
+
+/// Aucun tirage si la cible ne peut pas subir le statut ou si la chance est
+/// de 100 %. Rend `true` si le statut est infligé.
+fn tenter_effet(
+    cible: &mut Monstre,
+    effet: EffetSecondaire,
+    aleatoire: &mut dyn Aleatoire,
+) -> bool {
+    if !cible.peut_subir(effet.statut()) {
+        return false;
+    }
+    let touche = effet.chance() >= EffetSecondaire::CHANCE_MAX
+        || aleatoire.tirer(1..=100) <= u32::from(effet.chance());
+    touche && cible.infliger_statut(effet.statut())
 }
 
 /// IA des monstres sauvages de la V1 : une attaque au hasard (Q24).
@@ -257,10 +642,16 @@ mod tests {
 
     // Base 50 au niveau 5 avec des valeurs internes nulles : 20 PV et 10 dans
     // les autres stats. Une base de vitesse de 60 donne 11. Le coup inflige
-    // alors 5 dégâts avec un pourcentage de 100, sans critique.
+    // alors 5 dégâts à un monstre Feu avec un pourcentage de 100, sans
+    // critique : chaque attaque qui touche consomme les tirages [2, 100].
 
     fn coup() -> Attaque {
         attaque("coup", Type::Normal, Categorie::Physique, 40, 100)
+    }
+
+    fn dard_empoisonne() -> Attaque {
+        attaque("dard", Type::Poison, Categorie::Physique, 40, 100)
+            .avec_effet(EffetSecondaire::new(Statut::Poison, 30).unwrap())
     }
 
     fn rapide() -> Monstre {
@@ -275,7 +666,44 @@ mod tests {
         monstre(&[Type::Feu], stats_uniformes(50), 5, vec![coup()])
     }
 
-    fn degats(cible: Cote, degats: u32) -> Evenement {
+    fn affaibli(mut monstre: Monstre, pv_restants: u32) -> Monstre {
+        monstre.subir_degats(monstre.stats().pv - pv_restants);
+        monstre
+    }
+
+    fn paralyse(mut monstre: Monstre) -> Monstre {
+        monstre.infliger_statut(Statut::Paralysie);
+        monstre
+    }
+
+    fn combat(equipe: Vec<Monstre>, adversaires: Vec<Monstre>) -> Combat {
+        Combat::new(equipe, adversaires).unwrap()
+    }
+
+    fn tour(combat: &mut Combat, action: Action, tirages: &[u32]) -> Vec<Evenement> {
+        let mut aleatoire = AleatoireScripte::new(tirages.iter().copied());
+        combat.jouer_tour(action, &mut aleatoire).unwrap()
+    }
+
+    fn j(index: usize) -> Combattant {
+        Combattant {
+            cote: Cote::Joueur,
+            index,
+        }
+    }
+
+    fn a(index: usize) -> Combattant {
+        Combattant {
+            cote: Cote::Adversaire,
+            index,
+        }
+    }
+
+    fn lancee(lanceur: Combattant, attaque: Attaque) -> Evenement {
+        Evenement::AttaqueLancee { lanceur, attaque }
+    }
+
+    fn degats(cible: Combattant, degats: u32) -> Evenement {
         Evenement::Degats {
             cible,
             degats,
@@ -284,97 +712,27 @@ mod tests {
         }
     }
 
-    fn lancee(cote: Cote, attaque: Attaque) -> Evenement {
-        Evenement::AttaqueLancee { cote, attaque }
-    }
-
     #[test]
     fn le_plus_rapide_agit_en_premier() {
-        let mut combat = Combat::new(rapide(), lent()).unwrap();
-        let mut aleatoire = AleatoireScripte::new([2, 100, 2, 100]);
-        let evenements = combat
-            .jouer_tour(Action::Attaquer(0), &mut aleatoire)
-            .unwrap();
+        let mut combat = combat(vec![rapide()], vec![lent()]);
+        let evenements = tour(&mut combat, Action::Attaquer(0), &[2, 100, 2, 100]);
         assert_eq!(
             evenements,
             vec![
-                lancee(Cote::Joueur, coup()),
-                degats(Cote::Adversaire, 5),
-                lancee(Cote::Adversaire, coup()),
-                degats(Cote::Joueur, 5),
+                lancee(j(0), coup()),
+                degats(a(0), 5),
+                lancee(a(0), coup()),
+                degats(j(0), 5),
             ]
         );
-        assert_eq!(combat.joueur().pv_actuels(), 15);
-        assert_eq!(combat.adversaire().pv_actuels(), 15);
-        assert_eq!(combat.issue(), None);
+        assert_eq!(combat.phase(), Phase::ChoixAction);
     }
 
     #[test]
     fn egalite_de_vitesse_tiree_au_sort() {
-        let mut combat = Combat::new(lent(), lent()).unwrap();
-        let mut aleatoire = AleatoireScripte::new([1, 2, 100, 2, 100]);
-        let evenements = combat
-            .jouer_tour(Action::Attaquer(0), &mut aleatoire)
-            .unwrap();
-        assert_eq!(evenements[0], lancee(Cote::Adversaire, coup()));
-        assert_eq!(evenements[2], lancee(Cote::Joueur, coup()));
-    }
-
-    #[test]
-    fn ko_de_l_adversaire_donne_la_victoire_sans_riposte() {
-        let mut adversaire = lent();
-        adversaire.subir_degats(17);
-        let mut combat = Combat::new(rapide(), adversaire).unwrap();
-        let mut aleatoire = AleatoireScripte::new([2, 100]);
-        let evenements = combat
-            .jouer_tour(Action::Attaquer(0), &mut aleatoire)
-            .unwrap();
-        assert_eq!(
-            evenements,
-            vec![
-                lancee(Cote::Joueur, coup()),
-                degats(Cote::Adversaire, 5),
-                Evenement::Ko {
-                    cote: Cote::Adversaire
-                },
-                Evenement::FinDuCombat {
-                    issue: Issue::Victoire
-                },
-            ]
-        );
-        assert_eq!(combat.issue(), Some(Issue::Victoire));
-    }
-
-    #[test]
-    fn ko_du_joueur_donne_la_defaite() {
-        let mut joueur = lent();
-        joueur.subir_degats(17);
-        let mut combat = Combat::new(joueur, rapide()).unwrap();
-        let mut aleatoire = AleatoireScripte::new([2, 100]);
-        let evenements = combat
-            .jouer_tour(Action::Attaquer(0), &mut aleatoire)
-            .unwrap();
-        assert_eq!(
-            evenements.last(),
-            Some(&Evenement::FinDuCombat {
-                issue: Issue::Defaite
-            })
-        );
-        assert_eq!(combat.issue(), Some(Issue::Defaite));
-    }
-
-    #[test]
-    fn aucun_tour_apres_la_fin_du_combat() {
-        let mut adversaire = lent();
-        adversaire.subir_degats(17);
-        let mut combat = Combat::new(rapide(), adversaire).unwrap();
-        combat
-            .jouer_tour(Action::Attaquer(0), &mut AleatoireScripte::new([2, 100]))
-            .unwrap();
-        assert_eq!(
-            combat.jouer_tour(Action::Attaquer(0), &mut AleatoireScripte::new([])),
-            Err(ErreurCombat::CombatTermine)
-        );
+        let mut combat = combat(vec![lent()], vec![lent()]);
+        let evenements = tour(&mut combat, Action::Attaquer(0), &[1, 2, 100, 2, 100]);
+        assert_eq!(evenements[0], lancee(a(0), coup()));
     }
 
     #[test]
@@ -386,69 +744,395 @@ mod tests {
             5,
             vec![coup(), morsure.clone()],
         );
-        let mut combat = Combat::new(rapide(), adversaire).unwrap();
-        let mut aleatoire = AleatoireScripte::new([1, 2, 100, 2, 100]);
-        let evenements = combat
-            .jouer_tour(Action::Attaquer(0), &mut aleatoire)
-            .unwrap();
-        assert_eq!(evenements[2], lancee(Cote::Adversaire, morsure));
+        let mut combat = combat(vec![rapide()], vec![adversaire]);
+        let evenements = tour(&mut combat, Action::Attaquer(0), &[1, 2, 100, 2, 100]);
+        assert_eq!(evenements[2], lancee(a(0), morsure));
     }
 
     #[test]
-    fn cible_immunisee() {
+    fn cible_immunisee_sans_tirage() {
         let spectre = monstre(&[Type::Spectre], stats_uniformes(50), 5, vec![coup()]);
-        let mut combat = Combat::new(rapide(), spectre).unwrap();
-        // Le coup du joueur, de type Normal, n'a aucun effet sur le Spectre et
-        // ne tire rien ; seule l'attaque du Spectre contre le joueur demande
-        // des tirages.
-        let mut aleatoire = AleatoireScripte::new([2, 100]);
-        let evenements = combat
-            .jouer_tour(Action::Attaquer(0), &mut aleatoire)
-            .unwrap();
+        let mut combat = combat(vec![rapide()], vec![spectre]);
+        let evenements = tour(&mut combat, Action::Attaquer(0), &[2, 100]);
         assert_eq!(
             evenements[..2],
-            [
-                lancee(Cote::Joueur, coup()),
-                Evenement::SansEffet {
-                    cible: Cote::Adversaire
+            [lancee(j(0), coup()), Evenement::SansEffet(a(0))]
+        );
+    }
+
+    #[test]
+    fn la_paralysie_divise_la_vitesse_par_deux() {
+        // 11 de vitesse divisés par 2 : le monstre lent agit en premier.
+        let mut combat = combat(vec![paralyse(rapide())], vec![lent()]);
+        let evenements = tour(&mut combat, Action::Attaquer(0), &[2, 100, 2, 2, 100]);
+        assert_eq!(evenements[0], lancee(a(0), coup()));
+        assert_eq!(evenements[2], lancee(j(0), coup()));
+    }
+
+    #[test]
+    fn la_paralysie_peut_empecher_d_attaquer() {
+        let mut combat = combat(vec![rapide()], vec![paralyse(lent())]);
+        let evenements = tour(&mut combat, Action::Attaquer(0), &[2, 100, 1]);
+        assert_eq!(
+            evenements,
+            vec![
+                lancee(j(0), coup()),
+                degats(a(0), 5),
+                Evenement::BloqueParLaParalysie(a(0)),
+            ]
+        );
+    }
+
+    #[test]
+    fn effet_secondaire_inflige_un_statut_et_le_poison_agit_en_fin_de_tour() {
+        let joueur = monstre(
+            &[Type::Feu],
+            Stats {
+                vitesse: 60,
+                ..stats_uniformes(50)
+            },
+            5,
+            vec![dard_empoisonne()],
+        );
+        let mut combat = combat(vec![joueur], vec![lent()]);
+        let evenements = tour(&mut combat, Action::Attaquer(0), &[2, 100, 30, 2, 100]);
+        assert_eq!(
+            evenements,
+            vec![
+                lancee(j(0), dard_empoisonne()),
+                degats(a(0), 5),
+                Evenement::StatutInflige {
+                    cible: a(0),
+                    statut: Statut::Poison,
+                },
+                lancee(a(0), coup()),
+                degats(j(0), 5),
+                Evenement::DegatsDePoison {
+                    cible: a(0),
+                    degats: 2,
                 },
             ]
         );
-        assert_eq!(combat.adversaire().pv_actuels(), 20);
+        assert_eq!(combat.adversaires()[0].pv_actuels(), 13);
     }
 
     #[test]
-    fn attaque_inexistante_refusee_sans_rien_changer() {
-        let mut combat = Combat::new(rapide(), lent()).unwrap();
-        let avant = combat.clone();
-        assert_eq!(
-            combat.jouer_tour(Action::Attaquer(1), &mut AleatoireScripte::new([])),
-            Err(ErreurCombat::AttaqueInexistante(1))
+    fn effet_secondaire_peut_echouer() {
+        let joueur = monstre(
+            &[Type::Feu],
+            Stats {
+                vitesse: 60,
+                ..stats_uniformes(50)
+            },
+            5,
+            vec![dard_empoisonne()],
         );
+        let mut combat = combat(vec![joueur], vec![lent()]);
+        tour(&mut combat, Action::Attaquer(0), &[2, 100, 31, 2, 100]);
+        assert_eq!(combat.adversaires()[0].statut(), None);
+    }
+
+    #[test]
+    fn aucun_tirage_d_effet_sur_une_cible_immunisee_au_statut() {
+        let joueur = monstre(
+            &[Type::Feu],
+            Stats {
+                vitesse: 60,
+                ..stats_uniformes(50)
+            },
+            5,
+            vec![dard_empoisonne()],
+        );
+        let vipere = monstre(&[Type::Poison], stats_uniformes(50), 5, vec![coup()]);
+        let mut combat = combat(vec![joueur], vec![vipere]);
+        // Pas de tirage d'effet entre les deux attaques.
+        tour(&mut combat, Action::Attaquer(0), &[2, 100, 2, 100]);
+        assert_eq!(combat.adversaires()[0].statut(), None);
+    }
+
+    #[test]
+    fn le_poison_peut_donner_la_victoire() {
+        let mut spectre = affaibli(
+            monstre(&[Type::Spectre], stats_uniformes(50), 5, vec![coup()]),
+            2,
+        );
+        spectre.infliger_statut(Statut::Poison);
+        let mut combat = combat(vec![rapide()], vec![spectre]);
+        let evenements = tour(&mut combat, Action::Attaquer(0), &[2, 100]);
+        assert_eq!(
+            evenements[evenements.len() - 3..],
+            [
+                Evenement::DegatsDePoison {
+                    cible: a(0),
+                    degats: 2,
+                },
+                Evenement::Ko(a(0)),
+                Evenement::FinDuCombat(Issue::Victoire),
+            ]
+        );
+    }
+
+    #[test]
+    fn changer_de_monstre_coute_le_tour() {
+        let mut combat = combat(vec![rapide(), lent()], vec![lent()]);
+        let evenements = tour(&mut combat, Action::Changer(1), &[2, 100]);
+        assert_eq!(
+            evenements,
+            vec![
+                Evenement::MonstreEnvoye(j(1)),
+                lancee(a(0), coup()),
+                degats(j(1), 5),
+            ]
+        );
+        assert_eq!(combat.equipe()[0].pv_actuels(), 20);
+        assert_eq!(combat.actif(Cote::Joueur), j(1));
+    }
+
+    #[test]
+    fn changements_refuses_sans_rien_changer() {
+        let mut combat = combat(vec![rapide(), affaibli(lent(), 0)], vec![lent()]);
+        let avant = combat.clone();
+        let mut aleatoire = AleatoireScripte::new([]);
+        for (action, erreur) in [
+            (Action::Changer(0), ErreurCombat::MonstreDejaActif(0)),
+            (Action::Changer(1), ErreurCombat::MonstreKo(1)),
+            (Action::Changer(2), ErreurCombat::MonstreInexistant(2)),
+            (Action::Attaquer(1), ErreurCombat::AttaqueInexistante(1)),
+        ] {
+            assert_eq!(combat.jouer_tour(action, &mut aleatoire), Err(erreur));
+        }
         assert_eq!(combat, avant);
     }
 
     #[test]
-    fn refuse_un_monstre_deja_ko() {
-        let mut joueur = lent();
-        joueur.subir_degats(u32::MAX);
+    fn remplacement_gratuit_apres_un_ko() {
+        let mut combat = combat(vec![affaibli(lent(), 3), lent()], vec![rapide()]);
+        let evenements = tour(&mut combat, Action::Attaquer(0), &[2, 100]);
         assert_eq!(
-            Combat::new(joueur, lent()),
-            Err(ErreurCombat::MonstreKo(Cote::Joueur))
+            evenements,
+            vec![lancee(a(0), coup()), degats(j(0), 3), Evenement::Ko(j(0))]
+        );
+        assert_eq!(combat.phase(), Phase::Remplacement);
+        assert_eq!(
+            combat.jouer_tour(Action::Attaquer(0), &mut AleatoireScripte::new([])),
+            Err(ErreurCombat::RemplacementAttendu)
+        );
+        assert_eq!(combat.remplacer(0), Err(ErreurCombat::MonstreKo(0)));
+        assert_eq!(
+            combat.remplacer(1),
+            Ok(vec![Evenement::MonstreEnvoye(j(1))])
+        );
+        assert_eq!(combat.phase(), Phase::ChoixAction);
+        assert_eq!(
+            combat.remplacer(1),
+            Err(ErreurCombat::AucunRemplacementAttendu)
         );
     }
 
     #[test]
-    fn les_monstres_gardent_leurs_pv_apres_le_combat() {
-        let mut combat = Combat::new(rapide(), lent()).unwrap();
-        combat
-            .jouer_tour(
-                Action::Attaquer(0),
-                &mut AleatoireScripte::new([2, 100, 2, 85]),
-            )
-            .unwrap();
-        let (joueur, adversaire) = combat.into_monstres();
-        assert_eq!(joueur.pv_actuels(), 16);
-        assert_eq!(adversaire.pv_actuels(), 15);
+    fn defaite_quand_toute_l_equipe_est_ko() {
+        let mut combat = combat(vec![affaibli(lent(), 3)], vec![rapide()]);
+        let evenements = tour(&mut combat, Action::Attaquer(0), &[2, 100]);
+        assert_eq!(
+            evenements.last(),
+            Some(&Evenement::FinDuCombat(Issue::Defaite))
+        );
+        assert_eq!(combat.phase(), Phase::Termine(Issue::Defaite));
+        assert_eq!(
+            combat.jouer_tour(Action::Attaquer(0), &mut AleatoireScripte::new([])),
+            Err(ErreurCombat::CombatTermine)
+        );
+    }
+
+    #[test]
+    fn le_groupe_sauvage_entre_dans_l_ordre() {
+        let mut combat = combat(vec![rapide()], vec![affaibli(lent(), 3), lent()]);
+        let evenements = tour(&mut combat, Action::Attaquer(0), &[2, 100]);
+        assert_eq!(
+            evenements,
+            vec![
+                lancee(j(0), coup()),
+                degats(a(0), 3),
+                Evenement::Ko(a(0)),
+                Evenement::MonstreEnvoye(a(1)),
+            ]
+        );
+        assert_eq!(combat.actif(Cote::Adversaire), a(1));
+        assert_eq!(combat.phase(), Phase::ChoixAction);
+    }
+
+    #[test]
+    fn victoire_quand_tout_le_groupe_est_ko() {
+        let mut combat = combat(vec![rapide()], vec![affaibli(lent(), 3)]);
+        let evenements = tour(&mut combat, Action::Attaquer(0), &[2, 100]);
+        assert_eq!(
+            evenements.last(),
+            Some(&Evenement::FinDuCombat(Issue::Victoire))
+        );
+    }
+
+    #[test]
+    fn la_fuite_laisse_au_moins_un_pv() {
+        let mut combat = combat(vec![affaibli(lent(), 3)], vec![rapide()]);
+        let evenements = tour(&mut combat, Action::Fuir, &[2, 100]);
+        assert_eq!(
+            evenements,
+            vec![
+                lancee(a(0), coup()),
+                degats(j(0), 2),
+                Evenement::Fuite,
+                Evenement::FinDuCombat(Issue::Fuite),
+            ]
+        );
+        assert_eq!(combat.equipe()[0].pv_actuels(), 1);
+        assert!(combat.adversaires_capturables().is_empty());
+    }
+
+    #[test]
+    fn filet_sans_chance_puis_riposte() {
+        let mut combat = combat(vec![rapide()], vec![lent()]);
+        let evenements = tour(&mut combat, Action::LancerFilet, &[2, 100]);
+        assert_eq!(
+            evenements,
+            vec![
+                Evenement::FiletLance {
+                    cible: a(0),
+                    chance: 0,
+                },
+                Evenement::CaptureRatee(a(0)),
+                lancee(a(0), coup()),
+                degats(j(0), 5),
+            ]
+        );
+    }
+
+    #[test]
+    fn capture_ratee_puis_riposte() {
+        let mut combat = combat(vec![rapide()], vec![affaibli(lent(), 2)]);
+        let evenements = tour(&mut combat, Action::LancerFilet, &[91, 2, 100]);
+        assert_eq!(evenements[1], Evenement::CaptureRatee(a(0)));
+        assert_eq!(evenements[2], lancee(a(0), coup()));
+    }
+
+    #[test]
+    fn capture_du_dernier_sauvage_donne_la_victoire() {
+        let mut combat = combat(vec![rapide()], vec![affaibli(lent(), 2)]);
+        let evenements = tour(&mut combat, Action::LancerFilet, &[90]);
+        assert_eq!(
+            evenements,
+            vec![
+                Evenement::FiletLance {
+                    cible: a(0),
+                    chance: 90,
+                },
+                Evenement::CaptureReussie(a(0)),
+                Evenement::FinDuCombat(Issue::Victoire),
+            ]
+        );
+        assert!(combat.adversaires_capturables().is_empty());
+        let bilan = combat.terminer();
+        assert_eq!(bilan.issue, Some(Issue::Victoire));
+        let pv_des_captures: Vec<u32> = bilan.captures.iter().map(Monstre::pv_actuels).collect();
+        assert_eq!(pv_des_captures, vec![2]);
+    }
+
+    #[test]
+    fn plusieurs_monstres_captures_au_filet_dans_un_combat() {
+        let mut combat = combat(
+            vec![rapide()],
+            vec![affaibli(lent(), 2), affaibli(lent(), 2)],
+        );
+        let evenements = tour(&mut combat, Action::LancerFilet, &[90]);
+        assert_eq!(evenements.last(), Some(&Evenement::MonstreEnvoye(a(1))));
+        let evenements = tour(&mut combat, Action::LancerFilet, &[90]);
+        assert_eq!(
+            evenements.last(),
+            Some(&Evenement::FinDuCombat(Issue::Victoire))
+        );
+        assert_eq!(combat.terminer().captures.len(), 2);
+    }
+
+    #[test]
+    fn capture_de_plusieurs_monstres_ko_apres_la_victoire() {
+        let mut combat = combat(
+            vec![rapide()],
+            vec![affaibli(lent(), 3), affaibli(lent(), 3)],
+        );
+        tour(&mut combat, Action::Attaquer(0), &[2, 100]);
+        tour(&mut combat, Action::Attaquer(0), &[2, 100]);
+        assert_eq!(combat.phase(), Phase::Termine(Issue::Victoire));
+        assert_eq!(combat.adversaires_capturables(), vec![0, 1]);
+        assert_eq!(
+            combat.capturer_ko(1),
+            Ok(vec![Evenement::CaptureReussie(a(1))])
+        );
+        assert_eq!(combat.adversaires_capturables(), vec![0]);
+        assert_eq!(
+            combat.capturer_ko(0),
+            Ok(vec![Evenement::CaptureReussie(a(0))])
+        );
+        assert_eq!(
+            combat.capturer_ko(0),
+            Err(ErreurCombat::CaptureImpossible(0))
+        );
+        let captures = combat.terminer().captures;
+        assert_eq!(captures.len(), 2);
+        assert!(captures.iter().all(Monstre::est_ko));
+    }
+
+    #[test]
+    fn capture_au_filet_puis_capture_d_un_ko() {
+        let mut combat = combat(
+            vec![rapide()],
+            vec![affaibli(lent(), 2), affaibli(lent(), 3)],
+        );
+        tour(&mut combat, Action::LancerFilet, &[90]);
+        tour(&mut combat, Action::Attaquer(0), &[2, 100]);
+        assert_eq!(combat.phase(), Phase::Termine(Issue::Victoire));
+        assert_eq!(combat.adversaires_capturables(), vec![1]);
+        combat.capturer_ko(1).unwrap();
+        let pv_des_captures: Vec<u32> = combat
+            .terminer()
+            .captures
+            .iter()
+            .map(Monstre::pv_actuels)
+            .collect();
+        assert_eq!(pv_des_captures, vec![2, 0]);
+    }
+
+    #[test]
+    fn creation_refusee() {
+        assert_eq!(
+            Combat::new(vec![], vec![lent()]),
+            Err(ErreurCombat::EquipeSansMonstreApte)
+        );
+        assert_eq!(
+            Combat::new(vec![affaibli(lent(), 0)], vec![lent()]),
+            Err(ErreurCombat::EquipeSansMonstreApte)
+        );
+        assert_eq!(
+            Combat::new(vec![lent()], vec![]),
+            Err(ErreurCombat::AucunAdversaire)
+        );
+        assert_eq!(
+            Combat::new(vec![lent()], vec![lent(), affaibli(lent(), 0)]),
+            Err(ErreurCombat::AdversaireKo(1))
+        );
+    }
+
+    #[test]
+    fn le_premier_monstre_apte_commence() {
+        let combat = combat(vec![affaibli(lent(), 0), rapide()], vec![lent()]);
+        assert_eq!(combat.actif(Cote::Joueur), j(1));
+    }
+
+    #[test]
+    fn terminer_un_combat_interrompu_rend_l_equipe() {
+        let mut combat = combat(vec![rapide()], vec![lent()]);
+        tour(&mut combat, Action::Attaquer(0), &[2, 100, 2, 85]);
+        let bilan = combat.terminer();
+        assert_eq!(bilan.issue, None);
+        assert_eq!(bilan.equipe[0].pv_actuels(), 16);
+        assert!(bilan.captures.is_empty());
     }
 }

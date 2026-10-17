@@ -71,7 +71,7 @@ L'objectif du jeu est de proposer des boucles de gameplay intéressantes et stim
 - Choix du premier monstre parmi 3, au niveau 5.
 - Une dizaine de monstres sauvages.
 - 1 ou 2 zones d'expédition manuelle (voir Q3).
-- Combat au tour par tour (format Pokémon, section 10), capture au filet et fuite.
+- Combat au tour par tour (format Pokémon, section 10), avec les statuts poison et paralysie, capture au filet et fuite.
 - Camp de base réduit à l'essentiel : soin, gestion de l'équipe (3 monstres avec soi, 30 au camp) et sauvegarde.
 - Valeurs internes et shiny des monstres (section 5.1).
 
@@ -83,6 +83,8 @@ L'objectif du jeu est de proposer des boucles de gameplay intéressantes et stim
 - Marchands, location de monstres, fabrication, améliorations, automatisation, pêche et services rares du camp.
 - Les types Stellaire, Obscur, Lumière et Son, traités dans un second temps (section 5.2).
 - Habiletés et évolution des monstres (sections 5.1 et 5.4).
+- Effet du rôle soutien ou offensif (section 5.1).
+- Combats contre des humains (sections 10.1 et 11.3).
 
 ### 3.3 À trancher pour la V1
 
@@ -112,12 +114,12 @@ Chaque monstre possède :
 
 - un niveau, de 1 à 100 (section 7) ;
 - un à trois types ;
-- un rôle : soutien ou offensif. Ce rôle s'ajoute aux types ;
+- un rôle : soutien ou offensif. Ce rôle s'ajoute aux types ; il n'a pas d'effet dans la V1 ;
 - six stats, comme dans Pokémon : PV, Attaque, Défense, Attaque spéciale, Défense spéciale, Vitesse (section 5.8) ;
 - au plus 4 attaques, chacune d'un seul type, physique ou spéciale (section 10.4) ;
 - des valeurs internes aléatoires, de 0 à 31 pour chaque stat, qui influent sur ses stats (similaires aux IV de Pokémon), ce qui rend chaque monstre unique. Ces valeurs sont visibles dans le résumé du monstre ;
 - une habileté unique (équivalent des talents de Pokémon), qui a un effet secondaire lors des expéditions, des combats, etc. Les habiletés sont hors V1 ;
-- une faible chance d'être "shiny" : sa couleur change, sans incidence sur les stats ;
+- une faible chance d'être "shiny", 1 sur 512 pour un monstre sauvage : sa couleur change, sans incidence sur les stats ;
 - un sprite (une image), pour rendre le jeu plus vivant.
 
 ### 5.2 Types
@@ -231,7 +233,7 @@ Si tous les monstres du joueur sont KO pendant une expédition manuelle :
 Le format reprend celui des combats de Pokémon, comme base de départ qui pourra être ajustée pour se différencier :
 
 - un monstre actif de chaque côté, les autres en réserve ; ils combattent un à un ;
-- possibilité de changer de monstre actif ;
+- possibilité de changer de monstre actif : un changement volontaire est l'action du tour, et l'adversaire attaque le nouveau monstre ; remplacer un monstre KO est gratuit et se fait avant le tour suivant ;
 - ordre d'action déterminé par la vitesse ; en cas d'égalité, tirage au sort à chaque tour ;
 - efficacité des attaques selon la table des types (section 5.2) ;
 - effets de statut ;
@@ -239,7 +241,7 @@ Le format reprend celui des combats de Pokémon, comme base de départ qui pourr
 
 ### 10.3 Fuite
 
-- Le joueur peut fuir, mais ses monstres perdent alors une quantité de PV qui dépend de la difficulté de l'adversaire (voir Q13).
+- Le joueur peut fuir, et la fuite réussit toujours. En partant, le monstre actif du joueur subit une attaque du monstre adverse, résolue normalement (section 10.4), mais qui lui laisse au moins 1 PV : une fuite ne met jamais KO.
 
 ### 10.4 Résolution d'une attaque
 
@@ -253,6 +255,15 @@ Le format reprend celui des combats de Pokémon, comme base de départ qui pourr
   - une attaque qui n'est pas sans effet inflige au moins 1 dégât.
 - Exemple : au niveau 5, une attaque de puissance 40, quand l'Attaque de l'attaquant égale la Défense du défenseur, inflige de 4 à 5 dégâts sans autre modificateur.
 - Le nombre d'utilisations des attaques n'est pas limité dans la V1 (pas d'équivalent des PP de Pokémon).
+- Une attaque peut avoir un effet secondaire : une chance, en pourcentage, d'infliger un statut à la cible quand elle la touche sans la mettre KO (section 10.5).
+
+### 10.5 Effets de statut
+
+- La V1 compte deux statuts, avec les règles actuelles de Pokémon :
+  - poison : le monstre perd 1/8 de ses PV max à la fin de chaque tour (au moins 1 PV) ; les types Poison et Acier y sont immunisés ;
+  - paralysie : la vitesse du monstre est divisée par 2, et il a 1 chance sur 4 de ne pas pouvoir attaquer à chaque tour ; le type Électrique y est immunisé.
+- Un monstre a au plus un statut à la fois : un nouveau statut ne remplace pas l'ancien.
+- Un statut dure après le combat, pendant toute l'expédition, et il est guéri au retour au camp (section 13.1).
 
 ## 11. Obtention des monstres
 
@@ -274,7 +285,11 @@ Le format reprend celui des combats de Pokémon, comme base de départ qui pourr
   - monstre non KO : chances inversement proportionnelles au nombre de PV restants du monstre (moins il a de PV, plus la capture est probable) ;
   - plus le monstre est faible par rapport au joueur, plus la capture est facilitée ;
   - chaque niveau d'amélioration du filet augmente les chances de capture (section 13.5).
-- Destination du monstre capturé lorsque l'équipe ou le camp est plein : à définir (voir Q12).
+- Calcul pour un monstre non KO : chance = PV perdus / PV max x facteur, bornée à 100 %. Le facteur vaut le niveau du monstre actif du joueur divisé par celui du monstre sauvage, borné entre x0,5 et x2. Un monstre à PV pleins ne peut donc pas être capturé. Exemple : à niveau égal, un monstre à 2 PV sur 20 est capturé 9 fois sur 10.
+- Lancer un filet sur le monstre adverse actif est l'action du tour : si la capture échoue, l'adversaire agit. Un monstre sauvage mis KO peut être capturé à la fin du combat, si le joueur l'emporte.
+- Plusieurs monstres peuvent être capturés au cours d'un même combat : chaque monstre d'un groupe sauvage peut l'être, au filet pendant le combat ou, s'il est KO, à la fin d'un combat gagné.
+- Les filets de capture sont illimités dans la V1.
+- Chaque monstre capturé rejoint l'équipe s'il y reste une place, sinon le camp. Si le camp est plein lui aussi, le joueur choisit un monstre à relâcher pour garder sa capture.
 
 ### 11.3 Capture après un combat contre un humain contrôlé par l'IA
 
@@ -412,25 +427,16 @@ Les numéros des questions résolues ne sont pas réattribués, pour que les ré
 - Q7. Réduction de la durée des expéditions automatiques selon le nombre de monstres : division par le nombre de monstres, ou réduction de x% par monstre.
 - Q9. Le héros a-t-il un niveau ?
 - Q10. Courbe d'expérience des monstres.
-- Q12. Destination d'un monstre capturé quand l'équipe (3) ou le camp (30) est plein.
-- Q13. La perte de PV lors d'une fuite peut-elle mettre un monstre KO, et donc provoquer une défaite ?
 - Q15. Contenu de la V1 à trancher : codex, objets de soin.
 
 Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découpage de la V1 en étapes. Chacune indique l'étape de développement qui en a besoin : 1 fondations (types, stats, monstres), 2 combat 1 contre 1, 3 combat complet (changement, statuts, fuite, capture), 4 progression, 5 héros, équipe et camp, 6 expédition manuelle, 7 sauvegarde, 8 contenu et boucle de jeu complète. Le reste de Q15 (codex, objets de soin) concerne les étapes 6 et 8.
 
-- Q19. (Étape 2) Effet concret du rôle soutien ou offensif, en combat et en expédition. Le code suppose pour l'instant que le rôle est porté par l'espèce, et non par chaque monstre : à confirmer.
-- Q25. (Étape 3) Le changement volontaire de monstre actif consomme-t-il le tour ? Le remplacement d'un monstre KO est-il gratuit ?
-- Q26. (Étape 3) Effets de statut présents dans la V1 (par exemple poison, brûlure, paralysie, sommeil, gel) et leurs règles.
-- Q27. (Étape 3) Fuite : réussit-elle toujours ? Quels monstres perdent des PV (le monstre actif ou toute l'équipe) ? Comment se mesure la "difficulté de l'adversaire" qui fixe la perte (complète Q13) ?
-- Q28. (Étape 3) Formule de capture d'un monstre non KO : poids des PV restants, et référence de la comparaison "faible par rapport au joueur" (niveau du monstre actif, niveau moyen de l'équipe ou autre).
-- Q29. (Étape 3) Déroulement d'une capture : une tentative ratée consomme-t-elle le tour ? La capture d'un monstre KO se fait-elle après la victoire ? Face à plusieurs monstres sauvages, peut-on les capturer tous ?
-- Q30. (Étape 3) Filets de capture dans la V1 : nombre limité ou illimité et, s'ils sont limités, leur provenance, puisque marchands et fabrication sont hors V1.
-- Q31. (Étape 3) Combats contre des humains (sections 10.1 et 11.3) inclus ou non dans la V1.
+- Q19. (Après la V1) Effet du rôle soutien ou offensif, en combat et en expédition. Le code porte le rôle sur l'espèce, et non sur chaque monstre : à confirmer.
 - Q32. (Étape 4) Formule de gain d'expérience après un combat, et monstres qui en bénéficient : monstre actif, monstres ayant participé ou toute l'équipe.
 - Q33. (Étape 4) Apprentissage des attaques : à quels niveaux, et choix de l'attaque remplacée lorsque la limite de 4 attaques est atteinte.
 - Q34. (Étape 5) Effet de la classe du héros dans la V1 : bonus accordés aux monstres et actions de soutien (section 4.2). Sans effet, le choix de la classe serait purement descriptif.
 - Q35. (Étape 5) Stats et équipement du héros présents ou non dans la V1 (complète Q6 et Q9).
-- Q36. (Étape 5) Gestion des monstres dans la V1 : nombre minimal de monstres pour partir en expédition, possibilité de relâcher un monstre, possibilité de le renommer (section 5.5).
+- Q36. (Étape 5) Gestion des monstres dans la V1 : nombre minimal de monstres pour partir en expédition, possibilité de relâcher un monstre en dehors d'une capture avec le camp plein (section 11.2), possibilité de le renommer (section 5.5).
 - Q37. (Étape 6) Structure d'une expédition manuelle : nombre d'événements, possibilité de continuer ou de rentrer au camp entre deux événements, condition de fin.
 - Q38. (Étape 6) Événements présents dans la V1 parmi le combat, le monstre rare et le coffre (le marchand est hors V1), et probabilité de chacun.
 - Q39. (Étape 6) Contenu des coffres dans la V1, alors que les ressources n'y ont pas d'usage (fabrication et améliorations hors V1).
@@ -443,6 +449,8 @@ Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découp
 - Q46. (Étape 8) Histoire et tutoriel (section 6) inclus ou non dans la V1, et leur étendue.
 - Q47. (Étape 8) Représentation des sprites dans la console (art ASCII ou aucune image) et signalement d'un monstre shiny à l'écran.
 - Q48. (Étape 2) Un monstre connaît-il toujours au moins une attaque, et peut-il connaître deux fois la même ? Le code suppose pour l'instant au moins une attaque et aucun doublon, comme dans Pokémon : à confirmer.
+- Q49. (Étape 3) Ordre d'entrée des monstres d'un groupe sauvage. Le code les fait entrer dans l'ordre de la rencontre : à confirmer.
+- Q50. (Étape 3) Si le dernier monstre du joueur et le dernier monstre sauvage tombent KO au même tour (par le poison), qui l'emporte ? Le code donne la défaite au joueur, puisque toute son équipe est KO (section 9.3) : à confirmer.
 
 ## 17. Journal des décisions
 
@@ -493,3 +501,21 @@ Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découp
 - Q22 : pas de limite au nombre d'utilisations des attaques dans la V1.
 - Q23 : à vitesse égale, l'ordre d'action est tiré au sort à chaque tour.
 - Q24 : dans la V1, l'IA d'un monstre sauvage choisit son attaque au hasard.
+
+17/10/2026 (étape 3) :
+
+- Q25 : un changement volontaire de monstre actif est l'action du tour ; remplacer un monstre KO est gratuit.
+- Q26 : statuts poison et paralysie dans la V1, avec les règles actuelles de Pokémon ; un statut à la fois, infligé par l'effet secondaire d'une attaque, guéri au camp.
+- Q27 : la fuite réussit toujours ; le monstre actif subit en partant une attaque du monstre adverse.
+- Q13 : cette attaque laisse au moins 1 PV ; une fuite ne met jamais KO.
+- Q28 : chance de capture = PV perdus / PV max x facteur de niveau (monstre actif du joueur contre monstre sauvage, borné entre x0,5 et x2), bornée à 100 %.
+- Q29 : lancer un filet est l'action du tour ; un sauvage KO peut être capturé à la fin d'un combat gagné ; un seul monstre capturé par combat. La limite d'un monstre par combat est remplacée ci-dessous.
+- Q30 : filets illimités dans la V1.
+- Q12 : un monstre capturé va dans l'équipe s'il y a de la place, sinon au camp ; si le camp est plein, le joueur relâche un monstre pour le garder.
+- Q31 : pas de combat contre des humains dans la V1.
+- Q19 en partie : le rôle n'a pas d'effet dans la V1.
+- Un monstre sauvage a 1 chance sur 512 d'être shiny.
+
+17/10/2026 (étape 3, suite) :
+
+- Q29 révisée : plusieurs monstres peuvent être capturés dans un même combat ; chaque monstre d'un groupe sauvage peut l'être, au filet pendant le combat ou KO à la fin d'un combat gagné.

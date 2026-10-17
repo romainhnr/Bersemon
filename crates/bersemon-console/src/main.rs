@@ -1,5 +1,5 @@
 //! Interface console de Bersemon. Pour l'instant, elle propose un combat de
-//! démonstration contre un monstre sauvage.
+//! démonstration contre un groupe de monstres sauvages.
 
 mod affichage;
 mod demo;
@@ -8,56 +8,120 @@ use std::io::{self, BufRead, Write};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use bersemon_core::aleatoire::GenerateurAleatoire;
-use bersemon_core::combat::{Action, Combat, Cote};
+use bersemon_core::combat::{Action, Combat, Cote, ErreurCombat, Evenement, Phase};
 
 fn main() {
     let mut aleatoire = GenerateurAleatoire::new(graine_depuis_horloge());
-    let (joueur, adversaire) = demo::monstres(&mut aleatoire);
-    let mut combat =
-        Combat::new(joueur, adversaire).expect("les monstres de démonstration ont tous leurs PV");
+    let (equipe, groupe) = demo::rencontre(&mut aleatoire);
+    let mut combat = Combat::new(equipe, groupe).expect("la rencontre de démonstration est valide");
     let mut lignes = io::stdin().lock().lines();
 
     println!("Bersemon : combat de démonstration, avec un contenu provisoire.");
-    println!(
-        "{} apparaît !",
-        affichage::nom(combat.adversaire(), Cote::Adversaire)
-    );
-    while combat.issue().is_none() {
-        println!();
-        println!("{}", affichage::etat(&combat));
-        let Some(index) = demander_attaque(&combat, &mut lignes) else {
-            println!();
-            println!("Saisie terminée : combat abandonné.");
-            return;
+    println!("{}", affichage::rencontre(&combat));
+    loop {
+        let resultat = match combat.phase() {
+            Phase::ChoixAction => {
+                println!();
+                println!("{}", affichage::etat(&combat));
+                let Some(action) = choisir_action(&combat, &mut lignes) else {
+                    break;
+                };
+                combat.jouer_tour(action, &mut aleatoire)
+            }
+            Phase::Remplacement => {
+                println!();
+                println!("Quel monstre envoyer ?");
+                println!("{}", affichage::liste_equipe(&combat, false));
+                let nombre = combat.equipe().len();
+                let Some(choix) = lire_choix(&mut lignes, 1, nombre) else {
+                    break;
+                };
+                combat.remplacer(choix - 1)
+            }
+            Phase::Termine(_) => break,
         };
-        match combat.jouer_tour(Action::Attaquer(index), &mut aleatoire) {
-            Ok(evenements) => {
-                for evenement in &evenements {
-                    println!("{}", affichage::evenement(evenement, &combat));
+        afficher(resultat, &combat);
+    }
+
+    // Plusieurs monstres KO peuvent être capturés après une victoire (Q29).
+    loop {
+        let capturables = combat.adversaires_capturables();
+        if capturables.is_empty() {
+            break;
+        }
+        println!();
+        println!("Capturer un monstre KO ?");
+        println!("{}", affichage::liste_capturables(&combat, &capturables));
+        match lire_choix(&mut lignes, 0, capturables.len()) {
+            Some(choix) if choix > 0 => {
+                let resultat = combat.capturer_ko(capturables[choix - 1]);
+                afficher(resultat, &combat);
+            }
+            _ => break,
+        }
+    }
+    println!();
+    println!("{}", affichage::bilan(&combat.terminer()));
+}
+
+/// Rend `None` si l'entrée est fermée. Le choix 0 d'un sous-menu ramène au
+/// menu principal.
+fn choisir_action(
+    combat: &Combat,
+    lignes: &mut impl Iterator<Item = io::Result<String>>,
+) -> Option<Action> {
+    loop {
+        println!("{}", affichage::menu_action(combat));
+        match lire_choix(lignes, 1, 4)? {
+            1 => {
+                let monstre = combat.monstre(combat.actif(Cote::Joueur));
+                println!("{}", affichage::liste_attaques(monstre));
+                let choix = lire_choix(lignes, 0, monstre.attaques().liste().len())?;
+                if choix > 0 {
+                    return Some(Action::Attaquer(choix - 1));
                 }
             }
-            Err(erreur) => println!("Action impossible : {erreur}."),
+            2 => {
+                println!("{}", affichage::liste_equipe(combat, true));
+                let choix = lire_choix(lignes, 0, combat.equipe().len())?;
+                if choix > 0 {
+                    return Some(Action::Changer(choix - 1));
+                }
+            }
+            3 => return Some(Action::LancerFilet),
+            _ => return Some(Action::Fuir),
         }
     }
 }
 
-/// Rend la position de l'attaque choisie, ou None si l'entrée est fermée.
-fn demander_attaque(
-    combat: &Combat,
+/// Redemande tant que la saisie n'est pas un nombre de `min` à `max`. Rend
+/// `None` si l'entrée est fermée.
+fn lire_choix(
     lignes: &mut impl Iterator<Item = io::Result<String>>,
+    min: usize,
+    max: usize,
 ) -> Option<usize> {
-    let nombre = combat.joueur().attaques().liste().len();
-    println!("{}", affichage::liste_attaques(combat.joueur()));
     loop {
-        print!("Votre attaque (1 à {nombre}) : ");
+        print!("Votre choix ({min} à {max}) : ");
         // Sans vidage explicite, l'invite resterait en mémoire tampon jusqu'au
         // prochain saut de ligne. Un échec ici n'empêche pas de jouer.
         let _ = io::stdout().flush();
         let ligne = lignes.next()?.ok()?;
         match ligne.trim().parse::<usize>() {
-            Ok(choix) if (1..=nombre).contains(&choix) => return Some(choix - 1),
-            _ => println!("Choix invalide : entrez un numéro de 1 à {nombre}."),
+            Ok(choix) if (min..=max).contains(&choix) => return Some(choix),
+            _ => println!("Choix invalide : entrez un numéro de {min} à {max}."),
         }
+    }
+}
+
+fn afficher(resultat: Result<Vec<Evenement>, ErreurCombat>, combat: &Combat) {
+    match resultat {
+        Ok(evenements) => {
+            for evenement in &evenements {
+                println!("{}", affichage::evenement(evenement, combat));
+            }
+        }
+        Err(erreur) => println!("{}", affichage::erreur(&erreur)),
     }
 }
 
