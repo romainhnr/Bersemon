@@ -47,6 +47,31 @@ impl Type {
         Type::Tenebres,
         Type::Feerique,
     ];
+
+    /// Nom du type tel qu'il s'écrit dans le jeu, commun à toutes les
+    /// interfaces.
+    pub fn nom(self) -> &'static str {
+        match self {
+            Type::Normal => "Normal",
+            Type::Combat => "Combat",
+            Type::Vol => "Vol",
+            Type::Poison => "Poison",
+            Type::Sol => "Sol",
+            Type::Roche => "Roche",
+            Type::Insecte => "Insecte",
+            Type::Spectre => "Spectre",
+            Type::Acier => "Acier",
+            Type::Feu => "Feu",
+            Type::Eau => "Eau",
+            Type::Plante => "Plante",
+            Type::Electrique => "Électrique",
+            Type::Psychique => "Psychique",
+            Type::Glace => "Glace",
+            Type::Dragon => "Dragon",
+            Type::Tenebres => "Ténèbres",
+            Type::Feerique => "Féérique",
+        }
+    }
 }
 
 /// Types d'un monstre : un à trois types distincts (section 5.1).

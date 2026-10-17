@@ -114,7 +114,7 @@ Chaque monstre possède :
 - un à trois types ;
 - un rôle : soutien ou offensif. Ce rôle s'ajoute aux types ;
 - six stats, comme dans Pokémon : PV, Attaque, Défense, Attaque spéciale, Défense spéciale, Vitesse (section 5.8) ;
-- des attaques, chacune d'un seul type, physique ou spéciale (limite du nombre d'attaques utilisables à définir, voir Q4) ;
+- au plus 4 attaques, chacune d'un seul type, physique ou spéciale (section 10.4) ;
 - des valeurs internes aléatoires, de 0 à 31 pour chaque stat, qui influent sur ses stats (similaires aux IV de Pokémon), ce qui rend chaque monstre unique. Ces valeurs sont visibles dans le résumé du monstre ;
 - une habileté unique (équivalent des talents de Pokémon), qui a un effet secondaire lors des expéditions, des combats, etc. Les habiletés sont hors V1 ;
 - une faible chance d'être "shiny" : sa couleur change, sans incidence sur les stats ;
@@ -224,7 +224,7 @@ Si tous les monstres du joueur sont KO pendant une expédition manuelle :
 
 - Combat au tour par tour.
 - Adversaires possibles : un ou plusieurs monstres, ou un humain (seul ou avec ses monstres, selon la difficulté).
-- L'adversaire est contrôlé par une IA (l'ordinateur, et non un vrai joueur).
+- L'adversaire est contrôlé par une IA (l'ordinateur, et non un vrai joueur). Dans la V1, l'IA d'un monstre sauvage choisit son attaque au hasard.
 
 ### 10.2 Format
 
@@ -232,7 +232,7 @@ Le format reprend celui des combats de Pokémon, comme base de départ qui pourr
 
 - un monstre actif de chaque côté, les autres en réserve ; ils combattent un à un ;
 - possibilité de changer de monstre actif ;
-- ordre d'action déterminé par la vitesse ;
+- ordre d'action déterminé par la vitesse ; en cas d'égalité, tirage au sort à chaque tour ;
 - efficacité des attaques selon la table des types (section 5.2) ;
 - effets de statut ;
 - dégâts toujours tirés dans une fourchette aléatoire (section 1.4).
@@ -240,6 +240,19 @@ Le format reprend celui des combats de Pokémon, comme base de départ qui pourr
 ### 10.3 Fuite
 
 - Le joueur peut fuir, mais ses monstres perdent alors une quantité de PV qui dépend de la difficulté de l'adversaire (voir Q13).
+
+### 10.4 Résolution d'une attaque
+
+- Chaque attaque a un type, une catégorie (physique ou spéciale), une puissance et une précision.
+- Précision : une attaque de précision inférieure à 100 % peut rater ; un tirage en décide à chaque utilisation.
+- Coup critique : 1 chance sur 24 pour chaque attaque qui touche ; dégâts x1,5.
+- Bonus de type : x1,5 quand l'attaque a l'un des types du monstre qui l'utilise.
+- Dégâts, selon la formule de Pokémon, en divisions entières de gauche à droite :
+  - base = (2 x niveau / 5 + 2) x puissance x A / D / 50 + 2, où A et D sont l'Attaque de l'attaquant et la Défense du défenseur pour une attaque physique, l'Attaque spéciale et la Défense spéciale pour une attaque spéciale ;
+  - puis, dans cet ordre et en arrondissant à l'entier inférieur à chaque étape : x1,5 en cas de coup critique, x un pourcentage tiré de 85 % à 100 %, x1,5 pour le bonus de type, x l'efficacité (section 5.2) ;
+  - une attaque qui n'est pas sans effet inflige au moins 1 dégât.
+- Exemple : au niveau 5, une attaque de puissance 40, quand l'Attaque de l'attaquant égale la Défense du défenseur, inflige de 4 à 5 dégâts sans autre modificateur.
+- Le nombre d'utilisations des attaques n'est pas limité dans la V1 (pas d'équivalent des PP de Pokémon).
 
 ## 11. Obtention des monstres
 
@@ -394,7 +407,6 @@ Les numéros des questions résolues ne sont pas réattribués, pour que les ré
 
 - Q2. Les 2 classes disponibles dans la V1, parmi Guerrier, Mage, Templier et Assassin.
 - Q3. Les zones de la V1 : 1 ou 2, leurs noms et leur difficulté.
-- Q4. Nombre maximal d'attaques utilisables par monstre (4 dans Pokémon).
 - Q5. Types Stellaire, Obscur, Lumière et Son (après la V1) : relations d'efficacité, et différence entre les types Ténèbres et Obscur.
 - Q6. Nombre de talismans équipables.
 - Q7. Réduction de la durée des expéditions automatiques selon le nombre de monstres : division par le nombre de monstres, ou réduction de x% par monstre.
@@ -407,11 +419,6 @@ Les numéros des questions résolues ne sont pas réattribués, pour que les ré
 Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découpage de la V1 en étapes. Chacune indique l'étape de développement qui en a besoin : 1 fondations (types, stats, monstres), 2 combat 1 contre 1, 3 combat complet (changement, statuts, fuite, capture), 4 progression, 5 héros, équipe et camp, 6 expédition manuelle, 7 sauvegarde, 8 contenu et boucle de jeu complète. Le reste de Q15 (codex, objets de soin) concerne les étapes 6 et 8.
 
 - Q19. (Étape 2) Effet concret du rôle soutien ou offensif, en combat et en expédition. Le code suppose pour l'instant que le rôle est porté par l'espèce, et non par chaque monstre : à confirmer.
-- Q20. (Étape 2) Formule de dégâts et largeur de la fourchette aléatoire (section 1.4) : reprise de la formule de Pokémon ou formule propre.
-- Q21. (Étape 2) Précision des attaques (une attaque peut-elle échouer ?), coups critiques, et bonus lorsqu'une attaque a le type du monstre qui l'utilise.
-- Q22. (Étape 2) Nombre d'utilisations limité par attaque (équivalent des PP de Pokémon) ou non.
-- Q23. (Étape 2) Départage de deux monstres de même vitesse.
-- Q24. (Étape 2) Comportement de l'IA adverse dans la V1 : attaque au hasard, attaque la plus efficace ou autre.
 - Q25. (Étape 3) Le changement volontaire de monstre actif consomme-t-il le tour ? Le remplacement d'un monstre KO est-il gratuit ?
 - Q26. (Étape 3) Effets de statut présents dans la V1 (par exemple poison, brûlure, paralysie, sommeil, gel) et leurs règles.
 - Q27. (Étape 3) Fuite : réussit-elle toujours ? Quels monstres perdent des PV (le monstre actif ou toute l'équipe) ? Comment se mesure la "difficulté de l'adversaire" qui fixe la perte (complète Q13) ?
@@ -420,7 +427,7 @@ Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découp
 - Q30. (Étape 3) Filets de capture dans la V1 : nombre limité ou illimité et, s'ils sont limités, leur provenance, puisque marchands et fabrication sont hors V1.
 - Q31. (Étape 3) Combats contre des humains (sections 10.1 et 11.3) inclus ou non dans la V1.
 - Q32. (Étape 4) Formule de gain d'expérience après un combat, et monstres qui en bénéficient : monstre actif, monstres ayant participé ou toute l'équipe.
-- Q33. (Étape 4) Apprentissage des attaques : à quels niveaux, et choix de l'attaque remplacée lorsque la limite de Q4 est atteinte.
+- Q33. (Étape 4) Apprentissage des attaques : à quels niveaux, et choix de l'attaque remplacée lorsque la limite de 4 attaques est atteinte.
 - Q34. (Étape 5) Effet de la classe du héros dans la V1 : bonus accordés aux monstres et actions de soutien (section 4.2). Sans effet, le choix de la classe serait purement descriptif.
 - Q35. (Étape 5) Stats et équipement du héros présents ou non dans la V1 (complète Q6 et Q9).
 - Q36. (Étape 5) Gestion des monstres dans la V1 : nombre minimal de monstres pour partir en expédition, possibilité de relâcher un monstre, possibilité de le renommer (section 5.5).
@@ -435,6 +442,7 @@ Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découp
 - Q45. (Étape 8) Espèces rencontrées dans chaque zone de la V1 et fourchette de niveaux (complète Q3).
 - Q46. (Étape 8) Histoire et tutoriel (section 6) inclus ou non dans la V1, et leur étendue.
 - Q47. (Étape 8) Représentation des sprites dans la console (art ASCII ou aucune image) et signalement d'un monstre shiny à l'écran.
+- Q48. (Étape 2) Un monstre connaît-il toujours au moins une attaque, et peut-il connaître deux fois la même ? Le code suppose pour l'instant au moins une attaque et aucun doublon, comme dans Pokémon : à confirmer.
 
 ## 17. Journal des décisions
 
@@ -476,3 +484,12 @@ Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découp
 - Q16 : six stats, comme dans Pokémon (PV, Attaque, Défense, Attaque spéciale, Défense spéciale, Vitesse) ; chaque attaque est physique ou spéciale.
 - Q17 : stats calculées par la formule de Pokémon, sans EV ni nature ; valeurs internes de 0 à 31, tirées uniformément pour chaque stat.
 - Q18 : une attaque a un seul type ; contre plusieurs types, les coefficients se multiplient puis sont bornés entre x0,25 et x4 ; les immunités sont conservées.
+
+17/10/2026 (suite) :
+
+- Q4 : un monstre utilise au plus 4 attaques.
+- Q20 : dégâts calculés par la formule de Pokémon, avec un pourcentage tiré de 85 % à 100 % ; au moins 1 dégât si l'attaque n'est pas sans effet.
+- Q21 : chaque attaque a une précision et peut rater ; coups critiques à 1 chance sur 24, dégâts x1,5 ; bonus de type x1,5.
+- Q22 : pas de limite au nombre d'utilisations des attaques dans la V1.
+- Q23 : à vitesse égale, l'ordre d'action est tiré au sort à chaque tour.
+- Q24 : dans la V1, l'IA d'un monstre sauvage choisit son attaque au hasard.

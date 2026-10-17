@@ -1,6 +1,7 @@
-//! Monstre : un individu d'une espèce, avec son niveau, ses valeurs internes
-//! et ses PV du moment (section 5).
+//! Monstre : un individu d'une espèce, avec son niveau, ses valeurs internes,
+//! ses attaques et ses PV du moment (section 5).
 
+use crate::attaque::AttaquesMonstre;
 use crate::espece::Espece;
 use crate::niveau::Niveau;
 use crate::stats::{Stats, ValeursInternes, calculer_stats};
@@ -10,6 +11,7 @@ pub struct Monstre {
     espece: Espece,
     niveau: Niveau,
     valeurs_internes: ValeursInternes,
+    attaques: AttaquesMonstre,
     shiny: bool,
     pv_actuels: u32,
 }
@@ -22,12 +24,14 @@ impl Monstre {
         espece: Espece,
         niveau: Niveau,
         valeurs_internes: ValeursInternes,
+        attaques: AttaquesMonstre,
         shiny: bool,
     ) -> Self {
         let mut monstre = Self {
             espece,
             niveau,
             valeurs_internes,
+            attaques,
             shiny,
             pv_actuels: 0,
         };
@@ -45,6 +49,10 @@ impl Monstre {
 
     pub fn valeurs_internes(&self) -> &ValeursInternes {
         &self.valeurs_internes
+    }
+
+    pub fn attaques(&self) -> &AttaquesMonstre {
+        &self.attaques
     }
 
     /// Recalculées à chaque appel plutôt que mémorisées, pour qu'elles
@@ -86,9 +94,23 @@ impl Monstre {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::attaque::{Attaque, AttaqueId, Categorie};
     use crate::espece::{EspeceId, Role};
     use crate::stats::StatsDeBase;
     use crate::types::{Type, TypesMonstre};
+
+    fn attaques_de_test() -> AttaquesMonstre {
+        let attaque = Attaque::new(
+            AttaqueId::new("attaque-de-test"),
+            "Attaque de test",
+            Type::Normal,
+            Categorie::Physique,
+            40,
+            100,
+        )
+        .unwrap();
+        AttaquesMonstre::new(vec![attaque]).unwrap()
+    }
 
     fn espece_de_test() -> Espece {
         let base: StatsDeBase = Stats {
@@ -118,7 +140,13 @@ mod tests {
             vitesse: 31,
         })
         .unwrap();
-        Monstre::new(espece_de_test(), Niveau::new(niveau).unwrap(), vi, false)
+        Monstre::new(
+            espece_de_test(),
+            Niveau::new(niveau).unwrap(),
+            vi,
+            attaques_de_test(),
+            false,
+        )
     }
 
     #[test]
@@ -159,7 +187,13 @@ mod tests {
     #[test]
     fn shiny_conserve() {
         let vi = *monstre_de_test(5).valeurs_internes();
-        let monstre = Monstre::new(espece_de_test(), Niveau::new(5).unwrap(), vi, true);
+        let monstre = Monstre::new(
+            espece_de_test(),
+            Niveau::new(5).unwrap(),
+            vi,
+            attaques_de_test(),
+            true,
+        );
         assert!(monstre.est_shiny());
     }
 }
