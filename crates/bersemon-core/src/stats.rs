@@ -9,7 +9,7 @@ use crate::niveau::Niveau;
 ///
 /// Une attaque physique oppose l'Attaque à la Défense, une attaque spéciale
 /// l'Attaque spéciale à la Défense spéciale.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Stats<T> {
     pub pv: T,
     pub attaque: T,
@@ -23,6 +23,27 @@ pub struct Stats<T> {
 /// chaque monstre. u16 suffit largement et garantit que le calcul ne
 /// déborde pas en u32.
 pub type StatsDeBase = Stats<u16>;
+
+/// Pourcentage ajouté à chaque stat, comme le bonus de la classe du héros
+/// (section 4.2).
+pub type BonusDeStats = Stats<u8>;
+
+/// Chaque stat est augmentée de son pourcentage de bonus, arrondi à l'entier
+/// inférieur.
+pub fn appliquer_bonus(stats: &Stats<u32>, bonus: &BonusDeStats) -> Stats<u32> {
+    let majorer = |valeur: u32, pourcentage: u8| {
+        let majoree = u64::from(valeur) * (100 + u64::from(pourcentage)) / 100;
+        u32::try_from(majoree).unwrap_or(u32::MAX)
+    };
+    Stats {
+        pv: majorer(stats.pv, bonus.pv),
+        attaque: majorer(stats.attaque, bonus.attaque),
+        defense: majorer(stats.defense, bonus.defense),
+        attaque_speciale: majorer(stats.attaque_speciale, bonus.attaque_speciale),
+        defense_speciale: majorer(stats.defense_speciale, bonus.defense_speciale),
+        vitesse: majorer(stats.vitesse, bonus.vitesse),
+    }
+}
 
 /// Valeurs internes d'un monstre, de 0 à 31 pour chaque stat (Q17) : elles
 /// rendent chaque monstre unique.
@@ -193,6 +214,24 @@ mod tests {
             ValeursInternes::new(valeurs),
             Err(ErreurValeursInternes { valeur: 32 })
         );
+    }
+
+    #[test]
+    fn bonus_de_dix_pour_cent_arrondi_a_l_inferieur() {
+        let stats = Stats {
+            attaque: 55,
+            defense: 105,
+            ..uniformes(20)
+        };
+        let bonus = Stats {
+            attaque: 10,
+            defense: 10,
+            ..Stats::default()
+        };
+        let majorees = appliquer_bonus(&stats, &bonus);
+        assert_eq!(majorees.attaque, 60);
+        assert_eq!(majorees.defense, 115);
+        assert_eq!(majorees.vitesse, 20);
     }
 
     #[test]

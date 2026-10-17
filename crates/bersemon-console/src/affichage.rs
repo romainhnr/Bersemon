@@ -1,16 +1,16 @@
-//! Mise en texte, pour la console, de l'état et des événements d'un combat.
-//! Les phrases évitent les accords en genre, que le nom de l'espèce ne
-//! permet pas de connaître.
+//! Mise en texte, pour la console, de l'état du jeu et des événements. Les
+//! phrases évitent les accords en genre, que le nom d'un monstre ne permet pas
+//! de connaître. Les numéros affichés au joueur commencent à 1, les positions
+//! du noyau à 0.
 
 use bersemon_core::attaque::{Attaque, Categorie};
-use bersemon_core::combat::{
-    BilanCombat, Combat, Combattant, Cote, ErreurCombat, Evenement, Issue,
-};
+use bersemon_core::collection::{Collection, ErreurCollection};
+use bersemon_core::combat::{Combat, Combattant, Cote, ErreurCombat, Evenement, Issue};
+use bersemon_core::espece::Espece;
 use bersemon_core::monstre::{Monstre, RapportExperience};
 use bersemon_core::statut::Statut;
 use bersemon_core::types::Efficacite;
 
-/// Les positions du noyau commencent à 0, les numéros affichés au joueur à 1.
 pub fn erreur(erreur: &ErreurCombat) -> String {
     match erreur {
         ErreurCombat::AttaqueInexistante(index) => {
@@ -29,8 +29,26 @@ pub fn erreur(erreur: &ErreurCombat) -> String {
     }
 }
 
+pub fn erreur_collection(erreur: &ErreurCollection) -> String {
+    match erreur {
+        ErreurCollection::EmplacementInexistant(_) => "Ce monstre n'existe pas.".to_string(),
+        ErreurCollection::EquipePleine => format!(
+            "L'équipe compte déjà {} monstres.",
+            Collection::TAILLE_EQUIPE
+        ),
+        ErreurCollection::CampPlein => {
+            format!("Le camp est plein ({} monstres).", Collection::TAILLE_CAMP)
+        }
+        ErreurCollection::DernierMonstreDeLEquipe => {
+            "L'équipe doit garder au moins un monstre.".to_string()
+        }
+        autre => format!("Action impossible : {autre}."),
+    }
+}
+
+/// Nom du monstre, suivi de "sauvage" pour un adversaire.
 pub fn nom(monstre: &Monstre, cote: Cote) -> String {
-    let mut nom = monstre.espece().nom().to_string();
+    let mut nom = monstre.nom().to_string();
     if cote == Cote::Adversaire {
         nom.push_str(" sauvage");
     }
@@ -40,13 +58,70 @@ pub fn nom(monstre: &Monstre, cote: Cote) -> String {
     nom
 }
 
+pub fn liste_especes(especes: &[Espece]) -> String {
+    especes
+        .iter()
+        .enumerate()
+        .map(|(position, espece)| {
+            let types: Vec<&str> = espece
+                .types()
+                .liste()
+                .iter()
+                .map(|type_monstre| type_monstre.nom())
+                .collect();
+            format!(
+                "  {}. {} ({})",
+                position + 1,
+                espece.nom(),
+                types.join(", ")
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+/// Équipe puis camp, numérotés à la suite : l'équipe de 1 à 3, le camp
+/// ensuite.
+pub fn collection(collection: &Collection) -> String {
+    let equipe = collection.equipe();
+    let camp = collection.camp();
+    let mut lignes = vec![format!(
+        "Équipe ({}/{}) :",
+        equipe.len(),
+        Collection::TAILLE_EQUIPE
+    )];
+    for (index, monstre) in equipe.iter().enumerate() {
+        lignes.push(format!(
+            "  {}. {}",
+            index + 1,
+            ligne_monstre(monstre, Cote::Joueur)
+        ));
+    }
+    lignes.push(format!(
+        "Camp ({}/{}) :",
+        camp.len(),
+        Collection::TAILLE_CAMP
+    ));
+    if camp.is_empty() {
+        lignes.push("  aucun monstre".to_string());
+    }
+    for (index, monstre) in camp.iter().enumerate() {
+        lignes.push(format!(
+            "  {}. {}",
+            equipe.len() + index + 1,
+            ligne_monstre(monstre, Cote::Joueur)
+        ));
+    }
+    lignes.join("\n")
+}
+
 pub fn rencontre(combat: &Combat) -> String {
     let noms: Vec<String> = combat
         .adversaires()
         .iter()
-        .map(|monstre| monstre.espece().nom().to_string())
+        .map(|monstre| nom(monstre, Cote::Adversaire))
         .collect();
-    format!("Des monstres sauvages surgissent : {}.", noms.join(", "))
+    format!("Des monstres surgissent : {}.", noms.join(", "))
 }
 
 pub fn etat(combat: &Combat) -> String {
@@ -68,14 +143,14 @@ pub fn etat(combat: &Combat) -> String {
         "En face : {}",
         ligne_monstre(combat.monstre(adversaire), Cote::Adversaire)
     ));
-    let en_reserve = combat
+    let en_attente = combat
         .adversaires()
         .iter()
         .enumerate()
         .filter(|&(index, monstre)| index > adversaire.index && !monstre.est_ko())
         .count();
-    if en_reserve > 0 {
-        lignes.push(format!("  et {en_reserve} autre(s) monstre(s) en attente"));
+    if en_attente > 0 {
+        lignes.push(format!("  et {en_attente} autre(s) monstre(s) en attente"));
     }
     lignes.join("\n")
 }
@@ -175,16 +250,13 @@ pub fn evenement(evenement: &Evenement, combat: &Combat) -> String {
             format!("Le poison fait perdre {degats} PV à {}.", nom_de(*cible))
         }
         Evenement::Ko(combattant) => format!("{} est KO.", nom_de(*combattant)),
-        Evenement::FiletLance { cible, chance } => {
-            format!(
-                "Vous lancez un filet sur {} ({chance} % de chances).",
-                nom_de(*cible)
-            )
-        }
-        Evenement::CaptureReussie(cible) => format!(
-            "Capture réussie : {}.",
-            combat.monstre(*cible).espece().nom()
+        Evenement::FiletLance { cible, chance } => format!(
+            "Vous lancez un filet sur {} ({chance} % de chances).",
+            nom_de(*cible)
         ),
+        Evenement::CaptureReussie(cible) => {
+            format!("Capture réussie : {}.", combat.monstre(*cible).nom())
+        }
         Evenement::CaptureRatee(cible) => format!("{} se dégage du filet.", nom_de(*cible)),
         Evenement::Fuite => "Vous prenez la fuite.".to_string(),
         Evenement::FinDuCombat(Issue::Victoire) => "Victoire !".to_string(),
@@ -243,26 +315,7 @@ pub fn remplacement(monstre: &Monstre, oubliee: &Attaque, nouvelle: &Attaque) ->
     )
 }
 
-pub fn bilan(bilan: &BilanCombat) -> String {
-    let issue = match bilan.issue {
-        Some(Issue::Victoire) => "victoire",
-        Some(Issue::Defaite) => "défaite",
-        Some(Issue::Fuite) => "fuite",
-        None => "combat interrompu",
-    };
-    let mut lignes = vec![format!("Bilan : {issue}.")];
-    for monstre in &bilan.equipe {
-        lignes.push(format!("  {}", ligne_monstre(monstre, Cote::Joueur)));
-    }
-    if !bilan.captures.is_empty() {
-        lignes.push("Monstres capturés :".to_string());
-        for capture in &bilan.captures {
-            lignes.push(format!("  {}", ligne_monstre(capture, Cote::Joueur)));
-        }
-    }
-    lignes.join("\n")
-}
-
+/// Avec un surnom, le nom de l'espèce reste visible entre parenthèses.
 fn ligne_monstre(monstre: &Monstre, cote: Cote) -> String {
     let etat = if monstre.est_ko() {
         ", KO".to_string()
@@ -273,8 +326,13 @@ fn ligne_monstre(monstre: &Monstre, cote: Cote) -> String {
             None => String::new(),
         }
     };
+    let espece = if monstre.surnom().is_some() {
+        format!("{}, ", monstre.espece().nom())
+    } else {
+        String::new()
+    };
     format!(
-        "{} (niv. {}) : {}/{} PV{etat}",
+        "{} ({espece}niv. {}) : {}/{} PV{etat}",
         nom(monstre, cote),
         monstre.niveau().valeur(),
         monstre.pv_actuels(),

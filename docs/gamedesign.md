@@ -67,7 +67,7 @@ L'objectif du jeu est de proposer des boucles de gameplay intéressantes et stim
 ### 3.1 Inclus
 
 - Interface console.
-- Création du héros avec 2 classes parmi les 4 (voir Q2).
+- Création du héros : un nom et une classe, Guerrier ou Mage (section 4).
 - Choix du premier monstre parmi 3, au niveau 5.
 - Une dizaine de monstres sauvages.
 - 1 ou 2 zones d'expédition manuelle (voir Q3).
@@ -84,6 +84,7 @@ L'objectif du jeu est de proposer des boucles de gameplay intéressantes et stim
 - Les types Stellaire, Obscur, Lumière et Son, traités dans un second temps (section 5.2).
 - Habiletés et évolution des monstres (sections 5.1 et 5.4).
 - Effet du rôle soutien ou offensif (section 5.1).
+- Classes Templier et Assassin ; niveau, stats et équipement du héros ; actions de soutien des classes (section 4).
 - Combats contre des humains (sections 10.1 et 11.3).
 
 ### 3.3 À trancher pour la V1
@@ -99,11 +100,13 @@ L'objectif du jeu est de proposer des boucles de gameplay intéressantes et stim
   - ses stats ;
   - son équipement : armes, armure, x talismans (nombre à définir, voir Q6) ;
   - ses monstres.
+- Dans la V1, le héros se résume à un nom, choisi librement par le joueur (de 1 à 20 caractères), et à une classe, Guerrier ou Mage. Il n'a ni niveau, ni stats, ni équipement.
 
 ### 4.2 Rôle en combat
 
 - Pour le moment, seuls les monstres combattent, un à un. Le héros ne combat pas et n'a pas de PV en combat.
 - La classe et l'équipement du héros donnent des bonus aux monstres et quelques actions de soutien, par exemple des ordres ou l'utilisation d'objets.
+- Bonus de classe : en combat, les monstres du joueur ont +10 % dans une stat, arrondi à l'entier inférieur. Guerrier : Attaque. Mage : Attaque spéciale. Après la V1, Templier : Défense et Défense spéciale ; Assassin : Vitesse. Les actions de soutien viendront après la V1.
 - À terme, option hybride envisagée : le héros combat lui-même uniquement lorsque tous ses monstres sont KO.
 
 ## 5. Les monstres
@@ -148,7 +151,7 @@ Chaque monstre possède :
 
 Le joueur peut :
 
-- renommer son monstre ;
+- renommer son monstre : un surnom de 1 à 20 caractères, affiché à la place du nom de l'espèce ;
 - ajuster ses attaques ;
 - ajuster ses statistiques à l'aide d'objets ;
 - consulter le codex, par exemple pour savoir quand il évolue.
@@ -294,7 +297,7 @@ Le format reprend celui des combats de Pokémon, comme base de départ qui pourr
 - Lancer un filet sur le monstre adverse actif est l'action du tour : si la capture échoue, l'adversaire agit. Un monstre sauvage mis KO peut être capturé à la fin du combat, si le joueur l'emporte.
 - Plusieurs monstres peuvent être capturés au cours d'un même combat : chaque monstre d'un groupe sauvage peut l'être, au filet pendant le combat ou, s'il est KO, à la fin d'un combat gagné.
 - Les filets de capture sont illimités dans la V1.
-- Chaque monstre capturé rejoint l'équipe s'il y reste une place, sinon le camp. Si le camp est plein lui aussi, le joueur choisit un monstre à relâcher pour garder sa capture.
+- Chaque monstre capturé rejoint l'équipe s'il y reste une place, sinon le camp. Si le camp est plein lui aussi, le joueur relâche un monstre de son choix, du camp ou de l'équipe, et la capture prend sa place ; il peut aussi relâcher la capture elle-même, ce qui revient à y renoncer.
 
 ### 11.3 Capture après un combat contre un humain contrôlé par l'IA
 
@@ -349,6 +352,12 @@ Le format reprend celui des combats de Pokémon, comme base de départ qui pourr
 
 - Le joueur peut laisser certains monstres en sécurité au camp et en emmener d'autres avec lui.
 - Limites de départ : 3 monstres avec le joueur et 30 monstres au camp. Ces limites peuvent être augmentées (section 13.4).
+- Le joueur part en expédition avec 1 à 3 monstres.
+- Au camp, le joueur peut :
+  - échanger des monstres entre son équipe et le camp ;
+  - choisir l'ordre de son équipe : le premier monstre en état de combattre commence chaque combat ;
+  - relâcher un monstre, définitivement et après confirmation, sauf son dernier monstre ;
+  - renommer un monstre (section 5.5).
 
 ### 13.3 Équipement et stockage
 
@@ -425,20 +434,15 @@ Le joueur peut aussi vendre ses objets aux marchands contre de l'argent.
 
 Les numéros des questions résolues ne sont pas réattribués, pour que les références restent stables.
 
-- Q2. Les 2 classes disponibles dans la V1, parmi Guerrier, Mage, Templier et Assassin.
 - Q3. Les zones de la V1 : 1 ou 2, leurs noms et leur difficulté.
 - Q5. Types Stellaire, Obscur, Lumière et Son (après la V1) : relations d'efficacité, et différence entre les types Ténèbres et Obscur.
 - Q6. Nombre de talismans équipables.
 - Q7. Réduction de la durée des expéditions automatiques selon le nombre de monstres : division par le nombre de monstres, ou réduction de x% par monstre.
-- Q9. Le héros a-t-il un niveau ?
 - Q15. Contenu de la V1 à trancher : codex, objets de soin.
 
 Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découpage de la V1 en étapes. Chacune indique l'étape de développement qui en a besoin : 1 fondations (types, stats, monstres), 2 combat 1 contre 1, 3 combat complet (changement, statuts, fuite, capture), 4 progression, 5 héros, équipe et camp, 6 expédition manuelle, 7 sauvegarde, 8 contenu et boucle de jeu complète. Le reste de Q15 (codex, objets de soin) concerne les étapes 6 et 8.
 
 - Q19. (Après la V1) Effet du rôle soutien ou offensif, en combat et en expédition. Le code porte le rôle sur l'espèce, et non sur chaque monstre : à confirmer.
-- Q34. (Étape 5) Effet de la classe du héros dans la V1 : bonus accordés aux monstres et actions de soutien (section 4.2). Sans effet, le choix de la classe serait purement descriptif.
-- Q35. (Étape 5) Stats et équipement du héros présents ou non dans la V1 (complète Q6 et Q9).
-- Q36. (Étape 5) Gestion des monstres dans la V1 : nombre minimal de monstres pour partir en expédition, possibilité de relâcher un monstre en dehors d'une capture avec le camp plein (section 11.2), possibilité de le renommer (section 5.5).
 - Q37. (Étape 6) Structure d'une expédition manuelle : nombre d'événements, possibilité de continuer ou de rentrer au camp entre deux événements, condition de fin.
 - Q38. (Étape 6) Événements présents dans la V1 parmi le combat, le monstre rare et le coffre (le marchand est hors V1), et probabilité de chacun.
 - Q39. (Étape 6) Contenu des coffres dans la V1, alors que les ressources n'y ont pas d'usage (fabrication et améliorations hors V1).
@@ -453,6 +457,8 @@ Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découp
 - Q48. (Étape 2) Un monstre connaît-il toujours au moins une attaque, et peut-il connaître deux fois la même ? Le code suppose pour l'instant au moins une attaque et aucun doublon, comme dans Pokémon : à confirmer.
 - Q49. (Étape 3) Ordre d'entrée des monstres d'un groupe sauvage. Le code les fait entrer dans l'ordre de la rencontre : à confirmer.
 - Q50. (Étape 3) Si le dernier monstre du joueur et le dernier monstre sauvage tombent KO au même tour (par le poison), qui l'emporte ? Le code donne la défaite au joueur, puisque toute son équipe est KO (section 9.3) : à confirmer.
+- Q51. (Étape 5) L'équipe garde-t-elle toujours au moins un monstre, y compris au camp ? Le code l'impose : on ne peut ni envoyer au camp ni relâcher le dernier monstre de l'équipe sans en faire venir un autre d'abord : à confirmer.
+- Q52. (Étape 5) Les monstres de départ ont-ils des valeurs internes tirées au hasard, comme les monstres sauvages ? Le code les tire au hasard, et ils ne sont jamais shiny (la chance de shiny ne concerne que les monstres sauvages) : à confirmer.
 
 ## 17. Journal des décisions
 
@@ -527,3 +533,11 @@ Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découp
 - Q10 : courbe d'expérience n x n x n pour toutes les espèces ; stats recalculées et PV actuels augmentés d'autant que les PV max à chaque niveau.
 - Q32 : XP d'un monstre vaincu (KO ou capturé) = rendement de l'espèce x niveau / 7, x un pourcentage de 90 % à 110 % ; versée en entier à chaque participant non KO, à la fin du combat, quelle que soit l'issue.
 - Q33 : attaques apprises à des niveaux fixés par espèce ; avec 4 attaques connues, le joueur oublie une attaque ou renonce à la nouvelle ; un monstre créé connaît les 4 dernières attaques de sa liste jusqu'à son niveau.
+
+17/10/2026 (étape 5) :
+
+- Q2 : les classes de la V1 sont Guerrier et Mage.
+- Q34 : la classe donne +10 % à une stat des monstres du joueur en combat (Guerrier : Attaque ; Mage : Attaque spéciale ; plus tard Templier : Défense et Défense spéciale, Assassin : Vitesse) ; pas d'action de soutien dans la V1.
+- Q9 et Q35 : dans la V1, le héros n'a ni niveau, ni stats, ni équipement ; il a un nom libre de 1 à 20 caractères et une classe.
+- Q36 : départ en expédition avec 1 à 3 monstres ; au camp, le joueur peut relâcher un monstre (sauf le dernier), le renommer (surnom de 1 à 20 caractères) et choisir l'ordre de son équipe.
+- Q12 précisée : avec l'équipe et le camp pleins, le joueur relâche n'importe lequel de ses monstres, la capture prenant sa place, ou relâche la capture.

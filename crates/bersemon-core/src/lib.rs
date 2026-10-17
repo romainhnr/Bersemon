@@ -8,12 +8,15 @@
 pub mod aleatoire;
 pub mod attaque;
 pub mod capture;
+pub mod collection;
 pub mod combat;
 mod degats;
 pub mod espece;
 pub mod experience;
+pub mod heros;
 pub mod monstre;
 pub mod niveau;
+pub mod nom;
 pub mod stats;
 pub mod statut;
 pub mod types;

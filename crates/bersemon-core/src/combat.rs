@@ -24,6 +24,7 @@ use crate::capture::calculer_chance_capture;
 use crate::degats::{ResultatAttaque, resoudre_attaque};
 use crate::experience::tirer_gain_experience;
 use crate::monstre::{Monstre, RapportExperience};
+use crate::stats::{BonusDeStats, Stats, appliquer_bonus};
 use crate::statut::{CHANCES_BLOCAGE_PARALYSIE, Statut, degats_de_poison};
 use crate::types::Efficacite;
 
@@ -195,6 +196,9 @@ pub struct Combat {
     /// Pour chaque monstre adverse, les monstres de l'équipe qui ont été
     /// actifs face à lui : ce sont eux qui reçoivent son XP (section 7).
     participants: Vec<Vec<usize>>,
+    /// Bonus de la classe du héros, appliqué aux stats des monstres du joueur
+    /// (section 4.2).
+    bonus_joueur: BonusDeStats,
     phase: Phase,
 }
 
@@ -220,10 +224,28 @@ impl Combat {
             adversaires,
             actif_adversaire: 0,
             captures: Vec::new(),
+            bonus_joueur: BonusDeStats::default(),
             phase: Phase::ChoixAction,
         };
         combat.noter_participation();
         Ok(combat)
+    }
+
+    /// Bonus appliqué aux stats des monstres du joueur pendant tout le combat,
+    /// comme celui de la classe du héros (section 4.2).
+    pub fn avec_bonus_du_joueur(mut self, bonus: BonusDeStats) -> Self {
+        self.bonus_joueur = bonus;
+        self
+    }
+
+    /// Stats utilisées en combat : celles du monstre, plus le bonus du joueur
+    /// pour ses monstres.
+    pub fn stats_en_combat(&self, combattant: Combattant) -> Stats<u32> {
+        let stats = self.monstre(combattant).stats();
+        match combattant.cote {
+            Cote::Joueur => appliquer_bonus(&stats, &self.bonus_joueur),
+            Cote::Adversaire => stats,
+        }
     }
 
     pub fn phase(&self) -> Phase {
@@ -507,8 +529,8 @@ impl Combat {
     /// Le plus rapide agit en premier ; à vitesse égale, tirage au sort à
     /// chaque tour (Q23).
     fn ordre_du_tour(&self, aleatoire: &mut dyn Aleatoire) -> [Cote; 2] {
-        let vitesse_joueur = vitesse_en_combat(self.monstre(self.actif(Cote::Joueur)));
-        let vitesse_adversaire = vitesse_en_combat(self.monstre(self.actif(Cote::Adversaire)));
+        let vitesse_joueur = self.vitesse_en_combat(Cote::Joueur);
+        let vitesse_adversaire = self.vitesse_en_combat(Cote::Adversaire);
         let joueur_en_premier = match vitesse_joueur.cmp(&vitesse_adversaire) {
             Ordering::Greater => true,
             Ordering::Less => false,
@@ -543,9 +565,18 @@ impl Combat {
             return;
         }
 
+        let stats_attaquant = self.stats_en_combat(lanceur);
+        let stats_defenseur = self.stats_en_combat(cible);
         let (attaquant, defenseur) = self.attaquant_et_defenseur(cote);
         let attaque = attaquant.attaques().liste()[index_attaque].clone();
-        let resultat = resoudre_attaque(attaquant, &attaque, defenseur, aleatoire);
+        let resultat = resoudre_attaque(
+            attaquant,
+            &stats_attaquant,
+            &attaque,
+            defenseur,
+            &stats_defenseur,
+            aleatoire,
+        );
         let effet = attaque.effet();
         evenements.push(Evenement::AttaqueLancee { lanceur, attaque });
         match resultat {
@@ -664,15 +695,16 @@ impl Combat {
         self.phase = Phase::Termine(issue);
         evenements.push(Evenement::FinDuCombat(issue));
     }
-}
 
-/// La paralysie divise la vitesse par 2 (section 10.5).
-fn vitesse_en_combat(monstre: &Monstre) -> u32 {
-    let vitesse = monstre.stats().vitesse;
-    if monstre.statut() == Some(Statut::Paralysie) {
-        vitesse / 2
-    } else {
-        vitesse
+    /// La paralysie divise la vitesse par 2 (section 10.5), après le bonus.
+    fn vitesse_en_combat(&self, cote: Cote) -> u32 {
+        let combattant = self.actif(cote);
+        let vitesse = self.stats_en_combat(combattant).vitesse;
+        if self.monstre(combattant).statut() == Some(Statut::Paralysie) {
+            vitesse / 2
+        } else {
+            vitesse
+        }
     }
 }
 
@@ -1279,5 +1311,36 @@ mod tests {
         let rapport = bilan.experience[0].as_ref().unwrap();
         assert_eq!(rapport.experience_gagnee, 100);
         assert_eq!(rapport.niveau_apres, Niveau::new(6).unwrap());
+    }
+
+    fn bonus_d_attaque() -> BonusDeStats {
+        Stats {
+            attaque: 10,
+            ..Stats::default()
+        }
+    }
+
+    #[test]
+    fn le_bonus_du_joueur_ne_touche_que_ses_monstres() {
+        let combat = combat(vec![rapide()], vec![lent()]).avec_bonus_du_joueur(bonus_d_attaque());
+        assert_eq!(combat.stats_en_combat(j(0)).attaque, 11);
+        assert_eq!(combat.stats_en_combat(a(0)).attaque, 10);
+    }
+
+    #[test]
+    fn le_bonus_d_attaque_augmente_les_degats() {
+        // Au niveau 50 : 55 dans chaque stat. Le coup inflige 19 dégâts, et 21
+        // avec les 60 d'Attaque que donne le bonus.
+        let base_rapide = Stats {
+            vitesse: 60,
+            ..stats_uniformes(50)
+        };
+        let joueur = monstre(&[Type::Feu], base_rapide, 50, vec![coup()]);
+        let adversaire = monstre(&[Type::Feu], stats_uniformes(50), 50, vec![coup()]);
+        let mut combat =
+            combat(vec![joueur], vec![adversaire]).avec_bonus_du_joueur(bonus_d_attaque());
+        let evenements = tour(&mut combat, Action::Attaquer(0), &[2, 100, 2, 100]);
+        assert_eq!(evenements[1], degats(a(0), 21));
+        assert_eq!(evenements[3], degats(j(0), 19));
     }
 }

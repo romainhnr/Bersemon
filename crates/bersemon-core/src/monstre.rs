@@ -1,12 +1,13 @@
-//! Monstre : un individu d'une espèce, avec son niveau, son expérience, ses
-//! valeurs internes, ses attaques, ses PV et son statut du moment (sections 5
-//! et 7).
+//! Monstre : un individu d'une espèce, avec son éventuel surnom, son niveau,
+//! son expérience, ses valeurs internes, ses attaques, ses PV et son statut
+//! du moment (sections 5 et 7).
 
 use crate::aleatoire::Aleatoire;
 use crate::attaque::{Attaque, AttaquesMonstre, ErreurAttaquesMonstre};
 use crate::espece::Espece;
 use crate::experience::experience_requise;
 use crate::niveau::Niveau;
+use crate::nom::Nom;
 use crate::stats::{Stats, ValeursInternes, calculer_stats};
 use crate::statut::Statut;
 
@@ -34,6 +35,7 @@ pub struct RapportExperience {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Monstre {
     espece: Espece,
+    surnom: Option<Nom>,
     niveau: Niveau,
     experience: u32,
     valeurs_internes: ValeursInternes,
@@ -56,6 +58,7 @@ impl Monstre {
     ) -> Self {
         let mut monstre = Self {
             espece,
+            surnom: None,
             niveau,
             experience: experience_requise(niveau),
             valeurs_internes,
@@ -90,6 +93,20 @@ impl Monstre {
 
     pub fn espece(&self) -> &Espece {
         &self.espece
+    }
+
+    pub fn surnom(&self) -> Option<&Nom> {
+        self.surnom.as_ref()
+    }
+
+    /// Le surnom s'il y en a un, sinon le nom de l'espèce (section 5.5).
+    pub fn nom(&self) -> &str {
+        self.surnom.as_ref().map_or(self.espece.nom(), Nom::as_str)
+    }
+
+    /// `None` efface le surnom.
+    pub fn renommer(&mut self, surnom: Option<Nom>) {
+        self.surnom = surnom;
     }
 
     pub fn niveau(&self) -> Niveau {
@@ -477,5 +494,15 @@ mod tests {
         monstre.subir_degats(u32::MAX);
         monstre.gagner_experience(91);
         assert!(monstre.est_ko());
+    }
+
+    #[test]
+    fn le_surnom_remplace_le_nom_de_l_espece() {
+        let mut monstre = cree(5);
+        assert_eq!(monstre.nom(), "Espèce de test");
+        monstre.renommer(Some(Nom::new("Braise").unwrap()));
+        assert_eq!(monstre.nom(), "Braise");
+        monstre.renommer(None);
+        assert_eq!(monstre.nom(), "Espèce de test");
     }
 }

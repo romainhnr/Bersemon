@@ -8,6 +8,7 @@
 use crate::aleatoire::Aleatoire;
 use crate::attaque::{Attaque, Categorie};
 use crate::monstre::Monstre;
+use crate::stats::Stats;
 use crate::types::{Efficacite, efficacite};
 
 /// Un coup critique sur 24 (Q21).
@@ -27,12 +28,15 @@ pub(crate) enum ResultatAttaque {
     },
 }
 
+/// Les stats sont celles du combat, bonus de classe compris (section 4.2).
 /// Tirages, dans l'ordre : précision (seulement si elle est inférieure à
 /// 100 %), coup critique, pourcentage de dégâts.
 pub(crate) fn resoudre_attaque(
     attaquant: &Monstre,
+    stats_attaquant: &Stats<u32>,
     attaque: &Attaque,
     defenseur: &Monstre,
+    stats_defenseur: &Stats<u32>,
     aleatoire: &mut dyn Aleatoire,
 ) -> ResultatAttaque {
     let efficacite = efficacite(attaque.type_attaque(), defenseur.espece().types());
@@ -49,8 +53,6 @@ pub(crate) fn resoudre_attaque(
     let critique = aleatoire.tirer(1..=CHANCES_CRITIQUE) == 1;
     let pourcentage = aleatoire.tirer(POURCENTAGE_MIN..=POURCENTAGE_MAX);
 
-    let stats_attaquant = attaquant.stats();
-    let stats_defenseur = defenseur.stats();
     let (stat_attaque, stat_defense) = match attaque.categorie() {
         Categorie::Physique => (stats_attaquant.attaque, stats_defenseur.defense),
         Categorie::Speciale => (
@@ -211,6 +213,23 @@ mod tests {
         attaque("coup", Type::Normal, Categorie::Physique, 40, precision)
     }
 
+    /// Résolution avec les stats propres des monstres, sans bonus.
+    fn resoudre(
+        attaquant: &Monstre,
+        attaque: &Attaque,
+        defenseur: &Monstre,
+        aleatoire: &mut dyn Aleatoire,
+    ) -> ResultatAttaque {
+        resoudre_attaque(
+            attaquant,
+            &attaquant.stats(),
+            attaque,
+            defenseur,
+            &defenseur.stats(),
+            aleatoire,
+        )
+    }
+
     fn feu_niveau_5() -> Monstre {
         monstre(
             &[Type::Feu],
@@ -231,7 +250,7 @@ mod tests {
         );
         let mut aleatoire = AleatoireScripte::new([]);
         assert_eq!(
-            resoudre_attaque(&attaquant, &coup_de_test(50), &spectre, &mut aleatoire),
+            resoudre(&attaquant, &coup_de_test(50), &spectre, &mut aleatoire),
             ResultatAttaque::SansEffet
         );
     }
@@ -241,7 +260,7 @@ mod tests {
         let (attaquant, defenseur) = (feu_niveau_5(), feu_niveau_5());
         let mut aleatoire = AleatoireScripte::new([2, 100]);
         assert_eq!(
-            resoudre_attaque(&attaquant, &coup_de_test(100), &defenseur, &mut aleatoire),
+            resoudre(&attaquant, &coup_de_test(100), &defenseur, &mut aleatoire),
             ResultatAttaque::Touchee {
                 degats: 5,
                 critique: false,
@@ -255,7 +274,7 @@ mod tests {
         let (attaquant, defenseur) = (feu_niveau_5(), feu_niveau_5());
         let mut aleatoire = AleatoireScripte::new([91]);
         assert_eq!(
-            resoudre_attaque(&attaquant, &coup_de_test(90), &defenseur, &mut aleatoire),
+            resoudre(&attaquant, &coup_de_test(90), &defenseur, &mut aleatoire),
             ResultatAttaque::Ratee
         );
     }
@@ -265,7 +284,7 @@ mod tests {
         let (attaquant, defenseur) = (feu_niveau_5(), feu_niveau_5());
         let mut aleatoire = AleatoireScripte::new([90, 2, 85]);
         assert_eq!(
-            resoudre_attaque(&attaquant, &coup_de_test(90), &defenseur, &mut aleatoire),
+            resoudre(&attaquant, &coup_de_test(90), &defenseur, &mut aleatoire),
             ResultatAttaque::Touchee {
                 degats: 4,
                 critique: false,
@@ -279,7 +298,7 @@ mod tests {
         let (attaquant, defenseur) = (feu_niveau_5(), feu_niveau_5());
         let mut aleatoire = AleatoireScripte::new([1, 100]);
         assert_eq!(
-            resoudre_attaque(&attaquant, &coup_de_test(100), &defenseur, &mut aleatoire),
+            resoudre(&attaquant, &coup_de_test(100), &defenseur, &mut aleatoire),
             ResultatAttaque::Touchee {
                 degats: 7,
                 critique: true,
@@ -310,7 +329,7 @@ mod tests {
 
         let degats = |attaquant: &Monstre, attaque: &Attaque| {
             let mut aleatoire = AleatoireScripte::new([2, 100]);
-            match resoudre_attaque(attaquant, attaque, &defenseur, &mut aleatoire) {
+            match resoudre(attaquant, attaque, &defenseur, &mut aleatoire) {
                 ResultatAttaque::Touchee { degats, .. } => degats,
                 autre => panic!("attaque censée toucher : {autre:?}"),
             }

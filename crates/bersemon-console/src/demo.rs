@@ -1,6 +1,6 @@
-//! Contenu provisoire du combat de démonstration, en attendant le bestiaire
-//! de la V1 (Q44) : ces espèces, leurs attaques et leurs rendements ne sont
-//! pas des décisions de game design.
+//! Contenu provisoire, en attendant le bestiaire et les zones de la V1 (Q3,
+//! Q44, Q45) : ces espèces, leurs attaques, leurs rendements, les niveaux et
+//! la taille des groupes sauvages ne sont pas des décisions de game design.
 
 use bersemon_core::aleatoire::Aleatoire;
 use bersemon_core::attaque::{Attaque, AttaqueId, Categorie, EffetSecondaire};
@@ -11,183 +11,153 @@ use bersemon_core::stats::{Stats, StatsDeBase, ValeursInternes};
 use bersemon_core::statut::Statut;
 use bersemon_core::types::{Type, TypesMonstre};
 
-/// Rend l'équipe du joueur puis le groupe sauvage, tous au niveau 5. La
-/// Salamandre apprend deux attaques au niveau 6, la seconde sans place libre,
-/// pour montrer le choix de l'attaque à oublier.
-pub fn rencontre(aleatoire: &mut dyn Aleatoire) -> (Vec<Monstre>, Vec<Monstre>) {
-    let salamandre = espece(
+/// Le monstre de départ est au niveau 5 (section 6).
+const NIVEAU_DE_DEPART: u8 = 5;
+
+/// Les trois espèces proposées au départ.
+pub fn especes_de_depart() -> Vec<Espece> {
+    vec![salamandre(), crapaud(), mandragore()]
+}
+
+/// Valeurs internes tirées au hasard, jamais shiny (Q52).
+pub fn monstre_de_depart(espece: Espece, aleatoire: &mut dyn Aleatoire) -> Monstre {
+    creer(espece, NIVEAU_DE_DEPART, false, aleatoire)
+}
+
+/// Un ou deux monstres sauvages, du niveau 3 au niveau 5.
+pub fn groupe_sauvage(aleatoire: &mut dyn Aleatoire) -> Vec<Monstre> {
+    let taille = aleatoire.tirer(1..=2);
+    (0..taille)
+        .map(|_| {
+            let mut especes = vec![loup(), vipere(), corbeau()];
+            let index = aleatoire.tirer(0..=(especes.len() - 1) as u32) as usize;
+            let espece = especes.swap_remove(index);
+            let niveau = aleatoire.tirer(3..=5) as u8;
+            let shiny = tirer_shiny(aleatoire);
+            creer(espece, niveau, shiny, aleatoire)
+        })
+        .collect()
+}
+
+fn salamandre() -> Espece {
+    espece(
         "salamandre",
         "Salamandre",
         Type::Feu,
-        Stats {
-            pv: 45,
-            attaque: 50,
-            defense: 40,
-            attaque_speciale: 60,
-            defense_speciale: 50,
-            vitesse: 65,
-        },
+        base(45, 50, 40, 60, 50, 65),
         62,
         vec![
             apprise(
                 1,
-                attaque(
-                    "coup-de-queue",
-                    "Coup de queue",
-                    Type::Normal,
-                    Categorie::Physique,
-                    40,
-                    100,
-                ),
+                physique("coup-de-queue", "Coup de queue", Type::Normal, 40, 100),
             ),
             apprise(
                 3,
-                attaque(
+                speciale(
                     "crachat-de-braises",
                     "Crachat de braises",
                     Type::Feu,
-                    Categorie::Speciale,
                     40,
                     100,
                 ),
             ),
+            apprise(5, speciale("flamme-vive", "Flamme vive", Type::Feu, 70, 75)),
             apprise(
-                5,
-                attaque(
-                    "flamme-vive",
-                    "Flamme vive",
-                    Type::Feu,
-                    Categorie::Speciale,
-                    70,
-                    75,
-                ),
+                6,
+                physique("morsure-ardente", "Morsure ardente", Type::Feu, 55, 95),
             ),
             apprise(
                 6,
-                attaque(
-                    "morsure-ardente",
-                    "Morsure ardente",
-                    Type::Feu,
-                    Categorie::Physique,
-                    55,
-                    95,
-                ),
-            ),
-            apprise(
-                6,
-                attaque(
-                    "fouet-de-queue",
-                    "Fouet de queue",
-                    Type::Normal,
-                    Categorie::Physique,
-                    50,
-                    100,
-                ),
+                physique("fouet-de-queue", "Fouet de queue", Type::Normal, 50, 100),
             ),
         ],
-    );
-    let corbeau = espece(
-        "corbeau",
-        "Corbeau",
-        Type::Vol,
-        Stats {
-            pv: 40,
-            attaque: 55,
-            defense: 35,
-            attaque_speciale: 40,
-            defense_speciale: 35,
-            vitesse: 70,
-        },
-        58,
+    )
+}
+
+fn crapaud() -> Espece {
+    espece(
+        "crapaud",
+        "Crapaud",
+        Type::Eau,
+        base(50, 50, 55, 50, 50, 45),
+        63,
         vec![
             apprise(
                 1,
-                attaque(
-                    "coup-de-bec",
-                    "Coup de bec",
-                    Type::Vol,
-                    Categorie::Physique,
-                    35,
+                physique("charge-gluante", "Charge gluante", Type::Normal, 40, 100),
+            ),
+            apprise(
+                3,
+                speciale("jet-de-vase", "Jet de vase", Type::Eau, 40, 100),
+            ),
+            apprise(
+                6,
+                speciale("crachat-amer", "Crachat amer", Type::Poison, 35, 100)
+                    .avec_effet(effet(Statut::Poison, 30)),
+            ),
+        ],
+    )
+}
+
+fn mandragore() -> Espece {
+    espece(
+        "mandragore",
+        "Mandragore",
+        Type::Plante,
+        base(55, 45, 50, 55, 55, 40),
+        64,
+        vec![
+            apprise(
+                1,
+                physique("coup-de-racine", "Coup de racine", Type::Normal, 40, 100),
+            ),
+            apprise(
+                3,
+                speciale(
+                    "feuille-tranchante",
+                    "Feuille tranchante",
+                    Type::Plante,
+                    40,
                     100,
                 ),
             ),
             apprise(
-                4,
-                attaque("pique", "Piqué", Type::Vol, Categorie::Physique, 60, 90),
-            ),
-            apprise(
                 6,
-                attaque(
-                    "cri-percant",
-                    "Cri perçant",
-                    Type::Normal,
-                    Categorie::Speciale,
-                    40,
-                    100,
-                )
-                .avec_effet(effet(Statut::Paralysie, 10)),
+                speciale("cri-strident", "Cri strident", Type::Normal, 40, 100)
+                    .avec_effet(effet(Statut::Paralysie, 20)),
             ),
         ],
-    );
-    let loup = espece(
+    )
+}
+
+fn loup() -> Espece {
+    espece(
         "loup",
         "Loup",
         Type::Normal,
-        Stats {
-            pv: 50,
-            attaque: 60,
-            defense: 45,
-            attaque_speciale: 30,
-            defense_speciale: 40,
-            vitesse: 55,
-        },
+        base(50, 60, 45, 30, 40, 55),
         80,
         vec![
-            apprise(
-                1,
-                attaque(
-                    "griffure",
-                    "Griffure",
-                    Type::Normal,
-                    Categorie::Physique,
-                    40,
-                    100,
-                ),
-            ),
-            apprise(
-                4,
-                attaque(
-                    "morsure",
-                    "Morsure",
-                    Type::Tenebres,
-                    Categorie::Physique,
-                    60,
-                    90,
-                ),
-            ),
+            apprise(1, physique("griffure", "Griffure", Type::Normal, 40, 100)),
+            apprise(4, physique("morsure", "Morsure", Type::Tenebres, 60, 90)),
         ],
-    );
-    let vipere = espece(
+    )
+}
+
+fn vipere() -> Espece {
+    espece(
         "vipere",
         "Vipère",
         Type::Poison,
-        Stats {
-            pv: 40,
-            attaque: 50,
-            defense: 40,
-            attaque_speciale: 45,
-            defense_speciale: 45,
-            vitesse: 60,
-        },
+        base(40, 50, 40, 45, 45, 60),
         75,
         vec![
             apprise(
                 1,
-                attaque(
+                physique(
                     "morsure-venimeuse",
                     "Morsure venimeuse",
                     Type::Poison,
-                    Categorie::Physique,
                     40,
                     100,
                 )
@@ -195,30 +165,52 @@ pub fn rencontre(aleatoire: &mut dyn Aleatoire) -> (Vec<Monstre>, Vec<Monstre>) 
             ),
             apprise(
                 3,
-                attaque(
+                speciale(
                     "regard-petrifiant",
                     "Regard pétrifiant",
                     Type::Normal,
-                    Categorie::Speciale,
                     30,
                     100,
                 )
                 .avec_effet(effet(Statut::Paralysie, 30)),
             ),
         ],
-    );
+    )
+}
 
-    let equipe = vec![
-        creer(salamandre, false, aleatoire),
-        creer(corbeau, false, aleatoire),
-    ];
-    let loup_shiny = tirer_shiny(aleatoire);
-    let vipere_shiny = tirer_shiny(aleatoire);
-    let groupe = vec![
-        creer(loup, loup_shiny, aleatoire),
-        creer(vipere, vipere_shiny, aleatoire),
-    ];
-    (equipe, groupe)
+fn corbeau() -> Espece {
+    espece(
+        "corbeau",
+        "Corbeau",
+        Type::Vol,
+        base(40, 55, 35, 40, 35, 70),
+        58,
+        vec![
+            apprise(
+                1,
+                physique("coup-de-bec", "Coup de bec", Type::Vol, 35, 100),
+            ),
+            apprise(4, physique("pique", "Piqué", Type::Vol, 60, 90)),
+        ],
+    )
+}
+
+fn base(
+    pv: u16,
+    attaque: u16,
+    defense: u16,
+    attaque_speciale: u16,
+    defense_speciale: u16,
+    vitesse: u16,
+) -> StatsDeBase {
+    Stats {
+        pv,
+        attaque,
+        defense,
+        attaque_speciale,
+        defense_speciale,
+        vitesse,
+    }
 }
 
 fn espece(
@@ -247,6 +239,28 @@ fn apprise(niveau: u8, attaque: Attaque) -> AttaqueApprise {
     }
 }
 
+fn physique(id: &str, nom: &str, type_attaque: Type, puissance: u16, precision: u8) -> Attaque {
+    attaque(
+        id,
+        nom,
+        type_attaque,
+        Categorie::Physique,
+        puissance,
+        precision,
+    )
+}
+
+fn speciale(id: &str, nom: &str, type_attaque: Type, puissance: u16, precision: u8) -> Attaque {
+    attaque(
+        id,
+        nom,
+        type_attaque,
+        Categorie::Speciale,
+        puissance,
+        precision,
+    )
+}
+
 fn attaque(
     id: &str,
     nom: &str,
@@ -270,10 +284,10 @@ fn effet(statut: Statut, chance: u8) -> EffetSecondaire {
     EffetSecondaire::new(statut, chance).expect("effet de démonstration valide")
 }
 
-fn creer(espece: Espece, shiny: bool, aleatoire: &mut dyn Aleatoire) -> Monstre {
+fn creer(espece: Espece, niveau: u8, shiny: bool, aleatoire: &mut dyn Aleatoire) -> Monstre {
     Monstre::creer(
         espece,
-        Niveau::new(5).expect("niveau de démonstration valide"),
+        Niveau::new(niveau).expect("niveau de démonstration valide"),
         ValeursInternes::tirer(aleatoire),
         shiny,
     )
