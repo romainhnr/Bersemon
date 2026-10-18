@@ -63,6 +63,7 @@ L'objectif du jeu est de proposer des boucles de gameplay intéressantes et stim
 - Sur Discord, une seule commande, /bersemon, ouvre un message qui pose la question en cours ; le joueur répond par des boutons, et par un formulaire pour un texte comme le nom du héros.
 - Chaque compte Discord a une seule partie, la même sur tous les serveurs et en message privé. Elle est séparée de la partie de la console.
 - Sur Discord, une expédition en cours attend le joueur sans limite de temps, jusqu'à son prochain /bersemon ; un redémarrage du bot le ramène à sa dernière sauvegarde, comme quitter la console (section 13.9).
+- Hébergement du bot : pour commencer, sur le PC de l'utilisateur, lancé à la main quand il veut que le bot soit en ligne. Le bot est privé : seul l'utilisateur peut l'inviter dans un serveur.
 - Multijoueur : après l'adaptation à Discord (section 15).
 - Hors périmètre pour le moment : version mobile et vrai jeu PC.
 - Sauvegarde : dans un fichier JSON pour commencer, puis migration vers une base de données, probablement SQLite. Dans la V1, le fichier se trouve dans le dossier de données de l'utilisateur, %APPDATA%\Bersemon sous Windows (section 13.9). Sur Discord, un fichier JSON par compte Discord, au même format, en attendant SQLite.
@@ -494,7 +495,6 @@ Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découp
 Les questions Q59 et suivantes ont été relevées le 18/10/2026 lors du découpage de l'adaptation à Discord en étapes : 9 déroulement de la partie commun à la console et au bot, 10 squelette du bot, 11 une partie par joueur Discord, 12 jeu complet sur Discord, 13 déploiement.
 
 - Q64. (Après l'étape 12) Sprites des monstres (section 5.1) : source des images et droits d'utilisation.
-- Q63. (Étape 13) Hébergement du bot (PC de l'utilisateur, serveur, autre) et serveurs Discord où il peut être invité.
 
 ## 17. Journal des décisions
 
@@ -633,3 +633,7 @@ Les questions Q59 et suivantes ont été relevées le 18/10/2026 lors du découp
 - Q61 : sur Discord, pas de délai d'inactivité ; une expédition en cours attend le joueur jusqu'à son prochain /bersemon, et un redémarrage du bot le ramène à sa dernière sauvegarde.
 - Q62 : les sprites sont repoussés après l'étape 12 ; la source des images et leurs droits restent à décider (Q64).
 - Sur Discord, chaque choix met à jour le même message, qui montre ce qui vient de se passer et la question suivante.
+
+18/10/2026 (étape 13) :
+
+- Q63 : le bot tourne sur le PC de l'utilisateur, lancé à la main ; il est privé, et seul l'utilisateur peut l'inviter dans un serveur. Un serveur permanent viendra plus tard si des joueurs veulent le bot en ligne en continu.

@@ -2,6 +2,8 @@
 
 Mise en route du bot Discord. Depuis l'étape 12, toute la partie se joue sur Discord : création du héros, camp, expéditions, combats, gestion des monstres et codex, avec les mêmes règles et les mêmes textes que la console.
 
+Ce document décrit le bot et ses variables. Pour le faire tourner en service, avec un bot de test à part et le script de lancement, voir docs/deploiement.md.
+
 ## 1. Créer l'application Discord
 
 À faire une seule fois, avec ton compte Discord, sur le portail développeur : https://discord.com/developers/applications. Les intitulés ci-dessous sont ceux du portail en anglais ; ils peuvent changer.
