@@ -63,17 +63,24 @@ async fn main() {
             event_handler: |cadre, evenement| Box::pin(traiter_evenement(cadre, evenement)),
             ..Default::default()
         })
-        .setup(move |contexte, _pret, framework| {
+        .setup(move |contexte, pret, framework| {
             Box::pin(async move {
                 // Dans un serveur de test, les commandes apparaissent tout de
-                // suite ; l'enregistrement global, valable partout et en
-                // message privé, peut prendre jusqu'à une heure.
+                // suite, mais ni ailleurs ni en message privé ;
+                // l'enregistrement global, valable partout, peut prendre
+                // jusqu'à une heure.
                 let commandes = &framework.options().commands;
                 match serveur_de_test {
                     Some(serveur) => {
                         poise::builtins::register_in_guild(contexte, commandes, serveur).await?;
+                        println!(
+                            "Commandes enregistrées dans le serveur de test seulement : pas de message privé."
+                        );
                     }
-                    None => poise::builtins::register_globally(contexte, commandes).await?,
+                    None => {
+                        poise::builtins::register_globally(contexte, commandes).await?;
+                        effacer_les_commandes_de_serveur(contexte, pret).await;
+                    }
                 }
                 println!("Bersemon est connecté à Discord.");
                 Ok(donnees)
@@ -95,6 +102,20 @@ async fn main() {
     if let Err(erreur) = resultat {
         eprintln!("Le bot s'est arrêté sur une erreur : {erreur}.");
         std::process::exit(1);
+    }
+}
+
+/// Une commande enregistrée dans un serveur par le mode test y resterait à
+/// côté de la commande globale : `/bersemon` apparaîtrait en double. Un
+/// échec est signalé sans empêcher le bot de démarrer.
+async fn effacer_les_commandes_de_serveur(contexte: &serenity::Context, pret: &serenity::Ready) {
+    for serveur in &pret.guilds {
+        if let Err(erreur) = serveur.id.set_commands(contexte, Vec::new()).await {
+            eprintln!(
+                "Commandes du serveur {} impossibles à effacer : {erreur}.",
+                serveur.id
+            );
+        }
     }
 }
 

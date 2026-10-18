@@ -19,7 +19,7 @@ Le bot lit sa configuration dans des variables d'environnement :
 | Variable | Rôle |
 |---|---|
 | `DISCORD_TOKEN` | Jeton du bot, obligatoire. |
-| `BERSEMON_SERVEUR_DE_TEST` | Facultative : identifiant d'un serveur où les commandes sont enregistrées tout de suite, pour développer. Sans elle, les commandes sont enregistrées pour tous les serveurs et les messages privés, ce qui peut prendre jusqu'à une heure. |
+| `BERSEMON_SERVEUR_DE_TEST` | Facultative, pour développer : identifiant d'un serveur où les commandes sont enregistrées tout de suite, mais seulement là : `/bersemon` n'est alors disponible ni dans les autres serveurs ni en message privé. Sans elle, les commandes sont enregistrées pour tous les serveurs et les messages privés, ce qui peut prendre jusqu'à une heure. |
 | `BERSEMON_DONNEES` | Facultative : dossier des sauvegardes des joueurs, `%APPDATA%\Bersemon\discord` par défaut. Chaque compte Discord y a un fichier, `<identifiant du compte>.json`, séparé de la sauvegarde de la console. |
 
 L'identifiant d'un serveur se copie dans Discord après avoir activé le mode développeur (Paramètres utilisateur, Avancés), par un clic droit sur le serveur.
@@ -33,6 +33,8 @@ cargo run -p bersemon-discord
 ```
 
 Ces variables ne valent que pour ce terminal. Le bot affiche "Bersemon est connecté à Discord." une fois prêt. Ctrl+C arrête le bot.
+
+Pour jouer en message privé, lancer le bot sans `BERSEMON_SERVEUR_DE_TEST` (dans un terminal où elle a déjà été définie : `Remove-Item Env:BERSEMON_SERVEUR_DE_TEST`). Au démarrage, le bot efface alors les commandes qu'un lancement en mode test a laissées dans ses serveurs, pour que `/bersemon` n'y apparaisse pas en double. La commande globale peut mettre jusqu'à une heure à apparaître en message privé.
 
 ## 3. Jouer
 
