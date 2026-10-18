@@ -217,9 +217,9 @@ mod tests {
                 Some(EvenementExpedition::Coffre { .. })
             ));
         }
-        // Seuls le shiny et les valeurs internes de l'Apôtre sont tirés.
+        // Seul le shiny de l'Apôtre est tiré.
         assert!(matches!(
-            expedition.etape_suivante(&mut AleatoireScripte::new(MONSTRE)),
+            expedition.etape_suivante(&mut AleatoireScripte::new([2])),
             Some(EvenementExpedition::Apotre(apotre)) if apotre.niveau() == Niveau::new(7).unwrap()
         ));
         assert!(expedition.est_terminee());

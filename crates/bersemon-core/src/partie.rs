@@ -431,7 +431,7 @@ mod tests {
             expedition.etape_suivante(&mut AleatoireScripte::new([81, 1]));
         }
         let Some(EvenementExpedition::Apotre(apotre)) =
-            expedition.etape_suivante(&mut AleatoireScripte::new([2, 0, 0, 0, 0, 0, 0]))
+            expedition.etape_suivante(&mut AleatoireScripte::new([2]))
         else {
             panic!("l'Apôtre devait attendre à la dernière étape");
         };

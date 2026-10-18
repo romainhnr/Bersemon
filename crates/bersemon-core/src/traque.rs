@@ -7,7 +7,7 @@ use crate::aleatoire::Aleatoire;
 use crate::espece::{Espece, EspeceId};
 use crate::monstre::{Monstre, tirer_shiny};
 use crate::niveau::Niveau;
-use crate::stats::ValeursInternes;
+use crate::stats::{Stats, ValeursInternes};
 use crate::zone::{Zone, ZoneId};
 
 /// Un Apôtre combat 2 niveaux au-dessus du niveau maximal de sa zone (section
@@ -105,15 +105,32 @@ impl Apotre {
         &self.epilogue
     }
 
-    /// Comme un monstre sauvage, l'Apôtre a des valeurs internes tirées au
-    /// hasard et 1 chance sur 512 d'être shiny (Q58). Tirages : shiny, puis
-    /// valeurs internes.
+    /// Les valeurs internes de l'Apôtre sont fixes, au maximum ; comme un
+    /// monstre sauvage, il a 1 chance sur 512 d'être shiny (Q58). Un seul
+    /// tirage : le shiny.
     pub fn generer(&self, aleatoire: &mut dyn Aleatoire) -> Monstre {
         let shiny = tirer_shiny(aleatoire);
-        let valeurs_internes = ValeursInternes::tirer(aleatoire);
-        Monstre::creer(self.espece.clone(), self.niveau, valeurs_internes, shiny)
-            .expect("espèce vérifiée au niveau de l'Apôtre par Apotre::new")
+        Monstre::creer(
+            self.espece.clone(),
+            self.niveau,
+            valeurs_internes_maximales(),
+            shiny,
+        )
+        .expect("espèce vérifiée au niveau de l'Apôtre par Apotre::new")
     }
+}
+
+fn valeurs_internes_maximales() -> ValeursInternes {
+    let max = ValeursInternes::MAX;
+    ValeursInternes::new(Stats {
+        pv: max,
+        attaque: max,
+        defense: max,
+        attaque_speciale: max,
+        defense_speciale: max,
+        vitesse: max,
+    })
+    .expect("valeurs internes maximales valides")
 }
 
 /// Piste d'un Apôtre : ses indices, dans l'ordre où on les trouve, puis son
@@ -197,11 +214,13 @@ mod tests {
     }
 
     #[test]
-    fn l_apotre_combat_deux_niveaux_au_dessus_de_sa_zone() {
+    fn l_apotre_combat_deux_niveaux_au_dessus_de_sa_zone_aux_valeurs_internes_maximales() {
         let apotre = piste().apotre().clone();
         assert_eq!(apotre.niveau(), Niveau::new(15).unwrap());
-        let monstre = apotre.generer(&mut AleatoireScripte::new([1, 31, 31, 31, 31, 31, 31]));
+        // Seul le shiny est tiré.
+        let monstre = apotre.generer(&mut AleatoireScripte::new([1]));
         assert_eq!(monstre.niveau(), Niveau::new(15).unwrap());
+        assert_eq!(monstre.valeurs_internes(), &valeurs_internes_maximales());
         assert!(monstre.est_shiny());
         assert_eq!(monstre.espece().id().as_str(), "baron");
     }

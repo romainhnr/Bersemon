@@ -113,7 +113,7 @@ Attaques apprises :
 |---|---|---|---|---|---|---|
 | baron-pendu | Baron pendu | Ténèbres, Spectre | offensif | 85 / 85 / 75 / 90 / 80 / 65 (480) | 250 | 15, soit 2 de plus que le maximum du Marais |
 
-Attaques apprises : Corde du gibet (niv. 1), Lamentation (niv. 5), Sentence (niv. 10), Trappe du gibet (niv. 15). Au niveau 15, il les connaît toutes les quatre.
+Attaques apprises : Corde du gibet (niv. 1), Lamentation (niv. 5), Sentence (niv. 10), Trappe du gibet (niv. 15). Au niveau 15, il les connaît toutes les quatre. Ses valeurs internes sont fixes, à 31 pour chaque stat (section 9.4).
 
 Autrefois seigneur des terres du Marais, il a livré son propre fief au gibet pour devenir un Apôtre. Ses types le rendent insensible aux attaques Normal et Combat ; seul le type Féérique lui est très efficace.
 
