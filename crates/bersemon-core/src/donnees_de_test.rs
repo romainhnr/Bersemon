@@ -90,6 +90,7 @@ pub(crate) fn zone(id: &str) -> Zone {
         ZoneId::new(id),
         id,
         (niveau, niveau),
+        4,
         1,
         vec![espece("loup")],
         vec![],

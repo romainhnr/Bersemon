@@ -1,7 +1,7 @@
 //! Camp de base : départ en expédition par la carte, expéditions
-//! automatiques, liste des monstres, gestion des monstres (section 13.2),
-//! codex et marchand. Les monstres sont désignés par leur numéro dans la
-//! liste de la collection : l'équipe d'abord, le camp ensuite.
+//! automatiques, gestion des monstres (section 13.2), coffre du camp (section
+//! 13.3), codex et marchand. Les monstres sont désignés par leur numéro dans
+//! la liste de la collection : l'équipe d'abord, le camp ensuite.
 
 use bersemon_core::collection::{Collection, Emplacement, TriDuCamp};
 use bersemon_core::contenu::ContenuV1;
@@ -13,13 +13,14 @@ use bersemon_presentation::monstres::{attaques_connues, decrire_attaque, fiche_d
 use bersemon_presentation::partie::{collection as liste_des_monstres, en_tete_du_camp};
 
 use crate::affichage;
+use crate::ecran_coffre;
 use crate::ecran_expeditions_automatiques;
 use crate::ecran_marchand;
 use crate::horloge::maintenant;
 use crate::saisie::Entree;
 
-/// Le menu de gestion et celui du marchand restent ouverts d'une action à
-/// l'autre, jusqu'au retour.
+/// Le menu de gestion, celui du coffre et celui du marchand restent ouverts
+/// d'une action à l'autre, jusqu'au retour.
 #[derive(Debug, Default)]
 pub struct MenuDuCamp {
     ouvert: SousMenu,
@@ -30,6 +31,7 @@ enum SousMenu {
     #[default]
     Aucun,
     Gestion,
+    Coffre,
     Marchand,
 }
 
@@ -44,6 +46,7 @@ pub fn choisir(
         let sous_menu = match menu.ouvert {
             SousMenu::Aucun => None,
             SousMenu::Gestion => Some(gerer(partie, entree)?),
+            SousMenu::Coffre => Some(ecran_coffre::choisir(partie, entree)?),
             SousMenu::Marchand => Some(ecran_marchand::choisir(partie, contenu, entree)?),
         };
         match sous_menu {
@@ -62,13 +65,14 @@ pub fn choisir(
         println!("  1. Partir en expédition");
         println!("  2. Expéditions automatiques");
         println!("  3. Gérer vos monstres");
-        println!("  4. Consulter le codex");
+        println!("  4. Coffre du camp");
+        println!("  5. Consulter le codex");
         // Le marchand n'apparaît qu'une fois réfugié au camp (section 14.2).
         let marchand = partie.marchand_au_camp();
         if marchand {
-            println!("  5. Voir le marchand");
+            println!("  6. Voir le marchand");
         }
-        let quitter = if marchand { 6 } else { 5 };
+        let quitter = if marchand { 7 } else { 6 };
         println!("  {quitter}. Quitter");
         let choix = match entree.choix(1, quitter)? {
             1 => carte(partie, contenu, entree)?,
@@ -78,10 +82,14 @@ pub fn choisir(
                 None
             }
             4 => {
+                menu.ouvert = SousMenu::Coffre;
+                None
+            }
+            5 => {
                 println!("{}", affichage::codex(partie.codex(), contenu.especes()));
                 None
             }
-            5 if marchand => {
+            6 if marchand => {
                 menu.ouvert = SousMenu::Marchand;
                 None
             }

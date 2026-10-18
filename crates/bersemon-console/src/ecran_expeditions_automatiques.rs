@@ -70,8 +70,9 @@ fn envoyer(partie: &Partie, zone: &Zone, entree: &mut Entree) -> Option<Option<C
     let collection = partie.collection();
     println!();
     println!("{}", liste_des_monstres(collection));
-    // Toute l'équipe n'est proposée que si ce départ est possible : un
-    // monstre au camp pour la rejoindre, et une place au camp pour chacun.
+    // Toute l'équipe n'est proposée que si ce départ est possible : une
+    // place au camp pour chacun à son retour. L'équipe reste vide (section
+    // 12.1).
     let toute_l_equipe: Vec<Emplacement> = (0..collection.equipe().len())
         .map(Emplacement::Equipe)
         .collect();

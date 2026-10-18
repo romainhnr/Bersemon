@@ -9,14 +9,14 @@ use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 
 use crate::monstres::{decrire_attaque, nom};
-use crate::partie::{argent, potions};
+use crate::partie::argent;
 
-/// Ce que le joueur possède, en tête de l'étal.
+/// Ce que le joueur peut dépenser : l'argent du sac et du coffre paient
+/// ensemble, et les achats vont dans le coffre (section 13.3).
 pub fn etal(partie: &Partie) -> String {
     format!(
-        "Le marchand vous attend près du feu. Vous avez {} et {}. Une potion coûte {}.\n{}",
+        "Le marchand vous attend près du feu. Vous avez {}, entre votre sac et le coffre ; vos achats iront dans le coffre. Une potion coûte {}.\n{}",
         argent(partie.argent()),
-        potions(partie.inventaire().potions()),
         argent(PRIX_DE_LA_POTION),
         capsules_obtenues(partie)
     )
@@ -25,7 +25,6 @@ pub fn etal(partie: &Partie) -> String {
 pub fn capsules_obtenues(partie: &Partie) -> String {
     let noms: Vec<&str> = partie
         .capsules()
-        .iter()
         .map(|capsule| capsule.attaque().nom())
         .collect();
     if noms.is_empty() {
@@ -111,12 +110,12 @@ mod tests {
         .unwrap();
         assert_eq!(
             offre_de_rachat(&cerf),
-            "Cerf blanc (niv. 5) : 75 pièces d'argent"
+            "Cerf blanc (niv. 5) : 80 pièces d'argent"
         );
         cerf.renommer(Some(Nom::new("Lune").unwrap()));
         assert_eq!(
             offre_de_rachat(&cerf),
-            "Lune (Cerf blanc, niv. 5) : 75 pièces d'argent"
+            "Lune (Cerf blanc, niv. 5) : 80 pièces d'argent"
         );
     }
 

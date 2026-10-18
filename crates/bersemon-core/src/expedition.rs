@@ -12,9 +12,6 @@ use crate::monstre::Monstre;
 use crate::traque::Apotre;
 use crate::zone::{MonstreRare, Zone, tirer_entre};
 
-/// Une expédition compte de 4 à 6 étapes (Q37).
-const ETAPES_MIN: u32 = 4;
-const ETAPES_MAX: u32 = 6;
 /// Un coffre contient 1 à 2 potions (Q39).
 const POTIONS_MIN: u32 = 1;
 const POTIONS_MAX: u32 = 2;
@@ -52,8 +49,8 @@ impl ParametresCoffre {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EvenementExpedition {
     Combat(Vec<Monstre>),
-    /// Les potions rejoignent aussitôt celles du joueur ; l'argent et la
-    /// capsule ne lui sont acquis qu'au retour au camp (section 9.3).
+    /// Son contenu va dans le sac, et se perd avec lui en cas de défaite
+    /// (section 9.3).
     Coffre {
         potions: u32,
         argent: u32,
@@ -69,12 +66,16 @@ pub enum EvenementExpedition {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ErreurExpedition {
     ZoneFermee,
+    /// Toute l'équipe est partie en expédition automatique, ou le joueur l'a
+    /// vidée (section 13.2).
+    EquipeVide,
 }
 
 impl fmt::Display for ErreurExpedition {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ErreurExpedition::ZoneFermee => write!(f, "cette zone n'est pas encore sur la carte"),
+            ErreurExpedition::EquipeVide => write!(f, "l'équipe est vide"),
         }
     }
 }
@@ -84,35 +85,32 @@ impl std::error::Error for ErreurExpedition {}
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Expedition {
     zone: Zone,
-    /// Inconnu du joueur : il ne sait pas combien d'étapes il reste (Q37).
+    /// Fixé par la zone et connu du joueur (section 9.2).
     nombre_etapes: u32,
     etapes_faites: u32,
     defaite: bool,
     /// L'Apôtre qui attend à la dernière étape, une fois son antre localisé.
     apotre: Option<Apotre>,
-    /// Somme des coffres ouverts, perdue en cas de défaite (section 9.3).
-    argent_trouve: u32,
     /// Tant qu'aucun marchand n'est au camp, une étape peut tirer sa
     /// rencontre, une fois au plus (section 9.2).
     marchand_possible: bool,
     /// Un coffre ne contient qu'une capsule que le joueur n'a pas encore.
     capsules_possedees: Vec<AttaqueId>,
-    /// Perdues en cas de défaite, comme l'argent trouvé (section 9.3).
+    /// Pour qu'un autre coffre de la même expédition ne la contienne pas.
     capsules_trouvees: Vec<Capsule>,
 }
 
 impl Expedition {
-    /// Un tirage : le nombre d'étapes. Le départ passe par
-    /// `Partie::partir_en_expedition`, qui vérifie que la zone est ouverte et
-    /// place l'Apôtre au bout de l'expédition quand il le faut.
-    pub(crate) fn partir(zone: Zone, aleatoire: &mut dyn Aleatoire) -> Self {
+    /// Le départ passe par `Partie::partir_en_expedition`, qui vérifie que
+    /// la zone est ouverte et place l'Apôtre au bout de l'expédition quand il
+    /// le faut.
+    pub(crate) fn partir(zone: Zone) -> Self {
         Self {
+            nombre_etapes: zone.etapes(),
             zone,
-            nombre_etapes: aleatoire.tirer(ETAPES_MIN..=ETAPES_MAX),
             etapes_faites: 0,
             defaite: false,
             apotre: None,
-            argent_trouve: 0,
             marchand_possible: false,
             capsules_possedees: Vec::new(),
             capsules_trouvees: Vec::new(),
@@ -142,6 +140,11 @@ impl Expedition {
         self.etapes_faites
     }
 
+    /// Celui de la zone, montré au joueur (section 9.2).
+    pub fn nombre_etapes(&self) -> u32 {
+        self.nombre_etapes
+    }
+
     /// Plus d'étape à faire : après la dernière, ou après une défaite.
     pub fn est_terminee(&self) -> bool {
         self.defaite || self.etapes_faites >= self.nombre_etapes
@@ -156,29 +159,6 @@ impl Expedition {
     /// Une défaite renvoie au camp et met fin à l'expédition (section 9.3).
     pub fn noter_defaite(&mut self) {
         self.defaite = true;
-    }
-
-    pub fn argent_trouve(&self) -> u32 {
-        self.argent_trouve
-    }
-
-    /// Ce que le joueur garde au retour au camp : rien après une défaite
-    /// (section 9.3).
-    pub fn argent_rapporte(&self) -> u32 {
-        if self.defaite { 0 } else { self.argent_trouve }
-    }
-
-    pub fn capsules_trouvees(&self) -> &[Capsule] {
-        &self.capsules_trouvees
-    }
-
-    /// Aucune après une défaite (section 9.3).
-    pub fn capsules_rapportees(&self) -> &[Capsule] {
-        if self.defaite {
-            &[]
-        } else {
-            &self.capsules_trouvees
-        }
     }
 
     /// Passe à l'étape suivante et tire son événement ; `None` si
@@ -217,7 +197,6 @@ impl Expedition {
         let potions = aleatoire.tirer(POTIONS_MIN..=POTIONS_MAX);
         let fourchette = self.zone.coffre().argent();
         let argent = tirer_entre(*fourchette.start(), *fourchette.end(), aleatoire);
-        self.argent_trouve = self.argent_trouve.saturating_add(argent);
         let capsule = self.tirer_une_capsule(aleatoire);
         if let Some(capsule) = &capsule {
             self.capsules_trouvees.push(capsule.clone());
@@ -279,6 +258,7 @@ mod tests {
             ZoneId::new("bois"),
             "Bois",
             (niveau, niveau),
+            4,
             1,
             vec![espece("loup")],
             rares,
@@ -292,7 +272,7 @@ mod tests {
 
     #[test]
     fn evenements_selon_le_tirage() {
-        let mut expedition = Expedition::partir(zone(true), &mut AleatoireScripte::new([6]));
+        let mut expedition = Expedition::partir(zone(true));
         let mut combat = vec![80];
         combat.extend(MONSTRE);
         assert!(matches!(
@@ -318,7 +298,7 @@ mod tests {
 
     #[test]
     fn sans_monstre_rare_la_zone_donne_un_combat() {
-        let mut expedition = Expedition::partir(zone(false), &mut AleatoireScripte::new([4]));
+        let mut expedition = Expedition::partir(zone(false));
         let mut tirages = vec![100];
         tirages.extend(MONSTRE);
         assert!(matches!(
@@ -329,7 +309,7 @@ mod tests {
 
     #[test]
     fn reussie_apres_la_derniere_etape() {
-        let mut expedition = Expedition::partir(zone(false), &mut AleatoireScripte::new([4]));
+        let mut expedition = Expedition::partir(zone(false));
         for _ in 0..4 {
             assert!(!expedition.est_terminee());
             expedition.etape_suivante(&mut AleatoireScripte::new([81, 1]));
@@ -345,8 +325,7 @@ mod tests {
     #[test]
     fn l_apotre_attend_a_la_derniere_etape() {
         let apotre = Apotre::new(espece("baron"), &zone(false), "", "").unwrap();
-        let mut expedition =
-            Expedition::partir(zone(false), &mut AleatoireScripte::new([4])).vers_l_antre(apotre);
+        let mut expedition = Expedition::partir(zone(false)).vers_l_antre(apotre);
         for _ in 0..3 {
             assert!(matches!(
                 expedition.etape_suivante(&mut AleatoireScripte::new([81, 1])),
@@ -363,7 +342,7 @@ mod tests {
 
     #[test]
     fn une_defaite_termine_l_expedition_sans_la_reussir() {
-        let mut expedition = Expedition::partir(zone(false), &mut AleatoireScripte::new([4]));
+        let mut expedition = Expedition::partir(zone(false));
         for _ in 0..4 {
             expedition.etape_suivante(&mut AleatoireScripte::new([81, 1]));
         }
@@ -379,6 +358,7 @@ mod tests {
             ZoneId::new("bois"),
             "Bois",
             (niveau, niveau),
+            4,
             1,
             vec![espece("loup")],
             Vec::new(),
@@ -386,7 +366,7 @@ mod tests {
             ParametresCoffre::new(10..=25, Vec::new()).unwrap(),
         )
         .unwrap();
-        let mut expedition = Expedition::partir(zone, &mut AleatoireScripte::new([4]));
+        let mut expedition = Expedition::partir(zone);
         assert_eq!(
             expedition.etape_suivante(&mut AleatoireScripte::new([90, 1, 25])),
             Some(EvenementExpedition::Coffre {
@@ -395,25 +375,18 @@ mod tests {
                 capsule: None
             })
         );
-        expedition.etape_suivante(&mut AleatoireScripte::new([90, 2, 10]));
-        assert_eq!(expedition.argent_trouve(), 35);
-        assert_eq!(expedition.argent_rapporte(), 35);
     }
 
     #[test]
-    fn une_defaite_fait_perdre_l_argent_trouve() {
-        let mut expedition = Expedition::partir(zone(false), &mut AleatoireScripte::new([4]));
-        expedition.etape_suivante(&mut AleatoireScripte::new([81, 1]));
-        assert_eq!(expedition.argent_rapporte(), 10);
-        expedition.noter_defaite();
-        assert_eq!(expedition.argent_trouve(), 10);
-        assert_eq!(expedition.argent_rapporte(), 0);
+    fn le_nombre_d_etapes_est_celui_de_la_zone() {
+        let expedition = Expedition::partir(zone(false));
+        assert_eq!(expedition.nombre_etapes(), 4);
+        assert_eq!(expedition.etapes_faites(), 0);
     }
 
     #[test]
     fn le_marchand_se_rencontre_une_fois_a_la_place_d_un_combat() {
-        let mut expedition = Expedition::partir(zone(false), &mut AleatoireScripte::new([6]))
-            .avec_marchand_possible();
+        let mut expedition = Expedition::partir(zone(false)).avec_marchand_possible();
         let mut combat = vec![70];
         combat.extend(MONSTRE);
         assert!(matches!(
@@ -435,7 +408,7 @@ mod tests {
 
     #[test]
     fn sans_marchand_possible_le_tirage_donne_un_combat() {
-        let mut expedition = Expedition::partir(zone(false), &mut AleatoireScripte::new([4]));
+        let mut expedition = Expedition::partir(zone(false));
         let mut combat = vec![75];
         combat.extend(MONSTRE);
         assert!(matches!(
@@ -473,6 +446,7 @@ mod tests {
             ZoneId::new("bois"),
             "Bois",
             (niveau, niveau),
+            4,
             1,
             vec![espece("loup")],
             Vec::new(),
@@ -493,7 +467,7 @@ mod tests {
 
     #[test]
     fn une_capsule_nouvelle_dans_un_coffre_sur_cinq() {
-        let mut expedition = Expedition::partir(zone_a_capsules(), &mut AleatoireScripte::new([6]))
+        let mut expedition = Expedition::partir(zone_a_capsules())
             .avec_capsules_possedees(vec![AttaqueId::new("a")]);
         // Au-delà de 20, pas de capsule.
         assert_eq!(
@@ -517,14 +491,5 @@ mod tests {
             capsule_du_coffre(expedition.etape_suivante(&mut AleatoireScripte::new([90, 1]))),
             None
         );
-        let trouvees: Vec<&str> = expedition
-            .capsules_rapportees()
-            .iter()
-            .map(|capsule| capsule.id().as_str())
-            .collect();
-        assert_eq!(trouvees, vec!["c", "b"]);
-        expedition.noter_defaite();
-        assert!(expedition.capsules_rapportees().is_empty());
-        assert_eq!(expedition.capsules_trouvees().len(), 2);
     }
 }

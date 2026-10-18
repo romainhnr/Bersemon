@@ -6,6 +6,7 @@
 mod affichage;
 mod ecran_accueil;
 mod ecran_camp;
+mod ecran_coffre;
 mod ecran_combat;
 mod ecran_expedition;
 mod ecran_expeditions_automatiques;
@@ -21,7 +22,7 @@ use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::{Attente, Choix, Confirmation, Contexte, Deroulement};
 use bersemon_core::sauvegarde::SauvegardeRepository;
 use bersemon_presentation::erreurs::erreur_de_choix;
-use bersemon_presentation::partie::question_de_confirmation;
+use bersemon_presentation::partie::{compteur_d_etapes, question_de_confirmation};
 use bersemon_storage::{FichierJson, emplacement_par_defaut};
 
 use crate::ecran_camp::MenuDuCamp;
@@ -30,8 +31,6 @@ use crate::saisie::Entree;
 
 /// Au camp et en expédition, une partie est en jeu.
 const PARTIE_EN_JEU: &str = "une partie est en jeu";
-/// Entre deux étapes, une expédition est en cours.
-const EN_EXPEDITION: &str = "une expédition est en cours";
 
 fn main() {
     let mut aleatoire = GenerateurAleatoire::new(graine_depuis_horloge());
@@ -68,6 +67,12 @@ fn demander(
     menu: &mut MenuDuCamp,
     entree: &mut Entree,
 ) -> Option<Choix> {
+    // En expédition, le compteur d'étapes est toujours en haut (section
+    // 9.2).
+    if let Some(expedition) = deroulement.expedition() {
+        println!();
+        println!("{}", compteur_d_etapes(expedition));
+    }
     match deroulement.attente() {
         Attente::Reprise(partie) => ecran_accueil::reprise(partie, entree),
         Attente::SauvegardeIllisible(erreur) => ecran_accueil::sauvegarde_illisible(erreur, entree),
@@ -79,8 +84,7 @@ fn demander(
         }
         Attente::EntreDeuxEtapes => {
             let partie = deroulement.partie().expect(PARTIE_EN_JEU);
-            let expedition = deroulement.expedition().expect(EN_EXPEDITION);
-            ecran_expedition::entre_deux_etapes(partie, expedition, entree)
+            ecran_expedition::entre_deux_etapes(partie, entree)
         }
         Attente::MonstreRare(_) => ecran_expedition::monstre_rare(entree),
         Attente::ActionDeCombat(combat) => {

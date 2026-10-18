@@ -17,7 +17,7 @@ use crate::expedition_automatique::{
 };
 use crate::heros::Heros;
 use crate::horodatage::Horodatage;
-use crate::inventaire::{ErreurPotion, Inventaire};
+use crate::inventaire::{ErreurObjet, ErreurPotion, Inventaire, Objet};
 use crate::marchand::{ErreurMarchand, PRIX_DE_LA_POTION, prix_de_revente};
 use crate::monstre::{Monstre, tirer_shiny};
 use crate::niveau::Niveau;
@@ -46,15 +46,13 @@ pub fn creer_monstre_de_depart(
 pub struct Partie {
     heros: Heros,
     collection: Collection,
-    inventaire: Inventaire,
-    /// Gardé au camp : une défaite ne fait perdre que celui trouvé pendant
-    /// l'expédition (section 9.3).
-    argent: u32,
+    /// Ce que le joueur emporte en expédition manuelle, et qu'une défaite
+    /// lui fait perdre (section 9.3).
+    sac: Inventaire,
+    /// À l'abri : ce qui est gagné au camp y va (section 13.3).
+    coffre_du_camp: Inventaire,
     /// Une fois rencontré, le marchand reste au camp (section 14.2).
     marchand_au_camp: bool,
-    /// Dans l'ordre où le joueur les a obtenues, sans doublon (section
-    /// 13.10).
-    capsules: Vec<Capsule>,
     codex: Codex,
     zones_explorees: Vec<ZoneId>,
     /// Indices trouvés sur la piste de l'Apôtre (section 9.4).
@@ -83,10 +81,9 @@ pub struct AttaqueAChoisir {
 pub struct EtatPartie {
     pub heros: Heros,
     pub collection: Collection,
-    pub inventaire: Inventaire,
-    pub argent: u32,
+    pub sac: Inventaire,
+    pub coffre_du_camp: Inventaire,
     pub marchand_au_camp: bool,
-    pub capsules: Vec<Capsule>,
     pub codex: Codex,
     pub zones_explorees: Vec<ZoneId>,
     pub indices_trouves: usize,
@@ -106,7 +103,10 @@ pub enum ErreurRestaurationPartie {
     ExpeditionEnDouble(ZoneId),
     /// Aucun monstre du camp à cette position.
     AttaqueAChoisirSansMonstre(usize),
+    /// La même capsule dans le sac et dans le coffre.
     CapsuleEnDouble(AttaqueId),
+    /// Ni monstre au camp, ni monstre en expédition automatique.
+    AucunMonstre,
 }
 
 impl fmt::Display for ErreurRestaurationPartie {
@@ -130,6 +130,7 @@ impl fmt::Display for ErreurRestaurationPartie {
             ErreurRestaurationPartie::CapsuleEnDouble(capsule) => {
                 write!(f, "capsule obtenue deux fois : {}", capsule.as_str())
             }
+            ErreurRestaurationPartie::AucunMonstre => write!(f, "aucun monstre"),
         }
     }
 }
@@ -144,10 +145,9 @@ impl Partie {
         Self {
             heros,
             collection: Collection::new(depart),
-            inventaire: Inventaire::default(),
-            argent: 0,
+            sac: Inventaire::default(),
+            coffre_du_camp: Inventaire::default(),
             marchand_au_camp: false,
-            capsules: Vec::new(),
             codex,
             zones_explorees: Vec::new(),
             indices_trouves: 0,
@@ -171,13 +171,54 @@ impl Partie {
         &mut self.collection
     }
 
-    pub fn inventaire(&self) -> &Inventaire {
-        &self.inventaire
+    pub fn sac(&self) -> &Inventaire {
+        &self.sac
     }
 
-    /// En pièces d'argent (section 14.1).
+    pub fn coffre_du_camp(&self) -> &Inventaire {
+        &self.coffre_du_camp
+    }
+
+    /// Au camp, l'argent du sac et celui du coffre paient ensemble (section
+    /// 13.3).
     pub fn argent(&self) -> u32 {
-        self.argent
+        self.sac
+            .argent()
+            .saturating_add(self.coffre_du_camp.argent())
+    }
+
+    /// Celles du sac, puis celles du coffre : au camp, elles servent toutes
+    /// (section 13.3).
+    pub fn capsules(&self) -> impl Iterator<Item = &Capsule> {
+        self.sac
+            .capsules()
+            .iter()
+            .chain(self.coffre_du_camp.capsules())
+    }
+
+    pub fn possede_capsule(&self, id: &AttaqueId) -> bool {
+        self.sac.contient_capsule(id) || self.coffre_du_camp.contient_capsule(id)
+    }
+
+    /// Du sac vers le coffre, au camp seulement (section 13.3).
+    pub fn ranger_au_coffre(&mut self, objet: &Objet) -> Result<Inventaire, ErreurObjet> {
+        let range = self.sac.retirer(objet)?;
+        self.coffre_du_camp.ajouter(range.clone());
+        Ok(range)
+    }
+
+    /// Du coffre vers le sac, au camp seulement (section 13.3).
+    pub fn sortir_du_coffre(&mut self, objet: &Objet) -> Result<Inventaire, ErreurObjet> {
+        let sorti = self.coffre_du_camp.retirer(objet)?;
+        self.sac.ajouter(sorti.clone());
+        Ok(sorti)
+    }
+
+    /// Tout le sac rejoint le coffre. Rend ce qui a été rangé.
+    pub fn tout_ranger_au_coffre(&mut self) -> Inventaire {
+        let range = self.sac.perdre_tout();
+        self.coffre_du_camp.ajouter(range.clone());
+        range
     }
 
     pub fn marchand_au_camp(&self) -> bool {
@@ -190,7 +231,8 @@ impl Partie {
         self.marchand_au_camp = true;
     }
 
-    /// Au camp, sans confirmation (section 14.2). Rend le prix payé.
+    /// Au camp, sans confirmation ; les potions vont dans le coffre (sections
+    /// 13.3 et 14.2). Rend le prix payé.
     pub fn acheter_potions(&mut self, nombre: u32) -> Result<u32, ErreurMarchand> {
         self.verifier_marchand()?;
         if nombre == 0 {
@@ -198,7 +240,7 @@ impl Partie {
         }
         let prix = nombre.saturating_mul(PRIX_DE_LA_POTION);
         self.payer(prix)?;
-        self.inventaire.ajouter_potions(nombre);
+        self.coffre_du_camp.ajouter_potions(nombre);
         Ok(prix)
     }
 
@@ -220,8 +262,8 @@ impl Partie {
     }
 
     /// Définitive et soumise aux règles du relâcher : jamais le dernier
-    /// monstre de l'équipe (section 14.2). La confirmation revient au
-    /// déroulement. Rend le monstre vendu et son prix.
+    /// monstre (section 14.2). La confirmation revient au déroulement.
+    /// L'argent va dans le coffre. Rend le monstre vendu et son prix.
     pub fn vendre(&mut self, emplacement: Emplacement) -> Result<(Monstre, u32), ErreurMarchand> {
         self.verifier_marchand()?;
         let monstre = self
@@ -229,34 +271,19 @@ impl Partie {
             .relacher(emplacement)
             .map_err(ErreurMarchand::Collection)?;
         let prix = prix_de_revente(&monstre);
-        self.argent = self.argent.saturating_add(prix);
+        self.coffre_du_camp.ajouter_argent(prix);
         Ok((monstre, prix))
     }
 
-    pub fn capsules(&self) -> &[Capsule] {
-        &self.capsules
-    }
-
-    pub fn possede_capsule(&self, id: &AttaqueId) -> bool {
-        self.capsules.iter().any(|capsule| capsule.id() == id)
-    }
-
-    /// Une capsule déjà obtenue n'est pas ajoutée deux fois : elle sert sans
-    /// s'user (section 13.10).
-    fn obtenir_capsule(&mut self, capsule: Capsule) {
-        if !self.possede_capsule(capsule.id()) {
-            self.capsules.push(capsule);
-        }
-    }
-
-    /// Au camp, sans confirmation (section 14.2). Rend le prix payé.
+    /// Au camp, sans confirmation ; la capsule va dans le coffre (sections
+    /// 13.3 et 14.2). Rend le prix payé.
     pub fn acheter_capsule(&mut self, capsule: &Capsule) -> Result<u32, ErreurMarchand> {
         self.verifier_marchand()?;
         if self.possede_capsule(capsule.id()) {
             return Err(ErreurMarchand::CapsuleDejaPossedee);
         }
         self.payer(capsule.prix())?;
-        self.capsules.push(capsule.clone());
+        self.coffre_du_camp.ajouter_capsule(capsule.clone());
         Ok(capsule.prix())
     }
 
@@ -270,7 +297,7 @@ impl Partie {
             .collection
             .monstre(emplacement)
             .ok_or(ErreurCollection::EmplacementInexistant(emplacement))?;
-        Ok(attaques_a_apprendre(monstre, &self.capsules))
+        Ok(attaques_a_apprendre(monstre, self.capsules()))
     }
 
     /// Le monstre apprend l'attaque ; s'il en connaît déjà 4, il oublie
@@ -320,14 +347,14 @@ impl Partie {
         }
     }
 
+    /// Avec l'argent du sac d'abord, puis celui du coffre (section 13.3).
     fn payer(&mut self, prix: u32) -> Result<(), ErreurMarchand> {
-        if prix > self.argent {
-            return Err(ErreurMarchand::ArgentInsuffisant {
-                prix,
-                argent: self.argent,
-            });
+        let argent = self.argent();
+        if prix > argent {
+            return Err(ErreurMarchand::ArgentInsuffisant { prix, argent });
         }
-        self.argent -= prix;
+        let du_sac = self.sac.prendre_argent(prix);
+        self.coffre_du_camp.prendre_argent(prix - du_sac);
         Ok(())
     }
 
@@ -362,16 +389,19 @@ impl Partie {
     /// Reconstitue une partie depuis une sauvegarde : chaque morceau a déjà
     /// été revérifié par sa propre restauration. Il reste à vérifier ce qui
     /// les lie : les monstres partis gardent leur place au camp, une seule
-    /// expédition automatique par zone explorée, et chaque attaque à choisir
-    /// désigne un monstre du camp. Une capsule n'est obtenue qu'une fois.
+    /// expédition automatique par zone explorée, chaque attaque à choisir
+    /// désigne un monstre du camp, une capsule n'est obtenue qu'une fois, et
+    /// le joueur a au moins un monstre, au camp ou parti.
     pub fn restaurer(etat: EtatPartie) -> Result<Self, ErreurRestaurationPartie> {
-        for (position, capsule) in etat.capsules.iter().enumerate() {
-            let precedentes = &etat.capsules[..position];
-            if precedentes.iter().any(|autre| autre.id() == capsule.id()) {
-                return Err(ErreurRestaurationPartie::CapsuleEnDouble(
-                    capsule.id().clone(),
-                ));
-            }
+        if let Some(capsule) = etat
+            .sac
+            .capsules()
+            .iter()
+            .find(|capsule| etat.coffre_du_camp.contient_capsule(capsule.id()))
+        {
+            return Err(ErreurRestaurationPartie::CapsuleEnDouble(
+                capsule.id().clone(),
+            ));
         }
         let mut collection = etat.collection;
         let partis = etat
@@ -382,6 +412,9 @@ impl Partie {
         collection
             .definir_places_reservees(partis)
             .map_err(ErreurRestaurationPartie::Collection)?;
+        if collection.nombre_de_monstres() == 0 {
+            return Err(ErreurRestaurationPartie::AucunMonstre);
+        }
         for (position, expedition) in etat.expeditions_automatiques.iter().enumerate() {
             let zone = expedition.zone().id();
             if !etat.zones_explorees.contains(zone) {
@@ -402,10 +435,9 @@ impl Partie {
         Ok(Self {
             heros: etat.heros,
             collection,
-            inventaire: etat.inventaire,
-            argent: etat.argent,
+            sac: etat.sac,
+            coffre_du_camp: etat.coffre_du_camp,
             marchand_au_camp: etat.marchand_au_camp,
-            capsules: etat.capsules,
             codex: etat.codex,
             zones_explorees: etat.zones_explorees,
             indices_trouves: etat.indices_trouves,
@@ -429,23 +461,24 @@ impl Partie {
     /// l'Apôtre s'achève par le combat contre lui, tant qu'il n'est pas
     /// vaincu (section 9.4). Tant que le marchand n'est pas au camp, elle
     /// peut le rencontrer (section 9.2). Ses coffres ne contiennent que des
-    /// capsules que le joueur n'a pas encore (section 13.10).
+    /// capsules que le joueur n'a pas encore (section 13.10). Une équipe vide
+    /// ne part pas (section 13.2).
     pub fn partir_en_expedition(
         &self,
         zone: &Zone,
         piste: &Piste,
-        aleatoire: &mut dyn Aleatoire,
     ) -> Result<Expedition, ErreurExpedition> {
         if !piste.zone_ouverte(zone.id(), self.indices_trouves) {
             return Err(ErreurExpedition::ZoneFermee);
         }
+        if self.collection.equipe().is_empty() {
+            return Err(ErreurExpedition::EquipeVide);
+        }
         let possedees = self
-            .capsules
-            .iter()
+            .capsules()
             .map(|capsule| capsule.id().clone())
             .collect();
-        let mut expedition =
-            Expedition::partir(zone.clone(), aleatoire).avec_capsules_possedees(possedees);
+        let mut expedition = Expedition::partir(zone.clone()).avec_capsules_possedees(possedees);
         if !self.marchand_au_camp {
             expedition = expedition.avec_marchand_possible();
         }
@@ -460,7 +493,7 @@ impl Partie {
     }
 
     /// Combat contre un groupe sauvage, avec l'équipe, le bonus de classe du
-    /// héros et les potions portées. Les espèces du groupe entrent dans le
+    /// héros et les potions du sac. Les espèces du groupe entrent dans le
     /// codex comme rencontrées.
     pub fn preparer_combat(&mut self, groupe: Vec<Monstre>) -> Result<Combat, ErreurCombat> {
         let especes: Vec<_> = groupe
@@ -469,7 +502,7 @@ impl Partie {
             .collect();
         let combat = Combat::new(self.collection.equipe().to_vec(), groupe)?
             .avec_bonus_du_joueur(self.heros.classe().bonus())
-            .avec_potions(self.inventaire.potions());
+            .avec_potions(self.sac.potions());
         for espece in &especes {
             self.codex.noter_rencontre(espece);
         }
@@ -505,22 +538,24 @@ impl Partie {
 
     /// Reprend l'équipe et les potions à la fin du combat, inscrit les
     /// captures au codex et les rend, à placer ensuite avec
-    /// `Collection::accueillir_capture`. Une défaite fait perdre toutes les
-    /// potions (section 9.3). Les choix d'attaques en attente se font sur
-    /// l'équipe du bilan, avant cet appel.
+    /// `Collection::accueillir_capture`. Une défaite fait perdre tout le sac,
+    /// rendu à côté des captures (section 9.3). Les choix d'attaques en
+    /// attente se font sur l'équipe du bilan, avant cet appel.
     pub fn conclure_combat(
         &mut self,
         bilan: BilanCombat,
-    ) -> Result<Vec<Monstre>, ErreurCollection> {
+    ) -> Result<(Vec<Monstre>, Inventaire), ErreurCollection> {
         self.collection.actualiser_equipe(bilan.equipe)?;
-        self.inventaire.definir_potions(bilan.potions);
-        if bilan.issue == Some(Issue::Defaite) {
-            self.inventaire.perdre_tout();
-        }
+        self.sac.definir_potions(bilan.potions);
+        let perdu = if bilan.issue == Some(Issue::Defaite) {
+            self.sac.perdre_tout()
+        } else {
+            Inventaire::default()
+        };
         for capture in &bilan.captures {
             self.codex.noter_capture(capture.espece().id());
         }
-        Ok(bilan.captures)
+        Ok((bilan.captures, perdu))
     }
 
     /// Un monstre aperçu, comme un monstre rare qui n'attaque pas.
@@ -535,12 +570,18 @@ impl Partie {
         self.collection.accueillir_capture(monstre)
     }
 
-    pub fn ouvrir_coffre(&mut self, potions: u32) {
-        self.inventaire.ajouter_potions(potions);
+    /// Ce que contient un coffre trouvé en expédition va dans le sac (section
+    /// 13.3).
+    pub fn ouvrir_coffre(&mut self, potions: u32, argent: u32, capsule: Option<Capsule>) {
+        self.sac.ajouter_potions(potions);
+        self.sac.ajouter_argent(argent);
+        if let Some(capsule) = capsule {
+            self.sac.ajouter_capsule(capsule);
+        }
     }
 
-    /// Potion utilisée entre deux étapes d'une expédition. Rend les PV
-    /// rendus.
+    /// Potion du sac, utilisée entre deux étapes d'une expédition. Rend les
+    /// PV rendus.
     pub fn utiliser_potion(
         &mut self,
         index_equipe: usize,
@@ -550,7 +591,7 @@ impl Partie {
             .collection
             .membre_de_l_equipe_mut(index_equipe)
             .ok_or(ErreurPotion::MonstreInexistant)?;
-        self.inventaire.utiliser_potion(monstre, aleatoire)
+        self.sac.utiliser_potion(monstre, aleatoire)
     }
 
     pub fn expeditions_automatiques(&self) -> &[ExpeditionAutomatique] {
@@ -602,26 +643,25 @@ impl Partie {
     }
 
     /// Les monstres quittent l'équipe ou le camp et gardent leur place au
-    /// camp, où ils reviendront (section 12.1). Rend le monstre du camp qui
-    /// rejoint l'équipe quand elle part tout entière.
+    /// camp, où ils reviendront ; l'équipe peut rester vide (section 12.1).
     pub fn envoyer_en_expedition_automatique(
         &mut self,
         zone: &Zone,
         emplacements: &[Emplacement],
         maintenant: Horodatage,
-    ) -> Result<Option<Monstre>, ErreurExpeditionAutomatique> {
+    ) -> Result<(), ErreurExpeditionAutomatique> {
         self.verifier_depart(zone, emplacements)?;
-        let depart = self
+        let partis = self
             .collection
             .retirer_pour_expedition(emplacements)
             .map_err(ErreurExpeditionAutomatique::Collection)?;
         self.expeditions_automatiques
             .push(ExpeditionAutomatique::partir(
                 zone.clone(),
-                depart.partis,
+                partis,
                 maintenant,
             ));
-        Ok(depart.rejoint_l_equipe)
+        Ok(())
     }
 
     /// Avant le terme, les monstres reviennent au camp sans dégâts ni
@@ -640,9 +680,10 @@ impl Partie {
         Ok(())
     }
 
-    /// Tire le résultat, ajoute les potions et l'argent, et ramène les
-    /// monstres au camp (sections 12.3, 12.6 et 12.7). Les attaques en
-    /// attente dans les rapports d'XP s'ajoutent aux attaques à choisir.
+    /// Tire le résultat, range les potions et l'argent dans le coffre, et
+    /// ramène les monstres au camp (sections 12.3, 12.6, 12.7 et 13.3). Les
+    /// attaques en attente dans les rapports d'XP s'ajoutent aux attaques à
+    /// choisir.
     pub fn accueillir_expedition_automatique(
         &mut self,
         zone: &ZoneId,
@@ -656,8 +697,8 @@ impl Partie {
         let expedition = self.expeditions_automatiques.remove(position);
         // Les monstres reviennent à la suite, à la fin du camp.
         let (bilan, monstres) = expedition.resoudre(self.collection.camp().len(), aleatoire);
-        self.inventaire.ajouter_potions(bilan.potions);
-        self.argent = self.argent.saturating_add(bilan.argent);
+        self.coffre_du_camp.ajouter_potions(bilan.potions);
+        self.coffre_du_camp.ajouter_argent(bilan.argent);
         self.collection.accueillir_retour(monstres);
         for rentre in &bilan.monstres {
             let attaques = rentre
@@ -705,22 +746,16 @@ impl Partie {
             .ok_or(ErreurExpeditionAutomatique::Inexistante)
     }
 
-    /// Tous les monstres sont soignés (section 13.1) ; l'argent et les
-    /// capsules trouvés sont acquis, sauf après une défaite (section 9.3).
-    /// Une expédition menée
-    /// jusqu'au bout sans défaite rend la zone explorée et, si l'indice
-    /// suivant de la piste se trouve dans cette zone, le révèle et le rend
-    /// (section 9.4).
+    /// Tous les monstres sont soignés (section 13.1) ; ce qui a été trouvé
+    /// reste dans le sac. Une expédition menée jusqu'au bout sans défaite
+    /// rend la zone explorée et, si l'indice suivant de la piste se trouve
+    /// dans cette zone, le révèle et le rend (section 9.4).
     pub fn rentrer_au_camp<'p>(
         &mut self,
         expedition: &Expedition,
         piste: &'p Piste,
     ) -> Option<&'p Indice> {
         self.collection.soigner_tout();
-        self.argent = self.argent.saturating_add(expedition.argent_rapporte());
-        for capsule in expedition.capsules_rapportees() {
-            self.obtenir_capsule(capsule.clone());
-        }
         if !expedition.est_reussie() {
             return None;
         }
@@ -802,9 +837,7 @@ mod tests {
 
     /// Expédition de 4 étapes, toutes des coffres.
     fn expedition_complete(partie: &Partie, zone: &Zone, piste: &Piste) -> Expedition {
-        let mut expedition = partie
-            .partir_en_expedition(zone, piste, &mut AleatoireScripte::new([4]))
-            .unwrap();
+        let mut expedition = partie.partir_en_expedition(zone, piste).unwrap();
         for _ in 0..4 {
             assert!(matches!(
                 expedition.etape_suivante(&mut AleatoireScripte::new([81, 1])),
@@ -840,42 +873,72 @@ mod tests {
             assert_eq!(partie.indices_trouves(), numero);
         }
         assert_eq!(
-            partie.partir_en_expedition(&zones[2], &piste, &mut AleatoireScripte::new([])),
+            partie.partir_en_expedition(&zones[2], &piste),
             Err(ErreurExpedition::ZoneFermee)
         );
     }
 
     #[test]
-    fn l_argent_des_coffres_n_est_acquis_qu_au_retour() {
+    fn un_coffre_trouve_en_expedition_remplit_le_sac() {
         let (zones, piste) = carte();
         let mut partie = partie();
-        // Quatre coffres de 10 pièces d'argent.
+        partie.ouvrir_coffre(2, 10, Some(capsule("a", Type::Normal)));
+        assert_eq!(
+            partie.sac(),
+            &Inventaire::new(10, 2, vec![capsule("a", Type::Normal)])
+        );
+        assert!(partie.coffre_du_camp().est_vide());
+        assert_eq!(partie.argent(), 10);
+        // Ce qui a été trouvé reste dans le sac au retour (section 13.3).
         let expedition = expedition_complete(&partie, &zones[0], &piste);
-        assert_eq!(partie.argent(), 0);
         partie.rentrer_au_camp(&expedition, &piste);
-        assert_eq!(partie.argent(), 40);
+        assert_eq!(partie.sac().argent(), 10);
+        assert!(partie.coffre_du_camp().est_vide());
+    }
 
-        let mut perdue = expedition_complete(&partie, &zones[0], &piste);
-        perdue.noter_defaite();
-        partie.rentrer_au_camp(&perdue, &piste);
-        assert_eq!(partie.argent(), 40);
+    #[test]
+    fn ranger_et_sortir_du_coffre_au_camp() {
+        let mut partie = partie();
+        partie.ouvrir_coffre(3, 40, Some(capsule("a", Type::Normal)));
+        assert_eq!(
+            partie.ranger_au_coffre(&Objet::Potions(4)),
+            Err(ErreurObjet::Insuffisant)
+        );
+        assert_eq!(
+            partie.ranger_au_coffre(&Objet::Argent(30)),
+            Ok(Inventaire::new(30, 0, Vec::new()))
+        );
+        assert_eq!(partie.sac().argent(), 10);
+        assert_eq!(partie.coffre_du_camp().argent(), 30);
+        assert_eq!(
+            partie.sortir_du_coffre(&Objet::Argent(5)),
+            Ok(Inventaire::new(5, 0, Vec::new()))
+        );
+        let range = partie.tout_ranger_au_coffre();
+        assert_eq!(
+            range,
+            Inventaire::new(15, 3, vec![capsule("a", Type::Normal)])
+        );
+        assert!(partie.sac().est_vide());
+        assert_eq!(
+            partie.coffre_du_camp(),
+            &Inventaire::new(40, 3, vec![capsule("a", Type::Normal)])
+        );
+        // Au camp, une capsule sert où qu'elle soit.
+        assert!(partie.possede_capsule(&AttaqueId::new("a")));
     }
 
     #[test]
     fn le_marchand_ne_se_rencontre_que_s_il_n_est_pas_au_camp() {
         let (zones, piste) = carte();
         let mut partie = partie();
-        let mut expedition = partie
-            .partir_en_expedition(&zones[0], &piste, &mut AleatoireScripte::new([4]))
-            .unwrap();
+        let mut expedition = partie.partir_en_expedition(&zones[0], &piste).unwrap();
         assert_eq!(
             expedition.etape_suivante(&mut AleatoireScripte::new([71])),
             Some(EvenementExpedition::Marchand)
         );
         partie.accueillir_marchand();
-        let mut expedition = partie
-            .partir_en_expedition(&zones[0], &piste, &mut AleatoireScripte::new([4]))
-            .unwrap();
+        let mut expedition = partie.partir_en_expedition(&zones[0], &piste).unwrap();
         // Le monstre du groupe tire son shiny et ses valeurs internes.
         assert!(matches!(
             expedition.etape_suivante(&mut AleatoireScripte::new([71, 2, 0, 0, 0, 0, 0, 0])),
@@ -883,19 +946,19 @@ mod tests {
         ));
     }
 
-    /// Le marchand au camp et 50 pièces d'argent.
+    /// Le marchand au camp et 50 pièces d'argent dans le coffre.
     fn partie_chez_le_marchand() -> Partie {
         let mut partie = partie();
         partie.collection_mut().accueillir_capture(creer("loup", 3));
         partie.accueillir_marchand();
-        partie.argent = 50;
+        partie.coffre_du_camp.ajouter_argent(50);
         partie
     }
 
     #[test]
     fn rien_ne_s_echange_sans_marchand() {
         let mut partie = partie();
-        partie.argent = 50;
+        partie.coffre_du_camp.ajouter_argent(50);
         partie.collection_mut().accueillir_capture(creer("loup", 3));
         assert_eq!(
             partie.acheter_potions(1),
@@ -922,28 +985,40 @@ mod tests {
                 argent: 50
             })
         );
-        assert_eq!(partie.inventaire().potions(), 0);
+        assert_eq!(partie.coffre_du_camp().potions(), 0);
         assert_eq!(partie.acheter_potions(2), Ok(40));
-        assert_eq!(partie.inventaire().potions(), 2);
+        assert_eq!(partie.coffre_du_camp().potions(), 2);
         assert_eq!(partie.argent(), 10);
+    }
+
+    #[test]
+    fn le_sac_paie_avant_le_coffre_et_les_gains_vont_au_coffre() {
+        let mut partie = partie_chez_le_marchand();
+        partie.ouvrir_coffre(0, 15, None);
+        assert_eq!(partie.argent(), 65);
+        assert_eq!(partie.acheter_potions(1), Ok(20));
+        assert_eq!(partie.sac().argent(), 0);
+        assert_eq!(partie.coffre_du_camp().argent(), 45);
+        assert_eq!(partie.coffre_du_camp().potions(), 1);
+        partie.vendre(Emplacement::Equipe(1)).unwrap();
+        assert!(partie.sac().est_vide());
+        assert!(partie.coffre_du_camp().argent() > 45);
     }
 
     #[test]
     fn vendre_un_monstre_comme_on_le_relache() {
         let mut partie = partie_chez_le_marchand();
-        // Un Loup de niveau 3, d'espèce commune : 15 pièces d'argent.
+        // Un Loup de niveau 3, d'espèce commune et de base 300 : 3 x 300 / 50.
         let (estime, prix) = partie.estimer_vente(Emplacement::Equipe(1)).unwrap();
-        assert_eq!(prix, 15);
+        assert_eq!(prix, 18);
         assert_eq!(partie.collection().equipe().len(), 2);
-        assert_eq!(partie.vendre(Emplacement::Equipe(1)), Ok((estime, 15)));
-        assert_eq!(partie.argent(), 65);
+        assert_eq!(partie.vendre(Emplacement::Equipe(1)), Ok((estime, 18)));
+        assert_eq!(partie.argent(), 68);
         assert_eq!(partie.collection().equipe().len(), 1);
-        let dernier = Err(ErreurMarchand::Collection(
-            ErreurCollection::DernierMonstreDeLEquipe,
-        ));
+        let dernier = Err(ErreurMarchand::Collection(ErreurCollection::DernierMonstre));
         assert_eq!(partie.estimer_vente(Emplacement::Equipe(0)), dernier);
         assert_eq!(partie.vendre(Emplacement::Equipe(0)), dernier);
-        assert_eq!(partie.argent(), 65);
+        assert_eq!(partie.argent(), 68);
     }
 
     fn capsule(id: &str, type_attaque: Type) -> Capsule {
@@ -961,20 +1036,20 @@ mod tests {
                 argent: 50
             })
         );
-        partie.argent = 200;
+        partie.coffre_du_camp.ajouter_argent(150);
         assert_eq!(partie.acheter_capsule(&coup), Ok(150));
         assert_eq!(partie.argent(), 50);
         assert_eq!(
             partie.acheter_capsule(&coup),
             Err(ErreurMarchand::CapsuleDejaPossedee)
         );
-        assert_eq!(partie.capsules(), &[coup]);
+        assert_eq!(partie.coffre_du_camp().capsules(), &[coup]);
     }
 
     #[test]
     fn apprendre_au_camp_une_attaque_de_capsule() {
         let mut partie = partie_chez_le_marchand();
-        partie.argent = 1_000;
+        partie.coffre_du_camp.ajouter_argent(1_000);
         let loup = Emplacement::Equipe(1);
         // Les espèces de test sont de type Normal.
         partie.acheter_capsule(&capsule("feu", Type::Feu)).unwrap();
@@ -1026,7 +1101,7 @@ mod tests {
     }
 
     #[test]
-    fn les_capsules_des_coffres_ne_sont_acquises_qu_au_retour() {
+    fn un_coffre_ne_contient_que_des_capsules_nouvelles() {
         let (zones, piste) = carte();
         let mut zones = zones;
         let niveau = Niveau::new(5).unwrap();
@@ -1034,6 +1109,7 @@ mod tests {
             ZoneId::new("bois"),
             "bois",
             (niveau, niveau),
+            4,
             1,
             vec![espece("loup")],
             vec![],
@@ -1046,35 +1122,30 @@ mod tests {
         )
         .unwrap();
         let mut partie = partie();
-        partie.obtenir_capsule(capsule("a", Type::Normal));
-        let mut expedition = partie
-            .partir_en_expedition(&zones[0], &piste, &mut AleatoireScripte::new([4]))
-            .unwrap();
+        partie
+            .coffre_du_camp
+            .ajouter_capsule(capsule("a", Type::Normal));
+        let mut expedition = partie.partir_en_expedition(&zones[0], &piste).unwrap();
         // Un coffre, où seule la capsule b est nouvelle.
-        expedition.etape_suivante(&mut AleatoireScripte::new([81, 1, 20]));
-        assert_eq!(partie.capsules().len(), 1);
-        partie.rentrer_au_camp(&expedition, &piste);
-        let ids: Vec<&str> = partie
-            .capsules()
-            .iter()
-            .map(|capsule| capsule.id().as_str())
-            .collect();
-        assert_eq!(ids, vec!["a", "b"]);
+        let Some(EvenementExpedition::Coffre {
+            capsule: Some(trouvee),
+            ..
+        }) = expedition.etape_suivante(&mut AleatoireScripte::new([81, 1, 20]))
+        else {
+            panic!("un coffre avec une capsule était attendu");
+        };
+        assert_eq!(trouvee.id().as_str(), "b");
     }
 
     #[test]
     fn rentrer_avant_la_fin_ne_donne_pas_d_indice() {
         let (zones, piste) = carte();
         let mut partie = partie();
-        let mut expedition = partie
-            .partir_en_expedition(&zones[0], &piste, &mut AleatoireScripte::new([4]))
-            .unwrap();
+        let mut expedition = partie.partir_en_expedition(&zones[0], &piste).unwrap();
         expedition.etape_suivante(&mut AleatoireScripte::new([81, 1]));
         assert_eq!(partie.rentrer_au_camp(&expedition, &piste), None);
         assert!(!partie.est_exploree(&ZoneId::new("bois")));
         assert_eq!(partie.indices_trouves(), 0);
-        // Rentrer avant la fin garde les gains (section 9.2).
-        assert_eq!(partie.argent(), 10);
     }
 
     #[test]
@@ -1082,9 +1153,7 @@ mod tests {
         let (zones, piste) = carte();
         let mut partie = partie();
         partie.indices_trouves = 3;
-        let mut expedition = partie
-            .partir_en_expedition(&zones[1], &piste, &mut AleatoireScripte::new([4]))
-            .unwrap();
+        let mut expedition = partie.partir_en_expedition(&zones[1], &piste).unwrap();
         for _ in 0..3 {
             expedition.etape_suivante(&mut AleatoireScripte::new([81, 1]));
         }
@@ -1128,7 +1197,7 @@ mod tests {
     #[test]
     fn combat_note_les_rencontres_et_les_captures_et_rend_les_potions() {
         let mut partie = partie();
-        partie.ouvrir_coffre(2);
+        partie.ouvrir_coffre(2, 0, None);
         let mut loup = creer("loup", 5);
         loup.subir_degats(loup.stats().pv - 2);
         let mut combat = partie.preparer_combat(vec![loup]).unwrap();
@@ -1141,30 +1210,37 @@ mod tests {
             .jouer_tour(Action::LancerFilet, &mut AleatoireScripte::new([90]))
             .unwrap();
         let bilan = combat.terminer(&mut AleatoireScripte::new([100]));
-        let captures = partie.conclure_combat(bilan).unwrap();
+        let (captures, perdu) = partie.conclure_combat(bilan).unwrap();
         assert_eq!(captures.len(), 1);
+        assert!(perdu.est_vide());
         assert_eq!(
             partie.codex().etat(&EspeceId::new("loup")),
             EtatCodex::Capturee
         );
-        assert_eq!(partie.inventaire().potions(), 2);
+        assert_eq!(partie.sac().potions(), 2);
     }
 
     #[test]
-    fn une_defaite_fait_perdre_les_potions() {
+    fn une_defaite_fait_perdre_tout_le_sac_mais_pas_le_coffre() {
         let mut partie = partie();
-        partie.ouvrir_coffre(3);
+        partie.ouvrir_coffre(3, 25, Some(capsule("a", Type::Normal)));
+        partie.coffre_du_camp.ajouter_argent(100);
         let combat = partie.preparer_combat(vec![creer("loup", 50)]).unwrap();
         let mut bilan = combat.terminer(&mut AleatoireScripte::new([]));
         bilan.issue = Some(Issue::Defaite);
-        partie.conclure_combat(bilan).unwrap();
-        assert_eq!(partie.inventaire().potions(), 0);
+        let (_, perdu) = partie.conclure_combat(bilan).unwrap();
+        assert_eq!(
+            perdu,
+            Inventaire::new(25, 3, vec![capsule("a", Type::Normal)])
+        );
+        assert!(partie.sac().est_vide());
+        assert_eq!(partie.coffre_du_camp().argent(), 100);
     }
 
     #[test]
     fn potion_entre_deux_etapes() {
         let mut partie = partie();
-        partie.ouvrir_coffre(2);
+        partie.ouvrir_coffre(2, 0, None);
         assert_eq!(
             partie.utiliser_potion(3, &mut AleatoireScripte::new([])),
             Err(ErreurPotion::MonstreInexistant)
@@ -1174,7 +1250,7 @@ mod tests {
             partie.utiliser_potion(0, &mut AleatoireScripte::new([])),
             Ok(0)
         );
-        assert_eq!(partie.inventaire().potions(), 1);
+        assert_eq!(partie.sac().potions(), 1);
         let mut equipe = partie.collection().equipe().to_vec();
         equipe[0].subir_degats(10);
         partie.collection_mut().actualiser_equipe(equipe).unwrap();
@@ -1182,7 +1258,7 @@ mod tests {
             partie.utiliser_potion(0, &mut AleatoireScripte::new([50])),
             Ok(10)
         );
-        assert_eq!(partie.inventaire().potions(), 0);
+        assert_eq!(partie.sac().potions(), 0);
     }
 
     #[test]
@@ -1224,15 +1300,14 @@ mod tests {
             partie.envoyer_en_expedition_automatique(&bois, &[], a(0)),
             Err(ErreurExpeditionAutomatique::NombreDeMonstres(0))
         );
-        assert_eq!(
-            partie.envoyer_en_expedition_automatique(
-                &bois,
-                &[Emplacement::Equipe(0), Emplacement::Equipe(1)],
-                a(0)
-            ),
-            Err(ErreurExpeditionAutomatique::Collection(
-                ErreurCollection::DernierMonstreDeLEquipe
-            ))
+        // Toute l'équipe peut partir : elle reste alors vide (section 12.1).
+        assert!(
+            partie
+                .estimer_expedition_automatique(
+                    &bois,
+                    &[Emplacement::Equipe(0), Emplacement::Equipe(1)]
+                )
+                .is_ok()
         );
 
         // 20 PV contre 10 à 40 dégâts : 10 totaux sur 31 laissent le loup
@@ -1252,6 +1327,28 @@ mod tests {
             partie.estimer_expedition_automatique(&bois, &[Emplacement::Equipe(0)]),
             Err(ErreurExpeditionAutomatique::DejaEnCours)
         );
+    }
+
+    #[test]
+    fn toute_l_equipe_part_et_la_laisse_vide() {
+        let (_, piste) = carte();
+        let mut partie = partie_prete_pour_le_bois();
+        partie
+            .envoyer_en_expedition_automatique(
+                &zone("bois"),
+                &[Emplacement::Equipe(0), Emplacement::Equipe(1)],
+                a(0),
+            )
+            .unwrap();
+        assert!(partie.collection().equipe().is_empty());
+        assert!(partie.collection().camp().is_empty());
+        assert_eq!(partie.collection().places_reservees(), 2);
+        assert_eq!(
+            partie.partir_en_expedition(&zone("bois"), &piste),
+            Err(ErreurExpedition::EquipeVide)
+        );
+        // Les monstres partis comptent : la partie se recharge.
+        assert_eq!(Partie::restaurer(etat(&partie)), Ok(partie.clone()));
     }
 
     #[test]
@@ -1282,8 +1379,10 @@ mod tests {
         assert_eq!(bilan.monstres[0].position_au_camp, 0);
         assert_eq!(partie.collection().camp()[0].experience(), 125 + 100);
         assert_eq!(partie.collection().places_reservees(), 0);
-        assert_eq!(partie.inventaire().potions(), 1);
-        assert_eq!(partie.argent(), 20);
+        // Ce qui est gagné au camp va dans le coffre (section 13.3).
+        assert_eq!(partie.coffre_du_camp().potions(), 1);
+        assert_eq!(partie.coffre_du_camp().argent(), 20);
+        assert!(partie.sac().est_vide());
         assert!(partie.expeditions_automatiques().is_empty());
         assert_eq!(
             partie.accueillir_expedition_automatique(
@@ -1313,18 +1412,16 @@ mod tests {
         assert_eq!(partie.collection().camp().len(), 1);
         assert_eq!(partie.collection().camp()[0].experience(), 125);
         assert_eq!(partie.collection().places_reservees(), 0);
-        assert_eq!(partie.inventaire().potions(), 0);
-        assert_eq!(partie.argent(), 0);
+        assert!(partie.coffre_du_camp().est_vide());
     }
 
     fn etat(partie: &Partie) -> EtatPartie {
         EtatPartie {
             heros: partie.heros().clone(),
             collection: partie.collection().clone(),
-            inventaire: partie.inventaire().clone(),
-            argent: partie.argent(),
+            sac: partie.sac().clone(),
+            coffre_du_camp: partie.coffre_du_camp().clone(),
             marchand_au_camp: partie.marchand_au_camp(),
-            capsules: partie.capsules().to_vec(),
             codex: partie.codex().clone(),
             zones_explorees: partie.zones_explorees().to_vec(),
             indices_trouves: partie.indices_trouves(),
@@ -1386,6 +1483,20 @@ mod tests {
             Err(ErreurRestaurationPartie::Collection(
                 ErreurCollection::CampPlein
             ))
+        );
+
+        let mut capsule_en_double = etat(&partie);
+        capsule_en_double
+            .sac
+            .ajouter_capsule(capsule("a", Type::Normal));
+        capsule_en_double
+            .coffre_du_camp
+            .ajouter_capsule(capsule("a", Type::Normal));
+        assert_eq!(
+            Partie::restaurer(capsule_en_double),
+            Err(ErreurRestaurationPartie::CapsuleEnDouble(AttaqueId::new(
+                "a"
+            )))
         );
     }
 }

@@ -4,7 +4,7 @@ use bersemon_core::capsule::ErreurApprentissage;
 use bersemon_core::collection::{Collection, ErreurCollection};
 use bersemon_core::combat::ErreurCombat;
 use bersemon_core::deroulement::{ActionDeGestion, Choix, ErreurChoix};
-use bersemon_core::inventaire::ErreurPotion;
+use bersemon_core::inventaire::{ErreurObjet, ErreurPotion};
 use bersemon_core::marchand::ErreurMarchand;
 use bersemon_core::sauvegarde::ErreurSauvegarde;
 
@@ -30,6 +30,10 @@ pub fn erreur_de_choix(choix: &Choix, erreur: &ErreurChoix) -> String {
         ErreurChoix::ExpeditionAutomatique(erreur) => erreur_expedition_automatique(erreur),
         ErreurChoix::Marchand(erreur) => erreur_marchand(erreur),
         ErreurChoix::CapsuleInconnue(_) => "Le marchand ne vend pas cette capsule.".to_string(),
+        ErreurChoix::EquipeVide => {
+            "Votre équipe est vide : faites venir des monstres du camp avant de partir.".to_string()
+        }
+        ErreurChoix::Objet(erreur) => erreur_objet(erreur),
         ErreurChoix::Apprentissage(erreur) => erreur_apprentissage(erreur),
         autre => format!("Action impossible : {autre}."),
     }
@@ -53,6 +57,15 @@ pub fn erreur_marchand(erreur: &ErreurMarchand) -> String {
             "Vous avez déjà cette capsule : elle sert sans s'user.".to_string()
         }
         ErreurMarchand::Collection(erreur) => erreur_collection(erreur),
+    }
+}
+
+/// Entre le sac et le coffre du camp (section 13.3).
+pub fn erreur_objet(erreur: &ErreurObjet) -> String {
+    match erreur {
+        ErreurObjet::QuantiteNulle => "Choisissez au moins un objet.".to_string(),
+        ErreurObjet::Insuffisant => "Il n'y en a pas autant.".to_string(),
+        ErreurObjet::CapsuleAbsente => "Cette capsule n'est pas là.".to_string(),
     }
 }
 
@@ -104,9 +117,7 @@ pub fn erreur_collection(erreur: &ErreurCollection) -> String {
         ErreurCollection::CampPlein => {
             format!("Le camp est plein ({} monstres).", Collection::TAILLE_CAMP)
         }
-        ErreurCollection::DernierMonstreDeLEquipe => {
-            "L'équipe doit garder au moins un monstre.".to_string()
-        }
+        ErreurCollection::DernierMonstre => "Vous devez garder au moins un monstre.".to_string(),
         ErreurCollection::EmplacementEnDouble(_) => "Ce monstre est déjà choisi.".to_string(),
         autre => format!("Action impossible : {autre}."),
     }

@@ -15,6 +15,7 @@ use bersemon_core::deroulement::{Attente, Evenement};
 use bersemon_core::espece::EspeceId;
 use bersemon_core::heros::Classe;
 use bersemon_core::horodatage::Horodatage;
+use bersemon_core::inventaire::Inventaire;
 use bersemon_core::marchand::PRIX_DE_LA_POTION;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::EtatPartie;
@@ -195,32 +196,50 @@ fn expedition_automatique(session: &Session, message: &Message, faite: bool) -> 
 enum Visite {
     AFaire,
     PotionAchetee,
+    MonstreVendu,
     Faite,
 }
 
 /// Une visite, une fois le marchand au camp : une potion achetée sur son
-/// étal, puis le dernier monstre du camp vendu, avec confirmation. `None`
-/// s'il n'y a rien à faire.
+/// étal, puis le dernier monstre du camp vendu, avec confirmation, puis,
+/// au coffre du camp, le sac rangé puis une potion reprise du coffre.
+/// `None` s'il n'y a rien à faire.
 fn visite_au_marchand(session: &Session, message: &Message, visite: Visite) -> Option<Clic> {
     let partie = session.deroulement.partie()?;
     let camp = partie.collection().camp().len();
-    let possible = partie.marchand_au_camp()
-        && camp > 0
-        && (visite == Visite::PotionAchetee || partie.argent() >= PRIX_DE_LA_POTION);
-    if visite == Visite::Faite || !possible {
+    let possible = match visite {
+        Visite::AFaire => {
+            partie.marchand_au_camp() && camp > 0 && partie.argent() >= PRIX_DE_LA_POTION
+        }
+        Visite::PotionAchetee => camp > 0,
+        Visite::MonstreVendu => true,
+        Visite::Faite => false,
+    };
+    if !possible {
         return None;
     }
     match (session.vue, visite) {
+        (Vue::Camp, Visite::MonstreVendu) => {
+            Some(cliquer(message, |cle| *cle == Cle::Afficher(Vue::Coffre)))
+        }
         (Vue::Camp, _) => Some(cliquer(message, |cle| *cle == Cle::Afficher(Vue::Marchand))),
         (Vue::Marchand, Visite::AFaire) => {
             Some(cliquer(message, |cle| *cle == Cle::AcheterPotions(1)))
         }
-        (Vue::Marchand, _) => Some(cliquer(message, |cle| *cle == Cle::Afficher(Vue::Vente))),
+        (Vue::Marchand, Visite::PotionAchetee) => {
+            Some(cliquer(message, |cle| *cle == Cle::Afficher(Vue::Vente)))
+        }
         (Vue::Vente, Visite::PotionAchetee) => choisir_dans(
             message,
             |cle| matches!(cle, Cle::Vendre(_)),
             &format!("c{}", camp - 1),
         ),
+        (Vue::Coffre, Visite::MonstreVendu) if !partie.sac().est_vide() => {
+            Some(cliquer(message, |cle| *cle == Cle::ToutRanger))
+        }
+        (Vue::Coffre, Visite::MonstreVendu) => {
+            choisir_dans(message, |cle| *cle == Cle::SortirDuCoffre, "potions:1")
+        }
         _ => None,
     }
 }
@@ -366,14 +385,15 @@ fn l_equipe_et_le_camp_pleins_tiennent_dans_les_limites() {
     }
     assert_eq!(partie.collection().camp().len(), 30);
     // Les deux zones explorées, pour préparer une expédition automatique,
-    // le marchand au camp et la capsule Brasier.
+    // le marchand au camp, la capsule Brasier dans le sac et les autres
+    // dans le coffre.
+    let capsules = contenu.capsules();
     let partie = Partie::restaurer(EtatPartie {
         heros: partie.heros().clone(),
         collection: partie.collection().clone(),
-        inventaire: partie.inventaire().clone(),
-        argent: 1_000,
+        sac: Inventaire::new(45, 3, capsules[..1].to_vec()),
+        coffre_du_camp: Inventaire::new(1_000, 12, capsules[1..].to_vec()),
         marchand_au_camp: true,
-        capsules: contenu.capsules()[..1].to_vec(),
         codex: partie.codex().clone(),
         zones_explorees: vec![ZoneId::new("lisiere"), ZoneId::new("marais")],
         indices_trouves: 3,
@@ -405,6 +425,7 @@ fn l_equipe_et_le_camp_pleins_tiennent_dans_les_limites() {
         Vue::Vente,
         Vue::Attaques(Emplacement::Equipe(0)),
         Vue::Attaques(Emplacement::Camp(29)),
+        Vue::Coffre,
     ];
     let mut questions: Vec<_> = vues
         .into_iter()
@@ -451,10 +472,9 @@ fn les_attaques_au_camp_se_choisissent_par_menu() {
     let partie = Partie::restaurer(EtatPartie {
         heros: partie.heros().clone(),
         collection: partie.collection().clone(),
-        inventaire: partie.inventaire().clone(),
-        argent: 0,
+        sac: partie.sac().clone(),
+        coffre_du_camp: Inventaire::new(0, 0, contenu.capsules()[..1].to_vec()),
         marchand_au_camp: false,
-        capsules: contenu.capsules()[..1].to_vec(),
         codex: partie.codex().clone(),
         zones_explorees: Vec::new(),
         indices_trouves: 0,
@@ -574,7 +594,8 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
                     assert!(joueurs.retours_echus(maintenant).is_empty());
                 }
                 Evenement::PotionsAchetees { nombre: 1, .. } => visite = Visite::PotionAchetee,
-                Evenement::MonstreVendu { .. } => visite = Visite::Faite,
+                Evenement::MonstreVendu { .. } => visite = Visite::MonstreVendu,
+                Evenement::SortiDuCoffre(_) => visite = Visite::Faite,
                 _ => {}
             }
         }
@@ -589,6 +610,11 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
         "expédition automatique jamais accueillie"
     );
     assert_eq!(visite, Visite::Faite, "visite au marchand jamais faite");
+    assert!(
+        vus.iter()
+            .any(|evenement| matches!(evenement, Evenement::RangeAuCoffre(_))),
+        "sac jamais rangé"
+    );
     let session = joueurs.session(JOUEUR, &contenu);
     assert_eq!(session.deroulement.attente(), Attente::Camp);
     let partie = session.deroulement.partie().unwrap();
@@ -600,7 +626,7 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
 }
 
 #[test]
-fn toute_l_equipe_se_prepare_d_un_bouton_s_il_reste_un_monstre_au_camp() {
+fn toute_l_equipe_se_prepare_d_un_bouton_s_il_y_a_de_la_place_au_camp() {
     use bersemon_core::catalogue::Catalogue;
     use bersemon_core::heros::Heros;
     use bersemon_core::niveau::Niveau;
@@ -620,10 +646,9 @@ fn toute_l_equipe_se_prepare_d_un_bouton_s_il_reste_un_monstre_au_camp() {
         Partie::restaurer(EtatPartie {
             heros: partie.heros().clone(),
             collection: partie.collection().clone(),
-            inventaire: partie.inventaire().clone(),
-            argent: partie.argent(),
+            sac: partie.sac().clone(),
+            coffre_du_camp: partie.coffre_du_camp().clone(),
             marchand_au_camp: partie.marchand_au_camp(),
-            capsules: partie.capsules().to_vec(),
             codex: partie.codex().clone(),
             zones_explorees: vec![ZoneId::new("lisiere")],
             indices_trouves: 1,
@@ -658,29 +683,27 @@ fn toute_l_equipe_se_prepare_d_un_bouton_s_il_reste_un_monstre_au_camp() {
         })
     };
 
-    // Équipe de 3 Loups, aucun au camp : toute l'équipe ne peut pas partir.
+    // Équipe de 3 Loups, aucun au camp : le bouton choisit les trois
+    // monstres de l'équipe, qui restera vide.
     let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Mage);
     let mut partie = Partie::nouvelle(heros, loup.clone());
     for _ in 0..2 {
         partie.prendre_monstre_rare(loup.clone());
     }
-    assert_eq!(preparation(&explorer(&partie)), None);
+    let toute_l_equipe = Some(vec![
+        Emplacement::Equipe(0),
+        Emplacement::Equipe(1),
+        Emplacement::Equipe(2),
+    ]);
+    assert_eq!(preparation(&explorer(&partie)), toute_l_equipe);
 
-    // Un Loup au camp : le bouton choisit les trois monstres de l'équipe.
-    partie.prendre_monstre_rare(loup.clone());
-    assert_eq!(
-        preparation(&explorer(&partie)),
-        Some(vec![
-            Emplacement::Equipe(0),
-            Emplacement::Equipe(1),
-            Emplacement::Equipe(2)
-        ])
-    );
-
-    // Camp plein : les trois monstres de l'équipe n'auraient qu'une place
-    // pour revenir, celle du Loup qui les remplace. Pas de bouton.
-    while partie.collection().camp().len() < 30 {
+    // Trois places libres au camp : juste assez pour leur retour.
+    while partie.collection().camp().len() < 27 {
         partie.prendre_monstre_rare(loup.clone());
     }
+    assert_eq!(preparation(&explorer(&partie)), toute_l_equipe);
+
+    // Deux places libres : pas de bouton.
+    partie.prendre_monstre_rare(loup.clone());
     assert_eq!(preparation(&explorer(&partie)), None);
 }

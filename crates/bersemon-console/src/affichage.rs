@@ -11,7 +11,9 @@ use bersemon_core::partie::Partie;
 use bersemon_core::zone::Zone;
 use bersemon_presentation::combat::{attaque_de_trop, attaque_en_combat};
 use bersemon_presentation::monstres::{decrire_attaque, ligne_monstre, nom_en_combat};
-use bersemon_presentation::partie::{decrire_zone, fiche_d_espece, ligne_du_codex};
+use bersemon_presentation::partie::{
+    decrire_zone, fiche_d_espece, ligne_du_codex, sac_en_expedition,
+};
 
 use crate::ecran_combat::Commande;
 
@@ -132,7 +134,7 @@ pub fn equipe_en_expedition(partie: &Partie) -> String {
             ligne_monstre(monstre, Cote::Joueur)
         ));
     }
-    lignes.push(format!("Potions : {}", partie.inventaire().potions()));
+    lignes.push(sac_en_expedition(partie));
     lignes.join("\n")
 }
 

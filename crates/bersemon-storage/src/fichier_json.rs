@@ -8,7 +8,7 @@ use bersemon_core::catalogue::Catalogue;
 use bersemon_core::partie::Partie;
 use bersemon_core::sauvegarde::{ErreurSauvegarde, SauvegardeRepository};
 
-use crate::format::{self, SauvegardeV6, VERSION};
+use crate::format::{self, SauvegardeV7, VERSION};
 
 pub struct FichierJson {
     chemin: PathBuf,
@@ -38,7 +38,7 @@ impl FichierJson {
         if !(1..=VERSION).contains(&version) {
             return Err(ErreurSauvegarde::VersionInconnue(version));
         }
-        let sauvegarde: SauvegardeV6 = serde_json::from_value(valeur)
+        let sauvegarde: SauvegardeV7 = serde_json::from_value(valeur)
             .map_err(|erreur| ErreurSauvegarde::Illisible(erreur.to_string()))?;
         format::vers_partie(sauvegarde, catalogue)
     }
@@ -84,6 +84,7 @@ mod tests {
     use bersemon_core::expedition_automatique::ParametresExpeditionAutomatique;
     use bersemon_core::heros::{Classe, Heros};
     use bersemon_core::horodatage::Horodatage;
+    use bersemon_core::inventaire::Inventaire;
     use bersemon_core::monstre::Monstre;
     use bersemon_core::niveau::Niveau;
     use bersemon_core::nom::Nom;
@@ -185,6 +186,7 @@ mod tests {
             ZoneId::new("lisiere"),
             "Lisière",
             (niveau, niveau),
+            4,
             1,
             vec![espece("loup")],
             vec![],
@@ -233,17 +235,16 @@ mod tests {
         for _ in 0..3 {
             partie.prendre_monstre_rare(creer("loup", 3));
         }
-        partie.ouvrir_coffre(2);
+        partie.ouvrir_coffre(2, 0, None);
         partie.noter_conseil_vu(Conseil::PremierArretEntreDeuxEtapes);
         partie.noter_conseil_vu(Conseil::PremierCombat);
         // La traque n'avance qu'en expédition : elle est posée directement.
         let etat = |partie: &Partie, attaques_a_choisir| EtatPartie {
             heros: partie.heros().clone(),
             collection: partie.collection().clone(),
-            inventaire: partie.inventaire().clone(),
-            argent: 135,
+            sac: partie.sac().clone(),
+            coffre_du_camp: Inventaire::new(135, 0, vec![capsule("grand-coup", Type::Normal)]),
             marchand_au_camp: true,
-            capsules: vec![capsule("grand-coup", Type::Normal)],
             codex: partie.codex().clone(),
             zones_explorees: vec![ZoneId::new("lisiere")],
             indices_trouves: 3,
@@ -328,12 +329,12 @@ mod tests {
         let fichier = FichierJson::new(&chemin);
         let mut partie = partie_complete();
         fichier.enregistrer(&partie).unwrap();
-        partie.ouvrir_coffre(5);
+        partie.ouvrir_coffre(5, 0, None);
         fichier.enregistrer(&partie).unwrap();
         let rechargee = fichier.charger(&catalogue()).unwrap().unwrap();
         let temporaire_restant = chemin.with_extension("json.tmp").exists();
         nettoyer(&chemin);
-        assert_eq!(rechargee.inventaire().potions(), 7);
+        assert_eq!(rechargee.sac().potions(), 7);
         assert!(!temporaire_restant);
     }
 
@@ -350,6 +351,40 @@ mod tests {
         serde_json::to_string(&format::depuis_partie(&partie_complete())).unwrap()
     }
 
+    /// La partie complète écrite comme avant la version 7 : tout ce que
+    /// possède le joueur, sans sac ni coffre.
+    fn en_version(version: u64) -> serde_json::Value {
+        let partie = partie_complete();
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        let objet = valeur.as_object_mut().unwrap();
+        objet.insert("version".to_string(), version.into());
+        objet.remove("sac");
+        objet.remove("coffre_du_camp");
+        let potions = partie.sac().potions() + partie.coffre_du_camp().potions();
+        objet.insert("potions".to_string(), potions.into());
+        objet.insert("argent".to_string(), partie.argent().into());
+        let capsules: Vec<String> = partie
+            .capsules()
+            .map(|capsule| capsule.id().as_str().to_string())
+            .collect();
+        objet.insert("capsules".to_string(), serde_json::json!(capsules));
+        valeur
+    }
+
+    #[test]
+    fn une_sauvegarde_en_version_6_range_tout_au_coffre() {
+        let partie = partie_complete();
+        let rechargee = charger_texte(&en_version(6).to_string()).unwrap().unwrap();
+        assert!(rechargee.sac().est_vide());
+        let coffre = rechargee.coffre_du_camp();
+        assert_eq!(
+            coffre.potions(),
+            partie.sac().potions() + partie.coffre_du_camp().potions()
+        );
+        assert_eq!(coffre.argent(), 135);
+        assert!(coffre.contient_capsule(&AttaqueId::new("grand-coup")));
+    }
+
     #[test]
     fn fichier_illisible() {
         assert!(matches!(
@@ -364,23 +399,21 @@ mod tests {
 
     #[test]
     fn version_inconnue() {
-        let texte = texte_de_partie().replacen("\"version\":6", "\"version\":7", 1);
+        let texte = texte_de_partie().replacen("\"version\":7", "\"version\":8", 1);
         assert_eq!(
             charger_texte(&texte),
-            Err(ErreurSauvegarde::VersionInconnue(7))
+            Err(ErreurSauvegarde::VersionInconnue(8))
         );
     }
 
     #[test]
     fn une_sauvegarde_en_version_5_n_a_pas_de_capsule() {
         let partie = partie_complete();
-        assert_eq!(partie.capsules().len(), 1);
-        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
-        let objet = valeur.as_object_mut().unwrap();
-        objet.insert("version".to_string(), 5.into());
-        objet.remove("capsules");
+        assert_eq!(partie.capsules().count(), 1);
+        let mut valeur = en_version(5);
+        valeur.as_object_mut().unwrap().remove("capsules");
         let rechargee = charger_texte(&valeur.to_string()).unwrap().unwrap();
-        assert!(rechargee.capsules().is_empty());
+        assert_eq!(rechargee.capsules().count(), 0);
         // L'attaque déjà apprise reste : la capsule existe toujours dans le
         // jeu.
         assert_eq!(rechargee.collection(), partie.collection());
@@ -389,8 +422,7 @@ mod tests {
     #[test]
     fn capsule_disparue_du_jeu() {
         let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
-        let objet = valeur.as_object_mut().unwrap();
-        objet.insert("capsules".to_string(), serde_json::json!(["eclair"]));
+        valeur["coffre_du_camp"]["capsules"] = serde_json::json!(["eclair"]);
         assert_eq!(
             charger_texte(&valeur.to_string()),
             Err(ErreurSauvegarde::CapsuleInconnue("eclair".to_string()))
@@ -410,9 +442,8 @@ mod tests {
     fn une_sauvegarde_en_version_4_n_a_pas_de_marchand() {
         let partie = partie_complete();
         assert!(partie.marchand_au_camp());
-        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        let mut valeur = en_version(4);
         let objet = valeur.as_object_mut().unwrap();
-        objet.insert("version".to_string(), 4.into());
         objet.remove("marchand_au_camp");
         objet.remove("capsules");
         let rechargee = charger_texte(&valeur.to_string()).unwrap().unwrap();
@@ -424,9 +455,8 @@ mod tests {
     fn une_sauvegarde_en_version_3_n_a_pas_d_argent() {
         let partie = partie_complete();
         assert_eq!(partie.argent(), 135);
-        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        let mut valeur = en_version(3);
         let objet = valeur.as_object_mut().unwrap();
-        objet.insert("version".to_string(), 3.into());
         objet.remove("argent");
         objet.remove("marchand_au_camp");
         objet.remove("capsules");

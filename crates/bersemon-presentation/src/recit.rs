@@ -11,7 +11,7 @@ use crate::erreurs::erreur_sauvegarde;
 use crate::expeditions_automatiques;
 use crate::mise_en_valeur::important;
 use crate::monstres::{nom_en_valeur, nom_sauvage};
-use crate::partie::{argent, capsule as nom_de_capsule, enumerer, potions};
+use crate::partie::{argent, capsule as nom_de_capsule, contenu, enumerer, potions};
 
 /// Une ou plusieurs lignes de récit.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -46,7 +46,7 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             false,
         ),
         Evenement::Depart(zone) => (format!("Vous partez pour {zone}."), true),
-        Evenement::Etape(numero) => (format!("Étape {numero}."), true),
+        Evenement::Etape { numero, total } => (format!("Étape {numero}/{total}."), true),
         Evenement::Coffre {
             potions: nombre,
             argent: montant,
@@ -130,22 +130,13 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             false,
         ),
         Evenement::Epilogue(epilogue) => (epilogue.clone(), true),
-        Evenement::Defaite {
-            argent_perdu,
-            capsules_perdues,
-        } => {
-            let mut perdu = Vec::new();
-            if *argent_perdu > 0 {
-                perdu.push(argent(*argent_perdu));
-            }
-            perdu.extend(capsules_perdues.iter().map(nom_de_capsule));
-            let texte = if perdu.is_empty() {
-                "Toute votre équipe est KO : vous rentrez au camp et perdez vos potions."
-                    .to_string()
+        Evenement::Defaite { sac_perdu } => {
+            let texte = if sac_perdu.est_vide() {
+                "Toute votre équipe est KO : vous rentrez au camp, le sac vide.".to_string()
             } else {
                 format!(
-                    "Toute votre équipe est KO : vous rentrez au camp et perdez vos potions, ainsi que ce que vous aviez trouvé en chemin : {}.",
-                    enumerer(&perdu)
+                    "Toute votre équipe est KO : vous rentrez au camp et perdez tout votre sac : {}.",
+                    contenu(sac_perdu)
                 )
             };
             (important(&texte), true)
@@ -162,13 +153,7 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             "Retour au camp : vos monstres sont soignés.".to_string(),
             !matches!(precedent, Some(Evenement::ZoneExploree(_))),
         ),
-        Evenement::ArgentRapporte(montant) => {
-            (format!("Vous rapportez {}.", argent(*montant)), false)
-        }
-        Evenement::CapsuleRapportee(capsule) => (
-            format!("Vous rapportez {}.", nom_de_capsule(capsule)),
-            false,
-        ),
+
         Evenement::Indice { numero, texte } => {
             (important(&format!("Indice {numero} : {texte}")), true)
         }
@@ -201,6 +186,18 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
                 nom_en_valeur(monstre, Cote::Joueur),
                 argent(*prix)
             ),
+            false,
+        ),
+        // Tout ranger reste possible avec un sac vide.
+        Evenement::RangeAuCoffre(range) if range.est_vide() => {
+            ("Le sac est déjà vide.".to_string(), false)
+        }
+        Evenement::RangeAuCoffre(range) => (
+            format!("Vous rangez dans le coffre : {}.", contenu(range)),
+            false,
+        ),
+        Evenement::SortiDuCoffre(sorti) => (
+            format!("Vous prenez dans le coffre : {}.", contenu(sorti)),
             false,
         ),
         Evenement::CapsuleAchetee { capsule, prix } => (
@@ -281,14 +278,19 @@ mod tests {
     }
 
     #[test]
-    fn une_defaite_dit_l_argent_perdu() {
-        let recit = &raconter(&[Evenement::Defaite {
-            argent_perdu: 1,
-            capsules_perdues: vec![brasier()],
-        }])[0];
+    fn une_defaite_dit_ce_que_contenait_le_sac() {
+        let sac = bersemon_core::inventaire::Inventaire::new(1, 2, vec![brasier()]);
+        let recit = &raconter(&[Evenement::Defaite { sac_perdu: sac }])[0];
         assert_eq!(
             recit.texte,
-            "**Toute votre équipe est KO : vous rentrez au camp et perdez vos potions, ainsi que ce que vous aviez trouvé en chemin : 1 pièce d'argent et la capsule d'attaque Brasier.**"
+            "**Toute votre équipe est KO : vous rentrez au camp et perdez tout votre sac : 2 potions, 1 pièce d'argent et la capsule d'attaque Brasier.**"
+        );
+        let vide = Evenement::Defaite {
+            sac_perdu: bersemon_core::inventaire::Inventaire::default(),
+        };
+        assert_eq!(
+            raconter(&[vide])[0].texte,
+            "**Toute votre équipe est KO : vous rentrez au camp, le sac vide.**"
         );
     }
 
@@ -305,9 +307,15 @@ mod tests {
     }
 
     #[test]
-    fn l_argent_rapporte_suit_le_retour_au_camp() {
-        let recits = raconter(&[Evenement::RetourAuCamp, Evenement::ArgentRapporte(40)]);
-        assert_eq!(recits[1].texte, "Vous rapportez 40 pièces d'argent.");
-        assert!(!recits[1].nouveau_paragraphe);
+    fn ranger_au_coffre_dit_ce_qui_a_ete_range() {
+        let range = bersemon_core::inventaire::Inventaire::new(40, 0, Vec::new());
+        let recit = &raconter(&[Evenement::RangeAuCoffre(range)])[0];
+        assert_eq!(
+            recit.texte,
+            "Vous rangez dans le coffre : 40 pièces d'argent."
+        );
+        let rien = bersemon_core::inventaire::Inventaire::default();
+        let recit = &raconter(&[Evenement::RangeAuCoffre(rien)])[0];
+        assert_eq!(recit.texte, "Le sac est déjà vide.");
     }
 }

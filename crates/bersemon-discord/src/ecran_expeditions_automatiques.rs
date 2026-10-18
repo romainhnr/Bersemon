@@ -145,9 +145,9 @@ pub fn preparation(
             SECONDAIRE,
         ));
     }
-    // Proposé seulement si ce départ est possible : il faut un monstre au
-    // camp pour rejoindre l'équipe, et une place au camp pour chaque monstre
-    // de l'équipe (section 12.1).
+    // Proposé seulement si ce départ est possible : il faut une place au
+    // camp pour chaque monstre de l'équipe à son retour. L'équipe reste vide
+    // (section 12.1).
     let toute_l_equipe = (0..collection.equipe().len())
         .map(Emplacement::Equipe)
         .try_fold(Choisis::default(), Choisis::avec);

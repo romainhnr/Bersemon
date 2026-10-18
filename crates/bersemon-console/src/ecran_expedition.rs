@@ -3,35 +3,24 @@
 
 use bersemon_core::collection::{Collection, Emplacement};
 use bersemon_core::deroulement::{ActionDeGestion, Choix};
-use bersemon_core::expedition::Expedition;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_presentation::partie::{
-    butin_en_chemin, collection as liste_des_monstres, place_manquante as place_manquante_texte,
+    collection as liste_des_monstres, place_manquante as place_manquante_texte,
 };
 
 use crate::affichage;
 use crate::saisie::Entree;
 
-/// Rend `None` si l'entrée est fermée. Ce qui a été trouvé en chemin est
-/// rappelé : une défaite le ferait perdre (section 9.3).
-pub fn entre_deux_etapes(
-    partie: &Partie,
-    expedition: &Expedition,
-    entree: &mut Entree,
-) -> Option<Choix> {
+/// Rend `None` si l'entrée est fermée. Le contenu du sac est rappelé : une
+/// défaite le ferait perdre (section 9.3).
+pub fn entre_deux_etapes(partie: &Partie, entree: &mut Entree) -> Option<Choix> {
     loop {
         println!();
         println!("{}", affichage::equipe_en_expedition(partie));
-        if let Some(butin) = butin_en_chemin(expedition) {
-            println!("{butin}");
-        }
         println!("Que faire ?");
         println!("  1. Continuer l'expédition");
-        println!(
-            "  2. Utiliser une potion ({})",
-            partie.inventaire().potions()
-        );
+        println!("  2. Utiliser une potion ({})", partie.sac().potions());
         println!("  3. Changer l'ordre de l'équipe");
         println!("  4. Rentrer au camp");
         match entree.choix(1, 4)? {

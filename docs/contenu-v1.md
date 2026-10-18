@@ -133,6 +133,8 @@ Autrefois seigneur des terres du Marais, il a livré son propre fief au gibet po
 
 La Lisière est accessible dès le départ. Le Marais s'ouvre avec le premier indice, au bout de la première expédition complète dans la Lisière ; deux expéditions complètes dans le Marais donnent les indices 2 et 3 ; l'expédition suivante dans le Marais s'achève par le Baron pendu (section 9.4).
 
+Nombre d'étapes d'une expédition manuelle, fixe depuis l'étape 26 (décidé le 18/10/2026, gamedesign.md, section 9.2) : 3 dans la Lisière, 4 dans le Marais. Dans la V1, il était tiré entre 4 et 6.
+
 Expéditions automatiques, ajoutées après la V1 le 18/10/2026 (section 12) :
 
 | Identifiant | Durée de base, pour un monstre | Dégâts | XP par monstre non KO | Potions | Argent |
@@ -207,9 +209,9 @@ Au début du premier combat :
 
 > Conseil : affaiblissez un monstre avant de lancer un filet, car plus il a perdu de PV, plus la capture a de chances de réussir. Fuir réussit toujours, mais le monstre adverse frappe une dernière fois.
 
-Au premier arrêt entre deux étapes :
+Au premier arrêt entre deux étapes. Depuis l'étape 26 et le coffre du camp, le 19/10/2026, la fin du texte est « une défaite vous fait perdre tout votre sac, mais pas ce qui est rangé dans le coffre du camp » ; elle était « une défaite vous fait perdre toutes vos potions ».
 
-> Conseil : vos monstres ne récupèrent leurs PV qu'au camp. Entre deux étapes, soignez-les avec une potion, changez l'ordre de votre équipe, ou rentrez avant qu'il ne soit trop tard : une défaite vous fait perdre toutes vos potions.
+> Conseil : vos monstres ne récupèrent leurs PV qu'au camp. Entre deux étapes, soignez-les avec une potion, changez l'ordre de votre équipe, ou rentrez avant qu'il ne soit trop tard : une défaite vous fait perdre tout votre sac, mais pas ce qui est rangé dans le coffre du camp.
 
 Au premier retour au camp :
 
@@ -228,13 +230,13 @@ Au premier retour au camp :
 
 Ajoutée après la V1, le 18/10/2026 (gamedesign.md, sections 13.10 et 14). Les montants se comptent en pièces d'argent.
 
-Revente d'un monstre au marchand : son niveau multiplié par le coefficient de rareté de son espèce, puis doublé pour un shiny.
+Revente d'un monstre au marchand, depuis l'étape 26 : son niveau multiplié par le total des stats de base de son espèce, divisé par 50 en division entière, puis multiplié par le coefficient de rareté de l'espèce, et doublé pour un shiny. Avant l'étape 26, c'était son niveau multiplié par 5, 15 ou 40 selon la rareté.
 
 | Rareté | Espèces | Coefficient | Exemple |
 |---|---|---|---|
-| commune | monstres de départ et monstres communs | 5 | Loup de niveau 5 : 25 |
-| rare | Cerf blanc, Basilic | 15 | Cerf blanc de niveau 5 : 75 |
-| Apôtre | Baron pendu | 40 | Baron pendu de niveau 15 : 600 |
+| commune | monstres de départ et monstres communs | 1 | Loup de niveau 5 (285 de stats de base) : 28 |
+| rare | Cerf blanc, Basilic | 2 | Cerf blanc de niveau 5 (400) : 80 |
+| Apôtre | Baron pendu | 4 | Baron pendu de niveau 15 (480) : 576 |
 
 Prix du marchand : une potion coûte 20. Il vend toutes les capsules d'attaque.
 

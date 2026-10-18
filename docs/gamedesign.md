@@ -476,6 +476,7 @@ Repères, avec des valeurs internes de 15 : dans la Lisière, une Salamandre de 
   - Au camp, l'argent du sac et celui du coffre paient ensemble, celui du sac d'abord. Toutes les capsules possédées servent à apprendre des attaques, où qu'elles soient.
   - Une défaite en expédition manuelle fait perdre tout le sac (section 9.3). Une expédition automatique échouée ne rapporte rien, comme avant (section 12.3).
   - À la reprise d'une sauvegarde antérieure, l'argent, les potions et les capsules déjà possédés sont rangés dans le coffre.
+  - Au camp, l'écran du coffre montre le sac et le coffre ; on y prend ou range des potions, de l'argent et des capsules, ou l'on range tout le sac d'un coup. Le camp rappelle le contenu des deux.
 
 ### 13.4 Améliorations
 
@@ -591,7 +592,7 @@ Premier marchand, après la V1 :
 | Capsule d'attaque | 150 pour celles de la Lisière, 200 à 300 pour celles du Marais (docs/contenu-v1.md, section 6) |
 | Rencontre du marchand | 10 % des étapes d'une expédition manuelle, tant qu'il n'est pas au camp |
 
-Repères : un Loup de niveau 5 se revend 28 pièces d'argent, un Feu follet de niveau 10 64, un Cerf blanc de niveau 5 80, le Baron pendu au niveau 15 576. Une expédition dans la Lisière rapporte de l'ordre de 40 à 60 pièces d'argent avec une ou deux captures revendues, une expédition dans le Marais de 100 à 130. Une expédition de 5 étapes croise le marchand 41 fois sur 100. À vérifier en jouant.
+Repères : un Loup de niveau 5 se revend 28 pièces d'argent, un Feu follet de niveau 10 64, un Cerf blanc de niveau 5 80, le Baron pendu au niveau 15 576. Une expédition dans la Lisière rapporte de l'ordre de 40 à 60 pièces d'argent avec une ou deux captures revendues, une expédition dans le Marais de 100 à 130. Ces estimations datent des expéditions de 4 à 6 étapes ; depuis l'étape 26, elles en comptent 3 dans la Lisière et 4 dans le Marais. Une expédition croise le marchand 27 fois sur 100 dans la Lisière, 34 dans le Marais. À vérifier en jouant.
 
 ## 15. Multijoueur (après l'adaptation à Discord)
 
@@ -626,7 +627,7 @@ Les questions Q67 et suivantes ont été relevées le 18/10/2026 après les prem
 Les questions Q72 et suivantes ont été relevées le 18/10/2026 après les essais de l'économie, découpés en étapes : 25 interface, 26 règles (coffre et sac, équipe vide, revente, étapes fixes), 27 classe Assassin et nouveaux monstres, 28 combats contre des humains, 29 troisième zone, Baron et Apôtre de type Obscur, 30 marchands par zone.
 
 - Q72. (Étape 27) Classe Assassin : type, nom, stats, attaques et texte de présentation de son monstre attitré.
-- Q73. (Étape 27) Nouveaux monstres inspirés de Berserk (fées, elfes, squelettes, dragons) : liste, fiches et zones. Le Schnoz, une créature de Berserk (référence donnée par l'utilisateur : https://berserk.fandom.com/wiki/Chimimoryo, page que le site a refusé d'ouvrir), sera un monstre caché, obtenu par un easter egg ou extrêmement rare, peut-être le seul de type Stellaire.
+- Q73. (Étape 27) Nouveaux monstres inspirés de Berserk (fées, elfes, squelettes, dragons) : liste, fiches et zones. Le Schnoz, surnom donné par les fans au chimimoryo, créature astrale croisée près du Qliphoth dans l'épisode 215 du manga (page https://berserk.fandom.com/wiki/Chimimoryo transmise par l'utilisateur), sera un monstre caché, obtenu par un easter egg ou extrêmement rare, peut-être le seul de type Stellaire. C'est une créature de l'œuvre, protégée : sans souci pour un jeu privé, mais si le bot devient public, mieux vaudra une créature qui s'en inspire, avec son propre nom et sa propre apparence (voir aussi Q64).
 - Q74. (Étape 28) Combats contre des humains et leurs monstres, à la fin de la première zone pour commencer : nombre et niveaux des monstres adverses, fuite et filet, capture après la victoire (section 11.3), récompenses, et règles de l'IA d'un humain ordinaire (simple, mais pas au hasard).
 - Q75. (Étape 29) Troisième zone et nouvelle traque : un indice par zone à sa première expédition menée au bout ; à la fin de la deuxième zone, un humain plus fort, au service de l'Apôtre, donne l'indice de la troisième, où attend l'Apôtre. Restent à définir la zone (nom, niveaux, espèces), les noms (l'Apôtre actuel s'appelle déjà Baron pendu : l'un des deux sera renommé), l'IA du Baron et celle de l'Apôtre, et la conversion des sauvegardes qui ont déjà trouvé 3 indices. L'utilisateur accepte ces conséquences.
 - Q76. (Étape 29) Type Obscur : Obscur contre Obscur, attaques des Apôtres, équilibrage ; autres relations du type Stellaire (voir Q5).
@@ -864,3 +865,10 @@ Les questions Q72 et suivantes ont été relevées le 18/10/2026 après les essa
 - Type Obscur : il est gardé tel quel ; l'Apôtre combat seul contre 3 monstres, et l'équilibrage se fera en jouant.
 - Schnoz : monstre caché, obtenu par un easter egg ou extrêmement rare, peut-être le seul de type Stellaire (Q73).
 - Le rendu des listes sur Discord doit être propre (étape 25).
+
+19/10/2026 (étape 26) :
+
+- Écran du coffre au camp, dans la console (« Coffre du camp », entre la gestion des monstres et le codex) et sur Discord (bouton « Coffre du camp ») : prendre ou ranger des potions, de l'argent ou une capsule, ou tout ranger. La console demande la quantité ; Discord propose des lots dans ses menus : 1, 5 ou toutes les potions, 10, 50, 100, 500 ou tout l'argent.
+- Le compteur « [Étape : 2/3] » est en haut de chaque écran d'expédition, combats compris ; l'annonce d'une étape devient « Étape 2/3. ». Entre deux étapes, l'écran montre le contenu du sac, qu'une défaite ferait perdre.
+- Le conseil du premier arrêt entre deux étapes parle du sac et du coffre, à la place des potions perdues.
+- Sauvegarde en version 7, avec le sac et le coffre ; les versions 1 à 6 se lisent, tout rangé au coffre.

@@ -48,22 +48,25 @@ impl Capsule {
 /// celles de son espèce jusqu'à son niveau, y compris celles qu'il a
 /// oubliées ou refusées, puis celles des capsules de son type, chacune une
 /// seule fois.
-pub fn attaques_a_apprendre(monstre: &Monstre, capsules: &[Capsule]) -> Vec<Attaque> {
-    let de_l_espece = monstre
-        .espece()
-        .apprentissage()
-        .iter()
-        .filter(|apprise| apprise.niveau <= monstre.niveau())
-        .map(|apprise| &apprise.attaque);
-    let des_capsules = capsules
-        .iter()
-        .filter(|capsule| capsule.convient_a(monstre.espece()))
-        .map(Capsule::attaque);
+pub fn attaques_a_apprendre<'c>(
+    monstre: &Monstre,
+    capsules: impl IntoIterator<Item = &'c Capsule>,
+) -> Vec<Attaque> {
     let mut attaques: Vec<Attaque> = Vec::new();
-    for attaque in de_l_espece.chain(des_capsules) {
+    let mut ajouter = |attaque: &Attaque| {
         let deja_vue = attaques.iter().any(|vue| vue.id() == attaque.id());
         if !deja_vue && !monstre.attaques().connait(attaque.id()) {
             attaques.push(attaque.clone());
+        }
+    };
+    for apprise in monstre.espece().apprentissage() {
+        if apprise.niveau <= monstre.niveau() {
+            ajouter(&apprise.attaque);
+        }
+    }
+    for capsule in capsules {
+        if capsule.convient_a(monstre.espece()) {
+            ajouter(capsule.attaque());
         }
     }
     attaques

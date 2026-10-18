@@ -72,7 +72,7 @@ pub fn texte_du_conseil(conseil: Conseil) -> &'static str {
             "Conseil : affaiblissez un monstre avant de lancer un filet, car plus il a perdu de PV, plus la capture a de chances de réussir. Fuir réussit toujours, mais le monstre adverse frappe une dernière fois."
         }
         Conseil::PremierArretEntreDeuxEtapes => {
-            "Conseil : vos monstres ne récupèrent leurs PV qu'au camp. Entre deux étapes, soignez-les avec une potion, changez l'ordre de votre équipe, ou rentrez avant qu'il ne soit trop tard : une défaite vous fait perdre toutes vos potions."
+            "Conseil : vos monstres ne récupèrent leurs PV qu'au camp. Entre deux étapes, soignez-les avec une potion, changez l'ordre de votre équipe, ou rentrez avant qu'il ne soit trop tard : une défaite vous fait perdre tout votre sac, mais pas ce qui est rangé dans le coffre du camp."
         }
         Conseil::PremierRetourAuCamp => {
             "Conseil : au camp, vos monstres sont soignés et la partie est sauvegardée. Trois monstres vous accompagnent ; les autres attendent ici, et vous pouvez les échanger à tout moment."
@@ -118,6 +118,7 @@ impl ContenuV1 {
             ZoneId::new("lisiere"),
             "Lisière du Bois-Sombre",
             (niveau(3), niveau(7)),
+            3,
             2,
             vec![trouver("loup"), trouver("corbeau"), trouver("vipere")],
             vec![EspeceRare {
@@ -132,6 +133,7 @@ impl ContenuV1 {
             ZoneId::new("marais"),
             "Marais des Pendus",
             (niveau(8), niveau(13)),
+            4,
             3,
             vec![
                 trouver("feu-follet"),

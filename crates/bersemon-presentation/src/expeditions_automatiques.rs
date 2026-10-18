@@ -228,10 +228,9 @@ mod tests {
         Partie::restaurer(EtatPartie {
             heros: partie.heros().clone(),
             collection: partie.collection().clone(),
-            inventaire: partie.inventaire().clone(),
-            argent: partie.argent(),
+            sac: partie.sac().clone(),
+            coffre_du_camp: partie.coffre_du_camp().clone(),
             marchand_au_camp: partie.marchand_au_camp(),
-            capsules: partie.capsules().to_vec(),
             codex: partie.codex().clone(),
             zones_explorees: vec![ZoneId::new("lisiere")],
             indices_trouves: 1,

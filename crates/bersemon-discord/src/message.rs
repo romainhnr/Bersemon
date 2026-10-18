@@ -9,7 +9,7 @@ use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::{Attente, Confirmation, Evenement};
 use bersemon_core::horodatage::Horodatage;
 use bersemon_presentation::erreurs::erreur_de_choix;
-use bersemon_presentation::partie::question_de_confirmation;
+use bersemon_presentation::partie::{compteur_d_etapes, question_de_confirmation};
 use bersemon_presentation::recit::raconter;
 use poise::serenity_prelude as serenity;
 
@@ -146,6 +146,11 @@ pub fn message(
     }
     let question = question(session, contenu, maintenant);
     ajouter_paragraphe(&mut texte, &question.texte);
+    // En expédition, le compteur d'étapes est toujours en haut (section
+    // 9.2).
+    if let Some(expedition) = session.deroulement.expedition() {
+        texte = format!("{}\n\n{texte}", compteur_d_etapes(expedition));
+    }
     let mut rangees = question.rangees;
     rangees.truncate(RANGEES_MAX);
     Message {
@@ -192,8 +197,6 @@ fn expliquer(refus: &Refus) -> String {
 
 /// Au camp et en expédition, une partie est en jeu.
 const PARTIE_EN_JEU: &str = "une partie est en jeu";
-/// Entre deux étapes, une expédition est en cours.
-const EN_EXPEDITION: &str = "une expédition est en cours";
 
 fn question(session: &Session, contenu: &ContenuV1, maintenant: Horodatage) -> Question {
     let partie = || session.deroulement.partie().expect(PARTIE_EN_JEU);
@@ -203,10 +206,7 @@ fn question(session: &Session, contenu: &ContenuV1, maintenant: Horodatage) -> Q
         Attente::NomDuHeros => ecran_accueil::nom_du_heros(),
         Attente::Classe => ecran_accueil::classe(contenu),
         Attente::Camp => ecran_camp::question(partie(), session.vue, contenu, maintenant),
-        Attente::EntreDeuxEtapes => {
-            let expedition = session.deroulement.expedition().expect(EN_EXPEDITION);
-            ecran_expedition::entre_deux_etapes(partie(), expedition)
-        }
+        Attente::EntreDeuxEtapes => ecran_expedition::entre_deux_etapes(partie()),
         Attente::MonstreRare(_) => ecran_expedition::monstre_rare(),
         Attente::PlaceManquante(capture) => {
             ecran_expedition::place_manquante(capture, partie().collection())

@@ -47,6 +47,8 @@ pub struct MonstreRare {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ErreurZone {
     NiveauxInverses,
+    /// Une expédition compte au moins une étape.
+    AucuneEtape,
     GroupeVide,
     AucuneEspece,
     /// L'espèce n'apprend aucune attaque, ou en apprend une en double,
@@ -63,6 +65,7 @@ impl fmt::Display for ErreurZone {
             ErreurZone::NiveauxInverses => {
                 write!(f, "le niveau minimal dépasse le niveau maximal")
             }
+            ErreurZone::AucuneEtape => write!(f, "une expédition compte au moins une étape"),
             ErreurZone::GroupeVide => write!(f, "un groupe sauvage compte au moins un monstre"),
             ErreurZone::AucuneEspece => write!(f, "une zone doit avoir au moins une espèce"),
             ErreurZone::EspeceInvalide { espece, niveau } => write!(
@@ -83,6 +86,8 @@ pub struct Zone {
     nom: String,
     niveau_min: Niveau,
     niveau_max: Niveau,
+    /// Fixe et connu du joueur ; il suit la difficulté (section 9.2).
+    etapes: u32,
     taille_max_groupe: u8,
     especes: Vec<Espece>,
     rares: Vec<EspeceRare>,
@@ -103,6 +108,7 @@ impl Zone {
         id: ZoneId,
         nom: impl Into<String>,
         niveaux: (Niveau, Niveau),
+        etapes: u32,
         taille_max_groupe: u8,
         especes: Vec<Espece>,
         rares: Vec<EspeceRare>,
@@ -112,6 +118,9 @@ impl Zone {
         let (niveau_min, niveau_max) = niveaux;
         if niveau_min > niveau_max {
             return Err(ErreurZone::NiveauxInverses);
+        }
+        if etapes == 0 {
+            return Err(ErreurZone::AucuneEtape);
         }
         if taille_max_groupe == 0 {
             return Err(ErreurZone::GroupeVide);
@@ -136,6 +145,7 @@ impl Zone {
             nom: nom.into(),
             niveau_min,
             niveau_max,
+            etapes,
             taille_max_groupe,
             especes,
             rares,
@@ -156,6 +166,11 @@ impl Zone {
     /// (section 9.1).
     pub fn niveaux(&self) -> (Niveau, Niveau) {
         (self.niveau_min, self.niveau_max)
+    }
+
+    /// Le nombre d'étapes de chaque expédition manuelle (section 9.2).
+    pub fn etapes(&self) -> u32 {
+        self.etapes
     }
 
     pub fn taille_max_groupe(&self) -> u8 {
@@ -260,6 +275,7 @@ mod tests {
             ZoneId::new("bois"),
             "Bois",
             (niveau(niveaux.0), niveau(niveaux.1)),
+            4,
             taille,
             especes,
             rares,

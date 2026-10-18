@@ -190,6 +190,7 @@ mod tests {
             ZoneId::new(id),
             id,
             (Niveau::new(1).unwrap(), Niveau::new(niveau_max).unwrap()),
+            4,
             1,
             vec![espece("loup")],
             vec![],

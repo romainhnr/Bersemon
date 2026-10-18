@@ -1,4 +1,4 @@
-//! Format JSON de la sauvegarde, version 6, et sa conversion vers les types
+//! Format JSON de la sauvegarde, version 7, et sa conversion vers les types
 //! du noyau. Les énumérations sont écrites avec des noms fixés ici, et non
 //! avec les noms Rust, pour qu'un renommage dans le code ne casse pas les
 //! sauvegardes existantes.
@@ -28,27 +28,37 @@ use bersemon_core::zone::ZoneId;
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 6;
+pub(crate) const VERSION: u64 = 7;
+
+/// La version de la sauvegarde qui sépare le sac du coffre du camp.
+const VERSION_DU_COFFRE: u64 = 7;
 
 /// La version 2 ajoute la traque de l'Apôtre et le tutoriel, la version 3
 /// les expéditions automatiques et les attaques à choisir à leur retour, la
 /// version 4 l'argent, la version 5 le marchand, la version 6 les capsules
-/// d'attaque. Une sauvegarde d'une version précédente se lit avec cette
-/// structure : les champs ajoutés y prennent leur valeur de début de partie.
+/// d'attaque, la version 7 le sac et le coffre du camp. Une sauvegarde d'une
+/// version précédente se lit avec cette structure : les champs ajoutés y
+/// prennent leur valeur de début de partie.
 #[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct SauvegardeV6 {
+pub(crate) struct SauvegardeV7 {
     pub(crate) version: u64,
     heros: HerosV1,
     equipe: Vec<MonstreV1>,
     camp: Vec<MonstreV1>,
+    /// Jusqu'à la version 6 : tout ce que possédait le joueur, rangé dans le
+    /// coffre du camp à la lecture (section 13.3). N'est plus écrit.
+    #[serde(default, skip_serializing)]
     potions: u32,
-    #[serde(default)]
+    #[serde(default, skip_serializing)]
     argent: u32,
+    #[serde(default, skip_serializing)]
+    capsules: Vec<String>,
+    #[serde(default)]
+    sac: InventaireV7,
+    #[serde(default)]
+    coffre_du_camp: InventaireV7,
     #[serde(default)]
     marchand_au_camp: bool,
-    /// Identifiants de leurs attaques.
-    #[serde(default)]
-    capsules: Vec<String>,
     codex: CodexV1,
     zones_explorees: Vec<String>,
     #[serde(default)]
@@ -61,6 +71,17 @@ pub(crate) struct SauvegardeV6 {
     expeditions_automatiques: Vec<ExpeditionAutomatiqueV3>,
     #[serde(default)]
     attaques_a_choisir: Vec<AttaqueAChoisirV3>,
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+struct InventaireV7 {
+    #[serde(default)]
+    argent: u32,
+    #[serde(default)]
+    potions: u32,
+    /// Identifiants de leurs attaques.
+    #[serde(default)]
+    capsules: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -115,9 +136,9 @@ struct CodexV1 {
     capturees: Vec<String>,
 }
 
-pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV6 {
+pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV7 {
     let collection = partie.collection();
-    SauvegardeV6 {
+    SauvegardeV7 {
         version: VERSION,
         heros: HerosV1 {
             nom: partie.heros().nom().as_str().to_string(),
@@ -125,14 +146,12 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV6 {
         },
         equipe: collection.equipe().iter().map(depuis_monstre).collect(),
         camp: collection.camp().iter().map(depuis_monstre).collect(),
-        potions: partie.inventaire().potions(),
-        argent: partie.argent(),
+        potions: 0,
+        argent: 0,
+        capsules: Vec::new(),
+        sac: depuis_inventaire(partie.sac()),
+        coffre_du_camp: depuis_inventaire(partie.coffre_du_camp()),
         marchand_au_camp: partie.marchand_au_camp(),
-        capsules: partie
-            .capsules()
-            .iter()
-            .map(|capsule| capsule.id().as_str().to_string())
-            .collect(),
         codex: CodexV1 {
             rencontrees: ids(partie.codex().rencontrees()),
             capturees: ids(partie.codex().capturees()),
@@ -170,8 +189,40 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV6 {
     }
 }
 
+fn depuis_inventaire(inventaire: &Inventaire) -> InventaireV7 {
+    InventaireV7 {
+        argent: inventaire.argent(),
+        potions: inventaire.potions(),
+        capsules: inventaire
+            .capsules()
+            .iter()
+            .map(|capsule| capsule.id().as_str().to_string())
+            .collect(),
+    }
+}
+
+fn vers_inventaire(
+    inventaire: InventaireV7,
+    catalogue: &dyn Catalogue,
+) -> Result<Inventaire, ErreurSauvegarde> {
+    let capsules = inventaire
+        .capsules
+        .into_iter()
+        .map(|id| {
+            catalogue
+                .capsule(&AttaqueId::new(id.as_str()))
+                .ok_or(ErreurSauvegarde::CapsuleInconnue(id))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(Inventaire::new(
+        inventaire.argent,
+        inventaire.potions,
+        capsules,
+    ))
+}
+
 pub(crate) fn vers_partie(
-    sauvegarde: SauvegardeV6,
+    sauvegarde: SauvegardeV7,
     catalogue: &dyn Catalogue,
 ) -> Result<Partie, ErreurSauvegarde> {
     let heros = Heros::new(
@@ -192,17 +243,21 @@ pub(crate) fn vers_partie(
         .collect::<Result<Vec<_>, _>>()?;
     let collection = Collection::restaurer(equipe, camp)
         .map_err(|erreur| ErreurSauvegarde::Incoherente(erreur.to_string()))?;
-    let capsules = sauvegarde
-        .capsules
-        .into_iter()
-        .map(|id| {
-            catalogue
-                .capsule(&AttaqueId::new(id.as_str()))
-                .ok_or(ErreurSauvegarde::CapsuleInconnue(id))
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-    let mut inventaire = Inventaire::default();
-    inventaire.ajouter_potions(sauvegarde.potions);
+    // Avant la version 7, tout ce que possédait le joueur est rangé dans le
+    // coffre du camp, à l'abri (section 13.3).
+    let (sac, coffre_du_camp) = if sauvegarde.version < VERSION_DU_COFFRE {
+        let ancien = InventaireV7 {
+            argent: sauvegarde.argent,
+            potions: sauvegarde.potions,
+            capsules: sauvegarde.capsules,
+        };
+        (Inventaire::default(), vers_inventaire(ancien, catalogue)?)
+    } else {
+        (
+            vers_inventaire(sauvegarde.sac, catalogue)?,
+            vers_inventaire(sauvegarde.coffre_du_camp, catalogue)?,
+        )
+    };
     let mut codex = Codex::default();
     for espece in &sauvegarde.codex.rencontrees {
         codex.noter_rencontre(&EspeceId::new(espece.as_str()));
@@ -233,10 +288,9 @@ pub(crate) fn vers_partie(
     Partie::restaurer(EtatPartie {
         heros,
         collection,
-        inventaire,
-        argent: sauvegarde.argent,
+        sac,
+        coffre_du_camp,
         marchand_au_camp: sauvegarde.marchand_au_camp,
-        capsules,
         codex,
         zones_explorees,
         indices_trouves: sauvegarde.indices_trouves,

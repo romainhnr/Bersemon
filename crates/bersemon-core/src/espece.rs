@@ -110,6 +110,22 @@ impl Espece {
         &self.stats_de_base
     }
 
+    /// Avec la rareté, il fixe le prix de revente (section 14.5).
+    pub fn total_des_stats_de_base(&self) -> u32 {
+        let base = &self.stats_de_base;
+        [
+            base.pv,
+            base.attaque,
+            base.defense,
+            base.attaque_speciale,
+            base.defense_speciale,
+            base.vitesse,
+        ]
+        .iter()
+        .map(|&stat| u32::from(stat))
+        .sum()
+    }
+
     /// Sert au calcul de l'XP que rapporte un monstre de l'espèce vaincu
     /// (section 7).
     pub fn rendement_experience(&self) -> u16 {

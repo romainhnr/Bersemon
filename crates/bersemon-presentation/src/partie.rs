@@ -9,6 +9,7 @@ use bersemon_core::deroulement::Confirmation;
 use bersemon_core::espece::Espece;
 use bersemon_core::expedition::Expedition;
 use bersemon_core::heros::Classe;
+use bersemon_core::inventaire::Inventaire;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_core::zone::Zone;
@@ -26,6 +27,10 @@ pub fn collection(collection: &Collection) -> String {
         equipe.len(),
         Collection::TAILLE_EQUIPE
     )];
+    // Au camp, l'équipe peut être vide (section 13.2).
+    if equipe.is_empty() {
+        lignes.push("  aucun monstre".to_string());
+    }
     for (index, monstre) in equipe.iter().enumerate() {
         lignes.push(format!(
             "  {}. {}",
@@ -82,20 +87,49 @@ pub fn capsule(capsule: &Capsule) -> String {
     format!("la capsule d'attaque {}", capsule.attaque().nom())
 }
 
-/// Ce que l'expédition a trouvé, qu'une défaite ferait perdre (section
-/// 9.3). `None` s'il n'y a rien.
-pub fn butin_en_chemin(expedition: &Expedition) -> Option<String> {
-    let mut trouve = Vec::new();
-    if expedition.argent_trouve() > 0 {
-        trouve.push(argent(expedition.argent_trouve()));
+/// « 2 potions, 30 pièces d'argent et la capsule d'attaque Brasier », ou
+/// « vide ».
+pub fn contenu(inventaire: &Inventaire) -> String {
+    let mut elements = Vec::new();
+    if inventaire.potions() > 0 {
+        elements.push(potions(inventaire.potions()));
     }
-    trouve.extend(expedition.capsules_trouvees().iter().map(capsule));
-    (!trouve.is_empty()).then(|| {
-        format!(
-            "Trouvé en chemin, perdu en cas de défaite : {}.",
-            enumerer(&trouve)
-        )
-    })
+    if inventaire.argent() > 0 {
+        elements.push(argent(inventaire.argent()));
+    }
+    elements.extend(inventaire.capsules().iter().map(capsule));
+    if elements.is_empty() {
+        "vide".to_string()
+    } else {
+        enumerer(&elements)
+    }
+}
+
+/// L'écran du coffre du camp (section 13.3).
+pub fn coffre_du_camp(partie: &Partie) -> String {
+    format!(
+        "Ce qui est rangé dans le coffre du camp est à l'abri. Le sac part avec vous en expédition : une défaite le fait perdre.\nSac : {}.\nCoffre du camp : {}.",
+        contenu(partie.sac()),
+        contenu(partie.coffre_du_camp())
+    )
+}
+
+/// Le sac en expédition : une défaite le ferait perdre (section 9.3).
+pub fn sac_en_expedition(partie: &Partie) -> String {
+    let sac = partie.sac();
+    if sac.est_vide() {
+        return "Sac : vide.".to_string();
+    }
+    format!("Sac : {}. Une défaite le ferait perdre.", contenu(sac))
+}
+
+/// En haut de chaque écran d'expédition (section 9.2).
+pub fn compteur_d_etapes(expedition: &Expedition) -> String {
+    format!(
+        "[Étape : {}/{}]",
+        expedition.etapes_faites(),
+        expedition.nombre_etapes()
+    )
 }
 
 /// Les places de l'équipe et du camp, rappelées quand le joueur peut
@@ -142,13 +176,14 @@ pub fn partie_en_cours(partie: &Partie) -> String {
     )
 }
 
+/// Le sac, que le joueur emporte, et le coffre, à l'abri (section 13.3).
 pub fn en_tete_du_camp(partie: &Partie) -> String {
     format!(
-        "Camp de base ({}, {}). {} et {}.",
+        "Camp de base ({}, {}).\nSac : {}. Coffre du camp : {}.",
         partie.heros().nom().as_str(),
         partie.heros().classe().nom(),
-        potions(partie.inventaire().potions()),
-        argent(partie.argent())
+        contenu(partie.sac()),
+        contenu(partie.coffre_du_camp())
     )
 }
 

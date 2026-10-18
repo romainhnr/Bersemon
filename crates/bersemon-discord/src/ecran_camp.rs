@@ -1,7 +1,8 @@
 //! Camp de base sur Discord : départ en expédition par la carte, expéditions
-//! automatiques, liste des monstres, codex, gestion des monstres et de leurs
-//! attaques (sections 13.2 et 13.10), marchand. Les vues ne changent rien à
-//! la partie ; seules les actions la modifient, et la sauvegardent.
+//! automatiques, codex, gestion des monstres et de leurs attaques (sections
+//! 13.2 et 13.10), coffre du camp (section 13.3), marchand. Les vues ne
+//! changent rien à la partie ; seules les actions la modifient, et la
+//! sauvegardent.
 
 use bersemon_core::codex::EtatCodex;
 use bersemon_core::collection::{Collection, Emplacement, TriDuCamp};
@@ -24,7 +25,7 @@ use crate::message::{
     Bouton, DANGER, OPTIONS_PAR_MENU, OptionDeMenu, PRINCIPAL, Question, Rangee, SECONDAIRE,
     bouton, menu, rangees,
 };
-use crate::{ecran_expeditions_automatiques, ecran_marchand};
+use crate::{ecran_coffre, ecran_expeditions_automatiques, ecran_marchand};
 
 pub fn question(
     partie: &Partie,
@@ -43,6 +44,7 @@ pub fn question(
         Vue::Marchand => ecran_marchand::etal(partie, contenu),
         Vue::Vente => ecran_marchand::vente(partie),
         Vue::Attaques(emplacement) => attaques(partie, emplacement),
+        Vue::Coffre => ecran_coffre::coffre(partie),
     }
 }
 
@@ -51,12 +53,16 @@ pub fn retour() -> Bouton {
 }
 
 fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Question {
-    let equipe: Vec<String> = partie
+    let mut equipe: Vec<String> = partie
         .collection()
         .equipe()
         .iter()
         .map(|monstre| ligne_monstre(monstre, Cote::Joueur))
         .collect();
+    // Au camp, l'équipe peut être vide (section 13.2).
+    if equipe.is_empty() {
+        equipe.push("aucun monstre".to_string());
+    }
     let zones = partie
         .zones_accessibles(contenu.zones(), contenu.piste())
         .into_iter()
@@ -92,6 +98,7 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
             "Gérer vos monstres",
             SECONDAIRE,
         ),
+        bouton(Cle::Afficher(Vue::Coffre), "Coffre du camp", SECONDAIRE),
         bouton(Cle::Afficher(Vue::Codex(None)), "Codex", SECONDAIRE),
     ];
     // Le marchand n'apparaît qu'une fois réfugié au camp (section 14.2).

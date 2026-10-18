@@ -12,6 +12,7 @@ use bersemon_core::combat::Action;
 use bersemon_core::deroulement::{ActionDeGestion, Choix};
 use bersemon_core::expedition_automatique::MONSTRES_MAX;
 use bersemon_core::heros::Classe;
+use bersemon_core::inventaire::Objet;
 use bersemon_core::zone::ZoneId;
 
 /// Distingue les composants de Bersemon de ceux d'autres usages éventuels.
@@ -39,6 +40,8 @@ pub enum Vue {
     /// Les attaques que ce monstre connaît et celles qu'il peut apprendre
     /// au camp (section 13.10).
     Attaques(Emplacement),
+    /// Le sac et le coffre du camp (section 13.3).
+    Coffre,
 }
 
 /// Monstres choisis pour une expédition automatique, dans l'ordre du choix
@@ -183,6 +186,11 @@ pub enum Cle {
         oubliee: Option<usize>,
     },
     Trier(TriDuCamp),
+    /// Menu de ce que contient le coffre du camp.
+    SortirDuCoffre,
+    /// Menu de ce que contient le sac.
+    RangerAuCoffre,
+    ToutRanger,
 }
 
 impl Cle {
@@ -270,6 +278,9 @@ impl Cle {
                 oubliee: *oubliee,
             }),
             Cle::Trier(tri) => gerer(ActionDeGestion::TrierLeCamp(*tri)),
+            Cle::SortirDuCoffre => jouer(Choix::SortirDuCoffre(lire_objet(valeur?)?)),
+            Cle::RangerAuCoffre => jouer(Choix::RangerAuCoffre(lire_objet(valeur?)?)),
+            Cle::ToutRanger => jouer(Choix::ToutRangerAuCoffre),
         }
     }
 
@@ -301,6 +312,7 @@ impl Cle {
             Cle::Afficher(Vue::Attaques(emplacement)) => {
                 format!("vue:attaques:{}", emplacement_en_texte(*emplacement))
             }
+            Cle::Afficher(Vue::Coffre) => "vue:coffre".to_string(),
             Cle::Fiche => "fiche".to_string(),
             Cle::Choisir(numero) => format!("choisir:{numero}"),
             Cle::Monter(index) => format!("monter:{index}"),
@@ -362,6 +374,9 @@ impl Cle {
             Cle::Trier(TriDuCamp::Nom) => "trier:nom".to_string(),
             Cle::Trier(TriDuCamp::Niveau) => "trier:niveau".to_string(),
             Cle::Trier(TriDuCamp::Type) => "trier:type".to_string(),
+            Cle::SortirDuCoffre => "sortir-du-coffre".to_string(),
+            Cle::RangerAuCoffre => "ranger-au-coffre".to_string(),
+            Cle::ToutRanger => "tout-ranger".to_string(),
         }
     }
 
@@ -389,6 +404,10 @@ impl Cle {
             "vue:expeditions" => Cle::Afficher(Vue::Expeditions),
             "vue:marchand" => Cle::Afficher(Vue::Marchand),
             "vue:vente" => Cle::Afficher(Vue::Vente),
+            "vue:coffre" => Cle::Afficher(Vue::Coffre),
+            "sortir-du-coffre" => Cle::SortirDuCoffre,
+            "ranger-au-coffre" => Cle::RangerAuCoffre,
+            "tout-ranger" => Cle::ToutRanger,
             "acheter-capsule" => Cle::AcheterCapsule,
             "fiche" => Cle::Fiche,
             "continuer" => Cle::Continuer,
@@ -497,6 +516,26 @@ fn lire_emplacement(texte: &str) -> Option<Emplacement> {
         return index.parse().ok().map(Emplacement::Equipe);
     }
     texte.strip_prefix('c')?.parse().ok().map(Emplacement::Camp)
+}
+
+/// Valeur d'option des menus du coffre : `potions:` ou `argent:` suivi de
+/// la quantité, ou `capsule:` suivi de l'attaque.
+pub fn objet_en_texte(objet: &Objet) -> String {
+    match objet {
+        Objet::Potions(nombre) => format!("potions:{nombre}"),
+        Objet::Argent(montant) => format!("argent:{montant}"),
+        Objet::Capsule(attaque) => format!("capsule:{}", attaque.as_str()),
+    }
+}
+
+fn lire_objet(texte: &str) -> Option<Objet> {
+    let (genre, parametre) = texte.split_once(':')?;
+    match genre {
+        "potions" => Some(Objet::Potions(parametre.parse().ok()?)),
+        "argent" => Some(Objet::Argent(parametre.parse().ok()?)),
+        "capsule" => Some(Objet::Capsule(AttaqueId::new(parametre))),
+        _ => None,
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -610,6 +649,10 @@ mod tests {
             Cle::Trier(TriDuCamp::Nom),
             Cle::Trier(TriDuCamp::Niveau),
             Cle::Trier(TriDuCamp::Type),
+            Cle::Afficher(Vue::Coffre),
+            Cle::SortirDuCoffre,
+            Cle::RangerAuCoffre,
+            Cle::ToutRanger,
         ]
     }
 
@@ -757,6 +800,27 @@ mod tests {
             Some(Commande::Jouer(Choix::Vendre(Emplacement::Camp(12))))
         );
         assert_eq!(Cle::AcheterCapsule.commande(None, None), None);
+    }
+
+    #[test]
+    fn un_menu_du_coffre_deplace_l_objet_choisi() {
+        for objet in [
+            Objet::Potions(5),
+            Objet::Argent(120),
+            Objet::Capsule(AttaqueId::new("brasier")),
+        ] {
+            let valeur = objet_en_texte(&objet);
+            assert_eq!(
+                Cle::SortirDuCoffre.commande(Some(&valeur), None),
+                Some(Commande::Jouer(Choix::SortirDuCoffre(objet.clone())))
+            );
+            assert_eq!(
+                Cle::RangerAuCoffre.commande(Some(&valeur), None),
+                Some(Commande::Jouer(Choix::RangerAuCoffre(objet)))
+            );
+        }
+        assert_eq!(Cle::SortirDuCoffre.commande(Some("potions:x"), None), None);
+        assert_eq!(Cle::RangerAuCoffre.commande(Some("epee:1"), None), None);
     }
 
     #[test]
