@@ -85,6 +85,15 @@ pub fn decrire_attaque(attaque: &Attaque) -> String {
     )
 }
 
+/// Les attaques que le monstre connaît, numérotées à partir de 1.
+pub fn attaques_connues(monstre: &Monstre) -> String {
+    let mut lignes = vec![format!("Attaques de {} :", nom(monstre, Cote::Joueur))];
+    for (position, attaque) in monstre.attaques().liste().iter().enumerate() {
+        lignes.push(format!("  {}. {}", position + 1, decrire_attaque(attaque)));
+    }
+    lignes.join("\n")
+}
+
 /// Les types de l'espèce, dans l'ordre, séparés par des virgules.
 pub fn types_de(espece: &Espece) -> String {
     let types: Vec<&str> = espece

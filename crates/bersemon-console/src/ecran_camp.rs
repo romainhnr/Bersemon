@@ -1,24 +1,36 @@
 //! Camp de base : départ en expédition par la carte, expéditions
-//! automatiques, liste des monstres, gestion des monstres (section 13.2) et
-//! codex. Les monstres sont désignés par leur numéro dans la liste de la
-//! collection : l'équipe d'abord, le camp ensuite.
+//! automatiques, liste des monstres, gestion des monstres (section 13.2),
+//! codex et marchand. Les monstres sont désignés par leur numéro dans la
+//! liste de la collection : l'équipe d'abord, le camp ensuite.
 
 use bersemon_core::collection::{Collection, Emplacement};
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::{ActionDeGestion, Choix};
 use bersemon_core::partie::Partie;
 use bersemon_presentation::expeditions_automatiques::expeditions_rentrees;
+use bersemon_presentation::marchand::liste_de_rachat;
+use bersemon_presentation::monstres::{attaques_connues, decrire_attaque};
 use bersemon_presentation::partie::{collection as liste_des_monstres, en_tete_du_camp};
 
 use crate::affichage;
 use crate::ecran_expeditions_automatiques;
+use crate::ecran_marchand;
 use crate::horloge::maintenant;
 use crate::saisie::Entree;
 
-/// Le menu de gestion reste ouvert d'une action à l'autre, jusqu'au retour.
+/// Le menu de gestion et celui du marchand restent ouverts d'une action à
+/// l'autre, jusqu'au retour.
 #[derive(Debug, Default)]
 pub struct MenuDuCamp {
-    gestion_ouverte: bool,
+    ouvert: SousMenu,
+}
+
+#[derive(Debug, Default, PartialEq, Eq)]
+enum SousMenu {
+    #[default]
+    Aucun,
+    Gestion,
+    Marchand,
 }
 
 /// Rend `None` si le joueur quitte ou que l'entrée est fermée.
@@ -29,12 +41,18 @@ pub fn choisir(
     entree: &mut Entree,
 ) -> Option<Choix> {
     loop {
-        if menu.gestion_ouverte {
-            match gerer(partie.collection(), entree)? {
-                Some(action) => return Some(Choix::Gerer(action)),
-                None => menu.gestion_ouverte = false,
+        let sous_menu = match menu.ouvert {
+            SousMenu::Aucun => None,
+            SousMenu::Gestion => Some(gerer(partie, entree)?),
+            SousMenu::Marchand => Some(ecran_marchand::choisir(partie, contenu, entree)?),
+        };
+        match sous_menu {
+            Some(Some(choix)) => return Some(choix),
+            Some(None) => {
+                menu.ouvert = SousMenu::Aucun;
+                continue;
             }
-            continue;
+            None => {}
         }
         println!();
         println!("{}", en_tete_du_camp(partie));
@@ -46,8 +64,14 @@ pub fn choisir(
         println!("  3. Voir vos monstres");
         println!("  4. Gérer vos monstres");
         println!("  5. Consulter le codex");
-        println!("  6. Quitter");
-        let choix = match entree.choix(1, 6)? {
+        // Le marchand n'apparaît qu'une fois réfugié au camp (section 14.2).
+        let marchand = partie.marchand_au_camp();
+        if marchand {
+            println!("  6. Voir le marchand");
+        }
+        let quitter = if marchand { 7 } else { 6 };
+        println!("  {quitter}. Quitter");
+        let choix = match entree.choix(1, quitter)? {
             1 => carte(partie, contenu, entree)?,
             2 => ecran_expeditions_automatiques::choisir(partie, contenu, entree)?,
             3 => {
@@ -55,11 +79,15 @@ pub fn choisir(
                 None
             }
             4 => {
-                menu.gestion_ouverte = true;
+                menu.ouvert = SousMenu::Gestion;
                 None
             }
             5 => {
                 println!("{}", affichage::codex(partie.codex(), contenu.especes()));
+                None
+            }
+            6 if marchand => {
+                menu.ouvert = SousMenu::Marchand;
                 None
             }
             _ => return None,
@@ -81,7 +109,9 @@ fn carte(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Option<Op
 }
 
 /// `Some(None)` au retour vers le menu du camp.
-fn gerer(collection: &Collection, entree: &mut Entree) -> Option<Option<ActionDeGestion>> {
+fn gerer(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
+    let collection = partie.collection();
+    let marchand = partie.marchand_au_camp();
     loop {
         println!();
         println!("{}", liste_des_monstres(collection));
@@ -92,18 +122,26 @@ fn gerer(collection: &Collection, entree: &mut Entree) -> Option<Option<ActionDe
         println!("  4. Échanger un monstre de l'équipe et un du camp");
         println!("  5. Renommer un monstre");
         println!("  6. Relâcher un monstre");
+        println!("  7. Gérer les attaques d'un monstre");
+        if marchand {
+            println!("  8. Vendre un monstre au marchand");
+        }
         println!("  0. Retour");
-        let action = match entree.choix(0, 6)? {
+        let dernier = if marchand { 8 } else { 7 };
+        let gestion = |action: Option<ActionDeGestion>| action.map(Choix::Gerer);
+        let choix = match entree.choix(0, dernier)? {
             0 => return Some(None),
-            1 => changer_ordre(collection, entree)?,
-            2 => envoyer_au_camp(collection, entree)?,
-            3 => faire_venir(collection, entree)?,
-            4 => echanger(collection, entree)?,
-            5 => renommer(collection, entree)?,
-            _ => relacher(collection, entree)?,
+            1 => gestion(changer_ordre(collection, entree)?),
+            2 => gestion(envoyer_au_camp(collection, entree)?),
+            3 => gestion(faire_venir(collection, entree)?),
+            4 => gestion(echanger(collection, entree)?),
+            5 => gestion(renommer(collection, entree)?),
+            6 => gestion(relacher(collection, entree)?),
+            7 => attaques(partie, entree)?,
+            _ => vendre(collection, entree)?,
         };
-        if let Some(action) = action {
-            return Some(Some(action));
+        if let Some(choix) = choix {
+            return Some(Some(choix));
         }
     }
 }
@@ -210,4 +248,59 @@ fn renommer(collection: &Collection, entree: &mut Entree) -> Option<Option<Actio
 fn relacher(collection: &Collection, entree: &mut Entree) -> Option<Option<ActionDeGestion>> {
     let emplacement = designer(collection, entree, "Quel monstre relâcher ?")?;
     Some(emplacement.map(ActionDeGestion::Relacher))
+}
+
+/// Avec le prix de chaque monstre ; la confirmation est demandée par le
+/// déroulement (section 14.2).
+pub fn vendre(collection: &Collection, entree: &mut Entree) -> Option<Option<Choix>> {
+    println!();
+    println!("{}", liste_de_rachat(collection));
+    let emplacement = designer(collection, entree, "Quel monstre vendre au marchand ?")?;
+    Some(emplacement.map(Choix::Vendre))
+}
+
+/// Une attaque de son espèce jusqu'à son niveau, ou d'une capsule de son
+/// type ; s'il en connaît déjà 4, il en oublie une (section 13.10).
+fn attaques(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
+    let collection = partie.collection();
+    let Some(emplacement) = designer(collection, entree, "Quel monstre ?")? else {
+        return Some(None);
+    };
+    let Some(monstre) = collection.monstre(emplacement) else {
+        return Some(None);
+    };
+    println!();
+    println!("{}", attaques_connues(monstre));
+    let a_apprendre = partie.attaques_a_apprendre(emplacement).unwrap_or_default();
+    if a_apprendre.is_empty() {
+        println!("Rien de nouveau à apprendre au camp.");
+        return Some(None);
+    }
+    println!("À apprendre au camp :");
+    for (position, attaque) in a_apprendre.iter().enumerate() {
+        println!("  {}. {}", position + 1, decrire_attaque(attaque));
+    }
+    println!("Quelle attaque apprendre ? (0 pour annuler)");
+    let choix = entree.choix(0, a_apprendre.len())?;
+    if choix == 0 {
+        return Some(None);
+    }
+    let attaque = a_apprendre[choix - 1].id().clone();
+    let oubliee = if monstre.attaques().est_complete() {
+        println!(
+            "{} connaît déjà 4 attaques. Laquelle oublier ? (0 pour annuler)",
+            monstre.nom()
+        );
+        match entree.choix(0, monstre.attaques().liste().len())? {
+            0 => return Some(None),
+            position => Some(position - 1),
+        }
+    } else {
+        None
+    };
+    Some(Some(Choix::ApprendreAttaque {
+        emplacement,
+        attaque,
+        oubliee,
+    }))
 }

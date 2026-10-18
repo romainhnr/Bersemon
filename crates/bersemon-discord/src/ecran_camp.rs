@@ -1,27 +1,28 @@
 //! Camp de base sur Discord : départ en expédition par la carte, expéditions
-//! automatiques, liste des monstres, codex et gestion des monstres (section
-//! 13.2). Les vues ne changent rien à la partie ; seules les actions la
-//! modifient, et la sauvegardent.
+//! automatiques, liste des monstres, codex, gestion des monstres et de leurs
+//! attaques (sections 13.2 et 13.10), marchand. Les vues ne changent rien à
+//! la partie ; seules les actions la modifient, et la sauvegardent.
 
 use bersemon_core::codex::EtatCodex;
 use bersemon_core::collection::{Collection, Emplacement};
 use bersemon_core::combat::Cote;
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::horodatage::Horodatage;
+use bersemon_core::marchand::prix_de_revente;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_presentation::expeditions_automatiques::expeditions_rentrees;
-use bersemon_presentation::monstres::{ligne_monstre, nom};
+use bersemon_presentation::monstres::{attaques_connues, decrire_attaque, ligne_monstre, nom};
 use bersemon_presentation::partie::{
-    collection as liste_des_monstres, en_tete_du_camp, fiche_d_espece, ligne_du_codex,
+    argent, collection as liste_des_monstres, en_tete_du_camp, fiche_d_espece, ligne_du_codex,
 };
 
 use crate::composants::{Cle, Vue, emplacement_en_texte};
-use crate::ecran_expeditions_automatiques;
 use crate::message::{
     Bouton, DANGER, OPTIONS_PAR_MENU, OptionDeMenu, PRINCIPAL, Question, Rangee, SECONDAIRE,
     bouton, menu, rangees,
 };
+use crate::{ecran_expeditions_automatiques, ecran_marchand};
 
 pub fn question(
     partie: &Partie,
@@ -36,11 +37,14 @@ pub fn question(
             rangees: rangees(vec![retour()]),
         },
         Vue::Codex(fiche) => codex(partie, fiche, contenu),
-        Vue::Gestion(choisi) => gestion(partie.collection(), choisi),
+        Vue::Gestion(choisi) => gestion(partie, choisi),
         Vue::Expeditions => ecran_expeditions_automatiques::liste(partie, contenu, maintenant),
         Vue::Preparation { zone, choisis } => {
             ecran_expeditions_automatiques::preparation(partie, contenu, zone, choisis, maintenant)
         }
+        Vue::Marchand => ecran_marchand::etal(partie, contenu),
+        Vue::Vente => ecran_marchand::vente(partie),
+        Vue::Attaques(emplacement) => attaques(partie, emplacement),
     }
 }
 
@@ -79,7 +83,7 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
     let mut lignes: Vec<Rangee> = menu(Cle::Partir, "Partir en expédition", zones)
         .into_iter()
         .collect();
-    lignes.extend(rangees(vec![
+    let mut boutons = vec![
         bouton(
             Cle::Afficher(Vue::Expeditions),
             "Expéditions automatiques",
@@ -92,7 +96,12 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
             SECONDAIRE,
         ),
         bouton(Cle::Afficher(Vue::Codex(None)), "Codex", SECONDAIRE),
-    ]));
+    ];
+    // Le marchand n'apparaît qu'une fois réfugié au camp (section 14.2).
+    if partie.marchand_au_camp() {
+        boutons.push(bouton(Cle::Afficher(Vue::Marchand), "Marchand", SECONDAIRE));
+    }
+    lignes.extend(rangees(boutons));
     let mut en_tete = vec![en_tete_du_camp(partie)];
     en_tete.extend(expeditions_rentrees(partie, maintenant));
     Question {
@@ -149,7 +158,8 @@ fn codex(partie: &Partie, fiche: Option<usize>, contenu: &ContenuV1) -> Question
 
 /// Des menus pour choisir un monstre, puis les actions possibles pour le
 /// monstre choisi.
-fn gestion(collection: &Collection, choisi: Option<Emplacement>) -> Question {
+fn gestion(partie: &Partie, choisi: Option<Emplacement>) -> Question {
+    let collection = partie.collection();
     let liste = liste_des_monstres(collection);
     let choisi = choisi.and_then(|emplacement| {
         collection
@@ -195,6 +205,15 @@ fn gestion(collection: &Collection, choisi: Option<Emplacement>) -> Question {
     }
     boutons.push(bouton(Cle::Renommer(emplacement), "Renommer", SECONDAIRE));
     boutons.push(bouton(Cle::Relacher(emplacement), "Relâcher", DANGER));
+    boutons.push(bouton(
+        Cle::Afficher(Vue::Attaques(emplacement)),
+        "Attaques",
+        SECONDAIRE,
+    ));
+    if partie.marchand_au_camp() {
+        let libelle = format!("Vendre ({})", argent(prix_de_revente(monstre)));
+        boutons.push(bouton(Cle::VendreCeMonstre(emplacement), &libelle, DANGER));
+    }
     let mut lignes = rangees(boutons);
     lignes.extend(echange);
     lignes.extend(rangees(vec![
@@ -224,11 +243,25 @@ pub fn menus_de_monstres(
     verbe: &str,
     garder: impl Fn(Emplacement) -> bool,
 ) -> Vec<Rangee> {
+    menus_de_monstres_decrits(collection, cle, verbe, garder, |monstre| {
+        ligne_monstre(monstre, Cote::Joueur)
+    })
+}
+
+/// Comme `menus_de_monstres`, avec la description de chaque option, comme
+/// le prix de rachat.
+pub fn menus_de_monstres_decrits(
+    collection: &Collection,
+    cle: impl Fn(u8) -> Cle,
+    verbe: &str,
+    garder: impl Fn(Emplacement) -> bool,
+    decrire: impl Fn(&Monstre) -> String,
+) -> Vec<Rangee> {
     let taille_equipe = collection.equipe().len();
     let option = |emplacement: Emplacement, numero: usize, monstre: &Monstre| OptionDeMenu {
         libelle: format!("{numero}. {}", nom(monstre, Cote::Joueur)),
         valeur: emplacement_en_texte(emplacement),
-        description: Some(ligne_monstre(monstre, Cote::Joueur)),
+        description: Some(decrire(monstre)),
     };
     let equipe = collection
         .equipe()
@@ -261,6 +294,60 @@ pub fn menus_de_monstres(
         numero += 1;
     }
     menus
+}
+
+/// Les attaques connues, puis un menu des attaques à apprendre ; s'il en
+/// connaît déjà 4, un menu par attaque à oublier (section 13.10).
+fn attaques(partie: &Partie, emplacement: Emplacement) -> Question {
+    let Some(monstre) = partie.collection().monstre(emplacement) else {
+        return gestion(partie, None);
+    };
+    let a_apprendre = partie.attaques_a_apprendre(emplacement).unwrap_or_default();
+    let options = || -> Vec<OptionDeMenu> {
+        a_apprendre
+            .iter()
+            .map(|attaque| OptionDeMenu {
+                libelle: attaque.nom().to_string(),
+                valeur: attaque.id().as_str().to_string(),
+                description: Some(decrire_attaque(attaque)),
+            })
+            .collect()
+    };
+    let mut texte = attaques_connues(monstre);
+    let mut lignes: Vec<Rangee> = Vec::new();
+    if a_apprendre.is_empty() {
+        texte.push_str("\nRien de nouveau à apprendre au camp.");
+    } else if monstre.attaques().est_complete() {
+        texte.push_str(
+            "\nIl connaît déjà 4 attaques : choisissez la nouvelle dans le menu de celle à oublier.",
+        );
+        for (position, connue) in monstre.attaques().liste().iter().enumerate() {
+            let cle = Cle::Apprendre {
+                emplacement,
+                oubliee: Some(position),
+            };
+            let indication = format!("Oublier {} pour apprendre", connue.nom());
+            lignes.extend(menu(cle, &indication, options()));
+        }
+    } else {
+        let cle = Cle::Apprendre {
+            emplacement,
+            oubliee: None,
+        };
+        lignes.extend(menu(cle, "Apprendre une attaque", options()));
+    }
+    lignes.extend(rangees(vec![
+        bouton(
+            Cle::Afficher(Vue::Gestion(Some(emplacement))),
+            "Retour au monstre",
+            SECONDAIRE,
+        ),
+        retour(),
+    ]));
+    Question {
+        texte,
+        rangees: lignes,
+    }
 }
 
 /// Les monstres de l'équipe, désignés par leur position.

@@ -15,6 +15,7 @@ use bersemon_core::deroulement::{Attente, Evenement};
 use bersemon_core::espece::EspeceId;
 use bersemon_core::heros::Classe;
 use bersemon_core::horodatage::Horodatage;
+use bersemon_core::marchand::PRIX_DE_LA_POTION;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::EtatPartie;
 use bersemon_core::types::{Efficacite, efficacite};
@@ -189,14 +190,50 @@ fn expedition_automatique(session: &Session, message: &Message, faite: bool) -> 
     }
 }
 
+/// Où en est la visite au marchand.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Visite {
+    AFaire,
+    PotionAchetee,
+    Faite,
+}
+
+/// Une visite, une fois le marchand au camp : une potion achetée sur son
+/// étal, puis le dernier monstre du camp vendu, avec confirmation. `None`
+/// s'il n'y a rien à faire.
+fn visite_au_marchand(session: &Session, message: &Message, visite: Visite) -> Option<Clic> {
+    let partie = session.deroulement.partie()?;
+    let camp = partie.collection().camp().len();
+    let possible = partie.marchand_au_camp()
+        && camp > 0
+        && (visite == Visite::PotionAchetee || partie.argent() >= PRIX_DE_LA_POTION);
+    if visite == Visite::Faite || !possible {
+        return None;
+    }
+    match (session.vue, visite) {
+        (Vue::Camp, _) => Some(cliquer(message, |cle| *cle == Cle::Afficher(Vue::Marchand))),
+        (Vue::Marchand, Visite::AFaire) => {
+            Some(cliquer(message, |cle| *cle == Cle::AcheterPotions(1)))
+        }
+        (Vue::Marchand, _) => Some(cliquer(message, |cle| *cle == Cle::Afficher(Vue::Vente))),
+        (Vue::Vente, Visite::PotionAchetee) => choisir_dans(
+            message,
+            |cle| matches!(cle, Cle::Vendre(_)),
+            &format!("c{}", camp - 1),
+        ),
+        _ => None,
+    }
+}
+
 /// Le joueur simple de `deroulement` : la meilleure attaque, une potion sous
-/// la moitié des PV, le Marais à partir du niveau 12, toutes les captures, et
-/// une expédition automatique.
+/// la moitié des PV, le Marais à partir du niveau 12, toutes les captures,
+/// une expédition automatique et une visite au marchand.
 fn jouer_un_coup(
     session: &Session,
     message: &Message,
     tour: &mut usize,
     automatique_faite: bool,
+    visite: Visite,
 ) -> Clic {
     match session.deroulement.attente() {
         Attente::NomDuHeros => {
@@ -233,6 +270,9 @@ fn jouer_un_coup(
         }
         Attente::Camp => {
             if let Some(clic) = expedition_automatique(session, message, automatique_faite) {
+                return clic;
+            }
+            if let Some(clic) = visite_au_marchand(session, message, visite) {
                 return clic;
             }
             if session.vue != Vue::Camp {
@@ -309,27 +349,33 @@ fn l_equipe_et_le_camp_pleins_tiennent_dans_les_limites() {
     use bersemon_core::stats::ValeursInternes;
 
     let contenu = ContenuV1::new();
-    let loup = Monstre::creer(
-        contenu.espece(&EspeceId::new("loup")).unwrap(),
-        Niveau::new(5).unwrap(),
-        ValeursInternes::default(),
-        false,
-    )
-    .unwrap();
+    let creer = |id: &str, niveau: u8| {
+        Monstre::creer(
+            contenu.espece(&EspeceId::new(id)).unwrap(),
+            Niveau::new(niveau).unwrap(),
+            ValeursInternes::default(),
+            false,
+        )
+        .unwrap()
+    };
+    let loup = creer("loup", 5);
+    // Au niveau 14, la Salamandre connaît 4 attaques : elle peut réapprendre
+    // Souffle chaud ou apprendre Brasier, en oubliant une des siennes.
     let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Mage);
-    let mut partie = Partie::nouvelle(heros, loup.clone());
+    let mut partie = Partie::nouvelle(heros, creer("salamandre", 14));
     for _ in 0..32 {
         partie.prendre_monstre_rare(loup.clone());
     }
     assert_eq!(partie.collection().camp().len(), 30);
-    // Les deux zones explorées, pour préparer une expédition automatique.
+    // Les deux zones explorées, pour préparer une expédition automatique,
+    // le marchand au camp et la capsule Brasier.
     let partie = Partie::restaurer(EtatPartie {
         heros: partie.heros().clone(),
         collection: partie.collection().clone(),
         inventaire: partie.inventaire().clone(),
-        argent: partie.argent(),
-        marchand_au_camp: partie.marchand_au_camp(),
-        capsules: partie.capsules().to_vec(),
+        argent: 1_000,
+        marchand_au_camp: true,
+        capsules: contenu.capsules()[..1].to_vec(),
         codex: partie.codex().clone(),
         zones_explorees: vec![ZoneId::new("lisiere"), ZoneId::new("marais")],
         indices_trouves: 3,
@@ -356,6 +402,11 @@ fn l_equipe_et_le_camp_pleins_tiennent_dans_les_limites() {
             zone: 1,
             choisis: deux_choisis,
         },
+        Vue::Camp,
+        Vue::Marchand,
+        Vue::Vente,
+        Vue::Attaques(Emplacement::Equipe(0)),
+        Vue::Attaques(Emplacement::Camp(29)),
     ];
     let mut questions: Vec<_> = vues
         .into_iter()
@@ -376,6 +427,97 @@ fn l_equipe_et_le_camp_pleins_tiennent_dans_les_limites() {
 }
 
 #[test]
+fn les_attaques_au_camp_se_choisissent_par_menu() {
+    use bersemon_core::attaque::AttaqueId;
+    use bersemon_core::catalogue::Catalogue;
+    use bersemon_core::deroulement::Choix;
+    use bersemon_core::heros::Heros;
+    use bersemon_core::niveau::Niveau;
+    use bersemon_core::nom::Nom;
+    use bersemon_core::partie::Partie;
+    use bersemon_core::stats::ValeursInternes;
+
+    let contenu = ContenuV1::new();
+    let creer = |id: &str, niveau: u8| {
+        Monstre::creer(
+            contenu.espece(&EspeceId::new(id)).unwrap(),
+            Niveau::new(niveau).unwrap(),
+            ValeursInternes::default(),
+            false,
+        )
+        .unwrap()
+    };
+    let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Mage);
+    let mut partie = Partie::nouvelle(heros, creer("salamandre", 14));
+    partie.prendre_monstre_rare(creer("salamandre", 5));
+    let partie = Partie::restaurer(EtatPartie {
+        heros: partie.heros().clone(),
+        collection: partie.collection().clone(),
+        inventaire: partie.inventaire().clone(),
+        argent: 0,
+        marchand_au_camp: false,
+        capsules: contenu.capsules()[..1].to_vec(),
+        codex: partie.codex().clone(),
+        zones_explorees: Vec::new(),
+        indices_trouves: 0,
+        apotres_vaincus: Vec::new(),
+        conseils_vus: Vec::new(),
+        expeditions_automatiques: Vec::new(),
+        attaques_a_choisir: Vec::new(),
+    })
+    .unwrap();
+    let menus = |emplacement: Emplacement| -> Vec<(Cle, Vec<String>)> {
+        let question = crate::ecran_camp::question(
+            &partie,
+            Vue::Attaques(emplacement),
+            &contenu,
+            Horodatage::depuis_secondes(0),
+        );
+        question
+            .rangees
+            .into_iter()
+            .filter_map(|rangee| match rangee {
+                Rangee::Menu(menu) => Some((
+                    menu.cle,
+                    menu.options
+                        .into_iter()
+                        .map(|option| option.valeur)
+                        .collect(),
+                )),
+                Rangee::Boutons(_) => None,
+            })
+            .collect()
+    };
+
+    // Quatre attaques connues : un menu par attaque à oublier.
+    let complete = menus(Emplacement::Equipe(0));
+    assert_eq!(complete.len(), 4);
+    for (position, (cle, valeurs)) in complete.iter().enumerate() {
+        assert_eq!(valeurs, &vec!["souffle-chaud", "brasier"]);
+        assert_eq!(
+            cle.commande(Some("brasier"), None),
+            Some(Commande::Jouer(Choix::ApprendreAttaque {
+                emplacement: Emplacement::Equipe(0),
+                attaque: AttaqueId::new("brasier"),
+                oubliee: Some(position),
+            }))
+        );
+    }
+    // Au niveau 5, la Salamandre n'en connaît que 2 : un seul menu, sans
+    // rien oublier.
+    let libre = menus(Emplacement::Equipe(1));
+    assert_eq!(libre.len(), 1);
+    assert_eq!(
+        libre[0].0,
+        Cle::Apprendre {
+            emplacement: Emplacement::Equipe(1),
+            oubliee: None,
+        }
+    );
+    assert_eq!(libre[0].1, vec!["brasier"]);
+}
+
+#[test]
 fn une_partie_complete_a_travers_les_ecrans_du_bot() {
     let contenu = ContenuV1::new();
     let dossier = dossier_de_test();
@@ -387,6 +529,7 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
     // automatique, assez pour la faire rentrer.
     let mut heure = 0;
     let mut automatique_faite = false;
+    let mut visite = Visite::AFaire;
     for _ in 0..50_000 {
         let maintenant = Horodatage::depuis_secondes(heure);
         let session = joueurs.session(JOUEUR, &contenu);
@@ -398,7 +541,7 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
         {
             break;
         }
-        let clic = jouer_un_coup(session, &affiche, &mut tour, automatique_faite);
+        let clic = jouer_un_coup(session, &affiche, &mut tour, automatique_faite, visite);
         let version = session.version;
         let commande = clic
             .cle
@@ -432,6 +575,8 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
                     // annoncer.
                     assert!(joueurs.retours_echus(maintenant).is_empty());
                 }
+                Evenement::PotionsAchetees { nombre: 1, .. } => visite = Visite::PotionAchetee,
+                Evenement::MonstreVendu { .. } => visite = Visite::Faite,
                 _ => {}
             }
         }
@@ -445,6 +590,7 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
         automatique_faite,
         "expédition automatique jamais accueillie"
     );
+    assert_eq!(visite, Visite::Faite, "visite au marchand jamais faite");
     let session = joueurs.session(JOUEUR, &contenu);
     assert_eq!(session.deroulement.attente(), Attente::Camp);
     let partie = session.deroulement.partie().unwrap();

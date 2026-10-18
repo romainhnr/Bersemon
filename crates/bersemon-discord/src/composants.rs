@@ -6,6 +6,7 @@
 //! Un bouton porte tout son choix ; un menu porte le genre du choix, et
 //! l'option choisie le complète ; un formulaire porte le genre du texte saisi.
 
+use bersemon_core::attaque::AttaqueId;
 use bersemon_core::collection::Emplacement;
 use bersemon_core::combat::Action;
 use bersemon_core::deroulement::{ActionDeGestion, Choix};
@@ -35,6 +36,13 @@ pub enum Vue {
         zone: usize,
         choisis: Choisis,
     },
+    /// L'étal du marchand, une fois réfugié au camp (section 14.2).
+    Marchand,
+    /// Les monstres que le marchand rachète, avec leur prix.
+    Vente,
+    /// Les attaques que ce monstre connaît et celles qu'il peut apprendre
+    /// au camp (section 13.10).
+    Attaques(Emplacement),
 }
 
 /// Monstres choisis pour une expédition automatique, dans l'ordre du choix
@@ -165,6 +173,19 @@ pub enum Cle {
     },
     Accueillir(ZoneId),
     Rappeler(ZoneId),
+    AcheterPotions(u32),
+    /// Menu des capsules en vente.
+    AcheterCapsule,
+    /// Menu de monstres numéroté, avec leur prix.
+    Vendre(u8),
+    /// Le monstre choisi dans la gestion.
+    VendreCeMonstre(Emplacement),
+    /// Menu des attaques à apprendre par ce monstre, en oubliant celle en
+    /// position `oubliee` s'il en connaît déjà 4.
+    Apprendre {
+        emplacement: Emplacement,
+        oubliee: Option<usize>,
+    },
 }
 
 impl Cle {
@@ -239,6 +260,18 @@ impl Cle {
             }),
             Cle::Accueillir(zone) => jouer(Choix::AccueillirExpeditionAutomatique(zone.clone())),
             Cle::Rappeler(zone) => jouer(Choix::RappelerExpeditionAutomatique(zone.clone())),
+            Cle::AcheterPotions(nombre) => jouer(Choix::AcheterPotions(*nombre)),
+            Cle::AcheterCapsule => jouer(Choix::AcheterCapsule(AttaqueId::new(valeur?))),
+            Cle::Vendre(_) => jouer(Choix::Vendre(lire_emplacement(valeur?)?)),
+            Cle::VendreCeMonstre(emplacement) => jouer(Choix::Vendre(*emplacement)),
+            Cle::Apprendre {
+                emplacement,
+                oubliee,
+            } => jouer(Choix::ApprendreAttaque {
+                emplacement: *emplacement,
+                attaque: AttaqueId::new(valeur?),
+                oubliee: *oubliee,
+            }),
         }
     }
 
@@ -265,6 +298,11 @@ impl Cle {
             Cle::Afficher(Vue::Expeditions) => "vue:expeditions".to_string(),
             Cle::Afficher(Vue::Preparation { zone, choisis }) => {
                 format!("vue:preparation:{zone}:{}", choisis.en_texte())
+            }
+            Cle::Afficher(Vue::Marchand) => "vue:marchand".to_string(),
+            Cle::Afficher(Vue::Vente) => "vue:vente".to_string(),
+            Cle::Afficher(Vue::Attaques(emplacement)) => {
+                format!("vue:attaques:{}", emplacement_en_texte(*emplacement))
             }
             Cle::Fiche => "fiche".to_string(),
             Cle::Choisir(numero) => format!("choisir:{numero}"),
@@ -310,6 +348,20 @@ impl Cle {
             }
             Cle::Accueillir(zone) => format!("accueillir:{}", zone.as_str()),
             Cle::Rappeler(zone) => format!("rappeler:{}", zone.as_str()),
+            Cle::AcheterPotions(nombre) => format!("acheter-potions:{nombre}"),
+            Cle::AcheterCapsule => "acheter-capsule".to_string(),
+            Cle::Vendre(numero) => format!("vendre:{numero}"),
+            Cle::VendreCeMonstre(emplacement) => {
+                format!("vendre-monstre:{}", emplacement_en_texte(*emplacement))
+            }
+            // `-` quand il n'y a rien à oublier.
+            Cle::Apprendre {
+                emplacement,
+                oubliee,
+            } => {
+                let oubliee = oubliee.map_or("-".to_string(), |position| position.to_string());
+                format!("apprendre:{}:{oubliee}", emplacement_en_texte(*emplacement))
+            }
         }
     }
 
@@ -330,6 +382,9 @@ impl Cle {
             "vue:codex" => Cle::Afficher(Vue::Codex(None)),
             "vue:gestion" => Cle::Afficher(Vue::Gestion(None)),
             "vue:expeditions" => Cle::Afficher(Vue::Expeditions),
+            "vue:marchand" => Cle::Afficher(Vue::Marchand),
+            "vue:vente" => Cle::Afficher(Vue::Vente),
+            "acheter-capsule" => Cle::AcheterCapsule,
             "fiche" => Cle::Fiche,
             "continuer" => Cle::Continuer,
             "rentrer" => Cle::Rentrer,
@@ -356,6 +411,9 @@ impl Cle {
                             "codex" => Cle::Afficher(Vue::Codex(Some(parametre.parse().ok()?))),
                             "gestion" => {
                                 Cle::Afficher(Vue::Gestion(Some(lire_emplacement(parametre)?)))
+                            }
+                            "attaques" => {
+                                Cle::Afficher(Vue::Attaques(lire_emplacement(parametre)?))
                             }
                             "preparation" => {
                                 let (zone, choisis) = parametre.split_once(':')?;
@@ -384,6 +442,20 @@ impl Cle {
                     }
                     "accueillir" => Cle::Accueillir(ZoneId::new(parametre)),
                     "rappeler" => Cle::Rappeler(ZoneId::new(parametre)),
+                    "acheter-potions" => Cle::AcheterPotions(parametre.parse().ok()?),
+                    "vendre" => Cle::Vendre(numero()?),
+                    "vendre-monstre" => Cle::VendreCeMonstre(emplacement()?),
+                    "apprendre" => {
+                        let (emplacement, oubliee) = parametre.split_once(':')?;
+                        let oubliee = match oubliee {
+                            "-" => None,
+                            position => Some(position.parse().ok()?),
+                        };
+                        Cle::Apprendre {
+                            emplacement: lire_emplacement(emplacement)?,
+                            oubliee,
+                        }
+                    }
                     "choisir" => Cle::Choisir(numero()?),
                     "monter" => Cle::Monter(position()?),
                     "descendre" => Cle::Descendre(position()?),
@@ -516,6 +588,21 @@ mod tests {
             },
             Cle::Accueillir(ZoneId::new("lisiere")),
             Cle::Rappeler(ZoneId::new("marais")),
+            Cle::Afficher(Vue::Marchand),
+            Cle::Afficher(Vue::Vente),
+            Cle::Afficher(Vue::Attaques(Emplacement::Camp(29))),
+            Cle::AcheterPotions(5),
+            Cle::AcheterCapsule,
+            Cle::Vendre(2),
+            Cle::VendreCeMonstre(Emplacement::Equipe(2)),
+            Cle::Apprendre {
+                emplacement: Emplacement::Camp(29),
+                oubliee: None,
+            },
+            Cle::Apprendre {
+                emplacement: Emplacement::Equipe(0),
+                oubliee: Some(3),
+            },
         ]
     }
 
@@ -642,6 +729,27 @@ mod tests {
             Cle::Nommer.commande(None, None),
             Some(Commande::Ouvrir(Formulaire::NomDuHeros))
         );
+    }
+
+    #[test]
+    fn un_menu_d_attaques_apprend_l_attaque_choisie() {
+        let cle = Cle::Apprendre {
+            emplacement: Emplacement::Camp(4),
+            oubliee: Some(1),
+        };
+        assert_eq!(
+            cle.commande(Some("lianes-etrangleuses"), None),
+            Some(Commande::Jouer(Choix::ApprendreAttaque {
+                emplacement: Emplacement::Camp(4),
+                attaque: AttaqueId::new("lianes-etrangleuses"),
+                oubliee: Some(1),
+            }))
+        );
+        assert_eq!(
+            Cle::Vendre(1).commande(Some("c12"), None),
+            Some(Commande::Jouer(Choix::Vendre(Emplacement::Camp(12))))
+        );
+        assert_eq!(Cle::AcheterCapsule.commande(None, None), None);
     }
 
     #[test]

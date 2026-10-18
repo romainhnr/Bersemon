@@ -11,6 +11,7 @@ mod ecran_camp;
 mod ecran_combat;
 mod ecran_expedition;
 mod ecran_expeditions_automatiques;
+mod ecran_marchand;
 mod formulaires;
 mod horloge;
 mod interactions;

@@ -165,6 +165,8 @@ fn expliquer(refus: &Refus) -> String {
 
 /// Au camp et en expédition, une partie est en jeu.
 const PARTIE_EN_JEU: &str = "une partie est en jeu";
+/// Entre deux étapes, une expédition est en cours.
+const EN_EXPEDITION: &str = "une expédition est en cours";
 
 fn question(session: &Session, contenu: &ContenuV1, maintenant: Horodatage) -> Question {
     let partie = || session.deroulement.partie().expect(PARTIE_EN_JEU);
@@ -174,7 +176,10 @@ fn question(session: &Session, contenu: &ContenuV1, maintenant: Horodatage) -> Q
         Attente::NomDuHeros => ecran_accueil::nom_du_heros(),
         Attente::Classe => ecran_accueil::classe(contenu),
         Attente::Camp => ecran_camp::question(partie(), session.vue, contenu, maintenant),
-        Attente::EntreDeuxEtapes => ecran_expedition::entre_deux_etapes(partie()),
+        Attente::EntreDeuxEtapes => {
+            let expedition = session.deroulement.expedition().expect(EN_EXPEDITION);
+            ecran_expedition::entre_deux_etapes(partie(), expedition)
+        }
         Attente::MonstreRare(_) => ecran_expedition::monstre_rare(),
         Attente::PlaceManquante(capture) => {
             ecran_expedition::place_manquante(capture, partie().collection())

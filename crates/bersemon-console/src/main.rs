@@ -9,6 +9,7 @@ mod ecran_camp;
 mod ecran_combat;
 mod ecran_expedition;
 mod ecran_expeditions_automatiques;
+mod ecran_marchand;
 mod horloge;
 mod recit;
 mod saisie;
@@ -29,6 +30,8 @@ use crate::saisie::Entree;
 
 /// Au camp et en expédition, une partie est en jeu.
 const PARTIE_EN_JEU: &str = "une partie est en jeu";
+/// Entre deux étapes, une expédition est en cours.
+const EN_EXPEDITION: &str = "une expédition est en cours";
 
 fn main() {
     let mut aleatoire = GenerateurAleatoire::new(graine_depuis_horloge());
@@ -76,7 +79,8 @@ fn demander(
         }
         Attente::EntreDeuxEtapes => {
             let partie = deroulement.partie().expect(PARTIE_EN_JEU);
-            ecran_expedition::entre_deux_etapes(partie, entree)
+            let expedition = deroulement.expedition().expect(EN_EXPEDITION);
+            ecran_expedition::entre_deux_etapes(partie, expedition, entree)
         }
         Attente::MonstreRare(_) => ecran_expedition::monstre_rare(entree),
         Attente::ActionDeCombat(combat) => ecran_combat::choisir_action(combat, entree),

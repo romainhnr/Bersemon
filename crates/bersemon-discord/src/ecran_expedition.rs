@@ -3,11 +3,12 @@
 
 use bersemon_core::collection::Collection;
 use bersemon_core::combat::Cote;
+use bersemon_core::expedition::Expedition;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_presentation::monstres::ligne_monstre;
 use bersemon_presentation::partie::{
-    collection as liste_des_monstres, place_manquante as texte_de_place_manquante,
+    butin_en_chemin, collection as liste_des_monstres, place_manquante as texte_de_place_manquante,
 };
 
 use crate::composants::Cle;
@@ -15,8 +16,9 @@ use crate::ecran_camp::{menus_de_monstres, options_d_equipe};
 use crate::message::{PRINCIPAL, Question, SECONDAIRE, bouton, menu, rangees};
 
 /// Continuer, rentrer, soigner un monstre ou mettre un monstre en tête :
-/// c'est lui qui commencera le prochain combat (Q55).
-pub fn entre_deux_etapes(partie: &Partie) -> Question {
+/// c'est lui qui commencera le prochain combat (Q55). Ce qui a été trouvé
+/// en chemin est rappelé : une défaite le ferait perdre (section 9.3).
+pub fn entre_deux_etapes(partie: &Partie, expedition: &Expedition) -> Question {
     let equipe = partie.collection().equipe();
     let potions = partie.inventaire().potions();
     let lignes: Vec<String> = equipe
@@ -42,9 +44,10 @@ pub fn entre_deux_etapes(partie: &Partie) -> Question {
     }
     let suivants = options_d_equipe(equipe).into_iter().skip(1).collect();
     rangees_de_l_etape.extend(menu(Cle::EnTete, "Mettre en tête de l'équipe", suivants));
+    let butin = butin_en_chemin(expedition).map_or(String::new(), |butin| format!("\n{butin}"));
     Question {
         texte: format!(
-            "Votre équipe :\n{}\nPotions : {potions}\n\nQue faire ?",
+            "Votre équipe :\n{}\nPotions : {potions}{butin}\n\nQue faire ?",
             lignes.join("\n")
         ),
         rangees: rangees_de_l_etape,

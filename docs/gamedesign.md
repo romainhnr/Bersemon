@@ -250,6 +250,7 @@ Déroulement dans la V1 :
 - Un groupe sauvage compte de 1 à 2 monstres dans la zone facile, de 1 à 3 dans la zone difficile ; la taille est tirée à chaque combat.
 - Un coffre contient 1 à 2 potions (section 14.4). Après la V1, il contient aussi de l'argent, selon la zone, et, une fois sur 5, une capsule d'attaque de la zone que le joueur n'a pas encore (sections 13.10 et 14.5).
 - Entre deux étapes, le joueur continue, rentre au camp en gardant ses gains, utilise des potions ou change l'ordre de son équipe ; les échanges avec le camp restent impossibles. Les PV et les statuts sont conservés d'une étape à l'autre.
+- Après la V1, l'écran entre deux étapes rappelle l'argent et les capsules trouvés pendant l'expédition, qu'une défaite ferait perdre (section 9.3).
 - Après la dernière étape, le joueur rentre au camp et la zone compte comme explorée.
 
 ### 9.3 Défaite
@@ -518,6 +519,8 @@ Premier marchand, après la V1 :
 - Au camp, il vend des potions et des capsules d'attaque (section 13.10), et rachète les monstres capturés contre de l'argent. Il ne rachète ni potions ni capsules. Les achats se font sans confirmation.
 - Revendre un monstre est définitif et suit les règles du relâcher : confirmation, et jamais le dernier monstre de l'équipe. Tout monstre se revend comme il se relâche, monstre de départ et Apôtre compris. Le prix dépend de son niveau, de la rareté de son espèce et du shiny (section 14.5).
 - Les prix du marchand, à l'achat comme à la revente, sont fixes et non tirés au hasard, pour être connus avant l'échange, comme la durée d'une expédition automatique (section 12.2) : la section 1.4 vise les gains des combats et des expéditions.
+- Écrans : une fois le marchand au camp, le camp propose de le voir (une entrée du menu dans la console, un bouton sur Discord). Son étal montre l'argent, les potions et les capsules obtenues, vend des potions (au nombre choisi dans la console, par 1 ou 5 sur Discord) et les capsules que le joueur n'a pas encore. La vente montre le prix de chaque monstre ; on peut aussi vendre le monstre choisi depuis la gestion des monstres.
+- Les attaques d'un monstre se gèrent depuis la gestion des monstres : ses attaques connues, puis celles qu'il peut apprendre au camp ; s'il en connaît déjà 4, le joueur choisit aussi celle à oublier (section 13.10).
 - Tuer un monstre pour en tirer des ressources est envisagé, mais reporté tant qu'aucune ressource n'a d'usage (Q71).
 
 ### 14.3 Objets et ressources cités dans ce document
@@ -791,3 +794,8 @@ Les questions Q67 et suivantes ont été relevées le 18/10/2026 après les prem
 - Une défaite en expédition manuelle fait perdre l'argent et les capsules trouvés pendant l'expédition, acquis seulement au retour au camp ; l'argent déjà au camp reste.
 - Les prix du marchand sont fixes, pour être connus avant l'échange ; la section 1.4 vise les gains des combats et des expéditions.
 - Hypothèses retenues, présentées avec la conception : le marchand reste au camp même après une défaite, mais quitter le jeu avant le retour annule la rencontre ; on ne lui achète rien en expédition ; les achats se font sans confirmation ; tout monstre se revend comme il se relâche, monstre de départ et Apôtre compris ; il ne rachète ni potions ni capsules ; l'argent se compte en pièces d'argent.
+- Après un essai sur Discord de l'étape 22 (marchand rencontré mais invisible au camp, faute d'écran), l'ordre des étapes est gardé : capsules à l'étape 23, écrans à l'étape 24.
+
+18/10/2026 (étape 24) :
+
+- Écrans de l'économie, dans la console et sur Discord : le marchand au camp (étal, achat de potions et de capsules, vente avec le prix de chaque monstre, vente aussi depuis la gestion), les attaques d'un monstre depuis la gestion, et le rappel, entre deux étapes, de ce qui a été trouvé en chemin. Sur Discord, les potions s'achètent par 1 ou 5.

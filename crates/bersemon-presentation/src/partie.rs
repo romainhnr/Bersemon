@@ -7,6 +7,7 @@ use bersemon_core::combat::Cote;
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::Confirmation;
 use bersemon_core::espece::Espece;
+use bersemon_core::expedition::Expedition;
 use bersemon_core::heros::Classe;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
@@ -79,6 +80,22 @@ pub fn argent(montant: u32) -> String {
 /// « la capsule d'attaque Brasier ».
 pub fn capsule(capsule: &Capsule) -> String {
     format!("la capsule d'attaque {}", capsule.attaque().nom())
+}
+
+/// Ce que l'expédition a trouvé, qu'une défaite ferait perdre (section
+/// 9.3). `None` s'il n'y a rien.
+pub fn butin_en_chemin(expedition: &Expedition) -> Option<String> {
+    let mut trouve = Vec::new();
+    if expedition.argent_trouve() > 0 {
+        trouve.push(argent(expedition.argent_trouve()));
+    }
+    trouve.extend(expedition.capsules_trouvees().iter().map(capsule));
+    (!trouve.is_empty()).then(|| {
+        format!(
+            "Trouvé en chemin, perdu en cas de défaite : {}.",
+            enumerer(&trouve)
+        )
+    })
 }
 
 /// "a", "a et b", "a, b et c".
