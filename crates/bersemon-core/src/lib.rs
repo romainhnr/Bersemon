@@ -22,6 +22,7 @@ pub mod experience;
 pub mod heros;
 pub mod horodatage;
 pub mod inventaire;
+pub mod marchand;
 pub mod monstre;
 pub mod niveau;
 pub mod nom;

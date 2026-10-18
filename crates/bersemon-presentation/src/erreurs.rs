@@ -4,9 +4,11 @@ use bersemon_core::collection::{Collection, ErreurCollection};
 use bersemon_core::combat::ErreurCombat;
 use bersemon_core::deroulement::{ActionDeGestion, Choix, ErreurChoix};
 use bersemon_core::inventaire::ErreurPotion;
+use bersemon_core::marchand::ErreurMarchand;
 use bersemon_core::sauvegarde::ErreurSauvegarde;
 
 use crate::expeditions_automatiques::erreur_expedition_automatique;
+use crate::partie::argent;
 
 /// Le choix refusé dit de quel nom il s'agissait : celui du héros ou un
 /// surnom.
@@ -25,7 +27,26 @@ pub fn erreur_de_choix(choix: &Choix, erreur: &ErreurChoix) -> String {
             format!("Impossible d'apprendre cette attaque : {erreur}.")
         }
         ErreurChoix::ExpeditionAutomatique(erreur) => erreur_expedition_automatique(erreur),
+        ErreurChoix::Marchand(erreur) => erreur_marchand(erreur),
         autre => format!("Action impossible : {autre}."),
+    }
+}
+
+pub fn erreur_marchand(erreur: &ErreurMarchand) -> String {
+    match erreur {
+        ErreurMarchand::AucunMarchand => {
+            "Aucun marchand ne s'est encore installé au camp.".to_string()
+        }
+        ErreurMarchand::ArgentInsuffisant {
+            prix,
+            argent: reste,
+        } => format!(
+            "Il faut {}, et vous n'en avez que {}.",
+            argent(*prix),
+            reste
+        ),
+        ErreurMarchand::QuantiteNulle => "Choisissez au moins une potion.".to_string(),
+        ErreurMarchand::Collection(erreur) => erreur_collection(erreur),
     }
 }
 

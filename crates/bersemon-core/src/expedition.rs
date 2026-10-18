@@ -48,6 +48,8 @@ pub enum EvenementExpedition {
     MonstreRare(MonstreRare),
     /// Combat, sans fuite, contre l'Apôtre (section 9.4).
     Apotre(Monstre),
+    /// Le marchand rencontré se réfugie aussitôt au camp (section 14.2).
+    Marchand,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -76,6 +78,9 @@ pub struct Expedition {
     apotre: Option<Apotre>,
     /// Somme des coffres ouverts, perdue en cas de défaite (section 9.3).
     argent_trouve: u32,
+    /// Tant qu'aucun marchand n'est au camp, une étape peut tirer sa
+    /// rencontre, une fois au plus (section 9.2).
+    marchand_possible: bool,
 }
 
 impl Expedition {
@@ -90,11 +95,17 @@ impl Expedition {
             defaite: false,
             apotre: None,
             argent_trouve: 0,
+            marchand_possible: false,
         }
     }
 
     pub(crate) fn vers_l_antre(mut self, apotre: Apotre) -> Self {
         self.apotre = Some(apotre);
+        self
+    }
+
+    pub(crate) fn avec_marchand_possible(mut self) -> Self {
+        self.marchand_possible = true;
         self
     }
 
@@ -134,8 +145,9 @@ impl Expedition {
 
     /// Passe à l'étape suivante et tire son événement ; `None` si
     /// l'expédition est terminée. Tirages : nature de l'événement (combat
-    /// 80 %, coffre 15 %, monstre rare 5 %, Q38), puis ceux de son contenu :
-    /// pour un coffre, ses potions puis son argent.
+    /// 80 %, coffre 15 %, monstre rare 5 %, Q38 ; tant que le marchand peut
+    /// être rencontré, combat 70 % et marchand 10 %, Q70), puis ceux de son
+    /// contenu : pour un coffre, ses potions puis son argent.
     /// Une zone sans monstre rare donne un combat à la place. L'Apôtre
     /// remplace l'événement de la dernière étape, sans tirage de sa nature
     /// (Q57).
@@ -149,6 +161,10 @@ impl Expedition {
             return Some(EvenementExpedition::Apotre(apotre.generer(aleatoire)));
         }
         let evenement = match aleatoire.tirer(1..=100) {
+            71..=80 if self.marchand_possible => {
+                self.marchand_possible = false;
+                EvenementExpedition::Marchand
+            }
             1..=80 => EvenementExpedition::Combat(self.zone.generer_groupe(aleatoire)),
             81..=95 => self.tirer_un_coffre(aleatoire),
             _ => match self.zone.generer_monstre_rare(aleatoire) {
@@ -320,6 +336,40 @@ mod tests {
         expedition.noter_defaite();
         assert_eq!(expedition.argent_trouve(), 10);
         assert_eq!(expedition.argent_rapporte(), 0);
+    }
+
+    #[test]
+    fn le_marchand_se_rencontre_une_fois_a_la_place_d_un_combat() {
+        let mut expedition = Expedition::partir(zone(false), &mut AleatoireScripte::new([6]))
+            .avec_marchand_possible();
+        let mut combat = vec![70];
+        combat.extend(MONSTRE);
+        assert!(matches!(
+            expedition.etape_suivante(&mut AleatoireScripte::new(combat)),
+            Some(EvenementExpedition::Combat(_))
+        ));
+        assert_eq!(
+            expedition.etape_suivante(&mut AleatoireScripte::new([71])),
+            Some(EvenementExpedition::Marchand)
+        );
+        // Il ne se rencontre qu'une fois.
+        let mut combat = vec![80];
+        combat.extend(MONSTRE);
+        assert!(matches!(
+            expedition.etape_suivante(&mut AleatoireScripte::new(combat)),
+            Some(EvenementExpedition::Combat(_))
+        ));
+    }
+
+    #[test]
+    fn sans_marchand_possible_le_tirage_donne_un_combat() {
+        let mut expedition = Expedition::partir(zone(false), &mut AleatoireScripte::new([4]));
+        let mut combat = vec![75];
+        combat.extend(MONSTRE);
+        assert!(matches!(
+            expedition.etape_suivante(&mut AleatoireScripte::new(combat)),
+            Some(EvenementExpedition::Combat(_))
+        ));
     }
 
     #[test]

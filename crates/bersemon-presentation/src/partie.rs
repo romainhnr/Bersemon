@@ -178,6 +178,11 @@ pub fn question_de_confirmation(confirmation: &Confirmation) -> String {
             format!("Relâcher définitivement {} ?", monstre.nom())
         }
         Confirmation::RappelerLExpedition(expedition) => question_de_rappel(expedition),
+        Confirmation::Vendre { monstre, prix } => format!(
+            "Vendre définitivement {} au marchand pour {} ?",
+            monstre.nom(),
+            argent(*prix)
+        ),
     }
 }
 

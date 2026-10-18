@@ -1,7 +1,9 @@
 //! Récit des événements du déroulement, dans l'ordre où ils arrivent.
 
 use bersemon_core::combat::Cote;
-use bersemon_core::contenu::{INTRODUCTION, fin_de_l_introduction, texte_du_conseil};
+use bersemon_core::contenu::{
+    INTRODUCTION, RENCONTRE_DU_MARCHAND, fin_de_l_introduction, texte_du_conseil,
+};
 use bersemon_core::deroulement::Evenement;
 
 use crate::combat::{rapport_experience, remplacement, renoncement, soin_de_potion};
@@ -143,6 +145,19 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
         Evenement::ExpeditionAutomatiqueRentree { zone, bilan } => {
             (expeditions_automatiques::retour(zone, bilan), true)
         }
+        Evenement::MarchandRencontre => (RENCONTRE_DU_MARCHAND.to_string(), false),
+        Evenement::PotionsAchetees { nombre, prix } => (
+            format!("Vous achetez {} pour {}.", potions(*nombre), argent(*prix)),
+            false,
+        ),
+        Evenement::MonstreVendu { monstre, prix } => (
+            format!(
+                "Vous vendez {} au marchand pour {}.",
+                monstre.nom(),
+                argent(*prix)
+            ),
+            false,
+        ),
     };
     Recit {
         texte,
@@ -199,6 +214,18 @@ mod tests {
         assert_eq!(
             recit.texte,
             "Toute votre équipe est KO : vous rentrez au camp et perdez vos potions, ainsi que l'argent trouvé en chemin (1 pièce d'argent)."
+        );
+    }
+
+    #[test]
+    fn achat_et_vente_disent_le_prix() {
+        let recit = &raconter(&[Evenement::PotionsAchetees {
+            nombre: 2,
+            prix: 40,
+        }])[0];
+        assert_eq!(
+            recit.texte,
+            "Vous achetez 2 potions pour 40 pièces d'argent."
         );
     }
 

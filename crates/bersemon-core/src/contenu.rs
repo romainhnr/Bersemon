@@ -11,7 +11,7 @@ use std::time::Duration;
 
 use crate::attaque::{Attaque, AttaqueId, Categorie, EffetSecondaire};
 use crate::catalogue::Catalogue;
-use crate::espece::{AttaqueApprise, Espece, EspeceId, Role};
+use crate::espece::{AttaqueApprise, Espece, EspeceId, Rarete, Role};
 use crate::expedition::ParametresCoffre;
 use crate::expedition_automatique::ParametresExpeditionAutomatique;
 use crate::heros::Classe;
@@ -55,6 +55,10 @@ const INDICE_1: &str = "au bout de la Lisière, des cordes neuves pendent encore
 const INDICE_2: &str = "des noyés flottent entre les roseaux, tous tournés vers le même point de la brume, comme s'ils écoutaient un appel.";
 
 const INDICE_3: &str = "un gibet se dresse sur une île de vase, plus haut que les arbres. À son pied, la terre est retournée par des pas trop lourds pour un homme. L'antre de l'Apôtre est là.";
+
+/// Le marchand se réfugie aussitôt au camp, même si l'expédition finit mal
+/// (section 14.2).
+pub const RENCONTRE_DU_MARCHAND: &str = "Un marchand ambulant surgit de la brume, sa carriole chargée de fioles. Les routes ne sont plus sûres pour lui : il part se réfugier au camp, où vous le retrouverez.";
 
 const AVANT_LE_BARON: &str = "Sous le gibet, une silhouette se déplie lentement, la corde encore au cou. Le Baron pendu, Apôtre du Démiurge, vous a senti venir. Il n'y aura pas de fuite.";
 
@@ -511,6 +515,8 @@ struct FicheEspece {
     /// PV, Attaque, Défense, Attaque spéciale, Défense spéciale, Vitesse.
     stats_de_base: [u16; 6],
     rendement_experience: u16,
+    /// Fixe le prix de revente (section 14.5).
+    rarete: Rarete,
     /// Niveau d'apprentissage et identifiant de l'attaque.
     apprentissage: &'static [(u8, &'static str)],
 }
@@ -525,6 +531,7 @@ const ESPECES: [FicheEspece; 11] = [
         role: Role::Offensif,
         stats_de_base: [45, 40, 40, 70, 55, 65],
         rendement_experience: 62,
+        rarete: Rarete::Commune,
         apprentissage: &[
             (1, "souffle-chaud"),
             (3, "crachat-de-braises"),
@@ -540,6 +547,7 @@ const ESPECES: [FicheEspece; 11] = [
         role: Role::Offensif,
         stats_de_base: [55, 68, 55, 35, 45, 55],
         rendement_experience: 63,
+        rarete: Rarete::Commune,
         apprentissage: &[
             (1, "charge-gluante"),
             (3, "plongeon"),
@@ -555,6 +563,7 @@ const ESPECES: [FicheEspece; 11] = [
         role: Role::Soutien,
         stats_de_base: [70, 45, 70, 45, 65, 25],
         rendement_experience: 64,
+        rarete: Rarete::Commune,
         apprentissage: &[
             (1, "coup-de-racine"),
             (3, "feuille-tranchante"),
@@ -570,6 +579,7 @@ const ESPECES: [FicheEspece; 11] = [
         role: Role::Offensif,
         stats_de_base: [50, 62, 45, 30, 40, 58],
         rendement_experience: 70,
+        rarete: Rarete::Commune,
         apprentissage: &[(1, "griffure"), (4, "morsure"), (9, "curee")],
     },
     FicheEspece {
@@ -579,6 +589,7 @@ const ESPECES: [FicheEspece; 11] = [
         role: Role::Offensif,
         stats_de_base: [42, 57, 38, 45, 38, 72],
         rendement_experience: 66,
+        rarete: Rarete::Commune,
         apprentissage: &[(1, "coup-de-bec"), (4, "pique"), (8, "regard-funeste")],
     },
     FicheEspece {
@@ -588,6 +599,7 @@ const ESPECES: [FicheEspece; 11] = [
         role: Role::Offensif,
         stats_de_base: [40, 50, 40, 50, 45, 63],
         rendement_experience: 68,
+        rarete: Rarete::Commune,
         apprentissage: &[
             (1, "morsure-venimeuse"),
             (3, "regard-petrifiant"),
@@ -601,6 +613,7 @@ const ESPECES: [FicheEspece; 11] = [
         role: Role::Offensif,
         stats_de_base: [45, 30, 40, 70, 60, 75],
         rendement_experience: 85,
+        rarete: Rarete::Commune,
         apprentissage: &[
             (1, "lueur-trompeuse"),
             (1, "crachat-de-braises"),
@@ -615,6 +628,7 @@ const ESPECES: [FicheEspece; 11] = [
         role: Role::Offensif,
         stats_de_base: [60, 75, 85, 30, 50, 30],
         rendement_experience: 95,
+        rarete: Rarete::Commune,
         apprentissage: &[
             (1, "coup-de-garde"),
             (8, "lame-rouillee"),
@@ -628,6 +642,7 @@ const ESPECES: [FicheEspece; 11] = [
         role: Role::Soutien,
         stats_de_base: [70, 60, 60, 65, 70, 75],
         rendement_experience: 150,
+        rarete: Rarete::Rare,
         apprentissage: &[(1, "coup-de-bois"), (5, "ruade"), (8, "lumiere-d-aube")],
     },
     FicheEspece {
@@ -637,6 +652,7 @@ const ESPECES: [FicheEspece; 11] = [
         role: Role::Offensif,
         stats_de_base: [75, 70, 65, 75, 60, 55],
         rendement_experience: 170,
+        rarete: Rarete::Rare,
         apprentissage: &[
             (1, "morsure-venimeuse"),
             (8, "regard-petrifiant"),
@@ -651,6 +667,7 @@ const ESPECES: [FicheEspece; 11] = [
         role: Role::Offensif,
         stats_de_base: [85, 85, 75, 90, 80, 65],
         rendement_experience: 250,
+        rarete: Rarete::Apotre,
         apprentissage: &[
             (1, "corde-du-gibet"),
             (5, "lamentation"),
@@ -693,6 +710,7 @@ fn creer_espece(fiche: &FicheEspece) -> Espece {
         fiche.rendement_experience,
         apprentissage,
     )
+    .avec_rarete(fiche.rarete)
 }
 
 fn creer_attaque(id: &str) -> Attaque {
@@ -844,6 +862,27 @@ mod tests {
             for espece in zone.especes().iter().chain(rares) {
                 assert_eq!(contenu.espece(espece.id()).as_ref(), Some(espece));
             }
+        }
+    }
+
+    #[test]
+    fn la_rarete_suit_la_place_de_l_espece_dans_le_jeu() {
+        let contenu = ContenuV1::new();
+        let rares: Vec<&EspeceId> = contenu
+            .zones()
+            .iter()
+            .flat_map(|zone| zone.rares().iter().map(|rare| rare.espece.id()))
+            .collect();
+        let apotre = contenu.piste().apotre().espece().id();
+        for espece in contenu.especes() {
+            let attendue = if espece.id() == apotre {
+                Rarete::Apotre
+            } else if rares.contains(&espece.id()) {
+                Rarete::Rare
+            } else {
+                Rarete::Commune
+            };
+            assert_eq!(espece.rarete(), attendue, "{}", espece.id().as_str());
         }
     }
 

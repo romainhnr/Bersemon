@@ -25,6 +25,7 @@ use crate::expedition_automatique::{
 use crate::heros::{Classe, Heros};
 use crate::horodatage::Horodatage;
 use crate::inventaire::{ErreurPotion, potion_sans_effet};
+use crate::marchand::ErreurMarchand;
 use crate::monstre::{Monstre, RapportExperience};
 use crate::nom::{ErreurNom, Nom};
 use crate::partie::{Partie, creer_monstre_de_depart};
@@ -68,6 +69,11 @@ pub enum Choix {
     AccueillirExpeditionAutomatique(ZoneId),
     /// Avant son terme, après confirmation (section 12.7).
     RappelerExpeditionAutomatique(ZoneId),
+    /// Au camp, chez le marchand, sans confirmation (section 14.2).
+    AcheterPotions(u32),
+    /// Au camp, chez le marchand, après confirmation, comme un relâcher
+    /// (section 14.2).
+    Vendre(Emplacement),
     /// Au camp, toutes les actions ; entre deux étapes, seulement l'ordre de
     /// l'équipe (Q55).
     Gerer(ActionDeGestion),
@@ -149,6 +155,11 @@ pub enum Confirmation {
     Relacher(Monstre),
     /// Les monstres rentreraient sans rien rapporter (section 12.7).
     RappelerLExpedition(ExpeditionAutomatique),
+    /// La vente est définitive (section 14.2).
+    Vendre {
+        monstre: Monstre,
+        prix: u32,
+    },
 }
 
 /// Ce qui s'est passé, dans l'ordre. Les monstres et les combats sont des
@@ -231,6 +242,17 @@ pub enum Evenement {
         zone: String,
         bilan: BilanExpeditionAutomatique,
     },
+    /// Il se réfugie aussitôt au camp (section 14.2).
+    MarchandRencontre,
+    /// Prix payé, en pièces d'argent.
+    PotionsAchetees {
+        nombre: u32,
+        prix: u32,
+    },
+    MonstreVendu {
+        monstre: Monstre,
+        prix: u32,
+    },
     /// La partie continue : la sauvegarde sera retentée plus tard.
     SauvegardeImpossible(ErreurSauvegarde),
 }
@@ -247,6 +269,7 @@ pub enum ErreurChoix {
     Combat(ErreurCombat),
     Attaque(ErreurAttaquesMonstre),
     ExpeditionAutomatique(ErreurExpeditionAutomatique),
+    Marchand(ErreurMarchand),
 }
 
 impl fmt::Display for ErreurChoix {
@@ -261,6 +284,7 @@ impl fmt::Display for ErreurChoix {
             ErreurChoix::Combat(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Attaque(erreur) => write!(f, "{erreur}"),
             ErreurChoix::ExpeditionAutomatique(erreur) => write!(f, "{erreur}"),
+            ErreurChoix::Marchand(erreur) => write!(f, "{erreur}"),
         }
     }
 }
@@ -582,6 +606,36 @@ impl EnJeu {
                 evenements.extend(experience);
                 // Tout de suite, pour que quitter le jeu ne permette pas de
                 // tirer de nouveau le résultat (section 12.7).
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::AcheterPotions(nombre) => {
+                let prix = self
+                    .partie
+                    .acheter_potions(*nombre)
+                    .map_err(ErreurChoix::Marchand)?;
+                evenements.push(Evenement::PotionsAchetees {
+                    nombre: *nombre,
+                    prix,
+                });
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::Vendre(emplacement) => {
+                if !confirme {
+                    // Une vente impossible, comme celle du dernier monstre de
+                    // l'équipe, est refusée sans demander de confirmation.
+                    let (monstre, prix) = self
+                        .partie
+                        .estimer_vente(*emplacement)
+                        .map_err(ErreurChoix::Marchand)?;
+                    return Ok(Reponse::a_confirmer(Confirmation::Vendre { monstre, prix }));
+                }
+                let (monstre, prix) = self
+                    .partie
+                    .vendre(*emplacement)
+                    .map_err(ErreurChoix::Marchand)?;
+                evenements.push(Evenement::MonstreVendu { monstre, prix });
                 sauvegarder(&self.partie, contexte.depot, evenements);
                 Ok(Reponse::Faite)
             }
@@ -1155,6 +1209,11 @@ impl EnExpedition {
                 evenements.push(Evenement::Coffre { potions, argent });
                 self.apres_l_etape(partie, evenements)
             }
+            EvenementExpedition::Marchand => {
+                partie.accueillir_marchand();
+                evenements.push(Evenement::MarchandRencontre);
+                self.apres_l_etape(partie, evenements)
+            }
             EvenementExpedition::MonstreRare(rare) => {
                 partie.noter_rencontre(&rare.monstre);
                 if rare.pacifique {
@@ -1295,6 +1354,23 @@ mod tests {
         let mut partie = Partie::nouvelle(heros, creer("salamandre", 5));
         partie.prendre_monstre_rare(creer("loup", 3));
         partie
+    }
+
+    fn etat_de(partie: &Partie) -> EtatPartie {
+        EtatPartie {
+            heros: partie.heros().clone(),
+            collection: partie.collection().clone(),
+            inventaire: partie.inventaire().clone(),
+            argent: partie.argent(),
+            marchand_au_camp: partie.marchand_au_camp(),
+            codex: partie.codex().clone(),
+            zones_explorees: partie.zones_explorees().to_vec(),
+            indices_trouves: partie.indices_trouves(),
+            apotres_vaincus: partie.apotres_vaincus().to_vec(),
+            conseils_vus: partie.conseils_vus().to_vec(),
+            expeditions_automatiques: partie.expeditions_automatiques().to_vec(),
+            attaques_a_choisir: partie.attaques_a_choisir().to_vec(),
+        }
     }
 
     #[test]
@@ -1501,6 +1577,112 @@ mod tests {
         assert_eq!(deroulement.attente(), Attente::Camp);
         assert!(deroulement.expedition().is_none());
         assert_eq!(deroulement.partie().unwrap().argent(), 12);
+    }
+
+    #[test]
+    fn le_marchand_rencontre_attend_au_camp_pour_acheter_et_vendre() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut deroulement = Deroulement::demarrer(Ok(Some(partie(&contenu))));
+        repondre_sans_tirage(&mut deroulement, Choix::ReprendreLaPartie, &contenu, &depot).unwrap();
+        assert_eq!(
+            repondre_sans_tirage(&mut deroulement, Choix::AcheterPotions(1), &contenu, &depot),
+            Err(ErreurChoix::Marchand(ErreurMarchand::AucunMarchand))
+        );
+
+        // 4 étapes, puis le marchand.
+        let mut aleatoire = AleatoireScripte::new([4, 71]);
+        let mut contexte = Contexte {
+            contenu: &contenu,
+            aleatoire: &mut aleatoire,
+            depot: &depot,
+            maintenant: Horodatage::depuis_secondes(0),
+        };
+        let evenements = deroulement
+            .repondre(
+                Choix::PartirEnExpedition(ZoneId::new("lisiere")),
+                &mut contexte,
+            )
+            .unwrap();
+        assert_eq!(
+            evenements[2..],
+            [
+                Evenement::MarchandRencontre,
+                Evenement::Conseil(Conseil::PremierArretEntreDeuxEtapes),
+            ]
+        );
+        repondre_sans_tirage(&mut deroulement, Choix::RentrerAuCamp, &contenu, &depot).unwrap();
+        let partie = deroulement.partie().unwrap();
+        assert!(partie.marchand_au_camp());
+        assert!(
+            depot
+                .sauvegardes
+                .borrow()
+                .last()
+                .unwrap()
+                .marchand_au_camp()
+        );
+        assert_eq!(
+            repondre_sans_tirage(&mut deroulement, Choix::AcheterPotions(1), &contenu, &depot),
+            Err(ErreurChoix::Marchand(ErreurMarchand::ArgentInsuffisant {
+                prix: 20,
+                argent: 0
+            }))
+        );
+
+        // Le Loup de niveau 3, d'espèce commune, vaut 15 pièces d'argent.
+        let vente = Choix::Vendre(Emplacement::Equipe(1));
+        repondre_sans_tirage(&mut deroulement, vente, &contenu, &depot).unwrap();
+        assert!(matches!(
+            deroulement.attente(),
+            Attente::Confirmation(Confirmation::Vendre { prix: 15, .. })
+        ));
+        let evenements =
+            repondre_sans_tirage(&mut deroulement, Choix::Oui, &contenu, &depot).unwrap();
+        assert!(matches!(
+            &evenements[..],
+            [Evenement::MonstreVendu { prix: 15, monstre }] if monstre.espece().id().as_str() == "loup"
+        ));
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert_eq!(sauvegarde.argent(), 15);
+        assert_eq!(sauvegarde.collection().equipe().len(), 1);
+
+        // Le dernier monstre de l'équipe ne se vend pas : pas de
+        // confirmation demandée.
+        let dernier = Choix::Vendre(Emplacement::Equipe(0));
+        assert_eq!(
+            repondre_sans_tirage(&mut deroulement, dernier, &contenu, &depot),
+            Err(ErreurChoix::Marchand(ErreurMarchand::Collection(
+                ErreurCollection::DernierMonstreDeLEquipe
+            )))
+        );
+        assert_eq!(deroulement.attente(), Attente::Camp);
+    }
+
+    #[test]
+    fn acheter_des_potions_au_marchand() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut partie = partie(&contenu);
+        let mut etat = etat_de(&partie);
+        etat.argent = 50;
+        etat.marchand_au_camp = true;
+        partie = Partie::restaurer(etat).unwrap();
+        let mut deroulement = Deroulement::demarrer(Ok(Some(partie)));
+        repondre_sans_tirage(&mut deroulement, Choix::ReprendreLaPartie, &contenu, &depot).unwrap();
+        let evenements =
+            repondre_sans_tirage(&mut deroulement, Choix::AcheterPotions(2), &contenu, &depot)
+                .unwrap();
+        assert_eq!(
+            evenements,
+            vec![Evenement::PotionsAchetees {
+                nombre: 2,
+                prix: 40
+            }]
+        );
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert_eq!(sauvegarde.argent(), 10);
+        assert_eq!(sauvegarde.inventaire().potions(), 2);
     }
 
     #[test]
@@ -1731,6 +1913,14 @@ mod tests {
             .sum();
         assert!(rapporte > 0);
         assert_eq!(sauvegarde.argent(), rapporte);
+        // Le marchand rencontré reste au camp : il ne se croise qu'une fois
+        // (section 14.2).
+        let marchands = vus
+            .iter()
+            .filter(|evenement| **evenement == Evenement::MarchandRencontre)
+            .count();
+        assert_eq!(marchands, 1);
+        assert!(sauvegarde.marchand_au_camp());
     }
 
     /// Réponse donnée à cette heure, avec ces tirages.
@@ -1775,6 +1965,7 @@ mod tests {
             collection: partie.collection().clone(),
             inventaire: partie.inventaire().clone(),
             argent: partie.argent(),
+            marchand_au_camp: partie.marchand_au_camp(),
             codex: partie.codex().clone(),
             zones_explorees: vec![ZoneId::new("lisiere"), ZoneId::new("marais")],
             indices_trouves: 3,

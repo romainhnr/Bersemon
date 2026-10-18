@@ -17,6 +17,7 @@ use crate::expedition_automatique::{
 use crate::heros::Heros;
 use crate::horodatage::Horodatage;
 use crate::inventaire::{ErreurPotion, Inventaire};
+use crate::marchand::{ErreurMarchand, PRIX_DE_LA_POTION, prix_de_revente};
 use crate::monstre::{Monstre, tirer_shiny};
 use crate::niveau::Niveau;
 use crate::stats::ValeursInternes;
@@ -48,6 +49,8 @@ pub struct Partie {
     /// Gardé au camp : une défaite ne fait perdre que celui trouvé pendant
     /// l'expédition (section 9.3).
     argent: u32,
+    /// Une fois rencontré, le marchand reste au camp (section 14.2).
+    marchand_au_camp: bool,
     codex: Codex,
     zones_explorees: Vec<ZoneId>,
     /// Indices trouvés sur la piste de l'Apôtre (section 9.4).
@@ -78,6 +81,7 @@ pub struct EtatPartie {
     pub collection: Collection,
     pub inventaire: Inventaire,
     pub argent: u32,
+    pub marchand_au_camp: bool,
     pub codex: Codex,
     pub zones_explorees: Vec<ZoneId>,
     pub indices_trouves: usize,
@@ -133,6 +137,7 @@ impl Partie {
             collection: Collection::new(depart),
             inventaire: Inventaire::default(),
             argent: 0,
+            marchand_au_camp: false,
             codex,
             zones_explorees: Vec::new(),
             indices_trouves: 0,
@@ -163,6 +168,78 @@ impl Partie {
     /// En pièces d'argent (section 14.1).
     pub fn argent(&self) -> u32 {
         self.argent
+    }
+
+    pub fn marchand_au_camp(&self) -> bool {
+        self.marchand_au_camp
+    }
+
+    /// Le marchand rencontré se réfugie au camp pour de bon, même si
+    /// l'expédition finit en défaite (section 14.2).
+    pub(crate) fn accueillir_marchand(&mut self) {
+        self.marchand_au_camp = true;
+    }
+
+    /// Au camp, sans confirmation (section 14.2). Rend le prix payé.
+    pub fn acheter_potions(&mut self, nombre: u32) -> Result<u32, ErreurMarchand> {
+        self.verifier_marchand()?;
+        if nombre == 0 {
+            return Err(ErreurMarchand::QuantiteNulle);
+        }
+        let prix = nombre.saturating_mul(PRIX_DE_LA_POTION);
+        self.payer(prix)?;
+        self.inventaire.ajouter_potions(nombre);
+        Ok(prix)
+    }
+
+    /// Le monstre que la vente retirerait et son prix, sans rien vendre :
+    /// de quoi demander confirmation au joueur. Refuse ce que refuserait
+    /// `vendre`.
+    pub fn estimer_vente(
+        &self,
+        emplacement: Emplacement,
+    ) -> Result<(Monstre, u32), ErreurMarchand> {
+        self.verifier_marchand()?;
+        let monstre = self
+            .collection
+            .clone()
+            .relacher(emplacement)
+            .map_err(ErreurMarchand::Collection)?;
+        let prix = prix_de_revente(&monstre);
+        Ok((monstre, prix))
+    }
+
+    /// Définitive et soumise aux règles du relâcher : jamais le dernier
+    /// monstre de l'équipe (section 14.2). La confirmation revient au
+    /// déroulement. Rend le monstre vendu et son prix.
+    pub fn vendre(&mut self, emplacement: Emplacement) -> Result<(Monstre, u32), ErreurMarchand> {
+        self.verifier_marchand()?;
+        let monstre = self
+            .collection
+            .relacher(emplacement)
+            .map_err(ErreurMarchand::Collection)?;
+        let prix = prix_de_revente(&monstre);
+        self.argent = self.argent.saturating_add(prix);
+        Ok((monstre, prix))
+    }
+
+    fn verifier_marchand(&self) -> Result<(), ErreurMarchand> {
+        if self.marchand_au_camp {
+            Ok(())
+        } else {
+            Err(ErreurMarchand::AucunMarchand)
+        }
+    }
+
+    fn payer(&mut self, prix: u32) -> Result<(), ErreurMarchand> {
+        if prix > self.argent {
+            return Err(ErreurMarchand::ArgentInsuffisant {
+                prix,
+                argent: self.argent,
+            });
+        }
+        self.argent -= prix;
+        Ok(())
     }
 
     pub fn codex(&self) -> &Codex {
@@ -230,6 +307,7 @@ impl Partie {
             collection,
             inventaire: etat.inventaire,
             argent: etat.argent,
+            marchand_au_camp: etat.marchand_au_camp,
             codex: etat.codex,
             zones_explorees: etat.zones_explorees,
             indices_trouves: etat.indices_trouves,
@@ -251,7 +329,8 @@ impl Partie {
 
     /// Une fois tous les indices trouvés, une expédition dans la zone de
     /// l'Apôtre s'achève par le combat contre lui, tant qu'il n'est pas
-    /// vaincu (section 9.4).
+    /// vaincu (section 9.4). Tant que le marchand n'est pas au camp, elle
+    /// peut le rencontrer (section 9.2).
     pub fn partir_en_expedition(
         &self,
         zone: &Zone,
@@ -261,7 +340,10 @@ impl Partie {
         if !piste.zone_ouverte(zone.id(), self.indices_trouves) {
             return Err(ErreurExpedition::ZoneFermee);
         }
-        let expedition = Expedition::partir(zone.clone(), aleatoire);
+        let mut expedition = Expedition::partir(zone.clone(), aleatoire);
+        if !self.marchand_au_camp {
+            expedition = expedition.avec_marchand_possible();
+        }
         let apotre = piste.apotre();
         if piste.antre_localise(self.indices_trouves)
             && !self.est_vaincu(apotre)
@@ -669,6 +751,91 @@ mod tests {
     }
 
     #[test]
+    fn le_marchand_ne_se_rencontre_que_s_il_n_est_pas_au_camp() {
+        let (zones, piste) = carte();
+        let mut partie = partie();
+        let mut expedition = partie
+            .partir_en_expedition(&zones[0], &piste, &mut AleatoireScripte::new([4]))
+            .unwrap();
+        assert_eq!(
+            expedition.etape_suivante(&mut AleatoireScripte::new([71])),
+            Some(EvenementExpedition::Marchand)
+        );
+        partie.accueillir_marchand();
+        let mut expedition = partie
+            .partir_en_expedition(&zones[0], &piste, &mut AleatoireScripte::new([4]))
+            .unwrap();
+        // Le monstre du groupe tire son shiny et ses valeurs internes.
+        assert!(matches!(
+            expedition.etape_suivante(&mut AleatoireScripte::new([71, 2, 0, 0, 0, 0, 0, 0])),
+            Some(EvenementExpedition::Combat(_))
+        ));
+    }
+
+    /// Le marchand au camp et 50 pièces d'argent.
+    fn partie_chez_le_marchand() -> Partie {
+        let mut partie = partie();
+        partie.collection_mut().accueillir_capture(creer("loup", 3));
+        partie.accueillir_marchand();
+        partie.argent = 50;
+        partie
+    }
+
+    #[test]
+    fn rien_ne_s_echange_sans_marchand() {
+        let mut partie = partie();
+        partie.argent = 50;
+        partie.collection_mut().accueillir_capture(creer("loup", 3));
+        assert_eq!(
+            partie.acheter_potions(1),
+            Err(ErreurMarchand::AucunMarchand)
+        );
+        assert_eq!(
+            partie.vendre(Emplacement::Equipe(1)),
+            Err(ErreurMarchand::AucunMarchand)
+        );
+        assert_eq!(partie.collection().equipe().len(), 2);
+    }
+
+    #[test]
+    fn acheter_des_potions_dans_la_limite_de_son_argent() {
+        let mut partie = partie_chez_le_marchand();
+        assert_eq!(
+            partie.acheter_potions(0),
+            Err(ErreurMarchand::QuantiteNulle)
+        );
+        assert_eq!(
+            partie.acheter_potions(3),
+            Err(ErreurMarchand::ArgentInsuffisant {
+                prix: 60,
+                argent: 50
+            })
+        );
+        assert_eq!(partie.inventaire().potions(), 0);
+        assert_eq!(partie.acheter_potions(2), Ok(40));
+        assert_eq!(partie.inventaire().potions(), 2);
+        assert_eq!(partie.argent(), 10);
+    }
+
+    #[test]
+    fn vendre_un_monstre_comme_on_le_relache() {
+        let mut partie = partie_chez_le_marchand();
+        // Un Loup de niveau 3, d'espèce commune : 15 pièces d'argent.
+        let (estime, prix) = partie.estimer_vente(Emplacement::Equipe(1)).unwrap();
+        assert_eq!(prix, 15);
+        assert_eq!(partie.collection().equipe().len(), 2);
+        assert_eq!(partie.vendre(Emplacement::Equipe(1)), Ok((estime, 15)));
+        assert_eq!(partie.argent(), 65);
+        assert_eq!(partie.collection().equipe().len(), 1);
+        let dernier = Err(ErreurMarchand::Collection(
+            ErreurCollection::DernierMonstreDeLEquipe,
+        ));
+        assert_eq!(partie.estimer_vente(Emplacement::Equipe(0)), dernier);
+        assert_eq!(partie.vendre(Emplacement::Equipe(0)), dernier);
+        assert_eq!(partie.argent(), 65);
+    }
+
+    #[test]
     fn rentrer_avant_la_fin_ne_donne_pas_d_indice() {
         let (zones, piste) = carte();
         let mut partie = partie();
@@ -929,6 +1096,7 @@ mod tests {
             collection: partie.collection().clone(),
             inventaire: partie.inventaire().clone(),
             argent: partie.argent(),
+            marchand_au_camp: partie.marchand_au_camp(),
             codex: partie.codex().clone(),
             zones_explorees: partie.zones_explorees().to_vec(),
             indices_trouves: partie.indices_trouves(),

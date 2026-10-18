@@ -8,7 +8,7 @@ use bersemon_core::catalogue::Catalogue;
 use bersemon_core::partie::Partie;
 use bersemon_core::sauvegarde::{ErreurSauvegarde, SauvegardeRepository};
 
-use crate::format::{self, SauvegardeV4, VERSION};
+use crate::format::{self, SauvegardeV5, VERSION};
 
 pub struct FichierJson {
     chemin: PathBuf,
@@ -38,7 +38,7 @@ impl FichierJson {
         if !(1..=VERSION).contains(&version) {
             return Err(ErreurSauvegarde::VersionInconnue(version));
         }
-        let sauvegarde: SauvegardeV4 = serde_json::from_value(valeur)
+        let sauvegarde: SauvegardeV5 = serde_json::from_value(valeur)
             .map_err(|erreur| ErreurSauvegarde::Illisible(erreur.to_string()))?;
         format::vers_partie(sauvegarde, catalogue)
     }
@@ -214,6 +214,7 @@ mod tests {
             collection: partie.collection().clone(),
             inventaire: partie.inventaire().clone(),
             argent: 135,
+            marchand_au_camp: true,
             codex: partie.codex().clone(),
             zones_explorees: vec![ZoneId::new("lisiere")],
             indices_trouves: 3,
@@ -329,11 +330,24 @@ mod tests {
 
     #[test]
     fn version_inconnue() {
-        let texte = texte_de_partie().replacen("\"version\":4", "\"version\":5", 1);
+        let texte = texte_de_partie().replacen("\"version\":5", "\"version\":6", 1);
         assert_eq!(
             charger_texte(&texte),
-            Err(ErreurSauvegarde::VersionInconnue(5))
+            Err(ErreurSauvegarde::VersionInconnue(6))
         );
+    }
+
+    #[test]
+    fn une_sauvegarde_en_version_4_n_a_pas_de_marchand() {
+        let partie = partie_complete();
+        assert!(partie.marchand_au_camp());
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        let objet = valeur.as_object_mut().unwrap();
+        objet.insert("version".to_string(), 4.into());
+        objet.remove("marchand_au_camp");
+        let rechargee = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        assert!(!rechargee.marchand_au_camp());
+        assert_eq!(rechargee.argent(), partie.argent());
     }
 
     #[test]
@@ -344,6 +358,7 @@ mod tests {
         let objet = valeur.as_object_mut().unwrap();
         objet.insert("version".to_string(), 3.into());
         objet.remove("argent");
+        objet.remove("marchand_au_camp");
         let rechargee = charger_texte(&valeur.to_string()).unwrap().unwrap();
         assert_eq!(rechargee.argent(), 0);
         assert_eq!(rechargee.collection(), partie.collection());
