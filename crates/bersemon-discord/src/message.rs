@@ -29,6 +29,7 @@ const TEXTE_D_OPTION_MAX: usize = 100;
 
 pub const PRINCIPAL: serenity::ButtonStyle = serenity::ButtonStyle::Primary;
 pub const SECONDAIRE: serenity::ButtonStyle = serenity::ButtonStyle::Secondary;
+pub const SUCCES: serenity::ButtonStyle = serenity::ButtonStyle::Success;
 pub const DANGER: serenity::ButtonStyle = serenity::ButtonStyle::Danger;
 
 pub struct Bouton {
@@ -148,10 +149,36 @@ pub fn message(
     let mut rangees = question.rangees;
     rangees.truncate(RANGEES_MAX);
     Message {
-        texte: couper(&texte, LONGUEUR_MAX),
+        texte: couper(&echapper_les_debuts_de_ligne(&texte), LONGUEUR_MAX),
         rangees,
         version: session.version,
     }
+}
+
+/// Discord lit « 1. » en début de ligne comme une liste numérotée, « > »
+/// comme une citation et « - » ou « * » comme une puce, et les met en forme
+/// à sa façon : les numéros des listes du jeu se décaleraient. Une barre
+/// oblique inverse les fait afficher tels quels.
+fn echapper_les_debuts_de_ligne(texte: &str) -> String {
+    texte
+        .split('\n')
+        .map(|ligne| {
+            let reste = ligne.trim_start();
+            let retrait = &ligne[..ligne.len() - reste.len()];
+            let chiffres = reste.chars().take_while(char::is_ascii_digit).count();
+            if chiffres > 0 && reste[chiffres..].starts_with(". ") {
+                format!("{retrait}{}\\{}", &reste[..chiffres], &reste[chiffres..])
+            } else if ["> ", "- ", "* "]
+                .iter()
+                .any(|marque| reste.starts_with(marque))
+            {
+                format!("{retrait}\\{reste}")
+            } else {
+                ligne.to_string()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 fn expliquer(refus: &Refus) -> String {
@@ -184,9 +211,9 @@ fn question(session: &Session, contenu: &ContenuV1, maintenant: Horodatage) -> Q
         Attente::PlaceManquante(capture) => {
             ecran_expedition::place_manquante(capture, partie().collection())
         }
-        Attente::ActionDeCombat(combat) => ecran_combat::action(combat),
-        Attente::Remplacement(combat) => ecran_combat::remplacement(combat),
-        Attente::CaptureDesKo(combat) => ecran_combat::capture(combat),
+        Attente::ActionDeCombat(combat) => ecran_combat::action(combat, partie()),
+        Attente::Remplacement(combat) => ecran_combat::remplacement(combat, partie().codex()),
+        Attente::CaptureDesKo(combat) => ecran_combat::capture(combat, partie().collection()),
         Attente::OubliAttaque { monstre, nouvelle } => ecran_combat::oubli(monstre, nouvelle),
         Attente::Confirmation(confirmation) => confirmer(confirmation),
     }
@@ -274,6 +301,15 @@ mod tests {
             .map(|index| bouton(Cle::Attaquer(index), "Attaque", PRINCIPAL))
             .collect();
         assert_eq!(rangees(boutons).len(), 2);
+    }
+
+    #[test]
+    fn les_listes_ne_sont_pas_mises_en_forme_par_discord() {
+        let texte = "Équipe (2/3) :\n  1. Salamandre\n  2. Loup\n  > actif\n- puce\n**Coup critique !**\nNiveau 12. Rien";
+        assert_eq!(
+            echapper_les_debuts_de_ligne(texte),
+            "Équipe (2/3) :\n  1\\. Salamandre\n  2\\. Loup\n  \\> actif\n\\- puce\n**Coup critique !**\nNiveau 12. Rien"
+        );
     }
 
     #[test]

@@ -5,6 +5,7 @@ use std::fmt;
 
 use crate::monstre::Monstre;
 use crate::nom::Nom;
+use crate::types::Type;
 
 /// Position d'un monstre dans l'équipe ou au camp.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -69,6 +70,18 @@ impl fmt::Display for ErreurCollection {
 }
 
 impl std::error::Error for ErreurCollection {}
+
+/// Ordre du camp choisi par le joueur (section 13.2).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TriDuCamp {
+    /// Par ordre alphabétique, sans tenir compte des accents ni des
+    /// majuscules.
+    Nom,
+    /// Du plus haut niveau au plus bas.
+    Niveau,
+    /// Par premier type, dans l'ordre de la table des types.
+    Type,
+}
 
 /// Ce qu'un départ en expédition automatique change à la collection.
 #[derive(Debug, PartialEq, Eq)]
@@ -216,6 +229,24 @@ impl Collection {
         self.verifier(emplacement)?;
         self.monstre_mut(emplacement).renommer(surnom);
         Ok(())
+    }
+
+    /// Change l'ordre du camp pour de bon ; à critère égal, le nom, puis
+    /// l'ordre d'avant, départagent (section 13.2).
+    pub fn trier_le_camp(&mut self, tri: TriDuCamp) {
+        match tri {
+            TriDuCamp::Nom => self.camp.sort_by_key(cle_de_nom),
+            TriDuCamp::Niveau => self.camp.sort_by(|a, b| {
+                b.niveau()
+                    .cmp(&a.niveau())
+                    .then_with(|| cle_de_nom(a).cmp(&cle_de_nom(b)))
+            }),
+            TriDuCamp::Type => self.camp.sort_by(|a, b| {
+                rang_du_type(a)
+                    .cmp(&rang_du_type(b))
+                    .then_with(|| cle_de_nom(a).cmp(&cle_de_nom(b)))
+            }),
+        }
     }
 
     /// Soin complet de tous les monstres, au retour au camp (section 13.1).
@@ -403,6 +434,35 @@ impl Collection {
     }
 }
 
+/// Le nom affiché, en minuscules et sans accents, pour qu'« Éclair » se range
+/// avec les E.
+fn cle_de_nom(monstre: &Monstre) -> String {
+    monstre
+        .nom()
+        .to_lowercase()
+        .chars()
+        .map(|lettre| match lettre {
+            'à' | 'â' | 'ä' => 'a',
+            'ç' => 'c',
+            'é' | 'è' | 'ê' | 'ë' => 'e',
+            'î' | 'ï' => 'i',
+            'ô' | 'ö' => 'o',
+            'ù' | 'û' | 'ü' => 'u',
+            'ÿ' => 'y',
+            autre => autre,
+        })
+        .collect()
+}
+
+/// Position du premier type de l'espèce dans la table des types.
+fn rang_du_type(monstre: &Monstre) -> usize {
+    let premier = monstre.espece().types().liste()[0];
+    Type::TOUS
+        .iter()
+        .position(|type_monstre| *type_monstre == premier)
+        .unwrap_or(Type::TOUS.len())
+}
+
 fn indices_de_l_equipe(emplacements: &[Emplacement]) -> Vec<usize> {
     emplacements
         .iter()
@@ -419,6 +479,38 @@ mod tests {
     use crate::attaque::Categorie;
     use crate::donnees_de_test::{attaque, monstre, stats_uniformes};
     use crate::types::Type;
+
+    #[test]
+    fn trier_le_camp_par_nom_niveau_ou_type() {
+        let coup = attaque("coup", Type::Normal, Categorie::Physique, 40, 100);
+        let creer = |nom: &str, types: &[Type], niveau: u8| {
+            let mut cree = monstre(types, stats_uniformes(50), niveau, vec![coup.clone()]);
+            cree.renommer(Some(Nom::new(nom).unwrap()));
+            cree
+        };
+        let camp = vec![
+            creer("zéphyr", &[Type::Eau], 5),
+            creer("Éclair", &[Type::Feu], 9),
+            creer("brume", &[Type::Normal], 5),
+        ];
+        let mut collection =
+            Collection::restaurer(vec![creer("Chef", &[Type::Normal], 5)], camp).unwrap();
+        let noms = |collection: &Collection| -> Vec<String> {
+            collection
+                .camp()
+                .iter()
+                .map(|monstre| monstre.nom().to_string())
+                .collect()
+        };
+        collection.trier_le_camp(TriDuCamp::Nom);
+        assert_eq!(noms(&collection), ["brume", "Éclair", "zéphyr"]);
+        collection.trier_le_camp(TriDuCamp::Niveau);
+        assert_eq!(noms(&collection), ["Éclair", "brume", "zéphyr"]);
+        // Normal, Feu puis Eau, dans l'ordre de la table des types.
+        collection.trier_le_camp(TriDuCamp::Type);
+        assert_eq!(noms(&collection), ["brume", "Éclair", "zéphyr"]);
+        assert_eq!(collection.equipe()[0].nom(), "Chef");
+    }
 
     /// Monstres distingués par leur surnom.
     fn monstre_nomme(nom: &str) -> Monstre {

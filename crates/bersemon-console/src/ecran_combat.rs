@@ -2,9 +2,12 @@
 //! remplacement d'un monstre KO, capture des KO et attaque à oublier.
 
 use bersemon_core::attaque::Attaque;
+use bersemon_core::collection::Collection;
 use bersemon_core::combat::{Action, Combat, Cote};
 use bersemon_core::deroulement::Choix;
 use bersemon_core::monstre::Monstre;
+use bersemon_core::partie::Partie;
+use bersemon_presentation::partie::places_pour_une_capture;
 
 use crate::affichage;
 use crate::saisie::Entree;
@@ -33,17 +36,24 @@ fn commandes(combat: &Combat) -> Vec<Commande> {
 }
 
 /// Rend `None` si l'entrée est fermée. Le choix 0 d'un sous-menu ramène au
-/// menu principal.
-pub fn choisir_action(combat: &Combat, entree: &mut Entree) -> Option<Choix> {
+/// menu principal. Les types d'un adversaire ne s'affichent que si son
+/// espèce est capturée (section 10.6).
+pub fn choisir_action(combat: &Combat, partie: &Partie, entree: &mut Entree) -> Option<Choix> {
     println!();
-    println!("{}", bersemon_presentation::combat::etat(combat));
+    println!(
+        "{}",
+        bersemon_presentation::combat::etat(combat, partie.codex())
+    );
+    if combat.filet_possible() {
+        println!("{}", places_pour_une_capture(partie.collection()));
+    }
     let commandes = commandes(combat);
     loop {
         println!("{}", affichage::menu_action(combat, &commandes));
         let action = match commandes[entree.choix(1, commandes.len())? - 1] {
             Commande::Attaquer => {
                 let monstre = combat.monstre(combat.actif(Cote::Joueur));
-                println!("{}", affichage::liste_attaques(monstre));
+                println!("{}", affichage::liste_attaques(combat));
                 let choix = entree.choix(0, monstre.attaques().liste().len())?;
                 (choix > 0).then(|| Action::Attaquer(choix - 1))
             }
@@ -78,10 +88,15 @@ pub fn choisir_remplacant(combat: &Combat, entree: &mut Entree) -> Option<Choix>
 }
 
 /// Plusieurs monstres KO peuvent être capturés après une victoire (Q29).
-pub fn choisir_capture(combat: &Combat, entree: &mut Entree) -> Option<Choix> {
+pub fn choisir_capture(
+    combat: &Combat,
+    collection: &Collection,
+    entree: &mut Entree,
+) -> Option<Choix> {
     let capturables = combat.adversaires_capturables();
     println!();
     println!("Capturer un monstre KO ?");
+    println!("{}", places_pour_une_capture(collection));
     println!("{}", affichage::liste_capturables(combat, &capturables));
     let choix = match entree.choix(0, capturables.len())? {
         0 => Choix::NePlusCapturer,

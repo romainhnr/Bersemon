@@ -9,7 +9,7 @@ use bersemon_core::espece::Espece;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_core::zone::Zone;
-use bersemon_presentation::combat::attaque_de_trop;
+use bersemon_presentation::combat::{attaque_de_trop, attaque_en_combat};
 use bersemon_presentation::monstres::{decrire_attaque, ligne_monstre, nom_en_combat};
 use bersemon_presentation::partie::{decrire_zone, fiche_d_espece, ligne_du_codex};
 
@@ -33,13 +33,20 @@ pub fn menu_action(combat: &Combat, commandes: &[Commande]) -> String {
     lignes.join("\n")
 }
 
-pub fn liste_attaques(monstre: &Monstre) -> String {
+/// Chaque attaque du monstre actif, avec ses dégâts estimés contre le
+/// monstre adverse actif (section 10.6).
+pub fn liste_attaques(combat: &Combat) -> String {
+    let monstre = combat.monstre(combat.actif(Cote::Joueur));
     let mut lignes: Vec<String> = monstre
         .attaques()
         .liste()
         .iter()
         .enumerate()
-        .map(|(position, attaque)| format!("  {}. {}", position + 1, decrire_attaque(attaque)))
+        .map(|(position, attaque)| {
+            let ligne =
+                attaque_en_combat(combat, position).unwrap_or_else(|| decrire_attaque(attaque));
+            format!("  {}. {ligne}", position + 1)
+        })
         .collect();
     lignes.push("  0. Retour".to_string());
     lignes.join("\n")
@@ -88,7 +95,7 @@ pub fn liste_capturables(combat: &Combat, capturables: &[usize]) -> String {
             )
         })
         .collect();
-    lignes.push("  0. Aucun".to_string());
+    lignes.push("  0. Ne pas capturer".to_string());
     lignes.join("\n")
 }
 

@@ -16,7 +16,7 @@ use std::fmt;
 use crate::aleatoire::Aleatoire;
 use crate::attaque::{Attaque, AttaqueId, ErreurAttaquesMonstre};
 use crate::capsule::{Capsule, ErreurApprentissage};
-use crate::collection::{Emplacement, ErreurCollection, Placement};
+use crate::collection::{Emplacement, ErreurCollection, Placement, TriDuCamp};
 use crate::combat::{self, Action, BilanCombat, Combat, ErreurCombat, Issue, Phase};
 use crate::contenu::ContenuV1;
 use crate::expedition::{ErreurExpedition, EvenementExpedition, Expedition};
@@ -130,6 +130,8 @@ pub enum ActionDeGestion {
     },
     /// Définitif, après confirmation.
     Relacher(Emplacement),
+    /// L'ordre du camp change pour de bon.
+    TrierLeCamp(TriDuCamp),
 }
 
 /// La question posée au joueur.
@@ -860,6 +862,10 @@ fn gerer(
             collection
                 .relacher(*emplacement)
                 .map(|relache| evenements.push(Evenement::Relache(relache)))
+        }
+        ActionDeGestion::TrierLeCamp(tri) => {
+            collection.trier_le_camp(*tri);
+            Ok(())
         }
     }
     .map_err(ErreurChoix::Collection)?;

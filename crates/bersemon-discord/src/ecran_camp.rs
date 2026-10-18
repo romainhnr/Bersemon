@@ -4,7 +4,7 @@
 //! la partie ; seules les actions la modifient, et la sauvegardent.
 
 use bersemon_core::codex::EtatCodex;
-use bersemon_core::collection::{Collection, Emplacement};
+use bersemon_core::collection::{Collection, Emplacement, TriDuCamp};
 use bersemon_core::combat::Cote;
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::horodatage::Horodatage;
@@ -12,7 +12,9 @@ use bersemon_core::marchand::prix_de_revente;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_presentation::expeditions_automatiques::expeditions_rentrees;
-use bersemon_presentation::monstres::{attaques_connues, decrire_attaque, ligne_monstre, nom};
+use bersemon_presentation::monstres::{
+    attaques_connues, decrire_attaque, fiche_du_monstre, ligne_monstre, nom,
+};
 use bersemon_presentation::partie::{
     argent, collection as liste_des_monstres, en_tete_du_camp, fiche_d_espece, ligne_du_codex,
 };
@@ -32,10 +34,6 @@ pub fn question(
 ) -> Question {
     match vue {
         Vue::Camp => principale(partie, contenu, maintenant),
-        Vue::Monstres => Question {
-            texte: liste_des_monstres(partie.collection()),
-            rangees: rangees(vec![retour()]),
-        },
         Vue::Codex(fiche) => codex(partie, fiche, contenu),
         Vue::Gestion(choisi) => gestion(partie, choisi),
         Vue::Expeditions => ecran_expeditions_automatiques::liste(partie, contenu, maintenant),
@@ -89,7 +87,6 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
             "Expéditions automatiques",
             SECONDAIRE,
         ),
-        bouton(Cle::Afficher(Vue::Monstres), "Vos monstres", SECONDAIRE),
         bouton(
             Cle::Afficher(Vue::Gestion(None)),
             "Gérer vos monstres",
@@ -168,7 +165,25 @@ fn gestion(partie: &Partie, choisi: Option<Emplacement>) -> Question {
     });
     let Some((emplacement, monstre)) = choisi else {
         let mut lignes = menus_de_monstres(collection, Cle::Choisir, "Choisir", |_| true);
-        lignes.extend(rangees(vec![retour()]));
+        // Le tri change l'ordre du camp pour de bon (section 13.2).
+        let mut boutons = Vec::new();
+        if collection.camp().len() > 1 {
+            boutons.extend([
+                bouton(
+                    Cle::Trier(TriDuCamp::Nom),
+                    "Trier le camp par nom",
+                    SECONDAIRE,
+                ),
+                bouton(
+                    Cle::Trier(TriDuCamp::Niveau),
+                    "Trier par niveau",
+                    SECONDAIRE,
+                ),
+                bouton(Cle::Trier(TriDuCamp::Type), "Trier par type", SECONDAIRE),
+            ]);
+        }
+        boutons.push(retour());
+        lignes.extend(rangees(boutons));
         return Question {
             texte: format!("{liste}\n\nChoisissez un monstre à gérer."),
             rangees: lignes,
@@ -225,10 +240,7 @@ fn gestion(partie: &Partie, choisi: Option<Emplacement>) -> Question {
         retour(),
     ]));
     Question {
-        texte: format!(
-            "{liste}\n\nMonstre choisi : {}",
-            ligne_monstre(monstre, Cote::Joueur)
-        ),
+        texte: format!("Monstre choisi :\n{}", fiche_du_monstre(monstre)),
         rangees: lignes,
     }
 }
@@ -313,7 +325,11 @@ fn attaques(partie: &Partie, emplacement: Emplacement) -> Question {
             })
             .collect()
     };
-    let mut texte = attaques_connues(monstre);
+    let mut texte = format!(
+        "{}\n{}",
+        fiche_du_monstre(monstre),
+        attaques_connues(monstre)
+    );
     let mut lignes: Vec<Rangee> = Vec::new();
     if a_apprendre.is_empty() {
         texte.push_str("\nRien de nouveau à apprendre au camp.");

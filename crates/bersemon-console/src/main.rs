@@ -83,9 +83,15 @@ fn demander(
             ecran_expedition::entre_deux_etapes(partie, expedition, entree)
         }
         Attente::MonstreRare(_) => ecran_expedition::monstre_rare(entree),
-        Attente::ActionDeCombat(combat) => ecran_combat::choisir_action(combat, entree),
+        Attente::ActionDeCombat(combat) => {
+            let partie = deroulement.partie().expect(PARTIE_EN_JEU);
+            ecran_combat::choisir_action(combat, partie, entree)
+        }
         Attente::Remplacement(combat) => ecran_combat::choisir_remplacant(combat, entree),
-        Attente::CaptureDesKo(combat) => ecran_combat::choisir_capture(combat, entree),
+        Attente::CaptureDesKo(combat) => {
+            let collection = deroulement.partie().expect(PARTIE_EN_JEU).collection();
+            ecran_combat::choisir_capture(combat, collection, entree)
+        }
         Attente::OubliAttaque { monstre, nouvelle } => {
             ecran_combat::choisir_attaque_a_oublier(monstre, nouvelle, entree)
         }

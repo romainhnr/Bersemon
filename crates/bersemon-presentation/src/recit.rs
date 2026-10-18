@@ -9,7 +9,8 @@ use bersemon_core::deroulement::Evenement;
 use crate::combat::{rapport_experience, remplacement, renoncement, soin_de_potion};
 use crate::erreurs::erreur_sauvegarde;
 use crate::expeditions_automatiques;
-use crate::monstres::{nom, nom_sauvage};
+use crate::mise_en_valeur::important;
+use crate::monstres::{nom_en_valeur, nom_sauvage};
 use crate::partie::{argent, capsule as nom_de_capsule, enumerer, potions};
 
 /// Une ou plusieurs lignes de récit.
@@ -38,7 +39,10 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             true,
         ),
         Evenement::PartieCommencee(depart) => (
-            format!("{} vous accompagne désormais.", depart.nom()),
+            format!(
+                "{} vous accompagne désormais.",
+                nom_en_valeur(depart, Cote::Joueur)
+            ),
             false,
         ),
         Evenement::Depart(zone) => (format!("Vous partez pour {zone}."), true),
@@ -61,12 +65,15 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
         Evenement::MonstreRarePacifique(monstre) => (
             format!(
                 "Un monstre rare apparaît : {}. Il ne semble pas hostile.",
-                nom_sauvage(monstre)
+                important(&nom_sauvage(monstre))
             ),
             false,
         ),
         Evenement::MonstreRareHostile(monstre) => (
-            format!("Un monstre rare vous attaque : {} !", nom_sauvage(monstre)),
+            format!(
+                "Un monstre rare vous attaque : {} !",
+                important(&nom_sauvage(monstre))
+            ),
             false,
         ),
         Evenement::MonstreRareLaisse => ("Vous le laissez partir.".to_string(), false),
@@ -89,23 +96,36 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             (renoncement(monstre, nouvelle), false)
         }
         Evenement::AttaqueApprise { monstre, attaque } => (
-            format!("{} apprend {}.", nom(monstre, Cote::Joueur), attaque.nom()),
+            format!(
+                "{} apprend {}.",
+                nom_en_valeur(monstre, Cote::Joueur),
+                attaque.nom()
+            ),
             false,
         ),
-        Evenement::RejointLEquipe(monstre) => {
-            (format!("{} rejoint votre équipe.", monstre.nom()), false)
-        }
-        Evenement::PartPourLeCamp(monstre) => {
-            (format!("{} part pour le camp.", monstre.nom()), false)
-        }
-        Evenement::CaptureRelachee(monstre) | Evenement::Relache(monstre) => {
-            (format!("Vous relâchez {}.", monstre.nom()), false)
-        }
+        Evenement::RejointLEquipe(monstre) => (
+            format!(
+                "{} rejoint votre équipe.",
+                nom_en_valeur(monstre, Cote::Joueur)
+            ),
+            false,
+        ),
+        Evenement::PartPourLeCamp(monstre) => (
+            format!(
+                "{} part pour le camp.",
+                nom_en_valeur(monstre, Cote::Joueur)
+            ),
+            false,
+        ),
+        Evenement::CaptureRelachee(monstre) | Evenement::Relache(monstre) => (
+            format!("Vous relâchez {}.", nom_en_valeur(monstre, Cote::Joueur)),
+            false,
+        ),
         Evenement::RelachePourLaCapture { relache, capture } => (
             format!(
                 "Vous relâchez {}. {} prend sa place.",
-                relache.nom(),
-                capture.nom()
+                nom_en_valeur(relache, Cote::Joueur),
+                nom_en_valeur(capture, Cote::Joueur)
             ),
             false,
         ),
@@ -128,13 +148,16 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
                     enumerer(&perdu)
                 )
             };
-            (texte, true)
+            (important(&texte), true)
         }
         Evenement::PotionUtilisee { monstre, pv_rendus } => (
-            soin_de_potion(&nom(monstre, Cote::Joueur), *pv_rendus),
+            soin_de_potion(&nom_en_valeur(monstre, Cote::Joueur), *pv_rendus),
             false,
         ),
-        Evenement::ZoneExploree(zone) => (format!("Vous avez exploré {zone} jusqu'au bout."), true),
+        Evenement::ZoneExploree(zone) => (
+            important(&format!("Vous avez exploré {zone} jusqu'au bout.")),
+            true,
+        ),
         Evenement::RetourAuCamp => (
             "Retour au camp : vos monstres sont soignés.".to_string(),
             !matches!(precedent, Some(Evenement::ZoneExploree(_))),
@@ -146,7 +169,9 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             format!("Vous rapportez {}.", nom_de_capsule(capsule)),
             false,
         ),
-        Evenement::Indice { numero, texte } => (format!("Indice {numero} : {texte}"), true),
+        Evenement::Indice { numero, texte } => {
+            (important(&format!("Indice {numero} : {texte}")), true)
+        }
         Evenement::NouvelleZone(zone) => (
             format!("Une nouvelle zone apparaît sur la carte : {zone}."),
             false,
@@ -173,7 +198,7 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
         Evenement::MonstreVendu { monstre, prix } => (
             format!(
                 "Vous vendez {} au marchand pour {}.",
-                monstre.nom(),
+                nom_en_valeur(monstre, Cote::Joueur),
                 argent(*prix)
             ),
             false,
@@ -207,7 +232,8 @@ mod tests {
             recits,
             vec![
                 Recit {
-                    texte: "Vous avez exploré Lisière du Bois-Sombre jusqu'au bout.".to_string(),
+                    texte: "**Vous avez exploré Lisière du Bois-Sombre jusqu'au bout.**"
+                        .to_string(),
                     nouveau_paragraphe: true,
                 },
                 Recit {
@@ -262,7 +288,7 @@ mod tests {
         }])[0];
         assert_eq!(
             recit.texte,
-            "Toute votre équipe est KO : vous rentrez au camp et perdez vos potions, ainsi que ce que vous aviez trouvé en chemin : 1 pièce d'argent et la capsule d'attaque Brasier."
+            "**Toute votre équipe est KO : vous rentrez au camp et perdez vos potions, ainsi que ce que vous aviez trouvé en chemin : 1 pièce d'argent et la capsule d'attaque Brasier.**"
         );
     }
 

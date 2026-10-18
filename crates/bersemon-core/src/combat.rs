@@ -21,13 +21,13 @@ use std::fmt;
 use crate::aleatoire::Aleatoire;
 use crate::attaque::{Attaque, EffetSecondaire};
 use crate::capture::calculer_chance_capture;
-use crate::degats::{ResultatAttaque, resoudre_attaque};
+use crate::degats::{ResultatAttaque, a_le_bonus_de_type, estimer_degats, resoudre_attaque};
 use crate::experience::tirer_gain_experience;
 use crate::inventaire::{ErreurPotion, appliquer_potion, verifier_cible};
 use crate::monstre::{Monstre, RapportExperience};
 use crate::stats::{BonusDeStats, Stats, appliquer_bonus};
 use crate::statut::{CHANCES_BLOCAGE_PARALYSIE, Statut, degats_de_poison};
-use crate::types::Efficacite;
+use crate::types::{Efficacite, efficacite};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Cote {
@@ -186,6 +186,16 @@ impl fmt::Display for ErreurCombat {
 
 impl std::error::Error for ErreurCombat {}
 
+/// Ce que le joueur voit d'une attaque avant de la choisir (section 10.6).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ApercuAttaque {
+    /// Si elle touche, sans coup critique ; 0 contre une cible immunisée.
+    pub degats_min: u32,
+    pub degats_max: u32,
+    pub efficacite: Efficacite,
+    pub bonus_de_type: bool,
+}
+
 /// Ce que le combat laisse derrière lui. `issue` vaut `None` si le combat a
 /// été interrompu avant la fin ; `captures` suit l'ordre des captures ;
 /// `experience` suit l'ordre de l'équipe, avec `None` pour un monstre qui n'a
@@ -334,6 +344,29 @@ impl Combat {
             self.monstre(self.actif(Cote::Joueur)),
             self.monstre(self.actif(Cote::Adversaire)),
         )
+    }
+
+    /// Une attaque du monstre actif du joueur face au monstre adverse actif.
+    /// `None` si le monstre n'a pas d'attaque à cette position.
+    pub fn apercu_attaque(&self, index_attaque: usize) -> Option<ApercuAttaque> {
+        let joueur = self.actif(Cote::Joueur);
+        let adversaire = self.actif(Cote::Adversaire);
+        let attaquant = self.monstre(joueur);
+        let defenseur = self.monstre(adversaire);
+        let attaque = attaquant.attaques().liste().get(index_attaque)?;
+        let (degats_min, degats_max) = estimer_degats(
+            attaquant,
+            &self.stats_en_combat(joueur),
+            attaque,
+            defenseur,
+            &self.stats_en_combat(adversaire),
+        );
+        Some(ApercuAttaque {
+            degats_min,
+            degats_max,
+            efficacite: efficacite(attaque.type_attaque(), defenseur.espece().types()),
+            bonus_de_type: a_le_bonus_de_type(attaquant, attaque),
+        })
     }
 
     /// Joue un tour complet : l'action du joueur, celle de l'IA, puis la fin
@@ -919,6 +952,41 @@ mod tests {
             critique: false,
             efficacite: Efficacite::Normale,
         }
+    }
+
+    #[test]
+    fn apercu_des_degats_sans_coup_critique() {
+        let braise = attaque("braise", Type::Feu, Categorie::Speciale, 40, 100);
+        let attaquant = monstre(&[Type::Feu], stats_uniformes(50), 5, vec![coup(), braise]);
+        let contre_le_feu = combat(vec![attaquant], vec![lent()]);
+        // 5 dégâts à 100 %, 4 à 85 %.
+        assert_eq!(
+            contre_le_feu.apercu_attaque(0),
+            Some(ApercuAttaque {
+                degats_min: 4,
+                degats_max: 5,
+                efficacite: Efficacite::Normale,
+                bonus_de_type: false,
+            })
+        );
+        // Bonus de type, puis la résistance du Feu au Feu.
+        assert_eq!(
+            contre_le_feu.apercu_attaque(1),
+            Some(ApercuAttaque {
+                degats_min: 3,
+                degats_max: 3,
+                efficacite: Efficacite::Reduite,
+                bonus_de_type: true,
+            })
+        );
+        assert_eq!(contre_le_feu.apercu_attaque(2), None);
+        let spectre = monstre(&[Type::Spectre], stats_uniformes(50), 5, vec![coup()]);
+        let contre_un_spectre = combat(vec![lent()], vec![spectre]);
+        let apercu = contre_un_spectre.apercu_attaque(0).unwrap();
+        assert_eq!(
+            (apercu.degats_min, apercu.degats_max, apercu.efficacite),
+            (0, 0, Efficacite::Nulle)
+        );
     }
 
     #[test]

@@ -2,17 +2,27 @@
 //! le remplacement d'un monstre KO, la capture des KO et l'attaque à oublier.
 
 use bersemon_core::attaque::Attaque;
-use bersemon_core::combat::{Combat, Combattant, Cote};
+use bersemon_core::codex::Codex;
+use bersemon_core::collection::Collection;
+use bersemon_core::combat::{ApercuAttaque, Combat, Combattant, Cote};
 use bersemon_core::monstre::Monstre;
-use bersemon_presentation::combat::{attaque_de_trop, etat};
+use bersemon_core::partie::Partie;
+use bersemon_core::types::Efficacite;
+use bersemon_presentation::combat::{attaque_de_trop, attaque_en_combat, etat};
 use bersemon_presentation::monstres::{decrire_attaque, ligne_monstre, nom, nom_en_combat};
+use bersemon_presentation::partie::places_pour_une_capture;
+use poise::serenity_prelude as serenity;
 
 use crate::composants::Cle;
-use crate::message::{OptionDeMenu, PRINCIPAL, Question, SECONDAIRE, bouton, menu, rangees};
+use crate::message::{
+    DANGER, OptionDeMenu, PRINCIPAL, Question, SECONDAIRE, SUCCES, bouton, menu, rangees,
+};
 
 /// Une rangée d'attaques, le filet et la fuite (absents face à un Apôtre,
 /// section 9.4), puis un menu pour changer de monstre et un pour la potion.
-pub fn action(combat: &Combat) -> Question {
+/// Chaque attaque dit ses dégâts estimés, et sa couleur son efficacité
+/// (section 10.6).
+pub fn action(combat: &Combat, partie: &Partie) -> Question {
     let actif = combat.actif(Cote::Joueur);
     let attaques = combat
         .monstre(actif)
@@ -21,8 +31,12 @@ pub fn action(combat: &Combat) -> Question {
         .iter()
         .enumerate()
         .map(|(index, attaque)| {
-            let libelle = format!("{} ({})", attaque.nom(), attaque.type_attaque().nom());
-            bouton(Cle::Attaquer(index), &libelle, PRINCIPAL)
+            let libelle =
+                attaque_en_combat(combat, index).unwrap_or_else(|| attaque.nom().to_string());
+            let style = combat
+                .apercu_attaque(index)
+                .map_or(SECONDAIRE, style_d_attaque);
+            bouton(Cle::Attaquer(index), &libelle, style)
         })
         .collect();
     let mut lignes = rangees(attaques);
@@ -48,9 +62,26 @@ pub fn action(combat: &Combat) -> Question {
             soignables,
         ));
     }
+    let mut texte = etat(combat, partie.codex());
+    if combat.filet_possible() {
+        texte.push('\n');
+        texte.push_str(&places_pour_une_capture(partie.collection()));
+    }
     Question {
-        texte: format!("{}\n\nQue faire ?", etat(combat)),
+        texte: format!("{texte}\n\nQue faire ?"),
         rangees: lignes,
+    }
+}
+
+/// Vert : très efficace ; bleu : bonus de type ; rouge : peu efficace ou
+/// sans effet ; gris sinon. Très efficace l'emporte sur le bonus de type,
+/// et une attaque peu efficace reste rouge même avec le bonus.
+fn style_d_attaque(apercu: ApercuAttaque) -> serenity::ButtonStyle {
+    match apercu.efficacite {
+        Efficacite::Forte | Efficacite::TresForte => SUCCES,
+        Efficacite::Reduite | Efficacite::TresReduite | Efficacite::Nulle => DANGER,
+        Efficacite::Normale if apercu.bonus_de_type => PRINCIPAL,
+        Efficacite::Normale => SECONDAIRE,
     }
 }
 
@@ -69,7 +100,7 @@ fn options_aptes(combat: &Combat, garder: impl Fn(usize) -> bool) -> Vec<OptionD
         .collect()
 }
 
-pub fn remplacement(combat: &Combat) -> Question {
+pub fn remplacement(combat: &Combat, codex: &Codex) -> Question {
     let boutons = combat
         .equipe()
         .iter()
@@ -84,13 +115,13 @@ pub fn remplacement(combat: &Combat) -> Question {
         })
         .collect();
     Question {
-        texte: format!("{}\n\nQuel monstre envoyer ?", etat(combat)),
+        texte: format!("{}\n\nQuel monstre envoyer ?", etat(combat, codex)),
         rangees: rangees(boutons),
     }
 }
 
 /// Plusieurs monstres KO peuvent être capturés après une victoire (Q29).
-pub fn capture(combat: &Combat) -> Question {
+pub fn capture(combat: &Combat, collection: &Collection) -> Question {
     let mut boutons: Vec<_> = combat
         .adversaires_capturables()
         .into_iter()
@@ -103,9 +134,12 @@ pub fn capture(combat: &Combat) -> Question {
             bouton(Cle::Capturer(index), &libelle, PRINCIPAL)
         })
         .collect();
-    boutons.push(bouton(Cle::NePlusCapturer, "Ne plus capturer", SECONDAIRE));
+    boutons.push(bouton(Cle::NePlusCapturer, "Ne pas capturer", SECONDAIRE));
     Question {
-        texte: "Capturer un monstre KO ?".to_string(),
+        texte: format!(
+            "Capturer un monstre KO ?\n{}",
+            places_pour_une_capture(collection)
+        ),
         rangees: rangees(boutons),
     }
 }

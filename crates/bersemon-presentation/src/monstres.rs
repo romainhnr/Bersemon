@@ -1,10 +1,15 @@
 //! Noms et descriptions des monstres et de leurs attaques.
 
+use std::fmt::Display;
+
 use bersemon_core::attaque::{Attaque, Categorie};
 use bersemon_core::combat::{Combat, Combattant, Cote};
 use bersemon_core::espece::Espece;
 use bersemon_core::monstre::Monstre;
+use bersemon_core::stats::Stats;
 use bersemon_core::statut::Statut;
+
+use crate::mise_en_valeur::important;
 
 /// Nom du monstre, suivi de "sauvage" pour un adversaire.
 pub fn nom(monstre: &Monstre, cote: Cote) -> String {
@@ -13,6 +18,11 @@ pub fn nom(monstre: &Monstre, cote: Cote) -> String {
 
 pub fn nom_sauvage(monstre: &Monstre) -> String {
     nom(monstre, Cote::Adversaire)
+}
+
+/// En gras sur Discord, dans le récit (section 10.6).
+pub fn nom_en_valeur(monstre: &Monstre, cote: Cote) -> String {
+    important(&nom(monstre, cote))
 }
 
 /// Comme `nom`, sauf qu'un Apôtre n'est pas dit sauvage (section 9.4).
@@ -82,6 +92,33 @@ pub fn decrire_attaque(attaque: &Attaque) -> String {
         attaque.type_attaque().nom(),
         attaque.puissance(),
         attaque.precision()
+    )
+}
+
+/// Sa ligne, ses types, ses stats et ses valeurs internes (section 13.2).
+pub fn fiche_du_monstre(monstre: &Monstre) -> String {
+    [
+        ligne_monstre(monstre, Cote::Joueur),
+        format!("Types : {}", types_de(monstre.espece())),
+        format!("Stats : {}", decrire_stats(&monstre.stats())),
+        format!(
+            "Valeurs internes : {}",
+            decrire_stats(monstre.valeurs_internes().valeurs())
+        ),
+    ]
+    .join("\n")
+}
+
+/// Les six stats dans l'ordre du jeu.
+pub fn decrire_stats<T: Display>(stats: &Stats<T>) -> String {
+    format!(
+        "PV {}, Attaque {}, Défense {}, Attaque spéciale {}, Défense spéciale {}, Vitesse {}",
+        stats.pv,
+        stats.attaque,
+        stats.defense,
+        stats.attaque_speciale,
+        stats.defense_speciale,
+        stats.vitesse
     )
 }
 

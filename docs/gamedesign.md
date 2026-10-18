@@ -4,7 +4,7 @@ Bersemon est le nom du projet et du jeu.
 
 Statut : document de référence du projet. Il décrit ce qui est décidé ; les points non tranchés sont regroupés dans la section 16 "Questions ouvertes et valeurs à définir", et l'historique des décisions dans la section 17.
 
-Dernière mise à jour : 18/10/2026
+Dernière mise à jour : 19/10/2026
 
 ## Sommaire
 
@@ -119,6 +119,7 @@ L'objectif du jeu est de proposer des boucles de gameplay intéressantes et stim
 - Pour le moment, seuls les monstres combattent, un à un. Le héros ne combat pas et n'a pas de PV en combat.
 - La classe et l'équipement du héros donnent des bonus aux monstres et quelques actions de soutien, par exemple des ordres ou l'utilisation d'objets.
 - Bonus de classe : en combat, les monstres du joueur ont +10 % dans une stat, arrondi à l'entier inférieur. Guerrier : Attaque. Mage : Attaque spéciale. Après la V1, Templier : Défense et Défense spéciale, à chacune +10 % ; Assassin : Vitesse, plus tard. Les actions de soutien viendront après la V1.
+- Décidé le 18/10/2026, pour l'étape 27 : l'Assassin devient jouable, avec un monstre attitré rapide, qui frappe fort mais encaisse mal. Son type et sa fiche restent à proposer (Q72).
 - À terme, option hybride envisagée : le héros combat lui-même uniquement lorsque tous ses monstres sont KO.
 
 ## 5. Les monstres
@@ -144,6 +145,11 @@ Chaque monstre possède :
 - Table d'efficacité : celle de Pokémon, avec une modification : le type Glace résiste au type Eau.
 - Une attaque a un seul type. Contre un monstre à 2 ou 3 types, les coefficients de chacun de ses types se multiplient, puis le résultat est borné entre x0,25 et x4. Une immunité (x0) l'emporte sur tout le reste. Exemple : une attaque Roche contre un monstre Feu, Vol et Glace vaudrait x8 ; elle inflige x4.
 - Les types Stellaire, Obscur, Lumière et Son sont traités dans un second temps : leurs relations d'efficacité restent à définir et ils ne font pas partie de la V1 (voir Q5).
+- Type Obscur, décidé le 18/10/2026 pour l'étape 29 : il n'appartient qu'aux Apôtres, qui n'ont que ce type.
+  - En défense : les attaques Féérique, Psychique et Stellaire lui sont très efficaces ; les attaques Ténèbres, Poison, Insecte, Dragon et Spectre sont neutres ; il résiste à toutes les autres.
+  - En attaque : une attaque Obscur est très efficace contre tous les types, sauf Féérique et Stellaire, qui y résistent, et Psychique, Ténèbres, Poison, Insecte, Dragon et Spectre, contre qui elle est neutre.
+  - Le type Stellaire, opposé de l'Obscur, est très rare : un seul monstre l'aura. Le type Féérique, autre opposé de l'Obscur, reste rare.
+  - Restent à définir : Obscur contre Obscur, les autres relations du Stellaire, et l'équilibrage du combat contre un Apôtre (Q76). L'Apôtre combat seul contre les 3 monstres du joueur : on l'équilibrera en jouant, s'il le faut.
 
 ### 5.3 Bestiaire
 
@@ -151,7 +157,8 @@ Chaque monstre possède :
 - Exemples de familles : dragons, fées, elfes, créatures mythologiques ou folkloriques, animaux actuels ou disparus, objets possédés, etc.
 - Volume initial : une dizaine de monstres, augmenté au fur et à mesure.
 - Le contenu de la V1 (espèces, attaques, zones et textes) est décrit dans docs/contenu-v1.md, validé le 17/10/2026.
-- Après la V1, chaque espèce a une rareté : commune (monstres de départ compris), rare ou Apôtre. Elle fixe son prix de revente (section 14.5).
+- Après la V1, chaque espèce a une rareté : commune (monstres de départ compris), rare ou Apôtre. Avec le total de ses stats de base, elle fixe son prix de revente (section 14.5).
+- Décidé le 18/10/2026, pour l'étape 27 : de nouveaux monstres plus proches de l'univers de Berserk, parmi lesquels des fées, des elfes, des squelettes et des dragons (Q73).
 
 ### 5.4 Évolution
 
@@ -176,6 +183,7 @@ Le joueur peut :
 - Une entrée est déverrouillée partiellement à la rencontre d'un monstre, et entièrement à sa capture.
 - Dans la V1, le codex se consulte au camp. Une espèce rencontrée en expédition montre son nom et ses types ; une espèce capturée montre aussi ses stats de base et la liste des attaques qu'elle apprend. Le monstre de départ compte comme capturé.
 - La fiche d'une espèce capturée rappelle aussi ses types.
+- Après la V1 : une espèce seulement rencontrée ne montre plus que son nom ; ses types n'apparaissent qu'à sa capture, comme en combat (section 10.6). La fiche d'une espèce capturée montre aussi le total de ses stats de base.
 
 ### 5.7 KO (pas de mort définitive)
 
@@ -245,12 +253,14 @@ Lors d'une expédition, les événements suivants peuvent se produire :
 Déroulement dans la V1 :
 
 - Une expédition compte de 4 à 6 étapes, nombre tiré au départ et inconnu du joueur.
+- Après la V1, le nombre d'étapes est fixe pour chaque zone et connu du joueur, affiché en haut de l'écran d'expédition sous la forme « [Étape : 2/3] ». Il suit la difficulté : 3 dans la première zone, 4 dans la deuxième, 5 dans la troisième et la quatrième, 6 dans la cinquième et la sixième, puis 7 au plus.
 - Chaque étape tire un événement : combat contre un groupe sauvage (80 %), coffre (15 %) ou monstre rare (5 %). Le marchand est hors V1.
 - Après la V1, tant qu'aucun marchand n'est au camp, la rencontre d'un marchand prend 10 % sur les combats : combat 70 %, marchand 10 %, coffre 15 %, monstre rare 5 % (section 14.2). Une fois le marchand au camp, les combats retrouvent leurs 80 %.
 - Un groupe sauvage compte de 1 à 2 monstres dans la zone facile, de 1 à 3 dans la zone difficile ; la taille est tirée à chaque combat.
 - Un coffre contient 1 à 2 potions (section 14.4). Après la V1, il contient aussi de l'argent, selon la zone, et, une fois sur 5, une capsule d'attaque de la zone que le joueur n'a pas encore (sections 13.10 et 14.5).
 - Entre deux étapes, le joueur continue, rentre au camp en gardant ses gains, utilise des potions ou change l'ordre de son équipe ; les échanges avec le camp restent impossibles. Les PV et les statuts sont conservés d'une étape à l'autre.
-- Après la V1, l'écran entre deux étapes rappelle l'argent et les capsules trouvés pendant l'expédition, qu'une défaite ferait perdre (section 9.3).
+- Après la V1, l'écran entre deux étapes rappelle l'argent et les capsules trouvés pendant l'expédition, qu'une défaite ferait perdre (section 9.3). Avec le coffre du camp, il montre le contenu du sac (section 13.3).
+- Décidé le 18/10/2026, pour l'étape 29 : un événement important (un indice, un humain à vaincre en fin de zone, un Apôtre) est d'abord présenté par un texte et un bouton (« Combattre », « Lire l'indice ») avant de se produire, pour que le joueur ne le rate pas en enchaînant les actions.
 - Après la dernière étape, le joueur rentre au camp et la zone compte comme explorée.
 
 ### 9.3 Défaite
@@ -260,6 +270,7 @@ Si tous les monstres du joueur sont KO pendant une expédition manuelle :
 - le joueur retourne automatiquement au camp ;
 - il perd les objets qu'il avait sur lui, dont toutes ses potions ;
 - après la V1, il perd aussi l'argent et les capsules trouvés pendant l'expédition, qui ne lui sont acquis qu'au retour au camp ; l'argent qu'il avait déjà au camp lui reste ;
+- avec le coffre du camp (étape 26, section 13.3), il perd tout ce que contient son sac : potions, argent et capsules, qu'il les ait emportés ou trouvés en chemin. Ce qui est rangé dans le coffre est à l'abri. Il garde ses captures et l'XP gagnée ;
 - ses monstres restent KO et sont soignés au camp (section 5.7) ;
 - c'est aussi une défaite si son dernier monstre et le dernier monstre sauvage tombent KO au même tour ;
 - l'expédition ne compte pas comme menée jusqu'au bout.
@@ -272,6 +283,7 @@ Si tous les monstres du joueur sont KO pendant une expédition manuelle :
 - Combat contre un Apôtre : il combat seul, 2 niveaux au-dessus du niveau maximal de sa zone, avec des stats de base bien plus hautes que celles des monstres communs (environ 480). Ses valeurs internes sont fixes, au maximum : 31 pour chaque stat. Comme un monstre sauvage, il a 1 chance sur 512 d'être shiny. La fuite est impossible, et le filet aussi : on ne lance pas de filet sur un Apôtre pendant le combat.
 - Une défaite contre l'Apôtre est une défaite ordinaire (section 9.3) ; les indices restent acquis et l'on peut retenter.
 - Après la victoire, l'Apôtre, mis KO, peut être capturé, à coup sûr, comme tout monstre KO à la fin d'un combat gagné (section 11.2) : c'est la seule façon de le capturer. Capturé ou non, il ne réapparaît plus.
+- Décidé le 18/10/2026, pour l'étape 29 : un indice par zone, trouvé à la première expédition menée au bout dans cette zone. La première zone s'achève par un combat contre un humain et ses monstres (étape 28). La deuxième s'achève par un humain plus fort, au service de l'Apôtre, qui donne l'indice de la troisième zone ; l'Apôtre attend à la fin de la troisième. Les détails sont dans Q75.
 
 ## 10. Combat
 
@@ -280,6 +292,7 @@ Si tous les monstres du joueur sont KO pendant une expédition manuelle :
 - Combat au tour par tour.
 - Adversaires possibles : un ou plusieurs monstres, ou un humain (seul ou avec ses monstres, selon la difficulté).
 - L'adversaire est contrôlé par une IA (l'ordinateur, et non un vrai joueur). Dans la V1, l'IA d'un monstre sauvage choisit son attaque au hasard.
+- Décidé le 18/10/2026, pour les étapes 28 et 29 : les humains combattent avec leurs monstres et une IA qui n'agit pas au hasard. Un humain ordinaire a une IA simple ; l'humain qui termine la deuxième zone, une IA plus relevée ; l'Apôtre, une IA avancée et stratégique (Q74 et Q75).
 
 ### 10.2 Format
 
@@ -317,6 +330,16 @@ Le format reprend celui des combats de Pokémon, comme base de départ qui pourr
   - paralysie : la vitesse du monstre est divisée par 2, et il a 1 chance sur 4 de ne pas pouvoir attaquer à chaque tour ; le type Électrique y est immunisé.
 - Un monstre a au plus un statut à la fois : un nouveau statut ne remplace pas l'ancien.
 - Un statut dure après le combat, pendant toute l'expédition, et il est guéri au retour au camp (section 13.1).
+
+### 10.6 Affichage du combat (après la V1)
+
+Décidé le 18/10/2026, pour l'étape 25 :
+
+- Chaque attaque proposée montre les dégâts estimés contre le monstre adverse actif (la fourchette du tirage de 85 % à 100 %, sans coup critique), sa précision, sa catégorie (Phy ou Spé) et son effet secondaire s'il y a la place.
+- Sur Discord, la couleur du bouton d'une attaque dit son efficacité : vert pour une attaque très efficace, bleu pour une attaque qui a le bonus de type (section 10.4), gris sinon, rouge pour une attaque peu efficace ou sans effet. Très efficace l'emporte sur le bonus de type, et une attaque peu efficace reste rouge même avec le bonus.
+- Les types d'un monstre adverse ne s'affichent que si son espèce est capturée au codex ; sinon, « ? ».
+- Quand le joueur peut capturer, le nombre de monstres de son équipe et de son camp est rappelé. Le bouton qui renonce à la capture devient « Ne pas capturer ».
+- Sur Discord, sont mis en gras, en plus de la section 2 : les noms des monstres, la fin d'une expédition menée au bout, les indices et les défaites.
 
 ## 11. Obtention des monstres
 
@@ -358,6 +381,7 @@ Le format reprend celui des combats de Pokémon, comme base de départ qui pourr
 - Les monstres envoyés viennent de l'équipe ou du camp. L'équipe garde toujours au moins un monstre (section 13.2) : il faut donc avoir au moins 2 monstres pour lancer une expédition automatique.
 - Toute l'équipe peut partir, à condition qu'au moins un monstre reste au camp : le premier monstre du camp rejoint alors aussitôt l'équipe, qui n'est jamais vide, et le joueur peut repartir en expédition manuelle. Un bouton prépare directement le départ de toute l'équipe ; il n'est proposé que si ce départ est possible.
 - Chaque monstre pris dans l'équipe a besoin d'une place libre au camp, où il reviendra ; le monstre du camp qui rejoint l'équipe en libère une. Avec un camp plein, seuls des monstres du camp peuvent donc partir, puisqu'ils gardent leur propre place. Le refus l'explique au joueur.
+- Remplacé le 18/10/2026, pour l'étape 26 : l'équipe peut partir tout entière et reste alors vide ; aucun monstre du camp ne la rejoint. Tant qu'elle est vide, aucune expédition manuelle n'est possible. Un seul monstre suffit donc pour une expédition automatique. Chaque monstre pris dans l'équipe a toujours besoin d'une place au camp, où il reviendra. Le bouton « Toute l'équipe » reste proposé quand ce départ est possible.
 - Pendant l'expédition, les monstres envoyés sont inutilisables : on ne peut ni les relâcher, ni les renommer, ni les échanger. Ils gardent leur place au camp, dont la limite de 30 monstres les compte, et y reviennent.
 - Le joueur peut partir en expédition manuelle avec ses autres monstres, y compris dans une zone où une expédition automatique est en cours.
 - Le nombre d'expéditions automatiques simultanées n'est pas limité, mais une seule expédition automatique est possible par zone.
@@ -432,18 +456,26 @@ Repères, avec des valeurs internes de 15 : dans la Lisière, une Salamandre de 
 - Le joueur peut laisser certains monstres en sécurité au camp et en emmener d'autres avec lui.
 - Limites de départ : 3 monstres avec le joueur et 30 monstres au camp. Ces limites peuvent être augmentées (section 13.4). Les monstres partis en expédition automatique comptent dans la limite du camp (section 12.1).
 - Le joueur part en expédition avec 1 à 3 monstres. L'équipe garde toujours au moins un monstre, même au camp.
+- Remplacé le 18/10/2026, pour l'étape 26 : au camp, l'équipe peut être vide, après le départ de toute l'équipe en expédition automatique ou quand le joueur la vide lui-même ; il ne peut alors pas partir en expédition manuelle. Il ne peut ni relâcher ni vendre son dernier monstre, en comptant l'équipe, le camp et les monstres partis en expédition automatique.
 - Au camp, le joueur peut :
   - échanger des monstres entre son équipe et le camp ;
   - choisir l'ordre de son équipe : le premier monstre en état de combattre commence chaque combat ;
   - relâcher un monstre, définitivement et après confirmation, sauf son dernier monstre ;
   - renommer un monstre (section 5.5) ;
   - gérer les attaques d'un monstre (section 13.10) ;
-  - une fois le marchand au camp, lui revendre un monstre (section 14.2).
+  - une fois le marchand au camp, lui revendre un monstre (section 14.2) ;
+  - après la V1 (étape 25), trier le camp par nom, niveau ou type : l'ordre du camp change pour de bon, et les numéros des monstres le suivent.
+- Après la V1 (étape 25), la gestion d'un monstre et l'écran de ses attaques montrent ses types, ses stats et ses valeurs internes. La liste « Vos monstres » disparaît du camp : la gestion des monstres la montre déjà.
 
 ### 13.3 Équipement et stockage
 
 - Le joueur peut ajuster et modifier son équipement.
 - L'inventaire étant limité en place, le joueur dispose d'un coffre pour stocker ses objets.
+- Décidé le 18/10/2026, pour l'étape 26 : au camp, un coffre garde à l'abri l'argent, les potions et les capsules d'attaque ; le sac contient ce que le joueur emporte en expédition manuelle. Il les déplace librement entre le coffre et le sac, au camp seulement. Pas de limite de place pour l'instant.
+  - Ce qui est gagné au camp (achats, ventes, expéditions automatiques) va dans le coffre. Ce qui est trouvé en expédition manuelle va dans le sac, et y reste au retour : le joueur range lui-même ce qu'il veut protéger.
+  - Au camp, l'argent du sac et celui du coffre paient ensemble, celui du sac d'abord. Toutes les capsules possédées servent à apprendre des attaques, où qu'elles soient.
+  - Une défaite en expédition manuelle fait perdre tout le sac (section 9.3). Une expédition automatique échouée ne rapporte rien, comme avant (section 12.3).
+  - À la reprise d'une sauvegarde antérieure, l'argent, les potions et les capsules déjà possédés sont rangés dans le coffre.
 
 ### 13.4 Améliorations
 
@@ -500,7 +532,7 @@ Le joueur peut construire des machines pour automatiser certaines tâches, par e
 
 - La monnaie du jeu est l'argent : le même mot désigne le métal précieux et la monnaie.
 - Après la V1, l'argent vient de la revente des monstres au marchand, des coffres des expéditions manuelles et des expéditions automatiques réussies. Les montants sont en section 14.5.
-- Le joueur commence sans argent. L'argent trouvé pendant une expédition manuelle ne lui est acquis qu'au retour au camp (section 9.3).
+- Le joueur commence sans argent. L'argent trouvé pendant une expédition manuelle ne lui est acquis qu'au retour au camp (section 9.3). Avec le coffre du camp, il va dans le sac et se perd avec lui en cas de défaite (section 13.3).
 - Dans les textes du jeu, l'argent se compte en pièces d'argent.
 
 ### 14.2 Marchands
@@ -517,11 +549,13 @@ Premier marchand, après la V1 :
 - Tant qu'aucun marchand n'est au camp, chaque étape d'une expédition manuelle peut tirer la rencontre d'un marchand, à la place d'un combat (10 % des étapes, section 9.2).
 - Le marchand rencontré se réfugie au camp et y reste, toujours accessible ; il ne se rencontre plus en expédition. Il se réfugie au camp dès la rencontre, même si l'expédition finit en défaite ; quitter le jeu avant le retour au camp annule la rencontre, comme toute expédition non sauvegardée (section 13.9). On ne lui achète rien pendant l'expédition.
 - Au camp, il vend des potions et des capsules d'attaque (section 13.10), et rachète les monstres capturés contre de l'argent. Il ne rachète ni potions ni capsules. Les achats se font sans confirmation.
-- Revendre un monstre est définitif et suit les règles du relâcher : confirmation, et jamais le dernier monstre de l'équipe. Tout monstre se revend comme il se relâche, monstre de départ et Apôtre compris. Le prix dépend de son niveau, de la rareté de son espèce et du shiny (section 14.5).
+- Revendre un monstre est définitif et suit les règles du relâcher : confirmation, et jamais le dernier monstre de l'équipe. Tout monstre se revend comme il se relâche, monstre de départ et Apôtre compris. Le prix dépend de son niveau, du total des stats de base et de la rareté de son espèce, et du shiny (section 14.5).
 - Les prix du marchand, à l'achat comme à la revente, sont fixes et non tirés au hasard, pour être connus avant l'échange, comme la durée d'une expédition automatique (section 12.2) : la section 1.4 vise les gains des combats et des expéditions.
 - Écrans : une fois le marchand au camp, le camp propose de le voir (une entrée du menu dans la console, un bouton sur Discord). Son étal montre l'argent, les potions et les capsules obtenues, vend des potions (au nombre choisi dans la console, par 1 ou 5 sur Discord) et les capsules que le joueur n'a pas encore. La vente montre le prix de chaque monstre ; on peut aussi vendre le monstre choisi depuis la gestion des monstres.
 - Les attaques d'un monstre se gèrent depuis la gestion des monstres : ses attaques connues, puis celles qu'il peut apprendre au camp ; s'il en connaît déjà 4, le joueur choisit aussi celle à oublier (section 13.10).
 - Tuer un monstre pour en tirer des ressources est envisagé, mais reporté tant qu'aucune ressource n'a d'usage (Q71).
+- Décidé le 19/10/2026, pour l'étape 30, à la place d'un marchand par zone : un nécromancien, unique, s'installe au camp. Sa rencontre est scriptée, juste après la première expédition menée au bout dans la première zone, et ne se reproduit plus. En expédition, le joueur trouve des marchands tués, par exemple sous ses yeux par un monstre, ou un cadavre de marchand qui l'attaque ; il rapporte leur âme au nécromancien, dont l'étal s'enrichit des articles de chaque marchand. Chaque marchand a son nom. Ce que vend chacun, la façon de trouver les âmes et le sort du marchand actuel restent à définir (Q77).
+- Plus tard, d'autres personnages pourront être rencontrés de la même façon et enrichir le camp, comme un pêcheur qui apprend à pêcher (section 13.8).
 
 ### 14.3 Objets et ressources cités dans ce document
 
@@ -541,7 +575,7 @@ Premier marchand, après la V1 :
 
 - Seul objet de la V1. Une potion rend à un monstre de l'équipe un pourcentage de ses PV max tiré de 40 % à 60 %, arrondi à l'entier inférieur, sans dépasser ses PV max. Elle ne relève pas un monstre KO et ne guérit pas les statuts. Sur un monstre qui a tous ses PV, le jeu demande confirmation : la potion serait consommée sans effet.
 - Elle s'utilise en combat, comme action du tour (l'adversaire agit ensuite), ou entre deux étapes d'une expédition.
-- Dans la V1, les potions se trouvent dans les coffres ; après la V1, les expéditions automatiques réussies en rapportent aussi (section 12.6), et le marchand en vend au camp, à 20 pièces d'argent (sections 14.2 et 14.5). Il n'y a ni limite de sac ni coffre de stockage au camp : le joueur porte toutes ses potions et les perd toutes en cas de défaite (section 9.3).
+- Dans la V1, les potions se trouvent dans les coffres ; après la V1, les expéditions automatiques réussies en rapportent aussi (section 12.6), et le marchand en vend au camp, à 20 pièces d'argent (sections 14.2 et 14.5). Il n'y a ni limite de sac ni coffre de stockage au camp : le joueur porte toutes ses potions et les perd toutes en cas de défaite (section 9.3). Avec le coffre du camp (étape 26, section 13.3), seules les potions emportées dans le sac se perdent.
 
 ### 14.5 Montants (après la V1)
 
@@ -552,12 +586,12 @@ Premier marchand, après la V1 :
 | Coffre, Marais des Pendus | 25 à 50, en plus de 1 à 2 potions |
 | Capsule dans un coffre | un coffre sur 5, parmi les capsules de la zone que le joueur n'a pas encore |
 | Expédition automatique réussie | Lisière 15 à 30, Marais 40 à 80 (section 12.8) |
-| Revente d'un monstre | niveau x 5 pour une espèce commune, x 15 pour une rare, x 40 pour un Apôtre ; doublé pour un shiny |
+| Revente d'un monstre | niveau x total des stats de base / 50, en division entière, puis x 1 pour une espèce commune, x 2 pour une rare, x 4 pour un Apôtre, et x 2 pour un shiny (depuis l'étape 26 ; avant : niveau x 5, 15 ou 40 selon la rareté) |
 | Potion | 20 |
 | Capsule d'attaque | 150 pour celles de la Lisière, 200 à 300 pour celles du Marais (docs/contenu-v1.md, section 6) |
 | Rencontre du marchand | 10 % des étapes d'une expédition manuelle, tant qu'il n'est pas au camp |
 
-Repères : un Loup de niveau 5 se revend 25 pièces d'argent, un Cerf blanc de niveau 5 75, le Baron pendu au niveau 15 600. Une expédition dans la Lisière rapporte de l'ordre de 40 à 60 pièces d'argent avec une ou deux captures revendues, une expédition dans le Marais de 100 à 130. Une expédition de 5 étapes croise le marchand 41 fois sur 100. À vérifier en jouant.
+Repères : un Loup de niveau 5 se revend 28 pièces d'argent, un Feu follet de niveau 10 64, un Cerf blanc de niveau 5 80, le Baron pendu au niveau 15 576. Une expédition dans la Lisière rapporte de l'ordre de 40 à 60 pièces d'argent avec une ou deux captures revendues, une expédition dans le Marais de 100 à 130. Une expédition de 5 étapes croise le marchand 41 fois sur 100. À vérifier en jouant.
 
 ## 15. Multijoueur (après l'adaptation à Discord)
 
@@ -588,6 +622,16 @@ Les questions Q65 et suivantes ont été relevées le 18/10/2026 lors de la conc
 Les questions Q67 et suivantes ont été relevées le 18/10/2026 après les premiers tests sur Discord, découpés en étapes : 18 corrections (types au codex, mise en valeur, messages publics pour les tests), 19 Templier et monstre de départ attitré, 20 toute l'équipe en expédition automatique, puis l'économie : 21 argent et sauvegarde en version 4, 22 marchand, rencontre et revente (version 5), 23 attaques au camp et capsules (version 6), 24 écrans de la console et du bot.
 
 - Q71. (Après l'économie) Tuer un monstre pour des ressources : reporté tant qu'aucune ressource n'a d'usage (fabrication, améliorations).
+
+Les questions Q72 et suivantes ont été relevées le 18/10/2026 après les essais de l'économie, découpés en étapes : 25 interface, 26 règles (coffre et sac, équipe vide, revente, étapes fixes), 27 classe Assassin et nouveaux monstres, 28 combats contre des humains, 29 troisième zone, Baron et Apôtre de type Obscur, 30 marchands par zone.
+
+- Q72. (Étape 27) Classe Assassin : type, nom, stats, attaques et texte de présentation de son monstre attitré.
+- Q73. (Étape 27) Nouveaux monstres inspirés de Berserk (fées, elfes, squelettes, dragons) : liste, fiches et zones. Le Schnoz, une créature de Berserk (référence donnée par l'utilisateur : https://berserk.fandom.com/wiki/Chimimoryo, page que le site a refusé d'ouvrir), sera un monstre caché, obtenu par un easter egg ou extrêmement rare, peut-être le seul de type Stellaire.
+- Q74. (Étape 28) Combats contre des humains et leurs monstres, à la fin de la première zone pour commencer : nombre et niveaux des monstres adverses, fuite et filet, capture après la victoire (section 11.3), récompenses, et règles de l'IA d'un humain ordinaire (simple, mais pas au hasard).
+- Q75. (Étape 29) Troisième zone et nouvelle traque : un indice par zone à sa première expédition menée au bout ; à la fin de la deuxième zone, un humain plus fort, au service de l'Apôtre, donne l'indice de la troisième, où attend l'Apôtre. Restent à définir la zone (nom, niveaux, espèces), les noms (l'Apôtre actuel s'appelle déjà Baron pendu : l'un des deux sera renommé), l'IA du Baron et celle de l'Apôtre, et la conversion des sauvegardes qui ont déjà trouvé 3 indices. L'utilisateur accepte ces conséquences.
+- Q76. (Étape 29) Type Obscur : Obscur contre Obscur, attaques des Apôtres, équilibrage ; autres relations du type Stellaire (voir Q5).
+- Q77. (Étape 30) Nécromancien et âmes de marchands : nom et texte de la rencontre du nécromancien, noms et articles de chaque marchand, façon de trouver leur âme (marchand tué sous les yeux du joueur, cadavre qui attaque), sort du marchand actuel et conversion des sauvegardes où il est déjà au camp.
+- Q78. (Plus tard) Chaque Apôtre est unique : un événement quand le joueur les a tous réunis.
 
 ## 17. Journal des décisions
 
@@ -799,3 +843,24 @@ Les questions Q67 et suivantes ont été relevées le 18/10/2026 après les prem
 18/10/2026 (étape 24) :
 
 - Écrans de l'économie, dans la console et sur Discord : le marchand au camp (étal, achat de potions et de capsules, vente avec le prix de chaque monstre, vente aussi depuis la gestion), les attaques d'un monstre depuis la gestion, et le rappel, entre deux étapes, de ce qui a été trouvé en chemin. Sur Discord, les potions s'achètent par 1 ou 5.
+
+18/10/2026 (retours des essais de l'économie) :
+
+- Découpage : 25 interface, 26 règles, 27 classe Assassin et nouveaux monstres, 28 combats contre des humains, 29 troisième zone, Baron et Apôtre de type Obscur, 30 marchands par zone.
+- Interface (étape 25) : types, stats et valeurs internes d'un monstre dans sa gestion et l'écran de ses attaques ; total des stats de base au codex ; plus de liste « Vos monstres » au camp ; tri du camp par nom, niveau ou type, qui change l'ordre pour de bon ; affichage du combat de la section 10.6.
+- Les types d'une espèce n'apparaissent, au codex comme en combat, qu'à sa capture. Remplace la règle de la section 5.6 pour une espèce seulement rencontrée.
+- Coffre du camp (étape 26) : argent, potions et capsules à l'abri ; le sac contient ce que le joueur emporte ; une défaite en expédition manuelle fait perdre tout le sac, captures et XP gardées. Ce qui est gagné au camp va dans le coffre, ce qui est trouvé en expédition dans le sac, où il reste au retour. Au camp, sac et coffre paient ensemble, le sac d'abord, et toutes les capsules servent. Les sauvegardes antérieures rangent tout dans le coffre. Remplace la règle du butin perdu de la section 9.3.
+- Équipe vide (étape 26) : toute l'équipe peut partir en expédition automatique et reste alors vide ; pas d'expédition manuelle tant qu'elle l'est ; un seul monstre suffit pour une expédition automatique ; on ne relâche ni ne vend son dernier monstre, en comptant ceux partis. Remplace la règle de l'étape 20 et Q51.
+- Revente (étape 26) : niveau x total des stats de base / 50, puis x 1, 2 ou 4 selon la rareté, et x 2 pour un shiny. Remplace la formule de Q68.
+- Étapes (étape 26) : fixes par zone et affichées, 3, 4, 5, 5, 6, 6, puis 7 au plus. Remplace Q37.
+- Principes décidés pour plus tard : classe Assassin (Q72), monstres inspirés de Berserk (Q73), combats contre des humains et IA (Q74), troisième zone, Baron et un indice par zone (Q75), annonce des événements importants avec un bouton, type Obscur des Apôtres (Q76), marchands par zone (Q77), événement des Apôtres réunis (Q78).
+
+19/10/2026 (précisions sur les retours) :
+
+- Équipe vide : la décision du 18/10/2026 est confirmée, car refaire son équipe après chaque expédition automatique est trop gênant.
+- Troisième zone et nouvelle traque : l'utilisateur accepte de renommer l'Apôtre ou le Baron et de convertir les sauvegardes qui ont déjà trouvé 3 indices.
+- Marchands (étape 30) : un nécromancien unique, rencontré au camp juste après la première zone menée au bout, à qui l'on rapporte l'âme des marchands tués en expédition ; son étal s'enrichit à chaque âme. Remplace le principe d'un marchand par zone.
+- Les types d'une espèce restent cachés tant qu'elle n'est pas capturée, même rencontrée.
+- Type Obscur : il est gardé tel quel ; l'Apôtre combat seul contre 3 monstres, et l'équilibrage se fera en jouant.
+- Schnoz : monstre caché, obtenu par un easter egg ou extrêmement rare, peut-être le seul de type Stellaire (Q73).
+- Le rendu des listes sur Discord doit être propre (étape 25).

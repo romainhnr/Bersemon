@@ -14,7 +14,7 @@ use bersemon_core::partie::Partie;
 use bersemon_core::zone::Zone;
 
 use crate::expeditions_automatiques::question_de_rappel;
-use crate::monstres::{ligne_monstre, nom, types_de};
+use crate::monstres::{decrire_stats, ligne_monstre, nom, types_de};
 
 /// Équipe puis camp, numérotés à la suite : l'équipe de 1 à 3, le camp
 /// ensuite. Le joueur désigne un monstre par ce numéro.
@@ -98,6 +98,18 @@ pub fn butin_en_chemin(expedition: &Expedition) -> Option<String> {
     })
 }
 
+/// Les places de l'équipe et du camp, rappelées quand le joueur peut
+/// capturer. Le camp compte les places des monstres partis (section 12.1).
+pub fn places_pour_une_capture(collection: &Collection) -> String {
+    format!(
+        "Place pour vos captures : équipe {}/{}, camp {}/{}.",
+        collection.equipe().len(),
+        Collection::TAILLE_EQUIPE,
+        collection.camp().len() + collection.places_reservees(),
+        Collection::TAILLE_CAMP
+    )
+}
+
 /// "a", "a et b", "a, b et c".
 pub fn enumerer(elements: &[String]) -> String {
     match elements.split_last() {
@@ -156,12 +168,22 @@ pub fn decrire_zone(partie: &Partie, zone: &Zone) -> String {
     )
 }
 
-/// Une espèce inconnue reste masquée (section 5.6).
+/// Une espèce inconnue reste masquée ; ses types n'apparaissent qu'à sa
+/// capture (section 5.6).
 pub fn ligne_du_codex(codex: &Codex, espece: &Espece) -> String {
     match codex.etat(espece.id()) {
         EtatCodex::Inconnue => "???".to_string(),
-        EtatCodex::Rencontree => format!("{} ({}) : rencontrée", espece.nom(), types_de(espece)),
+        EtatCodex::Rencontree => format!("{} : rencontrée", espece.nom()),
         EtatCodex::Capturee => format!("{} ({}) : capturée", espece.nom(), types_de(espece)),
+    }
+}
+
+/// Les types d'une espèce capturée, « ? » sinon (section 10.6).
+pub fn types_connus(codex: &Codex, espece: &Espece) -> String {
+    if codex.etat(espece.id()) == EtatCodex::Capturee {
+        types_de(espece)
+    } else {
+        "?".to_string()
     }
 }
 
@@ -169,15 +191,13 @@ pub fn ligne_du_codex(codex: &Codex, espece: &Espece) -> String {
 /// (section 5.6).
 pub fn fiche_d_espece(espece: &Espece) -> [String; 3] {
     let base = espece.stats_de_base();
-    let stats = format!(
-        "Stats de base : PV {}, Attaque {}, Défense {}, Attaque spéciale {}, Défense spéciale {}, Vitesse {}",
-        base.pv,
-        base.attaque,
-        base.defense,
-        base.attaque_speciale,
-        base.defense_speciale,
-        base.vitesse
-    );
+    let total = u32::from(base.pv)
+        + u32::from(base.attaque)
+        + u32::from(base.defense)
+        + u32::from(base.attaque_speciale)
+        + u32::from(base.defense_speciale)
+        + u32::from(base.vitesse);
+    let stats = format!("Stats de base : {} (total {total})", decrire_stats(base));
     let attaques: Vec<String> = espece
         .apprentissage()
         .iter()

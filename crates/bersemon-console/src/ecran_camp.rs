@@ -3,13 +3,13 @@
 //! codex et marchand. Les monstres sont désignés par leur numéro dans la
 //! liste de la collection : l'équipe d'abord, le camp ensuite.
 
-use bersemon_core::collection::{Collection, Emplacement};
+use bersemon_core::collection::{Collection, Emplacement, TriDuCamp};
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::{ActionDeGestion, Choix};
 use bersemon_core::partie::Partie;
 use bersemon_presentation::expeditions_automatiques::expeditions_rentrees;
 use bersemon_presentation::marchand::liste_de_rachat;
-use bersemon_presentation::monstres::{attaques_connues, decrire_attaque};
+use bersemon_presentation::monstres::{attaques_connues, decrire_attaque, fiche_du_monstre};
 use bersemon_presentation::partie::{collection as liste_des_monstres, en_tete_du_camp};
 
 use crate::affichage;
@@ -61,32 +61,27 @@ pub fn choisir(
         }
         println!("  1. Partir en expédition");
         println!("  2. Expéditions automatiques");
-        println!("  3. Voir vos monstres");
-        println!("  4. Gérer vos monstres");
-        println!("  5. Consulter le codex");
+        println!("  3. Gérer vos monstres");
+        println!("  4. Consulter le codex");
         // Le marchand n'apparaît qu'une fois réfugié au camp (section 14.2).
         let marchand = partie.marchand_au_camp();
         if marchand {
-            println!("  6. Voir le marchand");
+            println!("  5. Voir le marchand");
         }
-        let quitter = if marchand { 7 } else { 6 };
+        let quitter = if marchand { 6 } else { 5 };
         println!("  {quitter}. Quitter");
         let choix = match entree.choix(1, quitter)? {
             1 => carte(partie, contenu, entree)?,
             2 => ecran_expeditions_automatiques::choisir(partie, contenu, entree)?,
             3 => {
-                println!("{}", liste_des_monstres(partie.collection()));
-                None
-            }
-            4 => {
                 menu.ouvert = SousMenu::Gestion;
                 None
             }
-            5 => {
+            4 => {
                 println!("{}", affichage::codex(partie.codex(), contenu.especes()));
                 None
             }
-            6 if marchand => {
+            5 if marchand => {
                 menu.ouvert = SousMenu::Marchand;
                 None
             }
@@ -122,12 +117,14 @@ fn gerer(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
         println!("  4. Échanger un monstre de l'équipe et un du camp");
         println!("  5. Renommer un monstre");
         println!("  6. Relâcher un monstre");
-        println!("  7. Gérer les attaques d'un monstre");
+        println!("  7. Voir la fiche d'un monstre");
+        println!("  8. Gérer les attaques d'un monstre");
+        println!("  9. Trier le camp");
         if marchand {
-            println!("  8. Vendre un monstre au marchand");
+            println!("  10. Vendre un monstre au marchand");
         }
         println!("  0. Retour");
-        let dernier = if marchand { 8 } else { 7 };
+        let dernier = if marchand { 10 } else { 9 };
         let gestion = |action: Option<ActionDeGestion>| action.map(Choix::Gerer);
         let choix = match entree.choix(0, dernier)? {
             0 => return Some(None),
@@ -137,7 +134,12 @@ fn gerer(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
             4 => gestion(echanger(collection, entree)?),
             5 => gestion(renommer(collection, entree)?),
             6 => gestion(relacher(collection, entree)?),
-            7 => attaques(partie, entree)?,
+            7 => {
+                fiche(collection, entree)?;
+                None
+            }
+            8 => attaques(partie, entree)?,
+            9 => gestion(trier(entree)?),
             _ => vendre(collection, entree)?,
         };
         if let Some(choix) = choix {
@@ -244,6 +246,33 @@ fn renommer(collection: &Collection, entree: &mut Entree) -> Option<Option<Actio
     }))
 }
 
+/// Types, stats et valeurs internes (section 13.2).
+fn fiche(collection: &Collection, entree: &mut Entree) -> Option<()> {
+    let emplacement = designer(collection, entree, "Quel monstre ?")?;
+    if let Some(monstre) = emplacement.and_then(|emplacement| collection.monstre(emplacement)) {
+        println!();
+        println!("{}", fiche_du_monstre(monstre));
+        println!("{}", attaques_connues(monstre));
+    }
+    Some(())
+}
+
+/// L'ordre du camp change pour de bon (section 13.2).
+fn trier(entree: &mut Entree) -> Option<Option<ActionDeGestion>> {
+    println!("Trier le camp par :");
+    println!("  1. Nom");
+    println!("  2. Niveau");
+    println!("  3. Type");
+    println!("  0. Annuler");
+    let tri = match entree.choix(0, 3)? {
+        0 => return Some(None),
+        1 => TriDuCamp::Nom,
+        2 => TriDuCamp::Niveau,
+        _ => TriDuCamp::Type,
+    };
+    Some(Some(ActionDeGestion::TrierLeCamp(tri)))
+}
+
 /// La confirmation est demandée par le déroulement.
 fn relacher(collection: &Collection, entree: &mut Entree) -> Option<Option<ActionDeGestion>> {
     let emplacement = designer(collection, entree, "Quel monstre relâcher ?")?;
@@ -270,6 +299,7 @@ fn attaques(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
         return Some(None);
     };
     println!();
+    println!("{}", fiche_du_monstre(monstre));
     println!("{}", attaques_connues(monstre));
     let a_apprendre = partie.attaques_a_apprendre(emplacement).unwrap_or_default();
     if a_apprendre.is_empty() {

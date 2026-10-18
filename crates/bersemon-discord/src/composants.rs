@@ -7,7 +7,7 @@
 //! l'option choisie le complète ; un formulaire porte le genre du texte saisi.
 
 use bersemon_core::attaque::AttaqueId;
-use bersemon_core::collection::Emplacement;
+use bersemon_core::collection::{Emplacement, TriDuCamp};
 use bersemon_core::combat::Action;
 use bersemon_core::deroulement::{ActionDeGestion, Choix};
 use bersemon_core::expedition_automatique::MONSTRES_MAX;
@@ -22,7 +22,6 @@ const PREFIXE: &str = "bersemon";
 pub enum Vue {
     #[default]
     Camp,
-    Monstres,
     /// Avec la position, dans le codex, de l'espèce dont la fiche est
     /// ouverte.
     Codex(Option<usize>),
@@ -32,10 +31,7 @@ pub enum Vue {
     Expeditions,
     /// Départ d'une expédition automatique en préparation : la position de
     /// la zone dans le contenu et les monstres déjà choisis.
-    Preparation {
-        zone: usize,
-        choisis: Choisis,
-    },
+    Preparation { zone: usize, choisis: Choisis },
     /// L'étal du marchand, une fois réfugié au camp (section 14.2).
     Marchand,
     /// Les monstres que le marchand rachète, avec leur prix.
@@ -186,6 +182,7 @@ pub enum Cle {
         emplacement: Emplacement,
         oubliee: Option<usize>,
     },
+    Trier(TriDuCamp),
 }
 
 impl Cle {
@@ -272,6 +269,7 @@ impl Cle {
                 attaque: AttaqueId::new(valeur?),
                 oubliee: *oubliee,
             }),
+            Cle::Trier(tri) => gerer(ActionDeGestion::TrierLeCamp(*tri)),
         }
     }
 
@@ -288,7 +286,6 @@ impl Cle {
             Cle::Non => "non".to_string(),
             Cle::Partir => "partir".to_string(),
             Cle::Afficher(Vue::Camp) => "vue:camp".to_string(),
-            Cle::Afficher(Vue::Monstres) => "vue:monstres".to_string(),
             Cle::Afficher(Vue::Codex(None)) => "vue:codex".to_string(),
             Cle::Afficher(Vue::Codex(Some(index))) => format!("vue:codex:{index}"),
             Cle::Afficher(Vue::Gestion(None)) => "vue:gestion".to_string(),
@@ -362,6 +359,9 @@ impl Cle {
                 let oubliee = oubliee.map_or("-".to_string(), |position| position.to_string());
                 format!("apprendre:{}:{oubliee}", emplacement_en_texte(*emplacement))
             }
+            Cle::Trier(TriDuCamp::Nom) => "trier:nom".to_string(),
+            Cle::Trier(TriDuCamp::Niveau) => "trier:niveau".to_string(),
+            Cle::Trier(TriDuCamp::Type) => "trier:type".to_string(),
         }
     }
 
@@ -378,7 +378,12 @@ impl Cle {
             "non" => Cle::Non,
             "partir" => Cle::Partir,
             "vue:camp" => Cle::Afficher(Vue::Camp),
-            "vue:monstres" => Cle::Afficher(Vue::Monstres),
+            // La liste des monstres a disparu du camp : un bouton d'un ancien
+            // message ouvre la gestion, qui la montre.
+            "vue:monstres" => Cle::Afficher(Vue::Gestion(None)),
+            "trier:nom" => Cle::Trier(TriDuCamp::Nom),
+            "trier:niveau" => Cle::Trier(TriDuCamp::Niveau),
+            "trier:type" => Cle::Trier(TriDuCamp::Type),
             "vue:codex" => Cle::Afficher(Vue::Codex(None)),
             "vue:gestion" => Cle::Afficher(Vue::Gestion(None)),
             "vue:expeditions" => Cle::Afficher(Vue::Expeditions),
@@ -535,7 +540,6 @@ mod tests {
             Cle::Non,
             Cle::Partir,
             Cle::Afficher(Vue::Camp),
-            Cle::Afficher(Vue::Monstres),
             Cle::Afficher(Vue::Codex(None)),
             Cle::Afficher(Vue::Codex(Some(10))),
             Cle::Afficher(Vue::Gestion(None)),
@@ -603,6 +607,9 @@ mod tests {
                 emplacement: Emplacement::Equipe(0),
                 oubliee: Some(3),
             },
+            Cle::Trier(TriDuCamp::Nom),
+            Cle::Trier(TriDuCamp::Niveau),
+            Cle::Trier(TriDuCamp::Type),
         ]
     }
 

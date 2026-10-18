@@ -147,9 +147,9 @@ fn meilleure_attaque(combat: &Combat) -> usize {
         .map_or(0, |(position, _)| position)
 }
 
-/// Visite, une fois, les vues du camp : liste des monstres, codex et fiche,
-/// gestion avec un surnom donné par formulaire.
-const TOUR_DU_CAMP: usize = 9;
+/// Visite, une fois, les vues du camp : codex et fiche, gestion avec un
+/// surnom donné par formulaire.
+const TOUR_DU_CAMP: usize = 7;
 
 /// Une expédition automatique dans la Lisière, une seule fois, avec le
 /// premier monstre du camp : préparation, départ, puis accueil une fois que
@@ -249,15 +249,13 @@ fn jouer_un_coup(
             *tour += 1;
             let premier = Emplacement::Equipe(0);
             match *tour {
-                1 => cliquer(message, |cle| *cle == Cle::Afficher(Vue::Monstres)),
-                2 => cliquer(message, |cle| *cle == Cle::Afficher(Vue::Camp)),
-                3 => cliquer(message, |cle| *cle == Cle::Afficher(Vue::Codex(None))),
-                4 => choisir_dans(message, |cle| *cle == Cle::Fiche, "0").expect("fiche"),
-                5 => cliquer(message, |cle| *cle == Cle::Afficher(Vue::Camp)),
-                6 => cliquer(message, |cle| *cle == Cle::Afficher(Vue::Gestion(None))),
-                7 => choisir_dans(message, |cle| matches!(cle, Cle::Choisir(_)), "e0")
+                1 => cliquer(message, |cle| *cle == Cle::Afficher(Vue::Codex(None))),
+                2 => choisir_dans(message, |cle| *cle == Cle::Fiche, "0").expect("fiche"),
+                3 => cliquer(message, |cle| *cle == Cle::Afficher(Vue::Camp)),
+                4 => cliquer(message, |cle| *cle == Cle::Afficher(Vue::Gestion(None))),
+                5 => choisir_dans(message, |cle| matches!(cle, Cle::Choisir(_)), "e0")
                     .expect("choix du monstre"),
-                8 => {
+                6 => {
                     assert!(propose(message, |cle| *cle == Cle::Renommer(premier)));
                     Clic {
                         cle: Cle::SurnomSaisi(premier),
