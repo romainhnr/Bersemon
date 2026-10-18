@@ -25,6 +25,8 @@ pub enum ErreurSauvegarde {
     Illisible(String),
     VersionInconnue(u64),
     EspeceInconnue(String),
+    /// Zone d'une expédition automatique en cours (section 12).
+    ZoneInconnue(String),
     AttaqueInconnue {
         espece: String,
         attaque: String,
@@ -44,6 +46,7 @@ impl fmt::Display for ErreurSauvegarde {
             ErreurSauvegarde::EspeceInconnue(espece) => {
                 write!(f, "espèce inconnue : {espece}")
             }
+            ErreurSauvegarde::ZoneInconnue(zone) => write!(f, "zone inconnue : {zone}"),
             ErreurSauvegarde::AttaqueInconnue { espece, attaque } => {
                 write!(f, "l'espèce {espece} n'apprend pas l'attaque {attaque}")
             }

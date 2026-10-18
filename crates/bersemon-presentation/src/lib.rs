@@ -8,6 +8,7 @@
 
 pub mod combat;
 pub mod erreurs;
+pub mod expeditions_automatiques;
 pub mod monstres;
 pub mod partie;
 pub mod recit;

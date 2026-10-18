@@ -10,6 +10,7 @@ use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_core::zone::Zone;
 
+use crate::expeditions_automatiques::question_de_rappel;
 use crate::monstres::{ligne_monstre, nom, types_de};
 
 /// Équipe puis camp, numérotés à la suite : l'équipe de 1 à 3, le camp
@@ -148,6 +149,7 @@ pub fn question_de_confirmation(confirmation: &Confirmation) -> String {
         Confirmation::Relacher(monstre) => {
             format!("Relâcher définitivement {} ?", monstre.nom())
         }
+        Confirmation::RappelerLExpedition(expedition) => question_de_rappel(expedition),
     }
 }
 

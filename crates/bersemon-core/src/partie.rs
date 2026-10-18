@@ -1,14 +1,21 @@
 //! Partie en cours : le héros et tout ce que le joueur possède ou sait. C'est
 //! ce qu'une sauvegarde devra conserver.
 
+use std::fmt;
+
 use crate::aleatoire::Aleatoire;
-use crate::attaque::ErreurAttaquesMonstre;
+use crate::attaque::{Attaque, ErreurAttaquesMonstre};
 use crate::codex::Codex;
-use crate::collection::{Collection, ErreurCollection, Placement};
+use crate::collection::{Collection, Emplacement, ErreurCollection, Placement};
 use crate::combat::{BilanCombat, Combat, ErreurCombat, Issue};
 use crate::espece::{Espece, EspeceId};
 use crate::expedition::{ErreurExpedition, Expedition};
+use crate::expedition_automatique::{
+    BilanExpeditionAutomatique, ErreurExpeditionAutomatique, Estimation, ExpeditionAutomatique,
+    MONSTRES_MAX, MONSTRES_MIN,
+};
 use crate::heros::Heros;
+use crate::horodatage::Horodatage;
 use crate::inventaire::{ErreurPotion, Inventaire};
 use crate::monstre::{Monstre, tirer_shiny};
 use crate::niveau::Niveau;
@@ -44,6 +51,21 @@ pub struct Partie {
     indices_trouves: usize,
     apotres_vaincus: Vec<EspeceId>,
     conseils_vus: Vec<Conseil>,
+    /// Une au plus par zone, dans l'ordre des départs (section 12.1).
+    expeditions_automatiques: Vec<ExpeditionAutomatique>,
+    /// Dans l'ordre où le joueur les choisira. Tant qu'il en reste, le
+    /// déroulement n'accepte aucune autre action au camp : les positions
+    /// qu'elles désignent ne bougent donc pas.
+    attaques_a_choisir: Vec<AttaqueAChoisir>,
+}
+
+/// Attaque qu'un monstre rentré d'expédition automatique veut apprendre en
+/// plus des 4 qu'il connaît : le joueur lui en fait oublier une ou y renonce
+/// (sections 7 et 12.7).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AttaqueAChoisir {
+    pub position_au_camp: usize,
+    pub attaque: Attaque,
 }
 
 /// Tout ce qu'une sauvegarde conserve d'une partie.
@@ -57,7 +79,45 @@ pub struct EtatPartie {
     pub indices_trouves: usize,
     pub apotres_vaincus: Vec<EspeceId>,
     pub conseils_vus: Vec<Conseil>,
+    pub expeditions_automatiques: Vec<ExpeditionAutomatique>,
+    pub attaques_a_choisir: Vec<AttaqueAChoisir>,
 }
+
+/// Sauvegarde lisible mais contraire aux règles des expéditions
+/// automatiques (section 12).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ErreurRestaurationPartie {
+    /// Le camp n'a pas la place de garder celle des monstres partis.
+    Collection(ErreurCollection),
+    ZoneNonExploree(ZoneId),
+    ExpeditionEnDouble(ZoneId),
+    /// Aucun monstre du camp à cette position.
+    AttaqueAChoisirSansMonstre(usize),
+}
+
+impl fmt::Display for ErreurRestaurationPartie {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ErreurRestaurationPartie::Collection(erreur) => write!(f, "{erreur}"),
+            ErreurRestaurationPartie::ZoneNonExploree(zone) => write!(
+                f,
+                "expédition automatique dans une zone non explorée : {}",
+                zone.as_str()
+            ),
+            ErreurRestaurationPartie::ExpeditionEnDouble(zone) => write!(
+                f,
+                "deux expéditions automatiques dans la zone {}",
+                zone.as_str()
+            ),
+            ErreurRestaurationPartie::AttaqueAChoisirSansMonstre(position) => write!(
+                f,
+                "attaque à choisir pour un monstre absent du camp (position {position})"
+            ),
+        }
+    }
+}
+
+impl std::error::Error for ErreurRestaurationPartie {}
 
 impl Partie {
     /// Le monstre de départ compte comme capturé dans le codex (Q54).
@@ -73,6 +133,8 @@ impl Partie {
             indices_trouves: 0,
             apotres_vaincus: Vec::new(),
             conseils_vus: Vec::new(),
+            expeditions_automatiques: Vec::new(),
+            attaques_a_choisir: Vec::new(),
         }
     }
 
@@ -122,18 +184,49 @@ impl Partie {
     }
 
     /// Reconstitue une partie depuis une sauvegarde : chaque morceau a déjà
-    /// été revérifié par sa propre restauration.
-    pub fn restaurer(etat: EtatPartie) -> Self {
-        Self {
+    /// été revérifié par sa propre restauration. Il reste à vérifier ce qui
+    /// les lie : les monstres partis gardent leur place au camp, une seule
+    /// expédition automatique par zone explorée, et chaque attaque à choisir
+    /// désigne un monstre du camp.
+    pub fn restaurer(etat: EtatPartie) -> Result<Self, ErreurRestaurationPartie> {
+        let mut collection = etat.collection;
+        let partis = etat
+            .expeditions_automatiques
+            .iter()
+            .map(|expedition| expedition.monstres().len())
+            .sum();
+        collection
+            .definir_places_reservees(partis)
+            .map_err(ErreurRestaurationPartie::Collection)?;
+        for (position, expedition) in etat.expeditions_automatiques.iter().enumerate() {
+            let zone = expedition.zone().id();
+            if !etat.zones_explorees.contains(zone) {
+                return Err(ErreurRestaurationPartie::ZoneNonExploree(zone.clone()));
+            }
+            let precedentes = &etat.expeditions_automatiques[..position];
+            if precedentes.iter().any(|autre| autre.zone().id() == zone) {
+                return Err(ErreurRestaurationPartie::ExpeditionEnDouble(zone.clone()));
+            }
+        }
+        for a_choisir in &etat.attaques_a_choisir {
+            if a_choisir.position_au_camp >= collection.camp().len() {
+                return Err(ErreurRestaurationPartie::AttaqueAChoisirSansMonstre(
+                    a_choisir.position_au_camp,
+                ));
+            }
+        }
+        Ok(Self {
             heros: etat.heros,
-            collection: etat.collection,
+            collection,
             inventaire: etat.inventaire,
             codex: etat.codex,
             zones_explorees: etat.zones_explorees,
             indices_trouves: etat.indices_trouves,
             apotres_vaincus: etat.apotres_vaincus,
             conseils_vus: etat.conseils_vus,
-        }
+            expeditions_automatiques: etat.expeditions_automatiques,
+            attaques_a_choisir: etat.attaques_a_choisir,
+        })
     }
 
     /// Les zones ouvertes par la piste de l'Apôtre (section 9.1), dans
@@ -262,6 +355,156 @@ impl Partie {
         self.inventaire.utiliser_potion(monstre, aleatoire)
     }
 
+    pub fn expeditions_automatiques(&self) -> &[ExpeditionAutomatique] {
+        &self.expeditions_automatiques
+    }
+
+    pub fn attaques_a_choisir(&self) -> &[AttaqueAChoisir] {
+        &self.attaques_a_choisir
+    }
+
+    /// La prochaine attaque à choisir, avec le monstre qui veut l'apprendre.
+    pub fn attaque_a_choisir(&self) -> Option<(&Monstre, &Attaque)> {
+        let a_choisir = self.attaques_a_choisir.first()?;
+        let monstre = self.collection.camp().get(a_choisir.position_au_camp)?;
+        Some((monstre, &a_choisir.attaque))
+    }
+
+    /// Le joueur a fait oublier une attaque au monstre, ou renoncé à la
+    /// nouvelle : on passe à la suivante.
+    pub(crate) fn attaque_choisie(&mut self) {
+        if !self.attaques_a_choisir.is_empty() {
+            self.attaques_a_choisir.remove(0);
+        }
+    }
+
+    pub fn expedition_automatique(&self, zone: &ZoneId) -> Option<&ExpeditionAutomatique> {
+        self.expeditions_automatiques
+            .iter()
+            .find(|expedition| expedition.zone().id() == zone)
+    }
+
+    /// Durée et chances de réussite, montrées avant le départ (section
+    /// 12.4). Refuse ce que refuserait `envoyer_en_expedition_automatique`.
+    pub fn estimer_expedition_automatique(
+        &self,
+        zone: &Zone,
+        emplacements: &[Emplacement],
+    ) -> Result<Estimation, ErreurExpeditionAutomatique> {
+        self.verifier_depart(zone, emplacements)?;
+        let monstres: Vec<Monstre> = emplacements
+            .iter()
+            .filter_map(|emplacement| self.collection.monstre(*emplacement).cloned())
+            .collect();
+        let parametres = zone.expedition_automatique();
+        Ok(Estimation {
+            duree: parametres.duree(monstres.len()),
+            chances: parametres.chances_de_reussite(&monstres),
+        })
+    }
+
+    /// Les monstres quittent l'équipe ou le camp et gardent leur place au
+    /// camp, où ils reviendront (section 12.1).
+    pub fn envoyer_en_expedition_automatique(
+        &mut self,
+        zone: &Zone,
+        emplacements: &[Emplacement],
+        maintenant: Horodatage,
+    ) -> Result<(), ErreurExpeditionAutomatique> {
+        self.verifier_depart(zone, emplacements)?;
+        let monstres = self
+            .collection
+            .retirer_pour_expedition(emplacements)
+            .map_err(ErreurExpeditionAutomatique::Collection)?;
+        self.expeditions_automatiques
+            .push(ExpeditionAutomatique::partir(
+                zone.clone(),
+                monstres,
+                maintenant,
+            ));
+        Ok(())
+    }
+
+    /// Avant le terme, les monstres reviennent au camp sans dégâts ni
+    /// récompense ; une expédition rentrée s'accueille (section 12.7).
+    pub fn rappeler_expedition_automatique(
+        &mut self,
+        zone: &ZoneId,
+        maintenant: Horodatage,
+    ) -> Result<(), ErreurExpeditionAutomatique> {
+        let position = self.position_de_l_expedition(zone)?;
+        if self.expeditions_automatiques[position].est_rentree(maintenant) {
+            return Err(ErreurExpeditionAutomatique::DejaRentree);
+        }
+        let monstres = self.expeditions_automatiques.remove(position).rappeler();
+        self.collection.accueillir_retour(monstres);
+        Ok(())
+    }
+
+    /// Tire le résultat, ajoute les potions et ramène les monstres au camp
+    /// (sections 12.3, 12.6 et 12.7). Les attaques en attente dans les
+    /// rapports d'XP s'ajoutent aux attaques à choisir.
+    pub fn accueillir_expedition_automatique(
+        &mut self,
+        zone: &ZoneId,
+        maintenant: Horodatage,
+        aleatoire: &mut dyn Aleatoire,
+    ) -> Result<BilanExpeditionAutomatique, ErreurExpeditionAutomatique> {
+        let position = self.position_de_l_expedition(zone)?;
+        if !self.expeditions_automatiques[position].est_rentree(maintenant) {
+            return Err(ErreurExpeditionAutomatique::PasEncoreRentree);
+        }
+        let expedition = self.expeditions_automatiques.remove(position);
+        // Les monstres reviennent à la suite, à la fin du camp.
+        let (bilan, monstres) = expedition.resoudre(self.collection.camp().len(), aleatoire);
+        self.inventaire.ajouter_potions(bilan.potions);
+        self.collection.accueillir_retour(monstres);
+        for rentre in &bilan.monstres {
+            let attaques = rentre
+                .rapport
+                .iter()
+                .flat_map(|rapport| &rapport.attaques_en_attente);
+            for attaque in attaques {
+                self.attaques_a_choisir.push(AttaqueAChoisir {
+                    position_au_camp: rentre.position_au_camp,
+                    attaque: attaque.clone(),
+                });
+            }
+        }
+        Ok(bilan)
+    }
+
+    fn verifier_depart(
+        &self,
+        zone: &Zone,
+        emplacements: &[Emplacement],
+    ) -> Result<(), ErreurExpeditionAutomatique> {
+        if !self.est_exploree(zone.id()) {
+            return Err(ErreurExpeditionAutomatique::ZoneNonExploree);
+        }
+        if self.expedition_automatique(zone.id()).is_some() {
+            return Err(ErreurExpeditionAutomatique::DejaEnCours);
+        }
+        if !(MONSTRES_MIN..=MONSTRES_MAX).contains(&emplacements.len()) {
+            return Err(ErreurExpeditionAutomatique::NombreDeMonstres(
+                emplacements.len(),
+            ));
+        }
+        self.collection
+            .verifier_depart(emplacements)
+            .map_err(ErreurExpeditionAutomatique::Collection)
+    }
+
+    fn position_de_l_expedition(
+        &self,
+        zone: &ZoneId,
+    ) -> Result<usize, ErreurExpeditionAutomatique> {
+        self.expeditions_automatiques
+            .iter()
+            .position(|expedition| expedition.zone().id() == zone)
+            .ok_or(ErreurExpeditionAutomatique::Inexistante)
+    }
+
     /// Tous les monstres sont soignés (section 13.1). Une expédition menée
     /// jusqu'au bout sans défaite rend la zone explorée et, si l'indice
     /// suivant de la piste se trouve dans cette zone, le révèle et le rend
@@ -293,11 +536,12 @@ mod tests {
     use crate::aleatoire::AleatoireScripte;
     use crate::codex::EtatCodex;
     use crate::combat::Action;
-    use crate::donnees_de_test::espece;
+    use crate::donnees_de_test::{espece, zone};
     use crate::espece::EspeceId;
     use crate::expedition::EvenementExpedition;
     use crate::heros::Classe;
     use crate::nom::Nom;
+    use std::time::Duration;
 
     fn creer(id: &str, niveau: u8) -> Monstre {
         Monstre::creer(
@@ -312,19 +556,6 @@ mod tests {
     fn partie() -> Partie {
         let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Guerrier);
         Partie::nouvelle(heros, creer("depart", 5))
-    }
-
-    fn zone(id: &str) -> Zone {
-        let niveau = Niveau::new(5).unwrap();
-        Zone::new(
-            ZoneId::new(id),
-            id,
-            (niveau, niveau),
-            1,
-            vec![espece("loup")],
-            vec![],
-        )
-        .unwrap()
     }
 
     #[test]
@@ -535,6 +766,193 @@ mod tests {
         assert_eq!(
             partie.codex().etat(&EspeceId::new("cerf-blanc")),
             EtatCodex::Capturee
+        );
+    }
+
+    /// Le monstre de départ et un loup de niveau 5, de 20 PV chacun, avec
+    /// le bois déjà exploré.
+    fn partie_prete_pour_le_bois() -> Partie {
+        let mut partie = partie();
+        partie.collection_mut().accueillir_capture(creer("loup", 5));
+        partie.zones_explorees.push(ZoneId::new("bois"));
+        partie
+    }
+
+    fn a(secondes: u64) -> Horodatage {
+        Horodatage::depuis_secondes(secondes)
+    }
+
+    #[test]
+    fn une_expedition_automatique_part_dans_une_zone_exploree() {
+        let bois = zone("bois");
+        let mut partie = partie();
+        partie.collection_mut().accueillir_capture(creer("loup", 5));
+        let loup = [Emplacement::Equipe(1)];
+        assert_eq!(
+            partie.envoyer_en_expedition_automatique(&bois, &loup, a(0)),
+            Err(ErreurExpeditionAutomatique::ZoneNonExploree)
+        );
+        partie.zones_explorees.push(ZoneId::new("bois"));
+        assert_eq!(
+            partie.envoyer_en_expedition_automatique(&bois, &[], a(0)),
+            Err(ErreurExpeditionAutomatique::NombreDeMonstres(0))
+        );
+        assert_eq!(
+            partie.envoyer_en_expedition_automatique(
+                &bois,
+                &[Emplacement::Equipe(0), Emplacement::Equipe(1)],
+                a(0)
+            ),
+            Err(ErreurExpeditionAutomatique::Collection(
+                ErreurCollection::DernierMonstreDeLEquipe
+            ))
+        );
+
+        // 20 PV contre 10 à 40 dégâts : 10 totaux sur 31 laissent le loup
+        // debout.
+        let estimation = partie.estimer_expedition_automatique(&bois, &loup).unwrap();
+        assert_eq!(estimation.duree, Duration::from_secs(3_600));
+        assert_eq!(estimation.chances.pourcentage(), 32);
+
+        partie
+            .envoyer_en_expedition_automatique(&bois, &loup, a(0))
+            .unwrap();
+        assert_eq!(partie.collection().equipe().len(), 1);
+        assert_eq!(partie.collection().places_reservees(), 1);
+        let expedition = partie.expedition_automatique(&ZoneId::new("bois")).unwrap();
+        assert_eq!(expedition.retour(), a(3_600));
+        assert_eq!(
+            partie.estimer_expedition_automatique(&bois, &[Emplacement::Equipe(0)]),
+            Err(ErreurExpeditionAutomatique::DejaEnCours)
+        );
+    }
+
+    #[test]
+    fn accueillir_une_expedition_rentree() {
+        let mut partie = partie_prete_pour_le_bois();
+        partie
+            .envoyer_en_expedition_automatique(&zone("bois"), &[Emplacement::Equipe(1)], a(0))
+            .unwrap();
+        let bois = ZoneId::new("bois");
+        assert_eq!(
+            partie.accueillir_expedition_automatique(
+                &bois,
+                a(3_599),
+                &mut AleatoireScripte::new([])
+            ),
+            Err(ErreurExpeditionAutomatique::PasEncoreRentree)
+        );
+        // 15 dégâts sur 20 PV : réussite, 100 XP et une potion.
+        let bilan = partie
+            .accueillir_expedition_automatique(
+                &bois,
+                a(3_600),
+                &mut AleatoireScripte::new([15, 100, 1]),
+            )
+            .unwrap();
+        assert!(bilan.reussite);
+        assert_eq!(bilan.monstres[0].position_au_camp, 0);
+        assert_eq!(partie.collection().camp()[0].experience(), 125 + 100);
+        assert_eq!(partie.collection().places_reservees(), 0);
+        assert_eq!(partie.inventaire().potions(), 1);
+        assert!(partie.expeditions_automatiques().is_empty());
+        assert_eq!(
+            partie.accueillir_expedition_automatique(
+                &bois,
+                a(3_600),
+                &mut AleatoireScripte::new([])
+            ),
+            Err(ErreurExpeditionAutomatique::Inexistante)
+        );
+    }
+
+    #[test]
+    fn rappeler_une_expedition_avant_son_terme() {
+        let mut partie = partie_prete_pour_le_bois();
+        partie
+            .envoyer_en_expedition_automatique(&zone("bois"), &[Emplacement::Equipe(1)], a(0))
+            .unwrap();
+        let bois = ZoneId::new("bois");
+        assert_eq!(
+            partie.rappeler_expedition_automatique(&bois, a(3_600)),
+            Err(ErreurExpeditionAutomatique::DejaRentree)
+        );
+        partie
+            .rappeler_expedition_automatique(&bois, a(10))
+            .unwrap();
+        assert!(partie.expeditions_automatiques().is_empty());
+        assert_eq!(partie.collection().camp().len(), 1);
+        assert_eq!(partie.collection().camp()[0].experience(), 125);
+        assert_eq!(partie.collection().places_reservees(), 0);
+        assert_eq!(partie.inventaire().potions(), 0);
+    }
+
+    fn etat(partie: &Partie) -> EtatPartie {
+        EtatPartie {
+            heros: partie.heros().clone(),
+            collection: partie.collection().clone(),
+            inventaire: partie.inventaire().clone(),
+            codex: partie.codex().clone(),
+            zones_explorees: partie.zones_explorees().to_vec(),
+            indices_trouves: partie.indices_trouves(),
+            apotres_vaincus: partie.apotres_vaincus().to_vec(),
+            conseils_vus: partie.conseils_vus().to_vec(),
+            expeditions_automatiques: partie.expeditions_automatiques().to_vec(),
+            attaques_a_choisir: partie.attaques_a_choisir().to_vec(),
+        }
+    }
+
+    #[test]
+    fn restaurer_reverifie_les_expeditions_automatiques() {
+        let mut partie = partie_prete_pour_le_bois();
+        partie
+            .envoyer_en_expedition_automatique(&zone("bois"), &[Emplacement::Equipe(1)], a(0))
+            .unwrap();
+        // Rechargée telle quelle, la partie garde l'expédition et la place
+        // réservée au camp.
+        assert_eq!(Partie::restaurer(etat(&partie)), Ok(partie.clone()));
+
+        let mut sans_exploration = etat(&partie);
+        sans_exploration.zones_explorees.clear();
+        assert_eq!(
+            Partie::restaurer(sans_exploration),
+            Err(ErreurRestaurationPartie::ZoneNonExploree(ZoneId::new(
+                "bois"
+            )))
+        );
+
+        let mut en_double = etat(&partie);
+        let copie = en_double.expeditions_automatiques[0].clone();
+        en_double.expeditions_automatiques.push(copie);
+        assert_eq!(
+            Partie::restaurer(en_double),
+            Err(ErreurRestaurationPartie::ExpeditionEnDouble(ZoneId::new(
+                "bois"
+            )))
+        );
+
+        let mut sans_monstre = etat(&partie);
+        sans_monstre.attaques_a_choisir.push(AttaqueAChoisir {
+            position_au_camp: 0,
+            attaque: creer("loup", 5).attaques().liste()[0].clone(),
+        });
+        assert_eq!(
+            Partie::restaurer(sans_monstre),
+            Err(ErreurRestaurationPartie::AttaqueAChoisirSansMonstre(0))
+        );
+
+        // Le monstre parti a besoin de sa place dans un camp déjà plein.
+        let mut camp_plein = etat(&partie);
+        let equipe = camp_plein.collection.equipe().to_vec();
+        let camp = (0..Collection::TAILLE_CAMP)
+            .map(|_| creer("loup", 5))
+            .collect();
+        camp_plein.collection = Collection::restaurer(equipe, camp).unwrap();
+        assert_eq!(
+            Partie::restaurer(camp_plein),
+            Err(ErreurRestaurationPartie::Collection(
+                ErreurCollection::CampPlein
+            ))
         );
     }
 }

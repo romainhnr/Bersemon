@@ -8,7 +8,7 @@ use bersemon_core::catalogue::Catalogue;
 use bersemon_core::partie::Partie;
 use bersemon_core::sauvegarde::{ErreurSauvegarde, SauvegardeRepository};
 
-use crate::format::{self, SauvegardeV2, VERSION};
+use crate::format::{self, SauvegardeV3, VERSION};
 
 pub struct FichierJson {
     chemin: PathBuf,
@@ -38,7 +38,7 @@ impl FichierJson {
         if !(1..=VERSION).contains(&version) {
             return Err(ErreurSauvegarde::VersionInconnue(version));
         }
-        let sauvegarde: SauvegardeV2 = serde_json::from_value(valeur)
+        let sauvegarde: SauvegardeV3 = serde_json::from_value(valeur)
             .map_err(|erreur| ErreurSauvegarde::Illisible(erreur.to_string()))?;
         format::vers_partie(sauvegarde, catalogue)
     }
@@ -77,24 +77,38 @@ fn acces(erreur: io::Error) -> ErreurSauvegarde {
 mod tests {
     use super::*;
     use bersemon_core::attaque::{Attaque, AttaqueId, Categorie, EffetSecondaire};
+    use bersemon_core::collection::Emplacement;
     use bersemon_core::espece::{AttaqueApprise, Espece, EspeceId, Role};
+    use bersemon_core::expedition_automatique::ParametresExpeditionAutomatique;
     use bersemon_core::heros::{Classe, Heros};
+    use bersemon_core::horodatage::Horodatage;
     use bersemon_core::monstre::Monstre;
     use bersemon_core::niveau::Niveau;
     use bersemon_core::nom::Nom;
-    use bersemon_core::partie::EtatPartie;
+    use bersemon_core::partie::{AttaqueAChoisir, EtatPartie};
     use bersemon_core::stats::{Stats, ValeursInternes};
     use bersemon_core::statut::Statut;
     use bersemon_core::tutoriel::Conseil;
     use bersemon_core::types::{Type, TypesMonstre};
-    use bersemon_core::zone::ZoneId;
+    use bersemon_core::zone::{Zone, ZoneId};
     use std::sync::atomic::{AtomicU32, Ordering};
+    use std::time::Duration;
 
-    struct CatalogueDeTest(Vec<Espece>);
+    struct CatalogueDeTest {
+        especes: Vec<Espece>,
+        zones: Vec<Zone>,
+    }
 
     impl Catalogue for CatalogueDeTest {
         fn espece(&self, id: &EspeceId) -> Option<Espece> {
-            self.0.iter().find(|espece| espece.id() == id).cloned()
+            self.especes
+                .iter()
+                .find(|espece| espece.id() == id)
+                .cloned()
+        }
+
+        fn zone(&self, id: &ZoneId) -> Option<Zone> {
+            self.zones.iter().find(|zone| zone.id() == id).cloned()
         }
     }
 
@@ -134,8 +148,32 @@ mod tests {
         )
     }
 
+    fn lisiere() -> Zone {
+        let niveau = Niveau::new(3).unwrap();
+        let parametres = ParametresExpeditionAutomatique::new(
+            Duration::from_secs(3_600),
+            15..=60,
+            100..=200,
+            0..=1,
+        )
+        .unwrap();
+        Zone::new(
+            ZoneId::new("lisiere"),
+            "Lisière",
+            (niveau, niveau),
+            1,
+            vec![espece("loup")],
+            vec![],
+            parametres,
+        )
+        .unwrap()
+    }
+
     fn catalogue() -> CatalogueDeTest {
-        CatalogueDeTest(vec![espece("salamandre"), espece("loup")])
+        CatalogueDeTest {
+            especes: vec![espece("salamandre"), espece("loup")],
+            zones: vec![lisiere()],
+        }
     }
 
     fn creer(id: &str, niveau: u8) -> Monstre {
@@ -168,7 +206,7 @@ mod tests {
         partie.noter_conseil_vu(Conseil::PremierArretEntreDeuxEtapes);
         partie.noter_conseil_vu(Conseil::PremierCombat);
         // La traque n'avance qu'en expédition : elle est posée directement.
-        Partie::restaurer(EtatPartie {
+        let etat = |partie: &Partie, attaques_a_choisir| EtatPartie {
             heros: partie.heros().clone(),
             collection: partie.collection().clone(),
             inventaire: partie.inventaire().clone(),
@@ -177,7 +215,28 @@ mod tests {
             indices_trouves: 3,
             apotres_vaincus: vec![EspeceId::new("loup")],
             conseils_vus: partie.conseils_vus().to_vec(),
-        })
+            expeditions_automatiques: partie.expeditions_automatiques().to_vec(),
+            attaques_a_choisir,
+        };
+        let mut partie = Partie::restaurer(etat(&partie, Vec::new())).unwrap();
+        // Le premier loup du camp part en expédition automatique ; l'autre
+        // attend de choisir une attaque, comme au retour d'une expédition.
+        partie
+            .envoyer_en_expedition_automatique(
+                &lisiere(),
+                &[Emplacement::Camp(0)],
+                Horodatage::depuis_secondes(1_000),
+            )
+            .unwrap();
+        let griffe = espece("loup")
+            .attaque_apprise(&AttaqueId::new("griffe"))
+            .cloned()
+            .unwrap();
+        let a_choisir = vec![AttaqueAChoisir {
+            position_au_camp: 0,
+            attaque: griffe,
+        }];
+        Partie::restaurer(etat(&partie, a_choisir)).unwrap()
     }
 
     /// Un fichier par test, dans le dossier temporaire du système.
@@ -254,11 +313,44 @@ mod tests {
 
     #[test]
     fn version_inconnue() {
-        let texte = texte_de_partie().replacen("\"version\":2", "\"version\":3", 1);
+        let texte = texte_de_partie().replacen("\"version\":3", "\"version\":4", 1);
         assert_eq!(
             charger_texte(&texte),
-            Err(ErreurSauvegarde::VersionInconnue(3))
+            Err(ErreurSauvegarde::VersionInconnue(4))
         );
+    }
+
+    #[test]
+    fn une_sauvegarde_en_version_2_n_a_pas_d_expedition_automatique() {
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        let objet = valeur.as_object_mut().unwrap();
+        objet.insert("version".to_string(), 2.into());
+        for champ in ["expeditions_automatiques", "attaques_a_choisir"] {
+            objet.remove(champ);
+        }
+        let partie = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        assert!(partie.expeditions_automatiques().is_empty());
+        assert!(partie.attaques_a_choisir().is_empty());
+        assert_eq!(partie.collection().places_reservees(), 0);
+        assert_eq!(partie.indices_trouves(), 3);
+    }
+
+    #[test]
+    fn expedition_dans_une_zone_disparue_du_jeu() {
+        let texte = texte_de_partie().replace("\"zone\":\"lisiere\"", "\"zone\":\"atlantide\"");
+        assert_eq!(
+            charger_texte(&texte),
+            Err(ErreurSauvegarde::ZoneInconnue("atlantide".to_string()))
+        );
+    }
+
+    #[test]
+    fn attaque_a_choisir_sans_monstre() {
+        let texte = texte_de_partie().replace("\"position_au_camp\":0", "\"position_au_camp\":7");
+        assert!(matches!(
+            charger_texte(&texte),
+            Err(ErreurSauvegarde::Incoherente(_))
+        ));
     }
 
     #[test]

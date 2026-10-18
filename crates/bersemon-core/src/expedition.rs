@@ -128,7 +128,7 @@ impl Expedition {
 mod tests {
     use super::*;
     use crate::aleatoire::AleatoireScripte;
-    use crate::donnees_de_test::espece;
+    use crate::donnees_de_test::{espece, parametres_expedition_automatique};
     use crate::niveau::Niveau;
     use crate::traque::Apotre;
     use crate::zone::{EspeceRare, ZoneId};
@@ -152,6 +152,7 @@ mod tests {
             1,
             vec![espece("loup")],
             rares,
+            parametres_expedition_automatique(),
         )
         .unwrap()
     }

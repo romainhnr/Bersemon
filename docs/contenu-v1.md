@@ -126,6 +126,13 @@ Autrefois seigneur des terres du Marais, il a livré son propre fief au gibet po
 
 La Lisière est accessible dès le départ. Le Marais s'ouvre avec le premier indice, au bout de la première expédition complète dans la Lisière ; deux expéditions complètes dans le Marais donnent les indices 2 et 3 ; l'expédition suivante dans le Marais s'achève par le Baron pendu (section 9.4).
 
+Expéditions automatiques, ajoutées après la V1 le 18/10/2026 (section 12) :
+
+| Identifiant | Durée de base, pour un monstre | Dégâts | XP par monstre non KO | Potions |
+|---|---|---|---|---|
+| lisiere | 1 h | 15 à 60 | 100 à 200 | 0 à 1 |
+| marais | 2 h | 40 à 120 | 300 à 600 | 1 à 2 |
+
 ## 4. Textes
 
 ### Introduction

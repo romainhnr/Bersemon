@@ -82,6 +82,9 @@ pub fn erreur_sauvegarde(erreur: &ErreurSauvegarde) -> String {
         ErreurSauvegarde::EspeceInconnue(espece) => {
             format!("elle cite une espèce qui n'existe plus ({espece})")
         }
+        ErreurSauvegarde::ZoneInconnue(zone) => {
+            format!("elle cite une zone qui n'existe plus ({zone})")
+        }
         ErreurSauvegarde::AttaqueInconnue { attaque, .. } => {
             format!("elle cite une attaque qui n'existe plus ({attaque})")
         }

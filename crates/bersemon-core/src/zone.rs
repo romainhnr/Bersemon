@@ -9,6 +9,7 @@ use std::fmt;
 
 use crate::aleatoire::Aleatoire;
 use crate::espece::{Espece, EspeceId};
+use crate::expedition_automatique::ParametresExpeditionAutomatique;
 use crate::monstre::{Monstre, tirer_shiny};
 use crate::niveau::Niveau;
 use crate::stats::ValeursInternes;
@@ -84,6 +85,7 @@ pub struct Zone {
     taille_max_groupe: u8,
     especes: Vec<Espece>,
     rares: Vec<EspeceRare>,
+    expedition_automatique: ParametresExpeditionAutomatique,
 }
 
 impl Zone {
@@ -97,6 +99,7 @@ impl Zone {
         taille_max_groupe: u8,
         especes: Vec<Espece>,
         rares: Vec<EspeceRare>,
+        expedition_automatique: ParametresExpeditionAutomatique,
     ) -> Result<Self, ErreurZone> {
         let (niveau_min, niveau_max) = niveaux;
         if niveau_min > niveau_max {
@@ -128,6 +131,7 @@ impl Zone {
             taille_max_groupe,
             especes,
             rares,
+            expedition_automatique,
         })
     }
 
@@ -155,6 +159,12 @@ impl Zone {
 
     pub fn rares(&self) -> &[EspeceRare] {
         &self.rares
+    }
+
+    /// Durée, dégâts et récompenses d'une expédition automatique (section
+    /// 12.8).
+    pub fn expedition_automatique(&self) -> &ParametresExpeditionAutomatique {
+        &self.expedition_automatique
     }
 
     /// Tirages : taille du groupe, puis pour chaque monstre ceux de
@@ -198,7 +208,8 @@ impl Zone {
     }
 }
 
-fn tirer_entre(min: u32, max: u32, aleatoire: &mut dyn Aleatoire) -> u32 {
+/// Aucun tirage quand la plage n'a qu'une valeur.
+pub(crate) fn tirer_entre(min: u32, max: u32, aleatoire: &mut dyn Aleatoire) -> u32 {
     if min == max {
         min
     } else {
@@ -215,7 +226,9 @@ mod tests {
     use super::*;
     use crate::aleatoire::AleatoireScripte;
     use crate::attaque::Categorie;
-    use crate::donnees_de_test::{attaque, espece, stats_uniformes};
+    use crate::donnees_de_test::{
+        attaque, espece, parametres_expedition_automatique, stats_uniformes,
+    };
     use crate::espece::{AttaqueApprise, Role};
     use crate::types::{Type, TypesMonstre};
 
@@ -236,6 +249,7 @@ mod tests {
             taille,
             especes,
             rares,
+            parametres_expedition_automatique(),
         )
     }
 

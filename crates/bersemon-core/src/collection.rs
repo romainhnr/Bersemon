@@ -29,7 +29,12 @@ pub enum ErreurCollection {
     EquipePleine,
     CampPlein,
     DernierMonstreDeLEquipe,
-    TailleDEquipeDifferente { attendue: usize, recue: usize },
+    TailleDEquipeDifferente {
+        attendue: usize,
+        recue: usize,
+    },
+    /// Le même monstre est choisi deux fois.
+    EmplacementEnDouble(Emplacement),
 }
 
 impl fmt::Display for ErreurCollection {
@@ -56,6 +61,9 @@ impl fmt::Display for ErreurCollection {
             ErreurCollection::TailleDEquipeDifferente { attendue, recue } => {
                 write!(f, "équipe de {recue} monstres reçue, {attendue} attendus")
             }
+            ErreurCollection::EmplacementEnDouble(emplacement) => {
+                write!(f, "le monstre {emplacement:?} est choisi deux fois")
+            }
         }
     }
 }
@@ -69,6 +77,9 @@ impl std::error::Error for ErreurCollection {}
 pub struct Collection {
     equipe: Vec<Monstre>,
     camp: Vec<Monstre>,
+    /// Une par monstre parti en expédition automatique : il garde sa place
+    /// au camp, où il reviendra (section 12.1).
+    places_reservees: usize,
 }
 
 impl Collection {
@@ -80,6 +91,7 @@ impl Collection {
         Self {
             equipe: vec![premier],
             camp: Vec::new(),
+            places_reservees: 0,
         }
     }
 
@@ -95,7 +107,11 @@ impl Collection {
         if camp.len() > Self::TAILLE_CAMP {
             return Err(ErreurCollection::CampPlein);
         }
-        Ok(Self { equipe, camp })
+        Ok(Self {
+            equipe,
+            camp,
+            places_reservees: 0,
+        })
     }
 
     pub fn equipe(&self) -> &[Monstre] {
@@ -104,6 +120,11 @@ impl Collection {
 
     pub fn camp(&self) -> &[Monstre] {
         &self.camp
+    }
+
+    /// Places du camp gardées pour les monstres en expédition automatique.
+    pub fn places_reservees(&self) -> usize {
+        self.places_reservees
     }
 
     pub fn monstre(&self, emplacement: Emplacement) -> Option<&Monstre> {
@@ -118,7 +139,7 @@ impl Collection {
         if self.equipe.len() == 1 {
             return Err(ErreurCollection::DernierMonstreDeLEquipe);
         }
-        if self.camp.len() >= Self::TAILLE_CAMP {
+        if self.places_libres_au_camp() == 0 {
             return Err(ErreurCollection::CampPlein);
         }
         let monstre = self.equipe.remove(index_equipe);
@@ -201,7 +222,7 @@ impl Collection {
         if self.equipe.len() < Self::TAILLE_EQUIPE {
             self.equipe.push(capture);
             Placement::Equipe(self.equipe.len() - 1)
-        } else if self.camp.len() < Self::TAILLE_CAMP {
+        } else if self.places_libres_au_camp() > 0 {
             self.camp.push(capture);
             Placement::Camp(self.camp.len() - 1)
         } else {
@@ -233,9 +254,95 @@ impl Collection {
         Ok(())
     }
 
+    /// Ce que `retirer_pour_expedition` refuserait. L'équipe garde un
+    /// monstre, et un monstre pris dans l'équipe a besoin d'une place libre
+    /// au camp, où il reviendra (section 12.1).
+    pub(crate) fn verifier_depart(
+        &self,
+        emplacements: &[Emplacement],
+    ) -> Result<(), ErreurCollection> {
+        for (position, emplacement) in emplacements.iter().enumerate() {
+            self.verifier(*emplacement)?;
+            if emplacements[..position].contains(emplacement) {
+                return Err(ErreurCollection::EmplacementEnDouble(*emplacement));
+            }
+        }
+        let de_l_equipe = indices_de_l_equipe(emplacements).len();
+        if de_l_equipe >= self.equipe.len() {
+            return Err(ErreurCollection::DernierMonstreDeLEquipe);
+        }
+        if de_l_equipe > self.places_libres_au_camp() {
+            return Err(ErreurCollection::CampPlein);
+        }
+        Ok(())
+    }
+
+    /// Rend les monstres dans l'ordre des emplacements ; leurs places au camp
+    /// restent réservées jusqu'à leur retour.
+    pub(crate) fn retirer_pour_expedition(
+        &mut self,
+        emplacements: &[Emplacement],
+    ) -> Result<Vec<Monstre>, ErreurCollection> {
+        self.verifier_depart(emplacements)?;
+        let monstres = emplacements
+            .iter()
+            .filter_map(|emplacement| self.monstre(*emplacement).cloned())
+            .collect();
+        // Du dernier au premier, pour que les positions restant à retirer ne
+        // bougent pas.
+        let mut equipe = indices_de_l_equipe(emplacements);
+        equipe.sort_unstable_by(|a, b| b.cmp(a));
+        for index in equipe {
+            self.equipe.remove(index);
+        }
+        let mut camp: Vec<usize> = emplacements
+            .iter()
+            .filter_map(|emplacement| match emplacement {
+                Emplacement::Camp(index) => Some(*index),
+                Emplacement::Equipe(_) => None,
+            })
+            .collect();
+        camp.sort_unstable_by(|a, b| b.cmp(a));
+        for index in camp {
+            self.camp.remove(index);
+        }
+        self.places_reservees += emplacements.len();
+        Ok(monstres)
+    }
+
+    /// Les monstres rentrés d'une expédition automatique reprennent, à la
+    /// fin du camp, les places qui leur étaient réservées.
+    pub(crate) fn accueillir_retour(&mut self, monstres: Vec<Monstre>) {
+        debug_assert!(monstres.len() <= self.places_reservees);
+        self.places_reservees = self.places_reservees.saturating_sub(monstres.len());
+        self.camp.extend(monstres);
+    }
+
+    /// À la reprise d'une sauvegarde : une place par monstre parti en
+    /// expédition automatique, qui garde la sienne au camp.
+    pub(crate) fn definir_places_reservees(
+        &mut self,
+        nombre: usize,
+    ) -> Result<(), ErreurCollection> {
+        if self.camp.len() + nombre > Self::TAILLE_CAMP {
+            return Err(ErreurCollection::CampPlein);
+        }
+        self.places_reservees = nombre;
+        Ok(())
+    }
+
+    fn places_libres_au_camp(&self) -> usize {
+        Self::TAILLE_CAMP.saturating_sub(self.camp.len() + self.places_reservees)
+    }
+
     /// Pour les soins hors combat, comme une potion entre deux étapes.
     pub(crate) fn membre_de_l_equipe_mut(&mut self, index: usize) -> Option<&mut Monstre> {
         self.equipe.get_mut(index)
+    }
+
+    /// Pour les attaques à choisir après une expédition automatique.
+    pub(crate) fn monstre_du_camp_mut(&mut self, index: usize) -> Option<&mut Monstre> {
+        self.camp.get_mut(index)
     }
 
     fn verifier(&self, emplacement: Emplacement) -> Result<(), ErreurCollection> {
@@ -252,6 +359,16 @@ impl Collection {
             Emplacement::Camp(index) => &mut self.camp[index],
         }
     }
+}
+
+fn indices_de_l_equipe(emplacements: &[Emplacement]) -> Vec<usize> {
+    emplacements
+        .iter()
+        .filter_map(|emplacement| match emplacement {
+            Emplacement::Equipe(index) => Some(*index),
+            Emplacement::Camp(_) => None,
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -452,6 +569,76 @@ mod tests {
             .collect();
         assert_eq!(
             Collection::restaurer(trois(), trente_et_un),
+            Err(ErreurCollection::CampPlein)
+        );
+    }
+
+    #[test]
+    fn depart_en_expedition_automatique_depuis_l_equipe_et_le_camp() {
+        let mut collection = Collection::new(monstre_nomme("a"));
+        for nom in ["b", "c", "d", "e"] {
+            collection.accueillir_capture(monstre_nomme(nom));
+        }
+        let partis = collection
+            .retirer_pour_expedition(&[
+                Emplacement::Camp(1),
+                Emplacement::Equipe(0),
+                Emplacement::Equipe(2),
+            ])
+            .unwrap();
+        assert_eq!(noms(&partis), vec!["e", "a", "c"]);
+        assert_eq!(noms(collection.equipe()), vec!["b"]);
+        assert_eq!(noms(collection.camp()), vec!["d"]);
+        assert_eq!(collection.places_reservees(), 3);
+        collection.accueillir_retour(partis);
+        assert_eq!(noms(collection.camp()), vec!["d", "e", "a", "c"]);
+        assert_eq!(collection.places_reservees(), 0);
+    }
+
+    #[test]
+    fn depart_refuse_sans_rien_changer() {
+        let mut collection = Collection::new(monstre_nomme("a"));
+        collection.accueillir_capture(monstre_nomme("b"));
+        let avant = collection.clone();
+        assert_eq!(
+            collection.retirer_pour_expedition(&[Emplacement::Equipe(0), Emplacement::Equipe(1)]),
+            Err(ErreurCollection::DernierMonstreDeLEquipe)
+        );
+        assert_eq!(
+            collection.retirer_pour_expedition(&[Emplacement::Equipe(1), Emplacement::Equipe(1)]),
+            Err(ErreurCollection::EmplacementEnDouble(Emplacement::Equipe(
+                1
+            )))
+        );
+        assert_eq!(
+            collection.retirer_pour_expedition(&[Emplacement::Camp(0)]),
+            Err(ErreurCollection::EmplacementInexistant(Emplacement::Camp(
+                0
+            )))
+        );
+        assert_eq!(collection, avant);
+    }
+
+    #[test]
+    fn les_places_reservees_comptent_dans_la_limite_du_camp() {
+        let mut collection = collection_pleine();
+        // Un monstre de l'équipe n'aurait pas de place où revenir.
+        assert_eq!(
+            collection.retirer_pour_expedition(&[Emplacement::Equipe(0)]),
+            Err(ErreurCollection::CampPlein)
+        );
+        // Un monstre du camp garde la sienne : le camp reste plein.
+        collection
+            .retirer_pour_expedition(&[Emplacement::Camp(0)])
+            .unwrap();
+        assert_eq!(collection.camp().len(), 29);
+        let nouveau = monstre_nomme("nouveau");
+        assert_eq!(
+            collection.accueillir_capture(nouveau.clone()),
+            Placement::PlaceManquante(nouveau)
+        );
+        assert_eq!(
+            collection.envoyer_au_camp(0),
             Err(ErreurCollection::CampPlein)
         );
     }

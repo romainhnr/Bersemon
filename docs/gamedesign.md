@@ -4,7 +4,7 @@ Bersemon est le nom du projet et du jeu.
 
 Statut : document de référence du projet. Il décrit ce qui est décidé ; les points non tranchés sont regroupés dans la section 16 "Questions ouvertes et valeurs à définir", et l'historique des décisions dans la section 17.
 
-Dernière mise à jour : 17/10/2026
+Dernière mise à jour : 18/10/2026
 
 ## Sommaire
 
@@ -63,6 +63,7 @@ L'objectif du jeu est de proposer des boucles de gameplay intéressantes et stim
 - Sur Discord, une seule commande, /bersemon, ouvre un message qui pose la question en cours ; le joueur répond par des boutons, et par un formulaire pour un texte comme le nom du héros.
 - Chaque compte Discord a une seule partie, la même sur tous les serveurs et en message privé. Elle est séparée de la partie de la console.
 - Sur Discord, une expédition en cours attend le joueur sans limite de temps, jusqu'à son prochain /bersemon ; un redémarrage du bot le ramène à sa dernière sauvegarde, comme quitter la console (section 13.9).
+- Sur Discord, le bot prévient le joueur par message privé du retour de ses expéditions automatiques (section 12.7).
 - Hébergement du bot : pour commencer, sur le PC de l'utilisateur, lancé à la main quand il veut que le bot soit en ligne. Le bot est privé : seul l'utilisateur peut l'inviter dans un serveur.
 - Multijoueur : après l'adaptation à Discord (section 15).
 - Hors périmètre pour le moment : version mobile et vrai jeu PC.
@@ -207,6 +208,7 @@ Le joueur peut :
 - Chaque monstre de l'équipe qui a été actif face au monstre vaincu et qui n'est pas KO à la fin du combat reçoit cette XP en entier.
 - L'XP est versée à la fin du combat, quelle que soit son issue ; les montées de niveau et l'apprentissage d'attaques se font donc après le combat, jamais pendant.
 - Chaque espèce a une liste d'attaques apprises à des niveaux donnés. En atteignant un de ces niveaux, le monstre apprend l'attaque ; s'il en connaît déjà 4, le joueur choisit l'attaque à oublier ou renonce à la nouvelle. Un monstre créé à un niveau donné connaît les 4 dernières attaques de sa liste jusqu'à ce niveau.
+- Une expédition automatique réussie rapporte aussi de l'XP (section 12.6).
 - Le héros n'a pas de niveau dans la V1 (section 4.1).
 
 ## 8. Boucle de gameplay
@@ -344,28 +346,35 @@ Le format reprend celui des combats de Pokémon, comme base de départ qui pourr
 
 ### 12.1 Principe
 
-- Le joueur peut envoyer ses monstres seuls en expédition, uniquement sur un lieu déjà exploré manuellement.
-- Pendant l'expédition, les monstres envoyés sont inutilisables, mais le joueur peut partir en expédition manuelle avec d'autres monstres.
+- Le joueur peut envoyer de 1 à 3 de ses monstres seuls en expédition, uniquement dans une zone déjà explorée manuellement, c'est-à-dire où il a mené une expédition jusqu'à sa dernière étape (section 9.2). Le départ se fait au camp.
+- Les monstres envoyés viennent de l'équipe ou du camp. L'équipe garde toujours au moins un monstre (section 13.2) : il faut donc avoir au moins 2 monstres pour lancer une expédition automatique.
+- Pendant l'expédition, les monstres envoyés sont inutilisables : on ne peut ni les relâcher, ni les renommer, ni les échanger. Ils gardent leur place au camp, dont la limite de 30 monstres les compte, et y reviennent.
+- Le joueur peut partir en expédition manuelle avec ses autres monstres, y compris dans une zone où une expédition automatique est en cours.
 - Le nombre d'expéditions automatiques simultanées n'est pas limité, mais une seule expédition automatique est possible par zone.
+- Une expédition automatique n'a aucun effet sur la traque : elle ne donne ni indice ni combat contre un Apôtre, et ne rend pas une zone explorée. Elle ne rencontre ni ne capture aucun monstre : le codex ne change pas.
 
 ### 12.2 Durée
 
-- La durée s'écoule en temps réel.
-- Plus la zone est facile, plus l'expédition est courte ; plus elle est difficile, plus l'expédition est longue.
-- Plus le nombre de monstres envoyés est élevé, plus la durée est réduite. Mode de calcul à définir (voir Q7).
+- La durée s'écoule en temps réel, y compris quand le jeu est fermé ou le bot éteint : elle se compte à partir de l'heure du départ.
+- La durée est fixe, et non tirée au hasard (la section 1.4 vise les dégâts et les gains), pour être connue avant le départ.
+- Chaque zone a une durée de base, pour un seul monstre (section 12.8) : plus la zone est difficile, plus l'expédition est longue.
+- Chaque monstre envoyé en plus du premier réduit la durée de 25 % de la durée de base : 100 % avec 1 monstre, 75 % avec 2, 50 % avec 3.
 
 ### 12.3 Dégâts et résultat
 
-- Chaque zone a une fourchette de dégâts (exemple : le lieu A inflige entre 100 et 300 PV).
-- Une valeur est tirée aléatoirement dans cette fourchette, puis répartie à parts égales entre les monstres envoyés. Exemple : avec un tirage de 222 et 2 monstres, chaque monstre subit 111 dégâts.
-- Les protections réduisent les dégâts subis (section 12.5).
-- Succès : au moins un monstre n'est pas KO. Les monstres rapportent des ressources et des objets, et gagnent de l'expérience, à la hauteur de la difficulté. Les monstres KO sont soignés au retour au camp.
-- Échec : tous les monstres envoyés sont KO. L'expédition ne rapporte rien et les monstres reviennent KO (section 5.7).
+- Les monstres partent avec tous leurs PV, puisque tous les monstres sont soignés au camp (section 13.1).
+- Chaque zone a une fourchette de dégâts (section 12.8). Un total de dégâts est tiré dans cette fourchette, puis réparti à parts égales entre les monstres envoyés, en divisions entières : le reste de la division est perdu.
+- Un monstre dont la part atteint ses PV tombe KO. Ce qui dépasse ses PV est réparti à parts égales entre les monstres encore debout, et ainsi de suite. L'expédition échoue donc à peu près quand le tirage atteint le total des PV des monstres envoyés : un monstre faible aide peu, un monstre robuste aide beaucoup.
+- Exemple : une Salamandre de 26 PV et un Loup de 16 PV. Avec un tirage de 40, chacun reçoit 20 ; le Loup tombe KO et les 4 dégâts en trop passent à la Salamandre, qui en subit 24 et reste debout : c'est une réussite. Avec un tirage de 50, chacun reçoit 25 ; le Loup tombe KO et ses 9 dégâts en trop portent ceux de la Salamandre à 34 : elle tombe KO à son tour, c'est un échec.
+- Les protections réduiront les dégâts subis ; elles sont reportées (section 12.5).
+- Succès : au moins un monstre n'est pas KO. L'expédition rapporte de l'XP et des potions (section 12.6).
+- Échec : tous les monstres envoyés sont KO. L'expédition ne rapporte rien (section 5.7).
+- Le résultat n'est tiré et connu qu'au moment où le joueur accueille l'expédition (section 12.7). Au retour, tous les monstres sont soignés, comme au camp (section 13.1).
 
 ### 12.4 Information avant le départ
 
-- Avant de lancer l'expédition, le joueur voit la difficulté du lieu, sa fourchette de dégâts et les chances de réussite.
-- Les chances de réussite sont calculées à partir de la fourchette de dégâts, du nombre de monstres envoyés, de leurs PV et des protections.
+- Avant de lancer l'expédition, le joueur voit la difficulté de la zone (ses niveaux, section 9.1), sa fourchette de dégâts, la durée et les chances de réussite.
+- Les chances de réussite sont calculées exactement à partir de la fourchette de dégâts, du nombre de monstres envoyés et de leurs PV, et plus tard des protections.
 
 ### 12.5 Protection
 
@@ -375,6 +384,30 @@ Le format reprend celui des combats de Pokémon, comme base de départ qui pourr
   - une troupe de 3 monstres (a, b, c) est envoyée vers le lieu A ;
   - X monstres ou objets peuvent assurer une protection efficace à 100% à 1 monstre important ;
   - Y monstres ou objets assurent une protection de 75%.
+- Les protections sont reportées : tant qu'il n'existe ni objet de protection ni effet du rôle (Q19), aucune protection ne s'applique (Q66).
+
+### 12.6 Récompenses
+
+- Chaque monstre qui n'est pas KO au retour d'une expédition réussie reçoit en entier le même gain d'XP, tiré une fois dans la fourchette de la zone (section 12.8) ; les monstres KO ne gagnent rien, comme en combat (section 7). Ce gain vaut environ la moitié de ce que rapporte une expédition manuelle dans la même zone.
+- Un nombre de potions est tiré dans la fourchette de la zone et ajouté à celles du joueur (section 14.4).
+- Les ressources et les autres objets (section 14.3) viendront avec l'économie (sections 13.4 et 14).
+
+### 12.7 Retour, accueil et rappel
+
+- Une expédition rentrée attend au camp que le joueur l'accueille. S'il est en expédition manuelle, il l'accueille à son retour au camp. Quand plusieurs expéditions sont rentrées, il les accueille une par une, chacune avec son bilan.
+- À l'accueil, le joueur voit le bilan : dégâts subis, monstres KO, XP et potions. Un monstre qui monte de niveau et doit apprendre une attaque alors qu'il en connaît déjà 4 choisit comme après un combat (section 7). Les monstres reviennent au camp, soignés.
+- La partie est sauvegardée dès l'accueil, pour que quitter le jeu ne permette pas de tirer de nouveau le résultat. Si le jeu s'arrête avant que le joueur ait choisi les attaques à oublier, ces choix lui sont reproposés à la reprise.
+- Au camp, le joueur peut rappeler une expédition avant son terme, après confirmation : les monstres rentrent aussitôt, sans dégâts ni récompense. Une expédition déjà rentrée ne se rappelle plus, elle s'accueille.
+- Sur Discord, le bot envoie un message privé au joueur à l'heure du retour, s'il est en ligne ; s'il était éteint, il prévient à son démarrage des expéditions rentrées entre-temps. Le joueur accueille ensuite l'expédition par /bersemon. La console affiche les expéditions rentrées au camp.
+
+### 12.8 Valeurs par zone
+
+| Zone | Durée de base | Dégâts | XP par monstre non KO | Potions |
+|---|---|---|---|---|
+| Lisière du Bois-Sombre | 1 h | 15 à 60 | 100 à 200 | 0 à 1 |
+| Marais des Pendus | 2 h | 40 à 120 | 300 à 600 | 1 à 2 |
+
+Repères, avec des valeurs internes de 15 : dans la Lisière, une Salamandre de niveau 8 seule réussit 23 fois sur 100, 71 fois avec un Loup de niveau 6, à coup sûr avec en plus une Vipère de niveau 5. Dans le Marais, une Salamandre de niveau 12 seule échoue toujours ; elle réussit 34 fois sur 100 avec un Crapaud de niveau 11, et 77 fois avec en plus une Mandragore de niveau 10. À vérifier en jouant.
 
 ## 13. Camp de base
 
@@ -386,7 +419,7 @@ Le format reprend celui des combats de Pokémon, comme base de départ qui pourr
 ### 13.2 Gestion des monstres
 
 - Le joueur peut laisser certains monstres en sécurité au camp et en emmener d'autres avec lui.
-- Limites de départ : 3 monstres avec le joueur et 30 monstres au camp. Ces limites peuvent être augmentées (section 13.4).
+- Limites de départ : 3 monstres avec le joueur et 30 monstres au camp. Ces limites peuvent être augmentées (section 13.4). Les monstres partis en expédition automatique comptent dans la limite du camp (section 12.1).
 - Le joueur part en expédition avec 1 à 3 monstres. L'équipe garde toujours au moins un monstre, même au camp.
 - Au camp, le joueur peut :
   - échanger des monstres entre son équipe et le camp ;
@@ -438,6 +471,7 @@ Le joueur peut construire des machines pour automatiser certaines tâches, par e
 - Une sauvegarde illisible, ou qui cite une espèce ou une attaque disparue du jeu, est refusée : le jeu l'explique et propose une nouvelle partie, sans rien effacer sans l'accord du joueur.
 - La sauvegarde garde l'identifiant des espèces, des attaques et des zones, pas leurs données : un rééquilibrage s'applique aux monstres déjà capturés.
 - Elle garde aussi l'avancée de la traque (indices trouvés, Apôtres vaincus) et les conseils du tutoriel déjà montrés.
+- Après la V1, elle garde les expéditions automatiques en cours : zone, monstres envoyés, heures de départ et de retour (section 12). Elle garde aussi les attaques qui restent à choisir après l'accueil d'une expédition (section 12.7). Le départ, le rappel et l'accueil d'une expédition automatique sont des actions au camp, suivies d'une sauvegarde.
 
 ## 14. Économie, marchands, objets et ressources
 
@@ -471,7 +505,7 @@ Le joueur peut aussi vendre ses objets aux marchands contre de l'argent.
 
 - Seul objet de la V1. Une potion rend à un monstre de l'équipe un pourcentage de ses PV max tiré de 40 % à 60 %, arrondi à l'entier inférieur, sans dépasser ses PV max. Elle ne relève pas un monstre KO et ne guérit pas les statuts. Sur un monstre qui a tous ses PV, le jeu demande confirmation : la potion serait consommée sans effet.
 - Elle s'utilise en combat, comme action du tour (l'adversaire agit ensuite), ou entre deux étapes d'une expédition.
-- Dans la V1, les potions se trouvent dans les coffres. Il n'y a ni limite de sac ni coffre de stockage au camp : le joueur porte toutes ses potions et les perd toutes en cas de défaite (section 9.3).
+- Dans la V1, les potions se trouvent dans les coffres ; après la V1, les expéditions automatiques réussies en rapportent aussi (section 12.6). Il n'y a ni limite de sac ni coffre de stockage au camp : le joueur porte toutes ses potions et les perd toutes en cas de défaite (section 9.3).
 
 ## 15. Multijoueur (après l'adaptation à Discord)
 
@@ -486,7 +520,6 @@ Les numéros des questions résolues ne sont pas réattribués, pour que les ré
 
 - Q5. Types Stellaire, Obscur, Lumière et Son (après la V1) : relations d'efficacité, et différence entre les types Ténèbres et Obscur.
 - Q6. Nombre de talismans équipables.
-- Q7. Réduction de la durée des expéditions automatiques selon le nombre de monstres : division par le nombre de monstres, ou réduction de x% par monstre.
 
 Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découpage de la V1 en étapes. Chacune indique l'étape de développement qui en a besoin : 1 fondations (types, stats, monstres), 2 combat 1 contre 1, 3 combat complet (changement, statuts, fuite, capture), 4 progression, 5 héros, équipe et camp, 6 expédition manuelle, 7 sauvegarde, 8 contenu et boucle de jeu complète.
 
@@ -495,6 +528,11 @@ Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découp
 Les questions Q59 et suivantes ont été relevées le 18/10/2026 lors du découpage de l'adaptation à Discord en étapes : 9 déroulement de la partie commun à la console et au bot, 10 squelette du bot, 11 une partie par joueur Discord, 12 jeu complet sur Discord, 13 déploiement.
 
 - Q64. (Après l'étape 12) Sprites des monstres (section 5.1) : source des images et droits d'utilisation.
+
+Les questions Q65 et suivantes ont été relevées le 18/10/2026 lors de la conception des expéditions automatiques, découpées en étapes : 14 règles du noyau, 15 déroulement et sauvegarde en version 3, 16 console, 17 bot Discord.
+
+- Q65. (Étape 17) Message privé de retour (section 12.7) : après un redémarrage du bot, prévenir de nouveau d'une expédition rentrée mais pas encore accueillie, ou garder trace des messages déjà envoyés.
+- Q66. (Après l'étape 17) Protections des expéditions automatiques (section 12.5) : objets de protection, effet du rôle soutien (Q19), valeurs des protections et façon dont elles s'appliquent à la répartition des dégâts avec report.
 
 ## 17. Journal des décisions
 
@@ -637,3 +675,26 @@ Les questions Q59 et suivantes ont été relevées le 18/10/2026 lors du découp
 18/10/2026 (étape 13) :
 
 - Q63 : le bot tourne sur le PC de l'utilisateur, lancé à la main ; il est privé, et seul l'utilisateur peut l'inviter dans un serveur. Un serveur permanent viendra plus tard si des joueurs veulent le bot en ligne en continu.
+
+18/10/2026 (expéditions automatiques) :
+
+- Chantier suivant : les expéditions automatiques, découpées en étapes 14 (règles du noyau), 15 (déroulement et sauvegarde en version 3), 16 (console) et 17 (bot Discord).
+- Une expédition automatique emmène de 1 à 3 monstres, pris dans l'équipe ou au camp ; l'équipe garde au moins un monstre.
+- Q7 : chaque monstre en plus du premier réduit la durée de 25 % de la durée de base (100 %, 75 %, 50 %).
+- Durées de base : Lisière 1 h, Marais 2 h. La durée est fixe et se compte à partir de l'heure du départ, jeu fermé ou bot éteint compris.
+- Dégâts répartis à parts égales, en divisions entières, avec report : ce qu'un monstre KO ne peut plus encaisser passe aux monstres encore debout. Remplace la répartition sans report de la section 12.3.
+- Fourchettes de dégâts : Lisière 15 à 60, Marais 40 à 120.
+- Récompenses d'une expédition réussie : de l'XP et des potions ; les ressources viendront avec l'économie.
+- XP : chaque monstre non KO reçoit en entier un tirage de 100 à 200 (Lisière) ou de 300 à 600 (Marais), environ la moitié d'une expédition manuelle ; les monstres KO ne gagnent rien. Potions : 0 à 1 (Lisière), 1 à 2 (Marais).
+- Protections reportées tant qu'il n'existe ni objet de protection ni effet du rôle (Q66).
+- Une expédition rentrée attend que le joueur l'accueille au camp ; le résultat est tiré à l'accueil, et les attaques en trop se choisissent comme après un combat.
+- Au camp, le joueur peut rappeler une expédition avant son terme, sans dégâts ni récompense.
+- Précisions confirmées à l'étape 14 : le gain d'XP est tiré une seule fois et reçu en entier par chaque monstre non KO ; une expédition déjà rentrée ne se rappelle plus, elle s'accueille.
+
+18/10/2026 (étape 15) :
+
+- Rappeler une expédition automatique demande confirmation.
+- La partie est sauvegardée dès l'accueil d'une expédition ; les attaques à oublier qui restent à choisir sont gardées par la sauvegarde et reproposées à la reprise.
+- Les expéditions rentrées s'accueillent une par une, chacune avec son bilan.
+- Sur Discord, le bot prévient le joueur par message privé du retour d'une expédition, et à son démarrage pour celles rentrées pendant qu'il était éteint.
+- Hypothèses validées : une expédition automatique n'a aucun effet sur la traque, l'exploration ni le codex ; les monstres envoyés gardent leur place au camp, comptée dans sa limite, et ne peuvent être ni relâchés, ni renommés, ni échangés ; une expédition manuelle reste possible dans la même zone ; la durée n'est pas tirée au hasard.

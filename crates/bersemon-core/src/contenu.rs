@@ -6,9 +6,13 @@
 //! le futur bot Discord. Les règles, elles, n'en dépendent pas : elles le
 //! reçoivent de l'appelant, comme le hasard.
 
+use std::ops::RangeInclusive;
+use std::time::Duration;
+
 use crate::attaque::{Attaque, AttaqueId, Categorie, EffetSecondaire};
 use crate::catalogue::Catalogue;
 use crate::espece::{AttaqueApprise, Espece, EspeceId, Role};
+use crate::expedition_automatique::ParametresExpeditionAutomatique;
 use crate::niveau::Niveau;
 use crate::stats::Stats;
 use crate::statut::Statut;
@@ -86,6 +90,7 @@ impl ContenuV1 {
                 espece: trouver("cerf-blanc"),
                 pacifique: true,
             }],
+            expedition_automatique(1, 15..=60, 100..=200, 0..=1),
         )
         .expect("Lisière conforme aux règles");
         let marais = Zone::new(
@@ -103,6 +108,7 @@ impl ContenuV1 {
                 espece: trouver("basilic"),
                 pacifique: false,
             }],
+            expedition_automatique(2, 40..=120, 300..=600, 1..=2),
         )
         .expect("Marais conforme aux règles");
         let baron = Apotre::new(trouver("baron-pendu"), &marais, AVANT_LE_BARON, EPILOGUE)
@@ -158,6 +164,10 @@ impl Catalogue for ContenuV1 {
             .iter()
             .find(|espece| espece.id() == id)
             .cloned()
+    }
+
+    fn zone(&self, id: &ZoneId) -> Option<Zone> {
+        self.zones.iter().find(|zone| zone.id() == id).cloned()
     }
 }
 
@@ -679,6 +689,22 @@ fn niveau(valeur: u8) -> Niveau {
     Niveau::new(valeur).expect("niveau du contenu valide")
 }
 
+/// Expéditions automatiques de la section 3 de docs/contenu-v1.md.
+fn expedition_automatique(
+    heures: u64,
+    degats: RangeInclusive<u32>,
+    experience: RangeInclusive<u32>,
+    potions: RangeInclusive<u32>,
+) -> ParametresExpeditionAutomatique {
+    ParametresExpeditionAutomatique::new(
+        Duration::from_secs(heures * 3_600),
+        degats,
+        experience,
+        potions,
+    )
+    .expect("expédition automatique conforme aux règles")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -688,6 +714,48 @@ mod tests {
     fn creer(contenu: &ContenuV1, id: &str, valeur: u8) -> Monstre {
         let espece = contenu.espece(&EspeceId::new(id)).unwrap();
         Monstre::creer(espece, niveau(valeur), ValeursInternes::default(), false).unwrap()
+    }
+
+    /// Monstre aux valeurs internes de 15, la moyenne des tirages.
+    fn creer_moyen(contenu: &ContenuV1, id: &str, valeur: u8) -> Monstre {
+        let espece = contenu.espece(&EspeceId::new(id)).unwrap();
+        let moyennes = ValeursInternes::new(Stats {
+            pv: 15,
+            attaque: 15,
+            defense: 15,
+            attaque_speciale: 15,
+            defense_speciale: 15,
+            vitesse: 15,
+        })
+        .unwrap();
+        Monstre::creer(espece, niveau(valeur), moyennes, false).unwrap()
+    }
+
+    /// Repères de la section 12.8 de docs/gamedesign.md.
+    #[test]
+    fn reperes_des_expeditions_automatiques() {
+        let contenu = ContenuV1::new();
+        let chances = |zone: usize, equipe: &[(&str, u8)]| {
+            let monstres: Vec<Monstre> = equipe
+                .iter()
+                .map(|&(id, valeur)| creer_moyen(&contenu, id, valeur))
+                .collect();
+            contenu.zones()[zone]
+                .expedition_automatique()
+                .chances_de_reussite(&monstres)
+                .pourcentage()
+        };
+        let salamandre = ("salamandre", 8);
+        assert_eq!(chances(0, &[salamandre]), 23);
+        assert_eq!(chances(0, &[salamandre, ("loup", 6)]), 71);
+        assert_eq!(chances(0, &[salamandre, ("loup", 6), ("vipere", 5)]), 100);
+        let salamandre = ("salamandre", 12);
+        assert_eq!(chances(1, &[salamandre]), 0);
+        assert_eq!(chances(1, &[salamandre, ("crapaud", 11)]), 34);
+        assert_eq!(
+            chances(1, &[salamandre, ("crapaud", 11), ("mandragore", 10)]),
+            77
+        );
     }
 
     #[test]

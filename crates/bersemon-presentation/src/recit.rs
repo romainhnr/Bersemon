@@ -6,6 +6,7 @@ use bersemon_core::deroulement::Evenement;
 
 use crate::combat::{rapport_experience, remplacement, renoncement, soin_de_potion};
 use crate::erreurs::erreur_sauvegarde;
+use crate::expeditions_automatiques;
 use crate::monstres::{nom, nom_sauvage};
 use crate::partie::potions;
 
@@ -112,6 +113,15 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             format!("Sauvegarde impossible : {}.", erreur_sauvegarde(erreur)),
             false,
         ),
+        Evenement::ExpeditionAutomatiquePartie(expedition) => {
+            (expeditions_automatiques::depart(expedition), true)
+        }
+        Evenement::ExpeditionAutomatiqueRappelee(expedition) => {
+            (expeditions_automatiques::rappel(expedition), true)
+        }
+        Evenement::ExpeditionAutomatiqueRentree { zone, bilan } => {
+            (expeditions_automatiques::retour(zone, bilan), true)
+        }
     };
     Recit {
         texte,

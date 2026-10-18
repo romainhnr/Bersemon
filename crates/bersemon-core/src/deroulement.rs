@@ -20,14 +20,18 @@ use crate::combat::{self, Action, BilanCombat, Combat, ErreurCombat, Issue, Phas
 use crate::contenu::ContenuV1;
 use crate::espece::EspeceId;
 use crate::expedition::{ErreurExpedition, EvenementExpedition, Expedition};
+use crate::expedition_automatique::{
+    BilanExpeditionAutomatique, ErreurExpeditionAutomatique, ExpeditionAutomatique,
+};
 use crate::heros::{Classe, Heros};
+use crate::horodatage::Horodatage;
 use crate::inventaire::{ErreurPotion, potion_sans_effet};
 use crate::monstre::{Monstre, RapportExperience};
 use crate::nom::{ErreurNom, Nom};
 use crate::partie::{Partie, creer_monstre_de_depart};
 use crate::sauvegarde::{ErreurSauvegarde, SauvegardeRepository};
 use crate::tutoriel::Conseil;
-use crate::zone::ZoneId;
+use crate::zone::{Zone, ZoneId};
 
 /// En expédition, l'équipe garde toujours un monstre en état de combattre
 /// entre deux combats : sinon une défaite l'aurait ramenée au camp.
@@ -39,6 +43,9 @@ pub struct Contexte<'a> {
     pub contenu: &'a ContenuV1,
     pub aleatoire: &'a mut dyn Aleatoire,
     pub depot: &'a dyn SauvegardeRepository,
+    /// L'heure du choix, que le noyau ne lit jamais lui-même, pour les
+    /// expéditions automatiques (section 12.2).
+    pub maintenant: Horodatage,
 }
 
 /// Décision complète du joueur, sans étape de navigation.
@@ -51,6 +58,17 @@ pub enum Choix {
     Classe(Classe),
     MonstreDeDepart(EspeceId),
     PartirEnExpedition(ZoneId),
+    /// Les monstres choisis, de 1 à 3, partent seuls (section 12.1).
+    /// L'interface a montré auparavant la durée et les chances de réussite
+    /// (`Partie::estimer_expedition_automatique`, section 12.4).
+    EnvoyerEnExpeditionAutomatique {
+        zone: ZoneId,
+        monstres: Vec<Emplacement>,
+    },
+    /// Une expédition rentrée, accueillie au camp (section 12.7).
+    AccueillirExpeditionAutomatique(ZoneId),
+    /// Avant son terme, après confirmation (section 12.7).
+    RappelerExpeditionAutomatique(ZoneId),
     /// Au camp, toutes les actions ; entre deux étapes, seulement l'ordre de
     /// l'équipe (Q55).
     Gerer(ActionDeGestion),
@@ -132,6 +150,8 @@ pub enum Confirmation {
     /// Le monstre a déjà tous ses PV : la potion serait perdue (Q53).
     PotionPerdue(Monstre),
     Relacher(Monstre),
+    /// Les monstres rentreraient sans rien rapporter (section 12.7).
+    RappelerLExpedition(ExpeditionAutomatique),
 }
 
 /// Ce qui s'est passé, dans l'ordre. Les monstres et les combats sont des
@@ -197,6 +217,16 @@ pub enum Evenement {
     NouvelleZone(String),
     Conseil(Conseil),
     Relache(Monstre),
+    /// Copie de l'expédition qui vient de partir.
+    ExpeditionAutomatiquePartie(ExpeditionAutomatique),
+    /// Copie de l'expédition rappelée, avant le retour de ses monstres.
+    ExpeditionAutomatiqueRappelee(ExpeditionAutomatique),
+    /// Suivi d'un événement `Experience` par monstre qui en a gagné.
+    ExpeditionAutomatiqueRentree {
+        /// Nom de la zone.
+        zone: String,
+        bilan: BilanExpeditionAutomatique,
+    },
     /// La partie continue : la sauvegarde sera retentée plus tard.
     SauvegardeImpossible(ErreurSauvegarde),
 }
@@ -213,6 +243,7 @@ pub enum ErreurChoix {
     Potion(ErreurPotion),
     Combat(ErreurCombat),
     Attaque(ErreurAttaquesMonstre),
+    ExpeditionAutomatique(ErreurExpeditionAutomatique),
 }
 
 impl fmt::Display for ErreurChoix {
@@ -229,6 +260,7 @@ impl fmt::Display for ErreurChoix {
             ErreurChoix::Potion(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Combat(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Attaque(erreur) => write!(f, "{erreur}"),
+            ErreurChoix::ExpeditionAutomatique(erreur) => write!(f, "{erreur}"),
         }
     }
 }
@@ -242,7 +274,7 @@ pub struct Deroulement {
 }
 
 enum Etat {
-    Reprise(Partie),
+    Reprise(Box<Partie>),
     SauvegardeIllisible(ErreurSauvegarde),
     NomDuHeros,
     Classe(Nom),
@@ -265,7 +297,7 @@ impl Deroulement {
     /// place d'une sauvegarde illisible (section 13.9).
     pub fn demarrer(chargement: Result<Option<Partie>, ErreurSauvegarde>) -> Self {
         let etat = match chargement {
-            Ok(Some(partie)) => Etat::Reprise(partie),
+            Ok(Some(partie)) => Etat::Reprise(Box::new(partie)),
             Ok(None) => Etat::NomDuHeros,
             Err(erreur) => Etat::SauvegardeIllisible(erreur),
         };
@@ -341,7 +373,9 @@ impl Deroulement {
         evenements: &mut Vec<Evenement>,
     ) -> Result<Reponse, ErreurChoix> {
         let suivant = match (&self.etat, choix) {
-            (Etat::Reprise(partie), Choix::ReprendreLaPartie) => EnJeu::au_camp(partie.clone()),
+            (Etat::Reprise(partie), Choix::ReprendreLaPartie) => {
+                EnJeu::au_camp(Partie::clone(partie))
+            }
             (Etat::Reprise(partie), Choix::NouvellePartie) => {
                 if !confirme {
                     let heros = partie.heros().clone();
@@ -378,6 +412,14 @@ impl Deroulement {
     }
 }
 
+fn zone_du_contenu<'c>(contenu: &'c ContenuV1, id: &ZoneId) -> Result<&'c Zone, ErreurChoix> {
+    contenu
+        .zones()
+        .iter()
+        .find(|zone| zone.id() == id)
+        .ok_or_else(|| ErreurChoix::ZoneInconnue(id.clone()))
+}
+
 /// La sauvegarde est automatique (section 13.9) ; un échec n'arrête pas la
 /// partie.
 fn sauvegarder(partie: &Partie, depot: &dyn SauvegardeRepository, evenements: &mut Vec<Evenement>) {
@@ -408,7 +450,10 @@ impl EnJeu {
 
     fn attente(&self) -> Attente<'_> {
         match &self.expedition {
-            None => Attente::Camp,
+            None => match self.partie.attaque_a_choisir() {
+                Some((monstre, nouvelle)) => Attente::OubliAttaque { monstre, nouvelle },
+                None => Attente::Camp,
+            },
             Some(en_cours) => en_cours.attente(),
         }
     }
@@ -440,14 +485,14 @@ impl EnJeu {
         contexte: &mut Contexte<'_>,
         evenements: &mut Vec<Evenement>,
     ) -> Result<Reponse, ErreurChoix> {
+        // Les attaques à choisir après une expédition automatique passent
+        // avant toute autre action (section 12.7).
+        if self.partie.attaque_a_choisir().is_some() {
+            return self.choisir_attaque(choix, contexte, evenements);
+        }
         match choix {
             Choix::PartirEnExpedition(id) => {
-                let zone = contexte
-                    .contenu
-                    .zones()
-                    .iter()
-                    .find(|zone| zone.id() == id)
-                    .ok_or_else(|| ErreurChoix::ZoneInconnue(id.clone()))?;
+                let zone = zone_du_contenu(contexte.contenu, id)?;
                 let expedition = self
                     .partie
                     .partir_en_expedition(zone, contexte.contenu.piste(), &mut *contexte.aleatoire)
@@ -473,8 +518,124 @@ impl EnJeu {
                 }
                 Ok(reponse)
             }
+            Choix::EnvoyerEnExpeditionAutomatique { zone, monstres } => {
+                let zone = zone_du_contenu(contexte.contenu, zone)?;
+                self.partie
+                    .envoyer_en_expedition_automatique(zone, monstres, contexte.maintenant)
+                    .map_err(ErreurChoix::ExpeditionAutomatique)?;
+                if let Some(expedition) = self.partie.expedition_automatique(zone.id()) {
+                    evenements.push(Evenement::ExpeditionAutomatiquePartie(expedition.clone()));
+                }
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::RappelerExpeditionAutomatique(zone) => {
+                let expedition = self.expedition_automatique(zone)?;
+                if !confirme {
+                    // Une expédition déjà rentrée est refusée sans demander
+                    // de confirmation.
+                    if expedition.est_rentree(contexte.maintenant) {
+                        return Err(ErreurChoix::ExpeditionAutomatique(
+                            ErreurExpeditionAutomatique::DejaRentree,
+                        ));
+                    }
+                    return Ok(Reponse::AConfirmer(Confirmation::RappelerLExpedition(
+                        expedition,
+                    )));
+                }
+                self.partie
+                    .rappeler_expedition_automatique(zone, contexte.maintenant)
+                    .map_err(ErreurChoix::ExpeditionAutomatique)?;
+                evenements.push(Evenement::ExpeditionAutomatiqueRappelee(expedition));
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::AccueillirExpeditionAutomatique(zone) => {
+                let expedition = self.expedition_automatique(zone)?;
+                let bilan = self
+                    .partie
+                    .accueillir_expedition_automatique(
+                        zone,
+                        contexte.maintenant,
+                        &mut *contexte.aleatoire,
+                    )
+                    .map_err(ErreurChoix::ExpeditionAutomatique)?;
+                let experience: Vec<Evenement> = bilan
+                    .monstres
+                    .iter()
+                    .filter_map(|rentre| {
+                        let rapport = rentre.rapport.clone()?;
+                        Some(Evenement::Experience {
+                            monstre: rentre.monstre.clone(),
+                            rapport,
+                        })
+                    })
+                    .collect();
+                evenements.push(Evenement::ExpeditionAutomatiqueRentree {
+                    zone: expedition.zone().nom().to_string(),
+                    bilan,
+                });
+                evenements.extend(experience);
+                // Tout de suite, pour que quitter le jeu ne permette pas de
+                // tirer de nouveau le résultat (section 12.7).
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
             _ => Err(ErreurChoix::HorsDePropos),
         }
+    }
+
+    fn expedition_automatique(&self, zone: &ZoneId) -> Result<ExpeditionAutomatique, ErreurChoix> {
+        self.partie
+            .expedition_automatique(zone)
+            .cloned()
+            .ok_or(ErreurChoix::ExpeditionAutomatique(
+                ErreurExpeditionAutomatique::Inexistante,
+            ))
+    }
+
+    /// Comme après un combat (Q33), sur un monstre rentré au camp. Chaque
+    /// choix est sauvegardé (section 12.7).
+    fn choisir_attaque(
+        &mut self,
+        choix: &Choix,
+        contexte: &mut Contexte<'_>,
+        evenements: &mut Vec<Evenement>,
+    ) -> Result<Reponse, ErreurChoix> {
+        let Some(a_choisir) = self.partie.attaques_a_choisir().first().cloned() else {
+            return Err(ErreurChoix::HorsDePropos);
+        };
+        let position_au_camp = a_choisir.position_au_camp;
+        let monstre = self
+            .partie
+            .collection_mut()
+            .monstre_du_camp_mut(position_au_camp)
+            .ok_or(ErreurChoix::Collection(
+                ErreurCollection::EmplacementInexistant(Emplacement::Camp(position_au_camp)),
+            ))?;
+        match choix {
+            Choix::OublierAttaque(position) => {
+                let oubliee = monstre.attaques().liste().get(*position).cloned().ok_or(
+                    ErreurChoix::Attaque(ErreurAttaquesMonstre::PositionInexistante(*position)),
+                )?;
+                monstre
+                    .remplacer_attaque(*position, a_choisir.attaque.clone())
+                    .map_err(ErreurChoix::Attaque)?;
+                evenements.push(Evenement::AttaqueRemplacee {
+                    monstre: monstre.clone(),
+                    oubliee,
+                    nouvelle: a_choisir.attaque,
+                });
+            }
+            Choix::RenoncerALAttaque => evenements.push(Evenement::AttaqueAbandonnee {
+                monstre: monstre.clone(),
+                nouvelle: a_choisir.attaque,
+            }),
+            _ => return Err(ErreurChoix::HorsDePropos),
+        }
+        self.partie.attaque_choisie();
+        sauvegarder(&self.partie, contexte.depot, evenements);
+        Ok(Reponse::Faite)
     }
 
     /// Soin de tous les monstres, indice éventuel, nouvelle zone, puis
@@ -1064,6 +1225,7 @@ mod tests {
     use crate::aleatoire::{AleatoireScripte, GenerateurAleatoire};
     use crate::catalogue::Catalogue;
     use crate::niveau::Niveau;
+    use crate::partie::EtatPartie;
     use crate::stats::ValeursInternes;
     use crate::types::{Efficacite, efficacite};
     use std::cell::RefCell;
@@ -1101,6 +1263,7 @@ mod tests {
             contenu,
             aleatoire: &mut aleatoire,
             depot,
+            maintenant: Horodatage::depuis_secondes(0),
         };
         deroulement.repondre(choix, &mut contexte)
     }
@@ -1166,6 +1329,7 @@ mod tests {
             contenu: &contenu,
             aleatoire: &mut aleatoire,
             depot: &depot,
+            maintenant: Horodatage::depuis_secondes(0),
         };
         let evenements = deroulement
             .repondre(
@@ -1294,6 +1458,7 @@ mod tests {
             contenu: &contenu,
             aleatoire: &mut aleatoire,
             depot: &depot,
+            maintenant: Horodatage::depuis_secondes(0),
         };
         let evenements = deroulement
             .repondre(
@@ -1359,6 +1524,7 @@ mod tests {
             contenu: &contenu,
             aleatoire: &mut aleatoire,
             depot: &depot,
+            maintenant: Horodatage::depuis_secondes(0),
         };
         let partir = Choix::PartirEnExpedition(ZoneId::new("lisiere"));
         let evenements = deroulement.repondre(partir, &mut contexte).unwrap();
@@ -1515,6 +1681,7 @@ mod tests {
                 contenu: &contenu,
                 aleatoire: &mut aleatoire,
                 depot: &depot,
+                maintenant: Horodatage::depuis_secondes(0),
             };
             let evenements = deroulement
                 .repondre(choix.clone(), &mut contexte)
@@ -1556,5 +1723,243 @@ mod tests {
             sauvegarde.apotres_vaincus(),
             &[EspeceId::new("baron-pendu")]
         );
+    }
+
+    /// Réponse donnée à cette heure, avec ces tirages.
+    fn repondre_a(
+        deroulement: &mut Deroulement,
+        choix: Choix,
+        contenu: &ContenuV1,
+        depot: &DepotMemoire,
+        secondes: u64,
+        tirages: Vec<u32>,
+    ) -> Result<Vec<Evenement>, ErreurChoix> {
+        let mut aleatoire = AleatoireScripte::new(tirages);
+        let mut contexte = Contexte {
+            contenu,
+            aleatoire: &mut aleatoire,
+            depot,
+            maintenant: Horodatage::depuis_secondes(secondes),
+        };
+        deroulement.repondre(choix, &mut contexte)
+    }
+
+    fn monstre_du_contenu(contenu: &ContenuV1, id: &str, niveau: u8) -> Monstre {
+        let espece = contenu.espece(&EspeceId::new(id)).unwrap();
+        Monstre::creer(
+            espece,
+            Niveau::new(niveau).unwrap(),
+            ValeursInternes::default(),
+            false,
+        )
+        .unwrap()
+    }
+
+    /// Salamandre de niveau 13 (34 PV, 4 attaques) et deux Loups de niveau 3
+    /// (16 PV), avec la Lisière et le Marais déjà explorés.
+    fn partie_pour_les_expeditions(contenu: &ContenuV1) -> Partie {
+        let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Mage);
+        let mut partie = Partie::nouvelle(heros, monstre_du_contenu(contenu, "salamandre", 13));
+        partie.prendre_monstre_rare(monstre_du_contenu(contenu, "loup", 3));
+        partie.prendre_monstre_rare(monstre_du_contenu(contenu, "loup", 3));
+        Partie::restaurer(EtatPartie {
+            heros: partie.heros().clone(),
+            collection: partie.collection().clone(),
+            inventaire: partie.inventaire().clone(),
+            codex: partie.codex().clone(),
+            zones_explorees: vec![ZoneId::new("lisiere"), ZoneId::new("marais")],
+            indices_trouves: 3,
+            apotres_vaincus: Vec::new(),
+            conseils_vus: Vec::new(),
+            expeditions_automatiques: Vec::new(),
+            attaques_a_choisir: Vec::new(),
+        })
+        .unwrap()
+    }
+
+    fn au_camp(partie: Partie, contenu: &ContenuV1, depot: &DepotMemoire) -> Deroulement {
+        let mut deroulement = Deroulement::demarrer(Ok(Some(partie)));
+        repondre_sans_tirage(&mut deroulement, Choix::ReprendreLaPartie, contenu, depot).unwrap();
+        deroulement
+    }
+
+    #[test]
+    fn envoyer_puis_rappeler_une_expedition_automatique() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut deroulement = au_camp(partie_pour_les_expeditions(&contenu), &contenu, &depot);
+        let lisiere = ZoneId::new("lisiere");
+        let envoi = Choix::EnvoyerEnExpeditionAutomatique {
+            zone: lisiere.clone(),
+            monstres: vec![Emplacement::Equipe(1)],
+        };
+        let evenements =
+            repondre_a(&mut deroulement, envoi, &contenu, &depot, 1_000, vec![]).unwrap();
+        let [Evenement::ExpeditionAutomatiquePartie(expedition)] = &evenements[..] else {
+            panic!("départ attendu : {evenements:?}");
+        };
+        assert_eq!(expedition.retour(), Horodatage::depuis_secondes(4_600));
+        assert_eq!(depot.sauvegardes.borrow().len(), 1);
+        assert_eq!(deroulement.attente(), Attente::Camp);
+        assert_eq!(
+            repondre_a(
+                &mut deroulement,
+                Choix::AccueillirExpeditionAutomatique(lisiere.clone()),
+                &contenu,
+                &depot,
+                4_599,
+                vec![]
+            ),
+            Err(ErreurChoix::ExpeditionAutomatique(
+                ErreurExpeditionAutomatique::PasEncoreRentree
+            ))
+        );
+
+        // Le rappel demande confirmation ; refusé, rien ne change.
+        let rappel = Choix::RappelerExpeditionAutomatique(lisiere.clone());
+        repondre_a(
+            &mut deroulement,
+            rappel.clone(),
+            &contenu,
+            &depot,
+            2_000,
+            vec![],
+        )
+        .unwrap();
+        assert!(matches!(
+            deroulement.attente(),
+            Attente::Confirmation(Confirmation::RappelerLExpedition(_))
+        ));
+        repondre_sans_tirage(&mut deroulement, Choix::Non, &contenu, &depot).unwrap();
+        assert!(
+            deroulement
+                .partie()
+                .unwrap()
+                .expedition_automatique(&lisiere)
+                .is_some()
+        );
+
+        repondre_a(&mut deroulement, rappel, &contenu, &depot, 2_000, vec![]).unwrap();
+        let evenements = repondre_a(
+            &mut deroulement,
+            Choix::Oui,
+            &contenu,
+            &depot,
+            2_000,
+            vec![],
+        )
+        .unwrap();
+        assert!(matches!(
+            &evenements[..],
+            [Evenement::ExpeditionAutomatiqueRappelee(_)]
+        ));
+        let partie = deroulement.partie().unwrap();
+        assert!(partie.expeditions_automatiques().is_empty());
+        assert_eq!(partie.collection().camp().len(), 1);
+        assert_eq!(depot.sauvegardes.borrow().len(), 2);
+    }
+
+    #[test]
+    fn une_expedition_rentree_ne_se_rappelle_plus() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut deroulement = au_camp(partie_pour_les_expeditions(&contenu), &contenu, &depot);
+        let lisiere = ZoneId::new("lisiere");
+        let envoi = Choix::EnvoyerEnExpeditionAutomatique {
+            zone: lisiere.clone(),
+            monstres: vec![Emplacement::Equipe(1)],
+        };
+        repondre_a(&mut deroulement, envoi, &contenu, &depot, 0, vec![]).unwrap();
+        assert_eq!(
+            repondre_a(
+                &mut deroulement,
+                Choix::RappelerExpeditionAutomatique(lisiere),
+                &contenu,
+                &depot,
+                3_600,
+                vec![]
+            ),
+            Err(ErreurChoix::ExpeditionAutomatique(
+                ErreurExpeditionAutomatique::DejaRentree
+            ))
+        );
+        assert_eq!(deroulement.attente(), Attente::Camp);
+    }
+
+    #[test]
+    fn accueillir_une_expedition_puis_choisir_l_attaque_a_oublier() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut deroulement = au_camp(partie_pour_les_expeditions(&contenu), &contenu, &depot);
+        let marais = ZoneId::new("marais");
+        let envoi = Choix::EnvoyerEnExpeditionAutomatique {
+            zone: marais.clone(),
+            monstres: vec![Emplacement::Equipe(0), Emplacement::Equipe(1)],
+        };
+        repondre_a(&mut deroulement, envoi, &contenu, &depot, 0, vec![]).unwrap();
+
+        // 2 h de base, 1 h 30 à deux. 40 dégâts en deux parts de 20 : le
+        // Loup (16 PV) tombe et la Salamandre (34 PV) encaisse 24. Elle gagne
+        // 600 XP et passe au niveau 14, où elle veut apprendre Fournaise.
+        let evenements = repondre_a(
+            &mut deroulement,
+            Choix::AccueillirExpeditionAutomatique(marais),
+            &contenu,
+            &depot,
+            5_400,
+            vec![40, 600, 1],
+        )
+        .unwrap();
+        let [
+            Evenement::ExpeditionAutomatiqueRentree { zone, bilan },
+            Evenement::Experience { monstre, rapport },
+        ] = &evenements[..]
+        else {
+            panic!("retour attendu : {evenements:?}");
+        };
+        assert_eq!(zone, "Marais des Pendus");
+        assert!(bilan.reussite);
+        assert!(bilan.monstres[1].ko);
+        assert_eq!(monstre.espece().id().as_str(), "salamandre");
+        assert_eq!(rapport.niveau_apres, Niveau::new(14).unwrap());
+        assert_eq!(deroulement.partie().unwrap().inventaire().potions(), 1);
+        // Sauvegardée dès l'accueil, avec l'attaque qui reste à choisir.
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert_eq!(sauvegarde.attaques_a_choisir().len(), 1);
+
+        let Attente::OubliAttaque { nouvelle, .. } = deroulement.attente() else {
+            panic!("une attaque à oublier était attendue");
+        };
+        assert_eq!(nouvelle.id().as_str(), "fournaise");
+        assert_eq!(
+            repondre_sans_tirage(
+                &mut deroulement,
+                Choix::Gerer(ActionDeGestion::EnvoyerAuCamp(0)),
+                &contenu,
+                &depot
+            ),
+            Err(ErreurChoix::HorsDePropos)
+        );
+
+        // Une reprise après un arrêt du jeu repropose le même choix.
+        let mut reprise = au_camp(sauvegarde, &contenu, &depot);
+        assert!(matches!(reprise.attente(), Attente::OubliAttaque { .. }));
+        let evenements =
+            repondre_sans_tirage(&mut reprise, Choix::OublierAttaque(0), &contenu, &depot).unwrap();
+        assert!(matches!(
+            &evenements[..],
+            [Evenement::AttaqueRemplacee { oubliee, .. }] if oubliee.id().as_str() == "souffle-chaud"
+        ));
+        assert_eq!(reprise.attente(), Attente::Camp);
+        let salamandre = &reprise.partie().unwrap().collection().camp()[0];
+        assert!(
+            salamandre
+                .attaques()
+                .liste()
+                .iter()
+                .any(|attaque| attaque.id().as_str() == "fournaise")
+        );
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert!(sauvegarde.attaques_a_choisir().is_empty());
     }
 }

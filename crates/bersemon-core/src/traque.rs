@@ -183,7 +183,7 @@ impl Piste {
 mod tests {
     use super::*;
     use crate::aleatoire::AleatoireScripte;
-    use crate::donnees_de_test::espece;
+    use crate::donnees_de_test::{espece, parametres_expedition_automatique};
 
     fn zone(id: &str, niveau_max: u8) -> Zone {
         Zone::new(
@@ -193,6 +193,7 @@ mod tests {
             1,
             vec![espece("loup")],
             vec![],
+            parametres_expedition_automatique(),
         )
         .unwrap()
     }

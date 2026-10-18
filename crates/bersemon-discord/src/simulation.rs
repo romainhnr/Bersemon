@@ -14,6 +14,7 @@ use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::{Attente, Evenement};
 use bersemon_core::espece::EspeceId;
 use bersemon_core::heros::Classe;
+use bersemon_core::horodatage::Horodatage;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::types::{Efficacite, efficacite};
 
@@ -312,7 +313,13 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
             .expect("composant lisible");
         evenements = match commande {
             Commande::Jouer(choix) => joueurs
-                .jouer(JOUEUR, version, choix.clone(), &contenu)
+                .jouer(
+                    JOUEUR,
+                    version,
+                    choix.clone(),
+                    &contenu,
+                    Horodatage::depuis_secondes(0),
+                )
                 .unwrap_or_else(|refus| panic!("{choix:?} refusé : {refus:?}")),
             Commande::Afficher(vue) => {
                 joueurs.afficher(JOUEUR, version, vue, &contenu).unwrap();

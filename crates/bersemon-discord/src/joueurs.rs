@@ -10,6 +10,7 @@ use std::sync::{Mutex, MutexGuard, PoisonError};
 use bersemon_core::aleatoire::{Aleatoire, GenerateurAleatoire};
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::{Choix, Contexte, Deroulement, ErreurChoix, Evenement};
+use bersemon_core::horodatage::Horodatage;
 use bersemon_core::sauvegarde::SauvegardeRepository;
 use bersemon_storage::FichierJson;
 
@@ -79,13 +80,15 @@ impl Joueurs {
     }
 
     /// Applique le choix si le message affichait la version en cours de la
-    /// partie. Un choix refusé ne change rien.
+    /// partie. Un choix refusé ne change rien. L'heure vient de l'appelant,
+    /// pour que les tests puissent la fixer.
     pub fn jouer(
         &mut self,
         joueur: IdJoueur,
         version: u32,
         choix: Choix,
         contenu: &ContenuV1,
+        maintenant: Horodatage,
     ) -> Result<Vec<Evenement>, Refus> {
         if !self.est_a_jour(joueur, version, contenu) {
             return Err(Refus::MessagePerime);
@@ -99,6 +102,7 @@ impl Joueurs {
             contenu,
             aleatoire: &mut self.aleatoire,
             depot: &depot,
+            maintenant,
         };
         let evenements = session
             .deroulement
@@ -177,7 +181,13 @@ mod tests {
         contenu: &ContenuV1,
     ) -> Result<Vec<Evenement>, Refus> {
         let version = joueurs.session(joueur, contenu).version;
-        joueurs.jouer(joueur, version, choix, contenu)
+        joueurs.jouer(
+            joueur,
+            version,
+            choix,
+            contenu,
+            Horodatage::depuis_secondes(0),
+        )
     }
 
     #[test]
@@ -205,9 +215,17 @@ mod tests {
         let mut joueurs = Joueurs::new(dossier.clone(), 1);
         let version = joueurs.session(1, &contenu).version;
         let nom = Choix::NomDuHeros("Aldric".to_string());
-        joueurs.jouer(1, version, nom.clone(), &contenu).unwrap();
+        joueurs
+            .jouer(
+                1,
+                version,
+                nom.clone(),
+                &contenu,
+                Horodatage::depuis_secondes(0),
+            )
+            .unwrap();
         assert_eq!(
-            joueurs.jouer(1, version, nom, &contenu),
+            joueurs.jouer(1, version, nom, &contenu, Horodatage::depuis_secondes(0)),
             Err(Refus::MessagePerime)
         );
         assert_eq!(
@@ -225,7 +243,13 @@ mod tests {
         let version = joueurs.session(1, &contenu).version;
         let vide = Choix::NomDuHeros("  ".to_string());
         assert_eq!(
-            joueurs.jouer(1, version, vide.clone(), &contenu),
+            joueurs.jouer(
+                1,
+                version,
+                vide.clone(),
+                &contenu,
+                Horodatage::depuis_secondes(0)
+            ),
             Err(Refus::Choix {
                 choix: vide,
                 erreur: ErreurChoix::Nom(ErreurNom::Vide),
