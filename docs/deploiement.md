@@ -44,6 +44,12 @@ Pour le bot de test :
 powershell -ExecutionPolicy Bypass -File deploiement\lancer-bersemon.ps1 -Test
 ```
 
+Pour tester à plusieurs, l'option `-Public` rend les messages de `/bersemon` visibles de tout le salon ; seul le joueur qui a ouvert un message peut se servir de ses boutons :
+
+```powershell
+powershell -ExecutionPolicy Bypass -File deploiement\lancer-bersemon.ps1 -Test -Public
+```
+
 L'option `-ExecutionPolicy Bypass` ne vaut que pour ce lancement : elle permet d'exécuter le script du dépôt sans changer la stratégie d'exécution de Windows.
 
 Le script compile le bot en mode release s'il a changé, renseigne ses variables à partir des fichiers de la section 2, puis le lance. Le bot en service enregistre ses commandes pour tous les serveurs et les messages privés ; le bot de test, dans le serveur de test s'il y en a un. Les messages du bot s'affichent dans le terminal ; Ctrl+C l'arrête. Les expéditions en cours sont alors perdues, et chaque joueur reprend à sa dernière sauvegarde (section 13.9 de docs/gamedesign.md).

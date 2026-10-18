@@ -11,6 +11,9 @@ const VARIABLE_JETON: &str = "DISCORD_TOKEN";
 const VARIABLE_SERVEUR_DE_TEST: &str = "BERSEMON_SERVEUR_DE_TEST";
 /// Dossier des sauvegardes des joueurs Discord, utile pour l'hébergement.
 const VARIABLE_DOSSIER: &str = "BERSEMON_DONNEES";
+/// Renseignée, /bersemon répond par un message visible de tout le salon,
+/// pour les tests à plusieurs (section 2).
+const VARIABLE_MESSAGES_PUBLICS: &str = "BERSEMON_MESSAGES_PUBLICS";
 
 /// Pas de `Debug` : le jeton ne doit apparaître dans aucun message.
 pub struct Configuration {
@@ -21,6 +24,8 @@ pub struct Configuration {
     /// %APPDATA%\Bersemon\discord par défaut, à côté de la sauvegarde de la
     /// console, dont les parties Discord sont séparées (Q59).
     pub dossier_des_parties: PathBuf,
+    /// `false` par défaut : les réponses ne sont visibles que du joueur.
+    pub messages_publics: bool,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -52,6 +57,7 @@ impl Configuration {
             std::env::var(VARIABLE_JETON).ok(),
             std::env::var(VARIABLE_SERVEUR_DE_TEST).ok(),
             std::env::var(VARIABLE_DOSSIER).ok(),
+            std::env::var(VARIABLE_MESSAGES_PUBLICS).ok(),
         )
     }
 
@@ -60,6 +66,7 @@ impl Configuration {
         jeton: Option<String>,
         serveur_de_test: Option<String>,
         dossier: Option<String>,
+        messages_publics: Option<String>,
     ) -> Result<Self, ErreurDeConfiguration> {
         let jeton = renseignee(jeton).ok_or(ErreurDeConfiguration::JetonAbsent)?;
         let serveur_de_test = match renseignee(serveur_de_test) {
@@ -77,6 +84,7 @@ impl Configuration {
             jeton,
             serveur_de_test,
             dossier_des_parties,
+            messages_publics: renseignee(messages_publics).is_some(),
         })
     }
 }
@@ -95,7 +103,29 @@ mod tests {
         jeton: Option<&str>,
         serveur: Option<&str>,
     ) -> Result<Configuration, ErreurDeConfiguration> {
-        Configuration::lire(jeton.map(String::from), serveur.map(String::from), None)
+        Configuration::lire(
+            jeton.map(String::from),
+            serveur.map(String::from),
+            None,
+            None,
+        )
+    }
+
+    #[test]
+    fn messages_publics_seulement_si_la_variable_est_renseignee() {
+        assert!(!lire(Some("jeton"), None).unwrap().messages_publics);
+        let lire_publics = |valeur: &str| {
+            Configuration::lire(
+                Some("jeton".to_string()),
+                None,
+                None,
+                Some(valeur.to_string()),
+            )
+            .unwrap()
+            .messages_publics
+        };
+        assert!(!lire_publics(" "));
+        assert!(lire_publics("1"));
     }
 
     #[test]
@@ -140,6 +170,7 @@ mod tests {
             Some("jeton".to_string()),
             None,
             Some("D:\\Bersemon\\parties".to_string()),
+            None,
         )
         .unwrap();
         assert_eq!(

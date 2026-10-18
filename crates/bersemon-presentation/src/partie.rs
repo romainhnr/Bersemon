@@ -118,9 +118,9 @@ pub fn ligne_du_codex(codex: &Codex, espece: &Espece) -> String {
     }
 }
 
-/// Stats de base et attaques, montrées pour une espèce capturée (section
-/// 5.6).
-pub fn fiche_d_espece(espece: &Espece) -> [String; 2] {
+/// Types, stats de base et attaques, montrés pour une espèce capturée
+/// (section 5.6).
+pub fn fiche_d_espece(espece: &Espece) -> [String; 3] {
     let base = espece.stats_de_base();
     let stats = format!(
         "Stats de base : PV {}, Attaque {}, Défense {}, Attaque spéciale {}, Défense spéciale {}, Vitesse {}",
@@ -142,7 +142,11 @@ pub fn fiche_d_espece(espece: &Espece) -> [String; 2] {
             )
         })
         .collect();
-    [stats, format!("Attaques : {}", attaques.join(", "))]
+    [
+        format!("Types : {}", types_de(espece)),
+        stats,
+        format!("Attaques : {}", attaques.join(", ")),
+    ]
 }
 
 pub fn question_de_confirmation(confirmation: &Confirmation) -> String {

@@ -65,7 +65,7 @@ L'objectif du jeu est de proposer des boucles de gameplay intéressantes et stim
 - Sur Discord, une expédition en cours attend le joueur sans limite de temps, jusqu'à son prochain /bersemon ; un redémarrage du bot le ramène à sa dernière sauvegarde, comme quitter la console (section 13.9).
 - Sur Discord, le bot prévient le joueur par message privé du retour de ses expéditions automatiques (section 12.7).
 - Pour les tests, une option au lancement du bot rend /bersemon visible de tout le salon. Seul l'auteur d'un message peut alors se servir de ses boutons ; les autres joueurs ouvrent leur propre partie par /bersemon. Sans l'option, les réponses restent visibles du seul joueur.
-- Les informations importantes du combat sont mises en valeur : coups critiques, statuts, efficacité des attaques, KO et captures. Elles s'affichent en gras sur Discord et en rouge dans la console.
+- Les informations importantes du combat sont mises en valeur sur Discord, en gras : coups critiques, statuts, efficacité des attaques, KO et captures. La console les affiche en texte simple.
 - Hébergement du bot : pour commencer, sur le PC de l'utilisateur, lancé à la main quand il veut que le bot soit en ligne. Le bot est privé : seul l'utilisateur peut l'inviter dans un serveur.
 - Multijoueur : après l'adaptation à Discord (section 15).
 - Hors périmètre pour le moment : version mobile et vrai jeu PC.
@@ -742,5 +742,9 @@ Les questions Q67 et suivantes ont été relevées le 18/10/2026 après les prem
 - Au camp, un monstre réapprend gratuitement les attaques de son espèce jusqu'à son niveau ; une capsule d'attaque, réutilisable, enseigne son attaque à tout monstre du même type.
 - Tuer un monstre pour des ressources est reporté (Q71).
 - La capture donne bien de l'XP (section 7), versée à la fin du combat : aucun changement.
+
+18/10/2026 (étape 18) :
+
+- Pas de couleur dans la console, qui afficherait des caractères parasites dans la vieille console de Windows 10 : la mise en valeur ne vaut que sur Discord. Remplace le rouge prévu pour la console.
 - Sur Discord, le bot prévient le joueur par message privé du retour d'une expédition, et à son démarrage pour celles rentrées pendant qu'il était éteint.
 - Hypothèses validées : une expédition automatique n'a aucun effet sur la traque, l'exploration ni le codex ; les monstres envoyés gardent leur place au camp, comptée dans sa limite, et ne peuvent être ni relâchés, ni renommés, ni échangés ; une expédition manuelle reste possible dans la même zone ; la durée n'est pas tirée au hasard.

@@ -7,6 +7,7 @@ use bersemon_core::monstre::{Monstre, RapportExperience};
 use bersemon_core::statut::Statut;
 use bersemon_core::types::Efficacite;
 
+use crate::mise_en_valeur::important;
 use crate::monstres::{decrire_attaque, ligne_monstre, ligne_monstre_nommee, nom, nom_en_combat};
 
 pub fn rencontre(combat: &Combat) -> String {
@@ -71,37 +72,46 @@ pub fn evenement(evenement: &Evenement, combat: &Combat) -> String {
             format!("{} utilise {}.", nom_de(*lanceur), attaque.nom())
         }
         Evenement::AttaqueRatee(lanceur) => format!("L'attaque de {} rate.", nom_de(*lanceur)),
-        Evenement::SansEffet(cible) => format!("Cela n'affecte pas {}.", nom_de(*cible)),
+        Evenement::SansEffet(cible) => {
+            important(&format!("Cela n'affecte pas {}.", nom_de(*cible)))
+        }
         Evenement::Degats {
             cible,
             degats,
             critique,
             efficacite,
         } => {
-            let critique = if *critique { "Coup critique ! " } else { "" };
+            let critique = if *critique {
+                format!("{} ", important("Coup critique !"))
+            } else {
+                String::new()
+            };
             let efficacite = phrase_efficacite(*efficacite)
-                .map(|phrase| format!("{phrase} "))
+                .map(|phrase| format!("{} ", important(phrase)))
                 .unwrap_or_default();
             format!("{critique}{efficacite}{} perd {degats} PV.", nom_de(*cible))
         }
-        Evenement::StatutInflige { cible, statut } => match statut {
+        Evenement::StatutInflige { cible, statut } => important(&match statut {
             Statut::Poison => format!("Le poison atteint {}.", nom_de(*cible)),
             Statut::Paralysie => format!("La paralysie frappe {}.", nom_de(*cible)),
-        },
-        Evenement::BloqueParLaParalysie(combattant) => {
-            format!("La paralysie empêche {} d'attaquer.", nom_de(*combattant))
-        }
-        Evenement::DegatsDePoison { cible, degats } => {
-            format!("Le poison fait perdre {degats} PV à {}.", nom_de(*cible))
-        }
-        Evenement::Ko(combattant) => format!("{} est KO.", nom_de(*combattant)),
+        }),
+        Evenement::BloqueParLaParalysie(combattant) => important(&format!(
+            "La paralysie empêche {} d'attaquer.",
+            nom_de(*combattant)
+        )),
+        Evenement::DegatsDePoison { cible, degats } => important(&format!(
+            "Le poison fait perdre {degats} PV à {}.",
+            nom_de(*cible)
+        )),
+        Evenement::Ko(combattant) => important(&format!("{} est KO.", nom_de(*combattant))),
         Evenement::FiletLance { cible, chance } => format!(
             "Vous lancez un filet sur {} ({chance} % de chances).",
             nom_de(*cible)
         ),
-        Evenement::CaptureReussie(cible) => {
-            format!("Capture réussie : {}.", combat.monstre(*cible).nom())
-        }
+        Evenement::CaptureReussie(cible) => important(&format!(
+            "Capture réussie : {}.",
+            combat.monstre(*cible).nom()
+        )),
         Evenement::CaptureRatee(cible) => format!("{} se dégage du filet.", nom_de(*cible)),
         Evenement::PotionUtilisee { cible, pv_rendus } => {
             soin_de_potion(&nom_de(*cible), *pv_rendus)

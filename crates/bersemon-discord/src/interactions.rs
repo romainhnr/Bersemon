@@ -19,6 +19,12 @@ pub async fn composant(
     let Some(lu) = Composant::lire(&composant.data.custom_id) else {
         return Ok(());
     };
+    if est_a_un_autre_joueur(&composant.message, composant.user.id) {
+        composant
+            .create_response(contexte, reponse_a_un_autre_joueur())
+            .await?;
+        return Ok(());
+    }
     let valeur = match &composant.data.kind {
         serenity::ComponentInteractionDataKind::StringSelect { values } => values.first(),
         _ => None,
@@ -39,6 +45,16 @@ pub async fn formulaire(
     let Some(lu) = Composant::lire(&formulaire.data.custom_id) else {
         return Ok(());
     };
+    let a_un_autre_joueur = formulaire
+        .message
+        .as_deref()
+        .is_some_and(|message| est_a_un_autre_joueur(message, formulaire.user.id));
+    if a_un_autre_joueur {
+        formulaire
+            .create_response(contexte, reponse_a_un_autre_joueur())
+            .await?;
+        return Ok(());
+    }
     let texte = valeur_du_champ(&formulaire.data.components, CHAMP_TEXTE).unwrap_or_default();
     let Some(commande) = lu.cle.commande(None, Some(&texte)) else {
         return Ok(());
@@ -46,6 +62,28 @@ pub async fn formulaire(
     let reponse = executer(donnees, formulaire.user.id.get(), lu.version, commande);
     formulaire.create_response(contexte, reponse).await?;
     Ok(())
+}
+
+/// Avec l'option des messages publics, d'autres joueurs voient le message et
+/// ses boutons : seul le joueur qui l'a ouvert, ou mis à jour, s'en sert.
+/// Sans information sur son auteur, le message est laissé à qui clique.
+fn est_a_un_autre_joueur(message: &serenity::Message, joueur: serenity::UserId) -> bool {
+    let auteur = match message.interaction_metadata.as_deref() {
+        Some(serenity::MessageInteractionMetadata::Command(commande)) => commande.user.id,
+        Some(serenity::MessageInteractionMetadata::Component(composant)) => composant.user.id,
+        Some(serenity::MessageInteractionMetadata::ModalSubmit(formulaire)) => formulaire.user.id,
+        _ => return false,
+    };
+    auteur != joueur
+}
+
+/// Visible du seul joueur qui a cliqué ; le message n'est pas touché.
+fn reponse_a_un_autre_joueur() -> serenity::CreateInteractionResponse {
+    serenity::CreateInteractionResponse::Message(
+        serenity::CreateInteractionResponseMessage::new()
+            .content("Ce message est la partie d'un autre joueur : ouvrez la vôtre avec /bersemon.")
+            .ephemeral(true),
+    )
 }
 
 fn executer(

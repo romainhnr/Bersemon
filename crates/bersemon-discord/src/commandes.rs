@@ -1,5 +1,6 @@
 //! Commandes slash du bot. Les réponses ne sont visibles que du joueur qui
-//! commande, dans un salon comme en message privé (section 2).
+//! commande, dans un salon comme en message privé (section 2), sauf avec
+//! l'option de test des messages publics.
 //!
 //! Le commentaire de documentation d'une commande est la description que
 //! Discord affiche au joueur.
@@ -23,7 +24,7 @@ pub async fn bersemon(contexte: ContexteDeCommande<'_>) -> Result<(), Erreur> {
     let reponse = poise::CreateReply::default()
         .components(affiche.composants())
         .content(affiche.texte)
-        .ephemeral(true);
+        .ephemeral(!donnees.messages_publics);
     contexte.send(reponse).await?;
     Ok(())
 }

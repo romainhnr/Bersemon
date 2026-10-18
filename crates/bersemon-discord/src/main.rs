@@ -34,6 +34,8 @@ use crate::joueurs::{Joueurs, verrouiller};
 pub struct DonneesDuBot {
     pub contenu: ContenuV1,
     pub joueurs: Arc<Mutex<Joueurs>>,
+    /// Option de test : /bersemon répond en public (section 2).
+    pub messages_publics: bool,
 }
 
 pub type Erreur = Box<dyn std::error::Error + Send + Sync>;
@@ -55,8 +57,12 @@ async fn main() {
             configuration.dossier_des_parties.clone(),
             graine_depuis_horloge(),
         ))),
+        messages_publics: configuration.messages_publics,
     };
     verrouiller(&donnees.joueurs).preparer_les_annonces(&donnees.contenu);
+    if donnees.messages_publics {
+        println!("Messages publics : /bersemon est visible de tout le salon (option de test).");
+    }
     println!(
         "Parties des joueurs : {}",
         configuration.dossier_des_parties.display()

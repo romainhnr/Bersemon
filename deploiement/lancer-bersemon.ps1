@@ -9,14 +9,19 @@ Avec -Test, le bot de développement : jeton dans jeton-test.txt, parties dans
 discord-test, et commandes enregistrées seulement dans le serveur de test dont
 l'identifiant est dans serveur-de-test.txt, si ce fichier existe.
 
+Avec -Public, option de test : /bersemon répond par un message visible de tout
+le salon, et seul le joueur qui l'a ouvert peut se servir de ses boutons.
+
 Les jetons restent dans ces fichiers, hors du dépôt. Voir docs/deploiement.md.
 
 Exemples :
     powershell -ExecutionPolicy Bypass -File deploiement\lancer-bersemon.ps1
     powershell -ExecutionPolicy Bypass -File deploiement\lancer-bersemon.ps1 -Test
+    powershell -ExecutionPolicy Bypass -File deploiement\lancer-bersemon.ps1 -Test -Public
 #>
 param(
-    [switch]$Test
+    [switch]$Test,
+    [switch]$Public
 )
 
 $racine = Split-Path -Parent $PSScriptRoot
@@ -46,6 +51,11 @@ if ($fichierServeur -and (Test-Path $fichierServeur)) {
     # Sans serveur de test, les commandes sont globales, messages privés
     # compris : une variable héritée du terminal ne doit pas s'en mêler.
     Remove-Item Env:BERSEMON_SERVEUR_DE_TEST -ErrorAction SilentlyContinue
+}
+if ($Public) {
+    $env:BERSEMON_MESSAGES_PUBLICS = '1'
+} else {
+    Remove-Item Env:BERSEMON_MESSAGES_PUBLICS -ErrorAction SilentlyContinue
 }
 
 Push-Location $racine
