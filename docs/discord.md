@@ -1,6 +1,6 @@
 # Bot Discord - Bersemon
 
-Mise en route du bot Discord. Depuis l'étape 11, `/bersemon` ouvre la partie du joueur : création du héros et du premier monstre, ou reprise de sa partie. Les expéditions, les combats et la gestion des monstres arrivent à l'étape 12 (docs/gamedesign.md, section 16).
+Mise en route du bot Discord. Depuis l'étape 12, toute la partie se joue sur Discord : création du héros, camp, expéditions, combats, gestion des monstres et codex, avec les mêmes règles et les mêmes textes que la console.
 
 ## 1. Créer l'application Discord
 
@@ -36,9 +36,13 @@ Ces variables ne valent que pour ce terminal. Le bot affiche "Bersemon est conne
 
 ## 3. Jouer
 
-`/bersemon` ouvre un message visible du seul joueur, dans un salon comme en message privé. Le message pose la question en cours ; chaque bouton y répond, et le message se met à jour. Le nom du héros se saisit dans un formulaire. Chaque compte Discord a une seule partie, la même partout.
+`/bersemon` ouvre un message visible du seul joueur, dans un salon comme en message privé. Le message montre ce qui vient de se passer, puis la question en cours ; chaque bouton ou menu y répond, et le message se met à jour. Le nom du héros et les surnoms se saisissent dans un formulaire. Chaque compte Discord a une seule partie, la même partout.
 
-La partie est sauvegardée à sa création, puis au camp. Si le bot redémarre, chacun reprend à sa dernière sauvegarde. Les boutons d'un message dépassé, ouvert avant un autre choix ou avant un redémarrage, ne font rien d'autre que remettre le message à jour.
+- Au camp : un menu pour partir en expédition, et des boutons pour voir ses monstres, les gérer (choisir un monstre, puis le déplacer, l'envoyer au camp ou le faire venir, l'échanger, le renommer ou le relâcher) et consulter le codex.
+- Entre deux étapes : continuer ou rentrer, et des menus pour utiliser une potion ou mettre un monstre en tête de l'équipe.
+- En combat : un bouton par attaque, le filet et la fuite, et des menus pour changer de monstre ou utiliser une potion.
+
+La partie est sauvegardée à sa création, puis au camp. Une expédition en cours attend le joueur jusqu'à son prochain `/bersemon` ; si le bot redémarre, chacun reprend à sa dernière sauvegarde. Les composants d'un message dépassé, ouvert avant un autre choix ou avant un redémarrage, ne font rien d'autre que remettre le message à jour.
 
 ## 4. Si le jeton a fuité
 

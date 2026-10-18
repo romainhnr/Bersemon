@@ -3,6 +3,7 @@ resolver = "3"
 members = [
     "crates/bersemon-core",
     "crates/bersemon-storage",
+    "crates/bersemon-presentation",
     "crates/bersemon-console",
     "crates/bersemon-discord",
 ]

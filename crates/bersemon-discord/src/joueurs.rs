@@ -13,6 +13,8 @@ use bersemon_core::deroulement::{Choix, Contexte, Deroulement, ErreurChoix, Even
 use bersemon_core::sauvegarde::SauvegardeRepository;
 use bersemon_storage::FichierJson;
 
+use crate::composants::Vue;
+
 /// Identifiant du compte Discord.
 pub type IdJoueur = u64;
 
@@ -21,12 +23,19 @@ pub struct Session {
     /// Change à chaque choix accepté : les boutons d'un message qui n'est
     /// plus à jour portent une version dépassée.
     pub version: u32,
+    /// Ce que montre le camp ; sans effet ailleurs.
+    pub vue: Vue,
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Refus {
     MessagePerime,
-    Choix(ErreurChoix),
+    /// Le choix est gardé pour l'expliquer, par exemple un nom ou un surnom
+    /// refusé.
+    Choix {
+        choix: Choix,
+        erreur: ErreurChoix,
+    },
 }
 
 pub struct Joueurs {
@@ -60,17 +69,18 @@ impl Joueurs {
         self.sessions.entry(joueur).or_insert_with(|| Session {
             deroulement: Deroulement::demarrer(depot(dossier, joueur).charger(contenu)),
             version: aleatoire.tirer(0..=u32::MAX),
+            vue: Vue::Camp,
         })
     }
 
-    /// Le bouton affichait-il la version en cours de la partie ?
+    /// Le composant affichait-il la version en cours de la partie ?
     pub fn est_a_jour(&mut self, joueur: IdJoueur, version: u32, contenu: &ContenuV1) -> bool {
         self.session(joueur, contenu).version == version
     }
 
     /// Applique le choix si le message affichait la version en cours de la
     /// partie. Un choix refusé ne change rien.
-    pub fn repondre(
+    pub fn jouer(
         &mut self,
         joueur: IdJoueur,
         version: u32,
@@ -92,10 +102,45 @@ impl Joueurs {
         };
         let evenements = session
             .deroulement
-            .repondre(choix, &mut contexte)
-            .map_err(Refus::Choix)?;
+            .repondre(choix.clone(), &mut contexte)
+            .map_err(|erreur| Refus::Choix {
+                choix: choix.clone(),
+                erreur,
+            })?;
         session.version = session.version.wrapping_add(1);
+        session.vue = vue_apres(session.vue, &choix);
         Ok(evenements)
+    }
+
+    /// Change ce que montre le camp, sans toucher à la partie ni à sa
+    /// version : les autres boutons du message restent valables.
+    pub fn afficher(
+        &mut self,
+        joueur: IdJoueur,
+        version: u32,
+        vue: Vue,
+        contenu: &ContenuV1,
+    ) -> Result<(), Refus> {
+        if !self.est_a_jour(joueur, version, contenu) {
+            return Err(Refus::MessagePerime);
+        }
+        let session = self
+            .sessions
+            .get_mut(&joueur)
+            .expect("session chargée par est_a_jour");
+        session.vue = vue;
+        Ok(())
+    }
+}
+
+/// Le camp s'ouvre sur sa vue principale au retour d'expédition. La gestion
+/// des monstres reste ouverte d'une action à l'autre, comme dans la console,
+/// mais le monstre choisi est oublié : sa place a pu changer.
+fn vue_apres(vue: Vue, choix: &Choix) -> Vue {
+    match (vue, choix) {
+        (_, Choix::PartirEnExpedition(_)) => Vue::Camp,
+        (Vue::Gestion(Some(_)), _) => Vue::Gestion(None),
+        (vue, _) => vue,
     }
 }
 
@@ -106,10 +151,12 @@ fn depot(dossier: &Path, joueur: IdJoueur) -> FichierJson {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bersemon_core::deroulement::Attente;
+    use bersemon_core::collection::Emplacement;
+    use bersemon_core::deroulement::{ActionDeGestion, Attente};
     use bersemon_core::espece::EspeceId;
     use bersemon_core::heros::Classe;
     use bersemon_core::nom::ErreurNom;
+    use bersemon_core::zone::ZoneId;
     use std::fs;
     use std::sync::atomic::{AtomicU32, Ordering};
 
@@ -130,7 +177,7 @@ mod tests {
         contenu: &ContenuV1,
     ) -> Result<Vec<Evenement>, Refus> {
         let version = joueurs.session(joueur, contenu).version;
-        joueurs.repondre(joueur, version, choix, contenu)
+        joueurs.jouer(joueur, version, choix, contenu)
     }
 
     #[test]
@@ -158,9 +205,9 @@ mod tests {
         let mut joueurs = Joueurs::new(dossier.clone(), 1);
         let version = joueurs.session(1, &contenu).version;
         let nom = Choix::NomDuHeros("Aldric".to_string());
-        joueurs.repondre(1, version, nom.clone(), &contenu).unwrap();
+        joueurs.jouer(1, version, nom.clone(), &contenu).unwrap();
         assert_eq!(
-            joueurs.repondre(1, version, nom, &contenu),
+            joueurs.jouer(1, version, nom, &contenu),
             Err(Refus::MessagePerime)
         );
         assert_eq!(
@@ -178,8 +225,11 @@ mod tests {
         let version = joueurs.session(1, &contenu).version;
         let vide = Choix::NomDuHeros("  ".to_string());
         assert_eq!(
-            joueurs.repondre(1, version, vide, &contenu),
-            Err(Refus::Choix(ErreurChoix::Nom(ErreurNom::Vide)))
+            joueurs.jouer(1, version, vide.clone(), &contenu),
+            Err(Refus::Choix {
+                choix: vide,
+                erreur: ErreurChoix::Nom(ErreurNom::Vide),
+            })
         );
         assert_eq!(joueurs.session(1, &contenu).version, version);
         let _ = fs::remove_dir_all(dossier);
@@ -209,6 +259,42 @@ mod tests {
             apres.session(42, &contenu).deroulement.attente(),
             Attente::Reprise(partie) if partie.heros().nom().as_str() == "Aldric"
         ));
+        let _ = fs::remove_dir_all(dossier);
+    }
+
+    #[test]
+    fn les_vues_du_camp_ne_changent_pas_la_version() {
+        let contenu = ContenuV1::new();
+        let dossier = dossier_de_test();
+        let mut joueurs = Joueurs::new(dossier.clone(), 1);
+        for choix in [
+            Choix::NomDuHeros("Aldric".to_string()),
+            Choix::Classe(Classe::Mage),
+            Choix::MonstreDeDepart(EspeceId::new("salamandre")),
+        ] {
+            repondre(&mut joueurs, 1, choix, &contenu).unwrap();
+        }
+        let version = joueurs.session(1, &contenu).version;
+        let choisi = Vue::Gestion(Some(Emplacement::Equipe(0)));
+        joueurs.afficher(1, version, choisi, &contenu).unwrap();
+        assert_eq!(joueurs.session(1, &contenu).vue, choisi);
+        assert_eq!(joueurs.session(1, &contenu).version, version);
+        assert_eq!(
+            joueurs.afficher(1, version.wrapping_sub(1), Vue::Camp, &contenu),
+            Err(Refus::MessagePerime)
+        );
+
+        // Après une action, la gestion reste ouverte sans monstre choisi.
+        let renommer = Choix::Gerer(ActionDeGestion::Renommer {
+            emplacement: Emplacement::Equipe(0),
+            surnom: "Braise".to_string(),
+        });
+        repondre(&mut joueurs, 1, renommer, &contenu).unwrap();
+        assert_eq!(joueurs.session(1, &contenu).vue, Vue::Gestion(None));
+
+        let partir = Choix::PartirEnExpedition(ZoneId::new("lisiere"));
+        repondre(&mut joueurs, 1, partir, &contenu).unwrap();
+        assert_eq!(joueurs.session(1, &contenu).vue, Vue::Camp);
         let _ = fs::remove_dir_all(dossier);
     }
 }

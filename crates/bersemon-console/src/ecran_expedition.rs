@@ -5,6 +5,9 @@ use bersemon_core::collection::{Collection, Emplacement};
 use bersemon_core::deroulement::{ActionDeGestion, Choix};
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
+use bersemon_presentation::partie::{
+    collection as liste_des_monstres, place_manquante as place_manquante_texte,
+};
 
 use crate::affichage;
 use crate::saisie::Entree;
@@ -76,11 +79,8 @@ pub fn place_manquante(
     entree: &mut Entree,
 ) -> Option<Choix> {
     println!();
-    println!(
-        "Votre équipe et le camp sont pleins. Quel monstre relâcher pour garder {} ?",
-        capture.nom()
-    );
-    println!("{}", affichage::collection(collection));
+    println!("{}", place_manquante_texte(capture));
+    println!("{}", liste_des_monstres(collection));
     println!("  0. Relâcher {}", capture.nom());
     let taille_equipe = collection.equipe().len();
     let total = taille_equipe + collection.camp().len();

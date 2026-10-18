@@ -75,6 +75,7 @@ name = "bersemon-console"
 version = "0.1.0"
 dependencies = [
  "bersemon-core",
+ "bersemon-presentation",
  "bersemon-storage",
 ]
 
@@ -87,9 +88,17 @@ name = "bersemon-discord"
 version = "0.1.0"
 dependencies = [
  "bersemon-core",
+ "bersemon-presentation",
  "bersemon-storage",
  "poise",
  "tokio",
+]
+
+[[package]]
+name = "bersemon-presentation"
+version = "0.1.0"
+dependencies = [
+ "bersemon-core",
 ]
 
 [[package]]

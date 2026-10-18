@@ -62,6 +62,7 @@ L'objectif du jeu est de proposer des boucles de gameplay intéressantes et stim
 - Sur Discord, les mêmes commandes fonctionnent dans un salon de serveur, avec des réponses visibles du seul joueur, et en message privé avec le bot.
 - Sur Discord, une seule commande, /bersemon, ouvre un message qui pose la question en cours ; le joueur répond par des boutons, et par un formulaire pour un texte comme le nom du héros.
 - Chaque compte Discord a une seule partie, la même sur tous les serveurs et en message privé. Elle est séparée de la partie de la console.
+- Sur Discord, une expédition en cours attend le joueur sans limite de temps, jusqu'à son prochain /bersemon ; un redémarrage du bot le ramène à sa dernière sauvegarde, comme quitter la console (section 13.9).
 - Multijoueur : après l'adaptation à Discord (section 15).
 - Hors périmètre pour le moment : version mobile et vrai jeu PC.
 - Sauvegarde : dans un fichier JSON pour commencer, puis migration vers une base de données, probablement SQLite. Dans la V1, le fichier se trouve dans le dossier de données de l'utilisateur, %APPDATA%\Bersemon sous Windows (section 13.9). Sur Discord, un fichier JSON par compte Discord, au même format, en attendant SQLite.
@@ -129,7 +130,7 @@ Chaque monstre possède :
 - des valeurs internes aléatoires, de 0 à 31 pour chaque stat, qui influent sur ses stats (similaires aux IV de Pokémon), ce qui rend chaque monstre unique. Ces valeurs sont visibles dans le résumé du monstre ;
 - une habileté unique (équivalent des talents de Pokémon), qui a un effet secondaire lors des expéditions, des combats, etc. Les habiletés sont hors V1 ;
 - une faible chance d'être "shiny", 1 sur 512 pour un monstre sauvage comme pour le monstre de départ : sa couleur change, sans incidence sur les stats. Dans la console, un shiny est signalé par la mention "(shiny)" après son nom ;
-- un sprite (une image), pour rendre le jeu plus vivant. La console de la V1 n'affiche pas d'image : les sprites viendront avec Discord.
+- un sprite (une image), pour rendre le jeu plus vivant. La console de la V1 n'affiche pas d'image, et le jeu reste textuel sur Discord pour l'instant : les sprites viendront plus tard, une fois décidées la source des images et leurs droits.
 
 ### 5.2 Types
 
@@ -492,8 +493,7 @@ Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découp
 
 Les questions Q59 et suivantes ont été relevées le 18/10/2026 lors du découpage de l'adaptation à Discord en étapes : 9 déroulement de la partie commun à la console et au bot, 10 squelette du bot, 11 une partie par joueur Discord, 12 jeu complet sur Discord, 13 déploiement.
 
-- Q61. (Étape 12) Expédition laissée en plan sur Discord : au bout de combien de temps d'inactivité le joueur est-il ramené au camp, et perd-il ce qu'il a gagné depuis la dernière sauvegarde, comme en quittant la console (section 13.9) ?
-- Q62. (Étape 12) Sprites des monstres sur Discord (section 5.1) : dès l'adaptation à Discord ou plus tard, et d'où viennent les images ?
+- Q64. (Après l'étape 12) Sprites des monstres (section 5.1) : source des images et droits d'utilisation.
 - Q63. (Étape 13) Hébergement du bot (PC de l'utilisateur, serveur, autre) et serveurs Discord où il peut être invité.
 
 ## 17. Journal des décisions
@@ -627,3 +627,9 @@ Les questions Q59 et suivantes ont été relevées le 18/10/2026 lors du découp
 - Q59 : la partie Discord est séparée de la partie de la console.
 - Q60 : une seule partie par compte Discord, la même sur tous les serveurs et en message privé.
 - Sur Discord, une seule commande, /bersemon, ouvre un message qui pose la question en cours, avec des boutons et un formulaire pour le nom du héros.
+
+18/10/2026 (étape 12) :
+
+- Q61 : sur Discord, pas de délai d'inactivité ; une expédition en cours attend le joueur jusqu'à son prochain /bersemon, et un redémarrage du bot le ramène à sa dernière sauvegarde.
+- Q62 : les sprites sont repoussés après l'étape 12 ; la source des images et leurs droits restent à décider (Q64).
+- Sur Discord, chaque choix met à jour le même message, qui montre ce qui vient de se passer et la question suivante.

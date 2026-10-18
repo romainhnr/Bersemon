@@ -36,7 +36,7 @@ fn commandes(combat: &Combat) -> Vec<Commande> {
 /// menu principal.
 pub fn choisir_action(combat: &Combat, entree: &mut Entree) -> Option<Choix> {
     println!();
-    println!("{}", affichage::etat(combat));
+    println!("{}", bersemon_presentation::combat::etat(combat));
     let commandes = commandes(combat);
     loop {
         println!("{}", affichage::menu_action(combat, &commandes));

@@ -1,0 +1,97 @@
+//! Noms et descriptions des monstres et de leurs attaques.
+
+use bersemon_core::attaque::{Attaque, Categorie};
+use bersemon_core::combat::{Combat, Combattant, Cote};
+use bersemon_core::espece::Espece;
+use bersemon_core::monstre::Monstre;
+use bersemon_core::statut::Statut;
+
+/// Nom du monstre, suivi de "sauvage" pour un adversaire.
+pub fn nom(monstre: &Monstre, cote: Cote) -> String {
+    nommer(monstre, cote == Cote::Adversaire)
+}
+
+pub fn nom_sauvage(monstre: &Monstre) -> String {
+    nom(monstre, Cote::Adversaire)
+}
+
+/// Comme `nom`, sauf qu'un Apôtre n'est pas dit sauvage (section 9.4).
+pub fn nom_en_combat(combat: &Combat, combattant: Combattant) -> String {
+    let sauvage = combattant.cote == Cote::Adversaire && !combat.est_contre_un_apotre();
+    nommer(combat.monstre(combattant), sauvage)
+}
+
+fn nommer(monstre: &Monstre, sauvage: bool) -> String {
+    let mut nom = monstre.nom().to_string();
+    if sauvage {
+        nom.push_str(" sauvage");
+    }
+    if monstre.est_shiny() {
+        nom.push_str(" (shiny)");
+    }
+    nom
+}
+
+/// Nom, niveau, PV et état du monstre.
+pub fn ligne_monstre(monstre: &Monstre, cote: Cote) -> String {
+    ligne_monstre_nommee(monstre, &nom(monstre, cote))
+}
+
+/// Avec un surnom, le nom de l'espèce reste visible entre parenthèses.
+pub fn ligne_monstre_nommee(monstre: &Monstre, nom: &str) -> String {
+    let etat = if monstre.est_ko() {
+        ", KO".to_string()
+    } else {
+        match monstre.statut() {
+            Some(Statut::Poison) => ", poison".to_string(),
+            Some(Statut::Paralysie) => ", paralysie".to_string(),
+            None => String::new(),
+        }
+    };
+    let espece = if monstre.surnom().is_some() {
+        format!("{}, ", monstre.espece().nom())
+    } else {
+        String::new()
+    };
+    format!(
+        "{nom} ({espece}niv. {}) : {}/{} PV{etat}",
+        monstre.niveau().valeur(),
+        monstre.pv_actuels(),
+        monstre.stats().pv
+    )
+}
+
+pub fn decrire_attaque(attaque: &Attaque) -> String {
+    let categorie = match attaque.categorie() {
+        Categorie::Physique => "physique",
+        Categorie::Speciale => "spéciale",
+    };
+    let effet = match attaque.effet() {
+        Some(effet) => {
+            let statut = match effet.statut() {
+                Statut::Poison => "poison",
+                Statut::Paralysie => "paralysie",
+            };
+            format!(", {statut} {} %", effet.chance())
+        }
+        None => String::new(),
+    };
+    format!(
+        "{} ({}, {categorie}, puissance {}, précision {} %{effet})",
+        attaque.nom(),
+        attaque.type_attaque().nom(),
+        attaque.puissance(),
+        attaque.precision()
+    )
+}
+
+/// Les types de l'espèce, dans l'ordre, séparés par des virgules.
+pub fn types_de(espece: &Espece) -> String {
+    let types: Vec<&str> = espece
+        .types()
+        .liste()
+        .iter()
+        .map(|type_monstre| type_monstre.nom())
+        .collect();
+    types.join(", ")
+}

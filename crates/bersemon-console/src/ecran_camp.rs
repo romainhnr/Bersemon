@@ -7,6 +7,7 @@ use bersemon_core::collection::{Collection, Emplacement};
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::{ActionDeGestion, Choix};
 use bersemon_core::partie::Partie;
+use bersemon_presentation::partie::{collection as liste_des_monstres, en_tete_du_camp};
 
 use crate::affichage;
 use crate::saisie::Entree;
@@ -33,12 +34,7 @@ pub fn choisir(
             continue;
         }
         println!();
-        println!(
-            "Camp de base ({}, {}). {}.",
-            partie.heros().nom().as_str(),
-            partie.heros().classe().nom(),
-            affichage::potions(partie.inventaire().potions())
-        );
+        println!("{}", en_tete_du_camp(partie));
         println!("  1. Partir en expédition");
         println!("  2. Voir vos monstres");
         println!("  3. Gérer vos monstres");
@@ -50,7 +46,7 @@ pub fn choisir(
                     return Some(choix);
                 }
             }
-            2 => println!("{}", affichage::collection(partie.collection())),
+            2 => println!("{}", liste_des_monstres(partie.collection())),
             3 => menu.gestion_ouverte = true,
             4 => println!("{}", affichage::codex(partie.codex(), contenu.especes())),
             _ => return None,
@@ -72,7 +68,7 @@ fn carte(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Option<Op
 fn gerer(collection: &Collection, entree: &mut Entree) -> Option<Option<ActionDeGestion>> {
     loop {
         println!();
-        println!("{}", affichage::collection(collection));
+        println!("{}", liste_des_monstres(collection));
         println!("Que faire ?");
         println!("  1. Changer l'ordre de l'équipe");
         println!("  2. Envoyer un monstre de l'équipe au camp");

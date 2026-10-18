@@ -3,12 +3,19 @@
 //! un message qui pose la question en cours, et chaque bouton y répond. La
 //! mise en route est décrite dans docs/discord.md.
 
-mod boutons;
 mod commandes;
+mod composants;
 mod configuration;
-mod ecrans;
+mod ecran_accueil;
+mod ecran_camp;
+mod ecran_combat;
+mod ecran_expedition;
+mod formulaires;
 mod interactions;
 mod joueurs;
+mod message;
+#[cfg(test)]
+mod simulation;
 
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -102,7 +109,7 @@ async fn traiter_evenement(
     };
     let resultat = match interaction {
         serenity::Interaction::Component(composant) => {
-            interactions::bouton(cadre.serenity_context, cadre.user_data, composant).await
+            interactions::composant(cadre.serenity_context, cadre.user_data, composant).await
         }
         serenity::Interaction::Modal(formulaire) => {
             interactions::formulaire(cadre.serenity_context, cadre.user_data, formulaire).await

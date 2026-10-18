@@ -17,6 +17,8 @@ use bersemon_core::aleatoire::GenerateurAleatoire;
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::{Attente, Choix, Confirmation, Contexte, Deroulement};
 use bersemon_core::sauvegarde::SauvegardeRepository;
+use bersemon_presentation::erreurs::erreur_de_choix;
+use bersemon_presentation::partie::question_de_confirmation;
 use bersemon_storage::{FichierJson, emplacement_par_defaut};
 
 use crate::ecran_camp::MenuDuCamp;
@@ -43,7 +45,7 @@ fn main() {
         };
         match deroulement.repondre(choix.clone(), &mut contexte) {
             Ok(evenements) => recit::raconter(&evenements),
-            Err(erreur) => println!("{}", affichage::erreur_de_choix(&choix, &erreur)),
+            Err(erreur) => println!("{}", erreur_de_choix(&choix, &erreur)),
         }
     }
     println!();
@@ -89,14 +91,7 @@ fn demander(
 }
 
 fn confirmer(confirmation: &Confirmation, entree: &mut Entree) -> Option<Choix> {
-    let question = match confirmation {
-        Confirmation::RemplacerLaPartie(heros) => format!(
-            "La partie en cours ({}) sera remplacée. Continuer ?",
-            heros.nom().as_str()
-        ),
-        Confirmation::PotionPerdue(monstre) => affichage::potion_perdue(monstre),
-        Confirmation::Relacher(monstre) => format!("Relâcher définitivement {} ?", monstre.nom()),
-    };
+    let question = question_de_confirmation(confirmation);
     let reponse = if entree.confirmation(&question)? {
         Choix::Oui
     } else {

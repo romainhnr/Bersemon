@@ -6,6 +6,8 @@ use bersemon_core::deroulement::Choix;
 use bersemon_core::heros::Classe;
 use bersemon_core::partie::Partie;
 use bersemon_core::sauvegarde::ErreurSauvegarde;
+use bersemon_presentation::erreurs::erreur_sauvegarde;
+use bersemon_presentation::partie::{decrire_classe, partie_en_cours};
 
 use crate::affichage;
 use crate::saisie::Entree;
@@ -13,11 +15,7 @@ use crate::saisie::Entree;
 /// Rend `None` si le joueur quitte ou que l'entrée est fermée.
 pub fn reprise(partie: &Partie, entree: &mut Entree) -> Option<Choix> {
     println!();
-    println!(
-        "Partie en cours : {}, {}.",
-        partie.heros().nom().as_str(),
-        partie.heros().classe().nom()
-    );
+    println!("{}", partie_en_cours(partie));
     println!("  1. Continuer cette partie");
     println!("  2. Commencer une nouvelle partie");
     println!("  3. Quitter");
@@ -34,7 +32,7 @@ pub fn sauvegarde_illisible(erreur: &ErreurSauvegarde, entree: &mut Entree) -> O
     println!();
     println!(
         "La sauvegarde ne peut pas être chargée : {}.",
-        affichage::erreur_sauvegarde(erreur)
+        erreur_sauvegarde(erreur)
     );
     println!("  1. Commencer une nouvelle partie, qui la remplacera");
     println!("  2. Quitter sans rien changer");
@@ -60,15 +58,4 @@ pub fn monstre_de_depart(contenu: &ContenuV1, entree: &mut Entree) -> Option<Cho
     println!("{}", affichage::liste_especes(especes));
     let choix = entree.choix(1, especes.len())?;
     Some(Choix::MonstreDeDepart(especes[choix - 1].id().clone()))
-}
-
-fn decrire_classe(classe: Classe) -> String {
-    let stat = match classe {
-        Classe::Guerrier => "Attaque",
-        Classe::Mage => "Attaque spéciale",
-    };
-    format!(
-        "{} : +10 % d'{stat} pour vos monstres en combat",
-        classe.nom()
-    )
 }
