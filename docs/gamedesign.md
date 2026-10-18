@@ -60,6 +60,8 @@ L'objectif du jeu est de proposer des boucles de gameplay intéressantes et stim
   2. Bot Discord (inspiration possible : le bot Discord Koya).
 - Le déroulement de la partie (camp, expéditions, combat et leurs suites) est commun à la console et au bot Discord, qui ne font que l'afficher et transmettre les choix du joueur.
 - Sur Discord, les mêmes commandes fonctionnent dans un salon de serveur, avec des réponses visibles du seul joueur, et en message privé avec le bot.
+- Sur Discord, une seule commande, /bersemon, ouvre un message qui pose la question en cours ; le joueur répond par des boutons, et par un formulaire pour un texte comme le nom du héros.
+- Chaque compte Discord a une seule partie, la même sur tous les serveurs et en message privé. Elle est séparée de la partie de la console.
 - Multijoueur : après l'adaptation à Discord (section 15).
 - Hors périmètre pour le moment : version mobile et vrai jeu PC.
 - Sauvegarde : dans un fichier JSON pour commencer, puis migration vers une base de données, probablement SQLite. Dans la V1, le fichier se trouve dans le dossier de données de l'utilisateur, %APPDATA%\Bersemon sous Windows (section 13.9). Sur Discord, un fichier JSON par compte Discord, au même format, en attendant SQLite.
@@ -490,8 +492,6 @@ Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découp
 
 Les questions Q59 et suivantes ont été relevées le 18/10/2026 lors du découpage de l'adaptation à Discord en étapes : 9 déroulement de la partie commun à la console et au bot, 10 squelette du bot, 11 une partie par joueur Discord, 12 jeu complet sur Discord, 13 déploiement.
 
-- Q59. (Étape 11) Partie console et partie Discord : séparées, ou une même partie qui passe de l'une à l'autre ?
-- Q60. (Étape 11) Une seule partie par compte Discord, la même sur tous les serveurs et en message privé ?
 - Q61. (Étape 12) Expédition laissée en plan sur Discord : au bout de combien de temps d'inactivité le joueur est-il ramené au camp, et perd-il ce qu'il a gagné depuis la dernière sauvegarde, comme en quittant la console (section 13.9) ?
 - Q62. (Étape 12) Sprites des monstres sur Discord (section 5.1) : dès l'adaptation à Discord ou plus tard, et d'où viennent les images ?
 - Q63. (Étape 13) Hébergement du bot (PC de l'utilisateur, serveur, autre) et serveurs Discord où il peut être invité.
@@ -621,3 +621,9 @@ Les questions Q59 et suivantes ont été relevées le 18/10/2026 lors du découp
 - Le déroulement de la partie est commun à la console et au bot, qui ne font que l'afficher et transmettre les choix du joueur.
 - Sur Discord, les mêmes commandes fonctionnent dans un salon de serveur, avec des réponses visibles du seul joueur, et en message privé.
 - Sauvegarde sur Discord : un fichier JSON par compte Discord, au format actuel ; SQLite plus tard.
+
+18/10/2026 (étape 11) :
+
+- Q59 : la partie Discord est séparée de la partie de la console.
+- Q60 : une seule partie par compte Discord, la même sur tous les serveurs et en message privé.
+- Sur Discord, une seule commande, /bersemon, ouvre un message qui pose la question en cours, avec des boutons et un formulaire pour le nom du héros.

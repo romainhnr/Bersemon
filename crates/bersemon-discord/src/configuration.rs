@@ -3,11 +3,14 @@
 
 use std::fmt;
 use std::num::NonZeroU64;
+use std::path::PathBuf;
 
 /// Jeton du bot, donné par le portail développeur de Discord.
 const VARIABLE_JETON: &str = "DISCORD_TOKEN";
 /// Serveur où les commandes sont enregistrées tout de suite, pour développer.
 const VARIABLE_SERVEUR_DE_TEST: &str = "BERSEMON_SERVEUR_DE_TEST";
+/// Dossier des sauvegardes des joueurs Discord, utile pour l'hébergement.
+const VARIABLE_DOSSIER: &str = "BERSEMON_DONNEES";
 
 /// Pas de `Debug` : le jeton ne doit apparaître dans aucun message.
 pub struct Configuration {
@@ -15,6 +18,9 @@ pub struct Configuration {
     /// `None` : commandes enregistrées pour tous les serveurs et les messages
     /// privés.
     pub serveur_de_test: Option<NonZeroU64>,
+    /// %APPDATA%\Bersemon\discord par défaut, à côté de la sauvegarde de la
+    /// console, dont les parties Discord sont séparées (Q59).
+    pub dossier_des_parties: PathBuf,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -45,6 +51,7 @@ impl Configuration {
         Self::lire(
             std::env::var(VARIABLE_JETON).ok(),
             std::env::var(VARIABLE_SERVEUR_DE_TEST).ok(),
+            std::env::var(VARIABLE_DOSSIER).ok(),
         )
     }
 
@@ -52,6 +59,7 @@ impl Configuration {
     fn lire(
         jeton: Option<String>,
         serveur_de_test: Option<String>,
+        dossier: Option<String>,
     ) -> Result<Self, ErreurDeConfiguration> {
         let jeton = renseignee(jeton).ok_or(ErreurDeConfiguration::JetonAbsent)?;
         let serveur_de_test = match renseignee(serveur_de_test) {
@@ -62,9 +70,13 @@ impl Configuration {
                     .map_err(|_| ErreurDeConfiguration::ServeurDeTestInvalide(texte))?,
             ),
         };
+        let dossier_des_parties = renseignee(dossier)
+            .map(PathBuf::from)
+            .unwrap_or_else(|| bersemon_storage::dossier_par_defaut().join("discord"));
         Ok(Self {
             jeton,
             serveur_de_test,
+            dossier_des_parties,
         })
     }
 }
@@ -83,7 +95,7 @@ mod tests {
         jeton: Option<&str>,
         serveur: Option<&str>,
     ) -> Result<Configuration, ErreurDeConfiguration> {
-        Configuration::lire(jeton.map(String::from), serveur.map(String::from))
+        Configuration::lire(jeton.map(String::from), serveur.map(String::from), None)
     }
 
     #[test]
@@ -118,5 +130,21 @@ mod tests {
                 Err(ErreurDeConfiguration::ServeurDeTestInvalide(texte)) if texte == invalide
             ));
         }
+    }
+
+    #[test]
+    fn dossier_des_parties_par_defaut_ou_donne() {
+        let par_defaut = lire(Some("jeton"), None).unwrap();
+        assert!(par_defaut.dossier_des_parties.ends_with("discord"));
+        let donne = Configuration::lire(
+            Some("jeton".to_string()),
+            None,
+            Some("D:\\Bersemon\\parties".to_string()),
+        )
+        .unwrap();
+        assert_eq!(
+            donne.dossier_des_parties,
+            PathBuf::from("D:\\Bersemon\\parties")
+        );
     }
 }

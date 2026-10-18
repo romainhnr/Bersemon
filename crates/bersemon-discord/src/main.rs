@@ -1,19 +1,28 @@
-//! Bot Discord de Bersemon. À cette étape, un squelette : la connexion et une
-//! commande `/bersemon` qui montre que le bot fonctionne. Le jeu y viendra
-//! par le déroulement du noyau (`bersemon_core::deroulement`), comme pour la
-//! console. La mise en route est décrite dans docs/discord.md.
+//! Bot Discord de Bersemon. La partie suit le déroulement du noyau
+//! (`bersemon_core::deroulement`), comme dans la console : `/bersemon` ouvre
+//! un message qui pose la question en cours, et chaque bouton y répond. La
+//! mise en route est décrite dans docs/discord.md.
 
+mod boutons;
 mod commandes;
 mod configuration;
+mod ecrans;
+mod interactions;
+mod joueurs;
+
+use std::sync::Mutex;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use bersemon_core::contenu::ContenuV1;
 use poise::serenity_prelude as serenity;
 
 use crate::configuration::Configuration;
+use crate::joueurs::Joueurs;
 
-/// Partagé par toutes les commandes.
+/// Partagé par toutes les commandes et les interactions.
 pub struct DonneesDuBot {
     pub contenu: ContenuV1,
+    pub joueurs: Mutex<Joueurs>,
 }
 
 pub type Erreur = Box<dyn std::error::Error + Send + Sync>;
@@ -29,11 +38,22 @@ async fn main() {
         }
     };
     let serveur_de_test = configuration.serveur_de_test.map(serenity::GuildId::from);
-    let contenu = ContenuV1::new();
+    let donnees = DonneesDuBot {
+        contenu: ContenuV1::new(),
+        joueurs: Mutex::new(Joueurs::new(
+            configuration.dossier_des_parties.clone(),
+            graine_depuis_horloge(),
+        )),
+    };
+    println!(
+        "Parties des joueurs : {}",
+        configuration.dossier_des_parties.display()
+    );
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
             commands: vec![commandes::bersemon()],
+            event_handler: |cadre, evenement| Box::pin(traiter_evenement(cadre, evenement)),
             ..Default::default()
         })
         .setup(move |contexte, _pret, framework| {
@@ -49,13 +69,14 @@ async fn main() {
                     None => poise::builtins::register_globally(contexte, commandes).await?,
                 }
                 println!("Bersemon est connecté à Discord.");
-                Ok(DonneesDuBot { contenu })
+                Ok(donnees)
             })
         })
         .build();
 
-    // Les commandes slash n'ont besoin d'aucun intent privilégié, comme le
-    // contenu des messages : rien n'est à demander à Discord.
+    // Les commandes slash et les boutons n'ont besoin d'aucun intent
+    // privilégié, comme le contenu des messages : rien n'est à demander à
+    // Discord.
     let intents = serenity::GatewayIntents::non_privileged();
     let client = serenity::ClientBuilder::new(&configuration.jeton, intents)
         .framework(framework)
@@ -68,4 +89,37 @@ async fn main() {
         eprintln!("Le bot s'est arrêté sur une erreur : {erreur}.");
         std::process::exit(1);
     }
+}
+
+/// Les commandes slash passent par poise ; les boutons et les formulaires,
+/// par ici. Un échec de réponse est signalé sans arrêter le bot.
+async fn traiter_evenement(
+    cadre: poise::FrameworkContext<'_, DonneesDuBot, Erreur>,
+    evenement: &serenity::FullEvent,
+) -> Result<(), Erreur> {
+    let serenity::FullEvent::InteractionCreate { interaction } = evenement else {
+        return Ok(());
+    };
+    let resultat = match interaction {
+        serenity::Interaction::Component(composant) => {
+            interactions::bouton(cadre.serenity_context, cadre.user_data, composant).await
+        }
+        serenity::Interaction::Modal(formulaire) => {
+            interactions::formulaire(cadre.serenity_context, cadre.user_data, formulaire).await
+        }
+        _ => Ok(()),
+    };
+    if let Err(erreur) = resultat {
+        eprintln!("Réponse impossible à une interaction : {erreur}.");
+    }
+    Ok(())
+}
+
+/// Une graine différente à chaque lancement suffit : le hasard d'un jeu n'a
+/// pas besoin d'être imprévisible au sens cryptographique.
+fn graine_depuis_horloge() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duree| duree.as_nanos() as u64)
+        .unwrap_or(0)
 }

@@ -12,13 +12,16 @@ use std::path::PathBuf;
 
 pub use fichier_json::FichierJson;
 
-/// %APPDATA%\Bersemon\sauvegarde.json sous Windows (section 13.9), ou le
-/// dossier courant si la variable n'existe pas.
-pub fn emplacement_par_defaut() -> PathBuf {
+/// %APPDATA%\Bersemon sous Windows, ou le dossier courant si la variable
+/// n'existe pas.
+pub fn dossier_par_defaut() -> PathBuf {
     match std::env::var_os("APPDATA") {
-        Some(dossier) => PathBuf::from(dossier)
-            .join("Bersemon")
-            .join("sauvegarde.json"),
-        None => PathBuf::from("sauvegarde.json"),
+        Some(dossier) => PathBuf::from(dossier).join("Bersemon"),
+        None => PathBuf::new(),
     }
+}
+
+/// Sauvegarde de la console (section 13.9).
+pub fn emplacement_par_defaut() -> PathBuf {
+    dossier_par_defaut().join("sauvegarde.json")
 }

@@ -87,6 +87,7 @@ name = "bersemon-discord"
 version = "0.1.0"
 dependencies = [
  "bersemon-core",
+ "bersemon-storage",
  "poise",
  "tokio",
 ]
