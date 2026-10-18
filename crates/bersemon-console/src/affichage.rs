@@ -7,6 +7,7 @@ use bersemon_core::attaque::{Attaque, Categorie};
 use bersemon_core::codex::{Codex, EtatCodex};
 use bersemon_core::collection::{Collection, ErreurCollection};
 use bersemon_core::combat::{Combat, Combattant, Cote, ErreurCombat, Evenement, Issue};
+use bersemon_core::deroulement::{ActionDeGestion, Choix, ErreurChoix};
 use bersemon_core::espece::Espece;
 use bersemon_core::inventaire::ErreurPotion;
 use bersemon_core::monstre::{Monstre, RapportExperience};
@@ -17,6 +18,26 @@ use bersemon_core::types::Efficacite;
 use bersemon_core::zone::Zone;
 
 use crate::ecran_combat::Commande;
+
+/// Le choix refusé dit de quel nom il s'agissait : celui du héros ou un
+/// surnom.
+pub fn erreur_de_choix(choix: &Choix, erreur: &ErreurChoix) -> String {
+    match erreur {
+        ErreurChoix::Nom(erreur) => match choix {
+            Choix::Gerer(ActionDeGestion::Renommer { .. }) => {
+                format!("Surnom refusé : {erreur}.")
+            }
+            _ => format!("Nom refusé : {erreur}."),
+        },
+        ErreurChoix::Collection(erreur) => erreur_collection(erreur),
+        ErreurChoix::Potion(erreur) => erreur_potion(erreur),
+        ErreurChoix::Combat(erreur) => self::erreur(erreur),
+        ErreurChoix::Attaque(erreur) => {
+            format!("Impossible d'apprendre cette attaque : {erreur}.")
+        }
+        autre => format!("Action impossible : {autre}."),
+    }
+}
 
 pub fn erreur(erreur: &ErreurCombat) -> String {
     match erreur {

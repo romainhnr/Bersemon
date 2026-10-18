@@ -14,6 +14,7 @@ pub mod collection;
 pub mod combat;
 pub mod contenu;
 mod degats;
+pub mod deroulement;
 pub mod espece;
 pub mod expedition;
 pub mod experience;

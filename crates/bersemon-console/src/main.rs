@@ -1,24 +1,29 @@
-//! Interface console de Bersemon : création du héros, introduction et choix
-//! du monstre de départ, camp de base, expéditions avec la traque de
-//! l'Apôtre, tutoriel et sauvegarde automatique.
+//! Interface console de Bersemon. Le déroulement de la partie vient du noyau
+//! (`bersemon_core::deroulement`) : la console pose ses questions, avec leurs
+//! sous-menus, lui transmet les choix du joueur et raconte ce qui s'est
+//! passé.
 
 mod affichage;
+mod ecran_accueil;
 mod ecran_camp;
 mod ecran_combat;
-mod ecran_creation;
 mod ecran_expedition;
+mod recit;
 mod saisie;
-mod tutoriel;
 
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use bersemon_core::aleatoire::{Aleatoire, GenerateurAleatoire};
-use bersemon_core::contenu::{ContenuV1, INTRODUCTION};
-use bersemon_core::partie::Partie;
+use bersemon_core::aleatoire::GenerateurAleatoire;
+use bersemon_core::contenu::ContenuV1;
+use bersemon_core::deroulement::{Attente, Choix, Confirmation, Contexte, Deroulement};
 use bersemon_core::sauvegarde::SauvegardeRepository;
 use bersemon_storage::{FichierJson, emplacement_par_defaut};
 
+use crate::ecran_camp::MenuDuCamp;
 use crate::saisie::Entree;
+
+/// Au camp et en expédition, une partie est en jeu.
+const PARTIE_EN_JEU: &str = "une partie est en jeu";
 
 fn main() {
     let mut aleatoire = GenerateurAleatoire::new(graine_depuis_horloge());
@@ -28,123 +33,76 @@ fn main() {
 
     println!("Bersemon");
     println!("Sauvegarde : {}", depot.chemin().display());
-    let Some(mut partie) = demarrer(&depot, &contenu, &mut aleatoire, &mut entree) else {
-        println!();
-        println!("À bientôt.");
-        return;
-    };
-
-    loop {
-        println!();
-        println!(
-            "Camp de base ({}, {}). {}.",
-            partie.heros().nom().as_str(),
-            partie.heros().classe().nom(),
-            affichage::potions(partie.inventaire().potions())
-        );
-        println!("  1. Partir en expédition");
-        println!("  2. Voir vos monstres");
-        println!("  3. Gérer vos monstres");
-        println!("  4. Consulter le codex");
-        println!("  5. Quitter");
-        let continuer = match entree.choix(1, 5) {
-            Some(1) => {
-                // Quitter en pleine expédition ramène à la dernière
-                // sauvegarde (section 13.9) : on ne sauvegarde qu'au retour.
-                let revenu =
-                    ecran_expedition::partir(&mut partie, &contenu, &mut aleatoire, &mut entree);
-                if revenu {
-                    sauvegarder(&depot, &partie);
-                }
-                revenu
-            }
-            Some(2) => {
-                println!("{}", affichage::collection(partie.collection()));
-                true
-            }
-            Some(3) => ecran_camp::gerer_monstres(&mut partie, &depot, &mut entree),
-            Some(4) => {
-                println!("{}", affichage::codex(partie.codex(), contenu.especes()));
-                true
-            }
-            _ => false,
+    let mut deroulement = Deroulement::demarrer(depot.charger(&contenu));
+    let mut menu = MenuDuCamp::default();
+    while let Some(choix) = demander(&deroulement, &contenu, &mut menu, &mut entree) {
+        let mut contexte = Contexte {
+            contenu: &contenu,
+            aleatoire: &mut aleatoire,
+            depot: &depot,
         };
-        if !continuer {
-            break;
+        match deroulement.repondre(choix.clone(), &mut contexte) {
+            Ok(evenements) => recit::raconter(&evenements),
+            Err(erreur) => println!("{}", affichage::erreur_de_choix(&choix, &erreur)),
         }
     }
     println!();
     println!("À bientôt.");
 }
 
-/// Reprend la partie sauvegardée ou en crée une nouvelle. Rien n'est effacé
-/// sans l'accord du joueur (section 13.9, Q56). Rend `None` si le joueur
-/// quitte.
-fn demarrer(
-    depot: &FichierJson,
+/// La question posée, avec ses sous-menus. Rend `None` quand le joueur
+/// quitte ou que l'entrée est fermée : quitter en pleine expédition ramène à
+/// la dernière sauvegarde (section 13.9).
+fn demander(
+    deroulement: &Deroulement,
     contenu: &ContenuV1,
-    aleatoire: &mut dyn Aleatoire,
+    menu: &mut MenuDuCamp,
     entree: &mut Entree,
-) -> Option<Partie> {
-    match depot.charger(contenu) {
-        Ok(Some(partie)) => loop {
-            println!();
-            println!(
-                "Partie en cours : {}, {}.",
-                partie.heros().nom().as_str(),
-                partie.heros().classe().nom()
-            );
-            println!("  1. Continuer cette partie");
-            println!("  2. Commencer une nouvelle partie");
-            println!("  3. Quitter");
-            match entree.choix(1, 3)? {
-                1 => return Some(partie),
-                2 => {
-                    let question = format!(
-                        "La partie en cours ({}) sera remplacée. Continuer ?",
-                        partie.heros().nom().as_str()
-                    );
-                    if entree.confirmation(&question)? {
-                        break;
-                    }
-                }
-                _ => return None,
-            }
-        },
-        Ok(None) => {}
-        Err(erreur) => {
-            println!();
-            println!(
-                "La sauvegarde ne peut pas être chargée : {}.",
-                affichage::erreur_sauvegarde(&erreur)
-            );
-            println!("  1. Commencer une nouvelle partie, qui la remplacera");
-            println!("  2. Quitter sans rien changer");
-            if entree.choix(1, 2)? != 1 {
-                return None;
-            }
+) -> Option<Choix> {
+    match deroulement.attente() {
+        Attente::Reprise(partie) => ecran_accueil::reprise(partie, entree),
+        Attente::SauvegardeIllisible(erreur) => ecran_accueil::sauvegarde_illisible(erreur, entree),
+        Attente::NomDuHeros => ecran_accueil::nom_du_heros(entree),
+        Attente::Classe => ecran_accueil::classe(entree),
+        Attente::MonstreDeDepart => ecran_accueil::monstre_de_depart(contenu, entree),
+        Attente::Camp => {
+            let partie = deroulement.partie().expect(PARTIE_EN_JEU);
+            ecran_camp::choisir(partie, contenu, menu, entree)
         }
+        Attente::EntreDeuxEtapes => {
+            let partie = deroulement.partie().expect(PARTIE_EN_JEU);
+            ecran_expedition::entre_deux_etapes(partie, entree)
+        }
+        Attente::MonstreRare(_) => ecran_expedition::monstre_rare(entree),
+        Attente::ActionDeCombat(combat) => ecran_combat::choisir_action(combat, entree),
+        Attente::Remplacement(combat) => ecran_combat::choisir_remplacant(combat, entree),
+        Attente::CaptureDesKo(combat) => ecran_combat::choisir_capture(combat, entree),
+        Attente::OubliAttaque { monstre, nouvelle } => {
+            ecran_combat::choisir_attaque_a_oublier(monstre, nouvelle, entree)
+        }
+        Attente::PlaceManquante(capture) => {
+            let collection = deroulement.partie().expect(PARTIE_EN_JEU).collection();
+            ecran_expedition::place_manquante(capture, collection, entree)
+        }
+        Attente::Confirmation(confirmation) => confirmer(confirmation, entree),
     }
-    let heros = ecran_creation::creer_heros(entree)?;
-    // L'introduction mène du choix de la classe à celui du premier monstre
-    // (section 6).
-    println!();
-    println!("{INTRODUCTION}");
-    println!();
-    let depart = ecran_creation::choisir_depart(contenu.especes_de_depart(), entree, aleatoire)?;
-    let partie = Partie::nouvelle(heros, depart);
-    sauvegarder(depot, &partie);
-    Some(partie)
 }
 
-/// Un échec est signalé sans interrompre la partie.
-fn sauvegarder(depot: &dyn SauvegardeRepository, partie: &Partie) {
-    if let Err(erreur) = depot.enregistrer(partie) {
-        println!(
-            "Sauvegarde impossible : {}.",
-            affichage::erreur_sauvegarde(&erreur)
-        );
-    }
+fn confirmer(confirmation: &Confirmation, entree: &mut Entree) -> Option<Choix> {
+    let question = match confirmation {
+        Confirmation::RemplacerLaPartie(heros) => format!(
+            "La partie en cours ({}) sera remplacée. Continuer ?",
+            heros.nom().as_str()
+        ),
+        Confirmation::PotionPerdue(monstre) => affichage::potion_perdue(monstre),
+        Confirmation::Relacher(monstre) => format!("Relâcher définitivement {} ?", monstre.nom()),
+    };
+    let reponse = if entree.confirmation(&question)? {
+        Choix::Oui
+    } else {
+        Choix::Non
+    };
+    Some(reponse)
 }
 
 /// Une graine différente à chaque lancement suffit : le hasard d'un jeu n'a
