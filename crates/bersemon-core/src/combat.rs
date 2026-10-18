@@ -136,7 +136,8 @@ pub enum ErreurCombat {
     MonstreDejaActif(usize),
     CaptureImpossible(usize),
     AucunePotion,
-    PvDejaPleins(usize),
+    FuiteImpossible,
+    FiletImpossible,
 }
 
 impl fmt::Display for ErreurCombat {
@@ -175,8 +176,9 @@ impl fmt::Display for ErreurCombat {
                 )
             }
             ErreurCombat::AucunePotion => write!(f, "aucune potion"),
-            ErreurCombat::PvDejaPleins(index) => {
-                write!(f, "le monstre en position {index} a déjà tous ses PV")
+            ErreurCombat::FuiteImpossible => write!(f, "impossible de fuir ce combat"),
+            ErreurCombat::FiletImpossible => {
+                write!(f, "impossible de lancer un filet dans ce combat")
             }
         }
     }
@@ -215,6 +217,8 @@ pub struct Combat {
     bonus_joueur: BonusDeStats,
     /// Potions que le joueur porte (section 14.4).
     potions: u32,
+    /// Face à un Apôtre, ni fuite ni filet (section 9.4).
+    contre_un_apotre: bool,
     phase: Phase,
 }
 
@@ -242,6 +246,7 @@ impl Combat {
             captures: Vec::new(),
             bonus_joueur: BonusDeStats::default(),
             potions: 0,
+            contre_un_apotre: false,
             phase: Phase::ChoixAction,
         };
         combat.noter_participation();
@@ -257,6 +262,25 @@ impl Combat {
 
     pub fn potions(&self) -> u32 {
         self.potions
+    }
+
+    /// Combat contre un Apôtre : ni fuite ni filet ; il ne se capture que KO,
+    /// après la victoire (section 9.4).
+    pub fn contre_un_apotre(mut self) -> Self {
+        self.contre_un_apotre = true;
+        self
+    }
+
+    pub fn est_contre_un_apotre(&self) -> bool {
+        self.contre_un_apotre
+    }
+
+    pub fn fuite_possible(&self) -> bool {
+        !self.contre_un_apotre
+    }
+
+    pub fn filet_possible(&self) -> bool {
+        !self.contre_un_apotre
     }
 
     /// Bonus appliqué aux stats des monstres du joueur pendant tout le combat,
@@ -544,11 +568,12 @@ impl Combat {
                 };
                 verifier_cible(monstre).map_err(|erreur| match erreur {
                     ErreurPotion::MonstreKo => ErreurCombat::MonstreKo(index),
-                    ErreurPotion::PvDejaPleins => ErreurCombat::PvDejaPleins(index),
                     ErreurPotion::MonstreInexistant => ErreurCombat::MonstreInexistant(index),
                     ErreurPotion::AucunePotion => ErreurCombat::AucunePotion,
                 })
             }
+            Action::Fuir if !self.fuite_possible() => Err(ErreurCombat::FuiteImpossible),
+            Action::LancerFilet if !self.filet_possible() => Err(ErreurCombat::FiletImpossible),
             Action::LancerFilet | Action::Fuir => Ok(()),
         }
     }
@@ -1173,6 +1198,32 @@ mod tests {
     }
 
     #[test]
+    fn ni_fuite_ni_filet_face_a_un_apotre() {
+        let mut combat = combat(vec![rapide()], vec![lent()]).contre_un_apotre();
+        assert!(!combat.fuite_possible());
+        assert!(!combat.filet_possible());
+        assert_eq!(
+            combat.jouer_tour(Action::Fuir, &mut AleatoireScripte::new([])),
+            Err(ErreurCombat::FuiteImpossible)
+        );
+        assert_eq!(
+            combat.jouer_tour(Action::LancerFilet, &mut AleatoireScripte::new([])),
+            Err(ErreurCombat::FiletImpossible)
+        );
+        assert_eq!(combat.phase(), Phase::ChoixAction);
+    }
+
+    #[test]
+    fn l_apotre_ko_se_capture_apres_la_victoire() {
+        let mut combat = combat(vec![rapide()], vec![affaibli(lent(), 3)]).contre_un_apotre();
+        tour(&mut combat, Action::Attaquer(0), &[2, 100]);
+        assert_eq!(combat.adversaires_capturables(), vec![0]);
+        combat.capturer_ko(0).unwrap();
+        let bilan = terminer(combat, &[100]);
+        assert_eq!(bilan.captures.len(), 1);
+    }
+
+    #[test]
     fn filet_sans_chance_puis_riposte() {
         let mut combat = combat(vec![rapide()], vec![lent()]);
         let evenements = tour(&mut combat, Action::LancerFilet, &[2, 100]);
@@ -1440,7 +1491,6 @@ mod tests {
         let mut combat = combat(vec![rapide(), affaibli(lent(), 0)], vec![lent()]).avec_potions(1);
         let avant = combat.clone();
         for (action, erreur) in [
-            (Action::UtiliserPotion(0), ErreurCombat::PvDejaPleins(0)),
             (Action::UtiliserPotion(1), ErreurCombat::MonstreKo(1)),
             (
                 Action::UtiliserPotion(5),
@@ -1450,5 +1500,20 @@ mod tests {
             assert_eq!(combat.jouer_tour(action, &mut aleatoire), Err(erreur));
         }
         assert_eq!(combat, avant);
+    }
+
+    #[test]
+    fn potion_perdue_sur_un_monstre_qui_a_tous_ses_pv() {
+        // Aucun tirage pour la potion : son effet nul est certain.
+        let mut combat = combat(vec![rapide()], vec![lent()]).avec_potions(1);
+        let evenements = tour(&mut combat, Action::UtiliserPotion(0), &[2, 100]);
+        assert_eq!(
+            evenements[0],
+            Evenement::PotionUtilisee {
+                cible: j(0),
+                pv_rendus: 0,
+            }
+        );
+        assert_eq!(combat.potions(), 0);
     }
 }

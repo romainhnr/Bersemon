@@ -16,6 +16,8 @@ use bersemon_core::statut::Statut;
 use bersemon_core::types::Efficacite;
 use bersemon_core::zone::Zone;
 
+use crate::ecran_combat::Commande;
+
 pub fn erreur(erreur: &ErreurCombat) -> String {
     match erreur {
         ErreurCombat::AttaqueInexistante(index) => {
@@ -29,9 +31,6 @@ pub fn erreur(erreur: &ErreurCombat) -> String {
             format!("Le monstre numéro {} combat déjà.", index + 1)
         }
         ErreurCombat::AucunePotion => "Vous n'avez plus de potion.".to_string(),
-        ErreurCombat::PvDejaPleins(index) => {
-            format!("Le monstre numéro {} a déjà tous ses PV.", index + 1)
-        }
         // Les autres erreurs ne viennent pas d'une saisie du joueur : la
         // console suit la phase du combat.
         autre => format!("Action impossible : {autre}."),
@@ -57,8 +56,18 @@ pub fn erreur_collection(erreur: &ErreurCollection) -> String {
 
 /// Nom du monstre, suivi de "sauvage" pour un adversaire.
 pub fn nom(monstre: &Monstre, cote: Cote) -> String {
+    nommer(monstre, cote == Cote::Adversaire)
+}
+
+/// Comme `nom`, sauf qu'un Apôtre n'est pas dit sauvage (section 9.4).
+fn nom_en_combat(combat: &Combat, combattant: Combattant) -> String {
+    let sauvage = combattant.cote == Cote::Adversaire && !combat.est_contre_un_apotre();
+    nommer(combat.monstre(combattant), sauvage)
+}
+
+fn nommer(monstre: &Monstre, sauvage: bool) -> String {
     let mut nom = monstre.nom().to_string();
-    if cote == Cote::Adversaire {
+    if sauvage {
         nom.push_str(" sauvage");
     }
     if monstre.est_shiny() {
@@ -125,10 +134,16 @@ pub fn collection(collection: &Collection) -> String {
 }
 
 pub fn rencontre(combat: &Combat) -> String {
-    let noms: Vec<String> = combat
-        .adversaires()
-        .iter()
-        .map(|monstre| nom(monstre, Cote::Adversaire))
+    let noms: Vec<String> = (0..combat.adversaires().len())
+        .map(|index| {
+            nom_en_combat(
+                combat,
+                Combattant {
+                    cote: Cote::Adversaire,
+                    index,
+                },
+            )
+        })
         .collect();
     format!("Des monstres surgissent : {}.", noms.join(", "))
 }
@@ -150,7 +165,10 @@ pub fn etat(combat: &Combat) -> String {
     let adversaire = combat.actif(Cote::Adversaire);
     lignes.push(format!(
         "En face : {}",
-        ligne_monstre(combat.monstre(adversaire), Cote::Adversaire)
+        ligne_monstre_nommee(
+            combat.monstre(adversaire),
+            &nom_en_combat(combat, adversaire)
+        )
     ));
     let en_attente = combat
         .adversaires()
@@ -164,12 +182,22 @@ pub fn etat(combat: &Combat) -> String {
     lignes.join("\n")
 }
 
-pub fn menu_action(combat: &Combat) -> String {
-    format!(
-        "Que faire ?\n  1. Attaquer\n  2. Changer de monstre\n  3. Lancer un filet ({} % de chances)\n  4. Utiliser une potion ({})\n  5. Fuir",
-        combat.chance_de_capture(),
-        combat.potions()
-    )
+pub fn menu_action(combat: &Combat, commandes: &[Commande]) -> String {
+    let mut lignes = vec!["Que faire ?".to_string()];
+    for (position, commande) in commandes.iter().enumerate() {
+        let libelle = match commande {
+            Commande::Attaquer => "Attaquer".to_string(),
+            Commande::Changer => "Changer de monstre".to_string(),
+            Commande::LancerFilet => format!(
+                "Lancer un filet ({} % de chances)",
+                combat.chance_de_capture()
+            ),
+            Commande::UtiliserPotion => format!("Utiliser une potion ({})", combat.potions()),
+            Commande::Fuir => "Fuir".to_string(),
+        };
+        lignes.push(format!("  {}. {libelle}", position + 1));
+    }
+    lignes.join("\n")
 }
 
 pub fn liste_attaques(monstre: &Monstre) -> String {
@@ -217,7 +245,13 @@ pub fn liste_capturables(combat: &Combat, capturables: &[usize]) -> String {
             format!(
                 "  {}. {}",
                 position + 1,
-                nom(&combat.adversaires()[index], Cote::Adversaire)
+                nom_en_combat(
+                    combat,
+                    Combattant {
+                        cote: Cote::Adversaire,
+                        index,
+                    },
+                )
             )
         })
         .collect();
@@ -226,7 +260,7 @@ pub fn liste_capturables(combat: &Combat, capturables: &[usize]) -> String {
 }
 
 pub fn evenement(evenement: &Evenement, combat: &Combat) -> String {
-    let nom_de = |combattant: Combattant| nom(combat.monstre(combattant), combattant.cote);
+    let nom_de = |combattant: Combattant| nom_en_combat(combat, combattant);
     match evenement {
         Evenement::MonstreEnvoye(combattant) => match combattant.cote {
             Cote::Joueur => format!("Vous envoyez {}.", nom_de(*combattant)),
@@ -269,7 +303,7 @@ pub fn evenement(evenement: &Evenement, combat: &Combat) -> String {
         }
         Evenement::CaptureRatee(cible) => format!("{} se dégage du filet.", nom_de(*cible)),
         Evenement::PotionUtilisee { cible, pv_rendus } => {
-            format!("{} récupère {pv_rendus} PV.", nom_de(*cible))
+            soin_de_potion(&nom_de(*cible), *pv_rendus)
         }
         Evenement::Fuite => "Vous prenez la fuite.".to_string(),
         Evenement::FinDuCombat(Issue::Victoire) => "Victoire !".to_string(),
@@ -348,12 +382,26 @@ pub fn erreur_sauvegarde(erreur: &ErreurSauvegarde) -> String {
     }
 }
 
+pub fn soin_de_potion(nom: &str, pv_rendus: u32) -> String {
+    if pv_rendus == 0 {
+        format!("La potion est sans effet sur {nom}.")
+    } else {
+        format!("{nom} récupère {pv_rendus} PV.")
+    }
+}
+
+pub fn potion_perdue(monstre: &Monstre) -> String {
+    format!(
+        "{} a déjà tous ses PV : la potion serait perdue. L'utiliser quand même ?",
+        nom(monstre, Cote::Joueur)
+    )
+}
+
 pub fn erreur_potion(erreur: &ErreurPotion) -> String {
     match erreur {
         ErreurPotion::AucunePotion => "Vous n'avez plus de potion.".to_string(),
         ErreurPotion::MonstreInexistant => "Ce monstre n'est pas dans l'équipe.".to_string(),
         ErreurPotion::MonstreKo => "Une potion ne relève pas un monstre KO.".to_string(),
-        ErreurPotion::PvDejaPleins => "Ce monstre a déjà tous ses PV.".to_string(),
     }
 }
 
@@ -457,8 +505,12 @@ pub fn codex(codex: &Codex, especes: &[Espece]) -> String {
     lignes.join("\n")
 }
 
-/// Avec un surnom, le nom de l'espèce reste visible entre parenthèses.
 fn ligne_monstre(monstre: &Monstre, cote: Cote) -> String {
+    ligne_monstre_nommee(monstre, &nom(monstre, cote))
+}
+
+/// Avec un surnom, le nom de l'espèce reste visible entre parenthèses.
+fn ligne_monstre_nommee(monstre: &Monstre, nom: &str) -> String {
     let etat = if monstre.est_ko() {
         ", KO".to_string()
     } else {
@@ -474,8 +526,7 @@ fn ligne_monstre(monstre: &Monstre, cote: Cote) -> String {
         String::new()
     };
     format!(
-        "{} ({espece}niv. {}) : {}/{} PV{etat}",
-        nom(monstre, cote),
+        "{nom} ({espece}niv. {}) : {}/{} PV{etat}",
         monstre.niveau().valeur(),
         monstre.pv_actuels(),
         monstre.stats().pv

@@ -1,7 +1,9 @@
-//! Format JSON de la sauvegarde, version 1, et sa conversion vers les types
+//! Format JSON de la sauvegarde, version 2, et sa conversion vers les types
 //! du noyau. Les énumérations sont écrites avec des noms fixés ici, et non
 //! avec les noms Rust, pour qu'un renommage dans le code ne casse pas les
 //! sauvegardes existantes.
+//!
+//! Chaque structure porte le numéro de la version qui l'a introduite.
 
 use serde::{Deserialize, Serialize};
 
@@ -15,18 +17,22 @@ use bersemon_core::inventaire::Inventaire;
 use bersemon_core::monstre::{EtatMonstre, Monstre};
 use bersemon_core::niveau::Niveau;
 use bersemon_core::nom::Nom;
-use bersemon_core::partie::Partie;
+use bersemon_core::partie::{EtatPartie, Partie};
 use bersemon_core::sauvegarde::ErreurSauvegarde;
 use bersemon_core::stats::{Stats, ValeursInternes};
 use bersemon_core::statut::Statut;
+use bersemon_core::tutoriel::Conseil;
 use bersemon_core::zone::ZoneId;
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 1;
+pub(crate) const VERSION: u64 = 2;
 
+/// La version 2 ajoute la traque de l'Apôtre et le tutoriel. Une sauvegarde
+/// en version 1 se lit avec cette structure : les champs ajoutés y prennent
+/// leur valeur de début de partie.
 #[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct SauvegardeV1 {
+pub(crate) struct SauvegardeV2 {
     pub(crate) version: u64,
     heros: HerosV1,
     equipe: Vec<MonstreV1>,
@@ -34,6 +40,12 @@ pub(crate) struct SauvegardeV1 {
     potions: u32,
     codex: CodexV1,
     zones_explorees: Vec<String>,
+    #[serde(default)]
+    indices_trouves: usize,
+    #[serde(default)]
+    apotres_vaincus: Vec<String>,
+    #[serde(default)]
+    conseils_vus: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -71,9 +83,9 @@ struct CodexV1 {
     capturees: Vec<String>,
 }
 
-pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV1 {
+pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV2 {
     let collection = partie.collection();
-    SauvegardeV1 {
+    SauvegardeV2 {
         version: VERSION,
         heros: HerosV1 {
             nom: partie.heros().nom().as_str().to_string(),
@@ -91,11 +103,18 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV1 {
             .iter()
             .map(|zone| zone.as_str().to_string())
             .collect(),
+        indices_trouves: partie.indices_trouves(),
+        apotres_vaincus: ids(partie.apotres_vaincus()),
+        conseils_vus: partie
+            .conseils_vus()
+            .iter()
+            .map(|conseil| nom_de_conseil(*conseil).to_string())
+            .collect(),
     }
 }
 
 pub(crate) fn vers_partie(
-    sauvegarde: SauvegardeV1,
+    sauvegarde: SauvegardeV2,
     catalogue: &dyn Catalogue,
 ) -> Result<Partie, ErreurSauvegarde> {
     let heros = Heros::new(
@@ -115,14 +134,36 @@ pub(crate) fn vers_partie(
     for espece in &sauvegarde.codex.capturees {
         codex.noter_capture(&EspeceId::new(espece.as_str()));
     }
-    let zones = sauvegarde
+    let zones_explorees = sauvegarde
         .zones_explorees
         .into_iter()
         .map(ZoneId::new)
         .collect();
-    Ok(Partie::restaurer(
-        heros, collection, inventaire, codex, zones,
-    ))
+    // Un Apôtre vaincu reste une espèce du jeu, comme un monstre capturé.
+    let apotres_vaincus = sauvegarde
+        .apotres_vaincus
+        .into_iter()
+        .map(|id| match catalogue.espece(&EspeceId::new(id.as_str())) {
+            Some(espece) => Ok(espece.id().clone()),
+            None => Err(ErreurSauvegarde::EspeceInconnue(id)),
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let conseils_vus = sauvegarde
+        .conseils_vus
+        .iter()
+        .map(String::as_str)
+        .map(conseil)
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(Partie::restaurer(EtatPartie {
+        heros,
+        collection,
+        inventaire,
+        codex,
+        zones_explorees,
+        indices_trouves: sauvegarde.indices_trouves,
+        apotres_vaincus,
+        conseils_vus,
+    }))
 }
 
 fn depuis_monstre(monstre: &Monstre) -> MonstreV1 {
@@ -253,6 +294,25 @@ fn statut(texte: &str) -> Result<Statut, ErreurSauvegarde> {
         "paralysie" => Ok(Statut::Paralysie),
         autre => Err(ErreurSauvegarde::Incoherente(format!(
             "statut inconnu : {autre}"
+        ))),
+    }
+}
+
+fn nom_de_conseil(conseil: Conseil) -> &'static str {
+    match conseil {
+        Conseil::PremierCombat => "premier-combat",
+        Conseil::PremierArretEntreDeuxEtapes => "premier-arret-entre-deux-etapes",
+        Conseil::PremierRetourAuCamp => "premier-retour-au-camp",
+    }
+}
+
+fn conseil(texte: &str) -> Result<Conseil, ErreurSauvegarde> {
+    match texte {
+        "premier-combat" => Ok(Conseil::PremierCombat),
+        "premier-arret-entre-deux-etapes" => Ok(Conseil::PremierArretEntreDeuxEtapes),
+        "premier-retour-au-camp" => Ok(Conseil::PremierRetourAuCamp),
+        autre => Err(ErreurSauvegarde::Incoherente(format!(
+            "conseil inconnu : {autre}"
         ))),
     }
 }

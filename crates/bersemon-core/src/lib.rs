@@ -12,6 +12,7 @@ pub mod catalogue;
 pub mod codex;
 pub mod collection;
 pub mod combat;
+pub mod contenu;
 mod degats;
 pub mod espece;
 pub mod expedition;
@@ -25,6 +26,8 @@ pub mod partie;
 pub mod sauvegarde;
 pub mod stats;
 pub mod statut;
+pub mod traque;
+pub mod tutoriel;
 pub mod types;
 pub mod zone;
 

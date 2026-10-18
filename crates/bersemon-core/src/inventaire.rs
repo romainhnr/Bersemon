@@ -56,7 +56,6 @@ pub enum ErreurPotion {
     AucunePotion,
     MonstreInexistant,
     MonstreKo,
-    PvDejaPleins,
 }
 
 impl fmt::Display for ErreurPotion {
@@ -65,28 +64,34 @@ impl fmt::Display for ErreurPotion {
             ErreurPotion::AucunePotion => write!(f, "aucune potion"),
             ErreurPotion::MonstreInexistant => write!(f, "ce monstre n'est pas dans l'équipe"),
             ErreurPotion::MonstreKo => write!(f, "une potion ne relève pas un monstre KO"),
-            ErreurPotion::PvDejaPleins => write!(f, "le monstre a déjà tous ses PV"),
         }
     }
 }
 
 impl std::error::Error for ErreurPotion {}
 
-/// Une potion ne relève pas un monstre KO (section 14.4) et n'est pas
-/// gaspillée sur un monstre qui a tous ses PV (Q53).
+/// Une potion ne relève pas un monstre KO (section 14.4). Sur un monstre qui
+/// a tous ses PV, elle est permise mais perdue : demander confirmation au
+/// joueur revient à l'interface (`potion_sans_effet`, Q53).
 pub fn verifier_cible(monstre: &Monstre) -> Result<(), ErreurPotion> {
     if monstre.est_ko() {
         Err(ErreurPotion::MonstreKo)
-    } else if monstre.pv_actuels() >= monstre.stats().pv {
-        Err(ErreurPotion::PvDejaPleins)
     } else {
         Ok(())
     }
 }
 
-/// Rend un pourcentage des PV max tiré de 40 % à 60 % (un tirage). Rend les
-/// PV réellement rendus.
+/// Le monstre a tous ses PV : une potion serait consommée sans effet.
+pub fn potion_sans_effet(monstre: &Monstre) -> bool {
+    monstre.pv_actuels() >= monstre.stats().pv
+}
+
+/// Rend un pourcentage des PV max tiré de 40 % à 60 % (un tirage, sauf si
+/// le monstre a déjà tous ses PV). Rend les PV réellement rendus.
 pub(crate) fn appliquer_potion(monstre: &mut Monstre, aleatoire: &mut dyn Aleatoire) -> u32 {
+    if potion_sans_effet(monstre) {
+        return 0;
+    }
     let pourcentage = aleatoire.tirer(POURCENTAGE_MIN..=POURCENTAGE_MAX);
     let soin = monstre.stats().pv * pourcentage / 100;
     monstre.soigner(soin)
@@ -138,11 +143,20 @@ mod tests {
             inventaire.utiliser_potion(&mut blesse(0), &mut aleatoire),
             Err(ErreurPotion::MonstreKo)
         );
-        assert_eq!(
-            inventaire.utiliser_potion(&mut blesse(20), &mut aleatoire),
-            Err(ErreurPotion::PvDejaPleins)
-        );
         assert_eq!(inventaire.potions(), 1);
+    }
+
+    #[test]
+    fn potion_perdue_sur_un_monstre_qui_a_tous_ses_pv() {
+        let mut inventaire = Inventaire::default();
+        inventaire.ajouter_potions(1);
+        let mut monstre = blesse(20);
+        assert!(potion_sans_effet(&monstre));
+        assert_eq!(
+            inventaire.utiliser_potion(&mut monstre, &mut AleatoireScripte::new([])),
+            Ok(0)
+        );
+        assert_eq!(inventaire.potions(), 0);
     }
 
     #[test]

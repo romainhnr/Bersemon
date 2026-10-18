@@ -1,15 +1,18 @@
-//! Combat contre un groupe sauvage, puis ses suites : XP, apprentissage
-//! d'attaques et placement des captures.
+//! Combat contre un groupe sauvage ou un Apôtre, puis ses suites : XP,
+//! apprentissage d'attaques et placement des captures.
 
 use bersemon_core::aleatoire::Aleatoire;
 use bersemon_core::attaque::Attaque;
 use bersemon_core::collection::{Collection, Emplacement, Placement};
 use bersemon_core::combat::{Action, Combat, Cote, ErreurCombat, Evenement, Issue, Phase};
+use bersemon_core::inventaire::potion_sans_effet;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
+use bersemon_core::tutoriel::Conseil;
 
 use crate::affichage;
 use crate::saisie::Entree;
+use crate::tutoriel::montrer_conseil;
 
 pub struct FinDeCombat {
     pub issue: Option<Issue>,
@@ -25,11 +28,35 @@ pub fn combattre(
 ) -> FinDeCombat {
     // En expédition, l'équipe garde toujours un monstre en état de combattre
     // entre deux combats : sinon une défaite l'aurait ramenée au camp.
-    let mut combat = partie
+    let combat = partie
         .preparer_combat(groupe)
         .expect("l'équipe a un monstre en état de combattre");
     println!();
     println!("{}", affichage::rencontre(&combat));
+    mener(partie, combat, aleatoire, entree)
+}
+
+/// Combat sans fuite ni filet (section 9.4) ; le récit de l'Apôtre, montré
+/// avant, tient lieu d'annonce.
+pub fn combattre_l_apotre(
+    partie: &mut Partie,
+    apotre: Monstre,
+    aleatoire: &mut dyn Aleatoire,
+    entree: &mut Entree,
+) -> FinDeCombat {
+    let combat = partie
+        .preparer_combat_contre_apotre(apotre)
+        .expect("l'équipe a un monstre en état de combattre");
+    mener(partie, combat, aleatoire, entree)
+}
+
+fn mener(
+    partie: &mut Partie,
+    mut combat: Combat,
+    aleatoire: &mut dyn Aleatoire,
+    entree: &mut Entree,
+) -> FinDeCombat {
+    montrer_conseil(partie, Conseil::PremierCombat);
     let mut entree_ouverte =
         jouer(&mut combat, aleatoire, entree) && capturer_les_ko(&mut combat, entree);
 
@@ -173,13 +200,37 @@ fn capturer_les_ko(combat: &mut Combat, entree: &mut Entree) -> bool {
     }
 }
 
+/// Entrées du menu de combat, numérotées dans l'ordre de la liste.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Commande {
+    Attaquer,
+    Changer,
+    LancerFilet,
+    UtiliserPotion,
+    Fuir,
+}
+
+/// Face à un Apôtre, le filet et la fuite ne sont pas proposés (section 9.4).
+fn commandes(combat: &Combat) -> Vec<Commande> {
+    let mut commandes = vec![Commande::Attaquer, Commande::Changer];
+    if combat.filet_possible() {
+        commandes.push(Commande::LancerFilet);
+    }
+    commandes.push(Commande::UtiliserPotion);
+    if combat.fuite_possible() {
+        commandes.push(Commande::Fuir);
+    }
+    commandes
+}
+
 /// Rend `None` si l'entrée est fermée. Le choix 0 d'un sous-menu ramène au
 /// menu principal.
 fn choisir_action(combat: &Combat, entree: &mut Entree) -> Option<Action> {
+    let commandes = commandes(combat);
     loop {
-        println!("{}", affichage::menu_action(combat));
-        match entree.choix(1, 5)? {
-            1 => {
+        println!("{}", affichage::menu_action(combat, &commandes));
+        match commandes[entree.choix(1, commandes.len())? - 1] {
+            Commande::Attaquer => {
                 let monstre = combat.monstre(combat.actif(Cote::Joueur));
                 println!("{}", affichage::liste_attaques(monstre));
                 let choix = entree.choix(0, monstre.attaques().liste().len())?;
@@ -187,23 +238,29 @@ fn choisir_action(combat: &Combat, entree: &mut Entree) -> Option<Action> {
                     return Some(Action::Attaquer(choix - 1));
                 }
             }
-            2 => {
+            Commande::Changer => {
                 println!("{}", affichage::liste_equipe(combat, true));
                 let choix = entree.choix(0, combat.equipe().len())?;
                 if choix > 0 {
                     return Some(Action::Changer(choix - 1));
                 }
             }
-            3 => return Some(Action::LancerFilet),
-            4 => {
+            Commande::LancerFilet => return Some(Action::LancerFilet),
+            Commande::UtiliserPotion => {
                 println!("Soigner quel monstre ?");
                 println!("{}", affichage::liste_equipe(combat, true));
                 let choix = entree.choix(0, combat.equipe().len())?;
                 if choix > 0 {
-                    return Some(Action::UtiliserPotion(choix - 1));
+                    let monstre = &combat.equipe()[choix - 1];
+                    // Sur un monstre qui a tous ses PV, la potion serait
+                    // perdue : le joueur confirme d'abord (Q53).
+                    let perdue = combat.potions() > 0 && potion_sans_effet(monstre);
+                    if !perdue || entree.confirmation(&affichage::potion_perdue(monstre))? {
+                        return Some(Action::UtiliserPotion(choix - 1));
+                    }
                 }
             }
-            _ => return Some(Action::Fuir),
+            Commande::Fuir => return Some(Action::Fuir),
         }
     }
 }

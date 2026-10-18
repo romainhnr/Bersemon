@@ -2,12 +2,13 @@
 //! (sections 4.1 et 6).
 
 use bersemon_core::aleatoire::Aleatoire;
+use bersemon_core::espece::Espece;
 use bersemon_core::heros::{Classe, Heros};
 use bersemon_core::monstre::Monstre;
 use bersemon_core::nom::Nom;
+use bersemon_core::partie::creer_monstre_de_depart;
 
 use crate::affichage;
-use crate::demo;
 use crate::saisie::Entree;
 
 /// Rend `None` si l'entrée est fermée.
@@ -28,12 +29,16 @@ pub fn creer_heros(entree: &mut Entree) -> Option<Heros> {
 }
 
 /// Rend `None` si l'entrée est fermée.
-pub fn choisir_depart(entree: &mut Entree, aleatoire: &mut dyn Aleatoire) -> Option<Monstre> {
-    let mut especes = demo::especes_de_depart();
+pub fn choisir_depart(
+    especes: &[Espece],
+    entree: &mut Entree,
+    aleatoire: &mut dyn Aleatoire,
+) -> Option<Monstre> {
     println!("Choisissez votre premier monstre :");
-    println!("{}", affichage::liste_especes(&especes));
+    println!("{}", affichage::liste_especes(especes));
     let choix = entree.choix(1, especes.len())?;
-    let monstre = demo::monstre_de_depart(especes.swap_remove(choix - 1), aleatoire);
+    let monstre = creer_monstre_de_depart(especes[choix - 1].clone(), aleatoire)
+        .expect("monstre de départ créé au niveau 5");
     println!("{} vous accompagne désormais.", monstre.nom());
     Some(monstre)
 }

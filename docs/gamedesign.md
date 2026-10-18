@@ -72,6 +72,7 @@ L'objectif du jeu est de proposer des boucles de gameplay intéressantes et stim
 - Une dizaine de monstres sauvages.
 - 2 zones d'expédition manuelle, une facile puis une difficile (section 9).
 - Potions de soin (section 14.4) et codex simple (section 5.6).
+- Un Apôtre à traquer dans la zone difficile, au bout de la V1 (sections 6 et 9.4).
 - Combat au tour par tour (format Pokémon, section 10), avec les statuts poison et paralysie, capture au filet et fuite.
 - Camp de base réduit à l'essentiel : soin, gestion de l'équipe (3 monstres avec soi, 30 au camp) et sauvegarde.
 - Valeurs internes et shiny des monstres (section 5.1).
@@ -118,13 +119,13 @@ Chaque monstre possède :
 
 - un niveau, de 1 à 100 (section 7) ;
 - un à trois types ;
-- un rôle : soutien ou offensif. Ce rôle s'ajoute aux types ; il n'a pas d'effet dans la V1 ;
+- un rôle : soutien ou offensif, le soutien couvrant aussi les profils défensifs. Ce rôle s'ajoute aux types et il est propre à l'espèce ; il n'a pas d'effet dans la V1 ;
 - six stats, comme dans Pokémon : PV, Attaque, Défense, Attaque spéciale, Défense spéciale, Vitesse (section 5.8) ;
-- au plus 4 attaques, chacune d'un seul type, physique ou spéciale (section 10.4) ;
+- de 1 à 4 attaques distinctes, chacune d'un seul type, physique ou spéciale (section 10.4) ;
 - des valeurs internes aléatoires, de 0 à 31 pour chaque stat, qui influent sur ses stats (similaires aux IV de Pokémon), ce qui rend chaque monstre unique. Ces valeurs sont visibles dans le résumé du monstre ;
 - une habileté unique (équivalent des talents de Pokémon), qui a un effet secondaire lors des expéditions, des combats, etc. Les habiletés sont hors V1 ;
-- une faible chance d'être "shiny", 1 sur 512 pour un monstre sauvage : sa couleur change, sans incidence sur les stats ;
-- un sprite (une image), pour rendre le jeu plus vivant.
+- une faible chance d'être "shiny", 1 sur 512 pour un monstre sauvage comme pour le monstre de départ : sa couleur change, sans incidence sur les stats. Dans la console, un shiny est signalé par la mention "(shiny)" après son nom ;
+- un sprite (une image), pour rendre le jeu plus vivant. La console de la V1 n'affiche pas d'image : les sprites viendront avec Discord.
 
 ### 5.2 Types
 
@@ -139,6 +140,7 @@ Chaque monstre possède :
 - Les créatures ne reprennent pas directement les Pokémon, qui ne correspondent pas à l'univers. Elles s'en inspirent pour être adaptées à un univers assez sombre et médiéval.
 - Exemples de familles : dragons, fées, elfes, créatures mythologiques ou folkloriques, animaux actuels ou disparus, objets possédés, etc.
 - Volume initial : une dizaine de monstres, augmenté au fur et à mesure.
+- Le contenu de la V1 (espèces, attaques, zones et textes) est décrit dans docs/contenu-v1.md, validé le 17/10/2026.
 
 ### 5.4 Évolution
 
@@ -161,7 +163,7 @@ Le joueur peut :
 
 - Le codex répertorie tous les monstres du jeu (comme le Pokédex de Pokémon).
 - Une entrée est déverrouillée partiellement à la rencontre d'un monstre, et entièrement à sa capture.
-- Dans la V1, le codex se consulte au camp. Une espèce rencontrée en expédition montre son nom et ses types ; une espèce capturée montre aussi ses stats de base et la liste des attaques qu'elle apprend.
+- Dans la V1, le codex se consulte au camp. Une espèce rencontrée en expédition montre son nom et ses types ; une espèce capturée montre aussi ses stats de base et la liste des attaques qu'elle apprend. Le monstre de départ compte comme capturé.
 
 ### 5.7 KO (pas de mort définitive)
 
@@ -183,7 +185,10 @@ Le joueur peut :
 
 - Une histoire, simple pour le moment.
 - Un petit tutoriel de départ.
-- Après le choix de la classe, l'histoire amène le joueur à choisir son premier monstre parmi 3. Ce monstre est au niveau 5.
+- Fil de l'histoire, inspiré de Berserk : le héros veut se venger du Démiurge, maître des Apôtres, de puissants monstres. Pour l'atteindre, il traque les Apôtres un par un, de zone en zone : dans chaque zone, il réunit des indices sur la cachette d'un Apôtre, s'en approche peu à peu, puis l'affronte avant de passer au suivant (section 9.4).
+- Dans la V1, un seul Apôtre est à vaincre, dans la zone difficile. Le Démiurge est annoncé dès l'introduction, mais il ne sera affronté que dans une version suivante. Après la victoire contre l'Apôtre, un court épilogue annonce la suite de la traque, puis le joueur peut continuer à explorer, capturer et compléter son codex.
+- Après le choix de la classe, l'histoire amène le joueur à choisir son premier monstre parmi 3. Ce monstre est au niveau 5. Ses valeurs internes sont tirées au hasard et il a, comme un monstre sauvage, 1 chance sur 512 d'être shiny.
+- Dans la V1 : une courte introduction d'ambiance après le choix de la classe, jusqu'au choix du premier monstre ; un tutoriel fait de quelques conseils, chacun montré une seule fois par partie, au premier combat, au premier arrêt entre deux étapes et au premier retour au camp. Les textes sont proposés dans docs/contenu-v1.md.
 - Une association d'un monstre de départ à chaque classe reste envisageable plus tard.
 
 ## 7. Progression
@@ -212,7 +217,8 @@ Le jeu alterne entre deux phases :
 - Pour rester dans le style propre à l'univers, le monde s'explore sur une carte qui se dévoile au fil des expéditions lancées par le joueur.
 - Le joueur part en expédition vers un lieu choisi, avec ses monstres.
 - Chaque zone a sa propre difficulté, visible sur la carte.
-- La V1 compte 2 zones : une zone facile, accessible dès le départ, et une zone difficile, qui apparaît sur la carte après une première expédition menée jusqu'à sa dernière étape dans la zone facile.
+- La V1 compte 2 zones : une zone facile, accessible dès le départ, et une zone difficile, qui apparaît sur la carte avec le premier indice sur l'Apôtre, trouvé au bout d'une première expédition menée jusqu'à sa dernière étape dans la zone facile (section 9.4).
+- Après la V1, chaque zone s'ouvrira avec la défaite de l'Apôtre de la zone précédente.
 
 ### 9.2 Événements
 
@@ -229,7 +235,7 @@ Déroulement dans la V1 :
 - Chaque étape tire un événement : combat contre un groupe sauvage (80 %), coffre (15 %) ou monstre rare (5 %). Le marchand est hors V1.
 - Un groupe sauvage compte de 1 à 2 monstres dans la zone facile, de 1 à 3 dans la zone difficile ; la taille est tirée à chaque combat.
 - Un coffre contient 1 à 2 potions (section 14.4).
-- Entre deux étapes, le joueur continue, rentre au camp en gardant ses gains, ou utilise des potions. Les PV et les statuts sont conservés d'une étape à l'autre.
+- Entre deux étapes, le joueur continue, rentre au camp en gardant ses gains, utilise des potions ou change l'ordre de son équipe ; les échanges avec le camp restent impossibles. Les PV et les statuts sont conservés d'une étape à l'autre.
 - Après la dernière étape, le joueur rentre au camp et la zone compte comme explorée.
 
 ### 9.3 Défaite
@@ -239,7 +245,17 @@ Si tous les monstres du joueur sont KO pendant une expédition manuelle :
 - le joueur retourne automatiquement au camp ;
 - il perd les objets qu'il avait sur lui, dont toutes ses potions ;
 - ses monstres restent KO et sont soignés au camp (section 5.7) ;
+- c'est aussi une défaite si son dernier monstre et le dernier monstre sauvage tombent KO au même tour ;
 - l'expédition ne compte pas comme menée jusqu'au bout.
+
+### 9.4 Traque d'un Apôtre
+
+- Chaque expédition menée jusqu'à sa dernière étape révèle un indice sur la cachette de l'Apôtre traqué : un court texte d'histoire.
+- Dans la V1, la piste commence dans la zone facile, qui n'a pas d'Apôtre : le premier indice, au bout de la première expédition complète dans la zone facile, désigne la zone difficile et l'ouvre. Les indices 2 et 3 viennent des expéditions menées au bout dans la zone difficile.
+- Au 3e indice, l'antre est localisé : l'expédition suivante dans la zone s'achève par le combat contre l'Apôtre, à sa dernière étape et à la place de l'événement tiré. Rentrer au camp avant cette étape repousse le combat à l'expédition suivante.
+- Combat contre un Apôtre : il combat seul, 2 niveaux au-dessus du niveau maximal de sa zone, avec des stats de base bien plus hautes que celles des monstres communs (environ 480). Comme un monstre sauvage, il a des valeurs internes tirées au hasard et 1 chance sur 512 d'être shiny. La fuite est impossible, et le filet aussi : on ne lance pas de filet sur un Apôtre pendant le combat.
+- Une défaite contre l'Apôtre est une défaite ordinaire (section 9.3) ; les indices restent acquis et l'on peut retenter.
+- Après la victoire, l'Apôtre, mis KO, peut être capturé, à coup sûr, comme tout monstre KO à la fin d'un combat gagné (section 11.2) : c'est la seule façon de le capturer. Capturé ou non, il ne réapparaît plus.
 
 ## 10. Combat
 
@@ -253,7 +269,7 @@ Si tous les monstres du joueur sont KO pendant une expédition manuelle :
 
 Le format reprend celui des combats de Pokémon, comme base de départ qui pourra être ajustée pour se différencier :
 
-- un monstre actif de chaque côté, les autres en réserve ; ils combattent un à un ;
+- un monstre actif de chaque côté, les autres en réserve ; ils combattent un à un, et les monstres d'un groupe sauvage entrent dans l'ordre de la rencontre ;
 - possibilité de changer de monstre actif : un changement volontaire est l'action du tour, et l'adversaire attaque le nouveau monstre ; remplacer un monstre KO est gratuit et se fait avant le tour suivant ;
 - ordre d'action déterminé par la vitesse ; en cas d'égalité, tirage au sort à chaque tour ;
 - efficacité des attaques selon la table des types (section 5.2) ;
@@ -262,7 +278,7 @@ Le format reprend celui des combats de Pokémon, comme base de départ qui pourr
 
 ### 10.3 Fuite
 
-- Le joueur peut fuir, et la fuite réussit toujours. En partant, le monstre actif du joueur subit une attaque du monstre adverse, résolue normalement (section 10.4), mais qui lui laisse au moins 1 PV : une fuite ne met jamais KO.
+- Le joueur peut fuir, et la fuite réussit toujours, sauf face à un Apôtre (section 9.4). En partant, le monstre actif du joueur subit une attaque du monstre adverse, résolue normalement (section 10.4), mais qui lui laisse au moins 1 PV : une fuite ne met jamais KO.
 
 ### 10.4 Résolution d'une attaque
 
@@ -308,7 +324,7 @@ Le format reprend celui des combats de Pokémon, comme base de départ qui pourr
   - chaque niveau d'amélioration du filet augmente les chances de capture (section 13.5).
 - Calcul pour un monstre non KO : chance = PV perdus / PV max x facteur, bornée à 100 %. Le facteur vaut le niveau du monstre actif du joueur divisé par celui du monstre sauvage, borné entre x0,5 et x2. Un monstre à PV pleins ne peut donc pas être capturé. Exemple : à niveau égal, un monstre à 2 PV sur 20 est capturé 9 fois sur 10.
 - Lancer un filet sur le monstre adverse actif est l'action du tour : si la capture échoue, l'adversaire agit. Un monstre sauvage mis KO peut être capturé à la fin du combat, si le joueur l'emporte.
-- Plusieurs monstres peuvent être capturés au cours d'un même combat : chaque monstre d'un groupe sauvage peut l'être, au filet pendant le combat ou, s'il est KO, à la fin d'un combat gagné.
+- Plusieurs monstres peuvent être capturés au cours d'un même combat : chaque monstre d'un groupe sauvage peut l'être, au filet pendant le combat ou, s'il est KO, à la fin d'un combat gagné. Un Apôtre ne se capture que KO, à la fin du combat (section 9.4).
 - Les filets de capture sont illimités dans la V1.
 - Chaque monstre capturé rejoint l'équipe s'il y reste une place, sinon le camp. Si le camp est plein lui aussi, le joueur relâche un monstre de son choix, du camp ou de l'équipe, et la capture prend sa place ; il peut aussi relâcher la capture elle-même, ce qui revient à y renoncer.
 
@@ -365,7 +381,7 @@ Le format reprend celui des combats de Pokémon, comme base de départ qui pourr
 
 - Le joueur peut laisser certains monstres en sécurité au camp et en emmener d'autres avec lui.
 - Limites de départ : 3 monstres avec le joueur et 30 monstres au camp. Ces limites peuvent être augmentées (section 13.4).
-- Le joueur part en expédition avec 1 à 3 monstres.
+- Le joueur part en expédition avec 1 à 3 monstres. L'équipe garde toujours au moins un monstre, même au camp.
 - Au camp, le joueur peut :
   - échanger des monstres entre son équipe et le camp ;
   - choisir l'ordre de son équipe : le premier monstre en état de combattre commence chaque combat ;
@@ -413,7 +429,9 @@ Le joueur peut construire des machines pour automatiser certaines tâches, par e
 - Un seul emplacement : une seule partie en cours, reprise au lancement du jeu. Commencer une nouvelle partie remplace l'ancienne, après confirmation.
 - La sauvegarde est automatique : à la création de la partie, à chaque retour au camp et après chaque action de gestion au camp.
 - On ne sauvegarde qu'au camp : quitter le jeu en pleine expédition ramène à la dernière sauvegarde.
+- Une sauvegarde illisible, ou qui cite une espèce ou une attaque disparue du jeu, est refusée : le jeu l'explique et propose une nouvelle partie, sans rien effacer sans l'accord du joueur.
 - La sauvegarde garde l'identifiant des espèces, des attaques et des zones, pas leurs données : un rééquilibrage s'applique aux monstres déjà capturés.
+- Elle garde aussi l'avancée de la traque (indices trouvés, Apôtres vaincus) et les conseils du tutoriel déjà montrés.
 
 ## 14. Économie, marchands, objets et ressources
 
@@ -445,7 +463,7 @@ Le joueur peut aussi vendre ses objets aux marchands contre de l'argent.
 
 ### 14.4 Potions (V1)
 
-- Seul objet de la V1. Une potion rend à un monstre de l'équipe un pourcentage de ses PV max tiré de 40 % à 60 %, arrondi à l'entier inférieur, sans dépasser ses PV max. Elle ne relève pas un monstre KO et ne guérit pas les statuts.
+- Seul objet de la V1. Une potion rend à un monstre de l'équipe un pourcentage de ses PV max tiré de 40 % à 60 %, arrondi à l'entier inférieur, sans dépasser ses PV max. Elle ne relève pas un monstre KO et ne guérit pas les statuts. Sur un monstre qui a tous ses PV, le jeu demande confirmation : la potion serait consommée sans effet.
 - Elle s'utilise en combat, comme action du tour (l'adversaire agit ensuite), ou entre deux étapes d'une expédition.
 - Dans la V1, les potions se trouvent dans les coffres. Il n'y a ni limite de sac ni coffre de stockage au camp : le joueur porte toutes ses potions et les perd toutes en cas de défaite (section 9.3).
 
@@ -466,20 +484,7 @@ Les numéros des questions résolues ne sont pas réattribués, pour que les ré
 
 Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découpage de la V1 en étapes. Chacune indique l'étape de développement qui en a besoin : 1 fondations (types, stats, monstres), 2 combat 1 contre 1, 3 combat complet (changement, statuts, fuite, capture), 4 progression, 5 héros, équipe et camp, 6 expédition manuelle, 7 sauvegarde, 8 contenu et boucle de jeu complète.
 
-- Q19. (Après la V1) Effet du rôle soutien ou offensif, en combat et en expédition. Le code porte le rôle sur l'espèce, et non sur chaque monstre : à confirmer.
-- Q44. (Étape 8) Bestiaire de la V1 : une dizaine d'espèces (nom, types, rôle, stats, rendement d'XP, liste d'attaques apprises par niveau), dont les 3 monstres de départ, et liste des attaques.
-- Q45. (Étape 8) Pour chacune des 2 zones de la V1 : nom, espèces rencontrées, monstres rares (et s'ils attaquent ou non), fourchette de niveaux.
-- Q46. (Étape 8) Histoire et tutoriel (section 6) inclus ou non dans la V1, et leur étendue.
-- Q47. (Étape 8) Représentation des sprites dans la console (art ASCII ou aucune image) et signalement d'un monstre shiny à l'écran.
-- Q48. (Étape 2) Un monstre connaît-il toujours au moins une attaque, et peut-il connaître deux fois la même ? Le code suppose pour l'instant au moins une attaque et aucun doublon, comme dans Pokémon : à confirmer.
-- Q49. (Étape 3) Ordre d'entrée des monstres d'un groupe sauvage. Le code les fait entrer dans l'ordre de la rencontre : à confirmer.
-- Q50. (Étape 3) Si le dernier monstre du joueur et le dernier monstre sauvage tombent KO au même tour (par le poison), qui l'emporte ? Le code donne la défaite au joueur, puisque toute son équipe est KO (section 9.3) : à confirmer.
-- Q51. (Étape 5) L'équipe garde-t-elle toujours au moins un monstre, y compris au camp ? Le code l'impose : on ne peut ni envoyer au camp ni relâcher le dernier monstre de l'équipe sans en faire venir un autre d'abord : à confirmer.
-- Q52. (Étape 5) Les monstres de départ ont-ils des valeurs internes tirées au hasard, comme les monstres sauvages ? Le code les tire au hasard, et ils ne sont jamais shiny (la chance de shiny ne concerne que les monstres sauvages) : à confirmer.
-- Q53. (Étape 6) Peut-on utiliser une potion sur un monstre qui a tous ses PV ? Le code le refuse, pour ne pas gaspiller la potion : à confirmer.
-- Q54. (Étape 6) Le monstre de départ compte-t-il comme capturé dans le codex ? Le code l'inscrit comme capturé : à confirmer.
-- Q55. (Étape 6) Peut-on changer l'ordre de son équipe entre deux étapes d'une expédition ? Le code ne le permet qu'au camp (section 13.2) : à confirmer.
-- Q56. (Étape 7) Que faire d'une sauvegarde qui cite une espèce ou une attaque disparue du jeu, ou qui est illisible ? Le code refuse de la charger, l'explique au joueur et lui propose une nouvelle partie, sans rien effacer sans sa confirmation : à confirmer. Les sauvegardes faites avec le contenu provisoire ne se chargeront plus une fois le bestiaire définitif en place (étape 8).
+- Q19. (Après la V1) Effet du rôle soutien ou offensif, en combat et en expédition.
 
 ## 17. Journal des décisions
 
@@ -566,7 +571,7 @@ Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découp
 17/10/2026 (étape 6) :
 
 - Q3 : 2 zones dans la V1, une facile puis une difficile.
-- Q40 : la zone difficile apparaît après une expédition menée jusqu'au bout dans la zone facile.
+- Q40 : la zone difficile apparaît après une expédition menée jusqu'au bout dans la zone facile. Remplacé ci-dessous par la traque des Apôtres.
 - Q37 et Q41 : une expédition compte de 4 à 6 étapes, nombre tiré au départ et inconnu du joueur ; entre deux étapes, le joueur continue ou rentre en gardant ses gains ; PV et statuts sont conservés ; après la dernière étape, la zone compte comme explorée.
 - Q38 : à chaque étape, combat (80 %), coffre (15 %) ou monstre rare (5 %).
 - Groupes sauvages de 1 à 2 monstres en zone facile, de 1 à 3 en zone difficile.
@@ -578,3 +583,23 @@ Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découp
 - Q42 : un seul emplacement de sauvegarde ; une nouvelle partie remplace l'ancienne après confirmation.
 - Q43 : sauvegarde automatique à la création, à chaque retour au camp et après chaque action au camp ; jamais en expédition.
 - Fichier de sauvegarde JSON dans %APPDATA%\Bersemon.
+
+17/10/2026 (étape 8) :
+
+- Q44 et Q45 : un brouillon du contenu de la V1 est rédigé dans docs/contenu-v1.md, à valider avant d'être codé.
+- Q46 : une courte introduction et un tutoriel de quelques conseils, chacun montré une fois par partie.
+- Q47 : pas d'image dans la console ; un shiny est signalé par "(shiny)".
+- Hypothèses validées : rôle propre à l'espèce (Q19), 1 à 4 attaques distinctes (Q48), entrée des sauvages dans l'ordre de la rencontre (Q49), défaite si les deux derniers monstres tombent au même tour (Q50), équipe jamais vide (Q51), monstre de départ capturé au codex (Q54), sauvegarde incompatible refusée sans rien effacer (Q56).
+- Q52 révisée : le monstre de départ a des valeurs internes tirées au hasard et 1 chance sur 512 d'être shiny.
+- Q53 révisée : une potion sur un monstre à PV pleins est permise après confirmation, et consommée sans effet.
+- Q55 révisée : entre deux étapes, le joueur peut changer l'ordre de son équipe.
+- Monstres de départ : Salamandre offensive en attaque spéciale, Crapaud offensif en attaque physique, Mandragore défensive ; un départ plus difficile que les autres est assumé. Noms du brouillon acceptés.
+- Histoire inspirée de Berserk : le héros traque les Apôtres un par un pour se venger de leur maître, le Démiurge. Un seul Apôtre dans la V1, dans la zone difficile ; le Démiurge vient après la V1.
+- Traque : un indice par expédition menée au bout ; le 1er, trouvé dans la zone facile, ouvre la zone difficile ; au 3e, l'antre est localisé et l'expédition suivante s'achève par le combat contre l'Apôtre.
+- Q40 révisée : une zone s'ouvre désormais par la traque (indice ou Apôtre vaincu), et non plus par une simple expédition menée au bout.
+- Combat contre un Apôtre : seul, 2 niveaux au-dessus du maximum de sa zone, stats bien plus hautes, sans fuite ; défaite ordinaire, indices conservés ; capture possible après la victoire ; il ne réapparaît plus.
+- Après l'Apôtre de la V1 : un épilogue, puis jeu libre.
+- Q44 et Q45 : contenu de la V1 validé dans docs/contenu-v1.md, avec la Mandragore à 320 de stats de base (5 PV de plus).
+- Q57 : le combat contre l'Apôtre remplace l'événement de la dernière étape de l'expédition qui suit le 3e indice.
+- Le rôle de soutien couvre aussi les profils défensifs ; pas de rôle supplémentaire.
+- Q58 : un Apôtre a, comme un monstre sauvage, des valeurs internes tirées au hasard et 1 chance sur 512 d'être shiny ; pas de filet pendant le combat contre lui, il ne se capture que KO après la victoire.

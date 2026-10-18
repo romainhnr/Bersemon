@@ -1,19 +1,19 @@
-//! Interface console de Bersemon. Pour l'instant : création du héros, choix
-//! du monstre de départ, camp de base, expéditions dans les zones de
-//! démonstration et sauvegarde automatique.
+//! Interface console de Bersemon : création du héros, introduction et choix
+//! du monstre de départ, camp de base, expéditions avec la traque de
+//! l'Apôtre, tutoriel et sauvegarde automatique.
 
 mod affichage;
-mod demo;
 mod ecran_camp;
 mod ecran_combat;
 mod ecran_creation;
 mod ecran_expedition;
 mod saisie;
+mod tutoriel;
 
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use bersemon_core::aleatoire::{Aleatoire, GenerateurAleatoire};
-use bersemon_core::catalogue::Catalogue;
+use bersemon_core::contenu::{ContenuV1, INTRODUCTION};
 use bersemon_core::partie::Partie;
 use bersemon_core::sauvegarde::SauvegardeRepository;
 use bersemon_storage::{FichierJson, emplacement_par_defaut};
@@ -23,13 +23,12 @@ use crate::saisie::Entree;
 fn main() {
     let mut aleatoire = GenerateurAleatoire::new(graine_depuis_horloge());
     let mut entree = Entree::depuis_le_clavier();
-    let zones = demo::zones();
-    let catalogue = demo::catalogue();
+    let contenu = ContenuV1::new();
     let depot = FichierJson::new(emplacement_par_defaut());
 
-    println!("Bersemon : version de démonstration, avec un contenu provisoire.");
+    println!("Bersemon");
     println!("Sauvegarde : {}", depot.chemin().display());
-    let Some(mut partie) = demarrer(&depot, &catalogue, &mut aleatoire, &mut entree) else {
+    let Some(mut partie) = demarrer(&depot, &contenu, &mut aleatoire, &mut entree) else {
         println!();
         println!("À bientôt.");
         return;
@@ -53,7 +52,7 @@ fn main() {
                 // Quitter en pleine expédition ramène à la dernière
                 // sauvegarde (section 13.9) : on ne sauvegarde qu'au retour.
                 let revenu =
-                    ecran_expedition::partir(&mut partie, &zones, &mut aleatoire, &mut entree);
+                    ecran_expedition::partir(&mut partie, &contenu, &mut aleatoire, &mut entree);
                 if revenu {
                     sauvegarder(&depot, &partie);
                 }
@@ -65,7 +64,7 @@ fn main() {
             }
             Some(3) => ecran_camp::gerer_monstres(&mut partie, &depot, &mut entree),
             Some(4) => {
-                println!("{}", affichage::codex(partie.codex(), catalogue.especes()));
+                println!("{}", affichage::codex(partie.codex(), contenu.especes()));
                 true
             }
             _ => false,
@@ -83,11 +82,11 @@ fn main() {
 /// quitte.
 fn demarrer(
     depot: &FichierJson,
-    catalogue: &dyn Catalogue,
+    contenu: &ContenuV1,
     aleatoire: &mut dyn Aleatoire,
     entree: &mut Entree,
 ) -> Option<Partie> {
-    match depot.charger(catalogue) {
+    match depot.charger(contenu) {
         Ok(Some(partie)) => loop {
             println!();
             println!(
@@ -127,7 +126,12 @@ fn demarrer(
         }
     }
     let heros = ecran_creation::creer_heros(entree)?;
-    let depart = ecran_creation::choisir_depart(entree, aleatoire)?;
+    // L'introduction mène du choix de la classe à celui du premier monstre
+    // (section 6).
+    println!();
+    println!("{INTRODUCTION}");
+    println!();
+    let depart = ecran_creation::choisir_depart(contenu.especes_de_depart(), entree, aleatoire)?;
     let partie = Partie::nouvelle(heros, depart);
     sauvegarder(depot, &partie);
     Some(partie)

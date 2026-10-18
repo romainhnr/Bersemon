@@ -8,7 +8,7 @@ use bersemon_core::catalogue::Catalogue;
 use bersemon_core::partie::Partie;
 use bersemon_core::sauvegarde::{ErreurSauvegarde, SauvegardeRepository};
 
-use crate::format::{self, SauvegardeV1, VERSION};
+use crate::format::{self, SauvegardeV2, VERSION};
 
 pub struct FichierJson {
     chemin: PathBuf,
@@ -34,10 +34,11 @@ impl FichierJson {
             .get("version")
             .and_then(serde_json::Value::as_u64)
             .ok_or_else(|| ErreurSauvegarde::Illisible("version absente".to_string()))?;
-        if version != VERSION {
+        // Le format en cours sait lire toutes les versions précédentes.
+        if !(1..=VERSION).contains(&version) {
             return Err(ErreurSauvegarde::VersionInconnue(version));
         }
-        let sauvegarde: SauvegardeV1 = serde_json::from_value(valeur)
+        let sauvegarde: SauvegardeV2 = serde_json::from_value(valeur)
             .map_err(|erreur| ErreurSauvegarde::Illisible(erreur.to_string()))?;
         format::vers_partie(sauvegarde, catalogue)
     }
@@ -81,9 +82,12 @@ mod tests {
     use bersemon_core::monstre::Monstre;
     use bersemon_core::niveau::Niveau;
     use bersemon_core::nom::Nom;
+    use bersemon_core::partie::EtatPartie;
     use bersemon_core::stats::{Stats, ValeursInternes};
     use bersemon_core::statut::Statut;
+    use bersemon_core::tutoriel::Conseil;
     use bersemon_core::types::{Type, TypesMonstre};
+    use bersemon_core::zone::ZoneId;
     use std::sync::atomic::{AtomicU32, Ordering};
 
     struct CatalogueDeTest(Vec<Espece>);
@@ -161,7 +165,19 @@ mod tests {
             partie.prendre_monstre_rare(creer("loup", 3));
         }
         partie.ouvrir_coffre(2);
-        partie
+        partie.noter_conseil_vu(Conseil::PremierArretEntreDeuxEtapes);
+        partie.noter_conseil_vu(Conseil::PremierCombat);
+        // La traque n'avance qu'en expédition : elle est posée directement.
+        Partie::restaurer(EtatPartie {
+            heros: partie.heros().clone(),
+            collection: partie.collection().clone(),
+            inventaire: partie.inventaire().clone(),
+            codex: partie.codex().clone(),
+            zones_explorees: vec![ZoneId::new("lisiere")],
+            indices_trouves: 3,
+            apotres_vaincus: vec![EspeceId::new("loup")],
+            conseils_vus: partie.conseils_vus().to_vec(),
+        })
     }
 
     /// Un fichier par test, dans le dossier temporaire du système.
@@ -238,11 +254,35 @@ mod tests {
 
     #[test]
     fn version_inconnue() {
-        let texte = texte_de_partie().replacen("\"version\":1", "\"version\":2", 1);
+        let texte = texte_de_partie().replacen("\"version\":2", "\"version\":3", 1);
         assert_eq!(
             charger_texte(&texte),
-            Err(ErreurSauvegarde::VersionInconnue(2))
+            Err(ErreurSauvegarde::VersionInconnue(3))
         );
+    }
+
+    #[test]
+    fn une_sauvegarde_en_version_1_reprend_au_debut_de_la_traque() {
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        let objet = valeur.as_object_mut().unwrap();
+        objet.insert("version".to_string(), 1.into());
+        for champ in ["indices_trouves", "apotres_vaincus", "conseils_vus"] {
+            objet.remove(champ);
+        }
+        let partie = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        assert_eq!(partie.indices_trouves(), 0);
+        assert!(partie.apotres_vaincus().is_empty());
+        assert!(partie.conseils_vus().is_empty());
+        assert_eq!(partie.collection(), partie_complete().collection());
+    }
+
+    #[test]
+    fn conseil_inconnu() {
+        let texte = texte_de_partie().replace("\"premier-combat\"", "\"dernier-combat\"");
+        assert!(matches!(
+            charger_texte(&texte),
+            Err(ErreurSauvegarde::Incoherente(_))
+        ));
     }
 
     #[test]
