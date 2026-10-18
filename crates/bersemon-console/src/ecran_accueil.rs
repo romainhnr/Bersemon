@@ -1,5 +1,6 @@
 //! Début de partie : reprise de la sauvegarde ou nouvelle partie, création
-//! du héros et choix du monstre de départ (sections 4.1, 6 et 13.9).
+//! du héros, dont la classe donne le monstre de départ (sections 4.1, 6 et
+//! 13.9).
 
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::Choix;
@@ -9,7 +10,6 @@ use bersemon_core::sauvegarde::ErreurSauvegarde;
 use bersemon_presentation::erreurs::erreur_sauvegarde;
 use bersemon_presentation::partie::{decrire_classe, partie_en_cours};
 
-use crate::affichage;
 use crate::saisie::Entree;
 
 /// Rend `None` si le joueur quitte ou que l'entrée est fermée.
@@ -43,19 +43,11 @@ pub fn nom_du_heros(entree: &mut Entree) -> Option<Choix> {
     entree.texte("Nom de votre héros : ").map(Choix::NomDuHeros)
 }
 
-pub fn classe(entree: &mut Entree) -> Option<Choix> {
+pub fn classe(contenu: &ContenuV1, entree: &mut Entree) -> Option<Choix> {
     println!("Classe de votre héros :");
     for (position, classe) in Classe::TOUTES.iter().enumerate() {
-        println!("  {}. {}", position + 1, decrire_classe(*classe));
+        println!("  {}. {}", position + 1, decrire_classe(*classe, contenu));
     }
     let choix = entree.choix(1, Classe::TOUTES.len())?;
     Some(Choix::Classe(Classe::TOUTES[choix - 1]))
-}
-
-pub fn monstre_de_depart(contenu: &ContenuV1, entree: &mut Entree) -> Option<Choix> {
-    let especes = contenu.especes_de_depart();
-    println!("Choisissez votre premier monstre :");
-    println!("{}", affichage::liste_especes(especes));
-    let choix = entree.choix(1, especes.len())?;
-    Some(Choix::MonstreDeDepart(especes[choix - 1].id().clone()))
 }

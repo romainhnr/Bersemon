@@ -13,6 +13,7 @@ use crate::attaque::{Attaque, AttaqueId, Categorie, EffetSecondaire};
 use crate::catalogue::Catalogue;
 use crate::espece::{AttaqueApprise, Espece, EspeceId, Role};
 use crate::expedition_automatique::ParametresExpeditionAutomatique;
+use crate::heros::Classe;
 use crate::niveau::Niveau;
 use crate::stats::Stats;
 use crate::statut::Statut;
@@ -24,15 +25,28 @@ use crate::zone::{EspeceRare, Zone, ZoneId};
 use Categorie::{Physique, Speciale};
 use Statut::{Paralysie, Poison};
 
-/// Affichée après le choix de la classe, juste avant le choix du premier
-/// monstre (section 6).
+/// Affichée après le choix de la classe (section 6), suivie du paragraphe
+/// propre à la classe, `fin_de_l_introduction`.
 pub const INTRODUCTION: &str = "Le royaume s'est éteint sous un ciel de cendre. Sur les routes que les hommes ont désertées, les bêtes ont repris leurs droits, et des choses plus anciennes rôdent au bord des bois.
 
 Ces choses ont un nom : les Apôtres. Autrefois des hommes, ils ont sacrifié ce qu'ils aimaient pour une chair de monstre, et ils servent un maître que nul n'a vu en face, le Démiurge. Une nuit, ses Apôtres ont fondu sur les vôtres. Vous êtes le seul à vous être relevé.
 
-Vous atteignez le camp de base, dernier feu allumé avant les terres sauvages. Ceux qui survivent ici ne le doivent pas à leur seule lame : ils se lient aux créatures, les capturent au filet et les mènent au combat. Pour atteindre le Démiurge, il faudra abattre ses Apôtres, un par un.
+Vous atteignez le camp de base, dernier feu allumé avant les terres sauvages. Ceux qui survivent ici ne le doivent pas à leur seule lame : ils se lient aux créatures, les capturent au filet et les mènent au combat. Pour atteindre le Démiurge, il faudra abattre ses Apôtres, un par un.";
 
-Le gardien du camp soulève le drap qui couvre trois cages. Choisissez la créature qui partagera votre route.";
+/// Le gardien confie au héros le monstre attitré de sa classe (Q67).
+pub fn fin_de_l_introduction(classe: Classe) -> &'static str {
+    match classe {
+        Classe::Guerrier => {
+            "Le gardien du camp jauge votre lame, puis ouvre une cage : un crapaud massif s'en extrait, la peau couverte de cicatrices. Il frappe fort et ne recule pas. Il partagera votre route."
+        }
+        Classe::Mage => {
+            "Le gardien du camp remarque la cendre sur vos doigts, puis ouvre une cage : une salamandre s'en glisse, et l'air tremble autour d'elle. Ses flammes répondront aux vôtres. Elle partagera votre route."
+        }
+        Classe::Templier => {
+            "Le gardien du camp observe votre bouclier, puis ouvre une cage : une mandragore en sort à pas lents, ses racines tressées comme une armure. Elle encaisse ce qui en abattrait d'autres. Elle partagera votre route."
+        }
+    }
+}
 
 // Chaque indice s'affiche après son numéro, d'où la minuscule initiale.
 const INDICE_1: &str = "au bout de la Lisière, des cordes neuves pendent encore à un chêne mort. Les traces d'une procession s'enfoncent vers le sud, là où la forêt se noie : le Marais des Pendus. Quelque chose y règne.";
@@ -140,6 +154,20 @@ impl ContenuV1 {
 
     pub fn especes_de_depart(&self) -> &[Espece] {
         &self.especes[..NOMBRE_DE_DEPARTS]
+    }
+
+    /// Chaque classe a son monstre de départ, qui reprend son profil
+    /// (section 6).
+    pub fn espece_de_depart(&self, classe: Classe) -> &Espece {
+        let id = match classe {
+            Classe::Guerrier => "crapaud",
+            Classe::Mage => "salamandre",
+            Classe::Templier => "mandragore",
+        };
+        self.especes_de_depart()
+            .iter()
+            .find(|espece| espece.id().as_str() == id)
+            .expect("chaque classe a son monstre de départ dans le contenu")
     }
 
     /// De la plus facile à la plus difficile, dans l'ordre de la carte.
@@ -807,6 +835,16 @@ mod tests {
                 assert_eq!(contenu.espece(espece.id()).as_ref(), Some(espece));
             }
         }
+    }
+
+    #[test]
+    fn chaque_classe_a_son_monstre_de_depart() {
+        let contenu = ContenuV1::new();
+        let ids: Vec<&str> = Classe::TOUTES
+            .iter()
+            .map(|classe| contenu.espece_de_depart(*classe).id().as_str())
+            .collect();
+        assert_eq!(ids, vec!["crapaud", "salamandre", "mandragore"]);
     }
 
     #[test]

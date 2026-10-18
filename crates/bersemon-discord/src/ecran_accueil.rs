@@ -1,12 +1,11 @@
 //! Début de partie sur Discord : reprise de la partie du compte ou nouvelle
-//! partie, création du héros et choix du monstre de départ.
+//! partie, création du héros, dont la classe donne le monstre de départ.
 
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::heros::Classe;
 use bersemon_core::partie::Partie;
 use bersemon_core::sauvegarde::ErreurSauvegarde;
 use bersemon_presentation::erreurs::erreur_sauvegarde;
-use bersemon_presentation::monstres::types_de;
 use bersemon_presentation::partie::{decrire_classe, partie_en_cours};
 
 use crate::composants::Cle;
@@ -48,10 +47,10 @@ pub fn nom_du_heros() -> Question {
     }
 }
 
-pub fn classe() -> Question {
+pub fn classe(contenu: &ContenuV1) -> Question {
     let lignes: Vec<String> = Classe::TOUTES
         .iter()
-        .map(|classe| decrire_classe(*classe))
+        .map(|classe| decrire_classe(*classe, contenu))
         .collect();
     let boutons = Classe::TOUTES
         .iter()
@@ -59,28 +58,6 @@ pub fn classe() -> Question {
         .collect();
     Question {
         texte: format!("Classe de votre héros :\n{}", lignes.join("\n")),
-        rangees: rangees(boutons),
-    }
-}
-
-pub fn monstre_de_depart(contenu: &ContenuV1) -> Question {
-    let especes = contenu.especes_de_depart();
-    let lignes: Vec<String> = especes
-        .iter()
-        .map(|espece| format!("{} ({})", espece.nom(), types_de(espece)))
-        .collect();
-    let boutons = especes
-        .iter()
-        .map(|espece| {
-            bouton(
-                Cle::MonstreDeDepart(espece.id().clone()),
-                espece.nom(),
-                PRINCIPAL,
-            )
-        })
-        .collect();
-    Question {
-        texte: format!("Choisissez votre premier monstre :\n{}", lignes.join("\n")),
         rangees: rangees(boutons),
     }
 }

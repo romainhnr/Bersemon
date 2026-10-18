@@ -61,7 +61,7 @@ Stats de base dans l'ordre PV / Attaque / Défense / Attaque spéciale / Défens
 
 ### Monstres de départ
 
-Trois profils distincts : la Salamandre frappe en attaque spéciale, le Crapaud en attaque physique, la Mandragore encaisse.
+Trois profils distincts : la Salamandre frappe en attaque spéciale, le Crapaud en attaque physique, la Mandragore encaisse. Depuis le 18/10/2026, chacun est attitré à une classe : Salamandre au Mage, Crapaud au Guerrier, Mandragore au Templier (section 6).
 
 | Identifiant | Nom | Types | Rôle | Profil | Stats de base (total) | Rendement d'XP |
 |---|---|---|---|---|---|---|
@@ -137,15 +137,25 @@ Expéditions automatiques, ajoutées après la V1 le 18/10/2026 (section 12) :
 
 ### Introduction
 
-Affichée après le choix de la classe, juste avant le choix du premier monstre (section 6) :
+Affichée après le choix de la classe (section 6). Dans la V1, elle précédait le choix du premier monstre et finissait par : "Le gardien du camp soulève le drap qui couvre trois cages. Choisissez la créature qui partagera votre route." Depuis le 18/10/2026, chaque classe a son monstre attitré, et le dernier paragraphe dépend de la classe (Q67).
 
 > Le royaume s'est éteint sous un ciel de cendre. Sur les routes que les hommes ont désertées, les bêtes ont repris leurs droits, et des choses plus anciennes rôdent au bord des bois.
 >
 > Ces choses ont un nom : les Apôtres. Autrefois des hommes, ils ont sacrifié ce qu'ils aimaient pour une chair de monstre, et ils servent un maître que nul n'a vu en face, le Démiurge. Une nuit, ses Apôtres ont fondu sur les vôtres. Vous êtes le seul à vous être relevé.
 >
 > Vous atteignez le camp de base, dernier feu allumé avant les terres sauvages. Ceux qui survivent ici ne le doivent pas à leur seule lame : ils se lient aux créatures, les capturent au filet et les mènent au combat. Pour atteindre le Démiurge, il faudra abattre ses Apôtres, un par un.
->
-> Le gardien du camp soulève le drap qui couvre trois cages. Choisissez la créature qui partagera votre route.
+
+Dernier paragraphe pour le Guerrier :
+
+> Le gardien du camp jauge votre lame, puis ouvre une cage : un crapaud massif s'en extrait, la peau couverte de cicatrices. Il frappe fort et ne recule pas. Il partagera votre route.
+
+Pour le Mage :
+
+> Le gardien du camp remarque la cendre sur vos doigts, puis ouvre une cage : une salamandre s'en glisse, et l'air tremble autour d'elle. Ses flammes répondront aux vôtres. Elle partagera votre route.
+
+Pour le Templier :
+
+> Le gardien du camp observe votre bouclier, puis ouvre une cage : une mandragore en sort à pas lents, ses racines tressées comme une armure. Elle encaisse ce qui en abattrait d'autres. Elle partagera votre route.
 
 ### Indices sur l'Apôtre
 

@@ -1,7 +1,7 @@
 //! Récit des événements du déroulement, dans l'ordre où ils arrivent.
 
 use bersemon_core::combat::Cote;
-use bersemon_core::contenu::{INTRODUCTION, texte_du_conseil};
+use bersemon_core::contenu::{INTRODUCTION, fin_de_l_introduction, texte_du_conseil};
 use bersemon_core::deroulement::Evenement;
 
 use crate::combat::{rapport_experience, remplacement, renoncement, soin_de_potion};
@@ -31,7 +31,10 @@ pub fn raconter(evenements: &[Evenement]) -> Vec<Recit> {
 
 fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
     let (texte, nouveau_paragraphe) = match evenement {
-        Evenement::Introduction => (INTRODUCTION.to_string(), true),
+        Evenement::Introduction(classe) => (
+            format!("{INTRODUCTION}\n\n{}", fin_de_l_introduction(*classe)),
+            true,
+        ),
         Evenement::PartieCommencee(depart) => (
             format!("{} vous accompagne désormais.", depart.nom()),
             false,

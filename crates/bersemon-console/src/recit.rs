@@ -14,7 +14,7 @@ pub fn raconter(evenements: &[Evenement]) {
         }
         println!("{}", sans_marques(&recit.texte));
         // L'introduction est séparée de la question qui la suit.
-        if *evenement == Evenement::Introduction {
+        if matches!(evenement, Evenement::Introduction(_)) {
             println!();
         }
     }

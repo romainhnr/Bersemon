@@ -9,7 +9,6 @@
 use bersemon_core::collection::Emplacement;
 use bersemon_core::combat::Action;
 use bersemon_core::deroulement::{ActionDeGestion, Choix};
-use bersemon_core::espece::EspeceId;
 use bersemon_core::expedition_automatique::MONSTRES_MAX;
 use bersemon_core::heros::Classe;
 use bersemon_core::zone::ZoneId;
@@ -110,7 +109,6 @@ pub enum Cle {
     ReprendreLaPartie,
     NouvellePartie,
     Classe(Classe),
-    MonstreDeDepart(EspeceId),
     Nommer,
     NomSaisi,
     Oui,
@@ -180,7 +178,6 @@ impl Cle {
             Cle::ReprendreLaPartie => jouer(Choix::ReprendreLaPartie),
             Cle::NouvellePartie => jouer(Choix::NouvellePartie),
             Cle::Classe(classe) => jouer(Choix::Classe(*classe)),
-            Cle::MonstreDeDepart(espece) => jouer(Choix::MonstreDeDepart(espece.clone())),
             Cle::Nommer => Some(Commande::Ouvrir(Formulaire::NomDuHeros)),
             Cle::NomSaisi => jouer(Choix::NomDuHeros(texte?.to_string())),
             Cle::Oui => jouer(Choix::Oui),
@@ -251,7 +248,7 @@ impl Cle {
             Cle::NouvellePartie => "nouvelle-partie".to_string(),
             Cle::Classe(Classe::Guerrier) => "classe:guerrier".to_string(),
             Cle::Classe(Classe::Mage) => "classe:mage".to_string(),
-            Cle::MonstreDeDepart(espece) => format!("depart:{}", espece.as_str()),
+            Cle::Classe(Classe::Templier) => "classe:templier".to_string(),
             Cle::Nommer => "nommer".to_string(),
             Cle::NomSaisi => "nom".to_string(),
             Cle::Oui => "oui".to_string(),
@@ -322,6 +319,7 @@ impl Cle {
             "nouvelle-partie" => Cle::NouvellePartie,
             "classe:guerrier" => Cle::Classe(Classe::Guerrier),
             "classe:mage" => Cle::Classe(Classe::Mage),
+            "classe:templier" => Cle::Classe(Classe::Templier),
             "nommer" => Cle::Nommer,
             "nom" => Cle::NomSaisi,
             "oui" => Cle::Oui,
@@ -352,7 +350,6 @@ impl Cle {
                 let numero = || parametre.parse::<u8>().ok();
                 let emplacement = || lire_emplacement(parametre);
                 match genre {
-                    "depart" => Cle::MonstreDeDepart(EspeceId::new(parametre)),
                     "vue" => {
                         let (vue, parametre) = parametre.split_once(':')?;
                         match vue {
@@ -459,7 +456,7 @@ mod tests {
             Cle::NouvellePartie,
             Cle::Classe(Classe::Guerrier),
             Cle::Classe(Classe::Mage),
-            Cle::MonstreDeDepart(EspeceId::new("salamandre")),
+            Cle::Classe(Classe::Templier),
             Cle::Nommer,
             Cle::NomSaisi,
             Cle::Oui,

@@ -18,7 +18,6 @@ use crate::attaque::{Attaque, ErreurAttaquesMonstre};
 use crate::collection::{Emplacement, ErreurCollection, Placement};
 use crate::combat::{self, Action, BilanCombat, Combat, ErreurCombat, Issue, Phase};
 use crate::contenu::ContenuV1;
-use crate::espece::EspeceId;
 use crate::expedition::{ErreurExpedition, EvenementExpedition, Expedition};
 use crate::expedition_automatique::{
     BilanExpeditionAutomatique, ErreurExpeditionAutomatique, ExpeditionAutomatique,
@@ -55,8 +54,8 @@ pub enum Choix {
     /// Remplace la partie sauvegardée, après confirmation (Q56).
     NouvellePartie,
     NomDuHeros(String),
+    /// La classe donne aussi le monstre de départ (section 6).
     Classe(Classe),
-    MonstreDeDepart(EspeceId),
     PartirEnExpedition(ZoneId),
     /// Les monstres choisis, de 1 à 3, partent seuls (section 12.1).
     /// L'interface a montré auparavant la durée et les chances de réussite
@@ -122,8 +121,6 @@ pub enum Attente<'a> {
     SauvegardeIllisible(&'a ErreurSauvegarde),
     NomDuHeros,
     Classe,
-    /// Parmi `ContenuV1::especes_de_depart`.
-    MonstreDeDepart,
     Camp,
     EntreDeuxEtapes,
     /// Monstre rare pacifique, que le joueur prend ou laisse (section 9.2).
@@ -158,8 +155,9 @@ pub enum Confirmation {
 /// copies prises sur le moment, pour que l'interface puisse les nommer.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Evenement {
-    /// Après le choix de la classe (section 6).
-    Introduction,
+    /// Après le choix de la classe, dont dépend son dernier paragraphe
+    /// (section 6).
+    Introduction(Classe),
     PartieCommencee(Monstre),
     /// Nom de la zone.
     Depart(String),
@@ -236,7 +234,6 @@ pub enum ErreurChoix {
     /// Le choix ne répond pas à la question posée.
     HorsDePropos,
     Nom(ErreurNom),
-    PasUnMonstreDeDepart(EspeceId),
     ZoneInconnue(ZoneId),
     ZoneFermee,
     Collection(ErreurCollection),
@@ -251,9 +248,6 @@ impl fmt::Display for ErreurChoix {
         match self {
             ErreurChoix::HorsDePropos => write!(f, "ce choix ne répond pas à la question"),
             ErreurChoix::Nom(erreur) => write!(f, "{erreur}"),
-            ErreurChoix::PasUnMonstreDeDepart(espece) => {
-                write!(f, "{} n'est pas un monstre de départ", espece.as_str())
-            }
             ErreurChoix::ZoneInconnue(zone) => write!(f, "zone inconnue : {}", zone.as_str()),
             ErreurChoix::ZoneFermee => write!(f, "cette zone n'est pas encore sur la carte"),
             ErreurChoix::Collection(erreur) => write!(f, "{erreur}"),
@@ -278,7 +272,6 @@ enum Etat {
     SauvegardeIllisible(ErreurSauvegarde),
     NomDuHeros,
     Classe(Nom),
-    MonstreDeDepart(Heros),
     EnJeu(Box<EnJeu>),
 }
 
@@ -332,7 +325,6 @@ impl Deroulement {
             Etat::SauvegardeIllisible(erreur) => Attente::SauvegardeIllisible(erreur),
             Etat::NomDuHeros => Attente::NomDuHeros,
             Etat::Classe(_) => Attente::Classe,
-            Etat::MonstreDeDepart(_) => Attente::MonstreDeDepart,
             Etat::EnJeu(jeu) => jeu.attente(),
         }
     }
@@ -364,7 +356,8 @@ impl Deroulement {
         Ok(evenements)
     }
 
-    /// Reprise, création du héros et choix du monstre de départ.
+    /// Reprise et création du héros, qui reçoit le monstre attitré de sa
+    /// classe (section 6).
     fn accueillir(
         &mut self,
         choix: &Choix,
@@ -388,20 +381,12 @@ impl Deroulement {
                 Etat::Classe(Nom::new(texte).map_err(ErreurChoix::Nom)?)
             }
             (Etat::Classe(nom), Choix::Classe(classe)) => {
-                evenements.push(Evenement::Introduction);
-                Etat::MonstreDeDepart(Heros::new(nom.clone(), *classe))
-            }
-            (Etat::MonstreDeDepart(heros), Choix::MonstreDeDepart(id)) => {
-                let espece = contexte
-                    .contenu
-                    .especes_de_depart()
-                    .iter()
-                    .find(|espece| espece.id() == id)
-                    .ok_or_else(|| ErreurChoix::PasUnMonstreDeDepart(id.clone()))?;
+                evenements.push(Evenement::Introduction(*classe));
+                let espece = contexte.contenu.espece_de_depart(*classe);
                 let depart = creer_monstre_de_depart(espece.clone(), &mut *contexte.aleatoire)
                     .expect("les monstres de départ du contenu existent au niveau 5");
                 evenements.push(Evenement::PartieCommencee(depart.clone()));
-                let partie = Partie::nouvelle(heros.clone(), depart);
+                let partie = Partie::nouvelle(Heros::new(nom.clone(), *classe), depart);
                 sauvegarder(&partie, contexte.depot, evenements);
                 EnJeu::au_camp(partie)
             }
@@ -1224,6 +1209,7 @@ mod tests {
     use super::*;
     use crate::aleatoire::{AleatoireScripte, GenerateurAleatoire};
     use crate::catalogue::Catalogue;
+    use crate::espece::EspeceId;
     use crate::niveau::Niveau;
     use crate::partie::EtatPartie;
     use crate::stats::ValeursInternes;
@@ -1287,7 +1273,7 @@ mod tests {
     }
 
     #[test]
-    fn creation_du_heros_puis_du_monstre_de_depart() {
+    fn creation_du_heros_avec_le_monstre_attitre_de_sa_classe() {
         let contenu = ContenuV1::new();
         let depot = DepotMemoire::default();
         let mut deroulement = Deroulement::demarrer(Ok(None));
@@ -1304,24 +1290,6 @@ mod tests {
         let nom = Choix::NomDuHeros("Aldric".to_string());
         repondre_sans_tirage(&mut deroulement, nom, &contenu, &depot).unwrap();
         assert_eq!(deroulement.attente(), Attente::Classe);
-        let evenements = repondre_sans_tirage(
-            &mut deroulement,
-            Choix::Classe(Classe::Mage),
-            &contenu,
-            &depot,
-        )
-        .unwrap();
-        assert_eq!(evenements, vec![Evenement::Introduction]);
-        assert_eq!(deroulement.attente(), Attente::MonstreDeDepart);
-        assert_eq!(
-            repondre_sans_tirage(
-                &mut deroulement,
-                Choix::MonstreDeDepart(EspeceId::new("loup")),
-                &contenu,
-                &depot
-            ),
-            Err(ErreurChoix::PasUnMonstreDeDepart(EspeceId::new("loup")))
-        );
 
         // Valeurs internes, puis shiny.
         let mut aleatoire = AleatoireScripte::new([31, 31, 31, 31, 31, 31, 1]);
@@ -1332,16 +1300,16 @@ mod tests {
             maintenant: Horodatage::depuis_secondes(0),
         };
         let evenements = deroulement
-            .repondre(
-                Choix::MonstreDeDepart(EspeceId::new("mandragore")),
-                &mut contexte,
-            )
+            .repondre(Choix::Classe(Classe::Templier), &mut contexte)
             .unwrap();
         assert!(matches!(
             &evenements[..],
-            [Evenement::PartieCommencee(depart)] if depart.est_shiny()
+            [Evenement::Introduction(Classe::Templier), Evenement::PartieCommencee(depart)]
+                if depart.est_shiny() && depart.espece().id().as_str() == "mandragore"
         ));
         assert_eq!(deroulement.attente(), Attente::Camp);
+        let partie = deroulement.partie().unwrap();
+        assert_eq!(partie.heros().classe(), Classe::Templier);
         // La partie est sauvegardée dès sa création (section 13.9).
         assert_eq!(depot.sauvegardes.borrow().len(), 1);
     }
@@ -1603,7 +1571,6 @@ mod tests {
             Attente::SauvegardeIllisible(_) => Choix::NouvellePartie,
             Attente::NomDuHeros => Choix::NomDuHeros("Aldric".to_string()),
             Attente::Classe => Choix::Classe(Classe::Mage),
-            Attente::MonstreDeDepart => Choix::MonstreDeDepart(EspeceId::new("salamandre")),
             Attente::Camp => {
                 let partie = partie.unwrap();
                 let zones = partie.zones_accessibles(contenu.zones(), contenu.piste());

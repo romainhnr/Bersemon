@@ -3,6 +3,7 @@
 use bersemon_core::codex::{Codex, EtatCodex};
 use bersemon_core::collection::Collection;
 use bersemon_core::combat::Cote;
+use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::Confirmation;
 use bersemon_core::espece::Espece;
 use bersemon_core::heros::Classe;
@@ -65,14 +66,18 @@ pub fn potions(nombre: u32) -> String {
     }
 }
 
-pub fn decrire_classe(classe: Classe) -> String {
-    let stat = match classe {
-        Classe::Guerrier => "Attaque",
-        Classe::Mage => "Attaque spéciale",
+/// Le bonus de la classe et son monstre de départ, que le joueur connaît
+/// avant de choisir (section 6).
+pub fn decrire_classe(classe: Classe, contenu: &ContenuV1) -> String {
+    let bonus = match classe {
+        Classe::Guerrier => "d'Attaque",
+        Classe::Mage => "d'Attaque spéciale",
+        Classe::Templier => "de Défense et de Défense spéciale",
     };
     format!(
-        "{} : +10 % d'{stat} pour vos monstres en combat",
-        classe.nom()
+        "{} : +10 % {bonus} pour vos monstres en combat ; premier monstre : {}",
+        classe.nom(),
+        contenu.espece_de_depart(classe).nom()
     )
 }
 

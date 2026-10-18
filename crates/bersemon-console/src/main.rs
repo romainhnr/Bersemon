@@ -69,8 +69,7 @@ fn demander(
         Attente::Reprise(partie) => ecran_accueil::reprise(partie, entree),
         Attente::SauvegardeIllisible(erreur) => ecran_accueil::sauvegarde_illisible(erreur, entree),
         Attente::NomDuHeros => ecran_accueil::nom_du_heros(entree),
-        Attente::Classe => ecran_accueil::classe(entree),
-        Attente::MonstreDeDepart => ecran_accueil::monstre_de_depart(contenu, entree),
+        Attente::Classe => ecran_accueil::classe(contenu, entree),
         Attente::Camp => {
             let partie = deroulement.partie().expect(PARTIE_EN_JEU);
             ecran_camp::choisir(partie, contenu, menu, entree)

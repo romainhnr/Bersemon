@@ -208,9 +208,6 @@ fn jouer_un_coup(
             }
         }
         Attente::Classe => cliquer(message, |cle| *cle == Cle::Classe(Classe::Mage)),
-        Attente::MonstreDeDepart => cliquer(message, |cle| {
-            *cle == Cle::MonstreDeDepart(EspeceId::new("salamandre"))
-        }),
         Attente::Camp if *tour < TOUR_DU_CAMP => {
             *tour += 1;
             let premier = Emplacement::Equipe(0);

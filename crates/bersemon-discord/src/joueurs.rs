@@ -181,7 +181,6 @@ mod tests {
     use super::*;
     use bersemon_core::collection::Emplacement;
     use bersemon_core::deroulement::{ActionDeGestion, Attente};
-    use bersemon_core::espece::EspeceId;
     use bersemon_core::heros::Classe;
     use bersemon_core::nom::ErreurNom;
     use bersemon_core::zone::ZoneId;
@@ -291,7 +290,6 @@ mod tests {
         for choix in [
             Choix::NomDuHeros("Aldric".to_string()),
             Choix::Classe(Classe::Mage),
-            Choix::MonstreDeDepart(EspeceId::new("salamandre")),
         ] {
             repondre(&mut joueurs, 42, choix, &contenu).unwrap();
         }
@@ -318,7 +316,6 @@ mod tests {
         for choix in [
             Choix::NomDuHeros("Aldric".to_string()),
             Choix::Classe(Classe::Mage),
-            Choix::MonstreDeDepart(EspeceId::new("salamandre")),
         ] {
             repondre(&mut joueurs, 1, choix, &contenu).unwrap();
         }

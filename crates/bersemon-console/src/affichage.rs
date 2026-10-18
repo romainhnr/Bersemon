@@ -10,26 +10,10 @@ use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_core::zone::Zone;
 use bersemon_presentation::combat::attaque_de_trop;
-use bersemon_presentation::monstres::{decrire_attaque, ligne_monstre, nom_en_combat, types_de};
+use bersemon_presentation::monstres::{decrire_attaque, ligne_monstre, nom_en_combat};
 use bersemon_presentation::partie::{decrire_zone, fiche_d_espece, ligne_du_codex};
 
 use crate::ecran_combat::Commande;
-
-pub fn liste_especes(especes: &[Espece]) -> String {
-    especes
-        .iter()
-        .enumerate()
-        .map(|(position, espece)| {
-            format!(
-                "  {}. {} ({})",
-                position + 1,
-                espece.nom(),
-                types_de(espece)
-            )
-        })
-        .collect::<Vec<_>>()
-        .join("\n")
-}
 
 pub fn menu_action(combat: &Combat, commandes: &[Commande]) -> String {
     let mut lignes = vec!["Que faire ?".to_string()];

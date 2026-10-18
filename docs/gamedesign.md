@@ -199,7 +199,7 @@ Le joueur peut :
 - Fil de l'histoire, inspiré de Berserk : le héros veut se venger du Démiurge, maître des Apôtres, de puissants monstres. Pour l'atteindre, il traque les Apôtres un par un, de zone en zone : dans chaque zone, il réunit des indices sur la cachette d'un Apôtre, s'en approche peu à peu, puis l'affronte avant de passer au suivant (section 9.4).
 - Dans la V1, un seul Apôtre est à vaincre, dans la zone difficile. Le Démiurge est annoncé dès l'introduction, mais il ne sera affronté que dans une version suivante. Après la victoire contre l'Apôtre, un court épilogue annonce la suite de la traque, puis le joueur peut continuer à explorer, capturer et compléter son codex.
 - Dans la V1, après le choix de la classe, l'histoire amène le joueur à choisir son premier monstre parmi 3. Ce monstre est au niveau 5. Ses valeurs internes sont tirées au hasard et il a, comme un monstre sauvage, 1 chance sur 512 d'être shiny.
-- Après la V1, le premier monstre n'est plus choisi : chaque classe a son monstre attitré, qui reprend son profil. Guerrier : Crapaud, offensif en attaque physique. Mage : Salamandre, offensive en attaque spéciale. Templier : Mandragore, défensive. Il reste au niveau 5, avec des valeurs internes tirées au hasard et 1 chance sur 512 d'être shiny. La fin de l'introduction, qui invitait à choisir parmi trois cages, est à réécrire (Q67).
+- Après la V1, le premier monstre n'est plus choisi : chaque classe a son monstre attitré, qui reprend son profil. Guerrier : Crapaud, offensif en attaque physique. Mage : Salamandre, offensive en attaque spéciale. Templier : Mandragore, défensive. Il reste au niveau 5, avec des valeurs internes tirées au hasard et 1 chance sur 512 d'être shiny. L'écran du choix de la classe annonce le monstre de chacune. Le dernier paragraphe de l'introduction présente le monstre de la classe choisie (Q67, textes dans docs/contenu-v1.md).
 - Dans la V1 : une courte introduction d'ambiance après le choix de la classe, jusqu'au choix du premier monstre ; un tutoriel fait de quelques conseils, chacun montré une seule fois par partie, au premier combat, au premier arrêt entre deux étapes et au premier retour au camp. Les textes sont proposés dans docs/contenu-v1.md.
 
 ## 7. Progression
@@ -557,7 +557,6 @@ Les questions Q65 et suivantes ont été relevées le 18/10/2026 lors de la conc
 
 Les questions Q67 et suivantes ont été relevées le 18/10/2026 après les premiers tests sur Discord, découpés en étapes : 18 corrections (types au codex, mise en valeur, messages publics pour les tests), 19 Templier et monstre de départ attitré, 20 toute l'équipe en expédition automatique, 21 et suivantes économie (argent, marchand, revente, capsules, attaques au camp).
 
-- Q67. (Étape 19) Fin de l'introduction, maintenant que le monstre de départ n'est plus choisi : texte à proposer dans docs/contenu-v1.md.
 - Q68. (Économie) Montants : argent des coffres et des expéditions automatiques, prix de revente des monstres, prix des potions et des capsules.
 - Q69. (Économie) Capsules d'attaque : liste des attaques proposées, où et avec quelle chance on les trouve en expédition.
 - Q70. (Économie) Chance de rencontrer le marchand à une étape (environ 5 % proposé, pris sur les combats).
@@ -746,5 +745,10 @@ Les questions Q67 et suivantes ont été relevées le 18/10/2026 après les prem
 18/10/2026 (étape 18) :
 
 - Pas de couleur dans la console, qui afficherait des caractères parasites dans la vieille console de Windows 10 : la mise en valeur ne vaut que sur Discord. Remplace le rouge prévu pour la console.
+
+18/10/2026 (étape 19) :
+
+- Q67 : le dernier paragraphe de l'introduction présente le monstre attitré de la classe choisie, un texte par classe (docs/contenu-v1.md).
+- L'écran du choix de la classe annonce le monstre de départ de chaque classe.
 - Sur Discord, le bot prévient le joueur par message privé du retour d'une expédition, et à son démarrage pour celles rentrées pendant qu'il était éteint.
 - Hypothèses validées : une expédition automatique n'a aucun effet sur la traque, l'exploration ni le codex ; les monstres envoyés gardent leur place au camp, comptée dans sa limite, et ne peuvent être ni relâchés, ni renommés, ni échangés ; une expédition manuelle reste possible dans la même zone ; la durée n'est pas tirée au hasard.
