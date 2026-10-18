@@ -8,7 +8,7 @@ use bersemon_core::catalogue::Catalogue;
 use bersemon_core::partie::Partie;
 use bersemon_core::sauvegarde::{ErreurSauvegarde, SauvegardeRepository};
 
-use crate::format::{self, SauvegardeV3, VERSION};
+use crate::format::{self, SauvegardeV4, VERSION};
 
 pub struct FichierJson {
     chemin: PathBuf,
@@ -38,7 +38,7 @@ impl FichierJson {
         if !(1..=VERSION).contains(&version) {
             return Err(ErreurSauvegarde::VersionInconnue(version));
         }
-        let sauvegarde: SauvegardeV3 = serde_json::from_value(valeur)
+        let sauvegarde: SauvegardeV4 = serde_json::from_value(valeur)
             .map_err(|erreur| ErreurSauvegarde::Illisible(erreur.to_string()))?;
         format::vers_partie(sauvegarde, catalogue)
     }
@@ -79,6 +79,7 @@ mod tests {
     use bersemon_core::attaque::{Attaque, AttaqueId, Categorie, EffetSecondaire};
     use bersemon_core::collection::Emplacement;
     use bersemon_core::espece::{AttaqueApprise, Espece, EspeceId, Role};
+    use bersemon_core::expedition::ParametresCoffre;
     use bersemon_core::expedition_automatique::ParametresExpeditionAutomatique;
     use bersemon_core::heros::{Classe, Heros};
     use bersemon_core::horodatage::Horodatage;
@@ -155,6 +156,7 @@ mod tests {
             15..=60,
             100..=200,
             0..=1,
+            15..=30,
         )
         .unwrap();
         Zone::new(
@@ -165,6 +167,7 @@ mod tests {
             vec![espece("loup")],
             vec![],
             parametres,
+            ParametresCoffre::new(10..=25).unwrap(),
         )
         .unwrap()
     }
@@ -210,6 +213,7 @@ mod tests {
             heros: partie.heros().clone(),
             collection: partie.collection().clone(),
             inventaire: partie.inventaire().clone(),
+            argent: 135,
             codex: partie.codex().clone(),
             zones_explorees: vec![ZoneId::new("lisiere")],
             indices_trouves: 3,
@@ -325,10 +329,27 @@ mod tests {
 
     #[test]
     fn version_inconnue() {
-        let texte = texte_de_partie().replacen("\"version\":3", "\"version\":4", 1);
+        let texte = texte_de_partie().replacen("\"version\":4", "\"version\":5", 1);
         assert_eq!(
             charger_texte(&texte),
-            Err(ErreurSauvegarde::VersionInconnue(4))
+            Err(ErreurSauvegarde::VersionInconnue(5))
+        );
+    }
+
+    #[test]
+    fn une_sauvegarde_en_version_3_n_a_pas_d_argent() {
+        let partie = partie_complete();
+        assert_eq!(partie.argent(), 135);
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        let objet = valeur.as_object_mut().unwrap();
+        objet.insert("version".to_string(), 3.into());
+        objet.remove("argent");
+        let rechargee = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        assert_eq!(rechargee.argent(), 0);
+        assert_eq!(rechargee.collection(), partie.collection());
+        assert_eq!(
+            rechargee.expeditions_automatiques(),
+            partie.expeditions_automatiques()
         );
     }
 

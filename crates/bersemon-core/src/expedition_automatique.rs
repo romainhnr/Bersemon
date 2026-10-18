@@ -51,6 +51,7 @@ pub struct ParametresExpeditionAutomatique {
     degats: RangeInclusive<u32>,
     experience: RangeInclusive<u32>,
     potions: RangeInclusive<u32>,
+    argent: RangeInclusive<u32>,
 }
 
 impl ParametresExpeditionAutomatique {
@@ -60,11 +61,13 @@ impl ParametresExpeditionAutomatique {
         degats: RangeInclusive<u32>,
         experience: RangeInclusive<u32>,
         potions: RangeInclusive<u32>,
+        argent: RangeInclusive<u32>,
     ) -> Result<Self, ErreurParametres> {
         if duree_de_base.as_secs() == 0 {
             return Err(ErreurParametres::DureeNulle);
         }
-        if degats.is_empty() || experience.is_empty() || potions.is_empty() {
+        let fourchettes = [&degats, &experience, &potions, &argent];
+        if fourchettes.iter().any(|fourchette| fourchette.is_empty()) {
             return Err(ErreurParametres::FourchetteInversee);
         }
         Ok(Self {
@@ -72,6 +75,7 @@ impl ParametresExpeditionAutomatique {
             degats,
             experience,
             potions,
+            argent,
         })
     }
 
@@ -90,6 +94,10 @@ impl ParametresExpeditionAutomatique {
 
     pub fn potions(&self) -> &RangeInclusive<u32> {
         &self.potions
+    }
+
+    pub fn argent(&self) -> &RangeInclusive<u32> {
+        &self.argent
     }
 
     /// Pour 1 à 3 monstres : 100 %, 75 % puis 50 % de la durée de base (Q7).
@@ -266,7 +274,8 @@ impl ExpeditionAutomatique {
     /// Rend le bilan et les monstres, XP comprise, dans l'ordre de
     /// l'expédition ; ils retournent au camp à la suite les uns des autres,
     /// à partir de `premiere_position_au_camp`. Tirages : total des dégâts,
-    /// puis, après une réussite, le gain d'XP et le nombre de potions.
+    /// puis, après une réussite, le gain d'XP, le nombre de potions et
+    /// l'argent.
     pub(crate) fn resoudre(
         self,
         premiere_position_au_camp: usize,
@@ -277,11 +286,16 @@ impl ExpeditionAutomatique {
         let pv = pv_max(&self.monstres);
         let subis = repartir_degats(degats, &pv);
         let reussite = est_reussie(&subis, &pv);
-        let (experience, potions) = if reussite {
+        let (experience, potions, argent) = if reussite {
             let experience = tirer_dans(parametres.experience(), aleatoire);
-            (experience, tirer_dans(parametres.potions(), aleatoire))
+            let potions = tirer_dans(parametres.potions(), aleatoire);
+            (
+                experience,
+                potions,
+                tirer_dans(parametres.argent(), aleatoire),
+            )
         } else {
-            (0, 0)
+            (0, 0, 0)
         };
 
         let mut monstres = self.monstres;
@@ -304,6 +318,7 @@ impl ExpeditionAutomatique {
             degats,
             reussite,
             potions,
+            argent,
             monstres: rentres,
         };
         (bilan, monstres)
@@ -320,6 +335,8 @@ pub struct BilanExpeditionAutomatique {
     pub reussite: bool,
     /// Ajoutées à celles du joueur ; aucune après un échec.
     pub potions: u32,
+    /// Ajouté à celui du joueur ; rien après un échec (section 12.6).
+    pub argent: u32,
     /// Dans l'ordre de l'expédition.
     pub monstres: Vec<MonstreRentre>,
 }
@@ -387,8 +404,14 @@ mod tests {
     use crate::stats::ValeursInternes;
 
     fn parametres(degats: RangeInclusive<u32>) -> ParametresExpeditionAutomatique {
-        ParametresExpeditionAutomatique::new(Duration::from_secs(3_600), degats, 100..=200, 0..=1)
-            .unwrap()
+        ParametresExpeditionAutomatique::new(
+            Duration::from_secs(3_600),
+            degats,
+            100..=200,
+            0..=1,
+            15..=30,
+        )
+        .unwrap()
     }
 
     /// Monstre de base 50 en PV, aux valeurs internes nulles : 20 PV au
@@ -403,7 +426,8 @@ mod tests {
         .unwrap()
     }
 
-    /// Une heure, 10 à 40 dégâts, 100 à 200 XP et 0 à 1 potion.
+    /// Une heure, 10 à 40 dégâts, 100 à 200 XP, 0 à 1 potion et 20 pièces
+    /// d'argent.
     fn bois() -> Zone {
         zone("bois")
     }
@@ -411,7 +435,7 @@ mod tests {
     #[test]
     fn parametres_invalides_refuses() {
         assert_eq!(
-            ParametresExpeditionAutomatique::new(Duration::ZERO, 1..=2, 1..=2, 0..=1),
+            ParametresExpeditionAutomatique::new(Duration::ZERO, 1..=2, 1..=2, 0..=1, 0..=1),
             Err(ErreurParametres::DureeNulle)
         );
         assert_eq!(
@@ -419,7 +443,18 @@ mod tests {
                 Duration::from_secs(60),
                 1..=2,
                 RangeInclusive::new(2, 1),
+                0..=1,
                 0..=1
+            ),
+            Err(ErreurParametres::FourchetteInversee)
+        );
+        assert_eq!(
+            ParametresExpeditionAutomatique::new(
+                Duration::from_secs(60),
+                1..=2,
+                1..=2,
+                0..=1,
+                RangeInclusive::new(2, 1)
             ),
             Err(ErreurParametres::FourchetteInversee)
         );
@@ -500,6 +535,7 @@ mod tests {
         assert!(bilan.reussite);
         assert_eq!(bilan.degats, 30);
         assert_eq!(bilan.potions, 1);
+        assert_eq!(bilan.argent, 20);
         assert_eq!(monstres.len(), 2);
         for (index, rentre) in bilan.monstres.iter().enumerate() {
             assert_eq!(rentre.degats_subis, 15);
@@ -536,6 +572,7 @@ mod tests {
         let (bilan, monstres) = expedition.resoudre(0, &mut AleatoireScripte::new([25]));
         assert!(!bilan.reussite);
         assert_eq!(bilan.potions, 0);
+        assert_eq!(bilan.argent, 0);
         assert!(bilan.monstres[0].ko);
         assert_eq!(bilan.monstres[0].rapport, None);
         // Les monstres reviennent soignés : ils n'ont jamais perdu de PV.

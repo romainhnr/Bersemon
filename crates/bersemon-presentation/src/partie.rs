@@ -66,6 +66,15 @@ pub fn potions(nombre: u32) -> String {
     }
 }
 
+/// L'argent se compte en pièces d'argent (section 14.1).
+pub fn argent(montant: u32) -> String {
+    if montant > 1 {
+        format!("{montant} pièces d'argent")
+    } else {
+        format!("{montant} pièce d'argent")
+    }
+}
+
 /// Le bonus de la classe et son monstre de départ, que le joueur connaît
 /// avant de choisir (section 6).
 pub fn decrire_classe(classe: Classe, contenu: &ContenuV1) -> String {
@@ -91,10 +100,11 @@ pub fn partie_en_cours(partie: &Partie) -> String {
 
 pub fn en_tete_du_camp(partie: &Partie) -> String {
     format!(
-        "Camp de base ({}, {}). {}.",
+        "Camp de base ({}, {}). {} et {}.",
         partie.heros().nom().as_str(),
         partie.heros().classe().nom(),
-        potions(partie.inventaire().potions())
+        potions(partie.inventaire().potions()),
+        argent(partie.argent())
     )
 }
 

@@ -163,8 +163,10 @@ pub enum Evenement {
     Depart(String),
     /// Numéro de l'étape.
     Etape(u32),
+    /// L'argent ne sera acquis qu'au retour au camp (section 9.3).
     Coffre {
         potions: u32,
+        argent: u32,
     },
     MonstreRarePacifique(Monstre),
     MonstreRareHostile(Monstre),
@@ -197,9 +199,11 @@ pub enum Evenement {
         capture: Monstre,
     },
     Epilogue(String),
-    /// Toute l'équipe est KO : retour au camp et potions perdues (section
-    /// 9.3).
-    Defaite,
+    /// Toute l'équipe est KO : retour au camp, potions et argent trouvé
+    /// perdus (section 9.3).
+    Defaite {
+        argent_perdu: u32,
+    },
     PotionUtilisee {
         monstre: Monstre,
         pv_rendus: u32,
@@ -207,6 +211,8 @@ pub enum Evenement {
     /// Nom de la zone menée jusqu'au bout.
     ZoneExploree(String),
     RetourAuCamp,
+    /// L'argent trouvé pendant l'expédition, acquis au retour (section 9.3).
+    ArgentRapporte(u32),
     Indice {
         numero: usize,
         texte: String,
@@ -279,9 +285,17 @@ enum Etat {
 #[derive(Debug, PartialEq, Eq)]
 enum Reponse {
     Faite,
-    AConfirmer(Confirmation),
+    /// En boîte : une confirmation copie un monstre ou une expédition, bien
+    /// plus lourds que les autres réponses.
+    AConfirmer(Box<Confirmation>),
     /// L'expédition est finie : il reste à rentrer au camp.
     RetourAuCamp,
+}
+
+impl Reponse {
+    fn a_confirmer(confirmation: Confirmation) -> Self {
+        Self::AConfirmer(Box::new(confirmation))
+    }
 }
 
 impl Deroulement {
@@ -351,7 +365,7 @@ impl Deroulement {
             _ => self.accueillir(&choix, confirme, contexte, &mut evenements)?,
         };
         if let Reponse::AConfirmer(confirmation) = reponse {
-            self.a_confirmer = Some((choix, confirmation));
+            self.a_confirmer = Some((choix, *confirmation));
         }
         Ok(evenements)
     }
@@ -372,7 +386,7 @@ impl Deroulement {
             (Etat::Reprise(partie), Choix::NouvellePartie) => {
                 if !confirme {
                     let heros = partie.heros().clone();
-                    return Ok(Reponse::AConfirmer(Confirmation::RemplacerLaPartie(heros)));
+                    return Ok(Reponse::a_confirmer(Confirmation::RemplacerLaPartie(heros)));
                 }
                 Etat::NomDuHeros
             }
@@ -529,7 +543,7 @@ impl EnJeu {
                             ErreurExpeditionAutomatique::DejaRentree,
                         ));
                     }
-                    return Ok(Reponse::AConfirmer(Confirmation::RappelerLExpedition(
+                    return Ok(Reponse::a_confirmer(Confirmation::RappelerLExpedition(
                         expedition,
                     )));
                 }
@@ -628,8 +642,8 @@ impl EnJeu {
         Ok(Reponse::Faite)
     }
 
-    /// Soin de tous les monstres, indice éventuel, nouvelle zone, puis
-    /// sauvegarde (sections 9.4, 13.1 et 13.9).
+    /// Soin de tous les monstres, argent trouvé, indice éventuel, nouvelle
+    /// zone, puis sauvegarde (sections 9.3, 9.4, 13.1 et 13.9).
     fn rentrer(&mut self, contexte: &mut Contexte<'_>, evenements: &mut Vec<Evenement>) {
         let Some(en_cours) = self.expedition.take() else {
             return;
@@ -644,6 +658,10 @@ impl EnJeu {
             ));
         }
         evenements.push(Evenement::RetourAuCamp);
+        let argent = en_cours.expedition.argent_rapporte();
+        if argent > 0 {
+            evenements.push(Evenement::ArgentRapporte(argent));
+        }
         if let Some(indice) = indice {
             evenements.push(Evenement::Indice {
                 numero: self.partie.indices_trouves(),
@@ -692,7 +710,7 @@ fn gerer(
                     .clone()
                     .relacher(*emplacement)
                     .map_err(ErreurChoix::Collection)?;
-                return Ok(Reponse::AConfirmer(Confirmation::Relacher(monstre)));
+                return Ok(Reponse::a_confirmer(Confirmation::Relacher(monstre)));
             }
             collection
                 .relacher(*emplacement)
@@ -803,7 +821,7 @@ impl EnExpedition {
                 if let Some(confirmation) =
                     potion_a_confirmer(partie.inventaire().potions(), equipe, *index, confirme)
                 {
-                    return Ok(Reponse::AConfirmer(confirmation));
+                    return Ok(Reponse::a_confirmer(confirmation));
                 }
                 let pv_rendus = partie
                     .utiliser_potion(*index, &mut *contexte.aleatoire)
@@ -875,7 +893,7 @@ impl EnExpedition {
                         potion_a_confirmer(combat.potions(), combat.equipe(), index, confirme);
                     if let Some(confirmation) = confirmation {
                         self.moment = Moment::Combat(combat);
-                        return Ok(Reponse::AConfirmer(confirmation));
+                        return Ok(Reponse::a_confirmer(confirmation));
                     }
                 }
                 combat.jouer_tour(*action, &mut *contexte.aleatoire)
@@ -1058,7 +1076,7 @@ impl EnExpedition {
                 };
                 if !confirme {
                     self.moment = Moment::PlaceManquante(attente);
-                    return Ok(Reponse::AConfirmer(Confirmation::Relacher(monstre)));
+                    return Ok(Reponse::a_confirmer(Confirmation::Relacher(monstre)));
                 }
                 match partie
                     .collection_mut()
@@ -1099,7 +1117,9 @@ impl EnExpedition {
             }
             if fin.issue == Some(Issue::Defaite) {
                 self.expedition.noter_defaite();
-                evenements.push(Evenement::Defaite);
+                evenements.push(Evenement::Defaite {
+                    argent_perdu: self.expedition.argent_trouve(),
+                });
             }
         }
         self.apres_l_etape(partie, evenements)
@@ -1130,9 +1150,9 @@ impl EnExpedition {
                 evenements.push(Evenement::Rencontre(combat.clone()));
                 self.engager(partie, combat, evenements)
             }
-            EvenementExpedition::Coffre { potions } => {
+            EvenementExpedition::Coffre { potions, argent } => {
                 partie.ouvrir_coffre(potions);
-                evenements.push(Evenement::Coffre { potions });
+                evenements.push(Evenement::Coffre { potions, argent });
                 self.apres_l_etape(partie, evenements)
             }
             EvenementExpedition::MonstreRare(rare) => {
@@ -1425,8 +1445,8 @@ mod tests {
             Err(ErreurChoix::ZoneFermee)
         );
 
-        // 4 étapes, puis un coffre d'une potion.
-        let mut aleatoire = AleatoireScripte::new([4, 81, 1]);
+        // 4 étapes, puis un coffre d'une potion et de 12 pièces d'argent.
+        let mut aleatoire = AleatoireScripte::new([4, 81, 1, 12]);
         let mut contexte = Contexte {
             contenu: &contenu,
             aleatoire: &mut aleatoire,
@@ -1444,7 +1464,10 @@ mod tests {
             vec![
                 Evenement::Depart("Lisière du Bois-Sombre".to_string()),
                 Evenement::Etape(1),
-                Evenement::Coffre { potions: 1 },
+                Evenement::Coffre {
+                    potions: 1,
+                    argent: 12
+                },
                 Evenement::Conseil(Conseil::PremierArretEntreDeuxEtapes),
             ]
         );
@@ -1470,12 +1493,14 @@ mod tests {
             evenements,
             vec![
                 Evenement::RetourAuCamp,
+                Evenement::ArgentRapporte(12),
                 Evenement::Conseil(Conseil::PremierRetourAuCamp),
                 Evenement::SauvegardeImpossible(ErreurSauvegarde::Acces("panne".to_string())),
             ]
         );
         assert_eq!(deroulement.attente(), Attente::Camp);
         assert!(deroulement.expedition().is_none());
+        assert_eq!(deroulement.partie().unwrap().argent(), 12);
     }
 
     #[test]
@@ -1695,6 +1720,17 @@ mod tests {
             sauvegarde.apotres_vaincus(),
             &[EspeceId::new("baron-pendu")]
         );
+        // Sans expédition automatique, l'argent du joueur est celui des
+        // coffres rapporté au camp : une défaite le fait perdre (section 9.3).
+        let rapporte: u32 = vus
+            .iter()
+            .filter_map(|evenement| match evenement {
+                Evenement::ArgentRapporte(argent) => Some(*argent),
+                _ => None,
+            })
+            .sum();
+        assert!(rapporte > 0);
+        assert_eq!(sauvegarde.argent(), rapporte);
     }
 
     /// Réponse donnée à cette heure, avec ces tirages.
@@ -1738,6 +1774,7 @@ mod tests {
             heros: partie.heros().clone(),
             collection: partie.collection().clone(),
             inventaire: partie.inventaire().clone(),
+            argent: partie.argent(),
             codex: partie.codex().clone(),
             zones_explorees: vec![ZoneId::new("lisiere"), ZoneId::new("marais")],
             indices_trouves: 3,
@@ -1872,14 +1909,15 @@ mod tests {
 
         // 2 h de base, 1 h 30 à deux. 40 dégâts en deux parts de 20 : le
         // Loup (16 PV) tombe et la Salamandre (34 PV) encaisse 24. Elle gagne
-        // 600 XP et passe au niveau 14, où elle veut apprendre Fournaise.
+        // 600 XP et passe au niveau 14, où elle veut apprendre Fournaise ;
+        // l'expédition rapporte aussi une potion et 55 pièces d'argent.
         let evenements = repondre_a(
             &mut deroulement,
             Choix::AccueillirExpeditionAutomatique(marais),
             &contenu,
             &depot,
             5_400,
-            vec![40, 600, 1],
+            vec![40, 600, 1, 55],
         )
         .unwrap();
         let [
@@ -1895,6 +1933,8 @@ mod tests {
         assert_eq!(monstre.espece().id().as_str(), "salamandre");
         assert_eq!(rapport.niveau_apres, Niveau::new(14).unwrap());
         assert_eq!(deroulement.partie().unwrap().inventaire().potions(), 1);
+        assert_eq!(bilan.argent, 55);
+        assert_eq!(deroulement.partie().unwrap().argent(), 55);
         // Sauvegardée dès l'accueil, avec l'attaque qui reste à choisir.
         let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
         assert_eq!(sauvegarde.attaques_a_choisir().len(), 1);

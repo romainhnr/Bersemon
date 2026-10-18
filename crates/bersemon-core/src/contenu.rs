@@ -12,6 +12,7 @@ use std::time::Duration;
 use crate::attaque::{Attaque, AttaqueId, Categorie, EffetSecondaire};
 use crate::catalogue::Catalogue;
 use crate::espece::{AttaqueApprise, Espece, EspeceId, Role};
+use crate::expedition::ParametresCoffre;
 use crate::expedition_automatique::ParametresExpeditionAutomatique;
 use crate::heros::Classe;
 use crate::niveau::Niveau;
@@ -104,7 +105,8 @@ impl ContenuV1 {
                 espece: trouver("cerf-blanc"),
                 pacifique: true,
             }],
-            expedition_automatique(1, 15..=60, 100..=200, 0..=1),
+            expedition_automatique(1, 15..=60, 100..=200, 0..=1, 15..=30),
+            coffre(10..=25),
         )
         .expect("Lisière conforme aux règles");
         let marais = Zone::new(
@@ -122,7 +124,8 @@ impl ContenuV1 {
                 espece: trouver("basilic"),
                 pacifique: false,
             }],
-            expedition_automatique(2, 40..=120, 300..=600, 1..=2),
+            expedition_automatique(2, 40..=120, 300..=600, 1..=2, 40..=80),
+            coffre(25..=50),
         )
         .expect("Marais conforme aux règles");
         let baron = Apotre::new(trouver("baron-pendu"), &marais, AVANT_LE_BARON, EPILOGUE)
@@ -723,14 +726,21 @@ fn expedition_automatique(
     degats: RangeInclusive<u32>,
     experience: RangeInclusive<u32>,
     potions: RangeInclusive<u32>,
+    argent: RangeInclusive<u32>,
 ) -> ParametresExpeditionAutomatique {
     ParametresExpeditionAutomatique::new(
         Duration::from_secs(heures * 3_600),
         degats,
         experience,
         potions,
+        argent,
     )
     .expect("expédition automatique conforme aux règles")
+}
+
+/// Coffres de la section 3 de docs/contenu-v1.md.
+fn coffre(argent: RangeInclusive<u32>) -> ParametresCoffre {
+    ParametresCoffre::new(argent).expect("coffre conforme aux règles")
 }
 
 #[cfg(test)]

@@ -8,7 +8,7 @@ use crate::combat::{rapport_experience, remplacement, renoncement, soin_de_potio
 use crate::erreurs::erreur_sauvegarde;
 use crate::expeditions_automatiques;
 use crate::monstres::{nom, nom_sauvage};
-use crate::partie::potions;
+use crate::partie::{argent, potions};
 
 /// Une ou plusieurs lignes de récit.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -41,10 +41,17 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
         ),
         Evenement::Depart(zone) => (format!("Vous partez pour {zone}."), true),
         Evenement::Etape(numero) => (format!("Étape {numero}."), true),
-        Evenement::Coffre { potions: nombre } => (
-            format!("Vous trouvez un coffre : {}.", potions(*nombre)),
-            false,
-        ),
+        Evenement::Coffre {
+            potions: nombre,
+            argent: montant,
+        } => {
+            let contenu = if *montant == 0 {
+                potions(*nombre)
+            } else {
+                format!("{} et {}", potions(*nombre), argent(*montant))
+            };
+            (format!("Vous trouvez un coffre : {contenu}."), false)
+        }
         Evenement::MonstreRarePacifique(monstre) => (
             format!(
                 "Un monstre rare apparaît : {}. Il ne semble pas hostile.",
@@ -93,10 +100,18 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             false,
         ),
         Evenement::Epilogue(epilogue) => (epilogue.clone(), true),
-        Evenement::Defaite => (
-            "Toute votre équipe est KO : vous rentrez au camp et perdez vos potions.".to_string(),
-            true,
-        ),
+        Evenement::Defaite { argent_perdu } => {
+            let texte = if *argent_perdu == 0 {
+                "Toute votre équipe est KO : vous rentrez au camp et perdez vos potions."
+                    .to_string()
+            } else {
+                format!(
+                    "Toute votre équipe est KO : vous rentrez au camp et perdez vos potions, ainsi que l'argent trouvé en chemin ({}).",
+                    argent(*argent_perdu)
+                )
+            };
+            (texte, true)
+        }
         Evenement::PotionUtilisee { monstre, pv_rendus } => (
             soin_de_potion(&nom(monstre, Cote::Joueur), *pv_rendus),
             false,
@@ -106,6 +121,9 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             "Retour au camp : vos monstres sont soignés.".to_string(),
             !matches!(precedent, Some(Evenement::ZoneExploree(_))),
         ),
+        Evenement::ArgentRapporte(montant) => {
+            (format!("Vous rapportez {}.", argent(*montant)), false)
+        }
         Evenement::Indice { numero, texte } => (format!("Indice {numero} : {texte}"), true),
         Evenement::NouvelleZone(zone) => (
             format!("Une nouvelle zone apparaît sur la carte : {zone}."),
@@ -159,8 +177,35 @@ mod tests {
     }
 
     #[test]
-    fn un_coffre_dit_combien_de_potions() {
-        let recit = &raconter(&[Evenement::Coffre { potions: 2 }])[0];
-        assert_eq!(recit.texte, "Vous trouvez un coffre : 2 potions.");
+    fn un_coffre_dit_combien_de_potions_et_d_argent() {
+        let recit = &raconter(&[Evenement::Coffre {
+            potions: 2,
+            argent: 15,
+        }])[0];
+        assert_eq!(
+            recit.texte,
+            "Vous trouvez un coffre : 2 potions et 15 pièces d'argent."
+        );
+        let sans_argent = &raconter(&[Evenement::Coffre {
+            potions: 1,
+            argent: 0,
+        }])[0];
+        assert_eq!(sans_argent.texte, "Vous trouvez un coffre : 1 potion.");
+    }
+
+    #[test]
+    fn une_defaite_dit_l_argent_perdu() {
+        let recit = &raconter(&[Evenement::Defaite { argent_perdu: 1 }])[0];
+        assert_eq!(
+            recit.texte,
+            "Toute votre équipe est KO : vous rentrez au camp et perdez vos potions, ainsi que l'argent trouvé en chemin (1 pièce d'argent)."
+        );
+    }
+
+    #[test]
+    fn l_argent_rapporte_suit_le_retour_au_camp() {
+        let recits = raconter(&[Evenement::RetourAuCamp, Evenement::ArgentRapporte(40)]);
+        assert_eq!(recits[1].texte, "Vous rapportez 40 pièces d'argent.");
+        assert!(!recits[1].nouveau_paragraphe);
     }
 }

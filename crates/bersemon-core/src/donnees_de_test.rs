@@ -5,6 +5,7 @@ use std::time::Duration;
 
 use crate::attaque::{Attaque, AttaqueId, AttaquesMonstre, Categorie};
 use crate::espece::{AttaqueApprise, Espece, EspeceId, Role};
+use crate::expedition::ParametresCoffre;
 use crate::expedition_automatique::ParametresExpeditionAutomatique;
 use crate::monstre::Monstre;
 use crate::niveau::Niveau;
@@ -62,10 +63,22 @@ pub(crate) fn espece(id: &str) -> Espece {
     )
 }
 
-/// Une heure, 10 à 40 dégâts, 100 à 200 XP et 0 à 1 potion.
+/// Une heure, 10 à 40 dégâts, 100 à 200 XP, 0 à 1 potion et toujours 20
+/// pièces d'argent, sans tirage.
 pub(crate) fn parametres_expedition_automatique() -> ParametresExpeditionAutomatique {
-    ParametresExpeditionAutomatique::new(Duration::from_secs(3_600), 10..=40, 100..=200, 0..=1)
-        .unwrap()
+    ParametresExpeditionAutomatique::new(
+        Duration::from_secs(3_600),
+        10..=40,
+        100..=200,
+        0..=1,
+        20..=20,
+    )
+    .unwrap()
+}
+
+/// Toujours 10 pièces d'argent par coffre, sans tirage.
+pub(crate) fn parametres_coffre() -> ParametresCoffre {
+    ParametresCoffre::new(10..=10).unwrap()
 }
 
 /// Zone de niveau 5 sans monstre rare, où vivent des loups en groupes d'un
@@ -80,6 +93,7 @@ pub(crate) fn zone(id: &str) -> Zone {
         vec![espece("loup")],
         vec![],
         parametres_expedition_automatique(),
+        parametres_coffre(),
     )
     .unwrap()
 }

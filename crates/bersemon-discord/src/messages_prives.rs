@@ -280,6 +280,7 @@ mod tests {
             heros: partie.heros().clone(),
             collection: partie.collection().clone(),
             inventaire: partie.inventaire().clone(),
+            argent: partie.argent(),
             codex: partie.codex().clone(),
             zones_explorees: vec![ZoneId::new("lisiere")],
             indices_trouves: 1,

@@ -9,6 +9,7 @@ use std::fmt;
 
 use crate::aleatoire::Aleatoire;
 use crate::espece::{Espece, EspeceId};
+use crate::expedition::ParametresCoffre;
 use crate::expedition_automatique::ParametresExpeditionAutomatique;
 use crate::monstre::{Monstre, tirer_shiny};
 use crate::niveau::Niveau;
@@ -86,12 +87,18 @@ pub struct Zone {
     especes: Vec<Espece>,
     rares: Vec<EspeceRare>,
     expedition_automatique: ParametresExpeditionAutomatique,
+    coffre: ParametresCoffre,
 }
 
 impl Zone {
     /// Vérifie que chaque espèce, rares comprises, peut être créée à chaque
     /// niveau de la zone : la génération des monstres ne peut ensuite plus
     /// échouer.
+    ///
+    /// Tous les paramètres sont obligatoires, pour qu'aucune zone n'oublie
+    /// une règle ; les regrouper ne servirait qu'à contourner la limite de
+    /// clippy.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: ZoneId,
         nom: impl Into<String>,
@@ -100,6 +107,7 @@ impl Zone {
         especes: Vec<Espece>,
         rares: Vec<EspeceRare>,
         expedition_automatique: ParametresExpeditionAutomatique,
+        coffre: ParametresCoffre,
     ) -> Result<Self, ErreurZone> {
         let (niveau_min, niveau_max) = niveaux;
         if niveau_min > niveau_max {
@@ -132,6 +140,7 @@ impl Zone {
             especes,
             rares,
             expedition_automatique,
+            coffre,
         })
     }
 
@@ -165,6 +174,11 @@ impl Zone {
     /// 12.8).
     pub fn expedition_automatique(&self) -> &ParametresExpeditionAutomatique {
         &self.expedition_automatique
+    }
+
+    /// Ce que contiennent ses coffres, en plus des potions (section 14.5).
+    pub fn coffre(&self) -> &ParametresCoffre {
+        &self.coffre
     }
 
     /// Tirages : taille du groupe, puis pour chaque monstre ceux de
@@ -227,7 +241,7 @@ mod tests {
     use crate::aleatoire::AleatoireScripte;
     use crate::attaque::Categorie;
     use crate::donnees_de_test::{
-        attaque, espece, parametres_expedition_automatique, stats_uniformes,
+        attaque, espece, parametres_coffre, parametres_expedition_automatique, stats_uniformes,
     };
     use crate::espece::{AttaqueApprise, Role};
     use crate::types::{Type, TypesMonstre};
@@ -250,6 +264,7 @@ mod tests {
             especes,
             rares,
             parametres_expedition_automatique(),
+            parametres_coffre(),
         )
     }
 

@@ -14,7 +14,7 @@ use bersemon_core::partie::Partie;
 use bersemon_core::zone::Zone;
 
 use crate::erreurs::erreur_collection;
-use crate::partie::potions;
+use crate::partie::{argent, potions};
 
 /// Une zone explorée : libre, en cours ou rentrée (section 12.1).
 pub fn etat_de_la_zone(partie: &Partie, zone: &Zone, maintenant: Horodatage) -> String {
@@ -166,15 +166,19 @@ pub fn retour(zone: &str, bilan: &BilanExpeditionAutomatique) -> String {
             rentre.degats_subis
         ));
     }
+    let mut gains = Vec::new();
+    if bilan.potions > 0 {
+        gains.push(potions(bilan.potions));
+    }
+    if bilan.argent > 0 {
+        gains.push(argent(bilan.argent));
+    }
     let conclusion = if !bilan.reussite {
         "Échec : tous vos monstres sont tombés KO, l'expédition ne rapporte rien.".to_string()
-    } else if bilan.potions == 0 {
-        "Réussite, mais vos monstres ne rapportent aucune potion.".to_string()
+    } else if gains.is_empty() {
+        "Réussite, mais vos monstres ne rapportent rien.".to_string()
     } else {
-        format!(
-            "Réussite : vos monstres rapportent {}.",
-            potions(bilan.potions)
-        )
+        format!("Réussite : vos monstres rapportent {}.", gains.join(" et "))
     };
     lignes.push(conclusion);
     lignes.push("Ils rentrent au camp et sont soignés.".to_string());
@@ -225,6 +229,7 @@ mod tests {
             heros: partie.heros().clone(),
             collection: partie.collection().clone(),
             inventaire: partie.inventaire().clone(),
+            argent: partie.argent(),
             codex: partie.codex().clone(),
             zones_explorees: vec![ZoneId::new("lisiere")],
             indices_trouves: 1,
@@ -261,6 +266,36 @@ mod tests {
         assert_eq!(
             expeditions_rentrees(&partie, a(3_600)),
             vec!["L'expédition partie pour Lisière du Bois-Sombre est rentrée : accueillez-la."]
+        );
+    }
+
+    #[test]
+    fn le_retour_dit_les_potions_et_l_argent_rapportes() {
+        let contenu = ContenuV1::new();
+        let lisiere = &contenu.zones()[0];
+        let mut partie = partie(&contenu);
+        let a = Horodatage::depuis_secondes;
+        partie
+            .envoyer_en_expedition_automatique(lisiere, &[Emplacement::Equipe(1)], a(0))
+            .unwrap();
+        let mut aleatoire = bersemon_core::aleatoire::GenerateurAleatoire::new(1);
+        let mut bilan = partie
+            .accueillir_expedition_automatique(lisiere.id(), a(3_600), &mut aleatoire)
+            .unwrap();
+        bilan.reussite = true;
+        bilan.potions = 1;
+        bilan.argent = 25;
+        let texte = retour("Lisière du Bois-Sombre", &bilan);
+        assert!(
+            texte.contains("Réussite : vos monstres rapportent 1 potion et 25 pièces d'argent."),
+            "{texte}"
+        );
+        bilan.potions = 0;
+        bilan.argent = 0;
+        let texte = retour("Lisière du Bois-Sombre", &bilan);
+        assert!(
+            texte.contains("Réussite, mais vos monstres ne rapportent rien."),
+            "{texte}"
         );
     }
 

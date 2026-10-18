@@ -54,10 +54,17 @@ Catégorie : P pour physique, S pour spéciale. L'effet est la chance d'infliger
 | lamentation | Lamentation | Spectre | S | 70 | 100 | paralysie 10 % |
 | sentence | Sentence | Ténèbres | S | 80 | 95 | |
 | trappe-du-gibet | Trappe du gibet | Ténèbres | P | 90 | 85 | |
+| brasier | Brasier | Feu | S | 70 | 100 | |
+| deferlante | Déferlante | Eau | P | 65 | 100 | |
+| lianes-etrangleuses | Lianes étrangleuses | Plante | P | 55 | 100 | paralysie 20 % |
+
+Les trois dernières attaques sont ajoutées après la V1, le 18/10/2026, pour les capsules d'attaque (section 6) : aucune espèce ne les apprend.
 
 ## 2. Espèces
 
 Stats de base dans l'ordre PV / Attaque / Défense / Attaque spéciale / Défense spéciale / Vitesse. Le rôle n'a pas d'effet dans la V1 (section 5.1).
+
+Rareté, ajoutée après la V1 le 18/10/2026 pour la revente au marchand (section 6) : les monstres de départ et les monstres communs sont d'espèce commune, les monstres rares d'espèce rare, et le Baron pendu est un Apôtre.
 
 ### Monstres de départ
 
@@ -128,10 +135,19 @@ La Lisière est accessible dès le départ. Le Marais s'ouvre avec le premier in
 
 Expéditions automatiques, ajoutées après la V1 le 18/10/2026 (section 12) :
 
-| Identifiant | Durée de base, pour un monstre | Dégâts | XP par monstre non KO | Potions |
-|---|---|---|---|---|
-| lisiere | 1 h | 15 à 60 | 100 à 200 | 0 à 1 |
-| marais | 2 h | 40 à 120 | 300 à 600 | 1 à 2 |
+| Identifiant | Durée de base, pour un monstre | Dégâts | XP par monstre non KO | Potions | Argent |
+|---|---|---|---|---|---|
+| lisiere | 1 h | 15 à 60 | 100 à 200 | 0 à 1 | 15 à 30 |
+| marais | 2 h | 40 à 120 | 300 à 600 | 1 à 2 | 40 à 80 |
+
+L'argent est ajouté le 18/10/2026, avec l'économie (section 6).
+
+Coffres des expéditions manuelles, après la V1 (section 6) :
+
+| Identifiant | Potions | Argent | Capsules d'attaque |
+|---|---|---|---|
+| lisiere | 1 à 2 | 10 à 25 | Brasier, Déferlante, Lianes étrangleuses |
+| marais | 1 à 2 | 25 à 50 | Croc de venin, Frisson d'outre-tombe, Sentence |
 
 ## 4. Textes
 
@@ -201,3 +217,30 @@ Au premier retour au camp :
 - Le Baron pendu est le combat le plus dur de la V1. Seul le type Féérique lui est très efficace : la Lumière d'aube du Cerf blanc, monstre rare pacifique de la Lisière, en fait une prise précieuse pour l'affronter.
 - Rythme estimé : une expédition dans la Lisière rapporte de l'ordre de 200 à 400 XP par participant, soit le passage du niveau 5 au niveau 8 environ en trois expéditions. Le Marais devient abordable vers le niveau 9, le Baron pendu vers le niveau 13 ou 14. À vérifier en jouant.
 - Place du combat contre l'Apôtre (Q57) : à la dernière étape de l'expédition qui suit le 3e indice, à la place de l'événement tiré ; rentrer avant cette étape le repousse à l'expédition suivante.
+
+## 6. Économie
+
+Ajoutée après la V1, le 18/10/2026 (gamedesign.md, sections 13.10 et 14). Les montants se comptent en pièces d'argent.
+
+Revente d'un monstre au marchand : son niveau multiplié par le coefficient de rareté de son espèce, puis doublé pour un shiny.
+
+| Rareté | Espèces | Coefficient | Exemple |
+|---|---|---|---|
+| commune | monstres de départ et monstres communs | 5 | Loup de niveau 5 : 25 |
+| rare | Cerf blanc, Basilic | 15 | Cerf blanc de niveau 5 : 75 |
+| Apôtre | Baron pendu | 40 | Baron pendu de niveau 15 : 600 |
+
+Prix du marchand : une potion coûte 20. Il vend toutes les capsules d'attaque.
+
+Capsules d'attaque : chacune enseigne son attaque à tout monstre qui a le type de cette attaque. Un coffre en contient une fois sur 5, tirée parmi les capsules de sa zone que le joueur n'a pas encore.
+
+| Capsule | Type | Utile à | Zone des coffres | Prix |
+|---|---|---|---|---|
+| Brasier | Feu | Salamandre, Feu follet | lisiere | 150 |
+| Déferlante | Eau | Crapaud | lisiere | 150 |
+| Lianes étrangleuses | Plante | Mandragore | lisiere | 150 |
+| Croc de venin | Poison | Vipère | marais | 200 |
+| Frisson d'outre-tombe | Spectre | Armure hantée, Baron pendu | marais | 200 |
+| Sentence | Ténèbres | Corbeau | marais | 300 |
+
+Les capsules de la Lisière servent aux monstres de départ, dont l'espèce apprend déjà toutes les attaques de leur type qui existaient dans la V1 ; celles du Marais donnent aux monstres communs une attaque d'une autre espèce de leur type.

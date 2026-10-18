@@ -45,6 +45,9 @@ pub struct Partie {
     heros: Heros,
     collection: Collection,
     inventaire: Inventaire,
+    /// Gardé au camp : une défaite ne fait perdre que celui trouvé pendant
+    /// l'expédition (section 9.3).
+    argent: u32,
     codex: Codex,
     zones_explorees: Vec<ZoneId>,
     /// Indices trouvés sur la piste de l'Apôtre (section 9.4).
@@ -74,6 +77,7 @@ pub struct EtatPartie {
     pub heros: Heros,
     pub collection: Collection,
     pub inventaire: Inventaire,
+    pub argent: u32,
     pub codex: Codex,
     pub zones_explorees: Vec<ZoneId>,
     pub indices_trouves: usize,
@@ -128,6 +132,7 @@ impl Partie {
             heros,
             collection: Collection::new(depart),
             inventaire: Inventaire::default(),
+            argent: 0,
             codex,
             zones_explorees: Vec::new(),
             indices_trouves: 0,
@@ -153,6 +158,11 @@ impl Partie {
 
     pub fn inventaire(&self) -> &Inventaire {
         &self.inventaire
+    }
+
+    /// En pièces d'argent (section 14.1).
+    pub fn argent(&self) -> u32 {
+        self.argent
     }
 
     pub fn codex(&self) -> &Codex {
@@ -219,6 +229,7 @@ impl Partie {
             heros: etat.heros,
             collection,
             inventaire: etat.inventaire,
+            argent: etat.argent,
             codex: etat.codex,
             zones_explorees: etat.zones_explorees,
             indices_trouves: etat.indices_trouves,
@@ -442,9 +453,9 @@ impl Partie {
         Ok(())
     }
 
-    /// Tire le résultat, ajoute les potions et ramène les monstres au camp
-    /// (sections 12.3, 12.6 et 12.7). Les attaques en attente dans les
-    /// rapports d'XP s'ajoutent aux attaques à choisir.
+    /// Tire le résultat, ajoute les potions et l'argent, et ramène les
+    /// monstres au camp (sections 12.3, 12.6 et 12.7). Les attaques en
+    /// attente dans les rapports d'XP s'ajoutent aux attaques à choisir.
     pub fn accueillir_expedition_automatique(
         &mut self,
         zone: &ZoneId,
@@ -459,6 +470,7 @@ impl Partie {
         // Les monstres reviennent à la suite, à la fin du camp.
         let (bilan, monstres) = expedition.resoudre(self.collection.camp().len(), aleatoire);
         self.inventaire.ajouter_potions(bilan.potions);
+        self.argent = self.argent.saturating_add(bilan.argent);
         self.collection.accueillir_retour(monstres);
         for rentre in &bilan.monstres {
             let attaques = rentre
@@ -506,7 +518,8 @@ impl Partie {
             .ok_or(ErreurExpeditionAutomatique::Inexistante)
     }
 
-    /// Tous les monstres sont soignés (section 13.1). Une expédition menée
+    /// Tous les monstres sont soignés (section 13.1) et l'argent trouvé est
+    /// acquis, sauf après une défaite (section 9.3). Une expédition menée
     /// jusqu'au bout sans défaite rend la zone explorée et, si l'indice
     /// suivant de la piste se trouve dans cette zone, le révèle et le rend
     /// (section 9.4).
@@ -516,6 +529,7 @@ impl Partie {
         piste: &'p Piste,
     ) -> Option<&'p Indice> {
         self.collection.soigner_tout();
+        self.argent = self.argent.saturating_add(expedition.argent_rapporte());
         if !expedition.est_reussie() {
             return None;
         }
@@ -639,6 +653,22 @@ mod tests {
     }
 
     #[test]
+    fn l_argent_des_coffres_n_est_acquis_qu_au_retour() {
+        let (zones, piste) = carte();
+        let mut partie = partie();
+        // Quatre coffres de 10 pièces d'argent.
+        let expedition = expedition_complete(&partie, &zones[0], &piste);
+        assert_eq!(partie.argent(), 0);
+        partie.rentrer_au_camp(&expedition, &piste);
+        assert_eq!(partie.argent(), 40);
+
+        let mut perdue = expedition_complete(&partie, &zones[0], &piste);
+        perdue.noter_defaite();
+        partie.rentrer_au_camp(&perdue, &piste);
+        assert_eq!(partie.argent(), 40);
+    }
+
+    #[test]
     fn rentrer_avant_la_fin_ne_donne_pas_d_indice() {
         let (zones, piste) = carte();
         let mut partie = partie();
@@ -649,6 +679,8 @@ mod tests {
         assert_eq!(partie.rentrer_au_camp(&expedition, &piste), None);
         assert!(!partie.est_exploree(&ZoneId::new("bois")));
         assert_eq!(partie.indices_trouves(), 0);
+        // Rentrer avant la fin garde les gains (section 9.2).
+        assert_eq!(partie.argent(), 10);
     }
 
     #[test]
@@ -843,7 +875,8 @@ mod tests {
             ),
             Err(ErreurExpeditionAutomatique::PasEncoreRentree)
         );
-        // 15 dégâts sur 20 PV : réussite, 100 XP et une potion.
+        // 15 dégâts sur 20 PV : réussite, 100 XP, une potion et 20 pièces
+        // d'argent.
         let bilan = partie
             .accueillir_expedition_automatique(
                 &bois,
@@ -856,6 +889,7 @@ mod tests {
         assert_eq!(partie.collection().camp()[0].experience(), 125 + 100);
         assert_eq!(partie.collection().places_reservees(), 0);
         assert_eq!(partie.inventaire().potions(), 1);
+        assert_eq!(partie.argent(), 20);
         assert!(partie.expeditions_automatiques().is_empty());
         assert_eq!(
             partie.accueillir_expedition_automatique(
@@ -886,6 +920,7 @@ mod tests {
         assert_eq!(partie.collection().camp()[0].experience(), 125);
         assert_eq!(partie.collection().places_reservees(), 0);
         assert_eq!(partie.inventaire().potions(), 0);
+        assert_eq!(partie.argent(), 0);
     }
 
     fn etat(partie: &Partie) -> EtatPartie {
@@ -893,6 +928,7 @@ mod tests {
             heros: partie.heros().clone(),
             collection: partie.collection().clone(),
             inventaire: partie.inventaire().clone(),
+            argent: partie.argent(),
             codex: partie.codex().clone(),
             zones_explorees: partie.zones_explorees().to_vec(),
             indices_trouves: partie.indices_trouves(),

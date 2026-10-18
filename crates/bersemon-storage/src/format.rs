@@ -1,4 +1,4 @@
-//! Format JSON de la sauvegarde, version 3, et sa conversion vers les types
+//! Format JSON de la sauvegarde, version 4, et sa conversion vers les types
 //! du noyau. Les énumérations sont écrites avec des noms fixés ici, et non
 //! avec les noms Rust, pour qu'un renommage dans le code ne casse pas les
 //! sauvegardes existantes.
@@ -28,19 +28,22 @@ use bersemon_core::zone::ZoneId;
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 3;
+pub(crate) const VERSION: u64 = 4;
 
 /// La version 2 ajoute la traque de l'Apôtre et le tutoriel, la version 3
-/// les expéditions automatiques et les attaques à choisir à leur retour. Une
-/// sauvegarde en version 1 ou 2 se lit avec cette structure : les champs
-/// ajoutés y prennent leur valeur de début de partie.
+/// les expéditions automatiques et les attaques à choisir à leur retour, la
+/// version 4 l'argent. Une sauvegarde d'une version précédente se lit avec
+/// cette structure : les champs ajoutés y prennent leur valeur de début de
+/// partie.
 #[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct SauvegardeV3 {
+pub(crate) struct SauvegardeV4 {
     pub(crate) version: u64,
     heros: HerosV1,
     equipe: Vec<MonstreV1>,
     camp: Vec<MonstreV1>,
     potions: u32,
+    #[serde(default)]
+    argent: u32,
     codex: CodexV1,
     zones_explorees: Vec<String>,
     #[serde(default)]
@@ -107,9 +110,9 @@ struct CodexV1 {
     capturees: Vec<String>,
 }
 
-pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV3 {
+pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV4 {
     let collection = partie.collection();
-    SauvegardeV3 {
+    SauvegardeV4 {
         version: VERSION,
         heros: HerosV1 {
             nom: partie.heros().nom().as_str().to_string(),
@@ -118,6 +121,7 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV3 {
         equipe: collection.equipe().iter().map(depuis_monstre).collect(),
         camp: collection.camp().iter().map(depuis_monstre).collect(),
         potions: partie.inventaire().potions(),
+        argent: partie.argent(),
         codex: CodexV1 {
             rencontrees: ids(partie.codex().rencontrees()),
             capturees: ids(partie.codex().capturees()),
@@ -156,7 +160,7 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV3 {
 }
 
 pub(crate) fn vers_partie(
-    sauvegarde: SauvegardeV3,
+    sauvegarde: SauvegardeV4,
     catalogue: &dyn Catalogue,
 ) -> Result<Partie, ErreurSauvegarde> {
     let heros = Heros::new(
@@ -210,6 +214,7 @@ pub(crate) fn vers_partie(
         heros,
         collection,
         inventaire,
+        argent: sauvegarde.argent,
         codex,
         zones_explorees,
         indices_trouves: sauvegarde.indices_trouves,

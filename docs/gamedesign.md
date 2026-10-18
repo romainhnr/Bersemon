@@ -151,6 +151,7 @@ Chaque monstre possède :
 - Exemples de familles : dragons, fées, elfes, créatures mythologiques ou folkloriques, animaux actuels ou disparus, objets possédés, etc.
 - Volume initial : une dizaine de monstres, augmenté au fur et à mesure.
 - Le contenu de la V1 (espèces, attaques, zones et textes) est décrit dans docs/contenu-v1.md, validé le 17/10/2026.
+- Après la V1, chaque espèce a une rareté : commune (monstres de départ compris), rare ou Apôtre. Elle fixe son prix de revente (section 14.5).
 
 ### 5.4 Évolution
 
@@ -245,8 +246,9 @@ Déroulement dans la V1 :
 
 - Une expédition compte de 4 à 6 étapes, nombre tiré au départ et inconnu du joueur.
 - Chaque étape tire un événement : combat contre un groupe sauvage (80 %), coffre (15 %) ou monstre rare (5 %). Le marchand est hors V1.
+- Après la V1, tant qu'aucun marchand n'est au camp, la rencontre d'un marchand prend 10 % sur les combats : combat 70 %, marchand 10 %, coffre 15 %, monstre rare 5 % (section 14.2). Une fois le marchand au camp, les combats retrouvent leurs 80 %.
 - Un groupe sauvage compte de 1 à 2 monstres dans la zone facile, de 1 à 3 dans la zone difficile ; la taille est tirée à chaque combat.
-- Un coffre contient 1 à 2 potions (section 14.4).
+- Un coffre contient 1 à 2 potions (section 14.4). Après la V1, il contient aussi de l'argent, selon la zone, et, une fois sur 5, une capsule d'attaque de la zone que le joueur n'a pas encore (sections 13.10 et 14.5).
 - Entre deux étapes, le joueur continue, rentre au camp en gardant ses gains, utilise des potions ou change l'ordre de son équipe ; les échanges avec le camp restent impossibles. Les PV et les statuts sont conservés d'une étape à l'autre.
 - Après la dernière étape, le joueur rentre au camp et la zone compte comme explorée.
 
@@ -256,6 +258,7 @@ Si tous les monstres du joueur sont KO pendant une expédition manuelle :
 
 - le joueur retourne automatiquement au camp ;
 - il perd les objets qu'il avait sur lui, dont toutes ses potions ;
+- après la V1, il perd aussi l'argent et les capsules trouvés pendant l'expédition, qui ne lui sont acquis qu'au retour au camp ; l'argent qu'il avait déjà au camp lui reste ;
 - ses monstres restent KO et sont soignés au camp (section 5.7) ;
 - c'est aussi une défaite si son dernier monstre et le dernier monstre sauvage tombent KO au même tour ;
 - l'expédition ne compte pas comme menée jusqu'au bout.
@@ -396,22 +399,23 @@ Le format reprend celui des combats de Pokémon, comme base de départ qui pourr
 
 - Chaque monstre qui n'est pas KO au retour d'une expédition réussie reçoit en entier le même gain d'XP, tiré une fois dans la fourchette de la zone (section 12.8) ; les monstres KO ne gagnent rien, comme en combat (section 7). Ce gain vaut environ la moitié de ce que rapporte une expédition manuelle dans la même zone.
 - Un nombre de potions est tiré dans la fourchette de la zone et ajouté à celles du joueur (section 14.4).
-- Les ressources et les autres objets (section 14.3) viendront avec l'économie (sections 13.4 et 14).
+- Une somme d'argent est tirée dans la fourchette de la zone et ajoutée à celui du joueur (section 14.1).
+- Les ressources et les autres objets (section 14.3) viendront plus tard (sections 13.4 et 14).
 
 ### 12.7 Retour, accueil et rappel
 
 - Une expédition rentrée attend au camp que le joueur l'accueille. S'il est en expédition manuelle, il l'accueille à son retour au camp. Quand plusieurs expéditions sont rentrées, il les accueille une par une, chacune avec son bilan.
-- À l'accueil, le joueur voit le bilan : dégâts subis, monstres KO, XP et potions. Un monstre qui monte de niveau et doit apprendre une attaque alors qu'il en connaît déjà 4 choisit comme après un combat (section 7). Les monstres reviennent au camp, soignés.
+- À l'accueil, le joueur voit le bilan : dégâts subis, monstres KO, XP, potions et argent. Un monstre qui monte de niveau et doit apprendre une attaque alors qu'il en connaît déjà 4 choisit comme après un combat (section 7). Les monstres reviennent au camp, soignés.
 - La partie est sauvegardée dès l'accueil, pour que quitter le jeu ne permette pas de tirer de nouveau le résultat. Si le jeu s'arrête avant que le joueur ait choisi les attaques à oublier, ces choix lui sont reproposés à la reprise.
 - Au camp, le joueur peut rappeler une expédition avant son terme, après confirmation : les monstres rentrent aussitôt, sans dégâts ni récompense. Une expédition déjà rentrée ne se rappelle plus, elle s'accueille.
 - Sur Discord, le bot envoie un message privé au joueur à l'heure du retour, s'il est en ligne ; s'il était éteint, il prévient à son démarrage des expéditions rentrées entre-temps. Chaque retour n'est annoncé qu'une fois, même si le bot redémarre avant que le joueur l'accueille (Q65). Le joueur accueille ensuite l'expédition par /bersemon. La console affiche les expéditions rentrées au camp.
 
 ### 12.8 Valeurs par zone
 
-| Zone | Durée de base | Dégâts | XP par monstre non KO | Potions |
-|---|---|---|---|---|
-| Lisière du Bois-Sombre | 1 h | 15 à 60 | 100 à 200 | 0 à 1 |
-| Marais des Pendus | 2 h | 40 à 120 | 300 à 600 | 1 à 2 |
+| Zone | Durée de base | Dégâts | XP par monstre non KO | Potions | Argent |
+|---|---|---|---|---|---|
+| Lisière du Bois-Sombre | 1 h | 15 à 60 | 100 à 200 | 0 à 1 | 15 à 30 |
+| Marais des Pendus | 2 h | 40 à 120 | 300 à 600 | 1 à 2 | 40 à 80 |
 
 Repères, avec des valeurs internes de 15 : dans la Lisière, une Salamandre de niveau 8 seule réussit 23 fois sur 100, 71 fois avec un Loup de niveau 6, à coup sûr avec en plus une Vipère de niveau 5. Dans le Marais, une Salamandre de niveau 12 seule échoue toujours ; elle réussit 34 fois sur 100 avec un Crapaud de niveau 11, et 77 fois avec en plus une Mandragore de niveau 10. À vérifier en jouant.
 
@@ -480,19 +484,23 @@ Le joueur peut construire des machines pour automatiser certaines tâches, par e
 - La sauvegarde garde l'identifiant des espèces, des attaques et des zones, pas leurs données : un rééquilibrage s'applique aux monstres déjà capturés.
 - Elle garde aussi l'avancée de la traque (indices trouvés, Apôtres vaincus) et les conseils du tutoriel déjà montrés.
 - Après la V1, elle garde les expéditions automatiques en cours : zone, monstres envoyés, heures de départ et de retour (section 12). Elle garde aussi les attaques qui restent à choisir après l'accueil d'une expédition (section 12.7). Le départ, le rappel et l'accueil d'une expédition automatique sont des actions au camp, suivies d'une sauvegarde.
+- Avec l'économie, elle garde aussi l'argent du joueur, la présence du marchand au camp et les capsules d'attaque obtenues (section 14). Les achats et les ventes sont des actions au camp, suivies d'une sauvegarde.
 
 ### 13.10 Attaques des monstres
 
 - Au camp, un monstre peut réapprendre gratuitement toute attaque que son espèce apprend jusqu'à son niveau, y compris celles qu'il a oubliées ou refusées. S'il en connaît déjà 4, il en oublie une (section 7).
-- Une capsule d'attaque enseigne une attaque précise à tout monstre qui a le type de cette attaque, de la même façon. Elle n'est pas consommée : une fois obtenue, elle sert autant de fois qu'on veut.
-- Les capsules se trouvent rarement en expédition, ou s'achètent chez le marchand (section 14.2). Leur liste et leur rareté restent à définir (Q69).
+- Une capsule d'attaque enseigne une attaque précise à tout monstre qui a le type de cette attaque et ne la connaît pas déjà, de la même façon. Elle n'est pas consommée : une fois obtenue, elle sert autant de fois qu'on veut.
+- Les capsules se trouvent dans les coffres des expéditions manuelles (section 9.2), ou s'achètent chez le marchand, qui les vend toutes (section 14.2). Chaque zone a ses capsules : un coffre en contient une fois sur 5, tirée parmi celles de la zone que le joueur n'a pas encore ; quand il les a toutes, le coffre n'en contient plus.
+- Un monstre de départ n'a qu'un type, et son espèce apprend déjà toutes les attaques de ce type qui existaient dans la V1. Les capsules comptent donc des attaques nouvelles pour les types Feu, Eau et Plante, trouvées dans la zone facile, et des attaques d'autres espèces, trouvées dans la zone difficile. Liste, types et prix dans docs/contenu-v1.md (section 6).
 
 ## 14. Économie, marchands, objets et ressources
 
 ### 14.1 Monnaie
 
 - La monnaie du jeu est l'argent : le même mot désigne le métal précieux et la monnaie.
-- Après la V1, l'argent vient de la revente des monstres au marchand, des coffres des expéditions manuelles et des expéditions automatiques réussies. Les montants restent à définir (Q68).
+- Après la V1, l'argent vient de la revente des monstres au marchand, des coffres des expéditions manuelles et des expéditions automatiques réussies. Les montants sont en section 14.5.
+- Le joueur commence sans argent. L'argent trouvé pendant une expédition manuelle ne lui est acquis qu'au retour au camp (section 9.3).
+- Dans les textes du jeu, l'argent se compte en pièces d'argent.
 
 ### 14.2 Marchands
 
@@ -505,9 +513,11 @@ Le joueur peut aussi vendre ses objets aux marchands contre de l'argent.
 
 Premier marchand, après la V1 :
 
-- Tant qu'aucun marchand n'est au camp, chaque étape d'une expédition manuelle peut tirer la rencontre d'un marchand, à la place d'un combat (environ 5 %, Q70).
-- Le marchand rencontré se réfugie au camp et y reste, toujours accessible ; il ne se rencontre plus en expédition.
-- Au camp, il vend des potions et des capsules d'attaque (section 13.10), et rachète les monstres capturés contre de l'argent. Revendre un monstre est définitif et suit les règles du relâcher : confirmation, et jamais le dernier monstre de l'équipe.
+- Tant qu'aucun marchand n'est au camp, chaque étape d'une expédition manuelle peut tirer la rencontre d'un marchand, à la place d'un combat (10 % des étapes, section 9.2).
+- Le marchand rencontré se réfugie au camp et y reste, toujours accessible ; il ne se rencontre plus en expédition. Il se réfugie au camp dès la rencontre, même si l'expédition finit en défaite ; quitter le jeu avant le retour au camp annule la rencontre, comme toute expédition non sauvegardée (section 13.9). On ne lui achète rien pendant l'expédition.
+- Au camp, il vend des potions et des capsules d'attaque (section 13.10), et rachète les monstres capturés contre de l'argent. Il ne rachète ni potions ni capsules. Les achats se font sans confirmation.
+- Revendre un monstre est définitif et suit les règles du relâcher : confirmation, et jamais le dernier monstre de l'équipe. Tout monstre se revend comme il se relâche, monstre de départ et Apôtre compris. Le prix dépend de son niveau, de la rareté de son espèce et du shiny (section 14.5).
+- Les prix du marchand, à l'achat comme à la revente, sont fixes et non tirés au hasard, pour être connus avant l'échange, comme la durée d'une expédition automatique (section 12.2) : la section 1.4 vise les gains des combats et des expéditions.
 - Tuer un monstre pour en tirer des ressources est envisagé, mais reporté tant qu'aucune ressource n'a d'usage (Q71).
 
 ### 14.3 Objets et ressources cités dans ce document
@@ -528,7 +538,23 @@ Premier marchand, après la V1 :
 
 - Seul objet de la V1. Une potion rend à un monstre de l'équipe un pourcentage de ses PV max tiré de 40 % à 60 %, arrondi à l'entier inférieur, sans dépasser ses PV max. Elle ne relève pas un monstre KO et ne guérit pas les statuts. Sur un monstre qui a tous ses PV, le jeu demande confirmation : la potion serait consommée sans effet.
 - Elle s'utilise en combat, comme action du tour (l'adversaire agit ensuite), ou entre deux étapes d'une expédition.
-- Dans la V1, les potions se trouvent dans les coffres ; après la V1, les expéditions automatiques réussies en rapportent aussi (section 12.6), et le marchand en vend au camp (section 14.2). Il n'y a ni limite de sac ni coffre de stockage au camp : le joueur porte toutes ses potions et les perd toutes en cas de défaite (section 9.3).
+- Dans la V1, les potions se trouvent dans les coffres ; après la V1, les expéditions automatiques réussies en rapportent aussi (section 12.6), et le marchand en vend au camp, à 20 pièces d'argent (sections 14.2 et 14.5). Il n'y a ni limite de sac ni coffre de stockage au camp : le joueur porte toutes ses potions et les perd toutes en cas de défaite (section 9.3).
+
+### 14.5 Montants (après la V1)
+
+| Élément | Valeur |
+|---|---|
+| Argent au départ | 0 |
+| Coffre, Lisière du Bois-Sombre | 10 à 25 pièces d'argent, en plus de 1 à 2 potions |
+| Coffre, Marais des Pendus | 25 à 50, en plus de 1 à 2 potions |
+| Capsule dans un coffre | un coffre sur 5, parmi les capsules de la zone que le joueur n'a pas encore |
+| Expédition automatique réussie | Lisière 15 à 30, Marais 40 à 80 (section 12.8) |
+| Revente d'un monstre | niveau x 5 pour une espèce commune, x 15 pour une rare, x 40 pour un Apôtre ; doublé pour un shiny |
+| Potion | 20 |
+| Capsule d'attaque | 150 pour celles de la Lisière, 200 à 300 pour celles du Marais (docs/contenu-v1.md, section 6) |
+| Rencontre du marchand | 10 % des étapes d'une expédition manuelle, tant qu'il n'est pas au camp |
+
+Repères : un Loup de niveau 5 se revend 25 pièces d'argent, un Cerf blanc de niveau 5 75, le Baron pendu au niveau 15 600. Une expédition dans la Lisière rapporte de l'ordre de 40 à 60 pièces d'argent avec une ou deux captures revendues, une expédition dans le Marais de 100 à 130. Une expédition de 5 étapes croise le marchand 41 fois sur 100. À vérifier en jouant.
 
 ## 15. Multijoueur (après l'adaptation à Discord)
 
@@ -556,11 +582,8 @@ Les questions Q65 et suivantes ont été relevées le 18/10/2026 lors de la conc
 
 - Q66. (Après l'étape 17) Protections des expéditions automatiques (section 12.5) : objets de protection, effet du rôle soutien (Q19), valeurs des protections et façon dont elles s'appliquent à la répartition des dégâts avec report.
 
-Les questions Q67 et suivantes ont été relevées le 18/10/2026 après les premiers tests sur Discord, découpés en étapes : 18 corrections (types au codex, mise en valeur, messages publics pour les tests), 19 Templier et monstre de départ attitré, 20 toute l'équipe en expédition automatique, 21 et suivantes économie (argent, marchand, revente, capsules, attaques au camp).
+Les questions Q67 et suivantes ont été relevées le 18/10/2026 après les premiers tests sur Discord, découpés en étapes : 18 corrections (types au codex, mise en valeur, messages publics pour les tests), 19 Templier et monstre de départ attitré, 20 toute l'équipe en expédition automatique, puis l'économie : 21 argent et sauvegarde en version 4, 22 marchand, rencontre et revente (version 5), 23 attaques au camp et capsules (version 6), 24 écrans de la console et du bot.
 
-- Q68. (Économie) Montants : argent des coffres et des expéditions automatiques, prix de revente des monstres, prix des potions et des capsules.
-- Q69. (Économie) Capsules d'attaque : liste des attaques proposées, où et avec quelle chance on les trouve en expédition.
-- Q70. (Économie) Chance de rencontrer le marchand à une étape (environ 5 % proposé, pris sur les combats).
 - Q71. (Après l'économie) Tuer un monstre pour des ressources : reporté tant qu'aucune ressource n'a d'usage (fabrication, améliorations).
 
 ## 17. Journal des décisions
@@ -757,3 +780,14 @@ Les questions Q67 et suivantes ont été relevées le 18/10/2026 après les prem
 18/10/2026 (étape 20) :
 
 - Avec un camp plein, la règle de la section 12.1 est gardée : un monstre pris dans l'équipe a besoin d'une place au camp, où il reviendra. Le refus l'explique, et le raccourci "toute l'équipe" n'est proposé que si ce départ est possible.
+
+18/10/2026 (économie) :
+
+- Découpage par couches : 21 argent et sauvegarde en version 4 ; 22 marchand, rencontre et revente, version 5 ; 23 attaques au camp et capsules, version 6 ; 24 écrans de la console et du bot. Une version de sauvegarde par étape qui change le format.
+- Q68 : montants de la section 14.5. Coffres : 10 à 25 pièces d'argent dans la Lisière, 25 à 50 dans le Marais. Expéditions automatiques réussies : 15 à 30 et 40 à 80. Revente : niveau x 5, 15 ou 40 selon la rareté de l'espèce, doublée pour un shiny. Potion : 20. Capsules : 150 à 300. Départ sans argent.
+- Chaque espèce a une rareté (commune, rare, Apôtre), qui fixe son prix de revente.
+- Q69 : six capsules, trois attaques nouvelles pour les types des monstres de départ (Lisière) et trois attaques d'autres espèces (Marais) ; un coffre sur 5 contient une capsule de sa zone que le joueur n'a pas encore ; le marchand les vend toutes.
+- Q70 : tant qu'il n'est pas au camp, le marchand se rencontre à 10 % des étapes, pris sur les combats (combat 70 %, marchand 10 %, coffre 15 %, monstre rare 5 %).
+- Une défaite en expédition manuelle fait perdre l'argent et les capsules trouvés pendant l'expédition, acquis seulement au retour au camp ; l'argent déjà au camp reste.
+- Les prix du marchand sont fixes, pour être connus avant l'échange ; la section 1.4 vise les gains des combats et des expéditions.
+- Hypothèses retenues, présentées avec la conception : le marchand reste au camp même après une défaite, mais quitter le jeu avant le retour annule la rencontre ; on ne lui achète rien en expédition ; les achats se font sans confirmation ; tout monstre se revend comme il se relâche, monstre de départ et Apôtre compris ; il ne rachète ni potions ni capsules ; l'argent se compte en pièces d'argent.
