@@ -6,6 +6,8 @@ use bersemon_core::deroulement::{ActionDeGestion, Choix, ErreurChoix};
 use bersemon_core::inventaire::ErreurPotion;
 use bersemon_core::sauvegarde::ErreurSauvegarde;
 
+use crate::expeditions_automatiques::erreur_expedition_automatique;
+
 /// Le choix refusé dit de quel nom il s'agissait : celui du héros ou un
 /// surnom.
 pub fn erreur_de_choix(choix: &Choix, erreur: &ErreurChoix) -> String {
@@ -22,6 +24,7 @@ pub fn erreur_de_choix(choix: &Choix, erreur: &ErreurChoix) -> String {
         ErreurChoix::Attaque(erreur) => {
             format!("Impossible d'apprendre cette attaque : {erreur}.")
         }
+        ErreurChoix::ExpeditionAutomatique(erreur) => erreur_expedition_automatique(erreur),
         autre => format!("Action impossible : {autre}."),
     }
 }
@@ -59,6 +62,7 @@ pub fn erreur_collection(erreur: &ErreurCollection) -> String {
         ErreurCollection::DernierMonstreDeLEquipe => {
             "L'équipe doit garder au moins un monstre.".to_string()
         }
+        ErreurCollection::EmplacementEnDouble(_) => "Ce monstre est déjà choisi.".to_string(),
         autre => format!("Action impossible : {autre}."),
     }
 }

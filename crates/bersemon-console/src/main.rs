@@ -8,6 +8,8 @@ mod ecran_accueil;
 mod ecran_camp;
 mod ecran_combat;
 mod ecran_expedition;
+mod ecran_expeditions_automatiques;
+mod horloge;
 mod recit;
 mod saisie;
 
@@ -16,13 +18,13 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use bersemon_core::aleatoire::GenerateurAleatoire;
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::{Attente, Choix, Confirmation, Contexte, Deroulement};
-use bersemon_core::horodatage::Horodatage;
 use bersemon_core::sauvegarde::SauvegardeRepository;
 use bersemon_presentation::erreurs::erreur_de_choix;
 use bersemon_presentation::partie::question_de_confirmation;
 use bersemon_storage::{FichierJson, emplacement_par_defaut};
 
 use crate::ecran_camp::MenuDuCamp;
+use crate::horloge::maintenant;
 use crate::saisie::Entree;
 
 /// Au camp et en expédition, une partie est en jeu.
@@ -100,14 +102,6 @@ fn confirmer(confirmation: &Confirmation, entree: &mut Entree) -> Option<Choix> 
         Choix::Non
     };
     Some(reponse)
-}
-
-/// L'heure du choix, que le noyau ne lit jamais lui-même (section 12.2).
-fn maintenant() -> Horodatage {
-    let secondes = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_or(0, |duree| duree.as_secs());
-    Horodatage::depuis_secondes(secondes)
 }
 
 /// Une graine différente à chaque lancement suffit : le hasard d'un jeu n'a

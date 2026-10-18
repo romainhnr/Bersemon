@@ -1,15 +1,18 @@
-//! Camp de base : départ en expédition par la carte, liste des monstres,
-//! gestion des monstres (section 13.2) et codex. Les monstres sont désignés
-//! par leur numéro dans la liste de la collection : l'équipe d'abord, le camp
-//! ensuite.
+//! Camp de base : départ en expédition par la carte, expéditions
+//! automatiques, liste des monstres, gestion des monstres (section 13.2) et
+//! codex. Les monstres sont désignés par leur numéro dans la liste de la
+//! collection : l'équipe d'abord, le camp ensuite.
 
 use bersemon_core::collection::{Collection, Emplacement};
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::{ActionDeGestion, Choix};
 use bersemon_core::partie::Partie;
+use bersemon_presentation::expeditions_automatiques::expeditions_rentrees;
 use bersemon_presentation::partie::{collection as liste_des_monstres, en_tete_du_camp};
 
 use crate::affichage;
+use crate::ecran_expeditions_automatiques;
+use crate::horloge::maintenant;
 use crate::saisie::Entree;
 
 /// Le menu de gestion reste ouvert d'une action à l'autre, jusqu'au retour.
@@ -35,21 +38,34 @@ pub fn choisir(
         }
         println!();
         println!("{}", en_tete_du_camp(partie));
+        for avis in expeditions_rentrees(partie, maintenant()) {
+            println!("{avis}");
+        }
         println!("  1. Partir en expédition");
-        println!("  2. Voir vos monstres");
-        println!("  3. Gérer vos monstres");
-        println!("  4. Consulter le codex");
-        println!("  5. Quitter");
-        match entree.choix(1, 5)? {
-            1 => {
-                if let Some(choix) = carte(partie, contenu, entree)? {
-                    return Some(choix);
-                }
+        println!("  2. Expéditions automatiques");
+        println!("  3. Voir vos monstres");
+        println!("  4. Gérer vos monstres");
+        println!("  5. Consulter le codex");
+        println!("  6. Quitter");
+        let choix = match entree.choix(1, 6)? {
+            1 => carte(partie, contenu, entree)?,
+            2 => ecran_expeditions_automatiques::choisir(partie, contenu, entree)?,
+            3 => {
+                println!("{}", liste_des_monstres(partie.collection()));
+                None
             }
-            2 => println!("{}", liste_des_monstres(partie.collection())),
-            3 => menu.gestion_ouverte = true,
-            4 => println!("{}", affichage::codex(partie.codex(), contenu.especes())),
+            4 => {
+                menu.gestion_ouverte = true;
+                None
+            }
+            5 => {
+                println!("{}", affichage::codex(partie.codex(), contenu.especes()));
+                None
+            }
             _ => return None,
+        };
+        if choix.is_some() {
+            return choix;
         }
     }
 }
@@ -100,14 +116,22 @@ fn designer(
     question: &str,
 ) -> Option<Option<Emplacement>> {
     println!("{question} (0 pour annuler)");
-    let taille_equipe = collection.equipe().len();
-    let total = taille_equipe + collection.camp().len();
+    let total = collection.equipe().len() + collection.camp().len();
     let emplacement = match entree.choix(0, total)? {
         0 => None,
-        numero if numero <= taille_equipe => Some(Emplacement::Equipe(numero - 1)),
-        numero => Some(Emplacement::Camp(numero - 1 - taille_equipe)),
+        numero => Some(emplacement_du_numero(collection, numero)),
     };
     Some(emplacement)
+}
+
+/// Le numéro, à partir de 1, d'un monstre de la liste de la collection.
+pub fn emplacement_du_numero(collection: &Collection, numero: usize) -> Emplacement {
+    let taille_equipe = collection.equipe().len();
+    if numero <= taille_equipe {
+        Emplacement::Equipe(numero - 1)
+    } else {
+        Emplacement::Camp(numero - 1 - taille_equipe)
+    }
 }
 
 fn changer_ordre(collection: &Collection, entree: &mut Entree) -> Option<Option<ActionDeGestion>> {

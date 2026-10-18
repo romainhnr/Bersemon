@@ -45,6 +45,15 @@ pub fn collection(collection: &Collection) -> String {
             ligne_monstre(monstre, Cote::Joueur)
         ));
     }
+    // Les monstres partis gardent leur place au camp (section 12.1).
+    match collection.places_reservees() {
+        0 => {}
+        1 => lignes
+            .push("En expédition automatique : 1 monstre, qui garde sa place au camp.".to_string()),
+        absents => lignes.push(format!(
+            "En expédition automatique : {absents} monstres, qui gardent leur place au camp."
+        )),
+    }
     lignes.join("\n")
 }
 

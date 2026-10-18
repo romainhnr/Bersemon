@@ -1,11 +1,100 @@
-//! Expéditions automatiques (section 12) : départ, rappel, retour et durées.
+//! Expéditions automatiques (section 12) : état des zones, estimation avant
+//! le départ, départ, rappel, retour et durées.
 
 use std::time::Duration;
 
-use bersemon_core::expedition_automatique::{BilanExpeditionAutomatique, ExpeditionAutomatique};
+use bersemon_core::expedition_automatique::{
+    BilanExpeditionAutomatique, Chances, ErreurExpeditionAutomatique, Estimation,
+    ExpeditionAutomatique, MONSTRES_MAX, MONSTRES_MIN,
+};
+use bersemon_core::horodatage::Horodatage;
 use bersemon_core::monstre::Monstre;
+use bersemon_core::partie::Partie;
+use bersemon_core::zone::Zone;
 
+use crate::erreurs::erreur_collection;
 use crate::partie::potions;
+
+/// Une zone explorée : libre, en cours ou rentrée (section 12.1).
+pub fn etat_de_la_zone(partie: &Partie, zone: &Zone, maintenant: Horodatage) -> String {
+    match partie.expedition_automatique(zone.id()) {
+        None => format!("{} : libre", zone.nom()),
+        Some(expedition) if expedition.est_rentree(maintenant) => format!(
+            "{} : rentrée, à accueillir ({})",
+            zone.nom(),
+            noms(expedition.monstres())
+        ),
+        Some(expedition) => format!(
+            "{} : en cours, retour dans {} ({})",
+            zone.nom(),
+            duree(expedition.temps_restant(maintenant)),
+            noms(expedition.monstres())
+        ),
+    }
+}
+
+/// Une ligne par expédition qui attend d'être accueillie (section 12.7).
+pub fn expeditions_rentrees(partie: &Partie, maintenant: Horodatage) -> Vec<String> {
+    partie
+        .expeditions_automatiques()
+        .iter()
+        .filter(|expedition| expedition.est_rentree(maintenant))
+        .map(|expedition| {
+            format!(
+                "L'expédition partie pour {} est rentrée : accueillez-la.",
+                expedition.zone().nom()
+            )
+        })
+        .collect()
+}
+
+/// Ce que le joueur voit avant le départ (section 12.4).
+pub fn estimation(zone: &Zone, estimation: &Estimation) -> String {
+    let (minimum, maximum) = zone.niveaux();
+    let degats = zone.expedition_automatique().degats();
+    format!(
+        "Difficulté : niveaux {} à {}. Dégâts à encaisser : {} à {}.\nDurée : {}. Chances de réussite : {}.",
+        minimum.valeur(),
+        maximum.valeur(),
+        degats.start(),
+        degats.end(),
+        duree(estimation.duree),
+        chances(estimation.chances)
+    )
+}
+
+/// Arrondies à l'entier inférieur ; une réussite possible n'est jamais
+/// annoncée à 0 %.
+pub fn chances(chances: Chances) -> String {
+    match chances.pourcentage() {
+        0 if chances.favorables > 0 => "moins de 1 %".to_string(),
+        pourcentage => format!("{pourcentage} %"),
+    }
+}
+
+pub fn erreur_expedition_automatique(erreur: &ErreurExpeditionAutomatique) -> String {
+    match erreur {
+        ErreurExpeditionAutomatique::ZoneNonExploree => {
+            "Menez d'abord une expédition jusqu'au bout dans cette zone.".to_string()
+        }
+        ErreurExpeditionAutomatique::DejaEnCours => {
+            "Une expédition automatique est déjà en cours dans cette zone.".to_string()
+        }
+        ErreurExpeditionAutomatique::NombreDeMonstres(_) => {
+            format!("Envoyez de {MONSTRES_MIN} à {MONSTRES_MAX} monstres.")
+        }
+        ErreurExpeditionAutomatique::Collection(erreur) => erreur_collection(erreur),
+        ErreurExpeditionAutomatique::Inexistante => {
+            "Aucune expédition automatique dans cette zone.".to_string()
+        }
+        ErreurExpeditionAutomatique::PasEncoreRentree => {
+            "L'expédition n'est pas encore rentrée.".to_string()
+        }
+        ErreurExpeditionAutomatique::DejaRentree => {
+            "L'expédition est déjà rentrée : accueillez-la.".to_string()
+        }
+    }
+}
 
 /// Arrondie à la minute supérieure, pour qu'un temps restant ne s'affiche
 /// jamais à 0 avant le retour.
@@ -98,6 +187,98 @@ fn noms(monstres: &[Monstre]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bersemon_core::catalogue::Catalogue;
+    use bersemon_core::collection::Emplacement;
+    use bersemon_core::contenu::ContenuV1;
+    use bersemon_core::espece::EspeceId;
+    use bersemon_core::heros::{Classe, Heros};
+    use bersemon_core::niveau::Niveau;
+    use bersemon_core::nom::Nom;
+    use bersemon_core::partie::EtatPartie;
+    use bersemon_core::stats::ValeursInternes;
+    use bersemon_core::zone::ZoneId;
+
+    fn creer(contenu: &ContenuV1, id: &str) -> Monstre {
+        let espece = contenu.espece(&EspeceId::new(id)).unwrap();
+        Monstre::creer(
+            espece,
+            Niveau::new(5).unwrap(),
+            ValeursInternes::default(),
+            false,
+        )
+        .unwrap()
+    }
+
+    /// Une Salamandre et un Loup, avec la Lisière explorée.
+    fn partie(contenu: &ContenuV1) -> Partie {
+        let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Mage);
+        let mut partie = Partie::nouvelle(heros, creer(contenu, "salamandre"));
+        partie.prendre_monstre_rare(creer(contenu, "loup"));
+        Partie::restaurer(EtatPartie {
+            heros: partie.heros().clone(),
+            collection: partie.collection().clone(),
+            inventaire: partie.inventaire().clone(),
+            codex: partie.codex().clone(),
+            zones_explorees: vec![ZoneId::new("lisiere")],
+            indices_trouves: 1,
+            apotres_vaincus: Vec::new(),
+            conseils_vus: Vec::new(),
+            expeditions_automatiques: Vec::new(),
+            attaques_a_choisir: Vec::new(),
+        })
+        .unwrap()
+    }
+
+    #[test]
+    fn etat_d_une_zone_libre_en_cours_puis_rentree() {
+        let contenu = ContenuV1::new();
+        let lisiere = &contenu.zones()[0];
+        let mut partie = partie(&contenu);
+        let a = Horodatage::depuis_secondes;
+        assert_eq!(
+            etat_de_la_zone(&partie, lisiere, a(0)),
+            "Lisière du Bois-Sombre : libre"
+        );
+        partie
+            .envoyer_en_expedition_automatique(lisiere, &[Emplacement::Equipe(1)], a(0))
+            .unwrap();
+        assert_eq!(
+            etat_de_la_zone(&partie, lisiere, a(1_200)),
+            "Lisière du Bois-Sombre : en cours, retour dans 40 min (Loup)"
+        );
+        assert!(expeditions_rentrees(&partie, a(1_200)).is_empty());
+        assert_eq!(
+            etat_de_la_zone(&partie, lisiere, a(3_600)),
+            "Lisière du Bois-Sombre : rentrée, à accueillir (Loup)"
+        );
+        assert_eq!(
+            expeditions_rentrees(&partie, a(3_600)),
+            vec!["L'expédition partie pour Lisière du Bois-Sombre est rentrée : accueillez-la."]
+        );
+    }
+
+    #[test]
+    fn chances_arrondies_sans_annoncer_0_pour_une_reussite_possible() {
+        let chances_sur = |favorables, possibles| {
+            chances(Chances {
+                favorables,
+                possibles,
+            })
+        };
+        assert_eq!(chances_sur(33, 46), "71 %");
+        assert_eq!(chances_sur(46, 46), "100 %");
+        assert_eq!(chances_sur(1, 1_000), "moins de 1 %");
+        assert_eq!(chances_sur(0, 81), "0 %");
+    }
+
+    #[test]
+    fn noms_enumeres() {
+        let contenu = ContenuV1::new();
+        let monstres = ["loup", "vipere", "corbeau"].map(|id| creer(&contenu, id));
+        assert_eq!(noms(&monstres[..1]), "Loup");
+        assert_eq!(noms(&monstres[..2]), "Loup et Vipère");
+        assert_eq!(noms(&monstres), "Loup, Vipère et Corbeau");
+    }
 
     #[test]
     fn durees_arrondies_a_la_minute_superieure() {
