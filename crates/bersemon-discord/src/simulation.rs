@@ -16,9 +16,11 @@ use bersemon_core::espece::EspeceId;
 use bersemon_core::heros::Classe;
 use bersemon_core::horodatage::Horodatage;
 use bersemon_core::monstre::Monstre;
+use bersemon_core::partie::EtatPartie;
 use bersemon_core::types::{Efficacite, efficacite};
+use bersemon_core::zone::ZoneId;
 
-use crate::composants::{Cle, Commande, Composant, Vue};
+use crate::composants::{Choisis, Cle, Commande, Composant, Vue};
 use crate::joueurs::{IdJoueur, Joueurs, Session};
 use crate::message::{
     BOUTONS_PAR_RANGEE, LONGUEUR_MAX, Message, OPTIONS_PAR_MENU, RANGEES_MAX, Rangee, message,
@@ -148,9 +150,54 @@ fn meilleure_attaque(combat: &Combat) -> usize {
 /// gestion avec un surnom donné par formulaire.
 const TOUR_DU_CAMP: usize = 9;
 
+/// Une expédition automatique dans la Lisière, une seule fois, avec le
+/// premier monstre du camp : préparation, départ, puis accueil une fois que
+/// l'horloge simulée l'a fait rentrer. `None` s'il n'y a rien à faire.
+fn expedition_automatique(session: &Session, message: &Message, faite: bool) -> Option<Clic> {
+    let partie = session.deroulement.partie()?;
+    let lisiere = ZoneId::new("lisiere");
+    let en_cours = partie.expedition_automatique(&lisiere).is_some();
+    let possible = !partie.collection().camp().is_empty() || en_cours;
+    if faite || !partie.est_exploree(&lisiere) || !possible {
+        return None;
+    }
+    match session.vue {
+        Vue::Camp => Some(cliquer(message, |cle| {
+            *cle == Cle::Afficher(Vue::Expeditions)
+        })),
+        Vue::Expeditions => {
+            assert!(
+                !propose(message, |cle| *cle == Cle::Rappeler(lisiere.clone())),
+                "l'horloge simulée devait faire rentrer l'expédition"
+            );
+            if propose(message, |cle| *cle == Cle::Accueillir(lisiere.clone())) {
+                return Some(cliquer(message, |cle| {
+                    *cle == Cle::Accueillir(lisiere.clone())
+                }));
+            }
+            Some(cliquer(message, |cle| {
+                matches!(cle, Cle::Afficher(Vue::Preparation { zone: 0, .. }))
+            }))
+        }
+        Vue::Preparation { .. } => {
+            if propose(message, |cle| matches!(cle, Cle::Expedier { .. })) {
+                return Some(cliquer(message, |cle| matches!(cle, Cle::Expedier { .. })));
+            }
+            choisir_dans(message, |cle| matches!(cle, Cle::Ajouter { .. }), "c0")
+        }
+        _ => None,
+    }
+}
+
 /// Le joueur simple de `deroulement` : la meilleure attaque, une potion sous
-/// la moitié des PV, le Marais à partir du niveau 12, toutes les captures.
-fn jouer_un_coup(session: &Session, message: &Message, tour: &mut usize) -> Clic {
+/// la moitié des PV, le Marais à partir du niveau 12, toutes les captures, et
+/// une expédition automatique.
+fn jouer_un_coup(
+    session: &Session,
+    message: &Message,
+    tour: &mut usize,
+    automatique_faite: bool,
+) -> Clic {
     match session.deroulement.attente() {
         Attente::NomDuHeros => {
             assert!(propose(message, |cle| *cle == Cle::Nommer));
@@ -188,6 +235,12 @@ fn jouer_un_coup(session: &Session, message: &Message, tour: &mut usize) -> Clic
             }
         }
         Attente::Camp => {
+            if let Some(clic) = expedition_automatique(session, message, automatique_faite) {
+                return clic;
+            }
+            if session.vue != Vue::Camp {
+                return cliquer(message, |cle| *cle == Cle::Afficher(Vue::Camp));
+            }
             let partie = session.deroulement.partie().unwrap();
             let niveau = partie.collection().equipe()[0].niveau().valeur();
             let marais = choisir_dans(message, |cle| *cle == Cle::Partir, "marais");
@@ -272,11 +325,46 @@ fn l_equipe_et_le_camp_pleins_tiennent_dans_les_limites() {
         partie.prendre_monstre_rare(loup.clone());
     }
     assert_eq!(partie.collection().camp().len(), 30);
-    let questions = [
-        crate::ecran_camp::question(&partie, Vue::Gestion(None), &contenu),
-        crate::ecran_camp::question(&partie, Vue::Gestion(Some(Emplacement::Camp(29))), &contenu),
-        crate::ecran_expedition::place_manquante(&loup, partie.collection()),
+    // Les deux zones explorées, pour préparer une expédition automatique.
+    let partie = Partie::restaurer(EtatPartie {
+        heros: partie.heros().clone(),
+        collection: partie.collection().clone(),
+        inventaire: partie.inventaire().clone(),
+        codex: partie.codex().clone(),
+        zones_explorees: vec![ZoneId::new("lisiere"), ZoneId::new("marais")],
+        indices_trouves: 3,
+        apotres_vaincus: Vec::new(),
+        conseils_vus: Vec::new(),
+        expeditions_automatiques: Vec::new(),
+        attaques_a_choisir: Vec::new(),
+    })
+    .unwrap();
+    let maintenant = Horodatage::depuis_secondes(0);
+    let deux_choisis = Choisis::default()
+        .avec(Emplacement::Equipe(1))
+        .and_then(|choisis| choisis.avec(Emplacement::Camp(29)))
+        .unwrap();
+    let vues = [
+        Vue::Gestion(None),
+        Vue::Gestion(Some(Emplacement::Camp(29))),
+        Vue::Expeditions,
+        Vue::Preparation {
+            zone: 1,
+            choisis: Choisis::default(),
+        },
+        Vue::Preparation {
+            zone: 1,
+            choisis: deux_choisis,
+        },
     ];
+    let mut questions: Vec<_> = vues
+        .into_iter()
+        .map(|vue| crate::ecran_camp::question(&partie, vue, &contenu, maintenant))
+        .collect();
+    questions.push(crate::ecran_expedition::place_manquante(
+        &loup,
+        partie.collection(),
+    ));
     for question in questions {
         let affiche = Message {
             texte: question.texte,
@@ -295,9 +383,14 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
     let mut evenements: Vec<Evenement> = Vec::new();
     let mut vus = Vec::new();
     let mut tour = 0;
+    // Horloge simulée : elle n'avance qu'au départ de l'expédition
+    // automatique, assez pour la faire rentrer.
+    let mut heure = 0;
+    let mut automatique_faite = false;
     for _ in 0..50_000 {
+        let maintenant = Horodatage::depuis_secondes(heure);
         let session = joueurs.session(JOUEUR, &contenu);
-        let affiche = message(session, &evenements, None, &contenu);
+        let affiche = message(session, &evenements, None, &contenu, maintenant);
         verifier_les_limites(&affiche);
         if evenements
             .iter()
@@ -305,7 +398,7 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
         {
             break;
         }
-        let clic = jouer_un_coup(session, &affiche, &mut tour);
+        let clic = jouer_un_coup(session, &affiche, &mut tour, automatique_faite);
         let version = session.version;
         let commande = clic
             .cle
@@ -313,13 +406,7 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
             .expect("composant lisible");
         evenements = match commande {
             Commande::Jouer(choix) => joueurs
-                .jouer(
-                    JOUEUR,
-                    version,
-                    choix.clone(),
-                    &contenu,
-                    Horodatage::depuis_secondes(0),
-                )
+                .jouer(JOUEUR, version, choix.clone(), &contenu, maintenant)
                 .unwrap_or_else(|refus| panic!("{choix:?} refusé : {refus:?}")),
             Commande::Afficher(vue) => {
                 joueurs.afficher(JOUEUR, version, vue, &contenu).unwrap();
@@ -327,11 +414,36 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
             }
             Commande::Ouvrir(formulaire) => panic!("formulaire {formulaire:?} non envoyé"),
         };
+        for evenement in &evenements {
+            match evenement {
+                Evenement::ExpeditionAutomatiquePartie(expedition) => {
+                    // Le retour est à annoncer dès son heure, pas avant.
+                    assert!(joueurs.retours_echus(maintenant).is_empty());
+                    heure = expedition.retour().secondes();
+                    assert_eq!(
+                        joueurs.retours_echus(expedition.retour()).len(),
+                        1,
+                        "retour à annoncer"
+                    );
+                }
+                Evenement::ExpeditionAutomatiqueRentree { .. } => {
+                    automatique_faite = true;
+                    // Accueillie avant l'annonce : il n'y a plus rien à
+                    // annoncer.
+                    assert!(joueurs.retours_echus(maintenant).is_empty());
+                }
+                _ => {}
+            }
+        }
         vus.extend(evenements.iter().cloned());
     }
     assert!(
         vus.iter()
             .any(|evenement| matches!(evenement, Evenement::Epilogue(_)))
+    );
+    assert!(
+        automatique_faite,
+        "expédition automatique jamais accueillie"
     );
     let session = joueurs.session(JOUEUR, &contenu);
     assert_eq!(session.deroulement.attente(), Attente::Camp);

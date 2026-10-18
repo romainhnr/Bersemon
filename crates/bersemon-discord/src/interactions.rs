@@ -2,13 +2,11 @@
 //! chacun remplace le contenu du message par la suite de la partie. Le verrou
 //! des parties n'est jamais tenu pendant un échange avec Discord.
 
-use std::time::{SystemTime, UNIX_EPOCH};
-
-use bersemon_core::horodatage::Horodatage;
 use poise::serenity_prelude as serenity;
 
 use crate::composants::{Commande, Composant};
 use crate::formulaires::{self, CHAMP_TEXTE};
+use crate::horloge::maintenant;
 use crate::joueurs::{IdJoueur, Refus, verrouiller};
 use crate::message::{self, Message};
 use crate::{DonneesDuBot, Erreur};
@@ -85,6 +83,7 @@ fn executer(
         &evenements,
         refus.as_ref(),
         contenu,
+        maintenant(),
     ))
 }
 
@@ -95,14 +94,6 @@ fn mise_a_jour(message: Message) -> serenity::CreateInteractionResponse {
             .components(message.composants())
             .content(message.texte),
     )
-}
-
-/// L'heure du choix, que le noyau ne lit jamais lui-même (section 12.2).
-fn maintenant() -> Horodatage {
-    let secondes = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_or(0, |duree| duree.as_secs());
-    Horodatage::depuis_secondes(secondes)
 }
 
 fn valeur_du_champ(lignes: &[serenity::ActionRow], champ: &str) -> Option<String> {

@@ -10,26 +10,30 @@ mod ecran_accueil;
 mod ecran_camp;
 mod ecran_combat;
 mod ecran_expedition;
+mod ecran_expeditions_automatiques;
 mod formulaires;
+mod horloge;
 mod interactions;
 mod joueurs;
 mod message;
+mod messages_prives;
 #[cfg(test)]
 mod simulation;
 
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use bersemon_core::contenu::ContenuV1;
 use poise::serenity_prelude as serenity;
 
 use crate::configuration::Configuration;
-use crate::joueurs::Joueurs;
+use crate::joueurs::{Joueurs, verrouiller};
 
-/// Partagé par toutes les commandes et les interactions.
+/// Partagé par toutes les commandes et les interactions. Les parties le sont
+/// aussi avec la tâche qui annonce le retour des expéditions automatiques.
 pub struct DonneesDuBot {
     pub contenu: ContenuV1,
-    pub joueurs: Mutex<Joueurs>,
+    pub joueurs: Arc<Mutex<Joueurs>>,
 }
 
 pub type Erreur = Box<dyn std::error::Error + Send + Sync>;
@@ -47,11 +51,12 @@ async fn main() {
     let serveur_de_test = configuration.serveur_de_test.map(serenity::GuildId::from);
     let donnees = DonneesDuBot {
         contenu: ContenuV1::new(),
-        joueurs: Mutex::new(Joueurs::new(
+        joueurs: Arc::new(Mutex::new(Joueurs::new(
             configuration.dossier_des_parties.clone(),
             graine_depuis_horloge(),
-        )),
+        ))),
     };
+    verrouiller(&donnees.joueurs).preparer_les_annonces(&donnees.contenu);
     println!(
         "Parties des joueurs : {}",
         configuration.dossier_des_parties.display()
@@ -82,6 +87,12 @@ async fn main() {
                         effacer_les_commandes_de_serveur(contexte, pret).await;
                     }
                 }
+                // Le premier tour annonce aussitôt les retours survenus
+                // pendant que le bot était éteint (section 12.7).
+                tokio::spawn(messages_prives::annoncer_les_retours(
+                    Arc::clone(&contexte.http),
+                    Arc::clone(&donnees.joueurs),
+                ));
                 println!("Bersemon est connecté à Discord.");
                 Ok(donnees)
             })

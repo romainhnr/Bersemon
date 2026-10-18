@@ -42,11 +42,14 @@ Pour jouer en message privé, lancer le bot sans `BERSEMON_SERVEUR_DE_TEST` (dan
 
 `/bersemon` ouvre un message visible du seul joueur, dans un salon comme en message privé. Le message montre ce qui vient de se passer, puis la question en cours ; chaque bouton ou menu y répond, et le message se met à jour. Le nom du héros et les surnoms se saisissent dans un formulaire. Chaque compte Discord a une seule partie, la même partout.
 
-- Au camp : un menu pour partir en expédition, et des boutons pour voir ses monstres, les gérer (choisir un monstre, puis le déplacer, l'envoyer au camp ou le faire venir, l'échanger, le renommer ou le relâcher) et consulter le codex.
+- Au camp : un menu pour partir en expédition, et des boutons pour les expéditions automatiques, pour voir ses monstres, les gérer (choisir un monstre, puis le déplacer, l'envoyer au camp ou le faire venir, l'échanger, le renommer ou le relâcher) et consulter le codex.
+- Expéditions automatiques : pour chaque zone explorée, envoyer de 1 à 3 monstres (ajoutés un par un depuis les menus, avec la durée et les chances de réussite), rappeler une expédition en cours ou accueillir une expédition rentrée. L'heure de retour s'affiche en temps relatif ; le bouton Actualiser remet la liste à jour.
 - Entre deux étapes : continuer ou rentrer, et des menus pour utiliser une potion ou mettre un monstre en tête de l'équipe.
 - En combat : un bouton par attaque, le filet et la fuite, et des menus pour changer de monstre ou utiliser une potion.
 
 La partie est sauvegardée à sa création, puis au camp. Une expédition en cours attend le joueur jusqu'à son prochain `/bersemon` ; si le bot redémarre, chacun reprend à sa dernière sauvegarde. Les composants d'un message dépassé, ouvert avant un autre choix ou avant un redémarrage, ne font rien d'autre que remettre le message à jour.
+
+Au retour d'une expédition automatique, le bot envoie un message privé au joueur, au plus une minute après l'heure du retour. S'il était éteint, il prévient à son démarrage des retours survenus entre-temps. Chaque retour n'est annoncé qu'une fois : les retours annoncés sont notés dans `retours-annonces.txt`, dans le dossier des parties. Un joueur qui n'accepte pas les messages privés du bot ne reçoit rien ; le bot le signale dans sa console.
 
 ## 4. Si le jeton a fuité
 

@@ -10,6 +10,7 @@ use bersemon_core::collection::Emplacement;
 use bersemon_core::combat::Action;
 use bersemon_core::deroulement::{ActionDeGestion, Choix};
 use bersemon_core::espece::EspeceId;
+use bersemon_core::expedition_automatique::MONSTRES_MAX;
 use bersemon_core::heros::Classe;
 use bersemon_core::zone::ZoneId;
 
@@ -27,6 +28,64 @@ pub enum Vue {
     Codex(Option<usize>),
     /// Avec le monstre choisi pour être géré.
     Gestion(Option<Emplacement>),
+    /// Les zones explorées et leurs expéditions automatiques (section 12).
+    Expeditions,
+    /// Départ d'une expédition automatique en préparation : la position de
+    /// la zone dans le contenu et les monstres déjà choisis.
+    Preparation {
+        zone: usize,
+        choisis: Choisis,
+    },
+}
+
+/// Monstres choisis pour une expédition automatique, dans l'ordre du choix
+/// (section 12.1).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct Choisis([Option<Emplacement>; MONSTRES_MAX]);
+
+impl Choisis {
+    pub fn liste(&self) -> Vec<Emplacement> {
+        self.0.iter().flatten().copied().collect()
+    }
+
+    pub fn contient(&self, emplacement: Emplacement) -> bool {
+        self.0.contains(&Some(emplacement))
+    }
+
+    pub fn est_complet(&self) -> bool {
+        self.0.iter().all(Option::is_some)
+    }
+
+    /// `None` si le monstre est déjà choisi ou qu'il y en a déjà 3.
+    pub fn avec(self, emplacement: Emplacement) -> Option<Self> {
+        if self.contient(emplacement) {
+            return None;
+        }
+        let mut choisis = self;
+        *choisis.0.iter_mut().find(|place| place.is_none())? = Some(emplacement);
+        Some(choisis)
+    }
+
+    /// `-` pour aucun monstre, sinon les emplacements séparés par des points.
+    fn en_texte(&self) -> String {
+        let liste: Vec<String> = self.liste().into_iter().map(emplacement_en_texte).collect();
+        if liste.is_empty() {
+            "-".to_string()
+        } else {
+            liste.join(".")
+        }
+    }
+
+    fn lire(texte: &str) -> Option<Self> {
+        if texte == "-" {
+            return Some(Self::default());
+        }
+        texte
+            .split('.')
+            .try_fold(Self::default(), |choisis, emplacement| {
+                choisis.avec(lire_emplacement(emplacement)?)
+            })
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -95,6 +154,19 @@ pub enum Cle {
     NePlusCapturer,
     Oublier(usize),
     Renoncer,
+    /// Menu de monstres numéroté : le monstre choisi s'ajoute à ceux de
+    /// l'expédition automatique en préparation.
+    Ajouter {
+        menu: u8,
+        zone: usize,
+        choisis: Choisis,
+    },
+    Expedier {
+        zone: ZoneId,
+        choisis: Choisis,
+    },
+    Accueillir(ZoneId),
+    Rappeler(ZoneId),
 }
 
 impl Cle {
@@ -160,6 +232,16 @@ impl Cle {
             Cle::NePlusCapturer => jouer(Choix::NePlusCapturer),
             Cle::Oublier(index) => jouer(Choix::OublierAttaque(*index)),
             Cle::Renoncer => jouer(Choix::RenoncerALAttaque),
+            Cle::Ajouter { zone, choisis, .. } => Some(Commande::Afficher(Vue::Preparation {
+                zone: *zone,
+                choisis: choisis.avec(lire_emplacement(valeur?)?)?,
+            })),
+            Cle::Expedier { zone, choisis } => jouer(Choix::EnvoyerEnExpeditionAutomatique {
+                zone: zone.clone(),
+                monstres: choisis.liste(),
+            }),
+            Cle::Accueillir(zone) => jouer(Choix::AccueillirExpeditionAutomatique(zone.clone())),
+            Cle::Rappeler(zone) => jouer(Choix::RappelerExpeditionAutomatique(zone.clone())),
         }
     }
 
@@ -182,6 +264,10 @@ impl Cle {
             Cle::Afficher(Vue::Gestion(None)) => "vue:gestion".to_string(),
             Cle::Afficher(Vue::Gestion(Some(emplacement))) => {
                 format!("vue:gestion:{}", emplacement_en_texte(*emplacement))
+            }
+            Cle::Afficher(Vue::Expeditions) => "vue:expeditions".to_string(),
+            Cle::Afficher(Vue::Preparation { zone, choisis }) => {
+                format!("vue:preparation:{zone}:{}", choisis.en_texte())
             }
             Cle::Fiche => "fiche".to_string(),
             Cle::Choisir(numero) => format!("choisir:{numero}"),
@@ -217,6 +303,16 @@ impl Cle {
             Cle::NePlusCapturer => "ne-plus-capturer".to_string(),
             Cle::Oublier(index) => format!("oublier:{index}"),
             Cle::Renoncer => "renoncer".to_string(),
+            Cle::Ajouter {
+                menu,
+                zone,
+                choisis,
+            } => format!("ajouter:{menu}:{zone}:{}", choisis.en_texte()),
+            Cle::Expedier { zone, choisis } => {
+                format!("expedier:{}:{}", zone.as_str(), choisis.en_texte())
+            }
+            Cle::Accueillir(zone) => format!("accueillir:{}", zone.as_str()),
+            Cle::Rappeler(zone) => format!("rappeler:{}", zone.as_str()),
         }
     }
 
@@ -235,6 +331,7 @@ impl Cle {
             "vue:monstres" => Cle::Afficher(Vue::Monstres),
             "vue:codex" => Cle::Afficher(Vue::Codex(None)),
             "vue:gestion" => Cle::Afficher(Vue::Gestion(None)),
+            "vue:expeditions" => Cle::Afficher(Vue::Expeditions),
             "fiche" => Cle::Fiche,
             "continuer" => Cle::Continuer,
             "rentrer" => Cle::Rentrer,
@@ -263,9 +360,33 @@ impl Cle {
                             "gestion" => {
                                 Cle::Afficher(Vue::Gestion(Some(lire_emplacement(parametre)?)))
                             }
+                            "preparation" => {
+                                let (zone, choisis) = parametre.split_once(':')?;
+                                Cle::Afficher(Vue::Preparation {
+                                    zone: zone.parse().ok()?,
+                                    choisis: Choisis::lire(choisis)?,
+                                })
+                            }
                             _ => return None,
                         }
                     }
+                    "ajouter" => {
+                        let mut morceaux = parametre.splitn(3, ':');
+                        Cle::Ajouter {
+                            menu: morceaux.next()?.parse().ok()?,
+                            zone: morceaux.next()?.parse().ok()?,
+                            choisis: Choisis::lire(morceaux.next()?)?,
+                        }
+                    }
+                    "expedier" => {
+                        let (zone, choisis) = parametre.split_once(':')?;
+                        Cle::Expedier {
+                            zone: ZoneId::new(zone),
+                            choisis: Choisis::lire(choisis)?,
+                        }
+                    }
+                    "accueillir" => Cle::Accueillir(ZoneId::new(parametre)),
+                    "rappeler" => Cle::Rappeler(ZoneId::new(parametre)),
                     "choisir" => Cle::Choisir(numero()?),
                     "monter" => Cle::Monter(position()?),
                     "descendre" => Cle::Descendre(position()?),
@@ -378,7 +499,83 @@ mod tests {
             Cle::NePlusCapturer,
             Cle::Oublier(0),
             Cle::Renoncer,
+            Cle::Afficher(Vue::Expeditions),
+            Cle::Afficher(Vue::Preparation {
+                zone: 1,
+                choisis: Choisis::default(),
+            }),
+            Cle::Afficher(Vue::Preparation {
+                zone: 0,
+                choisis: trois_choisis(),
+            }),
+            Cle::Ajouter {
+                menu: 2,
+                zone: 1,
+                choisis: trois_choisis(),
+            },
+            Cle::Expedier {
+                zone: ZoneId::new("marais"),
+                choisis: trois_choisis(),
+            },
+            Cle::Accueillir(ZoneId::new("lisiere")),
+            Cle::Rappeler(ZoneId::new("marais")),
         ]
+    }
+
+    fn trois_choisis() -> Choisis {
+        [
+            Emplacement::Equipe(2),
+            Emplacement::Camp(29),
+            Emplacement::Camp(0),
+        ]
+        .into_iter()
+        .try_fold(Choisis::default(), Choisis::avec)
+        .unwrap()
+    }
+
+    #[test]
+    fn trois_monstres_choisis_au_plus_et_chacun_une_fois() {
+        let un = Choisis::default().avec(Emplacement::Camp(3)).unwrap();
+        assert_eq!(un.avec(Emplacement::Camp(3)), None);
+        assert_eq!(trois_choisis().avec(Emplacement::Equipe(0)), None);
+        assert!(trois_choisis().est_complet());
+        assert_eq!(
+            trois_choisis().liste(),
+            vec![
+                Emplacement::Equipe(2),
+                Emplacement::Camp(29),
+                Emplacement::Camp(0)
+            ]
+        );
+        assert_eq!(Choisis::lire("c1.c1"), None);
+        assert_eq!(Choisis::lire("e0.e1.e2.c0"), None);
+    }
+
+    #[test]
+    fn un_monstre_ajoute_par_menu_rouvre_la_preparation() {
+        let cle = Cle::Ajouter {
+            menu: 0,
+            zone: 1,
+            choisis: Choisis::default(),
+        };
+        assert_eq!(
+            cle.commande(Some("e1"), None),
+            Some(Commande::Afficher(Vue::Preparation {
+                zone: 1,
+                choisis: Choisis::default().avec(Emplacement::Equipe(1)).unwrap(),
+            }))
+        );
+        let expedier = Cle::Expedier {
+            zone: ZoneId::new("lisiere"),
+            choisis: trois_choisis(),
+        };
+        assert_eq!(
+            expedier.commande(None, None),
+            Some(Commande::Jouer(Choix::EnvoyerEnExpeditionAutomatique {
+                zone: ZoneId::new("lisiere"),
+                monstres: trois_choisis().liste(),
+            }))
+        );
     }
 
     #[test]

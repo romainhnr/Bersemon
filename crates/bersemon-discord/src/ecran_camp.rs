@@ -1,42 +1,54 @@
-//! Camp de base sur Discord : départ en expédition par la carte, liste des
-//! monstres, codex et gestion des monstres (section 13.2). Les vues ne
-//! changent rien à la partie ; seules les actions de gestion la modifient,
-//! et la sauvegardent.
+//! Camp de base sur Discord : départ en expédition par la carte, expéditions
+//! automatiques, liste des monstres, codex et gestion des monstres (section
+//! 13.2). Les vues ne changent rien à la partie ; seules les actions la
+//! modifient, et la sauvegardent.
 
 use bersemon_core::codex::EtatCodex;
 use bersemon_core::collection::{Collection, Emplacement};
 use bersemon_core::combat::Cote;
 use bersemon_core::contenu::ContenuV1;
+use bersemon_core::horodatage::Horodatage;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
+use bersemon_presentation::expeditions_automatiques::expeditions_rentrees;
 use bersemon_presentation::monstres::{ligne_monstre, nom};
 use bersemon_presentation::partie::{
     collection as liste_des_monstres, en_tete_du_camp, fiche_d_espece, ligne_du_codex,
 };
 
 use crate::composants::{Cle, Vue, emplacement_en_texte};
+use crate::ecran_expeditions_automatiques;
 use crate::message::{
     Bouton, DANGER, OPTIONS_PAR_MENU, OptionDeMenu, PRINCIPAL, Question, Rangee, SECONDAIRE,
     bouton, menu, rangees,
 };
 
-pub fn question(partie: &Partie, vue: Vue, contenu: &ContenuV1) -> Question {
+pub fn question(
+    partie: &Partie,
+    vue: Vue,
+    contenu: &ContenuV1,
+    maintenant: Horodatage,
+) -> Question {
     match vue {
-        Vue::Camp => principale(partie, contenu),
+        Vue::Camp => principale(partie, contenu, maintenant),
         Vue::Monstres => Question {
             texte: liste_des_monstres(partie.collection()),
             rangees: rangees(vec![retour()]),
         },
         Vue::Codex(fiche) => codex(partie, fiche, contenu),
         Vue::Gestion(choisi) => gestion(partie.collection(), choisi),
+        Vue::Expeditions => ecran_expeditions_automatiques::liste(partie, contenu, maintenant),
+        Vue::Preparation { zone, choisis } => {
+            ecran_expeditions_automatiques::preparation(partie, contenu, zone, choisis, maintenant)
+        }
     }
 }
 
-fn retour() -> Bouton {
+pub fn retour() -> Bouton {
     bouton(Cle::Afficher(Vue::Camp), "Retour au camp", SECONDAIRE)
 }
 
-fn principale(partie: &Partie, contenu: &ContenuV1) -> Question {
+fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Question {
     let equipe: Vec<String> = partie
         .collection()
         .equipe()
@@ -68,6 +80,11 @@ fn principale(partie: &Partie, contenu: &ContenuV1) -> Question {
         .into_iter()
         .collect();
     lignes.extend(rangees(vec![
+        bouton(
+            Cle::Afficher(Vue::Expeditions),
+            "Expéditions automatiques",
+            SECONDAIRE,
+        ),
         bouton(Cle::Afficher(Vue::Monstres), "Vos monstres", SECONDAIRE),
         bouton(
             Cle::Afficher(Vue::Gestion(None)),
@@ -76,10 +93,12 @@ fn principale(partie: &Partie, contenu: &ContenuV1) -> Question {
         ),
         bouton(Cle::Afficher(Vue::Codex(None)), "Codex", SECONDAIRE),
     ]));
+    let mut en_tete = vec![en_tete_du_camp(partie)];
+    en_tete.extend(expeditions_rentrees(partie, maintenant));
     Question {
         texte: format!(
             "{}\nVotre équipe :\n{}",
-            en_tete_du_camp(partie),
+            en_tete.join("\n"),
             equipe.join("\n")
         ),
         rangees: lignes,
@@ -138,7 +157,7 @@ fn gestion(collection: &Collection, choisi: Option<Emplacement>) -> Question {
             .map(|monstre| (emplacement, monstre))
     });
     let Some((emplacement, monstre)) = choisi else {
-        let mut lignes = menus_de_monstres(collection, Cle::Choisir, "Choisir");
+        let mut lignes = menus_de_monstres(collection, Cle::Choisir, "Choisir", |_| true);
         lignes.extend(rangees(vec![retour()]));
         return Question {
             texte: format!("{liste}\n\nChoisissez un monstre à gérer."),
@@ -197,8 +216,14 @@ fn gestion(collection: &Collection, choisi: Option<Emplacement>) -> Question {
 
 /// Les monstres de l'équipe, puis ceux du camp, 25 au plus par menu : avec
 /// l'équipe et le camp pleins, trois menus. Les options portent le numéro de
-/// la liste des monstres.
-pub fn menus_de_monstres(collection: &Collection, cle: fn(u8) -> Cle, verbe: &str) -> Vec<Rangee> {
+/// la liste des monstres ; seuls les monstres que `garder` accepte y
+/// figurent.
+pub fn menus_de_monstres(
+    collection: &Collection,
+    cle: impl Fn(u8) -> Cle,
+    verbe: &str,
+    garder: impl Fn(Emplacement) -> bool,
+) -> Vec<Rangee> {
     let taille_equipe = collection.equipe().len();
     let option = |emplacement: Emplacement, numero: usize, monstre: &Monstre| OptionDeMenu {
         libelle: format!("{numero}. {}", nom(monstre, Cote::Joueur)),
@@ -209,6 +234,7 @@ pub fn menus_de_monstres(collection: &Collection, cle: fn(u8) -> Cle, verbe: &st
         .equipe()
         .iter()
         .enumerate()
+        .filter(|(index, _)| garder(Emplacement::Equipe(*index)))
         .map(|(index, monstre)| option(Emplacement::Equipe(index), index + 1, monstre))
         .collect();
     let mut menus: Vec<Rangee> = menu(cle(0), &format!("{verbe} un monstre de l'équipe"), equipe)
@@ -218,6 +244,7 @@ pub fn menus_de_monstres(collection: &Collection, cle: fn(u8) -> Cle, verbe: &st
         .camp()
         .iter()
         .enumerate()
+        .filter(|(index, _)| garder(Emplacement::Camp(*index)))
         .map(|(index, monstre)| {
             option(Emplacement::Camp(index), taille_equipe + index + 1, monstre)
         })

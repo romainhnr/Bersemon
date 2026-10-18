@@ -4,6 +4,7 @@
 //! Le commentaire de documentation d'une commande est la description que
 //! Discord affiche au joueur.
 
+use crate::horloge::maintenant;
 use crate::joueurs::verrouiller;
 use crate::message;
 use crate::{ContexteDeCommande, Erreur};
@@ -17,7 +18,7 @@ pub async fn bersemon(contexte: ContexteDeCommande<'_>) -> Result<(), Erreur> {
     let affiche = {
         let mut joueurs = verrouiller(&donnees.joueurs);
         let session = joueurs.session(joueur, &donnees.contenu);
-        message::message(session, &[], None, &donnees.contenu)
+        message::message(session, &[], None, &donnees.contenu, maintenant())
     };
     let reponse = poise::CreateReply::default()
         .components(affiche.composants())

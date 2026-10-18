@@ -15,6 +15,7 @@ use bersemon_core::sauvegarde::SauvegardeRepository;
 use bersemon_storage::FichierJson;
 
 use crate::composants::Vue;
+use crate::messages_prives::{Annonces, Retour};
 
 /// Identifiant du compte Discord.
 pub type IdJoueur = u64;
@@ -45,6 +46,8 @@ pub struct Joueurs {
     sessions: HashMap<IdJoueur, Session>,
     /// Partagé par tous les joueurs, sous le même verrou que leurs parties.
     aleatoire: GenerateurAleatoire,
+    /// Retours d'expéditions automatiques à annoncer par message privé.
+    annonces: Annonces,
 }
 
 /// Un incident pendant le traitement d'un choix ne doit pas bloquer tous les
@@ -56,10 +59,26 @@ pub fn verrouiller(joueurs: &Mutex<Joueurs>) -> MutexGuard<'_, Joueurs> {
 impl Joueurs {
     pub fn new(dossier: PathBuf, graine: u64) -> Self {
         Self {
+            annonces: Annonces::new(&dossier),
             dossier,
             sessions: HashMap::new(),
             aleatoire: GenerateurAleatoire::new(graine),
         }
+    }
+
+    /// Au démarrage du bot : les parties ne sont chargées qu'à la demande
+    /// de leur joueur, mais leurs expéditions automatiques doivent être
+    /// annoncées dès leur retour, même pendant que le bot était éteint.
+    pub fn preparer_les_annonces(&mut self, contenu: &ContenuV1) {
+        self.annonces.charger(&self.dossier, contenu);
+    }
+
+    pub fn retours_echus(&self, maintenant: Horodatage) -> Vec<Retour> {
+        self.annonces.echus(maintenant)
+    }
+
+    pub fn noter_annonce(&mut self, retour: &Retour) {
+        self.annonces.noter_annonce(retour);
     }
 
     /// La version de départ est tirée au hasard, pour qu'un bouton d'avant un
@@ -113,6 +132,7 @@ impl Joueurs {
             })?;
         session.version = session.version.wrapping_add(1);
         session.vue = vue_apres(session.vue, &choix);
+        self.annonces.suivre(joueur, &evenements);
         Ok(evenements)
     }
 
@@ -139,10 +159,14 @@ impl Joueurs {
 
 /// Le camp s'ouvre sur sa vue principale au retour d'expédition. La gestion
 /// des monstres reste ouverte d'une action à l'autre, comme dans la console,
-/// mais le monstre choisi est oublié : sa place a pu changer.
+/// mais le monstre choisi est oublié : sa place a pu changer. Après le départ
+/// ou l'accueil d'une expédition automatique, le joueur retrouve la liste des
+/// expéditions.
 fn vue_apres(vue: Vue, choix: &Choix) -> Vue {
     match (vue, choix) {
         (_, Choix::PartirEnExpedition(_)) => Vue::Camp,
+        (_, Choix::EnvoyerEnExpeditionAutomatique { .. })
+        | (_, Choix::AccueillirExpeditionAutomatique(_)) => Vue::Expeditions,
         (Vue::Gestion(Some(_)), _) => Vue::Gestion(None),
         (vue, _) => vue,
     }

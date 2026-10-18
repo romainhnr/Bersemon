@@ -175,7 +175,7 @@ pub fn retour(zone: &str, bilan: &BilanExpeditionAutomatique) -> String {
 }
 
 /// "a", "a et b", "a, b et c".
-fn noms(monstres: &[Monstre]) -> String {
+pub fn noms(monstres: &[Monstre]) -> String {
     let noms: Vec<&str> = monstres.iter().map(Monstre::nom).collect();
     match noms.split_last() {
         None => String::new(),

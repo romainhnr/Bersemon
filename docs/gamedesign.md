@@ -64,6 +64,8 @@ L'objectif du jeu est de proposer des boucles de gameplay intéressantes et stim
 - Chaque compte Discord a une seule partie, la même sur tous les serveurs et en message privé. Elle est séparée de la partie de la console.
 - Sur Discord, une expédition en cours attend le joueur sans limite de temps, jusqu'à son prochain /bersemon ; un redémarrage du bot le ramène à sa dernière sauvegarde, comme quitter la console (section 13.9).
 - Sur Discord, le bot prévient le joueur par message privé du retour de ses expéditions automatiques (section 12.7).
+- Pour les tests, une option au lancement du bot rend /bersemon visible de tout le salon. Seul l'auteur d'un message peut alors se servir de ses boutons ; les autres joueurs ouvrent leur propre partie par /bersemon. Sans l'option, les réponses restent visibles du seul joueur.
+- Les informations importantes du combat sont mises en valeur : coups critiques, statuts, efficacité des attaques, KO et captures. Elles s'affichent en gras sur Discord et en rouge dans la console.
 - Hébergement du bot : pour commencer, sur le PC de l'utilisateur, lancé à la main quand il veut que le bot soit en ligne. Le bot est privé : seul l'utilisateur peut l'inviter dans un serveur.
 - Multijoueur : après l'adaptation à Discord (section 15).
 - Hors périmètre pour le moment : version mobile et vrai jeu PC.
@@ -110,12 +112,13 @@ L'objectif du jeu est de proposer des boucles de gameplay intéressantes et stim
   - son équipement : armes, armure, x talismans (nombre à définir, voir Q6) ;
   - ses monstres.
 - Dans la V1, le héros se résume à un nom, choisi librement par le joueur (de 1 à 20 caractères), et à une classe, Guerrier ou Mage. Il n'a ni niveau, ni stats, ni équipement.
+- Après la V1, le Templier rejoint les classes jouables : Guerrier, Mage ou Templier. Chaque classe a son monstre de départ attitré (section 6).
 
 ### 4.2 Rôle en combat
 
 - Pour le moment, seuls les monstres combattent, un à un. Le héros ne combat pas et n'a pas de PV en combat.
 - La classe et l'équipement du héros donnent des bonus aux monstres et quelques actions de soutien, par exemple des ordres ou l'utilisation d'objets.
-- Bonus de classe : en combat, les monstres du joueur ont +10 % dans une stat, arrondi à l'entier inférieur. Guerrier : Attaque. Mage : Attaque spéciale. Après la V1, Templier : Défense et Défense spéciale ; Assassin : Vitesse. Les actions de soutien viendront après la V1.
+- Bonus de classe : en combat, les monstres du joueur ont +10 % dans une stat, arrondi à l'entier inférieur. Guerrier : Attaque. Mage : Attaque spéciale. Après la V1, Templier : Défense et Défense spéciale, à chacune +10 % ; Assassin : Vitesse, plus tard. Les actions de soutien viendront après la V1.
 - À terme, option hybride envisagée : le héros combat lui-même uniquement lorsque tous ses monstres sont KO.
 
 ## 5. Les monstres
@@ -162,7 +165,7 @@ Chaque monstre possède :
 Le joueur peut :
 
 - renommer son monstre : un surnom de 1 à 20 caractères, affiché à la place du nom de l'espèce ;
-- ajuster ses attaques ;
+- ajuster ses attaques, au camp : réapprendre une attaque de son espèce ou en apprendre une nouvelle grâce à une capsule d'attaque (section 13.10) ;
 - ajuster ses statistiques à l'aide d'objets ;
 - consulter le codex, par exemple pour savoir quand il évolue.
 
@@ -171,6 +174,7 @@ Le joueur peut :
 - Le codex répertorie tous les monstres du jeu (comme le Pokédex de Pokémon).
 - Une entrée est déverrouillée partiellement à la rencontre d'un monstre, et entièrement à sa capture.
 - Dans la V1, le codex se consulte au camp. Une espèce rencontrée en expédition montre son nom et ses types ; une espèce capturée montre aussi ses stats de base et la liste des attaques qu'elle apprend. Le monstre de départ compte comme capturé.
+- La fiche d'une espèce capturée rappelle aussi ses types.
 
 ### 5.7 KO (pas de mort définitive)
 
@@ -194,9 +198,9 @@ Le joueur peut :
 - Un petit tutoriel de départ.
 - Fil de l'histoire, inspiré de Berserk : le héros veut se venger du Démiurge, maître des Apôtres, de puissants monstres. Pour l'atteindre, il traque les Apôtres un par un, de zone en zone : dans chaque zone, il réunit des indices sur la cachette d'un Apôtre, s'en approche peu à peu, puis l'affronte avant de passer au suivant (section 9.4).
 - Dans la V1, un seul Apôtre est à vaincre, dans la zone difficile. Le Démiurge est annoncé dès l'introduction, mais il ne sera affronté que dans une version suivante. Après la victoire contre l'Apôtre, un court épilogue annonce la suite de la traque, puis le joueur peut continuer à explorer, capturer et compléter son codex.
-- Après le choix de la classe, l'histoire amène le joueur à choisir son premier monstre parmi 3. Ce monstre est au niveau 5. Ses valeurs internes sont tirées au hasard et il a, comme un monstre sauvage, 1 chance sur 512 d'être shiny.
+- Dans la V1, après le choix de la classe, l'histoire amène le joueur à choisir son premier monstre parmi 3. Ce monstre est au niveau 5. Ses valeurs internes sont tirées au hasard et il a, comme un monstre sauvage, 1 chance sur 512 d'être shiny.
+- Après la V1, le premier monstre n'est plus choisi : chaque classe a son monstre attitré, qui reprend son profil. Guerrier : Crapaud, offensif en attaque physique. Mage : Salamandre, offensive en attaque spéciale. Templier : Mandragore, défensive. Il reste au niveau 5, avec des valeurs internes tirées au hasard et 1 chance sur 512 d'être shiny. La fin de l'introduction, qui invitait à choisir parmi trois cages, est à réécrire (Q67).
 - Dans la V1 : une courte introduction d'ambiance après le choix de la classe, jusqu'au choix du premier monstre ; un tutoriel fait de quelques conseils, chacun montré une seule fois par partie, au premier combat, au premier arrêt entre deux étapes et au premier retour au camp. Les textes sont proposés dans docs/contenu-v1.md.
-- Une association d'un monstre de départ à chaque classe reste envisageable plus tard.
 
 ## 7. Progression
 
@@ -348,6 +352,7 @@ Le format reprend celui des combats de Pokémon, comme base de départ qui pourr
 
 - Le joueur peut envoyer de 1 à 3 de ses monstres seuls en expédition, uniquement dans une zone déjà explorée manuellement, c'est-à-dire où il a mené une expédition jusqu'à sa dernière étape (section 9.2). Le départ se fait au camp.
 - Les monstres envoyés viennent de l'équipe ou du camp. L'équipe garde toujours au moins un monstre (section 13.2) : il faut donc avoir au moins 2 monstres pour lancer une expédition automatique.
+- Toute l'équipe peut partir, à condition qu'au moins un monstre reste au camp : le premier monstre du camp rejoint alors aussitôt l'équipe, qui n'est jamais vide, et le joueur peut repartir en expédition manuelle. Un bouton prépare directement le départ de toute l'équipe.
 - Pendant l'expédition, les monstres envoyés sont inutilisables : on ne peut ni les relâcher, ni les renommer, ni les échanger. Ils gardent leur place au camp, dont la limite de 30 monstres les compte, et y reviennent.
 - Le joueur peut partir en expédition manuelle avec ses autres monstres, y compris dans une zone où une expédition automatique est en cours.
 - Le nombre d'expéditions automatiques simultanées n'est pas limité, mais une seule expédition automatique est possible par zone.
@@ -398,7 +403,7 @@ Le format reprend celui des combats de Pokémon, comme base de départ qui pourr
 - À l'accueil, le joueur voit le bilan : dégâts subis, monstres KO, XP et potions. Un monstre qui monte de niveau et doit apprendre une attaque alors qu'il en connaît déjà 4 choisit comme après un combat (section 7). Les monstres reviennent au camp, soignés.
 - La partie est sauvegardée dès l'accueil, pour que quitter le jeu ne permette pas de tirer de nouveau le résultat. Si le jeu s'arrête avant que le joueur ait choisi les attaques à oublier, ces choix lui sont reproposés à la reprise.
 - Au camp, le joueur peut rappeler une expédition avant son terme, après confirmation : les monstres rentrent aussitôt, sans dégâts ni récompense. Une expédition déjà rentrée ne se rappelle plus, elle s'accueille.
-- Sur Discord, le bot envoie un message privé au joueur à l'heure du retour, s'il est en ligne ; s'il était éteint, il prévient à son démarrage des expéditions rentrées entre-temps. Le joueur accueille ensuite l'expédition par /bersemon. La console affiche les expéditions rentrées au camp.
+- Sur Discord, le bot envoie un message privé au joueur à l'heure du retour, s'il est en ligne ; s'il était éteint, il prévient à son démarrage des expéditions rentrées entre-temps. Chaque retour n'est annoncé qu'une fois, même si le bot redémarre avant que le joueur l'accueille (Q65). Le joueur accueille ensuite l'expédition par /bersemon. La console affiche les expéditions rentrées au camp.
 
 ### 12.8 Valeurs par zone
 
@@ -425,7 +430,9 @@ Repères, avec des valeurs internes de 15 : dans la Lisière, une Salamandre de 
   - échanger des monstres entre son équipe et le camp ;
   - choisir l'ordre de son équipe : le premier monstre en état de combattre commence chaque combat ;
   - relâcher un monstre, définitivement et après confirmation, sauf son dernier monstre ;
-  - renommer un monstre (section 5.5).
+  - renommer un monstre (section 5.5) ;
+  - gérer les attaques d'un monstre (section 13.10) ;
+  - une fois le marchand au camp, lui revendre un monstre (section 14.2).
 
 ### 13.3 Équipement et stockage
 
@@ -473,11 +480,18 @@ Le joueur peut construire des machines pour automatiser certaines tâches, par e
 - Elle garde aussi l'avancée de la traque (indices trouvés, Apôtres vaincus) et les conseils du tutoriel déjà montrés.
 - Après la V1, elle garde les expéditions automatiques en cours : zone, monstres envoyés, heures de départ et de retour (section 12). Elle garde aussi les attaques qui restent à choisir après l'accueil d'une expédition (section 12.7). Le départ, le rappel et l'accueil d'une expédition automatique sont des actions au camp, suivies d'une sauvegarde.
 
+### 13.10 Attaques des monstres
+
+- Au camp, un monstre peut réapprendre gratuitement toute attaque que son espèce apprend jusqu'à son niveau, y compris celles qu'il a oubliées ou refusées. S'il en connaît déjà 4, il en oublie une (section 7).
+- Une capsule d'attaque enseigne une attaque précise à tout monstre qui a le type de cette attaque, de la même façon. Elle n'est pas consommée : une fois obtenue, elle sert autant de fois qu'on veut.
+- Les capsules se trouvent rarement en expédition, ou s'achètent chez le marchand (section 14.2). Leur liste et leur rareté restent à définir (Q69).
+
 ## 14. Économie, marchands, objets et ressources
 
 ### 14.1 Monnaie
 
 - La monnaie du jeu est l'argent : le même mot désigne le métal précieux et la monnaie.
+- Après la V1, l'argent vient de la revente des monstres au marchand, des coffres des expéditions manuelles et des expéditions automatiques réussies. Les montants restent à définir (Q68).
 
 ### 14.2 Marchands
 
@@ -487,6 +501,13 @@ Les marchands sont rencontrés en expédition. Ils proposent :
 - à l'achat ou à la location : des monstres. Une location coûte un prix donné et vaut pour un nombre donné d'expéditions.
 
 Le joueur peut aussi vendre ses objets aux marchands contre de l'argent.
+
+Premier marchand, après la V1 :
+
+- Tant qu'aucun marchand n'est au camp, chaque étape d'une expédition manuelle peut tirer la rencontre d'un marchand, à la place d'un combat (environ 5 %, Q70).
+- Le marchand rencontré se réfugie au camp et y reste, toujours accessible ; il ne se rencontre plus en expédition.
+- Au camp, il vend des potions et des capsules d'attaque (section 13.10), et rachète les monstres capturés contre de l'argent. Revendre un monstre est définitif et suit les règles du relâcher : confirmation, et jamais le dernier monstre de l'équipe.
+- Tuer un monstre pour en tirer des ressources est envisagé, mais reporté tant qu'aucune ressource n'a d'usage (Q71).
 
 ### 14.3 Objets et ressources cités dans ce document
 
@@ -498,6 +519,7 @@ Le joueur peut aussi vendre ses objets aux marchands contre de l'argent.
 - Argent (monnaie).
 - Objets d'évolution.
 - Objets de protection pour les expéditions automatiques.
+- Capsules d'attaque, qui enseignent une attaque (section 13.10).
 - Ressource très rare permettant de réanimer un monstre (en suspens, section 5.7).
 - Objet extrêmement rare permettant de rendre un monstre shiny.
 
@@ -505,7 +527,7 @@ Le joueur peut aussi vendre ses objets aux marchands contre de l'argent.
 
 - Seul objet de la V1. Une potion rend à un monstre de l'équipe un pourcentage de ses PV max tiré de 40 % à 60 %, arrondi à l'entier inférieur, sans dépasser ses PV max. Elle ne relève pas un monstre KO et ne guérit pas les statuts. Sur un monstre qui a tous ses PV, le jeu demande confirmation : la potion serait consommée sans effet.
 - Elle s'utilise en combat, comme action du tour (l'adversaire agit ensuite), ou entre deux étapes d'une expédition.
-- Dans la V1, les potions se trouvent dans les coffres ; après la V1, les expéditions automatiques réussies en rapportent aussi (section 12.6). Il n'y a ni limite de sac ni coffre de stockage au camp : le joueur porte toutes ses potions et les perd toutes en cas de défaite (section 9.3).
+- Dans la V1, les potions se trouvent dans les coffres ; après la V1, les expéditions automatiques réussies en rapportent aussi (section 12.6), et le marchand en vend au camp (section 14.2). Il n'y a ni limite de sac ni coffre de stockage au camp : le joueur porte toutes ses potions et les perd toutes en cas de défaite (section 9.3).
 
 ## 15. Multijoueur (après l'adaptation à Discord)
 
@@ -531,8 +553,15 @@ Les questions Q59 et suivantes ont été relevées le 18/10/2026 lors du découp
 
 Les questions Q65 et suivantes ont été relevées le 18/10/2026 lors de la conception des expéditions automatiques, découpées en étapes : 14 règles du noyau, 15 déroulement et sauvegarde en version 3, 16 console, 17 bot Discord.
 
-- Q65. (Étape 17) Message privé de retour (section 12.7) : après un redémarrage du bot, prévenir de nouveau d'une expédition rentrée mais pas encore accueillie, ou garder trace des messages déjà envoyés.
 - Q66. (Après l'étape 17) Protections des expéditions automatiques (section 12.5) : objets de protection, effet du rôle soutien (Q19), valeurs des protections et façon dont elles s'appliquent à la répartition des dégâts avec report.
+
+Les questions Q67 et suivantes ont été relevées le 18/10/2026 après les premiers tests sur Discord, découpés en étapes : 18 corrections (types au codex, mise en valeur, messages publics pour les tests), 19 Templier et monstre de départ attitré, 20 toute l'équipe en expédition automatique, 21 et suivantes économie (argent, marchand, revente, capsules, attaques au camp).
+
+- Q67. (Étape 19) Fin de l'introduction, maintenant que le monstre de départ n'est plus choisi : texte à proposer dans docs/contenu-v1.md.
+- Q68. (Économie) Montants : argent des coffres et des expéditions automatiques, prix de revente des monstres, prix des potions et des capsules.
+- Q69. (Économie) Capsules d'attaque : liste des attaques proposées, où et avec quelle chance on les trouve en expédition.
+- Q70. (Économie) Chance de rencontrer le marchand à une étape (environ 5 % proposé, pris sur les combats).
+- Q71. (Après l'économie) Tuer un monstre pour des ressources : reporté tant qu'aucune ressource n'a d'usage (fabrication, améliorations).
 
 ## 17. Journal des décisions
 
@@ -696,5 +725,22 @@ Les questions Q65 et suivantes ont été relevées le 18/10/2026 lors de la conc
 - Rappeler une expédition automatique demande confirmation.
 - La partie est sauvegardée dès l'accueil d'une expédition ; les attaques à oublier qui restent à choisir sont gardées par la sauvegarde et reproposées à la reprise.
 - Les expéditions rentrées s'accueillent une par une, chacune avec son bilan.
+
+18/10/2026 (étape 17) :
+
+- Q65 : le message privé de retour n'est envoyé qu'une fois par expédition ; le bot garde la trace des messages envoyés, même après un redémarrage.
+
+18/10/2026 (retours des premiers tests sur Discord) :
+
+- La fiche d'une espèce capturée rappelle ses types.
+- Coups critiques, statuts, efficacité, KO et captures sont mis en valeur : en gras sur Discord, en rouge dans la console.
+- Une option au lancement du bot rend /bersemon visible de tout le salon, pour les tests ; seul l'auteur d'un message peut se servir de ses boutons.
+- Le Templier devient jouable (+10 % en Défense et en Défense spéciale). Chaque classe a son monstre de départ attitré : Guerrier, Crapaud ; Mage, Salamandre ; Templier, Mandragore. Le choix du monstre de départ disparaît.
+- Toute l'équipe peut partir en expédition automatique s'il reste au moins un monstre au camp ; le premier monstre du camp rejoint alors l'équipe, qui n'est jamais vide. Un bouton prépare ce départ.
+- L'argent vient de la revente des monstres, des coffres et des expéditions automatiques réussies.
+- Le premier marchand rencontré en expédition se réfugie au camp pour de bon ; il vend potions et capsules d'attaque et rachète les monstres capturés.
+- Au camp, un monstre réapprend gratuitement les attaques de son espèce jusqu'à son niveau ; une capsule d'attaque, réutilisable, enseigne son attaque à tout monstre du même type.
+- Tuer un monstre pour des ressources est reporté (Q71).
+- La capture donne bien de l'XP (section 7), versée à la fin du combat : aucun changement.
 - Sur Discord, le bot prévient le joueur par message privé du retour d'une expédition, et à son démarrage pour celles rentrées pendant qu'il était éteint.
 - Hypothèses validées : une expédition automatique n'a aucun effet sur la traque, l'exploration ni le codex ; les monstres envoyés gardent leur place au camp, comptée dans sa limite, et ne peuvent être ni relâchés, ni renommés, ni échangés ; une expédition manuelle reste possible dans la même zone ; la durée n'est pas tirée au hasard.

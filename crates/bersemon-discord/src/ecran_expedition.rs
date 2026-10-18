@@ -64,7 +64,7 @@ pub fn monstre_rare() -> Question {
 /// Le joueur relâche un de ses monstres pour garder la capture, ou relâche
 /// la capture (Q12).
 pub fn place_manquante(capture: &Monstre, collection: &Collection) -> Question {
-    let mut lignes = menus_de_monstres(collection, Cle::Liberer, "Relâcher");
+    let mut lignes = menus_de_monstres(collection, Cle::Liberer, "Relâcher", |_| true);
     lignes.extend(rangees(vec![bouton(
         Cle::RelacherLaCapture,
         &format!("Relâcher {}", capture.nom()),

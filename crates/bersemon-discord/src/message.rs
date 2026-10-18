@@ -7,6 +7,7 @@
 
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::{Attente, Confirmation, Evenement};
+use bersemon_core::horodatage::Horodatage;
 use bersemon_presentation::erreurs::erreur_de_choix;
 use bersemon_presentation::partie::question_de_confirmation;
 use bersemon_presentation::recit::raconter;
@@ -119,11 +120,14 @@ impl Message {
     }
 }
 
+/// `maintenant` décide de ce que montrent les expéditions automatiques :
+/// rentrées ou encore en cours.
 pub fn message(
     session: &Session,
     evenements: &[Evenement],
     refus: Option<&Refus>,
     contenu: &ContenuV1,
+    maintenant: Horodatage,
 ) -> Message {
     let mut texte = String::new();
     for recit in raconter(evenements) {
@@ -139,7 +143,7 @@ pub fn message(
     if let Some(refus) = refus {
         ajouter_paragraphe(&mut texte, &expliquer(refus));
     }
-    let question = question(session, contenu);
+    let question = question(session, contenu, maintenant);
     ajouter_paragraphe(&mut texte, &question.texte);
     let mut rangees = question.rangees;
     rangees.truncate(RANGEES_MAX);
@@ -162,7 +166,7 @@ fn expliquer(refus: &Refus) -> String {
 /// Au camp et en expédition, une partie est en jeu.
 const PARTIE_EN_JEU: &str = "une partie est en jeu";
 
-fn question(session: &Session, contenu: &ContenuV1) -> Question {
+fn question(session: &Session, contenu: &ContenuV1, maintenant: Horodatage) -> Question {
     let partie = || session.deroulement.partie().expect(PARTIE_EN_JEU);
     match session.deroulement.attente() {
         Attente::Reprise(partie) => ecran_accueil::reprise(partie),
@@ -170,7 +174,7 @@ fn question(session: &Session, contenu: &ContenuV1) -> Question {
         Attente::NomDuHeros => ecran_accueil::nom_du_heros(),
         Attente::Classe => ecran_accueil::classe(),
         Attente::MonstreDeDepart => ecran_accueil::monstre_de_depart(contenu),
-        Attente::Camp => ecran_camp::question(partie(), session.vue, contenu),
+        Attente::Camp => ecran_camp::question(partie(), session.vue, contenu, maintenant),
         Attente::EntreDeuxEtapes => ecran_expedition::entre_deux_etapes(partie()),
         Attente::MonstreRare(_) => ecran_expedition::monstre_rare(),
         Attente::PlaceManquante(capture) => {

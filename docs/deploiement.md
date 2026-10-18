@@ -28,7 +28,7 @@ Set-Content -Path "$env:APPDATA\Bersemon\jeton-production.txt" -Value "jeton du 
 
 Ces fichiers ne doivent jamais être copiés dans le dépôt. Si un jeton a fuité, le régénérer dans l'onglet Bot (Reset Token) et mettre le fichier à jour.
 
-Les parties des joueurs sont rangées à part pour chaque bot : `%APPDATA%\Bersemon\discord` pour le bot en service, `%APPDATA%\Bersemon\discord-test` pour le bot de test. La sauvegarde de la console, `%APPDATA%\Bersemon\sauvegarde.json`, n'est pas concernée.
+Les parties des joueurs sont rangées à part pour chaque bot : `%APPDATA%\Bersemon\discord` pour le bot en service, `%APPDATA%\Bersemon\discord-test` pour le bot de test. Chaque dossier contient aussi `retours-annonces.txt`, la liste des retours d'expéditions automatiques déjà annoncés par message privé. La sauvegarde de la console, `%APPDATA%\Bersemon\sauvegarde.json`, n'est pas concernée.
 
 ## 3. Lancer le bot
 
