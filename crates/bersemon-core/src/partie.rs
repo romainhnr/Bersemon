@@ -404,25 +404,26 @@ impl Partie {
     }
 
     /// Les monstres quittent l'équipe ou le camp et gardent leur place au
-    /// camp, où ils reviendront (section 12.1).
+    /// camp, où ils reviendront (section 12.1). Rend le monstre du camp qui
+    /// rejoint l'équipe quand elle part tout entière.
     pub fn envoyer_en_expedition_automatique(
         &mut self,
         zone: &Zone,
         emplacements: &[Emplacement],
         maintenant: Horodatage,
-    ) -> Result<(), ErreurExpeditionAutomatique> {
+    ) -> Result<Option<Monstre>, ErreurExpeditionAutomatique> {
         self.verifier_depart(zone, emplacements)?;
-        let monstres = self
+        let depart = self
             .collection
             .retirer_pour_expedition(emplacements)
             .map_err(ErreurExpeditionAutomatique::Collection)?;
         self.expeditions_automatiques
             .push(ExpeditionAutomatique::partir(
                 zone.clone(),
-                monstres,
+                depart.partis,
                 maintenant,
             ));
-        Ok(())
+        Ok(depart.rejoint_l_equipe)
     }
 
     /// Avant le terme, les monstres reviennent au camp sans dégâts ni

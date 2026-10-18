@@ -3,6 +3,7 @@
 
 use std::time::Duration;
 
+use bersemon_core::collection::ErreurCollection;
 use bersemon_core::expedition_automatique::{
     BilanExpeditionAutomatique, Chances, ErreurExpeditionAutomatique, Estimation,
     ExpeditionAutomatique, MONSTRES_MAX, MONSTRES_MIN,
@@ -82,6 +83,12 @@ pub fn erreur_expedition_automatique(erreur: &ErreurExpeditionAutomatique) -> St
         }
         ErreurExpeditionAutomatique::NombreDeMonstres(_) => {
             format!("Envoyez de {MONSTRES_MIN} à {MONSTRES_MAX} monstres.")
+        }
+        // Les monstres pris dans l'équipe gardent une place au camp, où ils
+        // reviendront (section 12.1) : c'est elle qui manque.
+        ErreurExpeditionAutomatique::Collection(ErreurCollection::CampPlein) => {
+            "Le camp est plein : un monstre de l'équipe a besoin d'une place au camp, où il reviendra. Envoyez des monstres du camp, ou faites de la place."
+                .to_string()
         }
         ErreurExpeditionAutomatique::Collection(erreur) => erreur_collection(erreur),
         ErreurExpeditionAutomatique::Inexistante => {
@@ -255,6 +262,14 @@ mod tests {
             expeditions_rentrees(&partie, a(3_600)),
             vec!["L'expédition partie pour Lisière du Bois-Sombre est rentrée : accueillez-la."]
         );
+    }
+
+    #[test]
+    fn un_camp_plein_s_explique_et_dit_quoi_faire() {
+        let erreur = ErreurExpeditionAutomatique::Collection(ErreurCollection::CampPlein);
+        let texte = erreur_expedition_automatique(&erreur);
+        assert!(texte.contains("où il reviendra"), "{texte}");
+        assert!(texte.contains("Envoyez des monstres du camp"), "{texte}");
     }
 
     #[test]

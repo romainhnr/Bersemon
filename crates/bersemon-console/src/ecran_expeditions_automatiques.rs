@@ -2,6 +2,7 @@
 //! puis le départ, le rappel ou l'accueil d'une expédition. La durée et les
 //! chances de réussite sont montrées avant le départ (section 12.4).
 
+use bersemon_core::collection::Emplacement;
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::Choix;
 use bersemon_core::expedition_automatique::MONSTRES_MAX;
@@ -62,33 +63,35 @@ fn rappeler(zone: &Zone, entree: &mut Entree) -> Option<Option<Choix>> {
     Some((choix == 1).then(|| Choix::RappelerExpeditionAutomatique(zone.id().clone())))
 }
 
-/// Les monstres sont choisis un par un, par leur numéro dans la liste ;
-/// la durée et les chances s'affichent ensuite, avant la confirmation.
+/// Toute l'équipe d'un coup, quand ce départ est possible, ou des monstres
+/// choisis un par un, par leur numéro dans la liste (section 12.1). La durée
+/// et les chances s'affichent ensuite, avant la confirmation.
 fn envoyer(partie: &Partie, zone: &Zone, entree: &mut Entree) -> Option<Option<Choix>> {
     let collection = partie.collection();
-    let total = collection.equipe().len() + collection.camp().len();
     println!();
     println!("{}", liste_des_monstres(collection));
-    let mut monstres = Vec::new();
-    while monstres.len() < MONSTRES_MAX {
-        if monstres.is_empty() {
-            println!("Quel monstre envoyer ? (0 pour annuler)");
-        } else {
-            println!("Quel autre monstre ? (0 pour partir avec ceux-là)");
+    // Toute l'équipe n'est proposée que si ce départ est possible : un
+    // monstre au camp pour la rejoindre, et une place au camp pour chacun.
+    let toute_l_equipe: Vec<Emplacement> = (0..collection.equipe().len())
+        .map(Emplacement::Equipe)
+        .collect();
+    let monstres = if partie
+        .estimer_expedition_automatique(zone, &toute_l_equipe)
+        .is_err()
+    {
+        choisir_un_par_un(partie, entree)?
+    } else {
+        println!("  1. Choisir les monstres un par un");
+        println!("  2. Envoyer toute l'équipe");
+        println!("  0. Retour");
+        match entree.choix(0, 2)? {
+            0 => Vec::new(),
+            1 => choisir_un_par_un(partie, entree)?,
+            _ => toute_l_equipe,
         }
-        let numero = entree.choix(0, total)?;
-        if numero == 0 {
-            if monstres.is_empty() {
-                return Some(None);
-            }
-            break;
-        }
-        let emplacement = emplacement_du_numero(collection, numero);
-        if monstres.contains(&emplacement) {
-            println!("Ce monstre est déjà choisi.");
-        } else {
-            monstres.push(emplacement);
-        }
+    };
+    if monstres.is_empty() {
+        return Some(None);
     }
     match partie.estimer_expedition_automatique(zone, &monstres) {
         Err(erreur) => {
@@ -104,4 +107,29 @@ fn envoyer(partie: &Partie, zone: &Zone, entree: &mut Entree) -> Option<Option<C
             }))
         }
     }
+}
+
+/// Aucun monstre si le joueur annule d'emblée.
+fn choisir_un_par_un(partie: &Partie, entree: &mut Entree) -> Option<Vec<Emplacement>> {
+    let collection = partie.collection();
+    let total = collection.equipe().len() + collection.camp().len();
+    let mut monstres = Vec::new();
+    while monstres.len() < MONSTRES_MAX {
+        if monstres.is_empty() {
+            println!("Quel monstre envoyer ? (0 pour annuler)");
+        } else {
+            println!("Quel autre monstre ? (0 pour partir avec ceux-là)");
+        }
+        let numero = entree.choix(0, total)?;
+        if numero == 0 {
+            break;
+        }
+        let emplacement = emplacement_du_numero(collection, numero);
+        if monstres.contains(&emplacement) {
+            println!("Ce monstre est déjà choisi.");
+        } else {
+            monstres.push(emplacement);
+        }
+    }
+    Some(monstres)
 }

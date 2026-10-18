@@ -70,6 +70,15 @@ impl fmt::Display for ErreurCollection {
 
 impl std::error::Error for ErreurCollection {}
 
+/// Ce qu'un départ en expédition automatique change à la collection.
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct Depart {
+    /// Dans l'ordre des emplacements choisis.
+    pub(crate) partis: Vec<Monstre>,
+    /// Le premier monstre resté au camp, quand toute l'équipe est partie.
+    pub(crate) rejoint_l_equipe: Option<Monstre>,
+}
+
 /// L'équipe compte de 1 à 3 monstres et le camp au plus 30 (section 13.2).
 /// L'équipe garde toujours au moins un monstre (Q51) : le joueur ne peut donc
 /// jamais perdre son dernier monstre.
@@ -255,7 +264,8 @@ impl Collection {
     }
 
     /// Ce que `retirer_pour_expedition` refuserait. L'équipe garde un
-    /// monstre, et un monstre pris dans l'équipe a besoin d'une place libre
+    /// monstre : elle ne part tout entière que s'il en reste un au camp pour
+    /// la rejoindre. Un monstre pris dans l'équipe a besoin d'une place libre
     /// au camp, où il reviendra (section 12.1).
     pub(crate) fn verifier_depart(
         &self,
@@ -268,13 +278,25 @@ impl Collection {
             }
         }
         let de_l_equipe = indices_de_l_equipe(emplacements).len();
-        if de_l_equipe >= self.equipe.len() {
+        let remplacant = self.remplacant(emplacements);
+        if de_l_equipe >= self.equipe.len() && remplacant.is_none() {
             return Err(ErreurCollection::DernierMonstreDeLEquipe);
         }
-        if de_l_equipe > self.places_libres_au_camp() {
+        // Le remplaçant libère sa place au camp en rejoignant l'équipe.
+        let liberee = usize::from(remplacant.is_some());
+        if de_l_equipe > self.places_libres_au_camp() + liberee {
             return Err(ErreurCollection::CampPlein);
         }
         Ok(())
+    }
+
+    /// Quand toute l'équipe part, le premier monstre qui reste au camp la
+    /// rejoint, pour qu'elle ne soit jamais vide (section 12.1).
+    fn remplacant(&self, emplacements: &[Emplacement]) -> Option<usize> {
+        if indices_de_l_equipe(emplacements).len() < self.equipe.len() {
+            return None;
+        }
+        (0..self.camp.len()).find(|index| !emplacements.contains(&Emplacement::Camp(*index)))
     }
 
     /// Rend les monstres dans l'ordre des emplacements ; leurs places au camp
@@ -282,12 +304,13 @@ impl Collection {
     pub(crate) fn retirer_pour_expedition(
         &mut self,
         emplacements: &[Emplacement],
-    ) -> Result<Vec<Monstre>, ErreurCollection> {
+    ) -> Result<Depart, ErreurCollection> {
         self.verifier_depart(emplacements)?;
-        let monstres = emplacements
+        let partis = emplacements
             .iter()
             .filter_map(|emplacement| self.monstre(*emplacement).cloned())
             .collect();
+        let remplacant = self.remplacant(emplacements);
         // Du dernier au premier, pour que les positions restant à retirer ne
         // bougent pas.
         let mut equipe = indices_de_l_equipe(emplacements);
@@ -301,13 +324,24 @@ impl Collection {
                 Emplacement::Camp(index) => Some(*index),
                 Emplacement::Equipe(_) => None,
             })
+            .chain(remplacant)
             .collect();
         camp.sort_unstable_by(|a, b| b.cmp(a));
+        let mut rejoint_l_equipe = None;
         for index in camp {
-            self.camp.remove(index);
+            let monstre = self.camp.remove(index);
+            if Some(index) == remplacant {
+                rejoint_l_equipe = Some(monstre);
+            }
+        }
+        if let Some(monstre) = &rejoint_l_equipe {
+            self.equipe.push(monstre.clone());
         }
         self.places_reservees += emplacements.len();
-        Ok(monstres)
+        Ok(Depart {
+            partis,
+            rejoint_l_equipe,
+        })
     }
 
     /// Les monstres rentrés d'une expédition automatique reprennent, à la
@@ -579,13 +613,15 @@ mod tests {
         for nom in ["b", "c", "d", "e"] {
             collection.accueillir_capture(monstre_nomme(nom));
         }
-        let partis = collection
+        let depart = collection
             .retirer_pour_expedition(&[
                 Emplacement::Camp(1),
                 Emplacement::Equipe(0),
                 Emplacement::Equipe(2),
             ])
             .unwrap();
+        assert_eq!(depart.rejoint_l_equipe, None);
+        let partis = depart.partis;
         assert_eq!(noms(&partis), vec!["e", "a", "c"]);
         assert_eq!(noms(collection.equipe()), vec!["b"]);
         assert_eq!(noms(collection.camp()), vec!["d"]);
@@ -641,5 +677,73 @@ mod tests {
             collection.envoyer_au_camp(0),
             Err(ErreurCollection::CampPlein)
         );
+    }
+
+    #[test]
+    fn toute_l_equipe_part_et_le_premier_monstre_du_camp_la_rejoint() {
+        let mut collection = Collection::new(monstre_nomme("a"));
+        for nom in ["b", "c", "d"] {
+            collection.accueillir_capture(monstre_nomme(nom));
+        }
+        // Équipe a, b, c ; camp d. Le Loup d rejoint l'équipe.
+        let depart = collection
+            .retirer_pour_expedition(&[
+                Emplacement::Equipe(0),
+                Emplacement::Equipe(1),
+                Emplacement::Equipe(2),
+            ])
+            .unwrap();
+        assert_eq!(noms(&depart.partis), vec!["a", "b", "c"]);
+        assert_eq!(
+            depart.rejoint_l_equipe.as_ref().map(Monstre::nom),
+            Some("d")
+        );
+        assert_eq!(noms(collection.equipe()), vec!["d"]);
+        assert!(collection.camp().is_empty());
+        assert_eq!(collection.places_reservees(), 3);
+    }
+
+    #[test]
+    fn le_remplacant_est_le_premier_monstre_qui_reste_au_camp() {
+        let mut collection = Collection::new(monstre_nomme("a"));
+        for nom in ["b", "c", "d", "e"] {
+            collection.accueillir_capture(monstre_nomme(nom));
+        }
+        // Équipe a, b, c ; camp d, e. Le d part aussi : c'est le e qui reste.
+        let depart = collection
+            .retirer_pour_expedition(&[
+                Emplacement::Equipe(0),
+                Emplacement::Equipe(1),
+                Emplacement::Camp(0),
+            ])
+            .unwrap();
+        assert_eq!(depart.rejoint_l_equipe, None);
+        assert_eq!(noms(collection.equipe()), vec!["c"]);
+        let depart = collection
+            .retirer_pour_expedition(&[Emplacement::Equipe(0)])
+            .unwrap();
+        assert_eq!(
+            depart.rejoint_l_equipe.as_ref().map(Monstre::nom),
+            Some("e")
+        );
+        assert_eq!(noms(collection.equipe()), vec!["e"]);
+    }
+
+    #[test]
+    fn le_remplacant_libere_sa_place_au_camp() {
+        // Une équipe d'un seul monstre et un camp plein : le monstre parti
+        // reprendra la place que libère son remplaçant.
+        let camp_plein = (1..=30)
+            .map(|numero| monstre_nomme(&format!("c{numero}")))
+            .collect();
+        let mut collection = Collection::restaurer(vec![monstre_nomme("a")], camp_plein).unwrap();
+        let depart = collection
+            .retirer_pour_expedition(&[Emplacement::Equipe(0)])
+            .unwrap();
+        assert_eq!(
+            depart.rejoint_l_equipe.as_ref().map(Monstre::nom),
+            Some("c1")
+        );
+        assert_eq!(collection.camp().len() + collection.places_reservees(), 30);
     }
 }

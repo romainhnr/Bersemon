@@ -451,3 +451,86 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
     assert!(dossier.join(format!("{JOUEUR}.json")).exists());
     let _ = fs::remove_dir_all(dossier);
 }
+
+#[test]
+fn toute_l_equipe_se_prepare_d_un_bouton_s_il_reste_un_monstre_au_camp() {
+    use bersemon_core::catalogue::Catalogue;
+    use bersemon_core::heros::Heros;
+    use bersemon_core::niveau::Niveau;
+    use bersemon_core::nom::Nom;
+    use bersemon_core::partie::Partie;
+    use bersemon_core::stats::ValeursInternes;
+
+    let contenu = ContenuV1::new();
+    let loup = Monstre::creer(
+        contenu.espece(&EspeceId::new("loup")).unwrap(),
+        Niveau::new(5).unwrap(),
+        ValeursInternes::default(),
+        false,
+    )
+    .unwrap();
+    let explorer = |partie: &Partie| {
+        Partie::restaurer(EtatPartie {
+            heros: partie.heros().clone(),
+            collection: partie.collection().clone(),
+            inventaire: partie.inventaire().clone(),
+            codex: partie.codex().clone(),
+            zones_explorees: vec![ZoneId::new("lisiere")],
+            indices_trouves: 1,
+            apotres_vaincus: Vec::new(),
+            conseils_vus: Vec::new(),
+            expeditions_automatiques: Vec::new(),
+            attaques_a_choisir: Vec::new(),
+        })
+        .unwrap()
+    };
+    let preparation = |partie: &Partie| {
+        let question = crate::ecran_camp::question(
+            partie,
+            Vue::Preparation {
+                zone: 0,
+                choisis: Choisis::default(),
+            },
+            &contenu,
+            Horodatage::depuis_secondes(0),
+        );
+        let affiche = Message {
+            texte: question.texte,
+            rangees: question.rangees,
+            version: 1,
+        };
+        verifier_les_limites(&affiche);
+        boutons(&affiche).into_iter().find_map(|cle| match cle {
+            Cle::Afficher(Vue::Preparation { choisis, .. }) if !choisis.liste().is_empty() => {
+                Some(choisis.liste())
+            }
+            _ => None,
+        })
+    };
+
+    // Équipe de 3 Loups, aucun au camp : toute l'équipe ne peut pas partir.
+    let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Mage);
+    let mut partie = Partie::nouvelle(heros, loup.clone());
+    for _ in 0..2 {
+        partie.prendre_monstre_rare(loup.clone());
+    }
+    assert_eq!(preparation(&explorer(&partie)), None);
+
+    // Un Loup au camp : le bouton choisit les trois monstres de l'équipe.
+    partie.prendre_monstre_rare(loup.clone());
+    assert_eq!(
+        preparation(&explorer(&partie)),
+        Some(vec![
+            Emplacement::Equipe(0),
+            Emplacement::Equipe(1),
+            Emplacement::Equipe(2)
+        ])
+    );
+
+    // Camp plein : les trois monstres de l'équipe n'auraient qu'une place
+    // pour revenir, celle du Loup qui les remplace. Pas de bouton.
+    while partie.collection().camp().len() < 30 {
+        partie.prendre_monstre_rare(loup.clone());
+    }
+    assert_eq!(preparation(&explorer(&partie)), None);
+}

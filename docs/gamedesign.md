@@ -352,7 +352,8 @@ Le format reprend celui des combats de Pokémon, comme base de départ qui pourr
 
 - Le joueur peut envoyer de 1 à 3 de ses monstres seuls en expédition, uniquement dans une zone déjà explorée manuellement, c'est-à-dire où il a mené une expédition jusqu'à sa dernière étape (section 9.2). Le départ se fait au camp.
 - Les monstres envoyés viennent de l'équipe ou du camp. L'équipe garde toujours au moins un monstre (section 13.2) : il faut donc avoir au moins 2 monstres pour lancer une expédition automatique.
-- Toute l'équipe peut partir, à condition qu'au moins un monstre reste au camp : le premier monstre du camp rejoint alors aussitôt l'équipe, qui n'est jamais vide, et le joueur peut repartir en expédition manuelle. Un bouton prépare directement le départ de toute l'équipe.
+- Toute l'équipe peut partir, à condition qu'au moins un monstre reste au camp : le premier monstre du camp rejoint alors aussitôt l'équipe, qui n'est jamais vide, et le joueur peut repartir en expédition manuelle. Un bouton prépare directement le départ de toute l'équipe ; il n'est proposé que si ce départ est possible.
+- Chaque monstre pris dans l'équipe a besoin d'une place libre au camp, où il reviendra ; le monstre du camp qui rejoint l'équipe en libère une. Avec un camp plein, seuls des monstres du camp peuvent donc partir, puisqu'ils gardent leur propre place. Le refus l'explique au joueur.
 - Pendant l'expédition, les monstres envoyés sont inutilisables : on ne peut ni les relâcher, ni les renommer, ni les échanger. Ils gardent leur place au camp, dont la limite de 30 monstres les compte, et y reviennent.
 - Le joueur peut partir en expédition manuelle avec ses autres monstres, y compris dans une zone où une expédition automatique est en cours.
 - Le nombre d'expéditions automatiques simultanées n'est pas limité, mais une seule expédition automatique est possible par zone.
@@ -718,6 +719,8 @@ Les questions Q67 et suivantes ont été relevées le 18/10/2026 après les prem
 - Une expédition rentrée attend que le joueur l'accueille au camp ; le résultat est tiré à l'accueil, et les attaques en trop se choisissent comme après un combat.
 - Au camp, le joueur peut rappeler une expédition avant son terme, sans dégâts ni récompense.
 - Précisions confirmées à l'étape 14 : le gain d'XP est tiré une seule fois et reçu en entier par chaque monstre non KO ; une expédition déjà rentrée ne se rappelle plus, elle s'accueille.
+- Sur Discord, le bot prévient le joueur par message privé du retour d'une expédition, et à son démarrage pour celles rentrées pendant qu'il était éteint.
+- Hypothèses validées : une expédition automatique n'a aucun effet sur la traque, l'exploration ni le codex ; les monstres envoyés gardent leur place au camp, comptée dans sa limite, et ne peuvent être ni relâchés, ni renommés, ni échangés ; une expédition manuelle reste possible dans la même zone ; la durée n'est pas tirée au hasard.
 
 18/10/2026 (étape 15) :
 
@@ -750,5 +753,7 @@ Les questions Q67 et suivantes ont été relevées le 18/10/2026 après les prem
 
 - Q67 : le dernier paragraphe de l'introduction présente le monstre attitré de la classe choisie, un texte par classe (docs/contenu-v1.md).
 - L'écran du choix de la classe annonce le monstre de départ de chaque classe.
-- Sur Discord, le bot prévient le joueur par message privé du retour d'une expédition, et à son démarrage pour celles rentrées pendant qu'il était éteint.
-- Hypothèses validées : une expédition automatique n'a aucun effet sur la traque, l'exploration ni le codex ; les monstres envoyés gardent leur place au camp, comptée dans sa limite, et ne peuvent être ni relâchés, ni renommés, ni échangés ; une expédition manuelle reste possible dans la même zone ; la durée n'est pas tirée au hasard.
+
+18/10/2026 (étape 20) :
+
+- Avec un camp plein, la règle de la section 12.1 est gardée : un monstre pris dans l'équipe a besoin d'une place au camp, où il reviendra. Le refus l'explique, et le raccourci "toute l'équipe" n'est proposé que si ce départ est possible.

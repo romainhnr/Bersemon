@@ -505,11 +505,16 @@ impl EnJeu {
             }
             Choix::EnvoyerEnExpeditionAutomatique { zone, monstres } => {
                 let zone = zone_du_contenu(contexte.contenu, zone)?;
-                self.partie
+                let remplacant = self
+                    .partie
                     .envoyer_en_expedition_automatique(zone, monstres, contexte.maintenant)
                     .map_err(ErreurChoix::ExpeditionAutomatique)?;
                 if let Some(expedition) = self.partie.expedition_automatique(zone.id()) {
                     evenements.push(Evenement::ExpeditionAutomatiquePartie(expedition.clone()));
+                }
+                // Toute l'équipe est partie : un monstre du camp la rejoint.
+                if let Some(monstre) = remplacant {
+                    evenements.push(Evenement::RejointLEquipe(monstre));
                 }
                 sauvegarder(&self.partie, contexte.depot, evenements);
                 Ok(Reponse::Faite)
@@ -1928,5 +1933,32 @@ mod tests {
         );
         let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
         assert!(sauvegarde.attaques_a_choisir().is_empty());
+    }
+
+    #[test]
+    fn toute_l_equipe_part_et_un_monstre_du_camp_la_rejoint() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut partie = partie_pour_les_expeditions(&contenu);
+        partie.prendre_monstre_rare(monstre_du_contenu(&contenu, "vipere", 5));
+        let mut deroulement = au_camp(partie, &contenu, &depot);
+        let envoi = Choix::EnvoyerEnExpeditionAutomatique {
+            zone: ZoneId::new("lisiere"),
+            monstres: vec![
+                Emplacement::Equipe(0),
+                Emplacement::Equipe(1),
+                Emplacement::Equipe(2),
+            ],
+        };
+        let evenements = repondre_a(&mut deroulement, envoi, &contenu, &depot, 0, vec![]).unwrap();
+        assert!(matches!(
+            &evenements[..],
+            [Evenement::ExpeditionAutomatiquePartie(_), Evenement::RejointLEquipe(vipere)]
+                if vipere.espece().id().as_str() == "vipere"
+        ));
+        let collection = deroulement.partie().unwrap().collection();
+        assert_eq!(collection.equipe().len(), 1);
+        assert!(collection.camp().is_empty());
+        assert_eq!(collection.places_reservees(), 3);
     }
 }

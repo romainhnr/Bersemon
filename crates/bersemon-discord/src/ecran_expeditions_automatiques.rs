@@ -4,6 +4,7 @@
 //! 33 monstres d'une équipe et d'un camp pleins ; la durée et les chances
 //! s'affichent dès le premier (section 12.4).
 
+use bersemon_core::collection::Emplacement;
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::expedition_automatique::ExpeditionAutomatique;
 use bersemon_core::horodatage::Horodatage;
@@ -143,6 +144,27 @@ pub fn preparation(
             "Recommencer",
             SECONDAIRE,
         ));
+    }
+    // Proposé seulement si ce départ est possible : il faut un monstre au
+    // camp pour rejoindre l'équipe, et une place au camp pour chaque monstre
+    // de l'équipe (section 12.1).
+    let toute_l_equipe = (0..collection.equipe().len())
+        .map(Emplacement::Equipe)
+        .try_fold(Choisis::default(), Choisis::avec);
+    if let Some(toute_l_equipe) = toute_l_equipe {
+        let possible = partie
+            .estimer_expedition_automatique(zone, &toute_l_equipe.liste())
+            .is_ok();
+        if possible && toute_l_equipe != choisis {
+            boutons.push(bouton(
+                Cle::Afficher(Vue::Preparation {
+                    zone: position,
+                    choisis: toute_l_equipe,
+                }),
+                "Toute l'équipe",
+                SECONDAIRE,
+            ));
+        }
     }
     boutons.push(bouton(
         Cle::Afficher(Vue::Expeditions),
