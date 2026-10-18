@@ -1,6 +1,7 @@
 //! Contenu de la V1, tel que validé dans docs/contenu-v1.md : attaques,
-//! espèces, zones, piste de l'Apôtre et textes de l'histoire. Toute
-//! modification se reporte d'abord dans ce document.
+//! espèces, zones, piste de l'Apôtre et textes de l'histoire, puis, après la
+//! V1, capsules d'attaque. Toute modification se reporte d'abord dans ce
+//! document.
 //!
 //! Ce contenu vit dans le noyau pour être partagé tel quel par la console et
 //! le futur bot Discord. Les règles, elles, n'en dépendent pas : elles le
@@ -10,6 +11,7 @@ use std::ops::RangeInclusive;
 use std::time::Duration;
 
 use crate::attaque::{Attaque, AttaqueId, Categorie, EffetSecondaire};
+use crate::capsule::Capsule;
 use crate::catalogue::Catalogue;
 use crate::espece::{AttaqueApprise, Espece, EspeceId, Rarete, Role};
 use crate::expedition::ParametresCoffre;
@@ -85,6 +87,7 @@ pub struct ContenuV1 {
     especes: Vec<Espece>,
     zones: Vec<Zone>,
     piste: Piste,
+    capsules: Vec<Capsule>,
 }
 
 impl ContenuV1 {
@@ -92,6 +95,18 @@ impl ContenuV1 {
     /// de programmation, que les tests de ce module détectent.
     pub fn new() -> Self {
         let especes: Vec<Espece> = ESPECES.iter().map(creer_espece).collect();
+        let capsules: Vec<Capsule> = CAPSULES
+            .iter()
+            .map(|fiche| Capsule::new(creer_attaque(fiche.attaque), fiche.prix))
+            .collect();
+        let capsules_de = |zone: &str| {
+            CAPSULES
+                .iter()
+                .zip(&capsules)
+                .filter(|(fiche, _)| fiche.zone == zone)
+                .map(|(_, capsule)| capsule.clone())
+                .collect()
+        };
         let trouver = |id: &str| {
             especes
                 .iter()
@@ -110,7 +125,7 @@ impl ContenuV1 {
                 pacifique: true,
             }],
             expedition_automatique(1, 15..=60, 100..=200, 0..=1, 15..=30),
-            coffre(10..=25),
+            coffre(10..=25, capsules_de("lisiere")),
         )
         .expect("Lisière conforme aux règles");
         let marais = Zone::new(
@@ -129,7 +144,7 @@ impl ContenuV1 {
                 pacifique: false,
             }],
             expedition_automatique(2, 40..=120, 300..=600, 1..=2, 40..=80),
-            coffre(25..=50),
+            coffre(25..=50, capsules_de("marais")),
         )
         .expect("Marais conforme aux règles");
         let baron = Apotre::new(trouver("baron-pendu"), &marais, AVANT_LE_BARON, EPILOGUE)
@@ -151,6 +166,7 @@ impl ContenuV1 {
             especes,
             zones: vec![lisiere, marais],
             piste,
+            capsules,
         }
     }
 
@@ -185,6 +201,12 @@ impl ContenuV1 {
     pub fn piste(&self) -> &Piste {
         &self.piste
     }
+
+    /// Toutes les capsules d'attaque, que le marchand vend (section 14.2),
+    /// dans l'ordre de docs/contenu-v1.md.
+    pub fn capsules(&self) -> &[Capsule] {
+        &self.capsules
+    }
 }
 
 impl Default for ContenuV1 {
@@ -203,6 +225,13 @@ impl Catalogue for ContenuV1 {
 
     fn zone(&self, id: &ZoneId) -> Option<Zone> {
         self.zones.iter().find(|zone| zone.id() == id).cloned()
+    }
+
+    fn capsule(&self, id: &AttaqueId) -> Option<Capsule> {
+        self.capsules
+            .iter()
+            .find(|capsule| capsule.id() == id)
+            .cloned()
     }
 }
 
@@ -243,7 +272,7 @@ const fn avec_effet(fiche: FicheAttaque, statut: Statut, chance: u8) -> FicheAtt
 }
 
 /// Section 1 de docs/contenu-v1.md, dans le même ordre.
-const ATTAQUES: [FicheAttaque; 38] = [
+const ATTAQUES: [FicheAttaque; 41] = [
     fiche(
         "souffle-chaud",
         "Souffle chaud",
@@ -505,6 +534,62 @@ const ATTAQUES: [FicheAttaque; 38] = [
         90,
         85,
     ),
+    // Attaques des capsules, qu'aucune espèce n'apprend (section 6).
+    fiche("brasier", "Brasier", Type::Feu, Speciale, 70, 100),
+    fiche("deferlante", "Déferlante", Type::Eau, Physique, 65, 100),
+    avec_effet(
+        fiche(
+            "lianes-etrangleuses",
+            "Lianes étrangleuses",
+            Type::Plante,
+            Physique,
+            55,
+            100,
+        ),
+        Paralysie,
+        20,
+    ),
+];
+
+struct FicheCapsule {
+    attaque: &'static str,
+    prix: u32,
+    /// Identifiant de la zone dont les coffres la contiennent.
+    zone: &'static str,
+}
+
+/// Section 6 de docs/contenu-v1.md, dans le même ordre.
+const CAPSULES: [FicheCapsule; 6] = [
+    FicheCapsule {
+        attaque: "brasier",
+        prix: 150,
+        zone: "lisiere",
+    },
+    FicheCapsule {
+        attaque: "deferlante",
+        prix: 150,
+        zone: "lisiere",
+    },
+    FicheCapsule {
+        attaque: "lianes-etrangleuses",
+        prix: 150,
+        zone: "lisiere",
+    },
+    FicheCapsule {
+        attaque: "croc-de-venin",
+        prix: 200,
+        zone: "marais",
+    },
+    FicheCapsule {
+        attaque: "frisson-d-outre-tombe",
+        prix: 200,
+        zone: "marais",
+    },
+    FicheCapsule {
+        attaque: "sentence",
+        prix: 300,
+        zone: "marais",
+    },
 ];
 
 struct FicheEspece {
@@ -757,8 +842,8 @@ fn expedition_automatique(
 }
 
 /// Coffres de la section 3 de docs/contenu-v1.md.
-fn coffre(argent: RangeInclusive<u32>) -> ParametresCoffre {
-    ParametresCoffre::new(argent).expect("coffre conforme aux règles")
+fn coffre(argent: RangeInclusive<u32>, capsules: Vec<Capsule>) -> ParametresCoffre {
+    ParametresCoffre::new(argent, capsules).expect("coffre conforme aux règles")
 }
 
 #[cfg(test)]
@@ -837,7 +922,7 @@ mod tests {
     }
 
     #[test]
-    fn chaque_attaque_est_apprise_par_une_espece() {
+    fn chaque_attaque_est_apprise_par_une_espece_ou_une_capsule() {
         for fiche in &ATTAQUES {
             let apprise = ESPECES.iter().any(|espece| {
                 espece
@@ -845,8 +930,46 @@ mod tests {
                     .iter()
                     .any(|&(_, attaque)| attaque == fiche.id)
             });
-            assert!(apprise, "attaque {} apprise par aucune espèce", fiche.id);
+            let en_capsule = CAPSULES.iter().any(|capsule| capsule.attaque == fiche.id);
+            assert!(
+                apprise || en_capsule,
+                "attaque {} apprise par aucune espèce ni capsule",
+                fiche.id
+            );
         }
+    }
+
+    #[test]
+    fn chaque_capsule_sert_a_une_espece_qui_ne_l_apprend_pas() {
+        let contenu = ContenuV1::new();
+        assert_eq!(contenu.capsules().len(), 6);
+        for capsule in contenu.capsules() {
+            let utile = contenu.especes().iter().any(|espece| {
+                capsule.convient_a(espece) && espece.attaque_apprise(capsule.id()).is_none()
+            });
+            assert!(utile, "capsule {} inutile", capsule.id().as_str());
+            assert_eq!(contenu.capsule(capsule.id()).as_ref(), Some(capsule));
+        }
+    }
+
+    #[test]
+    fn les_coffres_de_chaque_zone_ont_leurs_capsules() {
+        let contenu = ContenuV1::new();
+        let ids = |zone: &Zone| -> Vec<String> {
+            zone.coffre()
+                .capsules()
+                .iter()
+                .map(|capsule| capsule.id().as_str().to_string())
+                .collect()
+        };
+        assert_eq!(
+            ids(&contenu.zones()[0]),
+            vec!["brasier", "deferlante", "lianes-etrangleuses"]
+        );
+        assert_eq!(
+            ids(&contenu.zones()[1]),
+            vec!["croc-de-venin", "frisson-d-outre-tombe", "sentence"]
+        );
     }
 
     #[test]

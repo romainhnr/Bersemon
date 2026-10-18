@@ -7,6 +7,7 @@
 
 pub mod aleatoire;
 pub mod attaque;
+pub mod capsule;
 pub mod capture;
 pub mod catalogue;
 pub mod codex;

@@ -1,6 +1,6 @@
-//! Marchand réfugié au camp (section 14.2) : il vend des potions et rachète
-//! les monstres. Ses prix sont fixes, et non tirés au hasard, pour être
-//! connus avant l'échange (section 14.5).
+//! Marchand réfugié au camp (section 14.2) : il vend des potions et des
+//! capsules d'attaque, et rachète les monstres. Ses prix sont fixes, et non
+//! tirés au hasard, pour être connus avant l'échange (section 14.5).
 
 use std::fmt;
 
@@ -43,6 +43,8 @@ pub enum ErreurMarchand {
         argent: u32,
     },
     QuantiteNulle,
+    /// Une capsule sert sans s'user : en racheter une ne sert à rien.
+    CapsuleDejaPossedee,
     /// La revente suit les règles du relâcher.
     Collection(ErreurCollection),
 }
@@ -56,6 +58,7 @@ impl fmt::Display for ErreurMarchand {
                 "il faut {prix} pièces d'argent, le joueur n'en a que {argent}"
             ),
             ErreurMarchand::QuantiteNulle => write!(f, "il faut acheter au moins un objet"),
+            ErreurMarchand::CapsuleDejaPossedee => write!(f, "cette capsule est déjà obtenue"),
             ErreurMarchand::Collection(erreur) => write!(f, "{erreur}"),
         }
     }

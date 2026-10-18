@@ -27,6 +27,8 @@ pub enum ErreurSauvegarde {
     EspeceInconnue(String),
     /// Zone d'une expédition automatique en cours (section 12).
     ZoneInconnue(String),
+    /// Capsule d'attaque obtenue (section 13.10).
+    CapsuleInconnue(String),
     AttaqueInconnue {
         espece: String,
         attaque: String,
@@ -47,6 +49,9 @@ impl fmt::Display for ErreurSauvegarde {
                 write!(f, "espèce inconnue : {espece}")
             }
             ErreurSauvegarde::ZoneInconnue(zone) => write!(f, "zone inconnue : {zone}"),
+            ErreurSauvegarde::CapsuleInconnue(capsule) => {
+                write!(f, "capsule d'attaque inconnue : {capsule}")
+            }
             ErreurSauvegarde::AttaqueInconnue { espece, attaque } => {
                 write!(f, "l'espèce {espece} n'apprend pas l'attaque {attaque}")
             }

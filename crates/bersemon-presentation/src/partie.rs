@@ -1,5 +1,6 @@
 //! Partie en cours : héros, camp, carte, codex et confirmations.
 
+use bersemon_core::capsule::Capsule;
 use bersemon_core::codex::{Codex, EtatCodex};
 use bersemon_core::collection::Collection;
 use bersemon_core::combat::Cote;
@@ -72,6 +73,20 @@ pub fn argent(montant: u32) -> String {
         format!("{montant} pièces d'argent")
     } else {
         format!("{montant} pièce d'argent")
+    }
+}
+
+/// « la capsule d'attaque Brasier ».
+pub fn capsule(capsule: &Capsule) -> String {
+    format!("la capsule d'attaque {}", capsule.attaque().nom())
+}
+
+/// "a", "a et b", "a, b et c".
+pub fn enumerer(elements: &[String]) -> String {
+    match elements.split_last() {
+        None => String::new(),
+        Some((dernier, [])) => dernier.clone(),
+        Some((dernier, autres)) => format!("{} et {dernier}", autres.join(", ")),
     }
 }
 

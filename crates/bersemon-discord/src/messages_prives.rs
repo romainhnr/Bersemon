@@ -282,6 +282,7 @@ mod tests {
             inventaire: partie.inventaire().clone(),
             argent: partie.argent(),
             marchand_au_camp: partie.marchand_au_camp(),
+            capsules: partie.capsules().to_vec(),
             codex: partie.codex().clone(),
             zones_explorees: vec![ZoneId::new("lisiere")],
             indices_trouves: 1,

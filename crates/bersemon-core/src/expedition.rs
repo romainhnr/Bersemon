@@ -5,6 +5,8 @@ use std::fmt;
 use std::ops::RangeInclusive;
 
 use crate::aleatoire::Aleatoire;
+use crate::attaque::AttaqueId;
+use crate::capsule::Capsule;
 use crate::expedition_automatique::ErreurParametres;
 use crate::monstre::Monstre;
 use crate::traque::Apotre;
@@ -16,34 +18,46 @@ const ETAPES_MAX: u32 = 6;
 /// Un coffre contient 1 à 2 potions (Q39).
 const POTIONS_MIN: u32 = 1;
 const POTIONS_MAX: u32 = 2;
+/// Un coffre sur 5 contient une capsule d'attaque (Q69).
+const CHANCE_DE_CAPSULE: u32 = 20;
 
 /// Contenu des coffres propre à chaque zone (section 14.5).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParametresCoffre {
     argent: RangeInclusive<u32>,
+    capsules: Vec<Capsule>,
 }
 
 impl ParametresCoffre {
-    pub fn new(argent: RangeInclusive<u32>) -> Result<Self, ErreurParametres> {
+    /// `capsules` : celles que ses coffres peuvent contenir (section 13.10).
+    pub fn new(
+        argent: RangeInclusive<u32>,
+        capsules: Vec<Capsule>,
+    ) -> Result<Self, ErreurParametres> {
         if argent.is_empty() {
             return Err(ErreurParametres::FourchetteInversee);
         }
-        Ok(Self { argent })
+        Ok(Self { argent, capsules })
     }
 
     pub fn argent(&self) -> &RangeInclusive<u32> {
         &self.argent
+    }
+
+    pub fn capsules(&self) -> &[Capsule] {
+        &self.capsules
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EvenementExpedition {
     Combat(Vec<Monstre>),
-    /// Les potions rejoignent aussitôt celles du joueur ; l'argent ne lui est
-    /// acquis qu'au retour au camp (section 9.3).
+    /// Les potions rejoignent aussitôt celles du joueur ; l'argent et la
+    /// capsule ne lui sont acquis qu'au retour au camp (section 9.3).
     Coffre {
         potions: u32,
         argent: u32,
+        capsule: Option<Capsule>,
     },
     MonstreRare(MonstreRare),
     /// Combat, sans fuite, contre l'Apôtre (section 9.4).
@@ -81,6 +95,10 @@ pub struct Expedition {
     /// Tant qu'aucun marchand n'est au camp, une étape peut tirer sa
     /// rencontre, une fois au plus (section 9.2).
     marchand_possible: bool,
+    /// Un coffre ne contient qu'une capsule que le joueur n'a pas encore.
+    capsules_possedees: Vec<AttaqueId>,
+    /// Perdues en cas de défaite, comme l'argent trouvé (section 9.3).
+    capsules_trouvees: Vec<Capsule>,
 }
 
 impl Expedition {
@@ -96,6 +114,8 @@ impl Expedition {
             apotre: None,
             argent_trouve: 0,
             marchand_possible: false,
+            capsules_possedees: Vec::new(),
+            capsules_trouvees: Vec::new(),
         }
     }
 
@@ -106,6 +126,11 @@ impl Expedition {
 
     pub(crate) fn avec_marchand_possible(mut self) -> Self {
         self.marchand_possible = true;
+        self
+    }
+
+    pub(crate) fn avec_capsules_possedees(mut self, capsules: Vec<AttaqueId>) -> Self {
+        self.capsules_possedees = capsules;
         self
     }
 
@@ -143,11 +168,24 @@ impl Expedition {
         if self.defaite { 0 } else { self.argent_trouve }
     }
 
+    pub fn capsules_trouvees(&self) -> &[Capsule] {
+        &self.capsules_trouvees
+    }
+
+    /// Aucune après une défaite (section 9.3).
+    pub fn capsules_rapportees(&self) -> &[Capsule] {
+        if self.defaite {
+            &[]
+        } else {
+            &self.capsules_trouvees
+        }
+    }
+
     /// Passe à l'étape suivante et tire son événement ; `None` si
     /// l'expédition est terminée. Tirages : nature de l'événement (combat
     /// 80 %, coffre 15 %, monstre rare 5 %, Q38 ; tant que le marchand peut
     /// être rencontré, combat 70 % et marchand 10 %, Q70), puis ceux de son
-    /// contenu : pour un coffre, ses potions puis son argent.
+    /// contenu : pour un coffre, ses potions, son argent puis sa capsule.
     /// Une zone sans monstre rare donne un combat à la place. L'Apôtre
     /// remplace l'événement de la dernière étape, sans tirage de sa nature
     /// (Q57).
@@ -180,7 +218,39 @@ impl Expedition {
         let fourchette = self.zone.coffre().argent();
         let argent = tirer_entre(*fourchette.start(), *fourchette.end(), aleatoire);
         self.argent_trouve = self.argent_trouve.saturating_add(argent);
-        EvenementExpedition::Coffre { potions, argent }
+        let capsule = self.tirer_une_capsule(aleatoire);
+        if let Some(capsule) = &capsule {
+            self.capsules_trouvees.push(capsule.clone());
+        }
+        EvenementExpedition::Coffre {
+            potions,
+            argent,
+            capsule,
+        }
+    }
+
+    /// Parmi les capsules de la zone que le joueur n'a ni obtenues, ni
+    /// trouvées pendant cette expédition. Tirages, s'il en reste : la
+    /// chance d'en trouver une, puis laquelle.
+    fn tirer_une_capsule(&self, aleatoire: &mut dyn Aleatoire) -> Option<Capsule> {
+        let nouvelles: Vec<&Capsule> = self
+            .zone
+            .coffre()
+            .capsules()
+            .iter()
+            .filter(|capsule| {
+                !self.capsules_possedees.contains(capsule.id())
+                    && !self
+                        .capsules_trouvees
+                        .iter()
+                        .any(|trouvee| trouvee.id() == capsule.id())
+            })
+            .collect();
+        if nouvelles.is_empty() || aleatoire.tirer(1..=100) > CHANCE_DE_CAPSULE {
+            return None;
+        }
+        let position = tirer_entre(0, (nouvelles.len() - 1) as u32, aleatoire) as usize;
+        Some(nouvelles[position].clone())
     }
 }
 
@@ -233,7 +303,8 @@ mod tests {
             expedition.etape_suivante(&mut AleatoireScripte::new([81, 2])),
             Some(EvenementExpedition::Coffre {
                 potions: 2,
-                argent: 10
+                argent: 10,
+                capsule: None
             })
         );
         let mut rare = vec![96];
@@ -312,7 +383,7 @@ mod tests {
             vec![espece("loup")],
             Vec::new(),
             parametres_expedition_automatique(),
-            ParametresCoffre::new(10..=25).unwrap(),
+            ParametresCoffre::new(10..=25, Vec::new()).unwrap(),
         )
         .unwrap();
         let mut expedition = Expedition::partir(zone, &mut AleatoireScripte::new([4]));
@@ -320,7 +391,8 @@ mod tests {
             expedition.etape_suivante(&mut AleatoireScripte::new([90, 1, 25])),
             Some(EvenementExpedition::Coffre {
                 potions: 1,
-                argent: 25
+                argent: 25,
+                capsule: None
             })
         );
         expedition.etape_suivante(&mut AleatoireScripte::new([90, 2, 10]));
@@ -375,8 +447,84 @@ mod tests {
     #[test]
     fn fourchette_d_argent_inversee_refusee() {
         assert_eq!(
-            ParametresCoffre::new(RangeInclusive::new(2, 1)),
+            ParametresCoffre::new(RangeInclusive::new(2, 1), Vec::new()),
             Err(ErreurParametres::FourchetteInversee)
         );
+    }
+
+    fn capsule(id: &str) -> Capsule {
+        Capsule::new(
+            crate::donnees_de_test::attaque(
+                id,
+                crate::types::Type::Normal,
+                crate::attaque::Categorie::Physique,
+                40,
+                100,
+            ),
+            150,
+        )
+    }
+
+    /// Zone dont les coffres contiennent 10 pièces d'argent et peut-être une
+    /// des capsules a, b et c.
+    fn zone_a_capsules() -> Zone {
+        let niveau = Niveau::new(5).unwrap();
+        Zone::new(
+            ZoneId::new("bois"),
+            "Bois",
+            (niveau, niveau),
+            1,
+            vec![espece("loup")],
+            Vec::new(),
+            parametres_expedition_automatique(),
+            ParametresCoffre::new(10..=10, vec![capsule("a"), capsule("b"), capsule("c")]).unwrap(),
+        )
+        .unwrap()
+    }
+
+    fn capsule_du_coffre(evenement: Option<EvenementExpedition>) -> Option<String> {
+        match evenement {
+            Some(EvenementExpedition::Coffre { capsule, .. }) => {
+                capsule.map(|capsule| capsule.id().as_str().to_string())
+            }
+            autre => panic!("coffre attendu : {autre:?}"),
+        }
+    }
+
+    #[test]
+    fn une_capsule_nouvelle_dans_un_coffre_sur_cinq() {
+        let mut expedition = Expedition::partir(zone_a_capsules(), &mut AleatoireScripte::new([6]))
+            .avec_capsules_possedees(vec![AttaqueId::new("a")]);
+        // Au-delà de 20, pas de capsule.
+        assert_eq!(
+            capsule_du_coffre(expedition.etape_suivante(&mut AleatoireScripte::new([90, 1, 21]))),
+            None
+        );
+        // Parmi b et c, la seconde.
+        assert_eq!(
+            capsule_du_coffre(
+                expedition.etape_suivante(&mut AleatoireScripte::new([90, 1, 20, 1]))
+            ),
+            Some("c".to_string())
+        );
+        // Seule b reste : aucun tirage de position.
+        assert_eq!(
+            capsule_du_coffre(expedition.etape_suivante(&mut AleatoireScripte::new([90, 1, 1]))),
+            Some("b".to_string())
+        );
+        // Plus rien de nouveau : ni chance ni position tirées.
+        assert_eq!(
+            capsule_du_coffre(expedition.etape_suivante(&mut AleatoireScripte::new([90, 1]))),
+            None
+        );
+        let trouvees: Vec<&str> = expedition
+            .capsules_rapportees()
+            .iter()
+            .map(|capsule| capsule.id().as_str())
+            .collect();
+        assert_eq!(trouvees, vec!["c", "b"]);
+        expedition.noter_defaite();
+        assert!(expedition.capsules_rapportees().is_empty());
+        assert_eq!(expedition.capsules_trouvees().len(), 2);
     }
 }

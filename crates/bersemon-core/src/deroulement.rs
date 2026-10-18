@@ -14,7 +14,8 @@ use std::collections::VecDeque;
 use std::fmt;
 
 use crate::aleatoire::Aleatoire;
-use crate::attaque::{Attaque, ErreurAttaquesMonstre};
+use crate::attaque::{Attaque, AttaqueId, ErreurAttaquesMonstre};
+use crate::capsule::{Capsule, ErreurApprentissage};
 use crate::collection::{Emplacement, ErreurCollection, Placement};
 use crate::combat::{self, Action, BilanCombat, Combat, ErreurCombat, Issue, Phase};
 use crate::contenu::ContenuV1;
@@ -74,6 +75,17 @@ pub enum Choix {
     /// Au camp, chez le marchand, après confirmation, comme un relâcher
     /// (section 14.2).
     Vendre(Emplacement),
+    /// Au camp, chez le marchand, sans confirmation : une capsule de
+    /// `ContenuV1::capsules` (section 14.2).
+    AcheterCapsule(AttaqueId),
+    /// Au camp, gratuitement : une attaque de `Partie::attaques_a_apprendre`.
+    /// S'il en connaît déjà 4, le monstre oublie celle en position
+    /// `oubliee`, que l'interface a fait choisir au joueur (section 13.10).
+    ApprendreAttaque {
+        emplacement: Emplacement,
+        attaque: AttaqueId,
+        oubliee: Option<usize>,
+    },
     /// Au camp, toutes les actions ; entre deux étapes, seulement l'ordre de
     /// l'équipe (Q55).
     Gerer(ActionDeGestion),
@@ -174,10 +186,12 @@ pub enum Evenement {
     Depart(String),
     /// Numéro de l'étape.
     Etape(u32),
-    /// L'argent ne sera acquis qu'au retour au camp (section 9.3).
+    /// L'argent et la capsule ne seront acquis qu'au retour au camp
+    /// (section 9.3).
     Coffre {
         potions: u32,
         argent: u32,
+        capsule: Option<Capsule>,
     },
     MonstreRarePacifique(Monstre),
     MonstreRareHostile(Monstre),
@@ -202,6 +216,12 @@ pub enum Evenement {
         monstre: Monstre,
         nouvelle: Attaque,
     },
+    /// Au camp, sans rien oublier ; sinon `AttaqueRemplacee` (section
+    /// 13.10).
+    AttaqueApprise {
+        monstre: Monstre,
+        attaque: Attaque,
+    },
     RejointLEquipe(Monstre),
     PartPourLeCamp(Monstre),
     CaptureRelachee(Monstre),
@@ -210,10 +230,11 @@ pub enum Evenement {
         capture: Monstre,
     },
     Epilogue(String),
-    /// Toute l'équipe est KO : retour au camp, potions et argent trouvé
-    /// perdus (section 9.3).
+    /// Toute l'équipe est KO : retour au camp, potions, argent et capsules
+    /// trouvés perdus (section 9.3).
     Defaite {
         argent_perdu: u32,
+        capsules_perdues: Vec<Capsule>,
     },
     PotionUtilisee {
         monstre: Monstre,
@@ -224,6 +245,8 @@ pub enum Evenement {
     RetourAuCamp,
     /// L'argent trouvé pendant l'expédition, acquis au retour (section 9.3).
     ArgentRapporte(u32),
+    /// Trouvée pendant l'expédition, acquise au retour (section 9.3).
+    CapsuleRapportee(Capsule),
     Indice {
         numero: usize,
         texte: String,
@@ -253,6 +276,10 @@ pub enum Evenement {
         monstre: Monstre,
         prix: u32,
     },
+    CapsuleAchetee {
+        capsule: Capsule,
+        prix: u32,
+    },
     /// La partie continue : la sauvegarde sera retentée plus tard.
     SauvegardeImpossible(ErreurSauvegarde),
 }
@@ -270,6 +297,9 @@ pub enum ErreurChoix {
     Attaque(ErreurAttaquesMonstre),
     ExpeditionAutomatique(ErreurExpeditionAutomatique),
     Marchand(ErreurMarchand),
+    /// Le marchand ne vend pas cette capsule.
+    CapsuleInconnue(AttaqueId),
+    Apprentissage(ErreurApprentissage),
 }
 
 impl fmt::Display for ErreurChoix {
@@ -285,6 +315,10 @@ impl fmt::Display for ErreurChoix {
             ErreurChoix::Attaque(erreur) => write!(f, "{erreur}"),
             ErreurChoix::ExpeditionAutomatique(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Marchand(erreur) => write!(f, "{erreur}"),
+            ErreurChoix::CapsuleInconnue(capsule) => {
+                write!(f, "capsule inconnue : {}", capsule.as_str())
+            }
+            ErreurChoix::Apprentissage(erreur) => write!(f, "{erreur}"),
         }
     }
 }
@@ -639,6 +673,60 @@ impl EnJeu {
                 sauvegarder(&self.partie, contexte.depot, evenements);
                 Ok(Reponse::Faite)
             }
+            Choix::AcheterCapsule(id) => {
+                let capsule = contexte
+                    .contenu
+                    .capsules()
+                    .iter()
+                    .find(|capsule| capsule.id() == id)
+                    .ok_or_else(|| ErreurChoix::CapsuleInconnue(id.clone()))?;
+                let prix = self
+                    .partie
+                    .acheter_capsule(capsule)
+                    .map_err(ErreurChoix::Marchand)?;
+                evenements.push(Evenement::CapsuleAchetee {
+                    capsule: capsule.clone(),
+                    prix,
+                });
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::ApprendreAttaque {
+                emplacement,
+                attaque,
+                oubliee,
+            } => {
+                let ancienne = self
+                    .partie
+                    .apprendre_attaque(*emplacement, attaque, *oubliee)
+                    .map_err(ErreurChoix::Apprentissage)?;
+                let monstre = self
+                    .partie
+                    .collection()
+                    .monstre(*emplacement)
+                    .cloned()
+                    .expect("le monstre vient d'apprendre l'attaque");
+                let nouvelle = monstre
+                    .attaques()
+                    .liste()
+                    .iter()
+                    .find(|connue| connue.id() == attaque)
+                    .cloned()
+                    .expect("le monstre connaît l'attaque apprise");
+                evenements.push(match ancienne {
+                    Some(oubliee) => Evenement::AttaqueRemplacee {
+                        monstre,
+                        oubliee,
+                        nouvelle,
+                    },
+                    None => Evenement::AttaqueApprise {
+                        monstre,
+                        attaque: nouvelle,
+                    },
+                });
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
             _ => Err(ErreurChoix::HorsDePropos),
         }
     }
@@ -715,6 +803,9 @@ impl EnJeu {
         let argent = en_cours.expedition.argent_rapporte();
         if argent > 0 {
             evenements.push(Evenement::ArgentRapporte(argent));
+        }
+        for capsule in en_cours.expedition.capsules_rapportees() {
+            evenements.push(Evenement::CapsuleRapportee(capsule.clone()));
         }
         if let Some(indice) = indice {
             evenements.push(Evenement::Indice {
@@ -1173,6 +1264,7 @@ impl EnExpedition {
                 self.expedition.noter_defaite();
                 evenements.push(Evenement::Defaite {
                     argent_perdu: self.expedition.argent_trouve(),
+                    capsules_perdues: self.expedition.capsules_trouvees().to_vec(),
                 });
             }
         }
@@ -1204,9 +1296,17 @@ impl EnExpedition {
                 evenements.push(Evenement::Rencontre(combat.clone()));
                 self.engager(partie, combat, evenements)
             }
-            EvenementExpedition::Coffre { potions, argent } => {
+            EvenementExpedition::Coffre {
+                potions,
+                argent,
+                capsule,
+            } => {
                 partie.ouvrir_coffre(potions);
-                evenements.push(Evenement::Coffre { potions, argent });
+                evenements.push(Evenement::Coffre {
+                    potions,
+                    argent,
+                    capsule,
+                });
                 self.apres_l_etape(partie, evenements)
             }
             EvenementExpedition::Marchand => {
@@ -1363,6 +1463,7 @@ mod tests {
             inventaire: partie.inventaire().clone(),
             argent: partie.argent(),
             marchand_au_camp: partie.marchand_au_camp(),
+            capsules: partie.capsules().to_vec(),
             codex: partie.codex().clone(),
             zones_explorees: partie.zones_explorees().to_vec(),
             indices_trouves: partie.indices_trouves(),
@@ -1521,8 +1622,9 @@ mod tests {
             Err(ErreurChoix::ZoneFermee)
         );
 
-        // 4 étapes, puis un coffre d'une potion et de 12 pièces d'argent.
-        let mut aleatoire = AleatoireScripte::new([4, 81, 1, 12]);
+        // 4 étapes, puis un coffre d'une potion et de 12 pièces d'argent,
+        // sans capsule.
+        let mut aleatoire = AleatoireScripte::new([4, 81, 1, 12, 21]);
         let mut contexte = Contexte {
             contenu: &contenu,
             aleatoire: &mut aleatoire,
@@ -1542,7 +1644,8 @@ mod tests {
                 Evenement::Etape(1),
                 Evenement::Coffre {
                     potions: 1,
-                    argent: 12
+                    argent: 12,
+                    capsule: None
                 },
                 Evenement::Conseil(Conseil::PremierArretEntreDeuxEtapes),
             ]
@@ -1683,6 +1786,115 @@ mod tests {
         let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
         assert_eq!(sauvegarde.argent(), 10);
         assert_eq!(sauvegarde.inventaire().potions(), 2);
+    }
+
+    #[test]
+    fn capsule_trouvee_dans_un_coffre_puis_apprise_au_camp() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut deroulement = Deroulement::demarrer(Ok(Some(partie(&contenu))));
+        repondre_sans_tirage(&mut deroulement, Choix::ReprendreLaPartie, &contenu, &depot).unwrap();
+        // 4 étapes, un coffre : une potion, 12 pièces d'argent et la
+        // première des trois capsules de la Lisière, Brasier.
+        let mut aleatoire = AleatoireScripte::new([4, 81, 1, 12, 20, 0]);
+        let mut contexte = Contexte {
+            contenu: &contenu,
+            aleatoire: &mut aleatoire,
+            depot: &depot,
+            maintenant: Horodatage::depuis_secondes(0),
+        };
+        let evenements = deroulement
+            .repondre(
+                Choix::PartirEnExpedition(ZoneId::new("lisiere")),
+                &mut contexte,
+            )
+            .unwrap();
+        assert!(matches!(
+            &evenements[2],
+            Evenement::Coffre { capsule: Some(capsule), .. } if capsule.id().as_str() == "brasier"
+        ));
+        assert!(deroulement.partie().unwrap().capsules().is_empty());
+        let evenements =
+            repondre_sans_tirage(&mut deroulement, Choix::RentrerAuCamp, &contenu, &depot).unwrap();
+        assert!(matches!(
+            &evenements[..3],
+            [
+                Evenement::RetourAuCamp,
+                Evenement::ArgentRapporte(12),
+                Evenement::CapsuleRapportee(capsule),
+            ] if capsule.id().as_str() == "brasier"
+        ));
+
+        // La Salamandre, de type Feu, connaît 2 attaques : elle apprend
+        // Brasier sans en oublier.
+        let apprendre = |attaque: &str, oubliee| Choix::ApprendreAttaque {
+            emplacement: Emplacement::Equipe(0),
+            attaque: AttaqueId::new(attaque),
+            oubliee,
+        };
+        let evenements = repondre_sans_tirage(
+            &mut deroulement,
+            apprendre("brasier", None),
+            &contenu,
+            &depot,
+        )
+        .unwrap();
+        assert!(matches!(
+            &evenements[..],
+            [Evenement::AttaqueApprise { attaque, .. }] if attaque.id().as_str() == "brasier"
+        ));
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert_eq!(sauvegarde.capsules().len(), 1);
+        assert!(
+            sauvegarde.collection().equipe()[0]
+                .attaques()
+                .connait(&AttaqueId::new("brasier"))
+        );
+        assert_eq!(
+            repondre_sans_tirage(
+                &mut deroulement,
+                apprendre("brasier", None),
+                &contenu,
+                &depot
+            ),
+            Err(ErreurChoix::Apprentissage(
+                ErreurApprentissage::AttaqueInaccessible
+            ))
+        );
+    }
+
+    #[test]
+    fn acheter_une_capsule_au_marchand() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut etat = etat_de(&partie(&contenu));
+        etat.argent = 160;
+        etat.marchand_au_camp = true;
+        let mut deroulement = Deroulement::demarrer(Ok(Some(Partie::restaurer(etat).unwrap())));
+        repondre_sans_tirage(&mut deroulement, Choix::ReprendreLaPartie, &contenu, &depot).unwrap();
+        assert_eq!(
+            repondre_sans_tirage(
+                &mut deroulement,
+                Choix::AcheterCapsule(AttaqueId::new("griffure")),
+                &contenu,
+                &depot
+            ),
+            Err(ErreurChoix::CapsuleInconnue(AttaqueId::new("griffure")))
+        );
+        let evenements = repondre_sans_tirage(
+            &mut deroulement,
+            Choix::AcheterCapsule(AttaqueId::new("deferlante")),
+            &contenu,
+            &depot,
+        )
+        .unwrap();
+        assert!(matches!(
+            &evenements[..],
+            [Evenement::CapsuleAchetee { prix: 150, capsule }] if capsule.id().as_str() == "deferlante"
+        ));
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert_eq!(sauvegarde.argent(), 10);
+        assert!(sauvegarde.possede_capsule(&AttaqueId::new("deferlante")));
     }
 
     #[test]
@@ -1921,6 +2133,12 @@ mod tests {
             .count();
         assert_eq!(marchands, 1);
         assert!(sauvegarde.marchand_au_camp());
+        // Les capsules du joueur sont celles rapportées au camp.
+        let capsules = vus
+            .iter()
+            .filter(|evenement| matches!(evenement, Evenement::CapsuleRapportee(_)))
+            .count();
+        assert_eq!(sauvegarde.capsules().len(), capsules);
     }
 
     /// Réponse donnée à cette heure, avec ces tirages.
@@ -1966,6 +2184,7 @@ mod tests {
             inventaire: partie.inventaire().clone(),
             argent: partie.argent(),
             marchand_au_camp: partie.marchand_au_camp(),
+            capsules: partie.capsules().to_vec(),
             codex: partie.codex().clone(),
             zones_explorees: vec![ZoneId::new("lisiere"), ZoneId::new("marais")],
             indices_trouves: 3,

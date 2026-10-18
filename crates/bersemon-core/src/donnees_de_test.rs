@@ -76,9 +76,10 @@ pub(crate) fn parametres_expedition_automatique() -> ParametresExpeditionAutomat
     .unwrap()
 }
 
-/// Toujours 10 pièces d'argent par coffre, sans tirage.
+/// Toujours 10 pièces d'argent par coffre, sans tirage, et jamais de
+/// capsule.
 pub(crate) fn parametres_coffre() -> ParametresCoffre {
-    ParametresCoffre::new(10..=10).unwrap()
+    ParametresCoffre::new(10..=10, Vec::new()).unwrap()
 }
 
 /// Zone de niveau 5 sans monstre rare, où vivent des loups en groupes d'un

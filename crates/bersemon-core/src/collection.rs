@@ -379,6 +379,14 @@ impl Collection {
         self.camp.get_mut(index)
     }
 
+    /// Pour les attaques apprises au camp (section 13.10).
+    pub(crate) fn monstre_a_modifier(&mut self, emplacement: Emplacement) -> Option<&mut Monstre> {
+        match emplacement {
+            Emplacement::Equipe(index) => self.equipe.get_mut(index),
+            Emplacement::Camp(index) => self.camp.get_mut(index),
+        }
+    }
+
     fn verifier(&self, emplacement: Emplacement) -> Result<(), ErreurCollection> {
         match self.monstre(emplacement) {
             Some(_) => Ok(()),

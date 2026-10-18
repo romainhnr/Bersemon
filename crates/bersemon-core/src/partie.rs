@@ -4,7 +4,8 @@
 use std::fmt;
 
 use crate::aleatoire::Aleatoire;
-use crate::attaque::{Attaque, ErreurAttaquesMonstre};
+use crate::attaque::{Attaque, AttaqueId, ErreurAttaquesMonstre};
+use crate::capsule::{Capsule, ErreurApprentissage, attaques_a_apprendre};
 use crate::codex::Codex;
 use crate::collection::{Collection, Emplacement, ErreurCollection, Placement};
 use crate::combat::{BilanCombat, Combat, ErreurCombat, Issue};
@@ -51,6 +52,9 @@ pub struct Partie {
     argent: u32,
     /// Une fois rencontré, le marchand reste au camp (section 14.2).
     marchand_au_camp: bool,
+    /// Dans l'ordre où le joueur les a obtenues, sans doublon (section
+    /// 13.10).
+    capsules: Vec<Capsule>,
     codex: Codex,
     zones_explorees: Vec<ZoneId>,
     /// Indices trouvés sur la piste de l'Apôtre (section 9.4).
@@ -82,6 +86,7 @@ pub struct EtatPartie {
     pub inventaire: Inventaire,
     pub argent: u32,
     pub marchand_au_camp: bool,
+    pub capsules: Vec<Capsule>,
     pub codex: Codex,
     pub zones_explorees: Vec<ZoneId>,
     pub indices_trouves: usize,
@@ -101,6 +106,7 @@ pub enum ErreurRestaurationPartie {
     ExpeditionEnDouble(ZoneId),
     /// Aucun monstre du camp à cette position.
     AttaqueAChoisirSansMonstre(usize),
+    CapsuleEnDouble(AttaqueId),
 }
 
 impl fmt::Display for ErreurRestaurationPartie {
@@ -121,6 +127,9 @@ impl fmt::Display for ErreurRestaurationPartie {
                 f,
                 "attaque à choisir pour un monstre absent du camp (position {position})"
             ),
+            ErreurRestaurationPartie::CapsuleEnDouble(capsule) => {
+                write!(f, "capsule obtenue deux fois : {}", capsule.as_str())
+            }
         }
     }
 }
@@ -138,6 +147,7 @@ impl Partie {
             inventaire: Inventaire::default(),
             argent: 0,
             marchand_au_camp: false,
+            capsules: Vec::new(),
             codex,
             zones_explorees: Vec::new(),
             indices_trouves: 0,
@@ -223,6 +233,85 @@ impl Partie {
         Ok((monstre, prix))
     }
 
+    pub fn capsules(&self) -> &[Capsule] {
+        &self.capsules
+    }
+
+    pub fn possede_capsule(&self, id: &AttaqueId) -> bool {
+        self.capsules.iter().any(|capsule| capsule.id() == id)
+    }
+
+    /// Une capsule déjà obtenue n'est pas ajoutée deux fois : elle sert sans
+    /// s'user (section 13.10).
+    fn obtenir_capsule(&mut self, capsule: Capsule) {
+        if !self.possede_capsule(capsule.id()) {
+            self.capsules.push(capsule);
+        }
+    }
+
+    /// Au camp, sans confirmation (section 14.2). Rend le prix payé.
+    pub fn acheter_capsule(&mut self, capsule: &Capsule) -> Result<u32, ErreurMarchand> {
+        self.verifier_marchand()?;
+        if self.possede_capsule(capsule.id()) {
+            return Err(ErreurMarchand::CapsuleDejaPossedee);
+        }
+        self.payer(capsule.prix())?;
+        self.capsules.push(capsule.clone());
+        Ok(capsule.prix())
+    }
+
+    /// Ce que ce monstre peut apprendre au camp, gratuitement (section
+    /// 13.10).
+    pub fn attaques_a_apprendre(
+        &self,
+        emplacement: Emplacement,
+    ) -> Result<Vec<Attaque>, ErreurCollection> {
+        let monstre = self
+            .collection
+            .monstre(emplacement)
+            .ok_or(ErreurCollection::EmplacementInexistant(emplacement))?;
+        Ok(attaques_a_apprendre(monstre, &self.capsules))
+    }
+
+    /// Le monstre apprend l'attaque ; s'il en connaît déjà 4, il oublie
+    /// celle en position `oubliee`, que l'interface a fait choisir au joueur
+    /// (section 13.10). Rend l'attaque oubliée.
+    pub fn apprendre_attaque(
+        &mut self,
+        emplacement: Emplacement,
+        attaque: &AttaqueId,
+        oubliee: Option<usize>,
+    ) -> Result<Option<Attaque>, ErreurApprentissage> {
+        let nouvelle = self
+            .attaques_a_apprendre(emplacement)
+            .map_err(ErreurApprentissage::Collection)?
+            .into_iter()
+            .find(|possible| possible.id() == attaque)
+            .ok_or(ErreurApprentissage::AttaqueInaccessible)?;
+        let monstre = self.collection.monstre_a_modifier(emplacement).ok_or(
+            ErreurApprentissage::Collection(ErreurCollection::EmplacementInexistant(emplacement)),
+        )?;
+        match (monstre.attaques().est_complete(), oubliee) {
+            (true, None) => Err(ErreurApprentissage::OubliManquant),
+            (false, Some(_)) => Err(ErreurApprentissage::OubliInutile),
+            (false, None) => monstre
+                .ajouter_attaque(nouvelle)
+                .map(|()| None)
+                .map_err(ErreurApprentissage::Attaque),
+            (true, Some(position)) => {
+                let ancienne = monstre.attaques().liste().get(position).cloned().ok_or(
+                    ErreurApprentissage::Attaque(ErreurAttaquesMonstre::PositionInexistante(
+                        position,
+                    )),
+                )?;
+                monstre
+                    .remplacer_attaque(position, nouvelle)
+                    .map(|()| Some(ancienne))
+                    .map_err(ErreurApprentissage::Attaque)
+            }
+        }
+    }
+
     fn verifier_marchand(&self) -> Result<(), ErreurMarchand> {
         if self.marchand_au_camp {
             Ok(())
@@ -274,8 +363,16 @@ impl Partie {
     /// été revérifié par sa propre restauration. Il reste à vérifier ce qui
     /// les lie : les monstres partis gardent leur place au camp, une seule
     /// expédition automatique par zone explorée, et chaque attaque à choisir
-    /// désigne un monstre du camp.
+    /// désigne un monstre du camp. Une capsule n'est obtenue qu'une fois.
     pub fn restaurer(etat: EtatPartie) -> Result<Self, ErreurRestaurationPartie> {
+        for (position, capsule) in etat.capsules.iter().enumerate() {
+            let precedentes = &etat.capsules[..position];
+            if precedentes.iter().any(|autre| autre.id() == capsule.id()) {
+                return Err(ErreurRestaurationPartie::CapsuleEnDouble(
+                    capsule.id().clone(),
+                ));
+            }
+        }
         let mut collection = etat.collection;
         let partis = etat
             .expeditions_automatiques
@@ -308,6 +405,7 @@ impl Partie {
             inventaire: etat.inventaire,
             argent: etat.argent,
             marchand_au_camp: etat.marchand_au_camp,
+            capsules: etat.capsules,
             codex: etat.codex,
             zones_explorees: etat.zones_explorees,
             indices_trouves: etat.indices_trouves,
@@ -330,7 +428,8 @@ impl Partie {
     /// Une fois tous les indices trouvés, une expédition dans la zone de
     /// l'Apôtre s'achève par le combat contre lui, tant qu'il n'est pas
     /// vaincu (section 9.4). Tant que le marchand n'est pas au camp, elle
-    /// peut le rencontrer (section 9.2).
+    /// peut le rencontrer (section 9.2). Ses coffres ne contiennent que des
+    /// capsules que le joueur n'a pas encore (section 13.10).
     pub fn partir_en_expedition(
         &self,
         zone: &Zone,
@@ -340,7 +439,13 @@ impl Partie {
         if !piste.zone_ouverte(zone.id(), self.indices_trouves) {
             return Err(ErreurExpedition::ZoneFermee);
         }
-        let mut expedition = Expedition::partir(zone.clone(), aleatoire);
+        let possedees = self
+            .capsules
+            .iter()
+            .map(|capsule| capsule.id().clone())
+            .collect();
+        let mut expedition =
+            Expedition::partir(zone.clone(), aleatoire).avec_capsules_possedees(possedees);
         if !self.marchand_au_camp {
             expedition = expedition.avec_marchand_possible();
         }
@@ -600,8 +705,9 @@ impl Partie {
             .ok_or(ErreurExpeditionAutomatique::Inexistante)
     }
 
-    /// Tous les monstres sont soignés (section 13.1) et l'argent trouvé est
-    /// acquis, sauf après une défaite (section 9.3). Une expédition menée
+    /// Tous les monstres sont soignés (section 13.1) ; l'argent et les
+    /// capsules trouvés sont acquis, sauf après une défaite (section 9.3).
+    /// Une expédition menée
     /// jusqu'au bout sans défaite rend la zone explorée et, si l'indice
     /// suivant de la piste se trouve dans cette zone, le révèle et le rend
     /// (section 9.4).
@@ -612,6 +718,9 @@ impl Partie {
     ) -> Option<&'p Indice> {
         self.collection.soigner_tout();
         self.argent = self.argent.saturating_add(expedition.argent_rapporte());
+        for capsule in expedition.capsules_rapportees() {
+            self.obtenir_capsule(capsule.clone());
+        }
         if !expedition.est_reussie() {
             return None;
         }
@@ -631,13 +740,15 @@ impl Partie {
 mod tests {
     use super::*;
     use crate::aleatoire::AleatoireScripte;
+    use crate::attaque::Categorie;
     use crate::codex::EtatCodex;
     use crate::combat::Action;
-    use crate::donnees_de_test::{espece, zone};
+    use crate::donnees_de_test::{attaque, espece, zone};
     use crate::espece::EspeceId;
     use crate::expedition::EvenementExpedition;
     use crate::heros::Classe;
     use crate::nom::Nom;
+    use crate::types::Type;
     use std::time::Duration;
 
     fn creer(id: &str, niveau: u8) -> Monstre {
@@ -833,6 +944,122 @@ mod tests {
         assert_eq!(partie.estimer_vente(Emplacement::Equipe(0)), dernier);
         assert_eq!(partie.vendre(Emplacement::Equipe(0)), dernier);
         assert_eq!(partie.argent(), 65);
+    }
+
+    fn capsule(id: &str, type_attaque: Type) -> Capsule {
+        Capsule::new(attaque(id, type_attaque, Categorie::Physique, 40, 100), 150)
+    }
+
+    #[test]
+    fn acheter_une_capsule_une_seule_fois() {
+        let mut partie = partie_chez_le_marchand();
+        let coup = capsule("grand-coup", Type::Normal);
+        assert_eq!(
+            partie.acheter_capsule(&coup),
+            Err(ErreurMarchand::ArgentInsuffisant {
+                prix: 150,
+                argent: 50
+            })
+        );
+        partie.argent = 200;
+        assert_eq!(partie.acheter_capsule(&coup), Ok(150));
+        assert_eq!(partie.argent(), 50);
+        assert_eq!(
+            partie.acheter_capsule(&coup),
+            Err(ErreurMarchand::CapsuleDejaPossedee)
+        );
+        assert_eq!(partie.capsules(), &[coup]);
+    }
+
+    #[test]
+    fn apprendre_au_camp_une_attaque_de_capsule() {
+        let mut partie = partie_chez_le_marchand();
+        partie.argent = 1_000;
+        let loup = Emplacement::Equipe(1);
+        // Les espèces de test sont de type Normal.
+        partie.acheter_capsule(&capsule("feu", Type::Feu)).unwrap();
+        assert!(partie.attaques_a_apprendre(loup).unwrap().is_empty());
+        assert_eq!(
+            partie.apprendre_attaque(loup, &AttaqueId::new("feu"), None),
+            Err(ErreurApprentissage::AttaqueInaccessible)
+        );
+        for id in ["a", "b", "c", "d"] {
+            partie.acheter_capsule(&capsule(id, Type::Normal)).unwrap();
+        }
+        assert_eq!(partie.attaques_a_apprendre(loup).unwrap().len(), 4);
+        assert_eq!(
+            partie.apprendre_attaque(loup, &AttaqueId::new("a"), Some(0)),
+            Err(ErreurApprentissage::OubliInutile)
+        );
+        for id in ["a", "b", "c"] {
+            assert_eq!(
+                partie.apprendre_attaque(loup, &AttaqueId::new(id), None),
+                Ok(None)
+            );
+        }
+        // Il connaît coup, a, b et c : il doit en oublier une.
+        assert_eq!(
+            partie.apprendre_attaque(loup, &AttaqueId::new("d"), None),
+            Err(ErreurApprentissage::OubliManquant)
+        );
+        assert_eq!(
+            partie.apprendre_attaque(loup, &AttaqueId::new("d"), Some(4)),
+            Err(ErreurApprentissage::Attaque(
+                ErreurAttaquesMonstre::PositionInexistante(4)
+            ))
+        );
+        let oubliee = partie
+            .apprendre_attaque(loup, &AttaqueId::new("d"), Some(0))
+            .unwrap()
+            .unwrap();
+        assert_eq!(oubliee.id().as_str(), "coup");
+        // Coup, appris par son espèce au niveau 1, se réapprend.
+        let a_apprendre = partie.attaques_a_apprendre(loup).unwrap();
+        assert_eq!(a_apprendre.len(), 1);
+        assert_eq!(a_apprendre[0].id().as_str(), "coup");
+        assert_eq!(
+            partie.attaques_a_apprendre(Emplacement::Camp(0)),
+            Err(ErreurCollection::EmplacementInexistant(Emplacement::Camp(
+                0
+            )))
+        );
+    }
+
+    #[test]
+    fn les_capsules_des_coffres_ne_sont_acquises_qu_au_retour() {
+        let (zones, piste) = carte();
+        let mut zones = zones;
+        let niveau = Niveau::new(5).unwrap();
+        zones[0] = Zone::new(
+            ZoneId::new("bois"),
+            "bois",
+            (niveau, niveau),
+            1,
+            vec![espece("loup")],
+            vec![],
+            crate::donnees_de_test::parametres_expedition_automatique(),
+            crate::expedition::ParametresCoffre::new(
+                10..=10,
+                vec![capsule("a", Type::Normal), capsule("b", Type::Normal)],
+            )
+            .unwrap(),
+        )
+        .unwrap();
+        let mut partie = partie();
+        partie.obtenir_capsule(capsule("a", Type::Normal));
+        let mut expedition = partie
+            .partir_en_expedition(&zones[0], &piste, &mut AleatoireScripte::new([4]))
+            .unwrap();
+        // Un coffre, où seule la capsule b est nouvelle.
+        expedition.etape_suivante(&mut AleatoireScripte::new([81, 1, 20]));
+        assert_eq!(partie.capsules().len(), 1);
+        partie.rentrer_au_camp(&expedition, &piste);
+        let ids: Vec<&str> = partie
+            .capsules()
+            .iter()
+            .map(|capsule| capsule.id().as_str())
+            .collect();
+        assert_eq!(ids, vec!["a", "b"]);
     }
 
     #[test]
@@ -1097,6 +1324,7 @@ mod tests {
             inventaire: partie.inventaire().clone(),
             argent: partie.argent(),
             marchand_au_camp: partie.marchand_au_camp(),
+            capsules: partie.capsules().to_vec(),
             codex: partie.codex().clone(),
             zones_explorees: partie.zones_explorees().to_vec(),
             indices_trouves: partie.indices_trouves(),

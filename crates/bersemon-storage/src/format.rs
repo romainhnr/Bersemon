@@ -1,4 +1,4 @@
-//! Format JSON de la sauvegarde, version 5, et sa conversion vers les types
+//! Format JSON de la sauvegarde, version 6, et sa conversion vers les types
 //! du noyau. Les énumérations sont écrites avec des noms fixés ici, et non
 //! avec les noms Rust, pour qu'un renommage dans le code ne casse pas les
 //! sauvegardes existantes.
@@ -28,15 +28,15 @@ use bersemon_core::zone::ZoneId;
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 5;
+pub(crate) const VERSION: u64 = 6;
 
 /// La version 2 ajoute la traque de l'Apôtre et le tutoriel, la version 3
 /// les expéditions automatiques et les attaques à choisir à leur retour, la
-/// version 4 l'argent, la version 5 le marchand. Une sauvegarde d'une
-/// version précédente se lit avec cette structure : les champs ajoutés y
-/// prennent leur valeur de début de partie.
+/// version 4 l'argent, la version 5 le marchand, la version 6 les capsules
+/// d'attaque. Une sauvegarde d'une version précédente se lit avec cette
+/// structure : les champs ajoutés y prennent leur valeur de début de partie.
 #[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct SauvegardeV5 {
+pub(crate) struct SauvegardeV6 {
     pub(crate) version: u64,
     heros: HerosV1,
     equipe: Vec<MonstreV1>,
@@ -46,6 +46,9 @@ pub(crate) struct SauvegardeV5 {
     argent: u32,
     #[serde(default)]
     marchand_au_camp: bool,
+    /// Identifiants de leurs attaques.
+    #[serde(default)]
+    capsules: Vec<String>,
     codex: CodexV1,
     zones_explorees: Vec<String>,
     #[serde(default)]
@@ -112,9 +115,9 @@ struct CodexV1 {
     capturees: Vec<String>,
 }
 
-pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV5 {
+pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV6 {
     let collection = partie.collection();
-    SauvegardeV5 {
+    SauvegardeV6 {
         version: VERSION,
         heros: HerosV1 {
             nom: partie.heros().nom().as_str().to_string(),
@@ -125,6 +128,11 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV5 {
         potions: partie.inventaire().potions(),
         argent: partie.argent(),
         marchand_au_camp: partie.marchand_au_camp(),
+        capsules: partie
+            .capsules()
+            .iter()
+            .map(|capsule| capsule.id().as_str().to_string())
+            .collect(),
         codex: CodexV1 {
             rencontrees: ids(partie.codex().rencontrees()),
             capturees: ids(partie.codex().capturees()),
@@ -163,7 +171,7 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV5 {
 }
 
 pub(crate) fn vers_partie(
-    sauvegarde: SauvegardeV5,
+    sauvegarde: SauvegardeV6,
     catalogue: &dyn Catalogue,
 ) -> Result<Partie, ErreurSauvegarde> {
     let heros = Heros::new(
@@ -184,6 +192,15 @@ pub(crate) fn vers_partie(
         .collect::<Result<Vec<_>, _>>()?;
     let collection = Collection::restaurer(equipe, camp)
         .map_err(|erreur| ErreurSauvegarde::Incoherente(erreur.to_string()))?;
+    let capsules = sauvegarde
+        .capsules
+        .into_iter()
+        .map(|id| {
+            catalogue
+                .capsule(&AttaqueId::new(id.as_str()))
+                .ok_or(ErreurSauvegarde::CapsuleInconnue(id))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
     let mut inventaire = Inventaire::default();
     inventaire.ajouter_potions(sauvegarde.potions);
     let mut codex = Codex::default();
@@ -219,6 +236,7 @@ pub(crate) fn vers_partie(
         inventaire,
         argent: sauvegarde.argent,
         marchand_au_camp: sauvegarde.marchand_au_camp,
+        capsules,
         codex,
         zones_explorees,
         indices_trouves: sauvegarde.indices_trouves,
@@ -318,13 +336,23 @@ fn vers_monstre(
     let espece = catalogue
         .espece(&EspeceId::new(monstre.espece.as_str()))
         .ok_or_else(|| ErreurSauvegarde::EspeceInconnue(monstre.espece.clone()))?;
+    // Une attaque hors de la liste de l'espèce vient d'une capsule de son
+    // type (section 13.10).
     let attaques = monstre
         .attaques
         .iter()
         .map(|id| {
+            let id_attaque = AttaqueId::new(id.as_str());
+            let de_capsule = || {
+                catalogue
+                    .capsule(&id_attaque)
+                    .filter(|capsule| capsule.convient_a(&espece))
+                    .map(|capsule| capsule.attaque().clone())
+            };
             espece
-                .attaque_apprise(&AttaqueId::new(id.as_str()))
+                .attaque_apprise(&id_attaque)
                 .cloned()
+                .or_else(de_capsule)
                 .ok_or_else(|| ErreurSauvegarde::AttaqueInconnue {
                     espece: monstre.espece.clone(),
                     attaque: id.clone(),

@@ -10,7 +10,7 @@ use crate::combat::{rapport_experience, remplacement, renoncement, soin_de_potio
 use crate::erreurs::erreur_sauvegarde;
 use crate::expeditions_automatiques;
 use crate::monstres::{nom, nom_sauvage};
-use crate::partie::{argent, potions};
+use crate::partie::{argent, capsule as nom_de_capsule, enumerer, potions};
 
 /// Une ou plusieurs lignes de récit.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -46,13 +46,17 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
         Evenement::Coffre {
             potions: nombre,
             argent: montant,
+            capsule,
         } => {
-            let contenu = if *montant == 0 {
-                potions(*nombre)
-            } else {
-                format!("{} et {}", potions(*nombre), argent(*montant))
-            };
-            (format!("Vous trouvez un coffre : {contenu}."), false)
+            let mut contenu = vec![potions(*nombre)];
+            if *montant > 0 {
+                contenu.push(argent(*montant));
+            }
+            contenu.extend(capsule.iter().map(nom_de_capsule));
+            (
+                format!("Vous trouvez un coffre : {}.", enumerer(&contenu)),
+                false,
+            )
         }
         Evenement::MonstreRarePacifique(monstre) => (
             format!(
@@ -84,6 +88,10 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
         Evenement::AttaqueAbandonnee { monstre, nouvelle } => {
             (renoncement(monstre, nouvelle), false)
         }
+        Evenement::AttaqueApprise { monstre, attaque } => (
+            format!("{} apprend {}.", nom(monstre, Cote::Joueur), attaque.nom()),
+            false,
+        ),
         Evenement::RejointLEquipe(monstre) => {
             (format!("{} rejoint votre équipe.", monstre.nom()), false)
         }
@@ -102,14 +110,22 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             false,
         ),
         Evenement::Epilogue(epilogue) => (epilogue.clone(), true),
-        Evenement::Defaite { argent_perdu } => {
-            let texte = if *argent_perdu == 0 {
+        Evenement::Defaite {
+            argent_perdu,
+            capsules_perdues,
+        } => {
+            let mut perdu = Vec::new();
+            if *argent_perdu > 0 {
+                perdu.push(argent(*argent_perdu));
+            }
+            perdu.extend(capsules_perdues.iter().map(nom_de_capsule));
+            let texte = if perdu.is_empty() {
                 "Toute votre équipe est KO : vous rentrez au camp et perdez vos potions."
                     .to_string()
             } else {
                 format!(
-                    "Toute votre équipe est KO : vous rentrez au camp et perdez vos potions, ainsi que l'argent trouvé en chemin ({}).",
-                    argent(*argent_perdu)
+                    "Toute votre équipe est KO : vous rentrez au camp et perdez vos potions, ainsi que ce que vous aviez trouvé en chemin : {}.",
+                    enumerer(&perdu)
                 )
             };
             (texte, true)
@@ -126,6 +142,10 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
         Evenement::ArgentRapporte(montant) => {
             (format!("Vous rapportez {}.", argent(*montant)), false)
         }
+        Evenement::CapsuleRapportee(capsule) => (
+            format!("Vous rapportez {}.", nom_de_capsule(capsule)),
+            false,
+        ),
         Evenement::Indice { numero, texte } => (format!("Indice {numero} : {texte}"), true),
         Evenement::NouvelleZone(zone) => (
             format!("Une nouvelle zone apparaît sur la carte : {zone}."),
@@ -154,6 +174,14 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             format!(
                 "Vous vendez {} au marchand pour {}.",
                 monstre.nom(),
+                argent(*prix)
+            ),
+            false,
+        ),
+        Evenement::CapsuleAchetee { capsule, prix } => (
+            format!(
+                "Vous achetez {} pour {}.",
+                nom_de_capsule(capsule),
                 argent(*prix)
             ),
             false,
@@ -196,6 +224,7 @@ mod tests {
         let recit = &raconter(&[Evenement::Coffre {
             potions: 2,
             argent: 15,
+            capsule: None,
         }])[0];
         assert_eq!(
             recit.texte,
@@ -204,16 +233,36 @@ mod tests {
         let sans_argent = &raconter(&[Evenement::Coffre {
             potions: 1,
             argent: 0,
+            capsule: None,
         }])[0];
         assert_eq!(sans_argent.texte, "Vous trouvez un coffre : 1 potion.");
+        let avec_capsule = &raconter(&[Evenement::Coffre {
+            potions: 1,
+            argent: 12,
+            capsule: Some(brasier()),
+        }])[0];
+        assert_eq!(
+            avec_capsule.texte,
+            "Vous trouvez un coffre : 1 potion, 12 pièces d'argent et la capsule d'attaque Brasier."
+        );
+    }
+
+    fn brasier() -> bersemon_core::capsule::Capsule {
+        use bersemon_core::catalogue::Catalogue;
+        bersemon_core::contenu::ContenuV1::new()
+            .capsule(&bersemon_core::attaque::AttaqueId::new("brasier"))
+            .unwrap()
     }
 
     #[test]
     fn une_defaite_dit_l_argent_perdu() {
-        let recit = &raconter(&[Evenement::Defaite { argent_perdu: 1 }])[0];
+        let recit = &raconter(&[Evenement::Defaite {
+            argent_perdu: 1,
+            capsules_perdues: vec![brasier()],
+        }])[0];
         assert_eq!(
             recit.texte,
-            "Toute votre équipe est KO : vous rentrez au camp et perdez vos potions, ainsi que l'argent trouvé en chemin (1 pièce d'argent)."
+            "Toute votre équipe est KO : vous rentrez au camp et perdez vos potions, ainsi que ce que vous aviez trouvé en chemin : 1 pièce d'argent et la capsule d'attaque Brasier."
         );
     }
 

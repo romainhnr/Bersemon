@@ -8,7 +8,7 @@ use bersemon_core::catalogue::Catalogue;
 use bersemon_core::partie::Partie;
 use bersemon_core::sauvegarde::{ErreurSauvegarde, SauvegardeRepository};
 
-use crate::format::{self, SauvegardeV5, VERSION};
+use crate::format::{self, SauvegardeV6, VERSION};
 
 pub struct FichierJson {
     chemin: PathBuf,
@@ -38,7 +38,7 @@ impl FichierJson {
         if !(1..=VERSION).contains(&version) {
             return Err(ErreurSauvegarde::VersionInconnue(version));
         }
-        let sauvegarde: SauvegardeV5 = serde_json::from_value(valeur)
+        let sauvegarde: SauvegardeV6 = serde_json::from_value(valeur)
             .map_err(|erreur| ErreurSauvegarde::Illisible(erreur.to_string()))?;
         format::vers_partie(sauvegarde, catalogue)
     }
@@ -77,6 +77,7 @@ fn acces(erreur: io::Error) -> ErreurSauvegarde {
 mod tests {
     use super::*;
     use bersemon_core::attaque::{Attaque, AttaqueId, Categorie, EffetSecondaire};
+    use bersemon_core::capsule::Capsule;
     use bersemon_core::collection::Emplacement;
     use bersemon_core::espece::{AttaqueApprise, Espece, EspeceId, Role};
     use bersemon_core::expedition::ParametresCoffre;
@@ -98,6 +99,7 @@ mod tests {
     struct CatalogueDeTest {
         especes: Vec<Espece>,
         zones: Vec<Zone>,
+        capsules: Vec<Capsule>,
     }
 
     impl Catalogue for CatalogueDeTest {
@@ -111,6 +113,26 @@ mod tests {
         fn zone(&self, id: &ZoneId) -> Option<Zone> {
             self.zones.iter().find(|zone| zone.id() == id).cloned()
         }
+
+        fn capsule(&self, id: &AttaqueId) -> Option<Capsule> {
+            self.capsules
+                .iter()
+                .find(|capsule| capsule.id() == id)
+                .cloned()
+        }
+    }
+
+    fn capsule(id: &str, type_attaque: Type) -> Capsule {
+        let attaque = Attaque::new(
+            AttaqueId::new(id),
+            id,
+            type_attaque,
+            Categorie::Physique,
+            70,
+            100,
+        )
+        .unwrap();
+        Capsule::new(attaque, 150)
     }
 
     fn espece(id: &str) -> Espece {
@@ -167,15 +189,21 @@ mod tests {
             vec![espece("loup")],
             vec![],
             parametres,
-            ParametresCoffre::new(10..=25).unwrap(),
+            ParametresCoffre::new(10..=25, Vec::new()).unwrap(),
         )
         .unwrap()
     }
 
+    /// Les espèces de test sont de type Normal : la capsule « vague » ne
+    /// leur convient pas.
     fn catalogue() -> CatalogueDeTest {
         CatalogueDeTest {
             especes: vec![espece("salamandre"), espece("loup")],
             zones: vec![lisiere()],
+            capsules: vec![
+                capsule("grand-coup", Type::Normal),
+                capsule("vague", Type::Eau),
+            ],
         }
     }
 
@@ -215,6 +243,7 @@ mod tests {
             inventaire: partie.inventaire().clone(),
             argent: 135,
             marchand_au_camp: true,
+            capsules: vec![capsule("grand-coup", Type::Normal)],
             codex: partie.codex().clone(),
             zones_explorees: vec![ZoneId::new("lisiere")],
             indices_trouves: 3,
@@ -224,6 +253,11 @@ mod tests {
             attaques_a_choisir,
         };
         let mut partie = Partie::restaurer(etat(&partie, Vec::new())).unwrap();
+        // Croc apprend l'attaque de la capsule, hors de la liste de son
+        // espèce.
+        partie
+            .apprendre_attaque(Emplacement::Equipe(1), &AttaqueId::new("grand-coup"), None)
+            .unwrap();
         // Le premier loup du camp part en expédition automatique ; l'autre
         // attend de choisir une attaque, comme au retour d'une expédition.
         partie
@@ -330,11 +364,46 @@ mod tests {
 
     #[test]
     fn version_inconnue() {
-        let texte = texte_de_partie().replacen("\"version\":5", "\"version\":6", 1);
+        let texte = texte_de_partie().replacen("\"version\":6", "\"version\":7", 1);
         assert_eq!(
             charger_texte(&texte),
-            Err(ErreurSauvegarde::VersionInconnue(6))
+            Err(ErreurSauvegarde::VersionInconnue(7))
         );
+    }
+
+    #[test]
+    fn une_sauvegarde_en_version_5_n_a_pas_de_capsule() {
+        let partie = partie_complete();
+        assert_eq!(partie.capsules().len(), 1);
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        let objet = valeur.as_object_mut().unwrap();
+        objet.insert("version".to_string(), 5.into());
+        objet.remove("capsules");
+        let rechargee = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        assert!(rechargee.capsules().is_empty());
+        // L'attaque déjà apprise reste : la capsule existe toujours dans le
+        // jeu.
+        assert_eq!(rechargee.collection(), partie.collection());
+    }
+
+    #[test]
+    fn capsule_disparue_du_jeu() {
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        let objet = valeur.as_object_mut().unwrap();
+        objet.insert("capsules".to_string(), serde_json::json!(["eclair"]));
+        assert_eq!(
+            charger_texte(&valeur.to_string()),
+            Err(ErreurSauvegarde::CapsuleInconnue("eclair".to_string()))
+        );
+    }
+
+    #[test]
+    fn attaque_d_une_capsule_d_un_autre_type_refusee() {
+        let texte = texte_de_partie().replace("\"grand-coup\"", "\"vague\"");
+        assert!(matches!(
+            charger_texte(&texte),
+            Err(ErreurSauvegarde::AttaqueInconnue { .. })
+        ));
     }
 
     #[test]
@@ -345,6 +414,7 @@ mod tests {
         let objet = valeur.as_object_mut().unwrap();
         objet.insert("version".to_string(), 4.into());
         objet.remove("marchand_au_camp");
+        objet.remove("capsules");
         let rechargee = charger_texte(&valeur.to_string()).unwrap().unwrap();
         assert!(!rechargee.marchand_au_camp());
         assert_eq!(rechargee.argent(), partie.argent());
@@ -359,6 +429,7 @@ mod tests {
         objet.insert("version".to_string(), 3.into());
         objet.remove("argent");
         objet.remove("marchand_au_camp");
+        objet.remove("capsules");
         let rechargee = charger_texte(&valeur.to_string()).unwrap().unwrap();
         assert_eq!(rechargee.argent(), 0);
         assert_eq!(rechargee.collection(), partie.collection());

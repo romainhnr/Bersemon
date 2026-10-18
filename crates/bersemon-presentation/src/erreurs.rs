@@ -1,5 +1,6 @@
 //! Choix refusés et sauvegardes impossibles, expliqués au joueur.
 
+use bersemon_core::capsule::ErreurApprentissage;
 use bersemon_core::collection::{Collection, ErreurCollection};
 use bersemon_core::combat::ErreurCombat;
 use bersemon_core::deroulement::{ActionDeGestion, Choix, ErreurChoix};
@@ -28,6 +29,8 @@ pub fn erreur_de_choix(choix: &Choix, erreur: &ErreurChoix) -> String {
         }
         ErreurChoix::ExpeditionAutomatique(erreur) => erreur_expedition_automatique(erreur),
         ErreurChoix::Marchand(erreur) => erreur_marchand(erreur),
+        ErreurChoix::CapsuleInconnue(_) => "Le marchand ne vend pas cette capsule.".to_string(),
+        ErreurChoix::Apprentissage(erreur) => erreur_apprentissage(erreur),
         autre => format!("Action impossible : {autre}."),
     }
 }
@@ -46,7 +49,28 @@ pub fn erreur_marchand(erreur: &ErreurMarchand) -> String {
             reste
         ),
         ErreurMarchand::QuantiteNulle => "Choisissez au moins une potion.".to_string(),
+        ErreurMarchand::CapsuleDejaPossedee => {
+            "Vous avez déjà cette capsule : elle sert sans s'user.".to_string()
+        }
         ErreurMarchand::Collection(erreur) => erreur_collection(erreur),
+    }
+}
+
+pub fn erreur_apprentissage(erreur: &ErreurApprentissage) -> String {
+    match erreur {
+        ErreurApprentissage::Collection(erreur) => erreur_collection(erreur),
+        ErreurApprentissage::AttaqueInaccessible => {
+            "Ce monstre ne peut pas apprendre cette attaque au camp.".to_string()
+        }
+        ErreurApprentissage::OubliManquant => {
+            "Ce monstre connaît déjà 4 attaques : choisissez celle à oublier.".to_string()
+        }
+        ErreurApprentissage::OubliInutile => {
+            "Ce monstre a encore de la place : il n'a rien à oublier.".to_string()
+        }
+        ErreurApprentissage::Attaque(erreur) => {
+            format!("Impossible d'apprendre cette attaque : {erreur}.")
+        }
     }
 }
 
@@ -109,6 +133,9 @@ pub fn erreur_sauvegarde(erreur: &ErreurSauvegarde) -> String {
         }
         ErreurSauvegarde::ZoneInconnue(zone) => {
             format!("elle cite une zone qui n'existe plus ({zone})")
+        }
+        ErreurSauvegarde::CapsuleInconnue(capsule) => {
+            format!("elle cite une capsule d'attaque qui n'existe plus ({capsule})")
         }
         ErreurSauvegarde::AttaqueInconnue { attaque, .. } => {
             format!("elle cite une attaque qui n'existe plus ({attaque})")
