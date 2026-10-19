@@ -2,8 +2,8 @@
 
 use std::fmt;
 
-/// Types de la V1. Stellaire, Obscur, Lumière et Son viendront après la V1
-/// (Q5).
+/// Types de la V1, puis le Stellaire, celui du seul Schnoz. Obscur, Lumière
+/// et Son viendront plus tard (Q5).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Type {
     Normal,
@@ -24,10 +24,11 @@ pub enum Type {
     Dragon,
     Tenebres,
     Feerique,
+    Stellaire,
 }
 
 impl Type {
-    pub const TOUS: [Type; 18] = [
+    pub const TOUS: [Type; 19] = [
         Type::Normal,
         Type::Combat,
         Type::Vol,
@@ -46,6 +47,7 @@ impl Type {
         Type::Dragon,
         Type::Tenebres,
         Type::Feerique,
+        Type::Stellaire,
     ];
 
     /// Nom du type tel qu'il s'écrit dans le jeu, commun à toutes les
@@ -70,6 +72,7 @@ impl Type {
             Type::Dragon => "Dragon",
             Type::Tenebres => "Ténèbres",
             Type::Feerique => "Féérique",
+            Type::Stellaire => "Stellaire",
         }
     }
 }
@@ -180,7 +183,8 @@ enum Rapport {
 }
 
 /// Table de Pokémon, avec une seule modification propre à Bersemon : le type
-/// Glace résiste au type Eau (section 5.2).
+/// Glace résiste au type Eau (section 5.2). Le type Stellaire est neutre, en
+/// attaque comme en défense, tant que l'Obscur, son opposé, n'existe pas.
 fn rapport(attaque: Type, defense: Type) -> Rapport {
     use Type::*;
     let (super_efficace_contre, peu_efficace_contre, sans_effet_sur): (&[Type], &[Type], &[Type]) =
@@ -231,6 +235,7 @@ fn rapport(attaque: Type, defense: Type) -> Rapport {
             Dragon => (&[Dragon], &[Acier], &[Feerique]),
             Tenebres => (&[Spectre, Psychique], &[Combat, Tenebres, Feerique], &[]),
             Feerique => (&[Combat, Dragon, Tenebres], &[Poison, Acier, Feu], &[]),
+            Stellaire => (&[], &[], &[]),
         };
     if sans_effet_sur.contains(&defense) {
         Rapport::Immunite
@@ -270,6 +275,14 @@ mod tests {
             }
         }
         assert_eq!((faiblesses, resistances, immunites), (51, 62, 8));
+    }
+
+    #[test]
+    fn le_stellaire_est_neutre_en_attaque_comme_en_defense() {
+        for autre in Type::TOUS {
+            assert_eq!(rapport(Stellaire, autre), Rapport::Neutre);
+            assert_eq!(rapport(autre, Stellaire), Rapport::Neutre);
+        }
     }
 
     #[test]

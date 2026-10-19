@@ -15,6 +15,10 @@ use crate::monstre::{Monstre, tirer_shiny};
 use crate::niveau::Niveau;
 use crate::stats::ValeursInternes;
 
+/// Un monstre rare sur 20 est le monstre caché, dans toute zone qui en a un
+/// (section 9.2).
+pub const CHANCES_MONSTRE_CACHE: u32 = 20;
+
 /// Identifiant stable d'une zone, enregistré dans la sauvegarde pour savoir
 /// quelles zones sont explorées.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -91,6 +95,8 @@ pub struct Zone {
     taille_max_groupe: u8,
     especes: Vec<Espece>,
     rares: Vec<EspeceRare>,
+    /// Il remplace parfois un monstre rare (section 9.2).
+    cache: Option<EspeceRare>,
     expedition_automatique: ParametresExpeditionAutomatique,
     coffre: ParametresCoffre,
 }
@@ -130,15 +136,7 @@ impl Zone {
         }
         let toutes = especes.iter().chain(rares.iter().map(|rare| &rare.espece));
         for espece in toutes {
-            for valeur in niveau_min.valeur()..=niveau_max.valeur() {
-                let niveau = Niveau::new(valeur).map_err(|_| ErreurZone::NiveauxInverses)?;
-                Monstre::creer(espece.clone(), niveau, ValeursInternes::default(), false).map_err(
-                    |_| ErreurZone::EspeceInvalide {
-                        espece: espece.id().clone(),
-                        niveau,
-                    },
-                )?;
-            }
+            verifier_espece(espece, niveau_min, niveau_max)?;
         }
         Ok(Self {
             id,
@@ -149,9 +147,18 @@ impl Zone {
             taille_max_groupe,
             especes,
             rares,
+            cache: None,
             expedition_automatique,
             coffre,
         })
+    }
+
+    /// Comme les autres espèces, le monstre caché doit pouvoir être créé à
+    /// chaque niveau de la zone.
+    pub fn avec_monstre_cache(mut self, cache: EspeceRare) -> Result<Self, ErreurZone> {
+        verifier_espece(&cache.espece, self.niveau_min, self.niveau_max)?;
+        self.cache = Some(cache);
+        Ok(self)
     }
 
     pub fn id(&self) -> &ZoneId {
@@ -185,6 +192,10 @@ impl Zone {
         &self.rares
     }
 
+    pub fn monstre_cache(&self) -> Option<&EspeceRare> {
+        self.cache.as_ref()
+    }
+
     /// Durée, dégâts et récompenses d'une expédition automatique (section
     /// 12.8).
     pub fn expedition_automatique(&self) -> &ParametresExpeditionAutomatique {
@@ -208,13 +219,16 @@ impl Zone {
             .collect()
     }
 
-    /// `None` si la zone n'a pas de monstre rare. Tirages : espèce rare, puis
-    /// ceux de `generer_monstre`.
+    /// `None` si la zone n'a pas de monstre rare, ou seulement un monstre
+    /// caché que le tirage n'a pas donné. Tirages : la chance du monstre
+    /// caché, si la zone en a un ; à défaut de lui, l'espèce rare ; puis ceux
+    /// de `generer_monstre`.
     pub fn generer_monstre_rare(&self, aleatoire: &mut dyn Aleatoire) -> Option<MonstreRare> {
-        if self.rares.is_empty() {
-            return None;
-        }
-        let rare = &self.rares[tirer_position(self.rares.len(), aleatoire)];
+        let rare = match &self.cache {
+            Some(cache) if aleatoire.tirer(1..=CHANCES_MONSTRE_CACHE) == 1 => cache,
+            _ if self.rares.is_empty() => return None,
+            _ => &self.rares[tirer_position(self.rares.len(), aleatoire)],
+        };
         Some(MonstreRare {
             monstre: self.generer_monstre(&rare.espece, aleatoire),
             pacifique: rare.pacifique,
@@ -235,6 +249,25 @@ impl Zone {
         Monstre::creer(espece.clone(), niveau, valeurs_internes, shiny)
             .expect("espèce vérifiée à chaque niveau par Zone::new")
     }
+}
+
+/// L'espèce doit apprendre au moins une attaque, et aucune en double, jusqu'à
+/// chacun de ces niveaux.
+fn verifier_espece(
+    espece: &Espece,
+    niveau_min: Niveau,
+    niveau_max: Niveau,
+) -> Result<(), ErreurZone> {
+    for valeur in niveau_min.valeur()..=niveau_max.valeur() {
+        let niveau = Niveau::new(valeur).map_err(|_| ErreurZone::NiveauxInverses)?;
+        Monstre::creer(espece.clone(), niveau, ValeursInternes::default(), false).map_err(
+            |_| ErreurZone::EspeceInvalide {
+                espece: espece.id().clone(),
+                niveau,
+            },
+        )?;
+    }
+    Ok(())
 }
 
 /// Aucun tirage quand la plage n'a qu'une valeur.
@@ -326,6 +359,74 @@ mod tests {
         assert_eq!(
             sans_rare.generer_monstre_rare(&mut AleatoireScripte::new([])),
             None
+        );
+    }
+
+    fn cache() -> EspeceRare {
+        EspeceRare {
+            espece: espece("schnoz"),
+            pacifique: true,
+        }
+    }
+
+    #[test]
+    fn le_monstre_cache_remplace_un_monstre_rare_sur_20() {
+        let rare = EspeceRare {
+            espece: espece("cerf-blanc"),
+            pacifique: true,
+        };
+        let zone = zone((5, 5), 1, vec![espece("loup")], vec![rare])
+            .unwrap()
+            .avec_monstre_cache(cache())
+            .unwrap();
+        // 1 sur 20 : le monstre caché, puis son shiny et ses valeurs internes.
+        let mut aleatoire = AleatoireScripte::new([1, 2, 0, 0, 0, 0, 0, 0]);
+        let monstre = zone.generer_monstre_rare(&mut aleatoire).unwrap();
+        assert_eq!(monstre.monstre.espece().id().as_str(), "schnoz");
+        // Au-delà, le seul monstre rare de la zone, sans tirage de position.
+        let mut aleatoire = AleatoireScripte::new([2, 2, 0, 0, 0, 0, 0, 0]);
+        let monstre = zone.generer_monstre_rare(&mut aleatoire).unwrap();
+        assert_eq!(monstre.monstre.espece().id().as_str(), "cerf-blanc");
+    }
+
+    #[test]
+    fn sans_autre_monstre_rare_le_monstre_cache_peut_manquer() {
+        let zone = zone((5, 5), 1, vec![espece("loup")], vec![])
+            .unwrap()
+            .avec_monstre_cache(cache())
+            .unwrap();
+        assert_eq!(
+            zone.generer_monstre_rare(&mut AleatoireScripte::new([20])),
+            None
+        );
+        let mut aleatoire = AleatoireScripte::new([1, 2, 0, 0, 0, 0, 0, 0]);
+        assert!(zone.generer_monstre_rare(&mut aleatoire).is_some());
+    }
+
+    #[test]
+    fn monstre_cache_invalide_refuse() {
+        let tardif = EspeceRare {
+            espece: Espece::new(
+                EspeceId::new("tardif"),
+                "Tardif",
+                TypesMonstre::new(&[Type::Feu]).unwrap(),
+                Role::Soutien,
+                stats_uniformes(50),
+                64,
+                vec![AttaqueApprise {
+                    niveau: niveau(6),
+                    attaque: attaque("coup", Type::Normal, Categorie::Physique, 40, 100),
+                }],
+            ),
+            pacifique: true,
+        };
+        let zone = zone((5, 7), 1, vec![espece("loup")], vec![]).unwrap();
+        assert_eq!(
+            zone.avec_monstre_cache(tardif),
+            Err(ErreurZone::EspeceInvalide {
+                espece: EspeceId::new("tardif"),
+                niveau: niveau(5),
+            })
         );
     }
 

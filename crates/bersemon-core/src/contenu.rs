@@ -118,6 +118,11 @@ impl ContenuV1 {
                 .cloned()
                 .unwrap_or_else(|| panic!("espèce {id} absente du contenu"))
         };
+        // Pacifique, il se rencontre dans toutes les zones (section 9.2).
+        let schnoz = || EspeceRare {
+            espece: trouver("schnoz"),
+            pacifique: true,
+        };
         let lisiere = Zone::new(
             ZoneId::new("lisiere"),
             "Lisière du Bois-Sombre",
@@ -132,6 +137,7 @@ impl ContenuV1 {
             expedition_automatique(1, 15..=60, 100..=200, 0..=1, 15..=30),
             coffre(10..=25, capsules_de("lisiere")),
         )
+        .and_then(|zone| zone.avec_monstre_cache(schnoz()))
         .expect("Lisière conforme aux règles");
         let marais = Zone::new(
             ZoneId::new("marais"),
@@ -152,6 +158,7 @@ impl ContenuV1 {
             expedition_automatique(2, 40..=120, 300..=600, 1..=2, 40..=80),
             coffre(25..=50, capsules_de("marais")),
         )
+        .and_then(|zone| zone.avec_monstre_cache(schnoz()))
         .expect("Marais conforme aux règles");
         let baron = Apotre::new(trouver("baron-pendu"), &marais, AVANT_LE_BARON, EPILOGUE)
             .expect("Baron pendu conforme aux règles");
@@ -279,7 +286,7 @@ const fn avec_effet(fiche: FicheAttaque, statut: Statut, chance: u8) -> FicheAtt
 }
 
 /// Section 1 de docs/contenu-v1.md, dans le même ordre.
-const ATTAQUES: [FicheAttaque; 44] = [
+const ATTAQUES: [FicheAttaque; 46] = [
     fiche(
         "souffle-chaud",
         "Souffle chaud",
@@ -578,6 +585,23 @@ const ATTAQUES: [FicheAttaque; 44] = [
         85,
         90,
     ),
+    // Attaques du Schnoz, monstre caché.
+    fiche(
+        "eclat-astral",
+        "Éclat astral",
+        Type::Stellaire,
+        Speciale,
+        40,
+        100,
+    ),
+    fiche(
+        "rayon-astral",
+        "Rayon astral",
+        Type::Stellaire,
+        Speciale,
+        75,
+        100,
+    ),
 ];
 
 struct FicheCapsule {
@@ -636,8 +660,8 @@ struct FicheEspece {
 }
 
 /// Section 2 de docs/contenu-v1.md, dans l'ordre du codex : les monstres de
-/// départ, les communs, les rares, puis l'Apôtre.
-const ESPECES: [FicheEspece; 12] = [
+/// départ, les communs, les rares, l'Apôtre, puis le monstre caché.
+const ESPECES: [FicheEspece; 13] = [
     FicheEspece {
         id: "salamandre",
         nom: "Salamandre",
@@ -803,6 +827,20 @@ const ESPECES: [FicheEspece; 12] = [
             (5, "lamentation"),
             (10, "sentence"),
             (15, "trappe-du-gibet"),
+        ],
+    },
+    FicheEspece {
+        id: "schnoz",
+        nom: "Schnoz",
+        types: &[Type::Stellaire],
+        role: Role::Soutien,
+        stats_de_base: [60, 50, 60, 90, 90, 100],
+        rendement_experience: 200,
+        rarete: Rarete::Rare,
+        apprentissage: &[
+            (1, "eclat-astral"),
+            (1, "lueur-trompeuse"),
+            (10, "rayon-astral"),
         ],
     },
 ];
@@ -1020,13 +1058,17 @@ mod tests {
     #[test]
     fn contenu_conforme_aux_regles() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.especes().len(), 12);
+        assert_eq!(contenu.especes().len(), 13);
         assert_eq!(contenu.zones().len(), 2);
         assert_eq!(contenu.piste().indices().len(), 3);
         // Toute espèce rencontrée en zone se retrouve au chargement d'une
         // sauvegarde.
         for zone in contenu.zones() {
-            let rares = zone.rares().iter().map(|rare| &rare.espece);
+            let rares = zone
+                .rares()
+                .iter()
+                .chain(zone.monstre_cache())
+                .map(|rare| &rare.espece);
             for espece in zone.especes().iter().chain(rares) {
                 assert_eq!(contenu.espece(espece.id()).as_ref(), Some(espece));
             }
@@ -1039,7 +1081,8 @@ mod tests {
         let rares: Vec<&EspeceId> = contenu
             .zones()
             .iter()
-            .flat_map(|zone| zone.rares().iter().map(|rare| rare.espece.id()))
+            .flat_map(|zone| zone.rares().iter().chain(zone.monstre_cache()))
+            .map(|rare| rare.espece.id())
             .collect();
         let apotre = contenu.piste().apotre().espece().id();
         for espece in contenu.especes() {
@@ -1052,6 +1095,23 @@ mod tests {
             };
             assert_eq!(espece.rarete(), attendue, "{}", espece.id().as_str());
         }
+    }
+
+    #[test]
+    fn le_schnoz_seul_stellaire_se_cache_dans_chaque_zone() {
+        let contenu = ContenuV1::new();
+        for zone in contenu.zones() {
+            let cache = zone.monstre_cache().unwrap();
+            assert_eq!(cache.espece.id().as_str(), "schnoz");
+            assert!(cache.pacifique);
+        }
+        let stellaires: Vec<&str> = contenu
+            .especes()
+            .iter()
+            .filter(|espece| espece.types().liste().contains(&Type::Stellaire))
+            .map(|espece| espece.id().as_str())
+            .collect();
+        assert_eq!(stellaires, vec!["schnoz"]);
     }
 
     #[test]

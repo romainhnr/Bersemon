@@ -1456,6 +1456,7 @@ mod tests {
     use super::*;
     use crate::aleatoire::{AleatoireScripte, GenerateurAleatoire};
     use crate::catalogue::Catalogue;
+    use crate::codex::EtatCodex;
     use crate::espece::EspeceId;
     use crate::niveau::Niveau;
     use crate::partie::EtatPartie;
@@ -2076,8 +2077,9 @@ mod tests {
         let mut deroulement = Deroulement::demarrer(Ok(Some(pleine)));
         repondre_sans_tirage(&mut deroulement, Choix::ReprendreLaPartie, &contenu, &depot).unwrap();
 
-        // Un monstre rare : niveau 5, non shiny, valeurs internes.
-        let mut aleatoire = AleatoireScripte::new([96, 5, 2, 0, 0, 0, 0, 0, 0]);
+        // Un monstre rare, qui n'est pas le Schnoz : niveau 5, non shiny,
+        // valeurs internes.
+        let mut aleatoire = AleatoireScripte::new([96, 2, 5, 2, 0, 0, 0, 0, 0, 0]);
         let mut contexte = Contexte {
             contenu: &contenu,
             aleatoire: &mut aleatoire,
@@ -2117,6 +2119,50 @@ mod tests {
         let camp = deroulement.partie().unwrap().collection().camp();
         assert_eq!(camp[0].nom(), "Cerf blanc");
         assert_eq!(deroulement.attente(), Attente::EntreDeuxEtapes);
+    }
+
+    #[test]
+    fn le_schnoz_se_rencontre_et_se_laisse_prendre() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut deroulement = Deroulement::demarrer(Ok(Some(partie(&contenu))));
+        repondre_sans_tirage(&mut deroulement, Choix::ReprendreLaPartie, &contenu, &depot).unwrap();
+
+        // Le monstre caché, une fois sur 20 : niveau 3, non shiny, valeurs
+        // internes.
+        let mut aleatoire = AleatoireScripte::new([96, 1, 3, 2, 0, 0, 0, 0, 0, 0]);
+        let mut contexte = Contexte {
+            contenu: &contenu,
+            aleatoire: &mut aleatoire,
+            depot: &depot,
+            maintenant: Horodatage::depuis_secondes(0),
+        };
+        let partir = Choix::PartirEnExpedition(ZoneId::new("lisiere"));
+        let evenements = deroulement.repondre(partir, &mut contexte).unwrap();
+        assert!(matches!(
+            evenements.last(),
+            Some(Evenement::MonstreRarePacifique(schnoz)) if schnoz.nom() == "Schnoz"
+        ));
+        repondre_sans_tirage(
+            &mut deroulement,
+            Choix::PrendreLeMonstreRare,
+            &contenu,
+            &depot,
+        )
+        .unwrap();
+        let partie = deroulement.partie().unwrap();
+        let collection = partie.collection();
+        assert!(
+            collection
+                .equipe()
+                .iter()
+                .chain(collection.camp())
+                .any(|monstre| monstre.nom() == "Schnoz")
+        );
+        assert_eq!(
+            partie.codex().etat(&EspeceId::new("schnoz")),
+            EtatCodex::Capturee
+        );
     }
 
     #[test]
