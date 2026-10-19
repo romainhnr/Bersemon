@@ -32,6 +32,7 @@ use crate::marchand::ErreurMarchand;
 use crate::monstre::{Monstre, RapportExperience};
 use crate::nom::{ErreurNom, Nom};
 use crate::partie::{Partie, creer_monstre_de_depart};
+use crate::ressource::{Ressource, RessourceId};
 use crate::sauvegarde::{ErreurSauvegarde, SauvegardeRepository};
 use crate::soin::{EffetDuSoin, ErreurSoin, Soin, Soins, soin_sans_effet, verifier_cible};
 use crate::traque::Piste;
@@ -88,6 +89,9 @@ pub enum Choix {
     DonnerAme(MarchandId),
     /// Au camp, chez Malvoise, sans confirmation (section 5.9).
     AcheterCapsulesDHabilete(u32),
+    /// Au camp, chez Malvoise, sans confirmation : toutes les ressources de
+    /// cette sorte, du sac et du coffre (section 14.3).
+    VendreRessources(RessourceId),
     /// Au camp, après confirmation : une capsule d'habileté fait passer ce
     /// monstre à l'autre habileté de son espèce (section 5.9).
     ChangerDHabilete(Emplacement),
@@ -280,6 +284,15 @@ pub enum Evenement {
     /// Après une victoire, grâce à l'habileté Fouineur de ce monstre ; la
     /// potion va dans le sac (section 5.9).
     PotionTrouvee(Monstre),
+    /// Après une victoire, lâchées par les monstres sauvages mis KO, une par
+    /// monstre ; elles vont dans le sac (section 14.3).
+    RessourcesTrouvees(Vec<Ressource>),
+    /// Rachetées par Malvoise ; l'argent va dans le coffre.
+    RessourcesVendues {
+        ressource: Ressource,
+        nombre: u32,
+        prix: u32,
+    },
     AttaqueRemplacee {
         monstre: Monstre,
         oubliee: Attaque,
@@ -829,6 +842,19 @@ impl EnJeu {
                 sauvegarder(&self.partie, contexte.depot, evenements);
                 Ok(Reponse::Faite)
             }
+            Choix::VendreRessources(id) => {
+                let (ressource, nombre, prix) = self
+                    .partie
+                    .vendre_ressources(id)
+                    .map_err(ErreurChoix::Marchand)?;
+                evenements.push(Evenement::RessourcesVendues {
+                    ressource,
+                    nombre,
+                    prix,
+                });
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
             Choix::AcheterCapsulesDHabilete(nombre) => {
                 let prix = self
                     .partie
@@ -1370,12 +1396,17 @@ impl EnExpedition {
                 return Reponse::Faite;
             }
         }
+        let vaincus = bilan.vaincus_sauvages.clone();
         let (captures, sac_perdu) = partie
             .conclure_combat(bilan)
             .expect("le combat rend l'équipe qu'il a reçue");
         if fin.issue == Some(Issue::Victoire) {
             if let Some(fouineur) = partie.fouiller_apres_une_victoire(&mut *contexte.aleatoire) {
                 evenements.push(Evenement::PotionTrouvee(fouineur));
+            }
+            let ressources = partie.recolter_ressources(&vaincus, &mut *contexte.aleatoire);
+            if !ressources.is_empty() {
+                evenements.push(Evenement::RessourcesTrouvees(ressources));
             }
         }
         let fin = FinDeCombat { sac_perdu, ..fin };
@@ -1707,7 +1738,7 @@ fn annoncer_placement(
             evenements.push(Evenement::PartPourLeCamp(collection.camp()[index].clone()));
             None
         }
-        Placement::PlaceManquante(capture) => Some(capture),
+        Placement::PlaceManquante(capture) => Some(*capture),
     }
 }
 

@@ -8,9 +8,10 @@ use bersemon_core::combat::Cote;
 use bersemon_core::marchand::prix_de_revente;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
+use bersemon_core::ressource::Ressource;
 
 use crate::monstres::{decrire_attaque, nom};
-use crate::partie::{argent, ligne_des_ames};
+use crate::partie::{argent, ligne_des_ames, ressources};
 use crate::soins::offre_de_soin;
 
 /// Ce que le joueur peut dépenser : l'argent du sac et du coffre paient
@@ -27,6 +28,36 @@ pub fn etal(partie: &Partie) -> String {
         soins.join("\n"),
         capsules_obtenues(partie),
         ligne_des_ames(partie)
+    )
+}
+
+/// Les ressources du sac et du coffre, chacune avec son nombre et ce que
+/// Malvoise en donnerait (section 14.3).
+pub fn ressources_a_vendre(partie: &Partie) -> Vec<(Ressource, u32)> {
+    let mut toutes: Vec<(Ressource, u32)> = Vec::new();
+    let possedees = partie
+        .sac()
+        .ressources()
+        .iter()
+        .chain(partie.coffre_du_camp().ressources());
+    for (ressource, nombre) in possedees {
+        match toutes
+            .iter_mut()
+            .find(|(sorte, _)| sorte.id() == ressource.id())
+        {
+            Some((_, total)) => *total += nombre,
+            None => toutes.push((ressource.clone(), *nombre)),
+        }
+    }
+    toutes
+}
+
+/// "Croc de loup (3) : 15 pièces d'argent".
+pub fn offre_de_ressources(ressource: &Ressource, nombre: u32) -> String {
+    format!(
+        "{} : {}",
+        ressources(ressource, nombre),
+        argent(nombre.saturating_mul(ressource.prix()))
     )
 }
 

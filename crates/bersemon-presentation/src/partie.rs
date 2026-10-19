@@ -13,6 +13,7 @@ use bersemon_core::heros::Classe;
 use bersemon_core::inventaire::Inventaire;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
+use bersemon_core::ressource::Ressource;
 use bersemon_core::zone::Zone;
 
 use crate::expeditions_automatiques::question_de_rappel;
@@ -101,6 +102,16 @@ pub fn capsule(capsule: &Capsule) -> String {
     format!("la capsule d'attaque {}", capsule.attaque().nom())
 }
 
+/// "Croc de loup" ou "Croc de loup (3)" : le nombre suit le nom, qui ne se
+/// met pas facilement au pluriel (section 14.3).
+pub fn ressources(ressource: &Ressource, nombre: u32) -> String {
+    if nombre > 1 {
+        format!("{} ({nombre})", ressource.nom())
+    } else {
+        ressource.nom().to_string()
+    }
+}
+
 /// Elles se consomment, d'où leur nombre (section 5.9).
 pub fn capsules_d_habilete(nombre: u32) -> String {
     if nombre > 1 {
@@ -121,6 +132,12 @@ pub fn contenu(inventaire: &Inventaire) -> String {
     if inventaire.capsules_d_habilete() > 0 {
         elements.push(capsules_d_habilete(inventaire.capsules_d_habilete()));
     }
+    elements.extend(
+        inventaire
+            .ressources()
+            .iter()
+            .map(|(ressource, nombre)| ressources(ressource, *nombre)),
+    );
     if elements.is_empty() {
         "vide".to_string()
     } else {

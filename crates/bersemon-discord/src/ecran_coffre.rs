@@ -1,12 +1,13 @@
 //! Le coffre du camp sur Discord (section 13.3) : un menu pour prendre dans
-//! le coffre, un autre pour ranger ce que contient le sac.
+//! le coffre, un autre pour ranger ce que contient le sac, et de même pour
+//! les ressources.
 
 use bersemon_core::inventaire::{Inventaire, Objet};
 use bersemon_core::partie::Partie;
 use bersemon_core::soin::Soin;
 use bersemon_presentation::monstres::decrire_attaque;
 use bersemon_presentation::partie::{
-    argent, capsules_d_habilete as capsules_d_habilete_en_texte, coffre_du_camp,
+    argent, capsules_d_habilete as capsules_d_habilete_en_texte, coffre_du_camp, ressources,
 };
 use bersemon_presentation::soins::soins;
 
@@ -34,6 +35,16 @@ pub fn coffre(partie: &Partie) -> Question {
         Cle::RangerAuCoffre,
         "Ranger dans le coffre",
         options(partie.sac()),
+    ));
+    lignes.extend(menu(
+        Cle::SortirRessourcesDuCoffre,
+        "Prendre des ressources dans le coffre",
+        options_de_ressources(partie.coffre_du_camp()),
+    ));
+    lignes.extend(menu(
+        Cle::RangerRessourcesAuCoffre,
+        "Ranger des ressources dans le coffre",
+        options_de_ressources(partie.sac()),
     ));
     let mut boutons = Vec::new();
     if !partie.sac().est_vide() {
@@ -115,6 +126,29 @@ fn options(inventaire: &Inventaire) -> Vec<OptionDeMenu> {
     // capsules d'habileté, la limite est tout juste atteinte ; elle est tenue
     // au cas où il y en aurait davantage, aux dépens des dernières capsules
     // d'attaque.
+    options.truncate(OPTIONS_PAR_MENU);
+    options
+}
+
+/// Une, puis toutes, pour chaque sorte : avec les neuf ressources du
+/// contenu, 18 options au plus (section 14.3).
+fn options_de_ressources(inventaire: &Inventaire) -> Vec<OptionDeMenu> {
+    let mut options = Vec::new();
+    for (ressource, nombre) in inventaire.ressources() {
+        let id = ressource.id().clone();
+        if *nombre > 1 {
+            options.push(option(
+                Objet::Ressources(id.clone(), 1),
+                ressources(ressource, 1),
+                None,
+            ));
+        }
+        options.push(option(
+            Objet::Ressources(id, *nombre),
+            ressources(ressource, *nombre),
+            Some("Tout".to_string()),
+        ));
+    }
     options.truncate(OPTIONS_PAR_MENU);
     options
 }

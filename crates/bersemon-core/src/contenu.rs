@@ -21,6 +21,7 @@ use crate::habilete::Habilete;
 use crate::heros::Classe;
 use crate::humain::{Humain, HumainId, IaHumain};
 use crate::niveau::Niveau;
+use crate::ressource::{Ressource, RessourceId};
 use crate::soin::Soin;
 use crate::stats::Stats;
 use crate::statut::Statut;
@@ -369,6 +370,14 @@ impl Catalogue for ContenuV1 {
         self.capsules
             .iter()
             .find(|capsule| capsule.id() == id)
+            .cloned()
+    }
+
+    fn ressource(&self, id: &RessourceId) -> Option<Ressource> {
+        self.especes
+            .iter()
+            .filter_map(Espece::ressource)
+            .find(|ressource| ressource.id() == id)
             .cloned()
     }
 
@@ -1156,7 +1165,7 @@ fn creer_espece(fiche: &FicheEspece) -> Espece {
             attaque: creer_attaque(id),
         })
         .collect();
-    Espece::new(
+    let espece = Espece::new(
         EspeceId::new(fiche.id),
         fiche.nom,
         TypesMonstre::new(fiche.types).expect("types du contenu valides"),
@@ -1173,8 +1182,37 @@ fn creer_espece(fiche: &FicheEspece) -> Espece {
         apprentissage,
     )
     .avec_rarete(fiche.rarete)
-    .avec_habiletes(fiche.habiletes.to_vec())
+    .avec_habiletes(fiche.habiletes.to_vec());
+    match RESSOURCES.iter().find(|(espece, _, _)| *espece == fiche.id) {
+        Some((_, id, nom)) => {
+            let prix = match fiche.rarete {
+                Rarete::Rare => PRIX_D_UNE_RESSOURCE_RARE,
+                Rarete::Commune | Rarete::Apotre => PRIX_D_UNE_RESSOURCE_COMMUNE,
+            };
+            espece.avec_ressource(Ressource::new(RessourceId::new(*id), *nom, prix))
+        }
+        None => espece,
+    }
 }
+
+/// Ce que Malvoise donne d'une ressource, selon la rareté de son espèce
+/// (section 14.3, Q82).
+const PRIX_D_UNE_RESSOURCE_COMMUNE: u32 = 5;
+const PRIX_D_UNE_RESSOURCE_RARE: u32 = 15;
+
+/// Espèce, identifiant et nom de chaque ressource : seules les espèces
+/// sauvages qui se combattent en ont une (section 14.3).
+const RESSOURCES: [(&str, &str, &str); 9] = [
+    ("loup", "croc-de-loup", "Croc de loup"),
+    ("corbeau", "plume-de-corbeau", "Plume de corbeau"),
+    ("vipere", "ecaille-de-vipere", "Écaille de vipère"),
+    ("feu-follet", "cendre-de-feu-follet", "Cendre de feu follet"),
+    ("armure-hantee", "fragment-d-armure", "Fragment d'armure"),
+    ("fee-noire", "aile-de-fee-noire", "Aile de fée noire"),
+    ("squelette", "os-de-squelette", "Os de squelette"),
+    ("basilic", "croc-de-basilic", "Croc de basilic"),
+    ("vouivre", "ecaille-de-vouivre", "Écaille de vouivre"),
+];
 
 fn creer_attaque(id: &str) -> Attaque {
     let fiche = ATTAQUES
@@ -1233,6 +1271,27 @@ mod tests {
     fn creer(contenu: &ContenuV1, id: &str, valeur: u8) -> Monstre {
         let espece = contenu.espece(&EspeceId::new(id)).unwrap();
         Monstre::creer(espece, niveau(valeur), ValeursInternes::default(), false).unwrap()
+    }
+
+    #[test]
+    fn chaque_espece_sauvage_combattue_a_sa_ressource() {
+        let contenu = ContenuV1::new();
+        for (espece, id, _) in RESSOURCES {
+            let ressource = contenu.espece(&EspeceId::new(espece)).unwrap();
+            let ressource = ressource.ressource().expect("ressource attendue");
+            assert_eq!(ressource.id().as_str(), id);
+            assert_eq!(contenu.ressource(ressource.id()).as_ref(), Some(ressource));
+        }
+        let prix = |espece: &str| {
+            let espece = contenu.espece(&EspeceId::new(espece)).unwrap();
+            espece.ressource().map(Ressource::prix)
+        };
+        assert_eq!(prix("loup"), Some(5));
+        assert_eq!(prix("vouivre"), Some(15));
+        // Ni monstre de départ, ni espèce pacifique, ni Apôtre.
+        for sans in ["salamandre", "cerf-blanc", "schnoz", "baron-pendu"] {
+            assert_eq!(prix(sans), None, "{sans}");
+        }
     }
 
     /// Monstre aux valeurs internes de 15, la moyenne des tirages.

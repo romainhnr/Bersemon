@@ -6,6 +6,7 @@ use crate::ame::{MarchandId, MarchandMort};
 use crate::attaque::AttaqueId;
 use crate::capsule::Capsule;
 use crate::espece::{Espece, EspeceId};
+use crate::ressource::{Ressource, RessourceId};
 use crate::zone::{Zone, ZoneId};
 
 pub trait Catalogue {
@@ -20,4 +21,7 @@ pub trait Catalogue {
 
     /// Pour les âmes recueillies (section 14.2).
     fn marchand_mort(&self, id: &MarchandId) -> Option<MarchandMort>;
+
+    /// Pour les ressources du sac et du coffre (section 14.3).
+    fn ressource(&self, id: &RessourceId) -> Option<Ressource>;
 }

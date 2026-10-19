@@ -5,6 +5,7 @@ use bersemon_core::contenu::{
     INTRODUCTION, MALVOISE_ET_L_AME, MALVOISE_SANS_AME, fin_de_l_introduction, texte_du_conseil,
 };
 use bersemon_core::deroulement::Evenement;
+use bersemon_core::ressource::Ressource;
 
 use crate::combat::{rapport_experience, remplacement, renoncement};
 use crate::erreurs::erreur_sauvegarde;
@@ -13,7 +14,7 @@ use crate::mise_en_valeur::important;
 use crate::monstres::{effet_d_habilete, nom_en_valeur, nom_sauvage};
 use crate::partie::{
     argent, argent_et_part_du_pillard, capsule as nom_de_capsule, capsules_d_habilete, contenu,
-    enumerer, potions,
+    enumerer, potions, ressources,
 };
 use crate::soins::{le_soin, soin_utilise, soins};
 
@@ -270,6 +271,39 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
         ),
         Evenement::SortiDuCoffre(sorti) => (
             format!("Vous prenez dans le coffre : {}.", contenu(sorti)),
+            false,
+        ),
+        Evenement::RessourcesTrouvees(trouvees) => {
+            // Regroupées par sorte, dans l'ordre où elles sont trouvées.
+            let mut sortes: Vec<(&Ressource, u32)> = Vec::new();
+            for ressource in trouvees {
+                match sortes.iter_mut().find(|(sorte, _)| sorte.id() == ressource.id()) {
+                    Some((_, nombre)) => *nombre += 1,
+                    None => sortes.push((ressource, 1)),
+                }
+            }
+            let liste: Vec<String> = sortes
+                .into_iter()
+                .map(|(ressource, nombre)| ressources(ressource, nombre))
+                .collect();
+            (
+                format!(
+                    "Sur les monstres vaincus, vous ramassez : {}.",
+                    enumerer(&liste)
+                ),
+                false,
+            )
+        }
+        Evenement::RessourcesVendues {
+            ressource,
+            nombre,
+            prix,
+        } => (
+            format!(
+                "Vous vendez {} à Malvoise pour {}.",
+                ressources(ressource, *nombre),
+                argent(*prix)
+            ),
             false,
         ),
         Evenement::CapsulesDHabileteAchetees { nombre, prix } => (

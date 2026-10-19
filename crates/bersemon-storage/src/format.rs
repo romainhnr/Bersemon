@@ -23,6 +23,7 @@ use bersemon_core::monstre::{EtatMonstre, Monstre};
 use bersemon_core::niveau::Niveau;
 use bersemon_core::nom::Nom;
 use bersemon_core::partie::{AttaqueAChoisir, EtatPartie, Partie};
+use bersemon_core::ressource::RessourceId;
 use bersemon_core::sauvegarde::ErreurSauvegarde;
 use bersemon_core::soin::Soin;
 use bersemon_core::stats::{Stats, ValeursInternes};
@@ -53,7 +54,8 @@ const VERSION_DE_MALVOISE: u64 = 11;
 /// version 10 suit la piste à deux indices ; la version 11 ajoute le
 /// remède, la grande potion, l'élixir et les âmes recueillies, et Malvoise
 /// remplace le marchand ; avec la version 12, une attaque à choisir peut
-/// désigner un monstre de l'équipe. Une sauvegarde d'une version
+/// désigner un monstre de l'équipe, et s'ajoutent les âmes portées et à
+/// retrouver, les capsules d'habileté et les ressources. Une sauvegarde d'une version
 /// précédente se lit avec cette structure : les champs ajoutés y prennent
 /// leur valeur de début de partie.
 #[derive(Debug, Serialize, Deserialize)]
@@ -124,6 +126,15 @@ struct InventaireV7 {
     /// Depuis la version 12 (section 5.9).
     #[serde(default)]
     capsules_d_habilete: u32,
+    /// Depuis la version 12 (section 14.3).
+    #[serde(default)]
+    ressources: Vec<RessourceV12>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct RessourceV12 {
+    id: String,
+    nombre: u32,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -274,6 +285,14 @@ fn depuis_inventaire(inventaire: &Inventaire) -> InventaireV7 {
             .map(|capsule| capsule.id().as_str().to_string())
             .collect(),
         capsules_d_habilete: inventaire.capsules_d_habilete(),
+        ressources: inventaire
+            .ressources()
+            .iter()
+            .map(|(ressource, nombre)| RessourceV12 {
+                id: ressource.id().as_str().to_string(),
+                nombre: *nombre,
+            })
+            .collect(),
     }
 }
 
@@ -290,13 +309,19 @@ fn vers_inventaire(
                 .ok_or(ErreurSauvegarde::CapsuleInconnue(id))
         })
         .collect::<Result<Vec<_>, _>>()?;
-    Ok(
-        Inventaire::new(inventaire.argent, inventaire.potions, capsules)
-            .avec_soins(Soin::Remede, inventaire.remedes)
-            .avec_soins(Soin::GrandePotion, inventaire.grandes_potions)
-            .avec_soins(Soin::Elixir, inventaire.elixirs)
-            .avec_capsules_d_habilete(inventaire.capsules_d_habilete),
-    )
+    let mut resultat = Inventaire::new(inventaire.argent, inventaire.potions, capsules)
+        .avec_soins(Soin::Remede, inventaire.remedes)
+        .avec_soins(Soin::GrandePotion, inventaire.grandes_potions)
+        .avec_soins(Soin::Elixir, inventaire.elixirs)
+        .avec_capsules_d_habilete(inventaire.capsules_d_habilete);
+    // Une ressource disparue du jeu ne se vend plus : elle est oubliée,
+    // comme une âme dont le marchand a disparu.
+    for ressource in inventaire.ressources {
+        if let Some(connue) = catalogue.ressource(&RessourceId::new(ressource.id)) {
+            resultat.ajouter_ressources(connue, ressource.nombre);
+        }
+    }
+    Ok(resultat)
 }
 
 pub(crate) fn vers_partie(

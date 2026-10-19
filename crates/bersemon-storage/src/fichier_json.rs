@@ -100,6 +100,7 @@ mod tests {
     use bersemon_core::niveau::Niveau;
     use bersemon_core::nom::Nom;
     use bersemon_core::partie::{AttaqueAChoisir, EtatPartie};
+    use bersemon_core::ressource::{Ressource, RessourceId};
     use bersemon_core::soin::Soin;
     use bersemon_core::stats::{Stats, ValeursInternes};
     use bersemon_core::statut::Statut;
@@ -141,6 +142,10 @@ mod tests {
                 .find(|marchand| marchand.id() == id)
                 .cloned()
         }
+
+        fn ressource(&self, id: &RessourceId) -> Option<Ressource> {
+            Some(croc()).filter(|croc| croc.id() == id)
+        }
     }
 
     fn bertrand() -> MarchandMort {
@@ -153,6 +158,19 @@ mod tests {
             "",
         )
         .unwrap()
+    }
+
+    fn croc() -> Ressource {
+        Ressource::new(RessourceId::new("croc"), "Croc", 5)
+    }
+
+    #[test]
+    fn une_ressource_disparue_du_jeu_est_oubliee() {
+        let partie = charger_texte(&texte_de_partie()).unwrap().unwrap();
+        assert_eq!(partie.coffre_du_camp().nombre_de_ressources(croc().id()), 4);
+        let texte = texte_de_partie().replace("\"croc\"", "\"inconnue\"");
+        let partie = charger_texte(&texte).unwrap().unwrap();
+        assert!(partie.coffre_du_camp().ressources().is_empty());
     }
 
     fn grete() -> MarchandMort {
@@ -308,7 +326,8 @@ mod tests {
                 .avec_soins(Soin::Remede, 2)
                 .avec_soins(Soin::GrandePotion, 1)
                 .avec_soins(Soin::Elixir, 3)
-                .avec_capsules_d_habilete(2),
+                .avec_capsules_d_habilete(2)
+                .avec_ressources(croc(), 4),
             marchand_au_camp: true,
             ames_donnees: vec![bertrand()],
             ames_portees: vec![grete()],

@@ -1,6 +1,7 @@
 //! Objets du joueur, rangés dans le sac, qu'il emporte en expédition
 //! manuelle, ou dans le coffre du camp, où ils sont à l'abri (sections 13.3
-//! et 14.4) : argent, soins, capsules d'attaque et capsules d'habileté.
+//! et 14.4) : argent, soins, capsules d'attaque, capsules d'habileté et
+//! ressources.
 
 use std::fmt;
 
@@ -8,6 +9,7 @@ use crate::aleatoire::Aleatoire;
 use crate::attaque::AttaqueId;
 use crate::capsule::Capsule;
 use crate::monstre::Monstre;
+use crate::ressource::{Ressource, RessourceId};
 use crate::soin::{EffetDuSoin, ErreurSoin, Soin, Soins, appliquer_soin, verifier_cible};
 
 /// Le contenu du sac ou du coffre. Pas de limite de place pour l'instant
@@ -21,6 +23,9 @@ pub struct Inventaire {
     /// Elles se consomment, contrairement aux capsules d'attaque (section
     /// 5.9).
     capsules_d_habilete: u32,
+    /// Dans l'ordre où elles ont été trouvées, sans nombre nul (section
+    /// 14.3).
+    ressources: Vec<(Ressource, u32)>,
 }
 
 /// Ce que le joueur déplace entre le sac et le coffre du camp.
@@ -30,6 +35,7 @@ pub enum Objet {
     Soins(Soin, u32),
     Capsule(AttaqueId),
     CapsulesDHabilete(u32),
+    Ressources(RessourceId, u32),
 }
 
 impl Inventaire {
@@ -42,6 +48,7 @@ impl Inventaire {
             soins: Soins::default(),
             capsules: Vec::new(),
             capsules_d_habilete: 0,
+            ressources: Vec::new(),
         };
         inventaire.soins.ajouter(Soin::Potion, potions);
         for capsule in capsules {
@@ -66,6 +73,48 @@ impl Inventaire {
 
     pub fn ajouter_capsules_d_habilete(&mut self, nombre: u32) {
         self.capsules_d_habilete = self.capsules_d_habilete.saturating_add(nombre);
+    }
+
+    pub fn ressources(&self) -> &[(Ressource, u32)] {
+        &self.ressources
+    }
+
+    pub fn nombre_de_ressources(&self, id: &RessourceId) -> u32 {
+        self.ressources
+            .iter()
+            .find(|(ressource, _)| ressource.id() == id)
+            .map_or(0, |(_, nombre)| *nombre)
+    }
+
+    pub fn ajouter_ressources(&mut self, ressource: Ressource, nombre: u32) {
+        if nombre == 0 {
+            return;
+        }
+        match self
+            .ressources
+            .iter_mut()
+            .find(|(presente, _)| presente.id() == ressource.id())
+        {
+            Some((_, present)) => *present = present.saturating_add(nombre),
+            None => self.ressources.push((ressource, nombre)),
+        }
+    }
+
+    pub fn avec_ressources(mut self, ressource: Ressource, nombre: u32) -> Self {
+        self.ajouter_ressources(ressource, nombre);
+        self
+    }
+
+    /// Toutes celles de cette sorte, rendues avec leur nombre.
+    pub(crate) fn retirer_toutes_les_ressources(
+        &mut self,
+        id: &RessourceId,
+    ) -> Option<(Ressource, u32)> {
+        let position = self
+            .ressources
+            .iter()
+            .position(|(ressource, _)| ressource.id() == id)?;
+        Some(self.ressources.remove(position))
     }
 
     /// Rend `false` sans rien changer s'il n'y en a pas.
@@ -99,6 +148,7 @@ impl Inventaire {
             && self.soins.est_vide()
             && self.capsules.is_empty()
             && self.capsules_d_habilete == 0
+            && self.ressources.is_empty()
     }
 
     pub fn contient_capsule(&self, id: &AttaqueId) -> bool {
@@ -134,6 +184,9 @@ impl Inventaire {
             self.ajouter_capsule(capsule);
         }
         self.ajouter_capsules_d_habilete(autre.capsules_d_habilete);
+        for (ressource, nombre) in autre.ressources {
+            self.ajouter_ressources(ressource, nombre);
+        }
     }
 
     /// Retire l'objet et le rend, seul dans un inventaire, sans rien changer
@@ -141,7 +194,10 @@ impl Inventaire {
     pub(crate) fn retirer(&mut self, objet: &Objet) -> Result<Inventaire, ErreurObjet> {
         let mut retire = Inventaire::default();
         match objet {
-            Objet::Argent(0) | Objet::Soins(_, 0) | Objet::CapsulesDHabilete(0) => {
+            Objet::Argent(0)
+            | Objet::Soins(_, 0)
+            | Objet::CapsulesDHabilete(0)
+            | Objet::Ressources(_, 0) => {
                 return Err(ErreurObjet::QuantiteNulle);
             }
             Objet::Argent(montant) => {
@@ -171,6 +227,22 @@ impl Inventaire {
                 }
                 self.capsules_d_habilete -= nombre;
                 retire.capsules_d_habilete = *nombre;
+            }
+            Objet::Ressources(id, nombre) => {
+                if *nombre > self.nombre_de_ressources(id) {
+                    return Err(ErreurObjet::Insuffisant);
+                }
+                let position = self
+                    .ressources
+                    .iter()
+                    .position(|(ressource, _)| ressource.id() == id)
+                    .expect("ressource présente");
+                let (ressource, present) = &mut self.ressources[position];
+                *present -= nombre;
+                retire.ajouter_ressources(ressource.clone(), *nombre);
+                if *present == 0 {
+                    self.ressources.remove(position);
+                }
             }
         }
         Ok(retire)

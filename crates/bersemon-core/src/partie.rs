@@ -26,10 +26,15 @@ use crate::inventaire::{ErreurObjet, Inventaire, Objet};
 use crate::marchand::{ErreurMarchand, PRIX_CAPSULE_D_HABILETE, prix_de_revente, prix_du_soin};
 use crate::monstre::{Monstre, tirer_shiny, tirer_valeurs_internes};
 use crate::niveau::Niveau;
+use crate::ressource::{Ressource, RessourceId};
 use crate::soin::{EffetDuSoin, ErreurSoin, Soin};
 use crate::traque::{Apotre, Indice, Piste};
 use crate::tutoriel::Conseil;
 use crate::zone::{Zone, ZoneId};
+
+/// Un monstre sauvage battu lâche sa ressource 1 fois sur 3 (section 14.3,
+/// Q82).
+const CHANCES_DE_RESSOURCE: u32 = 3;
 
 /// Le monstre de départ est au niveau 5 (section 6).
 const NIVEAU_DE_DEPART: u8 = 5;
@@ -824,6 +829,48 @@ impl Partie {
         Some(fouineur)
     }
 
+    /// Après un combat gagné, chaque monstre sauvage mis KO et non capturé
+    /// lâche sa ressource 1 fois sur 3 ; elle va dans le sac (section 14.3).
+    /// Rend ce qui est trouvé, dans l'ordre. Tirages : un par vaincu dont
+    /// l'espèce a une ressource, dans l'ordre du groupe.
+    pub fn recolter_ressources(
+        &mut self,
+        vaincus: &[Monstre],
+        aleatoire: &mut dyn Aleatoire,
+    ) -> Vec<Ressource> {
+        let mut trouvees = Vec::new();
+        for ressource in vaincus
+            .iter()
+            .filter_map(|vaincu| vaincu.espece().ressource())
+        {
+            if aleatoire.tirer(1..=CHANCES_DE_RESSOURCE) == 1 {
+                self.sac.ajouter_ressources(ressource.clone(), 1);
+                trouvees.push(ressource.clone());
+            }
+        }
+        trouvees
+    }
+
+    /// Au camp, chez Malvoise, sans confirmation : toutes les ressources de
+    /// cette sorte, celles du sac puis celles du coffre ; l'argent va dans le
+    /// coffre (section 14.3). Rend la ressource, leur nombre et le prix.
+    pub fn vendre_ressources(
+        &mut self,
+        id: &RessourceId,
+    ) -> Result<(Ressource, u32, u32), ErreurMarchand> {
+        self.verifier_marchand()?;
+        let du_sac = self.sac.retirer_toutes_les_ressources(id);
+        let du_coffre = self.coffre_du_camp.retirer_toutes_les_ressources(id);
+        let (ressource, nombre) = match (du_sac, du_coffre) {
+            (Some((ressource, sac)), Some((_, coffre))) => (ressource, sac + coffre),
+            (Some(seules), None) | (None, Some(seules)) => seules,
+            (None, None) => return Err(ErreurMarchand::RessourceAbsente),
+        };
+        let prix = nombre.saturating_mul(ressource.prix());
+        self.coffre_du_camp.ajouter_argent(prix);
+        Ok((ressource, nombre, prix))
+    }
+
     /// Le premier monstre de l'équipe qui a cette habileté et n'est pas KO.
     fn membre_debout(&self, habilete: Habilete) -> Option<&Monstre> {
         self.collection
@@ -1058,6 +1105,43 @@ mod tests {
     fn partie() -> Partie {
         let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Guerrier);
         Partie::nouvelle(heros, creer("depart", 5))
+    }
+
+    #[test]
+    fn les_vaincus_lachent_leur_ressource_que_malvoise_rachete() {
+        let croc = Ressource::new(RessourceId::new("croc"), "Croc", 5);
+        let loup = Monstre::creer(
+            espece("loup").avec_ressource(croc.clone()),
+            Niveau::new(5).unwrap(),
+            ValeursInternes::default(),
+            false,
+        )
+        .unwrap();
+        let mut partie = partie();
+        // Un tirage par vaincu dont l'espèce a une ressource : 1 la lâche.
+        let vaincus = [loup.clone(), creer("rat", 5), loup.clone(), loup];
+        let trouvees = partie.recolter_ressources(&vaincus, &mut AleatoireScripte::new([1, 2, 1]));
+        assert_eq!(trouvees, vec![croc.clone(), croc.clone()]);
+        assert_eq!(partie.sac().nombre_de_ressources(croc.id()), 2);
+        assert_eq!(
+            partie.vendre_ressources(croc.id()),
+            Err(ErreurMarchand::AucunMarchand)
+        );
+        partie.accueillir_malvoise();
+        partie
+            .ranger_au_coffre(&Objet::Ressources(croc.id().clone(), 1))
+            .unwrap();
+        // Celles du sac et du coffre, d'un coup ; l'argent va au coffre.
+        assert_eq!(
+            partie.vendre_ressources(croc.id()),
+            Ok((croc.clone(), 2, 10))
+        );
+        assert!(partie.sac().est_vide());
+        assert_eq!(partie.coffre_du_camp().argent(), 10);
+        assert_eq!(
+            partie.vendre_ressources(croc.id()),
+            Err(ErreurMarchand::RessourceAbsente)
+        );
     }
 
     #[test]

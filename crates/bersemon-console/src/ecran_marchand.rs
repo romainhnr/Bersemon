@@ -1,12 +1,14 @@
-//! Malvoise, le nécromancien du camp (section 14.2) : soins, capsules d'attaque,
-//! rachat des monstres et don des âmes. Les achats se font sans confirmation ; la vente
+//! Malvoise, le nécromancien du camp (section 14.2) : soins, capsules,
+//! rachat des monstres et des ressources, et don des âmes. Les achats se font sans confirmation ; la vente
 //! est confirmée par le déroulement.
 
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::Choix;
 use bersemon_core::marchand::{PRIX_CAPSULE_D_HABILETE, prix_du_soin};
 use bersemon_core::partie::Partie;
-use bersemon_presentation::marchand::{capsules_en_vente, etal, offre_de_capsule};
+use bersemon_presentation::marchand::{
+    capsules_en_vente, etal, offre_de_capsule, offre_de_ressources, ressources_a_vendre,
+};
 use bersemon_presentation::partie::argent;
 use bersemon_presentation::soins::{le_soin, offre_de_soin};
 
@@ -26,14 +28,16 @@ pub fn choisir(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Opt
             "  5. Acheter des capsules d'habileté ({} l'une)",
             argent(PRIX_CAPSULE_D_HABILETE)
         );
+        println!("  6. Vendre des ressources");
         println!("  0. Retour au camp");
-        let choix = match entree.choix(0, 5)? {
+        let choix = match entree.choix(0, 6)? {
             0 => return Some(None),
             1 => acheter_soins(partie, entree)?,
             2 => acheter_capsule(partie, contenu, entree)?,
             3 => vendre(partie.collection(), entree)?,
             4 => donner_ame(partie, entree)?,
-            _ => acheter_capsules_d_habilete(partie, entree)?,
+            5 => acheter_capsules_d_habilete(partie, entree)?,
+            _ => vendre_ressources(partie, entree)?,
         };
         if choix.is_some() {
             return Some(choix);
@@ -114,4 +118,25 @@ fn acheter_capsules_d_habilete(partie: &Partie, entree: &mut Entree) -> Option<O
     println!("Combien en acheter ? (0 pour annuler)");
     let nombre = entree.choix(0, au_plus as usize)?;
     Some((nombre > 0).then_some(Choix::AcheterCapsulesDHabilete(nombre as u32)))
+}
+
+/// Toutes celles d'une sorte, du sac et du coffre, sans confirmation
+/// (section 14.3).
+fn vendre_ressources(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
+    let a_vendre = ressources_a_vendre(partie);
+    if a_vendre.is_empty() {
+        println!("Vous n'avez aucune ressource.");
+        return Some(None);
+    }
+    println!("Malvoise rachète toutes les ressources d'une sorte, du sac et du coffre :");
+    for (position, (ressource, nombre)) in a_vendre.iter().enumerate() {
+        println!(
+            "  {}. {}",
+            position + 1,
+            offre_de_ressources(ressource, *nombre)
+        );
+    }
+    println!("Lesquelles vendre ? (0 pour annuler)");
+    let choix = entree.choix(0, a_vendre.len())?;
+    Some((choix > 0).then(|| Choix::VendreRessources(a_vendre[choix - 1].0.id().clone())))
 }

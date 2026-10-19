@@ -14,6 +14,7 @@ use bersemon_core::deroulement::{ActionDeGestion, Choix};
 use bersemon_core::expedition_automatique::MONSTRES_MAX;
 use bersemon_core::heros::Classe;
 use bersemon_core::inventaire::Objet;
+use bersemon_core::ressource::RessourceId;
 use bersemon_core::soin::Soin;
 use bersemon_core::zone::ZoneId;
 
@@ -202,6 +203,12 @@ pub enum Cle {
     SortirDuCoffre,
     /// Menu de ce que contient le sac.
     RangerAuCoffre,
+    /// Menus des ressources du coffre et du sac, à part pour que les autres
+    /// menus restent sous la limite de 25 options (section 14.3).
+    SortirRessourcesDuCoffre,
+    RangerRessourcesAuCoffre,
+    /// Menu des ressources que Malvoise rachète, toutes celles d'une sorte.
+    VendreRessources,
     ToutRanger,
     SeSuicider,
 }
@@ -303,6 +310,9 @@ impl Cle {
             Cle::Trier(tri) => gerer(ActionDeGestion::TrierLeCamp(*tri)),
             Cle::SortirDuCoffre => jouer(Choix::SortirDuCoffre(lire_objet(valeur?)?)),
             Cle::RangerAuCoffre => jouer(Choix::RangerAuCoffre(lire_objet(valeur?)?)),
+            Cle::SortirRessourcesDuCoffre => jouer(Choix::SortirDuCoffre(lire_objet(valeur?)?)),
+            Cle::RangerRessourcesAuCoffre => jouer(Choix::RangerAuCoffre(lire_objet(valeur?)?)),
+            Cle::VendreRessources => jouer(Choix::VendreRessources(RessourceId::new(valeur?))),
             Cle::ToutRanger => jouer(Choix::ToutRangerAuCoffre),
             Cle::SeSuicider => jouer(Choix::SeSuicider),
         }
@@ -410,6 +420,9 @@ impl Cle {
             Cle::Trier(TriDuCamp::Type) => "trier:type".to_string(),
             Cle::SortirDuCoffre => "sortir-du-coffre".to_string(),
             Cle::RangerAuCoffre => "ranger-au-coffre".to_string(),
+            Cle::SortirRessourcesDuCoffre => "sortir-ressources".to_string(),
+            Cle::RangerRessourcesAuCoffre => "ranger-ressources".to_string(),
+            Cle::VendreRessources => "vendre-ressources".to_string(),
             Cle::ToutRanger => "tout-ranger".to_string(),
             Cle::SeSuicider => "se-suicider".to_string(),
         }
@@ -443,6 +456,9 @@ impl Cle {
             "vue:coffre" => Cle::Afficher(Vue::Coffre),
             "sortir-du-coffre" => Cle::SortirDuCoffre,
             "ranger-au-coffre" => Cle::RangerAuCoffre,
+            "sortir-ressources" => Cle::SortirRessourcesDuCoffre,
+            "ranger-ressources" => Cle::RangerRessourcesAuCoffre,
+            "vendre-ressources" => Cle::VendreRessources,
             "tout-ranger" => Cle::ToutRanger,
             "vue:options" => Cle::Afficher(Vue::Options),
             "se-suicider" => Cle::SeSuicider,
@@ -599,6 +615,7 @@ pub fn objet_en_texte(objet: &Objet) -> String {
         Objet::Argent(montant) => format!("argent:{montant}"),
         Objet::Capsule(attaque) => format!("capsule:{}", attaque.as_str()),
         Objet::CapsulesDHabilete(nombre) => format!("capsules-d-habilete:{nombre}"),
+        Objet::Ressources(id, nombre) => format!("ressources:{}:{nombre}", id.as_str()),
     }
 }
 
@@ -612,6 +629,13 @@ fn lire_objet(texte: &str) -> Option<Objet> {
         "argent" => Some(Objet::Argent(parametre.parse().ok()?)),
         "capsule" => Some(Objet::Capsule(AttaqueId::new(parametre))),
         "capsules-d-habilete" => Some(Objet::CapsulesDHabilete(parametre.parse().ok()?)),
+        "ressources" => {
+            let (id, nombre) = parametre.rsplit_once(':')?;
+            Some(Objet::Ressources(
+                RessourceId::new(id),
+                nombre.parse().ok()?,
+            ))
+        }
         _ => None,
     }
 }
@@ -736,6 +760,9 @@ mod tests {
             Cle::Afficher(Vue::Coffre),
             Cle::SortirDuCoffre,
             Cle::RangerAuCoffre,
+            Cle::SortirRessourcesDuCoffre,
+            Cle::RangerRessourcesAuCoffre,
+            Cle::VendreRessources,
             Cle::ToutRanger,
             Cle::Afficher(Vue::Options),
             Cle::SeSuicider,
@@ -907,6 +934,7 @@ mod tests {
             Objet::Argent(120),
             Objet::Capsule(AttaqueId::new("brasier")),
             Objet::CapsulesDHabilete(3),
+            Objet::Ressources(RessourceId::new("croc-de-loup"), 2),
         ] {
             let valeur = objet_en_texte(&objet);
             assert_eq!(

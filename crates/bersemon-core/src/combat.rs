@@ -209,6 +209,10 @@ pub struct BilanCombat {
     pub issue: Option<Issue>,
     pub equipe: Vec<Monstre>,
     pub captures: Vec<Monstre>,
+    /// Les monstres sauvages mis KO et non capturés, qui peuvent lâcher leur
+    /// ressource après une victoire (section 14.3) : ni ceux d'un humain, ni
+    /// un Apôtre, ni un mort-vivant.
+    pub vaincus_sauvages: Vec<Monstre>,
     pub experience: Vec<Option<RapportExperience>>,
     pub soins: Soins,
 }
@@ -564,10 +568,17 @@ impl Combat {
             .iter()
             .filter_map(|&index| adversaires[index].take())
             .collect();
+        let sauvages = !self.contre_un_apotre && !self.contre_un_humain && !self.sans_capture;
+        let vaincus_sauvages = adversaires
+            .into_iter()
+            .flatten()
+            .filter(|adversaire| sauvages && adversaire.est_ko())
+            .collect();
         BilanCombat {
             issue,
             equipe: self.equipe,
             captures,
+            vaincus_sauvages,
             experience,
             soins: self.soins,
         }
@@ -1694,6 +1705,17 @@ mod tests {
         tour(&mut combat, Action::Attaquer(0), &[2, 100]);
         assert_eq!(combat.phase(), Phase::Termine(Issue::Victoire));
         assert!(combat.adversaires_capturables().is_empty());
+        // Un mort-vivant ne lâche pas de ressource (section 14.3).
+        assert!(terminer(combat, &[100]).vaincus_sauvages.is_empty());
+    }
+
+    #[test]
+    fn un_sauvage_ko_et_non_capture_peut_lacher_sa_ressource() {
+        let mut combat = combat(vec![rapide()], vec![affaibli(lent(), 1)]);
+        tour(&mut combat, Action::Attaquer(0), &[2, 100]);
+        let bilan = terminer(combat, &[100]);
+        assert_eq!(bilan.vaincus_sauvages.len(), 1);
+        assert!(bilan.captures.is_empty());
     }
 
     #[test]

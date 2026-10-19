@@ -21,7 +21,8 @@ pub enum Placement {
     Camp(usize),
     /// L'équipe et le camp sont pleins : le monstre est rendu, et le joueur
     /// choisit lequel relâcher (`relacher_pour_capture`), ou renonce à lui.
-    PlaceManquante(Monstre),
+    /// En boîte, pour que les autres placements restent légers.
+    PlaceManquante(Box<Monstre>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -258,7 +259,7 @@ impl Collection {
             self.camp.push(capture);
             Placement::Camp(self.camp.len() - 1)
         } else {
-            Placement::PlaceManquante(capture)
+            Placement::PlaceManquante(Box::new(capture))
         }
     }
 
@@ -540,7 +541,7 @@ mod tests {
         let nouveau = monstre_nomme("nouveau");
         assert_eq!(
             collection.accueillir_capture(nouveau.clone()),
-            Placement::PlaceManquante(nouveau)
+            Placement::PlaceManquante(Box::new(nouveau))
         );
     }
 
@@ -781,7 +782,7 @@ mod tests {
         let nouveau = monstre_nomme("nouveau");
         assert_eq!(
             collection.accueillir_capture(nouveau.clone()),
-            Placement::PlaceManquante(nouveau)
+            Placement::PlaceManquante(Box::new(nouveau))
         );
         assert_eq!(
             collection.envoyer_au_camp(0),

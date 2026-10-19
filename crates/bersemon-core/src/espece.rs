@@ -4,6 +4,7 @@
 use crate::attaque::{Attaque, AttaqueId};
 use crate::habilete::Habilete;
 use crate::niveau::Niveau;
+use crate::ressource::Ressource;
 use crate::stats::StatsDeBase;
 use crate::types::TypesMonstre;
 
@@ -61,6 +62,9 @@ pub struct Espece {
     /// Celles qu'un monstre de l'espèce peut avoir ; la première est donnée
     /// aux monstres des sauvegardes antérieures (section 5.9).
     habiletes: Vec<Habilete>,
+    /// Lâchée par un monstre sauvage de l'espèce mis KO (section 14.3). En
+    /// boîte, pour que chaque monstre, qui porte son espèce, reste léger.
+    ressource: Option<Box<Ressource>>,
 }
 
 impl Espece {
@@ -88,7 +92,17 @@ impl Espece {
             apprentissage,
             rarete: Rarete::Commune,
             habiletes: Vec::new(),
+            ressource: None,
         }
+    }
+
+    pub fn avec_ressource(mut self, ressource: Ressource) -> Self {
+        self.ressource = Some(Box::new(ressource));
+        self
+    }
+
+    pub fn ressource(&self) -> Option<&Ressource> {
+        self.ressource.as_deref()
     }
 
     pub fn avec_rarete(mut self, rarete: Rarete) -> Self {

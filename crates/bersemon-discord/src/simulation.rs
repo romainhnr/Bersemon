@@ -8,6 +8,7 @@ use std::fs;
 use std::path::PathBuf;
 
 use bersemon_core::attaque::Attaque;
+use bersemon_core::codex::EtatCodex;
 use bersemon_core::collection::Emplacement;
 use bersemon_core::combat::{Combat, Cote};
 use bersemon_core::contenu::ContenuV1;
@@ -22,6 +23,7 @@ use bersemon_core::partie::EtatPartie;
 use bersemon_core::soin::Soin;
 use bersemon_core::types::{Efficacite, efficacite};
 use bersemon_core::zone::ZoneId;
+use bersemon_presentation::marchand::ressources_a_vendre;
 
 use crate::composants::{Choisis, Cle, Commande, Composant, Vue};
 use crate::joueurs::{IdJoueur, Joueurs, Session};
@@ -242,6 +244,15 @@ fn visite_au_marchand(session: &Session, message: &Message, visite: Visite) -> O
         (Vue::Marchand, Visite::PotionAchetee) => {
             Some(cliquer(message, |cle| *cle == Cle::Afficher(Vue::Vente)))
         }
+        // Les ressources sont vendues avant le monstre (section 14.3).
+        (Vue::Vente, Visite::PotionAchetee) if !ressources_a_vendre(partie).is_empty() => {
+            let (ressource, _) = &ressources_a_vendre(partie)[0];
+            choisir_dans(
+                message,
+                |cle| *cle == Cle::VendreRessources,
+                ressource.id().as_str(),
+            )
+        }
         (Vue::Vente, Visite::PotionAchetee) => choisir_dans(
             message,
             |cle| matches!(cle, Cle::Vendre(_)),
@@ -342,7 +353,23 @@ fn jouer_un_coup(
             cliquer(message, |cle| *cle == Cle::Attaquer(meilleure))
         }
         Attente::Remplacement(_) => cliquer(message, |cle| matches!(cle, Cle::Remplacer(_))),
-        Attente::CaptureDesKo(_) => cliquer(message, |cle| matches!(cle, Cle::Capturer(_))),
+        // Une espèce déjà capturée est laissée KO : elle peut lâcher sa
+        // ressource (section 14.3).
+        Attente::CaptureDesKo(combat) => {
+            let codex = session.deroulement.partie().unwrap().codex();
+            let nouvelle = |cle: &Cle| match cle {
+                Cle::Capturer(index) => {
+                    let espece = combat.adversaires()[*index].espece().id();
+                    codex.etat(espece) != EtatCodex::Capturee
+                }
+                _ => false,
+            };
+            if boutons(message).into_iter().any(nouvelle) {
+                cliquer(message, nouvelle)
+            } else {
+                cliquer(message, |cle| *cle == Cle::NePlusCapturer)
+            }
+        }
         Attente::OubliAttaque { monstre, nouvelle } => {
             let (position, plus_faible) = monstre
                 .attaques()
@@ -652,6 +679,10 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
     );
     assert!(compter(|evenement| matches!(evenement, Evenement::AmeRecueillie(_))) > 0);
     assert!(compter(|evenement| matches!(evenement, Evenement::AmeDonnee { .. })) > 0);
+    // Les monstres battus lâchent des ressources, que Malvoise rachète
+    // (section 14.3).
+    assert!(compter(|evenement| matches!(evenement, Evenement::RessourcesTrouvees(_))) > 0);
+    assert!(compter(|evenement| matches!(evenement, Evenement::RessourcesVendues { .. })) > 0);
     assert!(
         vus.iter()
             .any(|evenement| matches!(evenement, Evenement::RangeAuCoffre(_))),
@@ -780,21 +811,38 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
     for id in ["loup", "corbeau", "vipere"] {
         partie.prendre_monstre_rare(creer(id));
     }
-    // Tous les soins, toutes les capsules d'attaque, de l'argent et des
-    // capsules d'habileté dans le coffre comme dans le sac.
-    let plein = || {
-        let mut inventaire =
-            Inventaire::new(1_000, 9, contenu.capsules().to_vec()).avec_capsules_d_habilete(3);
+    while partie.collection().camp().len() < 30 {
+        partie.prendre_monstre_rare(creer("loup"));
+    }
+    // Tous les soins, toutes les capsules d'attaque, de l'argent, des
+    // capsules d'habileté et toutes les ressources dans le coffre comme dans
+    // le sac, et un camp plein.
+    // Une capsule d'attaque ne s'obtient qu'une fois : elles sont toutes au
+    // coffre.
+    let plein = |capsules: bool| {
+        let capsules = if capsules {
+            contenu.capsules().to_vec()
+        } else {
+            Vec::new()
+        };
+        let mut inventaire = Inventaire::new(1_000, 9, capsules).avec_capsules_d_habilete(3);
         for soin in [Soin::Remede, Soin::GrandePotion, Soin::Elixir] {
             inventaire = inventaire.avec_soins(soin, 7);
+        }
+        for ressource in contenu
+            .especes()
+            .iter()
+            .filter_map(|espece| espece.ressource())
+        {
+            inventaire = inventaire.avec_ressources(ressource.clone(), 3);
         }
         inventaire
     };
     let etat = |donnees: Vec<&str>, portees: Vec<&str>| EtatPartie {
         heros: partie.heros().clone(),
         collection: partie.collection().clone(),
-        sac: Inventaire::default().avec_capsules_d_habilete(1),
-        coffre_du_camp: plein(),
+        sac: plein(false),
+        coffre_du_camp: plein(true),
         marchand_au_camp: true,
         ames_donnees: donnees.into_iter().map(marchand).collect(),
         ames_portees: portees.into_iter().map(marchand).collect(),
@@ -828,6 +876,8 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         let cles = afficher(&partie, Vue::Marchand);
         assert!(cles.contains(&Cle::AcheterCapsuleDHabilete));
         afficher(&partie, Vue::Coffre);
+        afficher(&partie, Vue::Vente);
+        afficher(&partie, Vue::Camp);
         // Un monstre de l'équipe, qui peut monter et descendre, et un du
         // camp, qui peut s'échanger.
         for emplacement in [Emplacement::Equipe(1), Emplacement::Camp(0)] {

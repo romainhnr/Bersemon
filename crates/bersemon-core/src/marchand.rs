@@ -66,6 +66,8 @@ pub enum ErreurMarchand {
     CapsuleDejaPossedee,
     /// Le joueur ne porte pas l'âme de ce marchand (section 14.2).
     AmeNonPortee,
+    /// Ni le sac ni le coffre n'en contiennent (section 14.3).
+    RessourceAbsente,
     /// La revente suit les règles du relâcher.
     Collection(ErreurCollection),
 }
@@ -84,6 +86,7 @@ impl fmt::Display for ErreurMarchand {
             }
             ErreurMarchand::CapsuleDejaPossedee => write!(f, "cette capsule est déjà obtenue"),
             ErreurMarchand::AmeNonPortee => write!(f, "le joueur ne porte pas cette âme"),
+            ErreurMarchand::RessourceAbsente => write!(f, "aucune ressource de cette sorte"),
             ErreurMarchand::Collection(erreur) => write!(f, "{erreur}"),
         }
     }

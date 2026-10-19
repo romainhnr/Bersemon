@@ -673,6 +673,7 @@ Premier marchand, après la V1 :
 - Filets de capture : achetables, fabricables, améliorables.
 - Équipement du héros : armes, armures, talismans.
 - Depuis l'étape 36 (19/10/2026, Q71), une ressource par espèce sauvage qui peut être combattue, lâchée par un monstre sauvage mis KO et non capturé, après un combat gagné, 1 fois sur 3. Les monstres d'un humain, les Apôtres et le marchand zombie n'en lâchent pas, et les espèces pacifiques ne se combattent pas. Elle va dans le sac, se range au coffre, se perd avec le sac et se revend à Malvoise, à un prix fixe selon la rareté de l'espèce : 5 pièces d'argent pour une espèce commune, 15 pour une rare. Au camp, Malvoise rachète toutes les ressources d'une sorte d'un coup, celles du sac puis celles du coffre, sans confirmation. Liste dans docs/contenu-v1.md, section 6. Noms, taux et prix sont des hypothèses, à confirmer (Q82).
+- Écrans, à l'étape 36 : les ressources s'écrivent avec leur nombre entre parenthèses, "Croc de loup (3)". Après une victoire, le récit dit celles que le joueur ramasse. Dans la console, l'étal de Malvoise propose "Vendre des ressources", par sorte, et le coffre les déplace au nombre choisi. Sur Discord, la vente des monstres devient "Vendre monstres et ressources", avec un menu des ressources, et le coffre a deux menus à part pour elles, une ou toutes de chaque sorte.
 - Capsule d'habileté, depuis l'étape 35 (section 5.9).
 - Argent (monnaie).
 - Objets d'évolution.

@@ -6,7 +6,8 @@ use bersemon_core::contenu::ContenuV1;
 use bersemon_core::marchand::{PRIX_CAPSULE_D_HABILETE, prix_du_soin};
 use bersemon_core::partie::Partie;
 use bersemon_presentation::marchand::{
-    capsules_en_vente, etal as texte_de_l_etal, offre_de_rachat,
+    capsules_en_vente, etal as texte_de_l_etal, offre_de_rachat, offre_de_ressources,
+    ressources_a_vendre,
 };
 use bersemon_presentation::monstres::decrire_attaque;
 use bersemon_presentation::partie::argent;
@@ -74,7 +75,11 @@ pub fn etal(partie: &Partie, contenu: &ContenuV1) -> Question {
     );
     lignes.extend(rangees(vec![
         bouton(Cle::AcheterCapsuleDHabilete, &libelle, PRINCIPAL),
-        bouton(Cle::Afficher(Vue::Vente), "Vendre des monstres", DANGER),
+        bouton(
+            Cle::Afficher(Vue::Vente),
+            "Vendre monstres et ressources",
+            DANGER,
+        ),
         retour(),
     ]));
     Question {
@@ -95,6 +100,20 @@ pub fn vente(partie: &Partie) -> Question {
         |_| true,
         offre_de_rachat,
     );
+    // Neuf sortes au plus : le menu reste loin de ses 25 options.
+    let ressources = ressources_a_vendre(partie)
+        .into_iter()
+        .map(|(ressource, nombre)| OptionDeMenu {
+            libelle: offre_de_ressources(&ressource, nombre),
+            valeur: ressource.id().as_str().to_string(),
+            description: Some("Toutes celles du sac et du coffre".to_string()),
+        })
+        .collect();
+    lignes.extend(menu(
+        Cle::VendreRessources,
+        "Vendre des ressources",
+        ressources,
+    ));
     lignes.extend(rangees(vec![
         bouton(
             Cle::Afficher(Vue::Marchand),
@@ -105,7 +124,7 @@ pub fn vente(partie: &Partie) -> Question {
     ]));
     Question {
         texte: format!(
-            "Malvoise rachète vos monstres : choisissez celui à vendre, son prix est indiqué dans le menu. Vous avez {}.",
+            "Malvoise rachète vos monstres et vos ressources : choisissez ce que vous vendez, son prix est indiqué dans le menu. Vous avez {}.",
             argent(partie.argent())
         ),
         rangees: lignes,
