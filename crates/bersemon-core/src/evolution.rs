@@ -14,6 +14,7 @@ use crate::espece::{Espece, EspeceId};
 use crate::monstre::Monstre;
 use crate::niveau::Niveau;
 use crate::pierre::PierreDEvolution;
+use crate::zone::ZoneId;
 
 /// Ce qu'il faut à un monstre pour évoluer.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -22,6 +23,19 @@ pub enum ConditionEvolution {
     Niveau(Niveau),
     /// Recevoir cette pierre, au camp, à tout niveau.
     Pierre(PierreDEvolution),
+    /// Gagner un niveau dans cette zone, en expédition manuelle, à partir de
+    /// ce niveau.
+    Lieu { zone: ZoneId, niveau: Niveau },
+    /// Avoir atteint ce niveau une fois cet Apôtre vaincu.
+    ApotreVaincu { apotre: EspeceId, niveau: Niveau },
+}
+
+/// Où en est le monstre quand on se demande s'il peut évoluer.
+#[derive(Debug, Clone, Copy)]
+pub struct Circonstances<'a> {
+    /// La zone de l'expédition manuelle en cours ; `None` au camp.
+    pub zone: Option<&'a ZoneId>,
+    pub apotres_vaincus: &'a [EspeceId],
 }
 
 /// L'évolution d'une espèce vers une autre, désignée par son identifiant :
@@ -60,25 +74,38 @@ impl Evolution {
     pub fn pierre(&self) -> Option<PierreDEvolution> {
         match self.condition {
             ConditionEvolution::Pierre(pierre) => Some(pierre),
-            ConditionEvolution::Niveau(_) => None,
+            ConditionEvolution::Niveau(_)
+            | ConditionEvolution::Lieu { .. }
+            | ConditionEvolution::ApotreVaincu { .. } => None,
         }
     }
 
-    /// Une condition de niveau se remplit au camp comme après un combat ;
-    /// une pierre ne se donne qu'au camp, sur demande du joueur.
-    fn est_remplie(&self, monstre: &Monstre) -> bool {
+    /// Une condition de niveau ou d'Apôtre vaincu se remplit au camp comme
+    /// après un combat, une condition de lieu seulement après un combat dans
+    /// sa zone ; une pierre ne se donne qu'au camp, sur demande du joueur.
+    fn est_remplie(&self, monstre: &Monstre, circonstances: &Circonstances<'_>) -> bool {
         match &self.condition {
             ConditionEvolution::Niveau(niveau) => monstre.niveau() >= *niveau,
             ConditionEvolution::Pierre(_) => false,
+            ConditionEvolution::Lieu { zone, niveau } => {
+                circonstances.zone == Some(zone) && monstre.niveau() >= *niveau
+            }
+            ConditionEvolution::ApotreVaincu { apotre, niveau } => {
+                circonstances.apotres_vaincus.contains(apotre) && monstre.niveau() >= *niveau
+            }
         }
     }
 }
 
 /// L'espèce en laquelle ce monstre peut évoluer maintenant, s'il en remplit
 /// la condition, sans pierre.
-pub fn evolution_possible(monstre: &Monstre, catalogue: &dyn Catalogue) -> Option<Espece> {
+pub fn evolution_possible(
+    monstre: &Monstre,
+    circonstances: &Circonstances<'_>,
+    catalogue: &dyn Catalogue,
+) -> Option<Espece> {
     let evolution = monstre.espece().evolution()?;
-    if !evolution.est_remplie(monstre) {
+    if !evolution.est_remplie(monstre, circonstances) {
         return None;
     }
     catalogue.espece(evolution.vers())
@@ -156,6 +183,11 @@ mod tests {
     use crate::stats::ValeursInternes;
     use crate::types::Type;
 
+    const AU_CAMP: Circonstances<'static> = Circonstances {
+        zone: None,
+        apotres_vaincus: &[],
+    };
+
     fn niveau(valeur: u8) -> Niveau {
         Niveau::new(valeur).unwrap()
     }
@@ -169,16 +201,16 @@ mod tests {
     fn possible_a_partir_du_niveau_de_la_condition() {
         let contenu = ContenuV1::new();
         assert_eq!(
-            evolution_possible(&salamandre(&contenu, 15), &contenu),
+            evolution_possible(&salamandre(&contenu, 15), &AU_CAMP, &contenu),
             None
         );
-        let vers = evolution_possible(&salamandre(&contenu, 16), &contenu).unwrap();
+        let vers = evolution_possible(&salamandre(&contenu, 16), &AU_CAMP, &contenu).unwrap();
         assert_eq!(vers.id().as_str(), "lezard-de-braise");
-        assert!(evolution_possible(&salamandre(&contenu, 40), &contenu).is_some());
+        assert!(evolution_possible(&salamandre(&contenu, 40), &AU_CAMP, &contenu).is_some());
         // Sa forme évoluée n'évolue pas encore (section 5.4).
         let mut lezard = salamandre(&contenu, 16);
         faire_evoluer(&mut lezard, vers);
-        assert_eq!(evolution_possible(&lezard, &contenu), None);
+        assert_eq!(evolution_possible(&lezard, &AU_CAMP, &contenu), None);
     }
 
     #[test]
@@ -202,7 +234,7 @@ mod tests {
         let experience = monstre.experience();
         let pv_max = monstre.stats().pv;
         let pv = monstre.pv_actuels();
-        let vers = evolution_possible(&monstre, &contenu).unwrap();
+        let vers = evolution_possible(&monstre, &AU_CAMP, &contenu).unwrap();
         faire_evoluer(&mut monstre, vers);
         assert_eq!(monstre.espece().id().as_str(), "lezard-de-braise");
         assert_eq!(monstre.nom(), "Braise");
@@ -221,7 +253,7 @@ mod tests {
         let espece = contenu.espece(&EspeceId::new("salamandre")).unwrap();
         let mut monstre =
             Monstre::creer(espece, niveau(16), ValeursInternes::default(), true).unwrap();
-        let vers = evolution_possible(&monstre, &contenu).unwrap();
+        let vers = evolution_possible(&monstre, &AU_CAMP, &contenu).unwrap();
         faire_evoluer(&mut monstre, vers);
         assert!(monstre.est_shiny());
         assert_eq!(monstre.valeurs_internes(), &ValeursInternes::maximales());
@@ -232,7 +264,7 @@ mod tests {
         let contenu = ContenuV1::new();
         let mut monstre = salamandre(&contenu, 16);
         monstre.subir_degats(u32::MAX);
-        let vers = evolution_possible(&monstre, &contenu).unwrap();
+        let vers = evolution_possible(&monstre, &AU_CAMP, &contenu).unwrap();
         faire_evoluer(&mut monstre, vers);
         assert!(monstre.est_ko());
     }
@@ -250,7 +282,7 @@ mod tests {
             attaques,
             false,
         );
-        let vers = evolution_possible(&monstre, &contenu).unwrap();
+        let vers = evolution_possible(&monstre, &AU_CAMP, &contenu).unwrap();
         let resultat = faire_evoluer(&mut monstre, vers);
         let apprise = resultat.attaque_apprise.unwrap();
         assert_eq!(apprise.id().as_str(), "jet-de-lave");
@@ -264,7 +296,7 @@ mod tests {
         let mut monstre = salamandre(&contenu, 16);
         assert!(monstre.attaques().est_complete());
         let avant = monstre.attaques().clone();
-        let vers = evolution_possible(&monstre, &contenu).unwrap();
+        let vers = evolution_possible(&monstre, &AU_CAMP, &contenu).unwrap();
         let resultat = faire_evoluer(&mut monstre, vers);
         assert_eq!(resultat.attaque_apprise, None);
         assert_eq!(
@@ -298,5 +330,55 @@ mod tests {
         assert_eq!(resultat.attaque_apprise, None);
         assert_eq!(resultat.attaque_en_attente, None);
         assert_eq!(monstre.attaques().liste().len(), 2);
+    }
+
+    fn creer(contenu: &ContenuV1, id: &str, valeur: u8) -> Monstre {
+        let espece = contenu.espece(&EspeceId::new(id)).unwrap();
+        Monstre::creer(espece, niveau(valeur), ValeursInternes::default(), false).unwrap()
+    }
+
+    #[test]
+    fn l_armure_hantee_n_evolue_que_dans_la_vallee() {
+        let contenu = ContenuV1::new();
+        let vallee = ZoneId::new("vallee");
+        let marais = ZoneId::new("marais");
+        let dans = |zone| Circonstances {
+            zone: Some(zone),
+            apotres_vaincus: &[],
+        };
+        let armure = creer(&contenu, "armure-hantee", 18);
+        let vers = evolution_possible(&armure, &dans(&vallee), &contenu).unwrap();
+        assert_eq!(vers.id().as_str(), "chevalier-noir");
+        assert_eq!(evolution_possible(&armure, &dans(&marais), &contenu), None);
+        assert_eq!(evolution_possible(&armure, &AU_CAMP, &contenu), None);
+        let jeune = creer(&contenu, "armure-hantee", 17);
+        assert_eq!(evolution_possible(&jeune, &dans(&vallee), &contenu), None);
+    }
+
+    #[test]
+    fn le_squelette_evolue_une_fois_le_baron_vaincu() {
+        let contenu = ContenuV1::new();
+        let baron = [EspeceId::new("baron-pendu")];
+        let apres_le_baron = Circonstances {
+            zone: None,
+            apotres_vaincus: &baron,
+        };
+        let squelette = creer(&contenu, "squelette", 20);
+        assert_eq!(evolution_possible(&squelette, &AU_CAMP, &contenu), None);
+        let vers = evolution_possible(&squelette, &apres_le_baron, &contenu).unwrap();
+        assert_eq!(vers.id().as_str(), "chevalier-squelette");
+        let jeune = creer(&contenu, "squelette", 19);
+        assert_eq!(evolution_possible(&jeune, &apres_le_baron, &contenu), None);
+    }
+
+    #[test]
+    fn une_pierre_ne_se_remplit_jamais_seule() {
+        let contenu = ContenuV1::new();
+        let cerf = creer(&contenu, "cerf-blanc", 50);
+        assert_eq!(evolution_possible(&cerf, &AU_CAMP, &contenu), None);
+        assert_eq!(
+            cerf.espece().evolution().and_then(Evolution::pierre),
+            Some(PierreDEvolution::Lune)
+        );
     }
 }

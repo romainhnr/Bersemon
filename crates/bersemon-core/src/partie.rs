@@ -12,7 +12,9 @@ use crate::codex::Codex;
 use crate::collection::{Collection, Emplacement, ErreurCollection, Placement};
 use crate::combat::{BilanCombat, Combat, ErreurCombat, Issue};
 use crate::espece::{Espece, EspeceId};
-use crate::evolution::{ErreurEvolution, ResultatEvolution, evolution_possible, faire_evoluer};
+use crate::evolution::{
+    Circonstances, ErreurEvolution, ResultatEvolution, evolution_possible, faire_evoluer,
+};
 use crate::expedition::{ErreurExpedition, Expedition, RencontreDeLAme};
 use crate::expedition_automatique::{
     BilanExpeditionAutomatique, ErreurExpeditionAutomatique, Estimation, ExpeditionAutomatique,
@@ -528,7 +530,13 @@ impl Partie {
                 }
                 evolution.and_then(|evolution| catalogue.espece(evolution.vers()))
             }
-            None => evolution_possible(monstre, catalogue),
+            None => {
+                let au_camp = Circonstances {
+                    zone: None,
+                    apotres_vaincus: &self.apotres_vaincus,
+                };
+                evolution_possible(monstre, &au_camp, catalogue)
+            }
         };
         let vers = vers.ok_or(ErreurEvolution::ImpossiblePourLInstant)?;
         Ok((monstre.clone(), vers, pierre))

@@ -338,6 +338,24 @@ mod tests {
         let espece = crate::partie::fiche_d_espece(loup.espece(), &contenu);
         assert_eq!(espece[1], "Habiletés possibles : Traqueur et Fouineur");
         assert_eq!(espece[4], "Évolution : Warg au niveau 16");
+        let fiche = |id: &str| {
+            let espece = contenu.espece(&EspeceId::new(id)).unwrap();
+            crate::partie::fiche_d_espece(&espece, &contenu)
+                .pop()
+                .unwrap()
+        };
+        assert_eq!(
+            fiche("armure-hantee"),
+            "Évolution : Chevalier noir dès le niveau 18, en gagnant un niveau dans la zone Vallée des Brumes"
+        );
+        assert_eq!(
+            fiche("squelette"),
+            "Évolution : Chevalier squelette dès le niveau 20, une fois l'Apôtre Baron pendu vaincu"
+        );
+        assert_eq!(
+            fiche("cerf-blanc"),
+            "Évolution : Cerf de lune avec une pierre de lune"
+        );
     }
 
     #[test]

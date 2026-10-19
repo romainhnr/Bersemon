@@ -358,18 +358,37 @@ pub fn fiche_d_espece(espece: &Espece, catalogue: &dyn Catalogue) -> Vec<String>
         fiche.push(format!(
             "Évolution : {} {}",
             vers.nom(),
-            condition_d_evolution(condition)
+            condition_d_evolution(condition, catalogue)
         ));
     }
     fiche
 }
 
 /// Après le nom de l'espèce d'arrivée : "Lézard de braise au niveau 16".
-pub fn condition_d_evolution(condition: &ConditionEvolution) -> String {
+pub fn condition_d_evolution(condition: &ConditionEvolution, catalogue: &dyn Catalogue) -> String {
     match condition {
         ConditionEvolution::Niveau(niveau) => format!("au niveau {}", niveau.valeur()),
         ConditionEvolution::Pierre(pierre) => {
             format!("avec une {}", pierre.nom().to_lowercase())
+        }
+        ConditionEvolution::Lieu { zone, niveau } => {
+            let zone = catalogue
+                .zone(zone)
+                .map_or_else(|| zone.as_str().to_string(), |zone| zone.nom().to_string());
+            format!(
+                "dès le niveau {}, en gagnant un niveau dans la zone {zone}",
+                niveau.valeur()
+            )
+        }
+        ConditionEvolution::ApotreVaincu { apotre, niveau } => {
+            let apotre = catalogue.espece(apotre).map_or_else(
+                || apotre.as_str().to_string(),
+                |apotre| apotre.nom().to_string(),
+            );
+            format!(
+                "dès le niveau {}, une fois l'Apôtre {apotre} vaincu",
+                niveau.valeur()
+            )
         }
     }
 }

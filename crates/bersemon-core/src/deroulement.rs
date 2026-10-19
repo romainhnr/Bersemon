@@ -21,7 +21,7 @@ use crate::collection::{Emplacement, ErreurCollection, Placement, TriDuCamp};
 use crate::combat::{self, Action, BilanCombat, Combat, ErreurCombat, Issue, Phase};
 use crate::contenu::ContenuV1;
 use crate::espece::Espece;
-use crate::evolution::{ErreurEvolution, evolution_possible, faire_evoluer};
+use crate::evolution::{Circonstances, ErreurEvolution, evolution_possible, faire_evoluer};
 use crate::expedition::{ErreurExpedition, EvenementExpedition, Expedition};
 use crate::expedition_automatique::{
     BilanExpeditionAutomatique, ErreurExpeditionAutomatique, ExpeditionAutomatique,
@@ -642,13 +642,14 @@ impl Deroulement {
 fn evolution_a_proposer(
     bilan: &BilanCombat,
     index: usize,
+    circonstances: &Circonstances<'_>,
     contexte: &Contexte<'_>,
 ) -> Option<Espece> {
     let rapport = bilan.experience.get(index)?.as_ref()?;
     if rapport.niveau_apres <= rapport.niveau_avant {
         return None;
     }
-    evolution_possible(&bilan.equipe[index], contexte.contenu)
+    evolution_possible(&bilan.equipe[index], circonstances, contexte.contenu)
 }
 
 fn zone_du_contenu<'c>(contenu: &'c ContenuV1, id: &ZoneId) -> Result<&'c Zone, ErreurChoix> {
@@ -1518,7 +1519,11 @@ impl EnExpedition {
                 });
                 return Reponse::Faite;
             }
-            if let Some(vers) = evolution_a_proposer(&bilan, index, contexte) {
+            let circonstances = Circonstances {
+                zone: Some(self.expedition.zone().id()),
+                apotres_vaincus: partie.apotres_vaincus(),
+            };
+            if let Some(vers) = evolution_a_proposer(&bilan, index, &circonstances, contexte) {
                 self.moment = Moment::Evolution(EvolutionEnCours {
                     bilan,
                     fin,
@@ -1587,7 +1592,12 @@ impl EnExpedition {
             return Ok(Reponse::Faite);
         }
         if !oubli.apres_evolution {
-            if let Some(vers) = evolution_a_proposer(&oubli.bilan, oubli.monstre, contexte) {
+            let circonstances = Circonstances {
+                zone: Some(self.expedition.zone().id()),
+                apotres_vaincus: partie.apotres_vaincus(),
+            };
+            let vers = evolution_a_proposer(&oubli.bilan, oubli.monstre, &circonstances, contexte);
+            if let Some(vers) = vers {
                 self.moment = Moment::Evolution(EvolutionEnCours {
                     bilan: oubli.bilan,
                     fin: oubli.fin,

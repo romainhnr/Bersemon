@@ -432,7 +432,7 @@ const fn avec_effet(fiche: FicheAttaque, statut: Statut, chance: u8) -> FicheAtt
 }
 
 /// Section 1 de docs/contenu-v1.md, dans le même ordre.
-const ATTAQUES: [FicheAttaque; 65] = [
+const ATTAQUES: [FicheAttaque; 67] = [
     fiche(
         "souffle-chaud",
         "Souffle chaud",
@@ -852,6 +852,22 @@ const ATTAQUES: [FicheAttaque; 65] = [
         100,
     ),
     fiche(
+        "taille-d-acier",
+        "Taille d'acier",
+        Type::Acier,
+        Physique,
+        85,
+        90,
+    ),
+    fiche(
+        "epee-des-morts",
+        "Épée des morts",
+        Type::Combat,
+        Physique,
+        85,
+        95,
+    ),
+    fiche(
         "regard-de-mort",
         "Regard de mort",
         Type::Poison,
@@ -945,6 +961,10 @@ struct FicheEvolution {
 enum FicheCondition {
     Niveau(u8),
     Pierre(PierreDEvolution),
+    /// Identifiant de la zone et niveau.
+    Lieu(&'static str, u8),
+    /// Identifiant de l'Apôtre et niveau.
+    ApotreVaincu(&'static str, u8),
 }
 
 const fn par_pierre(
@@ -955,6 +975,18 @@ const fn par_pierre(
     Some(FicheEvolution {
         vers,
         condition: FicheCondition::Pierre(pierre),
+        attaque,
+    })
+}
+
+const fn sous_condition(
+    vers: &'static str,
+    condition: FicheCondition,
+    attaque: &'static str,
+) -> Option<FicheEvolution> {
+    Some(FicheEvolution {
+        vers,
+        condition,
         attaque,
     })
 }
@@ -993,7 +1025,7 @@ const MARCHAND_ZOMBIE: FicheEspece = FicheEspece {
 /// Section 2 de docs/contenu-v1.md, dans l'ordre du codex : les monstres de
 /// départ, les communs, les rares, l'Apôtre, le monstre caché, puis les
 /// formes évoluées de la section 8.
-const ESPECES: [FicheEspece; 28] = [
+const ESPECES: [FicheEspece; 30] = [
     FicheEspece {
         id: "salamandre",
         nom: "Salamandre",
@@ -1141,7 +1173,11 @@ const ESPECES: [FicheEspece; 28] = [
             (8, "lame-rouillee"),
             (11, "charge-spectrale"),
         ],
-        evolution: None,
+        evolution: sous_condition(
+            "chevalier-noir",
+            FicheCondition::Lieu("vallee", 18),
+            "taille-d-acier",
+        ),
     },
     FicheEspece {
         id: "fee-noire",
@@ -1169,7 +1205,11 @@ const ESPECES: [FicheEspece; 28] = [
             (8, "lame-rouillee"),
             (11, "charge-spectrale"),
         ],
-        evolution: None,
+        evolution: sous_condition(
+            "chevalier-squelette",
+            FicheCondition::ApotreVaincu("baron-pendu", 20),
+            "epee-des-morts",
+        ),
     },
     FicheEspece {
         id: "cerf-blanc",
@@ -1476,6 +1516,43 @@ const ESPECES: [FicheEspece; 28] = [
         ],
         evolution: None,
     },
+    // Évolutions par lieu et par événement (étape 40).
+    FicheEspece {
+        id: "chevalier-noir",
+        nom: "Chevalier noir",
+        types: &[Type::Acier, Type::Spectre],
+        role: Role::Offensif,
+        stats_de_base: [75, 95, 105, 38, 62, 38],
+        rendement_experience: 133,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Carapace, Habilete::Ferocite],
+        apprentissage: &[
+            (1, "coup-de-garde"),
+            (8, "lame-rouillee"),
+            (11, "charge-spectrale"),
+            (18, "taille-d-acier"),
+            (18, "frisson-d-outre-tombe"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "chevalier-squelette",
+        nom: "Chevalier squelette",
+        types: &[Type::Spectre, Type::Combat],
+        role: Role::Offensif,
+        stats_de_base: [62, 100, 75, 38, 56, 69],
+        rendement_experience: 128,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Ferocite, Habilete::Carapace],
+        apprentissage: &[
+            (1, "frappe-d-os"),
+            (8, "lame-rouillee"),
+            (11, "charge-spectrale"),
+            (20, "epee-des-morts"),
+            (20, "coup-de-garde"),
+        ],
+        evolution: None,
+    },
 ];
 
 fn creer_espece(fiche: &FicheEspece) -> Espece {
@@ -1533,6 +1610,14 @@ fn creer_evolution(fiche: &FicheEvolution) -> Evolution {
     let condition = match fiche.condition {
         FicheCondition::Niveau(valeur) => ConditionEvolution::Niveau(niveau(valeur)),
         FicheCondition::Pierre(pierre) => ConditionEvolution::Pierre(pierre),
+        FicheCondition::Lieu(zone, valeur) => ConditionEvolution::Lieu {
+            zone: ZoneId::new(zone),
+            niveau: niveau(valeur),
+        },
+        FicheCondition::ApotreVaincu(apotre, valeur) => ConditionEvolution::ApotreVaincu {
+            apotre: EspeceId::new(apotre),
+            niveau: niveau(valeur),
+        },
     };
     Evolution::new(
         EspeceId::new(fiche.vers),
@@ -1762,7 +1847,7 @@ mod tests {
     #[test]
     fn contenu_conforme_aux_regles() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.especes().len(), 28);
+        assert_eq!(contenu.especes().len(), 30);
         assert_eq!(contenu.zones().len(), 3);
         assert_eq!(contenu.piste().indices().len(), 2);
         // Toute espèce rencontrée en zone se retrouve au chargement d'une
@@ -1849,7 +1934,7 @@ mod tests {
                 assert!(zone.especes().iter().all(|espece| espece.id() != vers.id()));
             }
         }
-        assert_eq!(evoluees, 11);
+        assert_eq!(evoluees, 13);
     }
 
     #[test]
