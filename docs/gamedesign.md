@@ -376,6 +376,18 @@ Décidé le 18/10/2026, pour l'étape 25 :
 - Quand le joueur peut capturer, le nombre de monstres de son équipe et de son camp est rappelé. Le bouton qui renonce à la capture devient « Ne pas capturer ».
 - Sur Discord, sont mis en gras, en plus de la section 2 : les noms des monstres, la fin d'une expédition menée au bout, les indices et les défaites.
 
+### 10.7 Combats contre des humains (après la V1)
+
+Décidé le 19/10/2026, pour l'étape 29 (Q74) :
+
+- Le premier humain est un brigand, au bout de la Lisière du Bois-Sombre. Il remplace l'événement de la dernière étape de chaque expédition dans la Lisière tant qu'il n'est pas vaincu, comme un Apôtre (section 9.4). Un court texte le présente avant le combat.
+- Le vaincre achève l'expédition : elle compte comme menée au bout, et la première fois donne l'indice 1, qui ouvre le Marais (section 9.4). Une partie qui a déjà cet indice croise quand même le brigand au bout de la Lisière, sans enjeu pour la traque. Une fois vaincu, il ne revient plus.
+- Son équipe : un Loup de niveau 7 et un Corbeau de niveau 8, juste au-dessus des niveaux de la Lisière. Leurs valeurs internes sont fixes, à 15, ils ne sont jamais shiny et ont la première habileté de leur espèce : le combat est le même pour tous. Ses monstres entrent dans l'ordre de son équipe.
+- Ni fuite ni filet pendant ce combat. Après la victoire, le joueur peut prendre un seul de ses monstres, au choix et à coup sûr, ou aucun (section 11.3).
+- Victoire : 60 pièces d'argent dans le sac, en plus de l'XP habituelle de chaque monstre vaincu (section 7). Une défaite est une défaite ordinaire (section 9.3).
+- IA simple d'un humain : son monstre actif choisit l'attaque qui inflige les dégâts estimés les plus hauts au monstre actif du joueur (le haut de la fourchette de la section 10.6, efficacité et bonus de type compris) ; à égalité, la première de sa liste. Il ne change pas de monstre et n'utilise pas de potion. Aucun tirage pour ce choix.
+- En combat, ses monstres ne sont pas dits sauvages. Les textes sont dans docs/contenu-v1.md, section 4.
+
 ## 11. Obtention des monstres
 
 ### 11.1 Moyens d'obtention
@@ -404,7 +416,7 @@ Décidé le 18/10/2026, pour l'étape 25 :
 
 ### 11.3 Capture après un combat contre un humain contrôlé par l'IA
 
-- Après avoir vaincu un humain qui combat avec ses monstres, le joueur peut capturer le monstre de son choix parmi ceux de l'adversaire.
+- Après avoir vaincu un humain qui combat avec ses monstres, le joueur peut capturer le monstre de son choix parmi ceux de l'adversaire. Depuis l'étape 29, il n'en prend qu'un, ou aucun ; pendant le combat, ni fuite ni filet (section 10.7).
 - La capture est garantie, puisque ses monstres sont forcément KO.
 - Cette règle ne s'applique pas aux combats contre de vrais joueurs (section 15).
 
@@ -553,7 +565,7 @@ Le joueur peut construire des machines pour automatiser certaines tâches, par e
 - On ne sauvegarde qu'au camp : quitter le jeu en pleine expédition ramène à la dernière sauvegarde.
 - Une sauvegarde illisible, ou qui cite une espèce ou une attaque disparue du jeu, est refusée : le jeu l'explique et propose une nouvelle partie, sans rien effacer sans l'accord du joueur.
 - La sauvegarde garde l'identifiant des espèces, des attaques et des zones, pas leurs données : un rééquilibrage s'applique aux monstres déjà capturés.
-- Elle garde aussi l'avancée de la traque (indices trouvés, Apôtres vaincus) et les conseils du tutoriel déjà montrés.
+- Elle garde aussi l'avancée de la traque (indices trouvés, Apôtres vaincus) et les conseils du tutoriel déjà montrés. Depuis l'étape 29, aussi les humains vaincus (section 10.7).
 - Après la V1, elle garde les expéditions automatiques en cours : zone, monstres envoyés, heures de départ et de retour (section 12). Elle garde aussi les attaques qui restent à choisir après l'accueil d'une expédition (section 12.7). Le départ, le rappel et l'accueil d'une expédition automatique sont des actions au camp, suivies d'une sauvegarde.
 - Avec l'économie, elle garde aussi l'argent du joueur, la présence du marchand au camp et les capsules d'attaque obtenues (section 14). Les achats et les ventes sont des actions au camp, suivies d'une sauvegarde.
 - Depuis l'étape 28, elle garde aussi l'habileté de chaque monstre (section 5.9).
@@ -667,7 +679,6 @@ Les questions Q67 et suivantes ont été relevées le 18/10/2026 après les prem
 Les questions Q72 et suivantes ont été relevées le 18/10/2026 après les essais de l'économie, découpés en étapes : 25 interface, 26 règles (coffre et sac, équipe vide, revente, étapes fixes), 27 classe Assassin et nouveaux monstres, 28 combats contre des humains, 29 troisième zone, Baron et Apôtre de type Obscur, 30 marchands par zone. Découpage révisé le 19/10/2026 : 28 shiny et habiletés, 29 combats contre des humains, 30 troisième zone, Baron et Apôtre de type Obscur, 31 nécromancien et âmes de marchands.
 
 - Q73. (Étape 30) Nouveaux monstres inspirés de Berserk (fées, elfes, squelettes, dragons), pour la troisième zone : liste, fiches et place dans la zone. Premier jet proposé le 19/10/2026, à confirmer : Fée noire (commune, Insecte et Ténèbres), Elfe (rare et pacifique, Féérique et Vol), Squelette (commun, Spectre et Combat), Vouivre (rare et hostile, Dragon et Vol) ; le type Féérique y reste réservé à une espèce rare (section 5.2). Le Schnoz, surnom donné par les fans au chimimoryo, créature astrale croisée près du Qliphoth dans l'épisode 215 du manga (page https://berserk.fandom.com/wiki/Chimimoryo transmise par l'utilisateur), est le monstre caché de l'étape 27. C'est une créature de l'œuvre, protégée : sans souci pour un jeu privé, mais si le bot devient public, mieux vaudra une créature qui s'en inspire, avec son propre nom et sa propre apparence (voir aussi Q64).
-- Q74. (Étape 29) Combats contre des humains et leurs monstres, à la fin de la première zone pour commencer : nombre et niveaux des monstres adverses, fuite et filet, capture après la victoire (section 11.3), récompenses, et règles de l'IA d'un humain ordinaire (simple, mais pas au hasard).
 - Q75. (Étape 30) Troisième zone et nouvelle traque : un indice par zone à sa première expédition menée au bout ; à la fin de la deuxième zone, un humain plus fort, au service de l'Apôtre, donne l'indice de la troisième, où attend l'Apôtre. Restent à définir la zone (nom, niveaux, espèces), les noms (l'Apôtre actuel s'appelle déjà Baron pendu : l'un des deux sera renommé), l'IA du Baron et celle de l'Apôtre, et la conversion des sauvegardes qui ont déjà trouvé 3 indices. L'utilisateur accepte ces conséquences.
 - Q76. (Étape 30) Type Obscur : Obscur contre Obscur, attaques des Apôtres, équilibrage ; autres relations du type Stellaire, neutre envers tous les types depuis l'étape 27 (voir Q5). À vérifier aussi : le Chat noir, de type Ténèbres, résiste à toutes les attaques du Baron pendu (Spectre et Ténèbres) ; l'équilibre de son départ contre le nouvel Apôtre.
 - Q77. (Étape 31) Nécromancien et âmes de marchands : nom et texte de la rencontre du nécromancien, noms et articles de chaque marchand, façon de trouver leur âme (marchand tué sous les yeux du joueur, cadavre qui attaque), sort du marchand actuel et conversion des sauvegardes où il est déjà au camp.
@@ -931,3 +942,11 @@ Les questions Q72 et suivantes ont été relevées le 18/10/2026 après les essa
 - Habiletés (section 5.9) : 2 possibles par espèce, une tirée pour chaque monstre à sa création ; la première de l'espèce pour les monstres des sauvegardes antérieures. Catalogue de onze habiletés d'après la liste de l'utilisateur : cinq bonus de stats de +10 %, Affinité (+20 % de dégâts avec le bonus de type), Instinct (+20 % d'XP), Éclaireur (-20 % de durée d'expédition automatique), Traqueur (capture x1,25), Pillard (+50 % d'argent des coffres et des expéditions automatiques) et Fouineur (une potion 1 fois sur 4 après un combat gagné). Valeurs à ajuster en jouant.
 - "Booste le taux de drop" est compris comme plus de butin : c'est l'habileté Pillard.
 - Les habiletés d'équipe ne se cumulent pas ; celles de stats s'ajoutent au bonus de la classe ; seules les habiletés de combat jouent pour les monstres sauvages et les Apôtres.
+
+19/10/2026 (étape 29) :
+
+- Q74 : le premier humain est un brigand, au bout de la Lisière, qui remplace l'événement de la dernière étape tant qu'il n'est pas vaincu ; le vaincre achève l'expédition et, la première fois, donne l'indice 1 qui ouvre le Marais. Une partie qui a déjà cet indice le croise aussi, sans enjeu pour la traque.
+- Son équipe : Loup de niveau 7 et Corbeau de niveau 8, valeurs internes à 15, sans shiny, première habileté de leur espèce. Victoire : 60 pièces d'argent dans le sac et l'XP habituelle.
+- Ni fuite ni filet contre un humain ; après la victoire, un seul de ses monstres au choix, à coup sûr, ou aucun.
+- IA simple : l'attaque aux dégâts estimés les plus hauts contre le monstre actif du joueur, la première à égalité ; ni changement de monstre ni potion.
+- Sauvegarde en version 9, avec les humains vaincus.
