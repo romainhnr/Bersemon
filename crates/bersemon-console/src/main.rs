@@ -103,6 +103,7 @@ fn demander(
             let collection = deroulement.partie().expect(PARTIE_EN_JEU).collection();
             ecran_expedition::place_manquante(capture, collection, entree)
         }
+        Attente::Annonce(annonce) => ecran_expedition::annonce(annonce, entree),
         Attente::Confirmation(confirmation) => confirmer(confirmation, entree),
     }
 }

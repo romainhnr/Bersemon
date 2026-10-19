@@ -345,6 +345,7 @@ fn jouer_un_coup(
             }
         }
         Attente::PlaceManquante(_) => cliquer(message, |cle| *cle == Cle::RelacherLaCapture),
+        Attente::Annonce(_) => cliquer(message, |cle| *cle == Cle::Poursuivre),
         Attente::Confirmation(_) => cliquer(message, |cle| *cle == Cle::Oui),
         Attente::Reprise(_) => cliquer(message, |cle| *cle == Cle::ReprendreLaPartie),
         Attente::SauvegardeIllisible(_) => cliquer(message, |cle| *cle == Cle::NouvellePartie),

@@ -5,7 +5,7 @@ use bersemon_core::codex::{Codex, EtatCodex};
 use bersemon_core::collection::Collection;
 use bersemon_core::combat::Cote;
 use bersemon_core::contenu::ContenuV1;
-use bersemon_core::deroulement::Confirmation;
+use bersemon_core::deroulement::{Annonce, Confirmation};
 use bersemon_core::espece::Espece;
 use bersemon_core::expedition::Expedition;
 use bersemon_core::heros::Classe;
@@ -142,6 +142,14 @@ pub fn compteur_d_etapes(expedition: &Expedition) -> String {
         expedition.etapes_faites(),
         expedition.nombre_etapes()
     )
+}
+
+/// Le texte et le bouton d'une annonce (section 9.2).
+pub fn annonce(annonce: Annonce) -> (&'static str, &'static str) {
+    match annonce {
+        Annonce::Combat => ("Le combat vous attend.", "Combattre"),
+        Annonce::Indice => ("Vous avez trouvé un indice.", "Lire l'indice"),
+    }
 }
 
 /// Les places de l'équipe et du camp, rappelées quand le joueur peut

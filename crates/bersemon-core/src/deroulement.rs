@@ -31,6 +31,7 @@ use crate::monstre::{Monstre, RapportExperience};
 use crate::nom::{ErreurNom, Nom};
 use crate::partie::{Partie, creer_monstre_de_depart};
 use crate::sauvegarde::{ErreurSauvegarde, SauvegardeRepository};
+use crate::traque::Piste;
 use crate::tutoriel::Conseil;
 use crate::zone::{Zone, ZoneId};
 
@@ -115,8 +116,21 @@ pub enum Choix {
     RenoncerALAttaque,
     RelacherPourLaCapture(Emplacement),
     RelacherLaCapture,
+    /// Répond à une annonce : combattre, ou lire l'indice (section 9.2).
+    Poursuivre,
     Oui,
     Non,
+}
+
+/// Ce qu'annonce un texte suivi d'un bouton, pour que le joueur ne le rate
+/// pas en enchaînant les actions (section 9.2).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Annonce {
+    /// Un humain de fin de zone ou un Apôtre : bouton "Combattre".
+    Combat,
+    /// Au bout d'une expédition qui révèle un indice : bouton "Lire
+    /// l'indice".
+    Indice,
 }
 
 /// Gestion des monstres (section 13.2).
@@ -165,6 +179,8 @@ pub enum Attente<'a> {
     /// L'équipe et le camp sont pleins : le joueur relâche un de ses monstres
     /// pour garder la capture, ou relâche la capture (Q12).
     PlaceManquante(&'a Monstre),
+    /// Le joueur poursuit par `Choix::Poursuivre`.
+    Annonce(Annonce),
     Confirmation(&'a Confirmation),
 }
 
@@ -605,6 +621,8 @@ impl EnJeu {
                     moment: Moment::EntreDeuxEtapes,
                 };
                 let reponse = en_cours.etape_suivante(&mut self.partie, contexte, evenements);
+                let reponse =
+                    en_cours.annoncer_l_indice(&self.partie, contexte.contenu.piste(), reponse);
                 self.expedition = Some(en_cours);
                 if reponse == Reponse::RetourAuCamp {
                     self.rentrer(contexte, evenements);
@@ -944,9 +962,14 @@ struct EnExpedition {
 enum Moment {
     EntreDeuxEtapes,
     MonstreRare(Monstre),
+    /// Le combat contre un humain de fin de zone ou un Apôtre, prêt à
+    /// commencer quand le joueur le veut (section 9.2).
+    AnnonceDeCombat(Combat),
     Combat(Combat),
     OubliAttaque(OubliEnCours),
     PlaceManquante(CaptureSansPlace),
+    /// L'expédition est finie et révèle un indice au retour (section 9.2).
+    AnnonceDIndice,
 }
 
 /// Ce qui reste à régler une fois les suites d'un combat terminées.
@@ -984,6 +1007,8 @@ impl EnExpedition {
         match &self.moment {
             Moment::EntreDeuxEtapes => Attente::EntreDeuxEtapes,
             Moment::MonstreRare(monstre) => Attente::MonstreRare(monstre),
+            Moment::AnnonceDeCombat(_) => Attente::Annonce(Annonce::Combat),
+            Moment::AnnonceDIndice => Attente::Annonce(Annonce::Indice),
             Moment::Combat(combat) => match combat.phase() {
                 Phase::ChoixAction => Attente::ActionDeCombat(combat),
                 Phase::Remplacement => Attente::Remplacement(combat),
@@ -1007,11 +1032,18 @@ impl EnExpedition {
         contexte: &mut Contexte<'_>,
         evenements: &mut Vec<Evenement>,
     ) -> Result<Reponse, ErreurChoix> {
-        match std::mem::replace(&mut self.moment, Moment::EntreDeuxEtapes) {
+        let reponse = match std::mem::replace(&mut self.moment, Moment::EntreDeuxEtapes) {
             Moment::EntreDeuxEtapes => {
                 self.entre_deux_etapes(partie, choix, confirme, contexte, evenements)
             }
             Moment::MonstreRare(monstre) => self.monstre_rare(partie, monstre, choix, evenements),
+            Moment::AnnonceDeCombat(combat) => {
+                if *choix != Choix::Poursuivre {
+                    self.moment = Moment::AnnonceDeCombat(combat);
+                    return Err(ErreurChoix::HorsDePropos);
+                }
+                Ok(self.engager(partie, combat, evenements))
+            }
             Moment::Combat(combat) => {
                 self.combattre(partie, combat, choix, confirme, contexte, evenements)
             }
@@ -1019,6 +1051,30 @@ impl EnExpedition {
             Moment::PlaceManquante(attente) => {
                 self.faire_place(partie, attente, choix, confirme, contexte, evenements)
             }
+            Moment::AnnonceDIndice => {
+                if *choix != Choix::Poursuivre {
+                    self.moment = Moment::AnnonceDIndice;
+                    return Err(ErreurChoix::HorsDePropos);
+                }
+                return Ok(Reponse::RetourAuCamp);
+            }
+        }?;
+        Ok(self.annoncer_l_indice(partie, contexte.contenu.piste(), reponse))
+    }
+
+    /// Une expédition menée au bout qui révèle un indice l'annonce d'abord
+    /// par un bouton ; le retour au camp attend le joueur (section 9.2).
+    fn annoncer_l_indice(&mut self, partie: &Partie, piste: &Piste, reponse: Reponse) -> Reponse {
+        let indice_a_lire = reponse == Reponse::RetourAuCamp
+            && self.expedition.est_reussie()
+            && piste
+                .indice_suivant(partie.indices_trouves())
+                .is_some_and(|indice| &indice.zone == self.expedition.zone().id());
+        if indice_a_lire {
+            self.moment = Moment::AnnonceDIndice;
+            Reponse::Faite
+        } else {
+            reponse
         }
     }
 
@@ -1430,7 +1486,8 @@ impl EnExpedition {
                 let combat = partie
                     .preparer_combat_contre_apotre(monstre)
                     .expect(EQUIPE_APTE);
-                self.engager(partie, combat, evenements)
+                self.moment = Moment::AnnonceDeCombat(combat);
+                Reponse::Faite
             }
             EvenementExpedition::Humain { humain, equipe } => {
                 // Comme pour l'Apôtre, son texte annonce la rencontre.
@@ -1440,7 +1497,8 @@ impl EnExpedition {
                 let combat = partie
                     .preparer_combat_contre_humain(equipe, humain.ia())
                     .expect(EQUIPE_APTE);
-                self.engager(partie, combat, evenements)
+                self.moment = Moment::AnnonceDeCombat(combat);
+                Reponse::Faite
             }
         }
     }
@@ -2321,6 +2379,7 @@ mod tests {
                 }
             }
             Attente::PlaceManquante(_) => Choix::RelacherLaCapture,
+            Attente::Annonce(_) => Choix::Poursuivre,
             Attente::Confirmation(_) => Choix::Oui,
         }
     }
@@ -2367,7 +2426,11 @@ mod tests {
         let mut aleatoire = GenerateurAleatoire::new(2026);
         let mut deroulement = Deroulement::demarrer(depot.charger(&contenu));
         let mut vus = Vec::new();
+        let mut annonces = Vec::new();
         for _ in 0..50_000 {
+            if let Attente::Annonce(annonce) = deroulement.attente() {
+                annonces.push(annonce);
+            }
             let choix = jouer_un_coup(&deroulement, &contenu);
             let mut contexte = Contexte {
                 contenu: &contenu,
@@ -2391,6 +2454,28 @@ mod tests {
             .filter(|evenement| matches!(evenement, Evenement::Indice { .. }))
             .count();
         assert_eq!(indices, 2);
+        // Chaque indice et chaque combat de fin de zone sont d'abord annoncés
+        // par un bouton (section 9.2).
+        let annonces_d_indice = annonces
+            .iter()
+            .filter(|annonce| **annonce == Annonce::Indice)
+            .count();
+        assert_eq!(annonces_d_indice, indices);
+        let fins_de_zone = vus
+            .iter()
+            .filter(|evenement| {
+                matches!(
+                    evenement,
+                    Evenement::HumainRencontre(_) | Evenement::RecitDeLApotre(_)
+                )
+            })
+            .count();
+        let annonces_de_combat = annonces
+            .iter()
+            .filter(|annonce| **annonce == Annonce::Combat)
+            .count();
+        assert!(fins_de_zone >= 3);
+        assert_eq!(annonces_de_combat, fins_de_zone);
         assert!(
             vus.iter()
                 .any(|evenement| matches!(evenement, Evenement::Epilogue(_)))

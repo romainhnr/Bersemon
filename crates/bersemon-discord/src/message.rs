@@ -215,6 +215,7 @@ fn question(session: &Session, contenu: &ContenuV1, maintenant: Horodatage) -> Q
         Attente::Remplacement(combat) => ecran_combat::remplacement(combat, partie().codex()),
         Attente::CaptureDesKo(combat) => ecran_combat::capture(combat, partie().collection()),
         Attente::OubliAttaque { monstre, nouvelle } => ecran_combat::oubli(monstre, nouvelle),
+        Attente::Annonce(annonce) => ecran_expedition::annonce(annonce),
         Attente::Confirmation(confirmation) => confirmer(confirmation),
     }
 }

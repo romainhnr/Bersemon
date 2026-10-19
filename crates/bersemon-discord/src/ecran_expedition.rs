@@ -1,14 +1,16 @@
 //! Expédition sur Discord (section 9.2) : entre deux étapes, devant un
-//! monstre rare pacifique, et quand une capture ne trouve pas de place.
+//! monstre rare pacifique, quand une capture ne trouve pas de place, et pour
+//! une annonce.
 
 use bersemon_core::collection::Collection;
 use bersemon_core::combat::Cote;
+use bersemon_core::deroulement::Annonce;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_presentation::monstres::ligne_monstre;
 use bersemon_presentation::partie::{
-    collection as liste_des_monstres, place_manquante as texte_de_place_manquante,
-    sac_en_expedition,
+    annonce as texte_d_annonce, collection as liste_des_monstres,
+    place_manquante as texte_de_place_manquante, sac_en_expedition,
 };
 
 use crate::composants::Cle;
@@ -51,6 +53,16 @@ pub fn entre_deux_etapes(partie: &Partie) -> Question {
             sac_en_expedition(partie)
         ),
         rangees: rangees_de_l_etape,
+    }
+}
+
+/// Un seul bouton, pour que le joueur ne rate pas l'événement en enchaînant
+/// les actions (section 9.2).
+pub fn annonce(annonce: Annonce) -> Question {
+    let (texte, libelle) = texte_d_annonce(annonce);
+    Question {
+        texte: texte.to_string(),
+        rangees: rangees(vec![bouton(Cle::Poursuivre, libelle, PRINCIPAL)]),
     }
 }
 

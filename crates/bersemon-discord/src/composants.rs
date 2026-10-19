@@ -145,6 +145,8 @@ pub enum Cle {
     /// Menu de l'équipe : le monstre choisi passe en tête (Q55).
     EnTete,
     Prendre,
+    /// Le bouton d'une annonce (section 9.2).
+    Poursuivre,
     Laisser,
     /// Menu des monstres à relâcher pour garder une capture.
     Liberer(u8),
@@ -245,6 +247,7 @@ impl Cle {
                 vers: 0,
             }),
             Cle::Prendre => jouer(Choix::PrendreLeMonstreRare),
+            Cle::Poursuivre => jouer(Choix::Poursuivre),
             Cle::Laisser => jouer(Choix::LaisserLeMonstreRare),
             Cle::Liberer(_) => jouer(Choix::RelacherPourLaCapture(lire_emplacement(valeur?)?)),
             Cle::RelacherLaCapture => jouer(Choix::RelacherLaCapture),
@@ -340,6 +343,7 @@ impl Cle {
             Cle::Potion => "potion".to_string(),
             Cle::EnTete => "en-tete".to_string(),
             Cle::Prendre => "prendre".to_string(),
+            Cle::Poursuivre => "poursuivre".to_string(),
             Cle::Laisser => "laisser".to_string(),
             Cle::Liberer(numero) => format!("liberer:{numero}"),
             Cle::RelacherLaCapture => "relacher-capture".to_string(),
@@ -425,6 +429,7 @@ impl Cle {
             "potion" => Cle::Potion,
             "en-tete" => Cle::EnTete,
             "prendre" => Cle::Prendre,
+            "poursuivre" => Cle::Poursuivre,
             "laisser" => Cle::Laisser,
             "relacher-capture" => Cle::RelacherLaCapture,
             "filet" => Cle::Filet,
@@ -609,6 +614,7 @@ mod tests {
             Cle::Potion,
             Cle::EnTete,
             Cle::Prendre,
+            Cle::Poursuivre,
             Cle::Laisser,
             Cle::Liberer(1),
             Cle::RelacherLaCapture,

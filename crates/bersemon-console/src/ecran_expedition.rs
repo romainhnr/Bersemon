@@ -1,12 +1,14 @@
 //! Questions posées en expédition (section 9.2) : entre deux étapes, devant
-//! un monstre rare pacifique, et quand une capture ne trouve pas de place.
+//! un monstre rare pacifique, quand une capture ne trouve pas de place, et
+//! pour une annonce.
 
 use bersemon_core::collection::{Collection, Emplacement};
-use bersemon_core::deroulement::{ActionDeGestion, Choix};
+use bersemon_core::deroulement::{ActionDeGestion, Annonce, Choix};
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_presentation::partie::{
-    collection as liste_des_monstres, place_manquante as place_manquante_texte,
+    annonce as texte_d_annonce, collection as liste_des_monstres,
+    place_manquante as place_manquante_texte,
 };
 
 use crate::affichage;
@@ -58,6 +60,14 @@ fn changer_ordre(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> 
         de: de - 1,
         vers: vers - 1,
     })))
+}
+
+/// Le bouton de l'annonce est l'unique choix d'un menu (section 9.2).
+pub fn annonce(annonce: Annonce, entree: &mut Entree) -> Option<Choix> {
+    let (texte, bouton) = texte_d_annonce(annonce);
+    println!("{texte}");
+    println!("  1. {bouton}");
+    entree.choix(1, 1).map(|_| Choix::Poursuivre)
 }
 
 pub fn monstre_rare(entree: &mut Entree) -> Option<Choix> {
