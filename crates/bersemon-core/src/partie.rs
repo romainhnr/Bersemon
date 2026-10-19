@@ -878,10 +878,8 @@ impl Partie {
             };
             expedition = expedition.avec_ame(marchand.clone(), rencontre);
         }
-        let apotre = piste.apotre();
-        if piste.antre_localise(self.indices_trouves)
-            && !self.est_vaincu(apotre)
-            && apotre.zone() == zone.id()
+        if let Some(apotre) =
+            piste.apotre_en_attente(zone.id(), self.indices_trouves, &self.apotres_vaincus)
         {
             return Ok(expedition.vers_l_antre(apotre.clone()));
         }
@@ -1284,7 +1282,7 @@ impl Partie {
             self.zones_explorees.push(zone.clone());
         }
         let indice = piste
-            .indice_suivant(self.indices_trouves)
+            .indice_suivant(self.indices_trouves, &self.apotres_vaincus)
             .filter(|indice| &indice.zone == zone)?;
         self.indices_trouves += 1;
         Some(indice)
@@ -1306,6 +1304,7 @@ mod tests {
     use crate::heros::Classe;
     use crate::nom::Nom;
     use crate::stats::ValeursInternes;
+    use crate::traque::Chapitre;
     use crate::types::Type;
     use std::time::Duration;
 
@@ -1483,12 +1482,12 @@ mod tests {
             texte: String::new(),
         };
         let apotre = Apotre::new(espece("baron"), &zones[1], "", "").unwrap();
-        let piste = Piste::new(
+        let chapitre = Chapitre::new(
             vec![indice("bois"), indice("marais"), indice("marais")],
             apotre,
         )
         .unwrap();
-        (zones, piste)
+        (zones, Piste::new(vec![chapitre]).unwrap())
     }
 
     fn ids(zones: &[&Zone]) -> Vec<String> {
@@ -1519,7 +1518,7 @@ mod tests {
         let expedition = expedition_complete(&partie, &zones[0], &piste);
         assert_eq!(
             partie.rentrer_au_camp(&expedition, &piste),
-            Some(&piste.indices()[0])
+            piste.indices().next()
         );
         assert!(partie.est_exploree(&ZoneId::new("bois")));
         assert_eq!(
@@ -1898,8 +1897,9 @@ mod tests {
         let combat = partie.preparer_combat_contre_apotre(apotre).unwrap();
         assert!(combat.est_contre_un_apotre());
 
-        partie.noter_apotre_vaincu(piste.apotre());
-        partie.noter_apotre_vaincu(piste.apotre());
+        let baron = piste.apotres().next().unwrap();
+        partie.noter_apotre_vaincu(baron);
+        partie.noter_apotre_vaincu(baron);
         assert_eq!(partie.apotres_vaincus(), &[EspeceId::new("baron")]);
         let expedition = expedition_complete(&partie, &zones[1], &piste);
         assert_eq!(partie.rentrer_au_camp(&expedition, &piste), None);

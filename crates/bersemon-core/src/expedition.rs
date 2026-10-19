@@ -155,6 +155,11 @@ impl Expedition {
         }
     }
 
+    /// L'Apôtre qui attend au bout de l'expédition, s'il y en a un.
+    pub fn apotre(&self) -> Option<&Apotre> {
+        self.apotre.as_ref()
+    }
+
     pub(crate) fn vers_l_antre(mut self, apotre: Apotre) -> Self {
         self.apotre = Some(apotre);
         self

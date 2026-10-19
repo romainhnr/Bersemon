@@ -121,15 +121,15 @@ impl Apotre {
     }
 }
 
-/// Piste d'un Apôtre : ses indices, dans l'ordre où on les trouve, puis son
-/// antre.
+/// Un chapitre de la traque : les indices qui mènent à un Apôtre, dans
+/// l'ordre où on les trouve, puis son antre (section 9.4).
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Piste {
+pub struct Chapitre {
     indices: Vec<Indice>,
     apotre: Apotre,
 }
 
-impl Piste {
+impl Chapitre {
     pub fn new(indices: Vec<Indice>, apotre: Apotre) -> Result<Self, ErreurTraque> {
         if indices.is_empty() {
             return Err(ErreurTraque::AucunIndice);
@@ -144,26 +144,97 @@ impl Piste {
     pub fn apotre(&self) -> &Apotre {
         &self.apotre
     }
+}
+
+/// La traque des Apôtres, chapitre après chapitre. Les indices se comptent
+/// à la suite d'un chapitre à l'autre ; ceux d'un chapitre ne se trouvent
+/// qu'une fois vaincu l'Apôtre du chapitre précédent (section 9.4).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Piste {
+    chapitres: Vec<Chapitre>,
+}
+
+impl Piste {
+    pub fn new(chapitres: Vec<Chapitre>) -> Result<Self, ErreurTraque> {
+        if chapitres.is_empty() {
+            return Err(ErreurTraque::AucunIndice);
+        }
+        Ok(Self { chapitres })
+    }
+
+    pub fn chapitres(&self) -> &[Chapitre] {
+        &self.chapitres
+    }
+
+    /// Tous les indices, numérotés à la suite.
+    pub fn indices(&self) -> impl Iterator<Item = &Indice> {
+        self.chapitres
+            .iter()
+            .flat_map(|chapitre| chapitre.indices.iter())
+    }
+
+    /// Les Apôtres, dans l'ordre de la traque.
+    pub fn apotres(&self) -> impl Iterator<Item = &Apotre> {
+        self.chapitres.iter().map(|chapitre| &chapitre.apotre)
+    }
+
+    /// Chaque chapitre, avec le nombre d'indices à trouver pour localiser
+    /// son antre.
+    fn chapitres_et_fins(&self) -> impl Iterator<Item = (&Chapitre, usize)> {
+        self.chapitres.iter().scan(0, |trouves, chapitre| {
+            *trouves += chapitre.indices.len();
+            Some((chapitre, *trouves))
+        })
+    }
 
     /// La zone de chaque indice déjà trouvé et celle de l'indice suivant sont
-    /// ouvertes ; celle de l'Apôtre l'est une fois tous les indices trouvés
-    /// (sections 9.1 et 9.4).
+    /// ouvertes ; celle d'un Apôtre l'est une fois tous les indices de son
+    /// chapitre trouvés (sections 9.1 et 9.4).
     pub fn zone_ouverte(&self, zone: &ZoneId, indices_trouves: usize) -> bool {
         let par_indice = self
-            .indices
-            .iter()
+            .indices()
             .take(indices_trouves.saturating_add(1))
             .any(|indice| &indice.zone == zone);
-        par_indice || (self.antre_localise(indices_trouves) && &self.apotre.zone == zone)
+        par_indice
+            || self
+                .chapitres_et_fins()
+                .any(|(chapitre, fin)| indices_trouves >= fin && &chapitre.apotre.zone == zone)
     }
 
-    /// `None` une fois tous les indices trouvés.
-    pub fn indice_suivant(&self, indices_trouves: usize) -> Option<&Indice> {
-        self.indices.get(indices_trouves)
+    /// `None` une fois tous les indices trouvés, ou tant que l'Apôtre du
+    /// chapitre précédent n'est pas vaincu.
+    pub fn indice_suivant(
+        &self,
+        indices_trouves: usize,
+        apotres_vaincus: &[EspeceId],
+    ) -> Option<&Indice> {
+        let mut debut = 0;
+        let mut precedent: Option<&Apotre> = None;
+        for (chapitre, fin) in self.chapitres_et_fins() {
+            if indices_trouves < fin {
+                if precedent.is_some_and(|apotre| !apotres_vaincus.contains(apotre.espece().id())) {
+                    return None;
+                }
+                return chapitre.indices.get(indices_trouves - debut);
+            }
+            debut = fin;
+            precedent = Some(&chapitre.apotre);
+        }
+        None
     }
 
-    pub fn antre_localise(&self, indices_trouves: usize) -> bool {
-        indices_trouves >= self.indices.len()
+    /// L'Apôtre dont l'antre, localisé, est dans cette zone, tant qu'il n'est
+    /// pas vaincu : il attend au bout de l'expédition (section 9.4).
+    pub fn apotre_en_attente(
+        &self,
+        zone: &ZoneId,
+        indices_trouves: usize,
+        apotres_vaincus: &[EspeceId],
+    ) -> Option<&Apotre> {
+        self.chapitres_et_fins()
+            .filter(|(_, fin)| indices_trouves >= *fin)
+            .map(|(chapitre, _)| &chapitre.apotre)
+            .find(|apotre| &apotre.zone == zone && !apotres_vaincus.contains(apotre.espece().id()))
     }
 }
 
@@ -197,16 +268,31 @@ mod tests {
 
     fn piste() -> Piste {
         let apotre = Apotre::new(espece("baron"), &zone("marais", 13), "avant", "après").unwrap();
-        Piste::new(
-            vec![indice("lisiere"), indice("marais"), indice("marais")],
-            apotre,
-        )
+        Piste::new(vec![
+            Chapitre::new(
+                vec![indice("lisiere"), indice("marais"), indice("marais")],
+                apotre,
+            )
+            .unwrap(),
+        ])
+        .unwrap()
+    }
+
+    /// Deux Apôtres : le second, dans les cimes, ne se traque qu'une fois le
+    /// premier vaincu.
+    fn deux_chapitres() -> Piste {
+        let baron = Apotre::new(espece("baron"), &zone("marais", 13), "", "").unwrap();
+        let abbesse = Apotre::new(espece("abbesse"), &zone("cimes", 27), "", "").unwrap();
+        Piste::new(vec![
+            Chapitre::new(vec![indice("lisiere"), indice("marais")], baron).unwrap(),
+            Chapitre::new(vec![indice("marais"), indice("cimes")], abbesse).unwrap(),
+        ])
         .unwrap()
     }
 
     #[test]
     fn l_apotre_combat_deux_niveaux_au_dessus_de_sa_zone_aux_valeurs_internes_maximales() {
-        let apotre = piste().apotre().clone();
+        let apotre = piste().apotres().next().unwrap().clone();
         assert_eq!(apotre.niveau(), Niveau::new(15).unwrap());
         // Seul le shiny est tiré.
         let monstre = apotre.generer(&mut AleatoireScripte::new([1]));
@@ -214,6 +300,37 @@ mod tests {
         assert_eq!(monstre.valeurs_internes(), &ValeursInternes::maximales());
         assert!(monstre.est_shiny());
         assert_eq!(monstre.espece().id().as_str(), "baron");
+    }
+
+    #[test]
+    fn le_chapitre_suivant_attend_la_defaite_de_l_apotre() {
+        let piste = deux_chapitres();
+        let baron = [EspeceId::new("baron")];
+        let cimes = ZoneId::new("cimes");
+        let marais = ZoneId::new("marais");
+        // Le Baron attend dans le Marais, ses deux indices trouvés.
+        assert_eq!(
+            piste
+                .apotre_en_attente(&marais, 2, &[])
+                .map(|apotre| apotre.espece().id().as_str()),
+            Some("baron")
+        );
+        assert_eq!(piste.indice_suivant(2, &[]), None);
+        // Vaincu, il laisse le troisième indice, qui ouvre les cimes.
+        assert_eq!(piste.apotre_en_attente(&marais, 2, &baron), None);
+        assert_eq!(piste.indice_suivant(2, &baron), Some(&indice("marais")));
+        assert!(!piste.zone_ouverte(&cimes, 2));
+        assert!(piste.zone_ouverte(&cimes, 3));
+        assert_eq!(piste.apotre_en_attente(&cimes, 3, &baron), None);
+        assert_eq!(
+            piste
+                .apotre_en_attente(&cimes, 4, &baron)
+                .map(|apotre| apotre.espece().id().as_str()),
+            Some("abbesse")
+        );
+        assert_eq!(piste.indice_suivant(4, &baron), None);
+        assert_eq!(piste.indices().count(), 4);
+        assert_eq!(piste.apotres().count(), 2);
     }
 
     #[test]
@@ -226,8 +343,12 @@ mod tests {
 
     #[test]
     fn piste_sans_indice_refusee() {
-        let apotre = piste().apotre().clone();
-        assert_eq!(Piste::new(vec![], apotre), Err(ErreurTraque::AucunIndice));
+        let apotre = piste().apotres().next().unwrap().clone();
+        assert_eq!(
+            Chapitre::new(vec![], apotre),
+            Err(ErreurTraque::AucunIndice)
+        );
+        assert_eq!(Piste::new(vec![]), Err(ErreurTraque::AucunIndice));
     }
 
     #[test]
@@ -245,10 +366,11 @@ mod tests {
     #[test]
     fn l_antre_est_localise_au_dernier_indice() {
         let piste = piste();
-        assert_eq!(piste.indice_suivant(0), Some(&indice("lisiere")));
-        assert_eq!(piste.indice_suivant(2), Some(&indice("marais")));
-        assert!(!piste.antre_localise(2));
-        assert_eq!(piste.indice_suivant(3), None);
-        assert!(piste.antre_localise(3));
+        let marais = ZoneId::new("marais");
+        assert_eq!(piste.indice_suivant(0, &[]), Some(&indice("lisiere")));
+        assert_eq!(piste.indice_suivant(2, &[]), Some(&indice("marais")));
+        assert_eq!(piste.apotre_en_attente(&marais, 2, &[]), None);
+        assert_eq!(piste.indice_suivant(3, &[]), None);
+        assert!(piste.apotre_en_attente(&marais, 3, &[]).is_some());
     }
 }

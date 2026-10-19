@@ -28,7 +28,7 @@ use crate::ressource::{Ressource, RessourceId};
 use crate::soin::Soin;
 use crate::stats::Stats;
 use crate::statut::Statut;
-use crate::traque::{Apotre, Indice, Piste};
+use crate::traque::{Apotre, Chapitre, Indice, Piste};
 use crate::tutoriel::Conseil;
 use crate::types::{Type, TypesMonstre};
 use crate::zone::{EspeceRare, Zone, ZoneId};
@@ -306,11 +306,12 @@ impl ContenuV1 {
             zone: zone.id().clone(),
             texte: texte.to_string(),
         };
-        let piste = Piste::new(
+        let chapitre_du_baron = Chapitre::new(
             vec![indice(&lisiere, INDICE_1), indice(&marais, INDICE_2)],
             baron,
         )
-        .expect("piste conforme aux règles");
+        .expect("chapitre du Baron conforme aux règles");
+        let piste = Piste::new(vec![chapitre_du_baron]).expect("piste conforme aux règles");
         let ressource = |id: &str| {
             especes
                 .iter()
@@ -1954,7 +1955,7 @@ mod tests {
         let contenu = ContenuV1::new();
         assert_eq!(contenu.especes().len(), 30);
         assert_eq!(contenu.zones().len(), 3);
-        assert_eq!(contenu.piste().indices().len(), 2);
+        assert_eq!(contenu.piste().indices().count(), 2);
         // Toute espèce rencontrée en zone se retrouve au chargement d'une
         // sauvegarde.
         for zone in contenu.zones() {
@@ -1978,7 +1979,11 @@ mod tests {
             .flat_map(|zone| zone.rares().iter().chain(zone.monstre_cache()))
             .map(|rare| rare.espece.id())
             .collect();
-        let apotre = contenu.piste().apotre().espece().id();
+        let apotres: Vec<&EspeceId> = contenu
+            .piste()
+            .apotres()
+            .map(|apotre| apotre.espece().id())
+            .collect();
         for espece in contenu.especes() {
             // Une forme évoluée a la rareté de sa forme de base (section 5.4).
             let base = contenu.especes().iter().find(|base| {
@@ -1987,7 +1992,7 @@ mod tests {
             });
             let attendue = if let Some(base) = base {
                 base.rarete()
-            } else if espece.id() == apotre {
+            } else if apotres.contains(&espece.id()) {
                 Rarete::Apotre
             } else if rares.contains(&espece.id()) {
                 Rarete::Rare
@@ -2172,7 +2177,7 @@ mod tests {
     #[test]
     fn le_baron_pendu_obscur_attend_au_bout_de_la_vallee_au_niveau_22() {
         let contenu = ContenuV1::new();
-        let apotre = contenu.piste().apotre();
+        let apotre = contenu.piste().apotres().next().unwrap();
         assert_eq!(apotre.niveau(), niveau(22));
         assert_eq!(apotre.zone().as_str(), "vallee");
         assert_eq!(apotre.espece().types().liste(), &[Type::Obscur]);
@@ -2201,7 +2206,6 @@ mod tests {
         let zones: Vec<&str> = contenu
             .piste()
             .indices()
-            .iter()
             .map(|indice| indice.zone.as_str())
             .collect();
         assert_eq!(zones, vec!["lisiere", "marais"]);

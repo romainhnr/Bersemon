@@ -1388,7 +1388,7 @@ impl EnExpedition {
                 self.evoluer(partie, evolution, choix, contexte, evenements)
             }
             Moment::PlaceManquante(attente) => {
-                self.faire_place(partie, attente, choix, confirme, contexte, evenements)
+                self.faire_place(partie, attente, choix, confirme, evenements)
             }
             Moment::AnnonceDIndice => {
                 if *choix != Choix::Poursuivre {
@@ -1407,7 +1407,7 @@ impl EnExpedition {
         let indice_a_lire = reponse == Reponse::RetourAuCamp
             && self.expedition.est_reussie()
             && piste
-                .indice_suivant(partie.indices_trouves())
+                .indice_suivant(partie.indices_trouves(), partie.apotres_vaincus())
                 .is_some_and(|indice| &indice.zone == self.expedition.zone().id());
         if indice_a_lire {
             self.moment = Moment::AnnonceDIndice;
@@ -1616,7 +1616,7 @@ impl EnExpedition {
             }
         }
         let fin = FinDeCombat { sac_perdu, ..fin };
-        self.placer(partie, captures.into(), Some(fin), contexte, evenements)
+        self.placer(partie, captures.into(), Some(fin), evenements)
     }
 
     fn oublier(
@@ -1746,7 +1746,6 @@ impl EnExpedition {
         partie: &mut Partie,
         mut restantes: VecDeque<Monstre>,
         fin: Option<FinDeCombat>,
-        contexte: &mut Contexte<'_>,
         evenements: &mut Vec<Evenement>,
     ) -> Reponse {
         while let Some(capture) = restantes.pop_front() {
@@ -1760,7 +1759,7 @@ impl EnExpedition {
                 return Reponse::Faite;
             }
         }
-        self.conclure(partie, fin, contexte, evenements)
+        self.conclure(partie, fin, evenements)
     }
 
     fn faire_place(
@@ -1769,7 +1768,6 @@ impl EnExpedition {
         attente: CaptureSansPlace,
         choix: &Choix,
         confirme: bool,
-        contexte: &mut Contexte<'_>,
         evenements: &mut Vec<Evenement>,
     ) -> Result<Reponse, ErreurChoix> {
         match choix {
@@ -1806,7 +1804,7 @@ impl EnExpedition {
                 return Err(ErreurChoix::HorsDePropos);
             }
         }
-        Ok(self.placer(partie, attente.restantes, attente.fin, contexte, evenements))
+        Ok(self.placer(partie, attente.restantes, attente.fin, evenements))
     }
 
     /// L'Apôtre vaincu ne réapparaît plus et l'épilogue suit ; un humain
@@ -1818,13 +1816,16 @@ impl EnExpedition {
         &mut self,
         partie: &mut Partie,
         fin: Option<FinDeCombat>,
-        contexte: &mut Contexte<'_>,
         evenements: &mut Vec<Evenement>,
     ) -> Reponse {
         if let Some(fin) = fin {
             if fin.contre_un_apotre && fin.issue == Some(Issue::Victoire) {
-                let apotre = contexte.contenu.piste().apotre();
-                partie.noter_apotre_vaincu(apotre);
+                let apotre = self
+                    .expedition
+                    .apotre()
+                    .expect("un combat contre un Apôtre suit l'antre de l'expédition")
+                    .clone();
+                partie.noter_apotre_vaincu(&apotre);
                 evenements.push(Evenement::Epilogue(apotre.epilogue().to_string()));
             }
             let humain = self.expedition.humain().cloned();
@@ -1950,8 +1951,12 @@ impl EnExpedition {
             }
             EvenementExpedition::Apotre(monstre) => {
                 // Le récit de l'Apôtre tient lieu d'annonce de la rencontre.
-                let recit = contexte.contenu.piste().apotre().avant_combat();
-                evenements.push(Evenement::RecitDeLApotre(recit.to_string()));
+                let recit = self
+                    .expedition
+                    .apotre()
+                    .map(|apotre| apotre.avant_combat().to_string())
+                    .unwrap_or_default();
+                evenements.push(Evenement::RecitDeLApotre(recit));
                 let combat = partie
                     .preparer_combat_contre_apotre(monstre)
                     .expect(EQUIPE_APTE);

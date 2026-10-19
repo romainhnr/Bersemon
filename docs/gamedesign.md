@@ -377,6 +377,7 @@ Si tous les monstres du joueur sont KO pendant une expédition manuelle :
   - l'Inquisiteur, humain au service du deuxième Apôtre, attend au bout de l'Abbaye ; la première expédition menée au bout donne l'indice 4, qui localise l'antre ;
   - ensuite, chaque expédition dans l'Abbaye s'achève par l'Abbesse écorchée, Apôtre de type Obscur, au niveau 29, tant qu'elle n'est pas vaincue ;
   - l'Abbaye n'a pas de marchand mort pour l'instant (hypothèse retenue, Q86).
+  - précisé à l'étape 44, en codant : la piste se lit chapitre par chapitre, un par Apôtre. Le combat contre un Apôtre suit l'Apôtre qui attend dans la zone de l'expédition ; une sauvegarde garde le nombre d'indices trouvés, qui se compte à la suite d'un chapitre à l'autre, sans changement de format.
 
 ## 10. Combat
 
