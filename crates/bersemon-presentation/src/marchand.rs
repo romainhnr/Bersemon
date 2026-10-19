@@ -4,20 +4,26 @@
 use bersemon_core::capsule::Capsule;
 use bersemon_core::collection::Collection;
 use bersemon_core::combat::Cote;
-use bersemon_core::marchand::{PRIX_DE_LA_POTION, prix_de_revente};
+use bersemon_core::marchand::prix_de_revente;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 
 use crate::monstres::{decrire_attaque, nom};
 use crate::partie::argent;
+use crate::soins::offre_de_soin;
 
 /// Ce que le joueur peut dépenser : l'argent du sac et du coffre paient
 /// ensemble, et les achats vont dans le coffre (section 13.3).
 pub fn etal(partie: &Partie) -> String {
+    let soins: Vec<String> = partie
+        .soins_en_vente()
+        .into_iter()
+        .map(|soin| format!("  {}", offre_de_soin(soin)))
+        .collect();
     format!(
-        "Le marchand vous attend près du feu. Vous avez {}, entre votre sac et le coffre ; vos achats iront dans le coffre. Une potion coûte {}.\n{}",
+        "Le marchand vous attend près du feu. Vous avez {}, entre votre sac et le coffre ; vos achats iront dans le coffre.\nSoins en vente :\n{}\n{}",
         argent(partie.argent()),
-        argent(PRIX_DE_LA_POTION),
+        soins.join("\n"),
         capsules_obtenues(partie)
     )
 }

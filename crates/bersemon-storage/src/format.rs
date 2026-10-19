@@ -1,4 +1,4 @@
-//! Format JSON de la sauvegarde, version 10, et sa conversion vers les types
+//! Format JSON de la sauvegarde, version 11, et sa conversion vers les types
 //! du noyau. Les énumérations sont écrites avec des noms fixés ici, et non
 //! avec les noms Rust, pour qu'un renommage dans le code ne casse pas les
 //! sauvegardes existantes.
@@ -23,6 +23,7 @@ use bersemon_core::niveau::Niveau;
 use bersemon_core::nom::Nom;
 use bersemon_core::partie::{AttaqueAChoisir, EtatPartie, Partie};
 use bersemon_core::sauvegarde::ErreurSauvegarde;
+use bersemon_core::soin::Soin;
 use bersemon_core::stats::{Stats, ValeursInternes};
 use bersemon_core::statut::Statut;
 use bersemon_core::tutoriel::Conseil;
@@ -30,7 +31,7 @@ use bersemon_core::zone::ZoneId;
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 10;
+pub(crate) const VERSION: u64 = 11;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -44,11 +45,12 @@ const VERSION_DE_LA_PISTE_A_DEUX_INDICES: u64 = 10;
 /// version 4 l'argent, la version 5 le marchand, la version 6 les capsules
 /// d'attaque, la version 7 le sac et le coffre du camp, la version 8
 /// l'habileté de chaque monstre, la version 9 les humains vaincus ; la
-/// version 10 suit la piste à deux indices. Une sauvegarde d'une version
+/// version 10 suit la piste à deux indices ; la version 11 ajoute le
+/// remède, la grande potion et l'élixir. Une sauvegarde d'une version
 /// précédente se lit avec cette structure : les champs ajoutés y prennent
 /// leur valeur de début de partie.
 #[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct SauvegardeV10 {
+pub(crate) struct SauvegardeV11 {
     pub(crate) version: u64,
     heros: HerosV1,
     equipe: Vec<MonstreV1>,
@@ -89,6 +91,13 @@ struct InventaireV7 {
     argent: u32,
     #[serde(default)]
     potions: u32,
+    /// Depuis la version 11 (section 14.4).
+    #[serde(default)]
+    remedes: u32,
+    #[serde(default)]
+    grandes_potions: u32,
+    #[serde(default)]
+    elixirs: u32,
     /// Identifiants de leurs attaques.
     #[serde(default)]
     capsules: Vec<String>,
@@ -150,9 +159,9 @@ struct CodexV1 {
     capturees: Vec<String>,
 }
 
-pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV10 {
+pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV11 {
     let collection = partie.collection();
-    SauvegardeV10 {
+    SauvegardeV11 {
         version: VERSION,
         heros: HerosV1 {
             nom: partie.heros().nom().as_str().to_string(),
@@ -212,6 +221,9 @@ fn depuis_inventaire(inventaire: &Inventaire) -> InventaireV7 {
     InventaireV7 {
         argent: inventaire.argent(),
         potions: inventaire.potions(),
+        remedes: inventaire.soins().nombre(Soin::Remede),
+        grandes_potions: inventaire.soins().nombre(Soin::GrandePotion),
+        elixirs: inventaire.soins().nombre(Soin::Elixir),
         capsules: inventaire
             .capsules()
             .iter()
@@ -233,15 +245,16 @@ fn vers_inventaire(
                 .ok_or(ErreurSauvegarde::CapsuleInconnue(id))
         })
         .collect::<Result<Vec<_>, _>>()?;
-    Ok(Inventaire::new(
-        inventaire.argent,
-        inventaire.potions,
-        capsules,
-    ))
+    Ok(
+        Inventaire::new(inventaire.argent, inventaire.potions, capsules)
+            .avec_soins(Soin::Remede, inventaire.remedes)
+            .avec_soins(Soin::GrandePotion, inventaire.grandes_potions)
+            .avec_soins(Soin::Elixir, inventaire.elixirs),
+    )
 }
 
 pub(crate) fn vers_partie(
-    sauvegarde: SauvegardeV10,
+    sauvegarde: SauvegardeV11,
     catalogue: &dyn Catalogue,
 ) -> Result<Partie, ErreurSauvegarde> {
     let heros = Heros::new(
@@ -269,6 +282,7 @@ pub(crate) fn vers_partie(
             argent: sauvegarde.argent,
             potions: sauvegarde.potions,
             capsules: sauvegarde.capsules,
+            ..InventaireV7::default()
         };
         (Inventaire::default(), vers_inventaire(ancien, catalogue)?)
     } else {

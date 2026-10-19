@@ -215,6 +215,21 @@ impl Monstre {
         self.pv_actuels = self.pv_actuels.saturating_sub(degats);
     }
 
+    /// Un remède guérit le statut (section 14.4). Rend le statut guéri.
+    pub(crate) fn guerir_statut(&mut self) -> Option<Statut> {
+        self.statut.take()
+    }
+
+    /// Un élixir relève un monstre KO avec ces PV, sans dépasser ses PV max
+    /// (section 14.4). Rend les PV rendus ; rien pour un monstre debout.
+    pub(crate) fn relever(&mut self, pv: u32) -> u32 {
+        if !self.est_ko() {
+            return 0;
+        }
+        self.pv_actuels = pv.min(self.stats().pv);
+        self.pv_actuels
+    }
+
     /// Rend tous les PV et guérit le statut, même d'un monstre KO, comme au
     /// retour au camp (section 13.1).
     pub fn soigner_completement(&mut self) {

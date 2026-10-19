@@ -19,10 +19,11 @@ use crate::habilete::{BONUS_DU_PILLARD, CHANCES_DU_FOUINEUR, Habilete};
 use crate::heros::Heros;
 use crate::horodatage::Horodatage;
 use crate::humain::{Humain, HumainId, IaHumain};
-use crate::inventaire::{ErreurObjet, ErreurPotion, Inventaire, Objet};
-use crate::marchand::{ErreurMarchand, PRIX_DE_LA_POTION, prix_de_revente};
+use crate::inventaire::{ErreurObjet, Inventaire, Objet};
+use crate::marchand::{ErreurMarchand, prix_de_revente, prix_du_soin};
 use crate::monstre::{Monstre, tirer_shiny, tirer_valeurs_internes};
 use crate::niveau::Niveau;
+use crate::soin::{EffetDuSoin, ErreurSoin, Soin};
 use crate::traque::{Apotre, Indice, Piste};
 use crate::tutoriel::Conseil;
 use crate::zone::{Zone, ZoneId};
@@ -238,16 +239,26 @@ impl Partie {
         self.marchand_au_camp = true;
     }
 
-    /// Au camp, sans confirmation ; les potions vont dans le coffre (sections
+    /// Ce que vend le marchand du camp, dans l'ordre de `Soin::TOUS` : la
+    /// potion, puis l'objet de chaque marchand dont l'âme est recueillie
+    /// (section 14.2).
+    pub fn soins_en_vente(&self) -> Vec<Soin> {
+        vec![Soin::Potion]
+    }
+
+    /// Au camp, sans confirmation ; les soins vont dans le coffre (sections
     /// 13.3 et 14.2). Rend le prix payé.
-    pub fn acheter_potions(&mut self, nombre: u32) -> Result<u32, ErreurMarchand> {
+    pub fn acheter_soins(&mut self, soin: Soin, nombre: u32) -> Result<u32, ErreurMarchand> {
         self.verifier_marchand()?;
+        if !self.soins_en_vente().contains(&soin) {
+            return Err(ErreurMarchand::SoinIndisponible(soin));
+        }
         if nombre == 0 {
             return Err(ErreurMarchand::QuantiteNulle);
         }
-        let prix = nombre.saturating_mul(PRIX_DE_LA_POTION);
+        let prix = nombre.saturating_mul(prix_du_soin(soin));
         self.payer(prix)?;
-        self.coffre_du_camp.ajouter_potions(nombre);
+        self.coffre_du_camp.ajouter_soins(soin, nombre);
         Ok(prix)
     }
 
@@ -511,7 +522,7 @@ impl Partie {
     }
 
     /// Combat contre un groupe sauvage, avec l'équipe, le bonus de classe du
-    /// héros et les potions du sac. Les espèces du groupe entrent dans le
+    /// héros et les soins du sac. Les espèces du groupe entrent dans le
     /// codex comme rencontrées.
     pub fn preparer_combat(&mut self, groupe: Vec<Monstre>) -> Result<Combat, ErreurCombat> {
         let especes: Vec<_> = groupe
@@ -520,7 +531,7 @@ impl Partie {
             .collect();
         let combat = Combat::new(self.collection.equipe().to_vec(), groupe)?
             .avec_bonus_du_joueur(self.heros.classe().bonus())
-            .avec_potions(self.sac.potions());
+            .avec_soins(*self.sac.soins());
         for espece in &especes {
             self.codex.noter_rencontre(espece);
         }
@@ -575,7 +586,7 @@ impl Partie {
         true
     }
 
-    /// Reprend l'équipe et les potions à la fin du combat, inscrit les
+    /// Reprend l'équipe et les soins à la fin du combat, inscrit les
     /// captures au codex et les rend, à placer ensuite avec
     /// `Collection::accueillir_capture`. Une défaite fait perdre tout le sac,
     /// rendu à côté des captures (section 9.3). Les choix d'attaques en
@@ -585,7 +596,7 @@ impl Partie {
         bilan: BilanCombat,
     ) -> Result<(Vec<Monstre>, Inventaire), ErreurCollection> {
         self.collection.actualiser_equipe(bilan.equipe)?;
-        self.sac.definir_potions(bilan.potions);
+        self.sac.definir_soins(bilan.soins);
         let perdu = if bilan.issue == Some(Issue::Defaite) {
             self.sac.perdre_tout()
         } else {
@@ -650,18 +661,19 @@ impl Partie {
             .find(|monstre| !monstre.est_ko() && monstre.a_l_habilete(habilete))
     }
 
-    /// Potion du sac, utilisée entre deux étapes d'une expédition. Rend les
-    /// PV rendus.
-    pub fn utiliser_potion(
+    /// Soin du sac, utilisé entre deux étapes d'une expédition (section
+    /// 14.4).
+    pub fn utiliser_soin(
         &mut self,
+        soin: Soin,
         index_equipe: usize,
         aleatoire: &mut dyn Aleatoire,
-    ) -> Result<u32, ErreurPotion> {
+    ) -> Result<EffetDuSoin, ErreurSoin> {
         let monstre = self
             .collection
             .membre_de_l_equipe_mut(index_equipe)
-            .ok_or(ErreurPotion::MonstreInexistant)?;
-        self.sac.utiliser_potion(monstre, aleatoire)
+            .ok_or(ErreurSoin::MonstreInexistant)?;
+        self.sac.utiliser_soin(soin, monstre, aleatoire)
     }
 
     pub fn expeditions_automatiques(&self) -> &[ExpeditionAutomatique] {
@@ -1030,7 +1042,7 @@ mod tests {
         let mut partie = partie();
         partie.ouvrir_coffre(3, 40, Some(capsule("a", Type::Normal)));
         assert_eq!(
-            partie.ranger_au_coffre(&Objet::Potions(4)),
+            partie.ranger_au_coffre(&Objet::Soins(Soin::Potion, 4)),
             Err(ErreurObjet::Insuffisant)
         );
         assert_eq!(
@@ -1090,7 +1102,7 @@ mod tests {
         partie.coffre_du_camp.ajouter_argent(50);
         partie.collection_mut().accueillir_capture(creer("loup", 3));
         assert_eq!(
-            partie.acheter_potions(1),
+            partie.acheter_soins(Soin::Potion, 1),
             Err(ErreurMarchand::AucunMarchand)
         );
         assert_eq!(
@@ -1104,18 +1116,18 @@ mod tests {
     fn acheter_des_potions_dans_la_limite_de_son_argent() {
         let mut partie = partie_chez_le_marchand();
         assert_eq!(
-            partie.acheter_potions(0),
+            partie.acheter_soins(Soin::Potion, 0),
             Err(ErreurMarchand::QuantiteNulle)
         );
         assert_eq!(
-            partie.acheter_potions(3),
+            partie.acheter_soins(Soin::Potion, 3),
             Err(ErreurMarchand::ArgentInsuffisant {
                 prix: 60,
                 argent: 50
             })
         );
         assert_eq!(partie.coffre_du_camp().potions(), 0);
-        assert_eq!(partie.acheter_potions(2), Ok(40));
+        assert_eq!(partie.acheter_soins(Soin::Potion, 2), Ok(40));
         assert_eq!(partie.coffre_du_camp().potions(), 2);
         assert_eq!(partie.argent(), 10);
     }
@@ -1125,7 +1137,7 @@ mod tests {
         let mut partie = partie_chez_le_marchand();
         partie.ouvrir_coffre(0, 15, None);
         assert_eq!(partie.argent(), 65);
-        assert_eq!(partie.acheter_potions(1), Ok(20));
+        assert_eq!(partie.acheter_soins(Soin::Potion, 1), Ok(20));
         assert_eq!(partie.sac().argent(), 0);
         assert_eq!(partie.coffre_du_camp().argent(), 45);
         assert_eq!(partie.coffre_du_camp().potions(), 1);
@@ -1339,7 +1351,7 @@ mod tests {
         let mut loup = creer("loup", 5);
         loup.subir_degats(loup.stats().pv - 2);
         let mut combat = partie.preparer_combat(vec![loup]).unwrap();
-        assert_eq!(combat.potions(), 2);
+        assert_eq!(combat.soins().nombre(Soin::Potion), 2);
         assert_eq!(
             partie.codex().etat(&EspeceId::new("loup")),
             EtatCodex::Rencontree
@@ -1376,27 +1388,38 @@ mod tests {
     }
 
     #[test]
-    fn potion_entre_deux_etapes() {
+    fn soin_entre_deux_etapes() {
         let mut partie = partie();
         partie.ouvrir_coffre(2, 0, None);
         assert_eq!(
-            partie.utiliser_potion(3, &mut AleatoireScripte::new([])),
-            Err(ErreurPotion::MonstreInexistant)
+            partie.utiliser_soin(Soin::Potion, 3, &mut AleatoireScripte::new([])),
+            Err(ErreurSoin::MonstreInexistant)
         );
         // Sur un monstre qui a tous ses PV, la potion est perdue (Q53).
         assert_eq!(
-            partie.utiliser_potion(0, &mut AleatoireScripte::new([])),
-            Ok(0)
+            partie.utiliser_soin(Soin::Potion, 0, &mut AleatoireScripte::new([])),
+            Ok(EffetDuSoin::PvRendus(0))
         );
         assert_eq!(partie.sac().potions(), 1);
         let mut equipe = partie.collection().equipe().to_vec();
         equipe[0].subir_degats(10);
         partie.collection_mut().actualiser_equipe(equipe).unwrap();
         assert_eq!(
-            partie.utiliser_potion(0, &mut AleatoireScripte::new([50])),
-            Ok(10)
+            partie.utiliser_soin(Soin::Potion, 0, &mut AleatoireScripte::new([50])),
+            Ok(EffetDuSoin::PvRendus(10))
         );
         assert_eq!(partie.sac().potions(), 0);
+    }
+
+    #[test]
+    fn le_marchand_ne_vend_que_les_soins_debloques() {
+        let mut partie = partie_chez_le_marchand();
+        assert_eq!(partie.soins_en_vente(), vec![Soin::Potion]);
+        assert_eq!(
+            partie.acheter_soins(Soin::Elixir, 1),
+            Err(ErreurMarchand::SoinIndisponible(Soin::Elixir))
+        );
+        assert_eq!(partie.argent(), 50);
     }
 
     #[test]

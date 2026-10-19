@@ -7,19 +7,21 @@ use bersemon_core::collection::Collection;
 use bersemon_core::combat::{ApercuAttaque, Combat, Combattant, Cote};
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
+use bersemon_core::soin::{Soin, Soins};
 use bersemon_core::types::Efficacite;
 use bersemon_presentation::combat::{attaque_de_trop, attaque_en_combat, etat};
 use bersemon_presentation::monstres::{decrire_attaque, ligne_monstre, nom, nom_en_combat};
 use bersemon_presentation::partie::places_pour_une_capture;
+use bersemon_presentation::soins::nom_du_soin;
 use poise::serenity_prelude as serenity;
 
-use crate::composants::Cle;
+use crate::composants::{Cle, soin_et_position_en_texte};
 use crate::message::{
     DANGER, OptionDeMenu, PRINCIPAL, Question, SECONDAIRE, SUCCES, bouton, menu, rangees,
 };
 
 /// Une rangée d'attaques, le filet et la fuite (absents face à un Apôtre,
-/// section 9.4), puis un menu pour changer de monstre et un pour la potion.
+/// section 9.4), puis un menu pour changer de monstre et un pour les soins.
 /// Chaque attaque dit ses dégâts estimés, et sa couleur son efficacité
 /// (section 10.6).
 pub fn action(combat: &Combat, partie: &Partie) -> Question {
@@ -54,14 +56,11 @@ pub fn action(combat: &Combat, partie: &Partie) -> Question {
     lignes.extend(rangees(autres));
     let remplacants = options_aptes(combat, |index| index != actif.index);
     lignes.extend(menu(Cle::Changer, "Changer de monstre", remplacants));
-    if combat.potions() > 0 {
-        let soignables = options_aptes(combat, |_| true);
-        lignes.extend(menu(
-            Cle::PotionEnCombat,
-            &format!("Utiliser une potion ({}) sur", combat.potions()),
-            soignables,
-        ));
-    }
+    lignes.extend(menu(
+        Cle::SoinEnCombat,
+        "Utiliser un soin",
+        options_de_soins(combat.soins(), combat.equipe()),
+    ));
     let mut texte = etat(combat, partie.codex());
     if combat.filet_possible() {
         texte.push('\n');
@@ -83,6 +82,30 @@ fn style_d_attaque(apercu: ApercuAttaque) -> serenity::ButtonStyle {
         Efficacite::Normale if apercu.bonus_de_type => PRINCIPAL,
         Efficacite::Normale => SECONDAIRE,
     }
+}
+
+/// Chaque soin du sac avec chaque monstre à qui il peut servir : l'élixir
+/// aux monstres KO, les autres soins aux monstres debout. Au plus 4 soins
+/// pour 3 monstres : 12 options, sous la limite de Discord.
+pub fn options_de_soins(soins: &Soins, equipe: &[Monstre]) -> Vec<OptionDeMenu> {
+    let mut options = Vec::new();
+    for (soin, nombre) in soins.presents() {
+        for (index, monstre) in equipe.iter().enumerate() {
+            if monstre.est_ko() != (soin == Soin::Elixir) {
+                continue;
+            }
+            options.push(OptionDeMenu {
+                libelle: format!(
+                    "{} ({nombre}) : {}",
+                    nom_du_soin(soin),
+                    nom(monstre, Cote::Joueur)
+                ),
+                valeur: soin_et_position_en_texte(soin, index),
+                description: Some(ligne_monstre(monstre, Cote::Joueur)),
+            });
+        }
+    }
+    options
 }
 
 /// Les monstres de l'équipe en état de combattre que `garder` retient.

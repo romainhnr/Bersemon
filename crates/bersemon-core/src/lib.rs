@@ -31,6 +31,7 @@ pub mod niveau;
 pub mod nom;
 pub mod partie;
 pub mod sauvegarde;
+pub mod soin;
 pub mod stats;
 pub mod statut;
 pub mod traque;

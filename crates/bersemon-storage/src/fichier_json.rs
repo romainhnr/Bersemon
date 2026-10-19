@@ -8,7 +8,7 @@ use bersemon_core::catalogue::Catalogue;
 use bersemon_core::partie::Partie;
 use bersemon_core::sauvegarde::{ErreurSauvegarde, SauvegardeRepository};
 
-use crate::format::{self, SauvegardeV10, VERSION};
+use crate::format::{self, SauvegardeV11, VERSION};
 
 pub struct FichierJson {
     chemin: PathBuf,
@@ -38,7 +38,7 @@ impl FichierJson {
         if !(1..=VERSION).contains(&version) {
             return Err(ErreurSauvegarde::VersionInconnue(version));
         }
-        let sauvegarde: SauvegardeV10 = serde_json::from_value(valeur)
+        let sauvegarde: SauvegardeV11 = serde_json::from_value(valeur)
             .map_err(|erreur| ErreurSauvegarde::Illisible(erreur.to_string()))?;
         format::vers_partie(sauvegarde, catalogue)
     }
@@ -99,6 +99,7 @@ mod tests {
     use bersemon_core::niveau::Niveau;
     use bersemon_core::nom::Nom;
     use bersemon_core::partie::{AttaqueAChoisir, EtatPartie};
+    use bersemon_core::soin::Soin;
     use bersemon_core::stats::{Stats, ValeursInternes};
     use bersemon_core::statut::Statut;
     use bersemon_core::tutoriel::Conseil;
@@ -254,7 +255,10 @@ mod tests {
             heros: partie.heros().clone(),
             collection: partie.collection().clone(),
             sac: partie.sac().clone(),
-            coffre_du_camp: Inventaire::new(135, 0, vec![capsule("grand-coup", Type::Normal)]),
+            coffre_du_camp: Inventaire::new(135, 0, vec![capsule("grand-coup", Type::Normal)])
+                .avec_soins(Soin::Remede, 2)
+                .avec_soins(Soin::GrandePotion, 1)
+                .avec_soins(Soin::Elixir, 3),
             marchand_au_camp: true,
             codex: partie.codex().clone(),
             zones_explorees: vec![ZoneId::new("lisiere")],
@@ -444,7 +448,7 @@ mod tests {
         assert_eq!(rechargee.indices_trouves(), 1);
         // L'Apôtre vaincu le reste.
         assert_eq!(rechargee.apotres_vaincus(), &[EspeceId::new("loup")]);
-        // En version 10, les indices se relisent tels quels.
+        // Depuis la version 10, les indices se relisent tels quels.
         let rechargee = charger_texte(&texte_de_partie()).unwrap().unwrap();
         assert_eq!(rechargee.indices_trouves(), 3);
     }
@@ -463,10 +467,10 @@ mod tests {
 
     #[test]
     fn version_inconnue() {
-        let texte = texte_de_partie().replacen("\"version\":10", "\"version\":11", 1);
+        let texte = texte_de_partie().replacen("\"version\":11", "\"version\":12", 1);
         assert_eq!(
             charger_texte(&texte),
-            Err(ErreurSauvegarde::VersionInconnue(11))
+            Err(ErreurSauvegarde::VersionInconnue(12))
         );
     }
 

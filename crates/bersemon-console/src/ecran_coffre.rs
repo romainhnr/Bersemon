@@ -7,6 +7,7 @@ use bersemon_core::partie::Partie;
 use bersemon_presentation::monstres::decrire_attaque;
 use bersemon_presentation::partie::coffre_du_camp;
 
+use crate::ecran_combat::choisir_soin;
 use crate::saisie::Entree;
 
 /// `Some(None)` au retour vers le menu du camp.
@@ -16,8 +17,8 @@ pub fn choisir(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
     loop {
         println!();
         println!("{}", coffre_du_camp(partie));
-        println!("  1. Prendre des potions");
-        println!("  2. Ranger des potions");
+        println!("  1. Prendre des soins");
+        println!("  2. Ranger des soins");
         println!("  3. Prendre de l'argent");
         println!("  4. Ranger de l'argent");
         println!("  5. Prendre une capsule d'attaque");
@@ -26,10 +27,8 @@ pub fn choisir(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
         println!("  0. Retour au camp");
         let choix = match entree.choix(0, 7)? {
             0 => return Some(None),
-            1 => quantite(coffre.potions(), "potions", entree)?
-                .map(|nombre| Choix::SortirDuCoffre(Objet::Potions(nombre))),
-            2 => quantite(sac.potions(), "potions", entree)?
-                .map(|nombre| Choix::RangerAuCoffre(Objet::Potions(nombre))),
+            1 => soins(coffre, entree)?.map(Choix::SortirDuCoffre),
+            2 => soins(sac, entree)?.map(Choix::RangerAuCoffre),
             3 => quantite(coffre.argent(), "pièces d'argent", entree)?
                 .map(|montant| Choix::SortirDuCoffre(Objet::Argent(montant))),
             4 => quantite(sac.argent(), "pièces d'argent", entree)?
@@ -54,6 +53,14 @@ fn quantite(disponible: u32, objets: &str, entree: &mut Entree) -> Option<Option
     println!("Combien de {objets} ? (0 pour annuler)");
     let nombre = entree.choix(0, disponible as usize)?;
     Some((nombre > 0).then_some(nombre as u32))
+}
+
+fn soins(inventaire: &Inventaire, entree: &mut Entree) -> Option<Option<Objet>> {
+    let Some(soin) = choisir_soin(inventaire.soins(), entree)? else {
+        return Some(None);
+    };
+    let nombre = quantite(inventaire.soins().nombre(soin), "soins", entree)?;
+    Some(nombre.map(|nombre| Objet::Soins(soin, nombre)))
 }
 
 fn capsule(inventaire: &Inventaire, entree: &mut Entree) -> Option<Option<Objet>> {

@@ -6,7 +6,7 @@ use bersemon_core::contenu::{
 };
 use bersemon_core::deroulement::Evenement;
 
-use crate::combat::{rapport_experience, remplacement, renoncement, soin_de_potion};
+use crate::combat::{rapport_experience, remplacement, renoncement};
 use crate::erreurs::erreur_sauvegarde;
 use crate::expeditions_automatiques;
 use crate::mise_en_valeur::important;
@@ -14,6 +14,7 @@ use crate::monstres::{nom_en_valeur, nom_sauvage};
 use crate::partie::{
     argent, argent_et_part_du_pillard, capsule as nom_de_capsule, contenu, enumerer, potions,
 };
+use crate::soins::{soin_utilise, soins};
 
 /// Une ou plusieurs lignes de récit.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -163,8 +164,12 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             };
             (important(&texte), true)
         }
-        Evenement::PotionUtilisee { monstre, pv_rendus } => (
-            soin_de_potion(&nom_en_valeur(monstre, Cote::Joueur), *pv_rendus),
+        Evenement::SoinUtilise {
+            soin,
+            monstre,
+            effet,
+        } => (
+            soin_utilise(*soin, &nom_en_valeur(monstre, Cote::Joueur), *effet),
             false,
         ),
         Evenement::ZoneExploree(zone) => (
@@ -209,8 +214,8 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             (expeditions_automatiques::retour(zone, bilan), true)
         }
         Evenement::MarchandRencontre => (RENCONTRE_DU_MARCHAND.to_string(), false),
-        Evenement::PotionsAchetees { nombre, prix } => (
-            format!("Vous achetez {} pour {}.", potions(*nombre), argent(*prix)),
+        Evenement::SoinsAchetes { soin, nombre, prix } => (
+            format!("Vous achetez {} pour {}.", soins(*soin, *nombre), argent(*prix)),
             false,
         ),
         Evenement::MonstreVendu { monstre, prix } => (
@@ -375,13 +380,14 @@ mod tests {
 
     #[test]
     fn achat_et_vente_disent_le_prix() {
-        let recit = &raconter(&[Evenement::PotionsAchetees {
+        let recit = &raconter(&[Evenement::SoinsAchetes {
+            soin: bersemon_core::soin::Soin::GrandePotion,
             nombre: 2,
-            prix: 40,
+            prix: 120,
         }])[0];
         assert_eq!(
             recit.texte,
-            "Vous achetez 2 potions pour 40 pièces d'argent."
+            "Vous achetez 2 grandes potions pour 120 pièces d'argent."
         );
     }
 

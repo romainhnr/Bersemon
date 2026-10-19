@@ -4,12 +4,14 @@ use bersemon_core::capsule::ErreurApprentissage;
 use bersemon_core::collection::{Collection, ErreurCollection};
 use bersemon_core::combat::ErreurCombat;
 use bersemon_core::deroulement::{ActionDeGestion, Choix, ErreurChoix};
-use bersemon_core::inventaire::{ErreurObjet, ErreurPotion};
+use bersemon_core::inventaire::ErreurObjet;
 use bersemon_core::marchand::ErreurMarchand;
 use bersemon_core::sauvegarde::ErreurSauvegarde;
+use bersemon_core::soin::ErreurSoin;
 
 use crate::expeditions_automatiques::erreur_expedition_automatique;
 use crate::partie::argent;
+use crate::soins::plus_aucun;
 
 /// Le choix refusé dit de quel nom il s'agissait : celui du héros ou un
 /// surnom.
@@ -22,7 +24,7 @@ pub fn erreur_de_choix(choix: &Choix, erreur: &ErreurChoix) -> String {
             _ => format!("Nom refusé : {erreur}."),
         },
         ErreurChoix::Collection(erreur) => erreur_collection(erreur),
-        ErreurChoix::Potion(erreur) => erreur_potion(erreur),
+        ErreurChoix::Soin(erreur) => erreur_soin(erreur),
         ErreurChoix::Combat(erreur) => erreur_de_combat(erreur),
         ErreurChoix::Attaque(erreur) => {
             format!("Impossible d'apprendre cette attaque : {erreur}.")
@@ -52,7 +54,8 @@ pub fn erreur_marchand(erreur: &ErreurMarchand) -> String {
             argent(*prix),
             reste
         ),
-        ErreurMarchand::QuantiteNulle => "Choisissez au moins une potion.".to_string(),
+        ErreurMarchand::QuantiteNulle => "Choisissez au moins un objet.".to_string(),
+        ErreurMarchand::SoinIndisponible(_) => "Ce soin n'est pas encore en vente.".to_string(),
         ErreurMarchand::CapsuleDejaPossedee => {
             "Vous avez déjà cette capsule : elle sert sans s'user.".to_string()
         }
@@ -100,7 +103,7 @@ pub fn erreur_de_combat(erreur: &ErreurCombat) -> String {
         ErreurCombat::MonstreDejaActif(index) => {
             format!("Le monstre numéro {} combat déjà.", index + 1)
         }
-        ErreurCombat::AucunePotion => "Vous n'avez plus de potion.".to_string(),
+        ErreurCombat::AucunSoin(soin) => plus_aucun(*soin).to_string(),
         // Les autres erreurs ne viennent pas d'une saisie du joueur :
         // l'interface suit la phase du combat.
         autre => format!("Action impossible : {autre}."),
@@ -123,11 +126,11 @@ pub fn erreur_collection(erreur: &ErreurCollection) -> String {
     }
 }
 
-pub fn erreur_potion(erreur: &ErreurPotion) -> String {
+pub fn erreur_soin(erreur: &ErreurSoin) -> String {
     match erreur {
-        ErreurPotion::AucunePotion => "Vous n'avez plus de potion.".to_string(),
-        ErreurPotion::MonstreInexistant => "Ce monstre n'est pas dans l'équipe.".to_string(),
-        ErreurPotion::MonstreKo => "Une potion ne relève pas un monstre KO.".to_string(),
+        ErreurSoin::Aucun(soin) => plus_aucun(*soin).to_string(),
+        ErreurSoin::MonstreInexistant => "Ce monstre n'est pas dans l'équipe.".to_string(),
+        ErreurSoin::MonstreKo => "Seul un élixir relève un monstre KO.".to_string(),
     }
 }
 

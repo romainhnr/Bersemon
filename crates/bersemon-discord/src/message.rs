@@ -315,6 +315,6 @@ mod tests {
 
     #[test]
     fn un_menu_sans_option_n_est_pas_cree() {
-        assert!(menu(Cle::Potion, "Potion", Vec::new()).is_none());
+        assert!(menu(Cle::Soin, "Soin", Vec::new()).is_none());
     }
 }

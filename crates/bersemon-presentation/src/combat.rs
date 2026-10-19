@@ -13,6 +13,7 @@ use crate::monstres::{
     decrire_attaque, ligne_monstre, nom, nom_en_combat, nom_en_valeur, progression_d_experience,
 };
 use crate::partie::types_connus;
+use crate::soins::soin_utilise;
 
 pub fn rencontre(combat: &Combat) -> String {
     let noms: Vec<String> = (0..combat.adversaires().len())
@@ -173,7 +174,7 @@ pub fn evenement(evenement: &Evenement, combat: &Combat) -> String {
             combat.monstre(*cible).nom()
         )),
         Evenement::CaptureRatee(cible) => format!("{} se dégage du filet.", fort(*cible)),
-        Evenement::PotionUtilisee { cible, pv_rendus } => soin_de_potion(&fort(*cible), *pv_rendus),
+        Evenement::SoinUtilise { soin, cible, effet } => soin_utilise(*soin, &fort(*cible), *effet),
         Evenement::Fuite => "Vous prenez la fuite.".to_string(),
         Evenement::FinDuCombat(Issue::Victoire) => "Victoire !".to_string(),
         Evenement::FinDuCombat(Issue::Defaite) => important("Défaite : toute votre équipe est KO."),
@@ -188,14 +189,6 @@ fn phrase_efficacite(efficacite: Efficacite) -> Option<&'static str> {
         Efficacite::Normale | Efficacite::Nulle => None,
         Efficacite::Reduite => Some("Ce n'est pas très efficace."),
         Efficacite::TresReduite => Some("Ce n'est presque pas efficace."),
-    }
-}
-
-pub fn soin_de_potion(nom: &str, pv_rendus: u32) -> String {
-    if pv_rendus == 0 {
-        format!("La potion est sans effet sur {nom}.")
-    } else {
-        format!("{nom} récupère {pv_rendus} PV.")
     }
 }
 

@@ -1,4 +1,4 @@
-//! Marchand réfugié au camp (section 14.2) : il vend des potions et des
+//! Marchand réfugié au camp (section 14.2) : il vend des soins et des
 //! capsules d'attaque, et rachète les monstres. Ses prix sont fixes, et non
 //! tirés au hasard, pour être connus avant l'échange (section 14.5).
 
@@ -7,9 +7,17 @@ use std::fmt;
 use crate::collection::ErreurCollection;
 use crate::espece::Rarete;
 use crate::monstre::Monstre;
+use crate::soin::Soin;
 
-/// En pièces d'argent.
-pub const PRIX_DE_LA_POTION: u32 = 20;
+/// En pièces d'argent (sections 14.4 et 14.5).
+pub fn prix_du_soin(soin: Soin) -> u32 {
+    match soin {
+        Soin::Potion => 20,
+        Soin::Remede => 25,
+        Soin::GrandePotion => 60,
+        Soin::Elixir => 150,
+    }
+}
 
 /// Le niveau multiplié par le total des stats de base est divisé par ce
 /// nombre (section 14.5).
@@ -48,6 +56,9 @@ pub enum ErreurMarchand {
         argent: u32,
     },
     QuantiteNulle,
+    /// Le marchand ne vend ce soin qu'une fois l'âme de son marchand
+    /// recueillie (section 14.2).
+    SoinIndisponible(Soin),
     /// Une capsule sert sans s'user : en racheter une ne sert à rien.
     CapsuleDejaPossedee,
     /// La revente suit les règles du relâcher.
@@ -63,6 +74,9 @@ impl fmt::Display for ErreurMarchand {
                 "il faut {prix} pièces d'argent, le joueur n'en a que {argent}"
             ),
             ErreurMarchand::QuantiteNulle => write!(f, "il faut acheter au moins un objet"),
+            ErreurMarchand::SoinIndisponible(soin) => {
+                write!(f, "le marchand ne vend pas encore ce soin : {soin:?}")
+            }
             ErreurMarchand::CapsuleDejaPossedee => write!(f, "cette capsule est déjà obtenue"),
             ErreurMarchand::Collection(erreur) => write!(f, "{erreur}"),
         }

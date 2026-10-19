@@ -25,12 +25,13 @@ use crate::expedition_automatique::{
 };
 use crate::heros::{Classe, Heros};
 use crate::horodatage::Horodatage;
-use crate::inventaire::{ErreurObjet, ErreurPotion, Inventaire, Objet, potion_sans_effet};
+use crate::inventaire::{ErreurObjet, Inventaire, Objet};
 use crate::marchand::ErreurMarchand;
 use crate::monstre::{Monstre, RapportExperience};
 use crate::nom::{ErreurNom, Nom};
 use crate::partie::{Partie, creer_monstre_de_depart};
 use crate::sauvegarde::{ErreurSauvegarde, SauvegardeRepository};
+use crate::soin::{EffetDuSoin, ErreurSoin, Soin, Soins, soin_sans_effet, verifier_cible};
 use crate::traque::Piste;
 use crate::tutoriel::Conseil;
 use crate::zone::{Zone, ZoneId};
@@ -71,8 +72,9 @@ pub enum Choix {
     AccueillirExpeditionAutomatique(ZoneId),
     /// Avant son terme, après confirmation (section 12.7).
     RappelerExpeditionAutomatique(ZoneId),
-    /// Au camp, chez le marchand, sans confirmation (section 14.2).
-    AcheterPotions(u32),
+    /// Au camp, chez le marchand, sans confirmation : un soin de
+    /// `Partie::soins_en_vente` (section 14.2).
+    AcheterSoins(Soin, u32),
     /// Au camp, chez le marchand, après confirmation, comme un relâcher
     /// (section 14.2).
     Vendre(Emplacement),
@@ -100,8 +102,9 @@ pub enum Choix {
     /// l'équipe (Q55).
     Gerer(ActionDeGestion),
     ContinuerLExpedition,
-    /// Position, dans l'équipe, du monstre à soigner entre deux étapes.
-    UtiliserPotion(usize),
+    /// Le soin et la position, dans l'équipe, du monstre à soigner entre
+    /// deux étapes (section 14.4).
+    UtiliserSoin(Soin, usize),
     RentrerAuCamp,
     PrendreLeMonstreRare,
     LaisserLeMonstreRare,
@@ -189,8 +192,12 @@ pub enum Attente<'a> {
 pub enum Confirmation {
     /// Une nouvelle partie remplace celle de ce héros (Q56).
     RemplacerLaPartie(Heros),
-    /// Le monstre a déjà tous ses PV : la potion serait perdue (Q53).
-    PotionPerdue(Monstre),
+    /// Le soin serait sans effet sur ce monstre, et perdu (Q53, section
+    /// 14.4).
+    SoinPerdu {
+        soin: Soin,
+        monstre: Monstre,
+    },
     Relacher(Monstre),
     /// Les monstres rentreraient sans rien rapporter (section 12.7).
     RappelerLExpedition(ExpeditionAutomatique),
@@ -280,9 +287,11 @@ pub enum Evenement {
     Defaite {
         sac_perdu: Inventaire,
     },
-    PotionUtilisee {
+    /// Entre deux étapes ; `monstre` est le monstre soigné.
+    SoinUtilise {
+        soin: Soin,
         monstre: Monstre,
-        pv_rendus: u32,
+        effet: EffetDuSoin,
     },
     /// Nom de la zone menée jusqu'au bout.
     ZoneExploree(String),
@@ -308,7 +317,8 @@ pub enum Evenement {
     /// Il se réfugie aussitôt au camp (section 14.2).
     MarchandRencontre,
     /// Prix payé, en pièces d'argent.
-    PotionsAchetees {
+    SoinsAchetes {
+        soin: Soin,
         nombre: u32,
         prix: u32,
     },
@@ -344,7 +354,7 @@ pub enum ErreurChoix {
     EquipeVide,
     Objet(ErreurObjet),
     Collection(ErreurCollection),
-    Potion(ErreurPotion),
+    Soin(ErreurSoin),
     Combat(ErreurCombat),
     Attaque(ErreurAttaquesMonstre),
     ExpeditionAutomatique(ErreurExpeditionAutomatique),
@@ -364,7 +374,7 @@ impl fmt::Display for ErreurChoix {
             ErreurChoix::EquipeVide => write!(f, "l'équipe est vide"),
             ErreurChoix::Objet(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Collection(erreur) => write!(f, "{erreur}"),
-            ErreurChoix::Potion(erreur) => write!(f, "{erreur}"),
+            ErreurChoix::Soin(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Combat(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Attaque(erreur) => write!(f, "{erreur}"),
             ErreurChoix::ExpeditionAutomatique(erreur) => write!(f, "{erreur}"),
@@ -699,12 +709,13 @@ impl EnJeu {
                 sauvegarder(&self.partie, contexte.depot, evenements);
                 Ok(Reponse::Faite)
             }
-            Choix::AcheterPotions(nombre) => {
+            Choix::AcheterSoins(soin, nombre) => {
                 let prix = self
                     .partie
-                    .acheter_potions(*nombre)
+                    .acheter_soins(*soin, *nombre)
                     .map_err(ErreurChoix::Marchand)?;
-                evenements.push(Evenement::PotionsAchetees {
+                evenements.push(Evenement::SoinsAchetes {
+                    soin: *soin,
                     nombre: *nombre,
                     prix,
                 });
@@ -1090,19 +1101,20 @@ impl EnExpedition {
     ) -> Result<Reponse, ErreurChoix> {
         match choix {
             Choix::ContinuerLExpedition => Ok(self.etape_suivante(partie, contexte, evenements)),
-            Choix::UtiliserPotion(index) => {
+            Choix::UtiliserSoin(soin, index) => {
                 let equipe = partie.collection().equipe();
                 if let Some(confirmation) =
-                    potion_a_confirmer(partie.sac().potions(), equipe, *index, confirme)
+                    soin_a_confirmer(*soin, partie.sac().soins(), equipe, *index, confirme)
                 {
                     return Ok(Reponse::a_confirmer(confirmation));
                 }
-                let pv_rendus = partie
-                    .utiliser_potion(*index, &mut *contexte.aleatoire)
-                    .map_err(ErreurChoix::Potion)?;
-                evenements.push(Evenement::PotionUtilisee {
+                let effet = partie
+                    .utiliser_soin(*soin, *index, &mut *contexte.aleatoire)
+                    .map_err(ErreurChoix::Soin)?;
+                evenements.push(Evenement::SoinUtilise {
+                    soin: *soin,
                     monstre: partie.collection().equipe()[*index].clone(),
-                    pv_rendus,
+                    effet,
                 });
                 Ok(Reponse::Faite)
             }
@@ -1162,9 +1174,9 @@ impl EnExpedition {
     ) -> Result<Reponse, ErreurChoix> {
         let resultat = match (combat.phase(), choix) {
             (Phase::ChoixAction, Choix::Combat(action)) => {
-                if let Action::UtiliserPotion(index) = *action {
+                if let Action::UtiliserSoin(soin, index) = *action {
                     let confirmation =
-                        potion_a_confirmer(combat.potions(), combat.equipe(), index, confirme);
+                        soin_a_confirmer(soin, combat.soins(), combat.equipe(), index, confirme);
                     if let Some(confirmation) = confirmation {
                         self.moment = Moment::Combat(combat);
                         return Ok(Reponse::a_confirmer(confirmation));
@@ -1515,18 +1527,25 @@ impl EnExpedition {
     }
 }
 
-/// Sur un monstre qui a tous ses PV, la potion serait perdue : le joueur
-/// confirme d'abord (Q53). Les autres cas sont laissés aux règles de la
-/// potion, qui les refusent ou les appliquent.
-fn potion_a_confirmer(
-    potions: u32,
+/// Un soin sans effet serait perdu : le joueur confirme d'abord (Q53,
+/// section 14.4). Les autres cas sont laissés aux règles des soins, qui les
+/// refusent ou les appliquent.
+fn soin_a_confirmer(
+    soin: Soin,
+    soins: &Soins,
     equipe: &[Monstre],
     index: usize,
     confirme: bool,
 ) -> Option<Confirmation> {
     let monstre = equipe.get(index)?;
-    let perdue = !confirme && potions > 0 && potion_sans_effet(monstre);
-    perdue.then(|| Confirmation::PotionPerdue(monstre.clone()))
+    let perdu = !confirme
+        && soins.nombre(soin) > 0
+        && verifier_cible(soin, monstre).is_ok()
+        && soin_sans_effet(soin, monstre);
+    perdu.then(|| Confirmation::SoinPerdu {
+        soin,
+        monstre: monstre.clone(),
+    })
 }
 
 /// Rend la capture qui ne trouve pas de place.
@@ -1876,16 +1895,29 @@ mod tests {
         assert_eq!(deroulement.attente(), Attente::EntreDeuxEtapes);
 
         // La Salamandre a tous ses PV : la potion serait perdue (Q53).
-        repondre_sans_tirage(&mut deroulement, Choix::UtiliserPotion(0), &contenu, &depot).unwrap();
+        repondre_sans_tirage(
+            &mut deroulement,
+            Choix::UtiliserSoin(Soin::Potion, 0),
+            &contenu,
+            &depot,
+        )
+        .unwrap();
         assert!(matches!(
             deroulement.attente(),
-            Attente::Confirmation(Confirmation::PotionPerdue(_))
+            Attente::Confirmation(Confirmation::SoinPerdu {
+                soin: Soin::Potion,
+                ..
+            })
         ));
         let evenements =
             repondre_sans_tirage(&mut deroulement, Choix::Oui, &contenu, &depot).unwrap();
         assert!(matches!(
             &evenements[..],
-            [Evenement::PotionUtilisee { pv_rendus: 0, .. }]
+            [Evenement::SoinUtilise {
+                soin: Soin::Potion,
+                effet: EffetDuSoin::PvRendus(0),
+                ..
+            }]
         ));
         assert_eq!(deroulement.partie().unwrap().sac().potions(), 0);
 
@@ -1912,7 +1944,12 @@ mod tests {
         let mut deroulement = Deroulement::demarrer(Ok(Some(partie(&contenu))));
         repondre_sans_tirage(&mut deroulement, Choix::ReprendreLaPartie, &contenu, &depot).unwrap();
         assert_eq!(
-            repondre_sans_tirage(&mut deroulement, Choix::AcheterPotions(1), &contenu, &depot),
+            repondre_sans_tirage(
+                &mut deroulement,
+                Choix::AcheterSoins(Soin::Potion, 1),
+                &contenu,
+                &depot
+            ),
             Err(ErreurChoix::Marchand(ErreurMarchand::AucunMarchand))
         );
 
@@ -1949,7 +1986,12 @@ mod tests {
                 .marchand_au_camp()
         );
         assert_eq!(
-            repondre_sans_tirage(&mut deroulement, Choix::AcheterPotions(1), &contenu, &depot),
+            repondre_sans_tirage(
+                &mut deroulement,
+                Choix::AcheterSoins(Soin::Potion, 1),
+                &contenu,
+                &depot
+            ),
             Err(ErreurChoix::Marchand(ErreurMarchand::ArgentInsuffisant {
                 prix: 20,
                 argent: 0
@@ -1996,12 +2038,17 @@ mod tests {
         partie = Partie::restaurer(etat).unwrap();
         let mut deroulement = Deroulement::demarrer(Ok(Some(partie)));
         repondre_sans_tirage(&mut deroulement, Choix::ReprendreLaPartie, &contenu, &depot).unwrap();
-        let evenements =
-            repondre_sans_tirage(&mut deroulement, Choix::AcheterPotions(2), &contenu, &depot)
-                .unwrap();
+        let evenements = repondre_sans_tirage(
+            &mut deroulement,
+            Choix::AcheterSoins(Soin::Potion, 2),
+            &contenu,
+            &depot,
+        )
+        .unwrap();
         assert_eq!(
             evenements,
-            vec![Evenement::PotionsAchetees {
+            vec![Evenement::SoinsAchetes {
+                soin: Soin::Potion,
                 nombre: 2,
                 prix: 40
             }]
@@ -2021,7 +2068,7 @@ mod tests {
         repondre_sans_tirage(&mut deroulement, Choix::ReprendreLaPartie, &contenu, &depot).unwrap();
         let evenements = repondre_sans_tirage(
             &mut deroulement,
-            Choix::SortirDuCoffre(Objet::Potions(2)),
+            Choix::SortirDuCoffre(Objet::Soins(Soin::Potion, 2)),
             &contenu,
             &depot,
         )
@@ -2339,7 +2386,9 @@ mod tests {
                     !monstre.est_ko() && monstre.pv_actuels() * 2 < monstre.stats().pv
                 });
                 match blesse {
-                    Some(index) if partie.sac().potions() > 0 => Choix::UtiliserPotion(index),
+                    Some(index) if partie.sac().potions() > 0 => {
+                        Choix::UtiliserSoin(Soin::Potion, index)
+                    }
                     Some(index) if equipe[index].pv_actuels() * 4 < equipe[index].stats().pv => {
                         Choix::RentrerAuCamp
                     }

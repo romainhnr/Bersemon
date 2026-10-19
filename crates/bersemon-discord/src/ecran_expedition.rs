@@ -15,6 +15,7 @@ use bersemon_presentation::partie::{
 
 use crate::composants::Cle;
 use crate::ecran_camp::{menus_de_monstres, options_d_equipe};
+use crate::ecran_combat::options_de_soins;
 use crate::message::{PRINCIPAL, Question, SECONDAIRE, bouton, menu, rangees};
 
 /// Continuer, rentrer, soigner un monstre ou mettre un monstre en tête :
@@ -22,7 +23,6 @@ use crate::message::{PRINCIPAL, Question, SECONDAIRE, bouton, menu, rangees};
 /// rappelé : une défaite le ferait perdre (section 9.3).
 pub fn entre_deux_etapes(partie: &Partie) -> Question {
     let equipe = partie.collection().equipe();
-    let potions = partie.sac().potions();
     let lignes: Vec<String> = equipe
         .iter()
         .map(|monstre| ligne_monstre(monstre, Cote::Joueur))
@@ -31,19 +31,11 @@ pub fn entre_deux_etapes(partie: &Partie) -> Question {
         bouton(Cle::Continuer, "Continuer l'expédition", PRINCIPAL),
         bouton(Cle::Rentrer, "Rentrer au camp", SECONDAIRE),
     ]);
-    if potions > 0 {
-        let aptes = options_d_equipe(equipe)
-            .into_iter()
-            .zip(equipe)
-            .filter(|(_, monstre)| !monstre.est_ko())
-            .map(|(option, _)| option)
-            .collect();
-        rangees_de_l_etape.extend(menu(
-            Cle::Potion,
-            &format!("Utiliser une potion ({potions}) sur"),
-            aptes,
-        ));
-    }
+    rangees_de_l_etape.extend(menu(
+        Cle::Soin,
+        "Utiliser un soin",
+        options_de_soins(partie.sac().soins(), equipe),
+    ));
     let suivants = options_d_equipe(equipe).into_iter().skip(1).collect();
     rangees_de_l_etape.extend(menu(Cle::EnTete, "Mettre en tête de l'équipe", suivants));
     Question {

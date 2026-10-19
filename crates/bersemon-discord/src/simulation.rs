@@ -16,9 +16,10 @@ use bersemon_core::espece::EspeceId;
 use bersemon_core::heros::Classe;
 use bersemon_core::horodatage::Horodatage;
 use bersemon_core::inventaire::Inventaire;
-use bersemon_core::marchand::PRIX_DE_LA_POTION;
+use bersemon_core::marchand::prix_du_soin;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::EtatPartie;
+use bersemon_core::soin::Soin;
 use bersemon_core::types::{Efficacite, efficacite};
 use bersemon_core::zone::ZoneId;
 
@@ -209,7 +210,7 @@ fn visite_au_marchand(session: &Session, message: &Message, visite: Visite) -> O
     let camp = partie.collection().camp().len();
     let possible = match visite {
         Visite::AFaire => {
-            partie.marchand_au_camp() && camp > 0 && partie.argent() >= PRIX_DE_LA_POTION
+            partie.marchand_au_camp() && camp > 0 && partie.argent() >= prix_du_soin(Soin::Potion)
         }
         Visite::PotionAchetee => camp > 0,
         Visite::MonstreVendu => true,
@@ -223,9 +224,9 @@ fn visite_au_marchand(session: &Session, message: &Message, visite: Visite) -> O
             Some(cliquer(message, |cle| *cle == Cle::Afficher(Vue::Coffre)))
         }
         (Vue::Camp, _) => Some(cliquer(message, |cle| *cle == Cle::Afficher(Vue::Marchand))),
-        (Vue::Marchand, Visite::AFaire) => {
-            Some(cliquer(message, |cle| *cle == Cle::AcheterPotions(1)))
-        }
+        (Vue::Marchand, Visite::AFaire) => Some(cliquer(message, |cle| {
+            *cle == Cle::AcheterSoins(Soin::Potion, 1)
+        })),
         (Vue::Marchand, Visite::PotionAchetee) => {
             Some(cliquer(message, |cle| *cle == Cle::Afficher(Vue::Vente)))
         }
@@ -238,7 +239,7 @@ fn visite_au_marchand(session: &Session, message: &Message, visite: Visite) -> O
             Some(cliquer(message, |cle| *cle == Cle::ToutRanger))
         }
         (Vue::Coffre, Visite::MonstreVendu) => {
-            choisir_dans(message, |cle| *cle == Cle::SortirDuCoffre, "potions:1")
+            choisir_dans(message, |cle| *cle == Cle::SortirDuCoffre, "soins:potion:1")
         }
         _ => None,
     }
@@ -313,7 +314,7 @@ fn jouer_un_coup(
             });
             if let Some(index) = blesse {
                 if let Some(clic) =
-                    choisir_dans(message, |cle| *cle == Cle::Potion, &index.to_string())
+                    choisir_dans(message, |cle| *cle == Cle::Soin, &format!("potion:{index}"))
                 {
                     return clic;
                 }
@@ -599,7 +600,7 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
                     // annoncer.
                     assert!(joueurs.retours_echus(maintenant).is_empty());
                 }
-                Evenement::PotionsAchetees { nombre: 1, .. } => visite = Visite::PotionAchetee,
+                Evenement::SoinsAchetes { nombre: 1, .. } => visite = Visite::PotionAchetee,
                 Evenement::MonstreVendu { .. } => visite = Visite::MonstreVendu,
                 Evenement::SortiDuCoffre(_) => visite = Visite::Faite,
                 _ => {}

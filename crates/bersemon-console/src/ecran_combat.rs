@@ -7,7 +7,9 @@ use bersemon_core::combat::{Action, Combat, Cote};
 use bersemon_core::deroulement::Choix;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
+use bersemon_core::soin::{Soin, Soins};
 use bersemon_presentation::partie::places_pour_une_capture;
+use bersemon_presentation::soins::{effet_du_soin, nom_du_soin};
 
 use crate::affichage;
 use crate::saisie::Entree;
@@ -18,7 +20,7 @@ pub enum Commande {
     Attaquer,
     Changer,
     LancerFilet,
-    UtiliserPotion,
+    UtiliserSoin,
     Fuir,
 }
 
@@ -28,7 +30,7 @@ fn commandes(combat: &Combat) -> Vec<Commande> {
     if combat.filet_possible() {
         commandes.push(Commande::LancerFilet);
     }
-    commandes.push(Commande::UtiliserPotion);
+    commandes.push(Commande::UtiliserSoin);
     if combat.fuite_possible() {
         commandes.push(Commande::Fuir);
     }
@@ -63,20 +65,45 @@ pub fn choisir_action(combat: &Combat, partie: &Partie, entree: &mut Entree) -> 
                 (choix > 0).then(|| Action::Changer(choix - 1))
             }
             Commande::LancerFilet => Some(Action::LancerFilet),
-            // La confirmation d'une potion perdue est demandée par le
+            // La confirmation d'un soin perdu est demandée par le
             // déroulement (Q53).
-            Commande::UtiliserPotion => {
-                println!("Soigner quel monstre ?");
-                println!("{}", affichage::liste_equipe(combat, true));
-                let choix = entree.choix(0, combat.equipe().len())?;
-                (choix > 0).then(|| Action::UtiliserPotion(choix - 1))
-            }
+            Commande::UtiliserSoin => match choisir_soin(combat.soins(), entree)? {
+                Some(soin) => {
+                    println!("Soigner quel monstre ?");
+                    println!("{}", affichage::liste_equipe(combat, true));
+                    let choix = entree.choix(0, combat.equipe().len())?;
+                    (choix > 0).then(|| Action::UtiliserSoin(soin, choix - 1))
+                }
+                None => None,
+            },
             Commande::Fuir => Some(Action::Fuir),
         };
         if let Some(action) = action {
             return Some(Choix::Combat(action));
         }
     }
+}
+
+/// Parmi ceux du sac, en combat ou entre deux étapes. `Some(None)` s'il
+/// n'y en a aucun ou si le joueur annule.
+pub fn choisir_soin(soins: &Soins, entree: &mut Entree) -> Option<Option<Soin>> {
+    let presents: Vec<(Soin, u32)> = soins.presents().collect();
+    if presents.is_empty() {
+        println!("Vous n'avez aucun soin.");
+        return Some(None);
+    }
+    println!("Quel soin utiliser ?");
+    for (position, (soin, nombre)) in presents.iter().enumerate() {
+        println!(
+            "  {}. {} ({nombre}) : {}",
+            position + 1,
+            nom_du_soin(*soin),
+            effet_du_soin(*soin)
+        );
+    }
+    println!("  0. Retour");
+    let choix = entree.choix(0, presents.len())?;
+    Some((choix > 0).then(|| presents[choix - 1].0))
 }
 
 pub fn choisir_remplacant(combat: &Combat, entree: &mut Entree) -> Option<Choix> {

@@ -13,6 +13,7 @@ use bersemon_core::deroulement::{ActionDeGestion, Choix};
 use bersemon_core::expedition_automatique::MONSTRES_MAX;
 use bersemon_core::heros::Classe;
 use bersemon_core::inventaire::Objet;
+use bersemon_core::soin::Soin;
 use bersemon_core::zone::ZoneId;
 
 /// Distingue les composants de Bersemon de ceux d'autres usages éventuels.
@@ -140,8 +141,8 @@ pub enum Cle {
     Relacher(Emplacement),
     Continuer,
     Rentrer,
-    /// Menu de l'équipe, entre deux étapes.
-    Potion,
+    /// Menu des soins et des monstres à soigner, entre deux étapes.
+    Soin,
     /// Menu de l'équipe : le monstre choisi passe en tête (Q55).
     EnTete,
     Prendre,
@@ -156,8 +157,8 @@ pub enum Cle {
     Fuir,
     /// Menu de l'équipe, en combat.
     Changer,
-    /// Menu de l'équipe, en combat.
-    PotionEnCombat,
+    /// Menu des soins et des monstres à soigner, en combat.
+    SoinEnCombat,
     Remplacer(usize),
     Capturer(usize),
     NePlusCapturer,
@@ -176,7 +177,7 @@ pub enum Cle {
     },
     Accueillir(ZoneId),
     Rappeler(ZoneId),
-    AcheterPotions(u32),
+    AcheterSoins(Soin, u32),
     /// Menu des capsules en vente.
     AcheterCapsule,
     /// Menu de monstres numéroté, avec leur prix.
@@ -241,7 +242,10 @@ impl Cle {
             Cle::Relacher(emplacement) => gerer(ActionDeGestion::Relacher(*emplacement)),
             Cle::Continuer => jouer(Choix::ContinuerLExpedition),
             Cle::Rentrer => jouer(Choix::RentrerAuCamp),
-            Cle::Potion => jouer(Choix::UtiliserPotion(position()?)),
+            Cle::Soin => {
+                let (soin, index) = lire_soin_et_position(valeur?)?;
+                jouer(Choix::UtiliserSoin(soin, index))
+            }
             Cle::EnTete => gerer(ActionDeGestion::ChangerLOrdre {
                 de: position()?,
                 vers: 0,
@@ -255,7 +259,10 @@ impl Cle {
             Cle::Filet => jouer(Choix::Combat(Action::LancerFilet)),
             Cle::Fuir => jouer(Choix::Combat(Action::Fuir)),
             Cle::Changer => jouer(Choix::Combat(Action::Changer(position()?))),
-            Cle::PotionEnCombat => jouer(Choix::Combat(Action::UtiliserPotion(position()?))),
+            Cle::SoinEnCombat => {
+                let (soin, index) = lire_soin_et_position(valeur?)?;
+                jouer(Choix::Combat(Action::UtiliserSoin(soin, index)))
+            }
             Cle::Remplacer(index) => jouer(Choix::Remplacer(*index)),
             Cle::Capturer(index) => jouer(Choix::Capturer(*index)),
             Cle::NePlusCapturer => jouer(Choix::NePlusCapturer),
@@ -271,7 +278,7 @@ impl Cle {
             }),
             Cle::Accueillir(zone) => jouer(Choix::AccueillirExpeditionAutomatique(zone.clone())),
             Cle::Rappeler(zone) => jouer(Choix::RappelerExpeditionAutomatique(zone.clone())),
-            Cle::AcheterPotions(nombre) => jouer(Choix::AcheterPotions(*nombre)),
+            Cle::AcheterSoins(soin, nombre) => jouer(Choix::AcheterSoins(*soin, *nombre)),
             Cle::AcheterCapsule => jouer(Choix::AcheterCapsule(AttaqueId::new(valeur?))),
             Cle::Vendre(_) => jouer(Choix::Vendre(lire_emplacement(valeur?)?)),
             Cle::VendreCeMonstre(emplacement) => jouer(Choix::Vendre(*emplacement)),
@@ -340,7 +347,7 @@ impl Cle {
             }
             Cle::Continuer => "continuer".to_string(),
             Cle::Rentrer => "rentrer".to_string(),
-            Cle::Potion => "potion".to_string(),
+            Cle::Soin => "soin".to_string(),
             Cle::EnTete => "en-tete".to_string(),
             Cle::Prendre => "prendre".to_string(),
             Cle::Poursuivre => "poursuivre".to_string(),
@@ -351,7 +358,7 @@ impl Cle {
             Cle::Filet => "filet".to_string(),
             Cle::Fuir => "fuir".to_string(),
             Cle::Changer => "changer".to_string(),
-            Cle::PotionEnCombat => "potion-combat".to_string(),
+            Cle::SoinEnCombat => "soin-combat".to_string(),
             Cle::Remplacer(index) => format!("remplacer:{index}"),
             Cle::Capturer(index) => format!("capturer:{index}"),
             Cle::NePlusCapturer => "ne-plus-capturer".to_string(),
@@ -367,7 +374,9 @@ impl Cle {
             }
             Cle::Accueillir(zone) => format!("accueillir:{}", zone.as_str()),
             Cle::Rappeler(zone) => format!("rappeler:{}", zone.as_str()),
-            Cle::AcheterPotions(nombre) => format!("acheter-potions:{nombre}"),
+            Cle::AcheterSoins(soin, nombre) => {
+                format!("acheter-soins:{}:{nombre}", soin_en_texte(*soin))
+            }
             Cle::AcheterCapsule => "acheter-capsule".to_string(),
             Cle::Vendre(numero) => format!("vendre:{numero}"),
             Cle::VendreCeMonstre(emplacement) => {
@@ -426,7 +435,7 @@ impl Cle {
             "fiche" => Cle::Fiche,
             "continuer" => Cle::Continuer,
             "rentrer" => Cle::Rentrer,
-            "potion" => Cle::Potion,
+            "soin" => Cle::Soin,
             "en-tete" => Cle::EnTete,
             "prendre" => Cle::Prendre,
             "poursuivre" => Cle::Poursuivre,
@@ -435,7 +444,7 @@ impl Cle {
             "filet" => Cle::Filet,
             "fuir" => Cle::Fuir,
             "changer" => Cle::Changer,
-            "potion-combat" => Cle::PotionEnCombat,
+            "soin-combat" => Cle::SoinEnCombat,
             "ne-plus-capturer" => Cle::NePlusCapturer,
             "renoncer" => Cle::Renoncer,
             autre => {
@@ -481,7 +490,10 @@ impl Cle {
                     }
                     "accueillir" => Cle::Accueillir(ZoneId::new(parametre)),
                     "rappeler" => Cle::Rappeler(ZoneId::new(parametre)),
-                    "acheter-potions" => Cle::AcheterPotions(parametre.parse().ok()?),
+                    "acheter-soins" => {
+                        let (soin, nombre) = parametre.split_once(':')?;
+                        Cle::AcheterSoins(lire_soin(soin)?, nombre.parse().ok()?)
+                    }
                     "vendre" => Cle::Vendre(numero()?),
                     "vendre-monstre" => Cle::VendreCeMonstre(emplacement()?),
                     "apprendre" => {
@@ -533,11 +545,39 @@ fn lire_emplacement(texte: &str) -> Option<Emplacement> {
     texte.strip_prefix('c')?.parse().ok().map(Emplacement::Camp)
 }
 
-/// Valeur d'option des menus du coffre : `potions:` ou `argent:` suivi de
-/// la quantité, ou `capsule:` suivi de l'attaque.
+/// Nom fixé ici, et non le nom Rust, comme dans la sauvegarde.
+pub fn soin_en_texte(soin: Soin) -> &'static str {
+    match soin {
+        Soin::Potion => "potion",
+        Soin::Remede => "remede",
+        Soin::GrandePotion => "grande-potion",
+        Soin::Elixir => "elixir",
+    }
+}
+
+fn lire_soin(texte: &str) -> Option<Soin> {
+    Soin::TOUS
+        .into_iter()
+        .find(|soin| soin_en_texte(*soin) == texte)
+}
+
+/// Valeur d'option des menus de soins : le soin, puis la position, dans
+/// l'équipe, du monstre à soigner.
+pub fn soin_et_position_en_texte(soin: Soin, index: usize) -> String {
+    format!("{}:{index}", soin_en_texte(soin))
+}
+
+fn lire_soin_et_position(texte: &str) -> Option<(Soin, usize)> {
+    let (soin, index) = texte.split_once(':')?;
+    Some((lire_soin(soin)?, index.parse().ok()?))
+}
+
+/// Valeur d'option des menus du coffre : `soins:` suivi du soin et de la
+/// quantité, `argent:` suivi de la quantité, ou `capsule:` suivi de
+/// l'attaque.
 pub fn objet_en_texte(objet: &Objet) -> String {
     match objet {
-        Objet::Potions(nombre) => format!("potions:{nombre}"),
+        Objet::Soins(soin, nombre) => format!("soins:{}:{nombre}", soin_en_texte(*soin)),
         Objet::Argent(montant) => format!("argent:{montant}"),
         Objet::Capsule(attaque) => format!("capsule:{}", attaque.as_str()),
     }
@@ -546,7 +586,10 @@ pub fn objet_en_texte(objet: &Objet) -> String {
 fn lire_objet(texte: &str) -> Option<Objet> {
     let (genre, parametre) = texte.split_once(':')?;
     match genre {
-        "potions" => Some(Objet::Potions(parametre.parse().ok()?)),
+        "soins" => {
+            let (soin, nombre) = parametre.split_once(':')?;
+            Some(Objet::Soins(lire_soin(soin)?, nombre.parse().ok()?))
+        }
         "argent" => Some(Objet::Argent(parametre.parse().ok()?)),
         "capsule" => Some(Objet::Capsule(AttaqueId::new(parametre))),
         _ => None,
@@ -611,7 +654,7 @@ mod tests {
             Cle::Relacher(Emplacement::Camp(0)),
             Cle::Continuer,
             Cle::Rentrer,
-            Cle::Potion,
+            Cle::Soin,
             Cle::EnTete,
             Cle::Prendre,
             Cle::Poursuivre,
@@ -622,7 +665,7 @@ mod tests {
             Cle::Filet,
             Cle::Fuir,
             Cle::Changer,
-            Cle::PotionEnCombat,
+            Cle::SoinEnCombat,
             Cle::Remplacer(2),
             Cle::Capturer(1),
             Cle::NePlusCapturer,
@@ -651,7 +694,8 @@ mod tests {
             Cle::Afficher(Vue::Marchand),
             Cle::Afficher(Vue::Vente),
             Cle::Afficher(Vue::Attaques(Emplacement::Camp(29))),
-            Cle::AcheterPotions(5),
+            Cle::AcheterSoins(Soin::Potion, 5),
+            Cle::AcheterSoins(Soin::GrandePotion, 1),
             Cle::AcheterCapsule,
             Cle::Vendre(2),
             Cle::VendreCeMonstre(Emplacement::Equipe(2)),
@@ -778,7 +822,18 @@ mod tests {
             )))
         );
         assert_eq!(Cle::Changer.commande(None, None), None);
-        assert_eq!(Cle::Potion.commande(Some("x"), None), None);
+        assert_eq!(Cle::Soin.commande(Some("x"), None), None);
+        assert_eq!(
+            Cle::SoinEnCombat.commande(Some(&soin_et_position_en_texte(Soin::Elixir, 2)), None),
+            Some(Commande::Jouer(Choix::Combat(Action::UtiliserSoin(
+                Soin::Elixir,
+                2
+            ))))
+        );
+        assert_eq!(
+            Cle::Soin.commande(Some("remede:0"), None),
+            Some(Commande::Jouer(Choix::UtiliserSoin(Soin::Remede, 0)))
+        );
     }
 
     #[test]
@@ -824,7 +879,8 @@ mod tests {
     #[test]
     fn un_menu_du_coffre_deplace_l_objet_choisi() {
         for objet in [
-            Objet::Potions(5),
+            Objet::Soins(Soin::Potion, 5),
+            Objet::Soins(Soin::GrandePotion, 2),
             Objet::Argent(120),
             Objet::Capsule(AttaqueId::new("brasier")),
         ] {
@@ -838,7 +894,14 @@ mod tests {
                 Some(Commande::Jouer(Choix::RangerAuCoffre(objet)))
             );
         }
-        assert_eq!(Cle::SortirDuCoffre.commande(Some("potions:x"), None), None);
+        assert_eq!(
+            Cle::SortirDuCoffre.commande(Some("soins:potion:x"), None),
+            None
+        );
+        assert_eq!(
+            Cle::SortirDuCoffre.commande(Some("soins:baume:1"), None),
+            None
+        );
         assert_eq!(Cle::RangerAuCoffre.commande(Some("epee:1"), None), None);
     }
 

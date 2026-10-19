@@ -16,6 +16,7 @@ use bersemon_core::zone::Zone;
 
 use crate::expeditions_automatiques::question_de_rappel;
 use crate::monstres::{decrire_stats, ligne_monstre, nom, types_de};
+use crate::soins::{liste_de_soins, question_du_soin_perdu};
 
 /// Équipe puis camp, numérotés à la suite : l'équipe de 1 à 3, le camp
 /// ensuite. Le joueur désigne un monstre par ce numéro.
@@ -102,10 +103,7 @@ pub fn capsule(capsule: &Capsule) -> String {
 /// « 2 potions, 30 pièces d'argent et la capsule d'attaque Brasier », ou
 /// « vide ».
 pub fn contenu(inventaire: &Inventaire) -> String {
-    let mut elements = Vec::new();
-    if inventaire.potions() > 0 {
-        elements.push(potions(inventaire.potions()));
-    }
+    let mut elements = liste_de_soins(inventaire.soins());
     if inventaire.argent() > 0 {
         elements.push(argent(inventaire.argent()));
     }
@@ -289,10 +287,9 @@ pub fn question_de_confirmation(confirmation: &Confirmation) -> String {
             "La partie en cours ({}) sera remplacée. Continuer ?",
             heros.nom().as_str()
         ),
-        Confirmation::PotionPerdue(monstre) => format!(
-            "{} a déjà tous ses PV : la potion serait perdue. L'utiliser quand même ?",
-            nom(monstre, Cote::Joueur)
-        ),
+        Confirmation::SoinPerdu { soin, monstre } => {
+            question_du_soin_perdu(*soin, &nom(monstre, Cote::Joueur))
+        }
         Confirmation::Relacher(monstre) => {
             format!("Relâcher définitivement {} ?", monstre.nom())
         }

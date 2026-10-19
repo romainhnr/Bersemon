@@ -25,8 +25,8 @@ use crate::degats::{ResultatAttaque, a_le_bonus_de_type, estimer_degats, resoudr
 use crate::experience::tirer_gain_experience;
 use crate::habilete::{BONUS_D_INSTINCT, Habilete, majorer};
 use crate::humain::IaHumain;
-use crate::inventaire::{ErreurPotion, appliquer_potion, verifier_cible};
 use crate::monstre::{Monstre, RapportExperience};
+use crate::soin::{EffetDuSoin, ErreurSoin, Soin, Soins, appliquer_soin, verifier_cible};
 use crate::stats::{BonusDeStats, Stats, appliquer_bonus, cumuler_bonus};
 use crate::statut::{CHANCES_BLOCAGE_PARALYSIE, Statut, degats_de_poison};
 use crate::types::{Efficacite, efficacite};
@@ -79,8 +79,9 @@ pub enum Action {
     /// Position, dans l'équipe, du monstre à envoyer.
     Changer(usize),
     LancerFilet,
-    /// Position, dans l'équipe, du monstre à soigner (section 14.4).
-    UtiliserPotion(usize),
+    /// Le soin et la position, dans l'équipe, du monstre à soigner (section
+    /// 14.4).
+    UtiliserSoin(Soin, usize),
     Fuir,
 }
 
@@ -116,9 +117,10 @@ pub enum Evenement {
     },
     CaptureReussie(Combattant),
     CaptureRatee(Combattant),
-    PotionUtilisee {
+    SoinUtilise {
+        soin: Soin,
         cible: Combattant,
-        pv_rendus: u32,
+        effet: EffetDuSoin,
     },
     Fuite,
     FinDuCombat(Issue),
@@ -137,7 +139,7 @@ pub enum ErreurCombat {
     MonstreKo(usize),
     MonstreDejaActif(usize),
     CaptureImpossible(usize),
-    AucunePotion,
+    AucunSoin(Soin),
     FuiteImpossible,
     FiletImpossible,
 }
@@ -177,7 +179,7 @@ impl fmt::Display for ErreurCombat {
                     "le monstre adverse en position {index} ne peut pas être capturé"
                 )
             }
-            ErreurCombat::AucunePotion => write!(f, "aucune potion"),
+            ErreurCombat::AucunSoin(soin) => write!(f, "aucun soin de ce genre : {soin:?}"),
             ErreurCombat::FuiteImpossible => write!(f, "impossible de fuir ce combat"),
             ErreurCombat::FiletImpossible => {
                 write!(f, "impossible de lancer un filet dans ce combat")
@@ -201,14 +203,14 @@ pub struct ApercuAttaque {
 /// Ce que le combat laisse derrière lui. `issue` vaut `None` si le combat a
 /// été interrompu avant la fin ; `captures` suit l'ordre des captures ;
 /// `experience` suit l'ordre de l'équipe, avec `None` pour un monstre qui n'a
-/// rien gagné ; `potions` est le nombre de potions restantes.
+/// rien gagné ; `soins` sont les soins restants.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BilanCombat {
     pub issue: Option<Issue>,
     pub equipe: Vec<Monstre>,
     pub captures: Vec<Monstre>,
     pub experience: Vec<Option<RapportExperience>>,
-    pub potions: u32,
+    pub soins: Soins,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -227,8 +229,8 @@ pub struct Combat {
     /// Bonus de la classe du héros, appliqué aux stats des monstres du joueur
     /// (section 4.2).
     bonus_joueur: BonusDeStats,
-    /// Potions que le joueur porte (section 14.4).
-    potions: u32,
+    /// Soins que le joueur porte (section 14.4).
+    soins: Soins,
     /// Face à un Apôtre, ni fuite ni filet (section 9.4).
     contre_un_apotre: bool,
     /// Face à un humain, ni fuite ni filet, et une seule capture après la
@@ -261,7 +263,7 @@ impl Combat {
             actif_adversaire: 0,
             captures: Vec::new(),
             bonus_joueur: BonusDeStats::default(),
-            potions: 0,
+            soins: Soins::default(),
             contre_un_apotre: false,
             contre_un_humain: false,
             ia: Ia::Hasard,
@@ -271,15 +273,15 @@ impl Combat {
         Ok(combat)
     }
 
-    /// Potions que le joueur emporte dans le combat ; le bilan rend celles
-    /// qui restent.
-    pub fn avec_potions(mut self, potions: u32) -> Self {
-        self.potions = potions;
+    /// Soins que le joueur emporte dans le combat ; le bilan rend ceux qui
+    /// restent.
+    pub fn avec_soins(mut self, soins: Soins) -> Self {
+        self.soins = soins;
         self
     }
 
-    pub fn potions(&self) -> u32 {
-        self.potions
+    pub fn soins(&self) -> &Soins {
+        &self.soins
     }
 
     /// Combat contre un Apôtre : ni fuite ni filet ; il ne se capture que KO,
@@ -448,7 +450,7 @@ impl Combat {
                     );
                 }
             },
-            // Changer de monstre, lancer un filet ou utiliser une potion passe
+            // Changer de monstre, lancer un filet ou utiliser un soin passe
             // avant toute attaque, comme dans Pokémon, et laisse l'adversaire
             // agir.
             Action::Changer(index) => {
@@ -463,15 +465,16 @@ impl Combat {
                     self.riposter(attaque_adversaire, false, aleatoire, &mut evenements);
                 }
             }
-            Action::UtiliserPotion(index) => {
-                self.potions -= 1;
-                let pv_rendus = appliquer_potion(&mut self.equipe[index], aleatoire);
-                evenements.push(Evenement::PotionUtilisee {
+            Action::UtiliserSoin(soin, index) => {
+                self.soins.retirer(soin, 1);
+                let effet = appliquer_soin(soin, &mut self.equipe[index], aleatoire);
+                evenements.push(Evenement::SoinUtilise {
+                    soin,
                     cible: Combattant {
                         cote: Cote::Joueur,
                         index,
                     },
-                    pv_rendus,
+                    effet,
                 });
                 self.riposter(attaque_adversaire, false, aleatoire, &mut evenements);
             }
@@ -550,7 +553,7 @@ impl Combat {
             equipe: self.equipe,
             captures,
             experience,
-            potions: self.potions,
+            soins: self.soins,
         }
     }
 
@@ -816,17 +819,17 @@ impl Combat {
                 }
                 self.verifier_remplacant(index)
             }
-            Action::UtiliserPotion(index) => {
-                if self.potions == 0 {
-                    return Err(ErreurCombat::AucunePotion);
+            Action::UtiliserSoin(soin, index) => {
+                if self.soins.nombre(soin) == 0 {
+                    return Err(ErreurCombat::AucunSoin(soin));
                 }
                 let Some(monstre) = self.equipe.get(index) else {
                     return Err(ErreurCombat::MonstreInexistant(index));
                 };
-                verifier_cible(monstre).map_err(|erreur| match erreur {
-                    ErreurPotion::MonstreKo => ErreurCombat::MonstreKo(index),
-                    ErreurPotion::MonstreInexistant => ErreurCombat::MonstreInexistant(index),
-                    ErreurPotion::AucunePotion => ErreurCombat::AucunePotion,
+                verifier_cible(soin, monstre).map_err(|erreur| match erreur {
+                    ErreurSoin::MonstreKo => ErreurCombat::MonstreKo(index),
+                    ErreurSoin::MonstreInexistant => ErreurCombat::MonstreInexistant(index),
+                    ErreurSoin::Aucun(soin) => ErreurCombat::AucunSoin(soin),
                 })
             }
             Action::Fuir if !self.fuite_possible() => Err(ErreurCombat::FuiteImpossible),
@@ -1939,44 +1942,63 @@ mod tests {
         assert_eq!(evenements[0], lancee(j(0), coup()));
     }
 
+    fn potions(nombre: u32) -> Soins {
+        let mut soins = Soins::default();
+        soins.ajouter(Soin::Potion, nombre);
+        soins
+    }
+
     #[test]
     fn une_potion_soigne_puis_l_adversaire_agit() {
-        let mut combat = combat(vec![affaibli(rapide(), 5)], vec![lent()]).avec_potions(2);
+        let mut combat = combat(vec![affaibli(rapide(), 5)], vec![lent()]).avec_soins(potions(2));
         // 50 % de 20 PV max : 10 PV rendus.
-        let evenements = tour(&mut combat, Action::UtiliserPotion(0), &[50, 2, 100]);
+        let evenements = tour(
+            &mut combat,
+            Action::UtiliserSoin(Soin::Potion, 0),
+            &[50, 2, 100],
+        );
         assert_eq!(
             evenements,
             vec![
-                Evenement::PotionUtilisee {
+                Evenement::SoinUtilise {
+                    soin: Soin::Potion,
                     cible: j(0),
-                    pv_rendus: 10,
+                    effet: EffetDuSoin::PvRendus(10),
                 },
                 lancee(a(0), coup()),
                 degats(j(0), 5),
             ]
         );
         assert_eq!(combat.equipe()[0].pv_actuels(), 10);
-        assert_eq!(combat.potions(), 1);
-        assert_eq!(terminer(combat, &[]).potions, 1);
+        assert_eq!(combat.soins().nombre(Soin::Potion), 1);
+        assert_eq!(terminer(combat, &[]).soins, potions(1));
     }
 
     #[test]
-    fn potion_refusee_sans_rien_changer() {
+    fn soin_refuse_sans_rien_changer() {
         let sans_potion = combat(vec![affaibli(rapide(), 5)], vec![lent()]);
         let mut aleatoire = AleatoireScripte::new([]);
         assert_eq!(
             sans_potion
                 .clone()
-                .jouer_tour(Action::UtiliserPotion(0), &mut aleatoire),
-            Err(ErreurCombat::AucunePotion)
+                .jouer_tour(Action::UtiliserSoin(Soin::Potion, 0), &mut aleatoire),
+            Err(ErreurCombat::AucunSoin(Soin::Potion))
         );
-        let mut combat = combat(vec![rapide(), affaibli(lent(), 0)], vec![lent()]).avec_potions(1);
+        let mut combat =
+            combat(vec![rapide(), affaibli(lent(), 0)], vec![lent()]).avec_soins(potions(1));
         let avant = combat.clone();
         for (action, erreur) in [
-            (Action::UtiliserPotion(1), ErreurCombat::MonstreKo(1)),
             (
-                Action::UtiliserPotion(5),
+                Action::UtiliserSoin(Soin::Potion, 1),
+                ErreurCombat::MonstreKo(1),
+            ),
+            (
+                Action::UtiliserSoin(Soin::Potion, 5),
                 ErreurCombat::MonstreInexistant(5),
+            ),
+            (
+                Action::UtiliserSoin(Soin::Elixir, 1),
+                ErreurCombat::AucunSoin(Soin::Elixir),
             ),
         ] {
             assert_eq!(combat.jouer_tour(action, &mut aleatoire), Err(erreur));
@@ -1987,15 +2009,43 @@ mod tests {
     #[test]
     fn potion_perdue_sur_un_monstre_qui_a_tous_ses_pv() {
         // Aucun tirage pour la potion : son effet nul est certain.
-        let mut combat = combat(vec![rapide()], vec![lent()]).avec_potions(1);
-        let evenements = tour(&mut combat, Action::UtiliserPotion(0), &[2, 100]);
+        let mut combat = combat(vec![rapide()], vec![lent()]).avec_soins(potions(1));
+        let evenements = tour(
+            &mut combat,
+            Action::UtiliserSoin(Soin::Potion, 0),
+            &[2, 100],
+        );
         assert_eq!(
             evenements[0],
-            Evenement::PotionUtilisee {
+            Evenement::SoinUtilise {
+                soin: Soin::Potion,
                 cible: j(0),
-                pv_rendus: 0,
+                effet: EffetDuSoin::PvRendus(0),
             }
         );
-        assert_eq!(combat.potions(), 0);
+        assert!(combat.soins().est_vide());
+    }
+
+    #[test]
+    fn un_elixir_releve_un_monstre_ko_de_l_equipe() {
+        let mut soins = Soins::default();
+        soins.ajouter(Soin::Elixir, 1);
+        let mut combat =
+            combat(vec![rapide(), affaibli(lent(), 0)], vec![lent()]).avec_soins(soins);
+        let evenements = tour(
+            &mut combat,
+            Action::UtiliserSoin(Soin::Elixir, 1),
+            &[2, 100],
+        );
+        assert_eq!(
+            evenements[0],
+            Evenement::SoinUtilise {
+                soin: Soin::Elixir,
+                cible: j(1),
+                effet: EffetDuSoin::PvRendus(10),
+            }
+        );
+        assert_eq!(combat.equipe()[1].pv_actuels(), 10);
+        assert!(combat.soins().est_vide());
     }
 }

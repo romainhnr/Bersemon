@@ -12,6 +12,7 @@ use bersemon_presentation::partie::{
 };
 
 use crate::affichage;
+use crate::ecran_combat::choisir_soin;
 use crate::saisie::Entree;
 
 /// Rend `None` si l'entrée est fermée. Le contenu du sac est rappelé : une
@@ -22,16 +23,21 @@ pub fn entre_deux_etapes(partie: &Partie, entree: &mut Entree) -> Option<Choix> 
         println!("{}", affichage::equipe_en_expedition(partie));
         println!("Que faire ?");
         println!("  1. Continuer l'expédition");
-        println!("  2. Utiliser une potion ({})", partie.sac().potions());
+        println!(
+            "  2. Utiliser un soin ({})",
+            affichage::sac(partie.sac().soins())
+        );
         println!("  3. Changer l'ordre de l'équipe");
         println!("  4. Rentrer au camp");
         match entree.choix(1, 4)? {
             1 => return Some(Choix::ContinuerLExpedition),
             2 => {
-                println!("Soigner quel monstre ? (0 pour annuler)");
-                let choix = entree.choix(0, partie.collection().equipe().len())?;
-                if choix > 0 {
-                    return Some(Choix::UtiliserPotion(choix - 1));
+                if let Some(soin) = choisir_soin(partie.sac().soins(), entree)? {
+                    println!("Soigner quel monstre ? (0 pour annuler)");
+                    let choix = entree.choix(0, partie.collection().equipe().len())?;
+                    if choix > 0 {
+                        return Some(Choix::UtiliserSoin(soin, choix - 1));
+                    }
                 }
             }
             3 => {

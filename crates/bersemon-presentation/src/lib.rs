@@ -14,3 +14,4 @@ pub mod mise_en_valeur;
 pub mod monstres;
 pub mod partie;
 pub mod recit;
+pub mod soins;

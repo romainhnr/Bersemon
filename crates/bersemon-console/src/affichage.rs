@@ -8,12 +8,14 @@ use bersemon_core::combat::{Combat, Combattant, Cote};
 use bersemon_core::espece::Espece;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
+use bersemon_core::soin::Soins;
 use bersemon_core::zone::Zone;
 use bersemon_presentation::combat::{attaque_de_trop, attaque_en_combat};
 use bersemon_presentation::monstres::{decrire_attaque, ligne_monstre, nom_en_combat};
 use bersemon_presentation::partie::{
     decrire_zone, fiche_d_espece, ligne_du_codex, sac_en_expedition,
 };
+use bersemon_presentation::soins::liste_de_soins;
 
 use crate::ecran_combat::Commande;
 
@@ -27,12 +29,22 @@ pub fn menu_action(combat: &Combat, commandes: &[Commande]) -> String {
                 "Lancer un filet ({} % de chances)",
                 combat.chance_de_capture()
             ),
-            Commande::UtiliserPotion => format!("Utiliser une potion ({})", combat.potions()),
+            Commande::UtiliserSoin => format!("Utiliser un soin ({})", sac(combat.soins())),
             Commande::Fuir => "Fuir".to_string(),
         };
         lignes.push(format!("  {}. {libelle}", position + 1));
     }
     lignes.join("\n")
+}
+
+/// "2 potions, 1 élixir" ou "aucun".
+pub fn sac(soins: &Soins) -> String {
+    let liste = liste_de_soins(soins);
+    if liste.is_empty() {
+        "aucun".to_string()
+    } else {
+        liste.join(", ")
+    }
 }
 
 /// Chaque attaque du monstre actif, avec ses dégâts estimés contre le
