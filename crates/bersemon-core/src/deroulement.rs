@@ -413,9 +413,12 @@ pub enum Evenement {
         nombre: u32,
         prix: u32,
     },
-    /// Gunther se met au travail, sur ce plan (section 13.4). En boîte,
-    /// comme la confirmation.
-    AmeliorationLancee(Box<PlanDAmelioration>),
+    /// Gunther se met au travail, sur ce plan, jusqu'à la fin du chantier
+    /// (section 13.4). Le plan est en boîte, comme dans la confirmation.
+    AmeliorationLancee {
+        plan: Box<PlanDAmelioration>,
+        chantier: Chantier,
+    },
     /// Le niveau construit compte désormais.
     AmeliorationConstatee(Chantier),
     /// Le monstre après le changement.
@@ -1010,10 +1013,14 @@ impl EnJeu {
                         Box::new(plan.clone()),
                     )));
                 }
-                self.partie
+                let chantier = self
+                    .partie
                     .lancer_amelioration(plan, contexte.maintenant)
                     .map_err(ErreurChoix::Amelioration)?;
-                evenements.push(Evenement::AmeliorationLancee(Box::new(plan.clone())));
+                evenements.push(Evenement::AmeliorationLancee {
+                    plan: Box::new(plan.clone()),
+                    chantier,
+                });
                 sauvegarder(&self.partie, contexte.depot, evenements);
                 Ok(Reponse::Faite)
             }
@@ -3283,7 +3290,7 @@ mod tests {
             repondre_a_l_heure(&mut deroulement, Choix::Oui, &contenu, &depot, a(1_000)).unwrap();
         assert!(matches!(
             &evenements[..],
-            [Evenement::AmeliorationLancee(plan)] if plan.niveau() == 1
+            [Evenement::AmeliorationLancee { plan, .. }] if plan.niveau() == 1
         ));
         // Les crocs du sac d'abord, puis ceux du coffre.
         let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();

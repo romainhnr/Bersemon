@@ -343,7 +343,7 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             false,
         ),
         Evenement::GuntherLibere(texte) => (texte.clone(), true),
-        Evenement::AmeliorationLancee(plan) => (lancement(plan), false),
+        Evenement::AmeliorationLancee { plan, .. } => (lancement(plan), false),
         Evenement::AmeliorationConstatee(chantier) => (constat(chantier), true),
         Evenement::PierresAchetees {
             pierre,

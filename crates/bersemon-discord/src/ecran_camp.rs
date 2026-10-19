@@ -4,6 +4,7 @@
 //! 13.9). Les vues ne changent rien à la partie ; seules les actions la
 //! modifient, et la sauvegardent.
 
+use bersemon_core::amelioration::Amelioration;
 use bersemon_core::codex::EtatCodex;
 use bersemon_core::collection::{Collection, Emplacement, TriDuCamp};
 use bersemon_core::combat::Cote;
@@ -14,17 +15,18 @@ use bersemon_core::marchand::prix_de_revente;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_presentation::expeditions_automatiques::expeditions_rentrees;
+use bersemon_presentation::forge::{etat_de_la_forge, travail_fini};
 use bersemon_presentation::monstres::{
     attaques_connues, decrire_attaque, fiche_du_monstre, ligne_monstre, nom,
 };
 use bersemon_presentation::partie::{
-    argent, collection as liste_des_monstres, en_tete_du_camp, fiche_d_espece, ligne_du_codex,
+    argent, collection as liste_complete, en_tete_du_camp, fiche_d_espece, ligne_du_codex,
 };
 
 use crate::composants::{Cle, Vue, emplacement_en_texte};
 use crate::message::{
     Bouton, DANGER, OPTIONS_PAR_MENU, OptionDeMenu, PRINCIPAL, Question, Rangee, SECONDAIRE,
-    bouton, menu, rangees,
+    SUCCES, bouton, menu, rangees,
 };
 use crate::{ecran_coffre, ecran_expeditions_automatiques, ecran_marchand};
 
@@ -47,6 +49,7 @@ pub fn question(
         Vue::Attaques(emplacement) => attaques(partie, emplacement, contenu),
         Vue::Coffre => ecran_coffre::coffre(partie),
         Vue::Options => options(),
+        Vue::Forge => forge(partie, contenu, maintenant),
     }
 }
 
@@ -103,14 +106,23 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
         bouton(Cle::Afficher(Vue::Coffre), "Coffre du camp", SECONDAIRE),
         bouton(Cle::Afficher(Vue::Codex(None)), "Codex", SECONDAIRE),
     ];
-    // Le marchand n'apparaît qu'une fois réfugié au camp (section 14.2).
+    // Malvoise et Gunther n'apparaissent qu'une fois au camp (sections 13.4
+    // et 14.2) : au plus 7 boutons, sur deux rangées.
     if partie.marchand_au_camp() {
         boutons.push(bouton(Cle::Afficher(Vue::Marchand), "Malvoise", SECONDAIRE));
+    }
+    if partie.forge().est_au_camp() {
+        boutons.push(bouton(
+            Cle::Afficher(Vue::Forge),
+            "Forge de Gunther",
+            SECONDAIRE,
+        ));
     }
     boutons.push(bouton(Cle::Afficher(Vue::Options), "Options", SECONDAIRE));
     lignes.extend(rangees(boutons));
     let mut en_tete = vec![en_tete_du_camp(partie)];
     en_tete.extend(expeditions_rentrees(partie, maintenant));
+    en_tete.extend(travail_fini(partie, maintenant));
     Question {
         texte: format!(
             "{}\nVotre équipe :\n{}",
@@ -118,6 +130,37 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
             equipe.join("\n")
         ),
         rangees: lignes,
+    }
+}
+
+/// Un bouton par amélioration qui n'est pas au niveau maximal, même faute
+/// de ressources : le refus dit ce qui manque. Le déroulement fait
+/// confirmer le lancement (section 13.4).
+fn forge(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Question {
+    if !partie.forge().est_au_camp() {
+        return Question {
+            texte: "Aucun artisan ne s'est encore installé au camp.".to_string(),
+            rangees: rangees(vec![retour()]),
+        };
+    }
+    let mut boutons = Vec::new();
+    if partie
+        .forge()
+        .chantier()
+        .is_some_and(|chantier| chantier.est_fini(maintenant))
+    {
+        boutons.push(bouton(Cle::Constater, "Constater le travail", SUCCES));
+    }
+    for amelioration in Amelioration::TOUTES {
+        if partie.forge().ameliorations().niveau(amelioration) < amelioration.niveau_max() {
+            let libelle = format!("Améliorer : {}", amelioration.nom());
+            boutons.push(bouton(Cle::Ameliorer(amelioration), &libelle, PRINCIPAL));
+        }
+    }
+    boutons.push(retour());
+    Question {
+        texte: etat_de_la_forge(partie, contenu, maintenant),
+        rangees: rangees(boutons),
     }
 }
 
@@ -183,6 +226,41 @@ fn codex(partie: &Partie, fiche: Option<usize>, contenu: &ContenuV1) -> Question
         texte: lignes.join("\n"),
         rangees: rangees_du_codex,
     }
+}
+
+/// La liste complète tient au-dessous de cette longueur ; au-delà, celle du
+/// camp laisse la place au reste du message, ses monstres étant décrits dans
+/// les menus.
+const LONGUEUR_MAX_DE_LA_LISTE: usize = 1_400;
+
+/// Équipe puis camp, numérotés à la suite. Avec l'enclos agrandi (section
+/// 13.4), un camp nombreux ne se résume qu'à son compte.
+pub fn liste_des_monstres(collection: &Collection) -> String {
+    let complete = liste_complete(collection);
+    if complete.chars().count() <= LONGUEUR_MAX_DE_LA_LISTE {
+        return complete;
+    }
+    let equipe = collection.equipe();
+    let mut lignes = vec![format!(
+        "Équipe ({}/{}) :",
+        equipe.len(),
+        collection.tailles().equipe
+    )];
+    for (index, monstre) in equipe.iter().enumerate() {
+        lignes.push(format!(
+            "  {}. {}",
+            index + 1,
+            ligne_monstre(monstre, Cote::Joueur)
+        ));
+    }
+    lignes.push(format!(
+        "Camp ({}/{}) : les monstres {} à {}, décrits dans les menus.",
+        collection.camp().len(),
+        collection.tailles().camp,
+        equipe.len() + 1,
+        equipe.len() + collection.camp().len()
+    ));
+    lignes.join("\n")
 }
 
 /// Des menus pour choisir un monstre, puis les actions possibles pour le
@@ -294,8 +372,9 @@ fn gestion(partie: &Partie, choisi: Option<Emplacement>, contenu: &ContenuV1) ->
     }
 }
 
-/// Les monstres de l'équipe, puis ceux du camp, 25 au plus par menu : avec
-/// l'équipe et le camp pleins, trois menus. Les options portent le numéro de
+/// Les monstres de l'équipe, puis ceux du camp, numérotés à la suite et 25
+/// au plus par menu : avec l'enclos agrandi, l'équipe et 60 monstres au camp
+/// tiennent en trois menus (section 13.4). Les options portent le numéro de
 /// la liste des monstres ; seuls les monstres que `garder` accepte y
 /// figurent.
 pub fn menus_de_monstres(
@@ -319,42 +398,53 @@ pub fn menus_de_monstres_decrits(
     decrire: impl Fn(&Monstre) -> String,
 ) -> Vec<Rangee> {
     let taille_equipe = collection.equipe().len();
-    let option = |emplacement: Emplacement, numero: usize, monstre: &Monstre| OptionDeMenu {
-        libelle: format!("{numero}. {}", nom(monstre, Cote::Joueur)),
-        valeur: emplacement_en_texte(emplacement),
-        description: Some(decrire(monstre)),
-    };
     let equipe = collection
         .equipe()
         .iter()
         .enumerate()
-        .filter(|(index, _)| garder(Emplacement::Equipe(*index)))
-        .map(|(index, monstre)| option(Emplacement::Equipe(index), index + 1, monstre))
-        .collect();
-    let mut menus: Vec<Rangee> = menu(cle(0), &format!("{verbe} un monstre de l'équipe"), equipe)
-        .into_iter()
-        .collect();
-    let camp: Vec<OptionDeMenu> = collection
+        .map(|(index, monstre)| (Emplacement::Equipe(index), index + 1, monstre));
+    let camp = collection
         .camp()
         .iter()
         .enumerate()
-        .filter(|(index, _)| garder(Emplacement::Camp(*index)))
-        .map(|(index, monstre)| {
-            option(Emplacement::Camp(index), taille_equipe + index + 1, monstre)
-        })
+        .map(|(index, monstre)| (Emplacement::Camp(index), taille_equipe + index + 1, monstre));
+    let gardes: Vec<(Emplacement, usize, &Monstre)> = equipe
+        .chain(camp)
+        .filter(|(emplacement, _, _)| garder(*emplacement))
         .collect();
-    let mut restantes = camp.into_iter().peekable();
-    let mut numero = 1;
-    while restantes.peek().is_some() {
-        let partie_du_camp = restantes.by_ref().take(OPTIONS_PAR_MENU).collect();
-        menus.extend(menu(
-            cle(numero),
-            &format!("{verbe} un monstre du camp"),
-            partie_du_camp,
-        ));
-        numero += 1;
-    }
-    menus
+    let plusieurs = gardes.len() > OPTIONS_PAR_MENU;
+    gardes
+        .chunks(OPTIONS_PAR_MENU)
+        .enumerate()
+        .filter_map(|(numero, morceau)| {
+            let dans_l_equipe = morceau
+                .iter()
+                .filter(|(emplacement, _, _)| matches!(emplacement, Emplacement::Equipe(_)))
+                .count();
+            let provenance = if dans_l_equipe == morceau.len() {
+                "de l'équipe"
+            } else if dans_l_equipe > 0 {
+                "de l'équipe ou du camp"
+            } else {
+                "du camp"
+            };
+            let mut indication = format!("{verbe} un monstre {provenance}");
+            if plusieurs {
+                let premier = morceau.first().map_or(0, |(_, numero, _)| *numero);
+                let dernier = morceau.last().map_or(0, |(_, numero, _)| *numero);
+                indication.push_str(&format!(" ({premier} à {dernier})"));
+            }
+            let options = morceau
+                .iter()
+                .map(|(emplacement, numero, monstre)| OptionDeMenu {
+                    libelle: format!("{numero}. {}", nom(monstre, Cote::Joueur)),
+                    valeur: emplacement_en_texte(*emplacement),
+                    description: Some(decrire(monstre)),
+                })
+                .collect();
+            menu(cle(u8::try_from(numero).ok()?), &indication, options)
+        })
+        .collect()
 }
 
 /// Les attaques connues, puis un menu des attaques à apprendre ; s'il en

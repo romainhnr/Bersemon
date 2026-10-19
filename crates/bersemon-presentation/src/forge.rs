@@ -76,6 +76,18 @@ pub fn etat_du_chantier(chantier: &Chantier, maintenant: Horodatage) -> String {
     }
 }
 
+/// Au camp, quand Gunther a fini et attend que le joueur constate son
+/// travail (section 13.4).
+pub fn travail_fini(partie: &Partie, maintenant: Horodatage) -> Option<String> {
+    let chantier = partie.forge().chantier()?;
+    chantier.est_fini(maintenant).then(|| {
+        format!(
+            "Gunther a fini : {}. Passez à sa forge pour constater son travail.",
+            niveau_d_amelioration(chantier.amelioration, chantier.niveau)
+        )
+    })
+}
+
 /// Le niveau atteint de chaque amélioration, ce que coûte le suivant, et la
 /// construction en cours.
 pub fn etat_de_la_forge(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> String {

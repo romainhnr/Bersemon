@@ -10,6 +10,7 @@ mod ecran_coffre;
 mod ecran_combat;
 mod ecran_expedition;
 mod ecran_expeditions_automatiques;
+mod ecran_forge;
 mod ecran_marchand;
 mod horloge;
 mod recit;

@@ -7,6 +7,7 @@
 //! l'option choisie le complète ; un formulaire porte le genre du texte saisi.
 
 use bersemon_core::ame::MarchandId;
+use bersemon_core::amelioration::Amelioration;
 use bersemon_core::attaque::AttaqueId;
 use bersemon_core::collection::{Emplacement, TriDuCamp};
 use bersemon_core::combat::Action;
@@ -48,6 +49,8 @@ pub enum Vue {
     Coffre,
     /// Le suicide du héros, pour recommencer (section 13.9).
     Options,
+    /// La forge de Gunther, une fois libéré (section 13.4).
+    Forge,
 }
 
 /// Monstres choisis pour une expédition automatique, dans l'ordre du choix
@@ -220,6 +223,10 @@ pub enum Cle {
     VendreRessources,
     ToutRanger,
     SeSuicider,
+    /// Gunther construit le niveau suivant (section 13.4).
+    Ameliorer(Amelioration),
+    /// Le joueur constate le travail fini de Gunther.
+    Constater,
 }
 
 impl Cle {
@@ -328,6 +335,8 @@ impl Cle {
             Cle::VendreRessources => jouer(Choix::VendreRessources(RessourceId::new(valeur?))),
             Cle::ToutRanger => jouer(Choix::ToutRangerAuCoffre),
             Cle::SeSuicider => jouer(Choix::SeSuicider),
+            Cle::Ameliorer(amelioration) => jouer(Choix::LancerAmelioration(*amelioration)),
+            Cle::Constater => jouer(Choix::ConstaterAmelioration),
         }
     }
 
@@ -362,6 +371,7 @@ impl Cle {
             }
             Cle::Afficher(Vue::Coffre) => "vue:coffre".to_string(),
             Cle::Afficher(Vue::Options) => "vue:options".to_string(),
+            Cle::Afficher(Vue::Forge) => "vue:forge".to_string(),
             Cle::Fiche(numero) => format!("fiche:{numero}"),
             Cle::Choisir(numero) => format!("choisir:{numero}"),
             Cle::Monter(index) => format!("monter:{index}"),
@@ -444,6 +454,10 @@ impl Cle {
             Cle::VendreRessources => "vendre-ressources".to_string(),
             Cle::ToutRanger => "tout-ranger".to_string(),
             Cle::SeSuicider => "se-suicider".to_string(),
+            Cle::Ameliorer(amelioration) => {
+                format!("ameliorer:{}", amelioration_en_texte(*amelioration))
+            }
+            Cle::Constater => "constater".to_string(),
         }
     }
 
@@ -480,6 +494,8 @@ impl Cle {
             "vendre-ressources" => Cle::VendreRessources,
             "tout-ranger" => Cle::ToutRanger,
             "vue:options" => Cle::Afficher(Vue::Options),
+            "vue:forge" => Cle::Afficher(Vue::Forge),
+            "constater" => Cle::Constater,
             "se-suicider" => Cle::SeSuicider,
             "acheter-capsule" => Cle::AcheterCapsule,
             "acheter-capsule-d-habilete" => Cle::AcheterCapsuleDHabilete,
@@ -554,6 +570,7 @@ impl Cle {
                     "changer-habilete" => Cle::ChangerDHabilete(emplacement()?),
                     "faire-evoluer" => Cle::FaireEvoluer(emplacement()?),
                     "acheter-pierre" => Cle::AcheterPierre(lire_pierre(parametre)?),
+                    "ameliorer" => Cle::Ameliorer(lire_amelioration(parametre)?),
                     "fiche" => Cle::Fiche(numero()?),
                     "apprendre" => {
                         let (emplacement, oubliee) = parametre.split_once(':')?;
@@ -602,6 +619,20 @@ fn lire_emplacement(texte: &str) -> Option<Emplacement> {
         return index.parse().ok().map(Emplacement::Equipe);
     }
     texte.strip_prefix('c')?.parse().ok().map(Emplacement::Camp)
+}
+
+/// Nom fixé ici, et non le nom Rust, comme dans la sauvegarde.
+fn amelioration_en_texte(amelioration: Amelioration) -> &'static str {
+    match amelioration {
+        Amelioration::Enclos => "enclos",
+        Amelioration::Filets => "filets",
+    }
+}
+
+fn lire_amelioration(texte: &str) -> Option<Amelioration> {
+    Amelioration::TOUTES
+        .into_iter()
+        .find(|amelioration| amelioration_en_texte(*amelioration) == texte)
 }
 
 /// Nom fixé ici, et non le nom Rust, comme dans la sauvegarde.
@@ -817,6 +848,10 @@ mod tests {
             Cle::ToutRanger,
             Cle::Afficher(Vue::Options),
             Cle::SeSuicider,
+            Cle::Afficher(Vue::Forge),
+            Cle::Ameliorer(Amelioration::Enclos),
+            Cle::Ameliorer(Amelioration::Filets),
+            Cle::Constater,
         ]
     }
 

@@ -9,6 +9,7 @@ use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::{ActionDeGestion, Choix};
 use bersemon_core::partie::Partie;
 use bersemon_presentation::expeditions_automatiques::expeditions_rentrees;
+use bersemon_presentation::forge::travail_fini;
 use bersemon_presentation::marchand::liste_de_rachat;
 use bersemon_presentation::monstres::{attaques_connues, decrire_attaque, fiche_du_monstre};
 use bersemon_presentation::partie::{
@@ -18,6 +19,7 @@ use bersemon_presentation::partie::{
 use crate::affichage;
 use crate::ecran_coffre;
 use crate::ecran_expeditions_automatiques;
+use crate::ecran_forge;
 use crate::ecran_marchand;
 use crate::horloge::maintenant;
 use crate::saisie::Entree;
@@ -27,6 +29,19 @@ use crate::saisie::Entree;
 #[derive(Debug, Default)]
 pub struct MenuDuCamp {
     ouvert: SousMenu,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum EntreeDuCamp {
+    Carte,
+    Automatiques,
+    Gestion,
+    Coffre,
+    Codex,
+    Marchand,
+    Forge,
+    Options,
+    Quitter,
 }
 
 #[derive(Debug, Default, PartialEq, Eq)]
@@ -65,41 +80,54 @@ pub fn choisir(
         for avis in expeditions_rentrees(partie, maintenant()) {
             println!("{avis}");
         }
-        println!("  1. Partir en expédition");
-        println!("  2. Expéditions automatiques");
-        println!("  3. Gérer vos monstres");
-        println!("  4. Coffre du camp");
-        println!("  5. Consulter le codex");
-        // Le marchand n'apparaît qu'une fois réfugié au camp (section 14.2).
-        let marchand = partie.marchand_au_camp();
-        if marchand {
-            println!("  6. Voir Malvoise");
+        if let Some(avis) = travail_fini(partie, maintenant()) {
+            println!("{avis}");
         }
-        let options = if marchand { 7 } else { 6 };
-        println!("  {options}. Options");
-        let quitter = options + 1;
-        println!("  {quitter}. Quitter");
-        let choix = match entree.choix(1, quitter)? {
-            1 => carte(partie, contenu, entree)?,
-            2 => ecran_expeditions_automatiques::choisir(partie, contenu, entree)?,
-            3 => {
+        // Malvoise et Gunther n'apparaissent qu'une fois au camp (sections
+        // 13.4 et 14.2).
+        let mut entrees = vec![
+            (EntreeDuCamp::Carte, "Partir en expédition"),
+            (EntreeDuCamp::Automatiques, "Expéditions automatiques"),
+            (EntreeDuCamp::Gestion, "Gérer vos monstres"),
+            (EntreeDuCamp::Coffre, "Coffre du camp"),
+            (EntreeDuCamp::Codex, "Consulter le codex"),
+        ];
+        if partie.marchand_au_camp() {
+            entrees.push((EntreeDuCamp::Marchand, "Voir Malvoise"));
+        }
+        if partie.forge().est_au_camp() {
+            entrees.push((EntreeDuCamp::Forge, "Forge de Gunther"));
+        }
+        entrees.push((EntreeDuCamp::Options, "Options"));
+        entrees.push((EntreeDuCamp::Quitter, "Quitter"));
+        for (position, (_, libelle)) in entrees.iter().enumerate() {
+            println!("  {}. {libelle}", position + 1);
+        }
+        let (entree_choisie, _) = entrees[entree.choix(1, entrees.len())? - 1];
+        let choix = match entree_choisie {
+            EntreeDuCamp::Carte => carte(partie, contenu, entree)?,
+            EntreeDuCamp::Automatiques => {
+                ecran_expeditions_automatiques::choisir(partie, contenu, entree)?
+            }
+            EntreeDuCamp::Gestion => {
                 menu.ouvert = SousMenu::Gestion;
                 None
             }
-            4 => {
+            EntreeDuCamp::Coffre => {
                 menu.ouvert = SousMenu::Coffre;
                 None
             }
-            5 => {
+            EntreeDuCamp::Codex => {
                 println!("{}", affichage::codex(partie.codex(), contenu));
                 None
             }
-            6 if marchand => {
+            EntreeDuCamp::Marchand => {
                 menu.ouvert = SousMenu::Marchand;
                 None
             }
-            numero if numero == options => choisir_une_option(entree)?,
-            _ => return None,
+            EntreeDuCamp::Forge => ecran_forge::choisir(partie, contenu, entree)?,
+            EntreeDuCamp::Options => choisir_une_option(entree)?,
+            EntreeDuCamp::Quitter => return None,
         };
         if choix.is_some() {
             return choix;

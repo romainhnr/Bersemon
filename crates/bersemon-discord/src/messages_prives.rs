@@ -1,7 +1,8 @@
 //! Messages privés envoyés au retour des expéditions automatiques (section
-//! 12.7). Chaque retour n'est annoncé qu'une fois, même si le bot redémarre
-//! avant que le joueur l'accueille (Q65) : les retours annoncés sont notés,
-//! un par ligne, dans un fichier texte du dossier des parties.
+//! 12.7) et à la fin des constructions de Gunther (section 13.4). Chaque
+//! retour n'est annoncé qu'une fois, même si le bot redémarre avant que le
+//! joueur l'accueille (Q65) : les retours annoncés sont notés, un par ligne,
+//! dans un fichier texte du dossier des parties.
 
 use std::collections::HashSet;
 use std::fs::{self, OpenOptions};
@@ -10,12 +11,14 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use bersemon_core::amelioration::Chantier;
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::Evenement;
 use bersemon_core::expedition_automatique::ExpeditionAutomatique;
 use bersemon_core::horodatage::Horodatage;
 use bersemon_core::sauvegarde::SauvegardeRepository;
 use bersemon_core::zone::ZoneId;
+use bersemon_presentation::forge::niveau_d_amelioration;
 use bersemon_storage::FichierJson;
 use poise::serenity_prelude as serenity;
 
@@ -28,15 +31,32 @@ const FICHIER: &str = "retours-annonces.txt";
 /// Un retour est annoncé au plus une minute après son heure.
 const PERIODE: Duration = Duration::from_secs(60);
 
+/// Dans le fichier, à la place d'une zone : la forge de Gunther, qu'aucune
+/// zone ne porte comme identifiant.
+const CLE_DE_LA_FORGE: &str = "forge";
+
 /// Une expédition se reconnaît à son joueur, sa zone et son heure de retour :
-/// une nouvelle expédition dans la même zone a une autre heure.
-type Reference = (IdJoueur, ZoneId, Horodatage);
+/// une nouvelle expédition dans la même zone a une autre heure. Une
+/// construction, à son joueur, à la forge et à son heure de fin.
+type Reference = (IdJoueur, String, Horodatage);
+
+/// Ce qui est à annoncer.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Sujet {
+    Expedition {
+        zone: ZoneId,
+        nom_de_zone: String,
+    },
+    /// Le niveau construit, déjà mis en texte.
+    Forge {
+        travail: String,
+    },
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Retour {
     pub joueur: IdJoueur,
-    pub zone: ZoneId,
-    pub nom_de_zone: String,
+    pub sujet: Sujet,
     pub heure: Horodatage,
 }
 
@@ -44,22 +64,46 @@ impl Retour {
     fn de(joueur: IdJoueur, expedition: &ExpeditionAutomatique) -> Self {
         Self {
             joueur,
-            zone: expedition.zone().id().clone(),
-            nom_de_zone: expedition.zone().nom().to_string(),
+            sujet: Sujet::Expedition {
+                zone: expedition.zone().id().clone(),
+                nom_de_zone: expedition.zone().nom().to_string(),
+            },
             heure: expedition.retour(),
         }
     }
 
-    fn reference(&self) -> Reference {
-        (self.joueur, self.zone.clone(), self.heure)
+    fn de_la_forge(joueur: IdJoueur, chantier: &Chantier) -> Self {
+        Self {
+            joueur,
+            sujet: Sujet::Forge {
+                travail: niveau_d_amelioration(chantier.amelioration, chantier.niveau),
+            },
+            heure: chantier.fin,
+        }
     }
 
-    /// Le résultat n'est tiré qu'à l'accueil : le message n'en dit rien.
+    fn cle(&self) -> &str {
+        match &self.sujet {
+            Sujet::Expedition { zone, .. } => zone.as_str(),
+            Sujet::Forge { .. } => CLE_DE_LA_FORGE,
+        }
+    }
+
+    fn reference(&self) -> Reference {
+        (self.joueur, self.cle().to_string(), self.heure)
+    }
+
+    /// Le résultat d'une expédition n'est tiré qu'à l'accueil : le message
+    /// n'en dit rien.
     pub fn texte(&self) -> String {
-        format!(
-            "Votre expédition automatique dans {} est rentrée. Ouvrez /bersemon pour l'accueillir.",
-            self.nom_de_zone
-        )
+        match &self.sujet {
+            Sujet::Expedition { nom_de_zone, .. } => format!(
+                "Votre expédition automatique dans {nom_de_zone} est rentrée. Ouvrez /bersemon pour l'accueillir."
+            ),
+            Sujet::Forge { travail } => {
+                format!("Gunther a fini : {travail}. Ouvrez /bersemon pour constater son travail.")
+            }
+        }
     }
 }
 
@@ -98,8 +142,15 @@ impl Annonces {
                     continue;
                 }
             };
-            for expedition in partie.expeditions_automatiques() {
-                let retour = Retour::de(joueur, expedition);
+            let expeditions = partie
+                .expeditions_automatiques()
+                .iter()
+                .map(|expedition| Retour::de(joueur, expedition));
+            let chantier = partie
+                .forge()
+                .chantier()
+                .map(|chantier| Retour::de_la_forge(joueur, chantier));
+            for retour in expeditions.chain(chantier) {
                 if deja_annonces.contains(&retour.reference()) {
                     toujours_en_attente.push(retour.reference());
                 } else {
@@ -112,8 +163,9 @@ impl Annonces {
         }
     }
 
-    /// Ce que vient de faire le joueur : un départ, un rappel, un accueil ou
-    /// une nouvelle partie, qui remplace l'ancienne et ses expéditions.
+    /// Ce que vient de faire le joueur : un départ, un rappel, un accueil,
+    /// une construction lancée ou constatée, ou une nouvelle partie, qui
+    /// remplace l'ancienne avec ses expéditions et sa forge.
     pub fn suivre(&mut self, joueur: IdJoueur, evenements: &[Evenement]) {
         for evenement in evenements {
             match evenement {
@@ -121,10 +173,16 @@ impl Annonces {
                     self.a_annoncer.push(Retour::de(joueur, expedition));
                 }
                 Evenement::ExpeditionAutomatiqueRappelee { expedition, .. } => {
-                    self.oublier(joueur, Some(expedition.zone().id()));
+                    self.oublier(joueur, Some(expedition.zone().id().as_str()));
                 }
                 Evenement::ExpeditionAutomatiqueRentree { bilan, .. } => {
-                    self.oublier(joueur, Some(&bilan.zone));
+                    self.oublier(joueur, Some(bilan.zone.as_str()));
+                }
+                Evenement::AmeliorationLancee { chantier, .. } => {
+                    self.a_annoncer.push(Retour::de_la_forge(joueur, chantier));
+                }
+                Evenement::AmeliorationConstatee(_) => {
+                    self.oublier(joueur, Some(CLE_DE_LA_FORGE));
                 }
                 Evenement::PartieCommencee(_) | Evenement::Suicide => self.oublier(joueur, None),
                 _ => {}
@@ -132,11 +190,10 @@ impl Annonces {
         }
     }
 
-    /// Toutes les zones du joueur quand `zone` vaut `None`.
-    fn oublier(&mut self, joueur: IdJoueur, zone: Option<&ZoneId>) {
-        self.a_annoncer.retain(|retour| {
-            retour.joueur != joueur || zone.is_some_and(|zone| &retour.zone != zone)
-        });
+    /// Tout ce qui est à annoncer au joueur quand `cle` vaut `None`.
+    fn oublier(&mut self, joueur: IdJoueur, cle: Option<&str>) {
+        self.a_annoncer
+            .retain(|retour| retour.joueur != joueur || cle.is_some_and(|cle| retour.cle() != cle));
     }
 
     pub fn echus(&self, maintenant: Horodatage) -> Vec<Retour> {
@@ -207,11 +264,12 @@ fn parties(dossier: &Path) -> Vec<(IdJoueur, PathBuf)> {
         .collect()
 }
 
-/// Une ligne par retour : le joueur, la zone et l'heure en secondes.
+/// Une ligne par retour : le joueur, la zone ou la forge, et l'heure en
+/// secondes.
 fn en_lignes(references: &[Reference]) -> String {
     references
         .iter()
-        .map(|(joueur, zone, heure)| format!("{joueur} {} {}\n", zone.as_str(), heure.secondes()))
+        .map(|(joueur, cle, heure)| format!("{joueur} {cle} {}\n", heure.secondes()))
         .collect()
 }
 
@@ -226,9 +284,9 @@ fn lire_le_fichier(fichier: &Path) -> HashSet<Reference> {
         .filter_map(|ligne| {
             let mut morceaux = ligne.split_whitespace();
             let joueur = morceaux.next()?.parse().ok()?;
-            let zone = ZoneId::new(morceaux.next()?);
+            let cle = morceaux.next()?.to_string();
             let heure = Horodatage::depuis_secondes(morceaux.next()?.parse().ok()?);
-            Some((joueur, zone, heure))
+            Some((joueur, cle, heure))
         })
         .collect()
 }
@@ -374,5 +432,50 @@ mod tests {
         annonces.suivre(7, &[Evenement::PartieCommencee(loup(&contenu))]);
         let _ = fs::remove_dir_all(&dossier);
         assert!(annonces.echus(heure).is_empty());
+    }
+
+    #[test]
+    fn la_fin_d_une_construction_est_annoncee_une_fois() {
+        use bersemon_core::amelioration::{Amelioration, Chantier};
+        use bersemon_core::contenu::ContenuV1;
+
+        let contenu = ContenuV1::new();
+        let dossier = dossier_de_test();
+        let plan = contenu
+            .plan_d_amelioration(Amelioration::Filets, 1)
+            .unwrap()
+            .clone();
+        let chantier = Chantier {
+            amelioration: Amelioration::Filets,
+            niveau: 1,
+            fin: Horodatage::depuis_secondes(3_600),
+        };
+        let mut annonces = Annonces::new(&dossier);
+        annonces.suivre(
+            JOUEUR,
+            &[Evenement::AmeliorationLancee {
+                plan: Box::new(plan),
+                chantier,
+            }],
+        );
+        assert!(
+            annonces
+                .echus(Horodatage::depuis_secondes(3_599))
+                .is_empty()
+        );
+        let echus = annonces.echus(Horodatage::depuis_secondes(3_600));
+        assert_eq!(echus.len(), 1);
+        assert_eq!(
+            echus[0].texte(),
+            "Gunther a fini : Filets, niveau 1 (chance de capture +10 %). Ouvrez /bersemon pour constater son travail."
+        );
+        // Constatée avant l'annonce : il n'y a plus rien à annoncer.
+        annonces.suivre(JOUEUR, &[Evenement::AmeliorationConstatee(chantier)]);
+        let _ = fs::remove_dir_all(&dossier);
+        assert!(
+            annonces
+                .echus(Horodatage::depuis_secondes(3_600))
+                .is_empty()
+        );
     }
 }

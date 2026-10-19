@@ -405,7 +405,9 @@ fn dossier_de_test() -> PathBuf {
 
 #[test]
 fn l_equipe_et_le_camp_pleins_tiennent_dans_les_limites() {
+    use bersemon_core::amelioration::{Ameliorations, Forge};
     use bersemon_core::catalogue::Catalogue;
+    use bersemon_core::collection::Collection;
     use bersemon_core::heros::Heros;
     use bersemon_core::niveau::Niveau;
     use bersemon_core::nom::Nom;
@@ -435,66 +437,88 @@ fn l_equipe_et_le_camp_pleins_tiennent_dans_les_limites() {
     // le marchand au camp, la capsule Brasier dans le sac et les autres
     // dans le coffre.
     let capsules = contenu.capsules();
-    let partie = Partie::restaurer(EtatPartie {
-        heros: partie.heros().clone(),
-        collection: partie.collection().clone(),
-        sac: Inventaire::new(45, 3, capsules[..1].to_vec()),
-        coffre_du_camp: Inventaire::new(1_000, 12, capsules[1..].to_vec()),
-        marchand_au_camp: true,
-        ames_donnees: Vec::new(),
-        ames_portees: Vec::new(),
-        ames_a_retrouver: Vec::new(),
-        codex: partie.codex().clone(),
-        zones_explorees: vec![ZoneId::new("lisiere"), ZoneId::new("marais")],
-        indices_trouves: 3,
-        apotres_vaincus: Vec::new(),
-        humains_vaincus: Vec::new(),
-        conseils_vus: Vec::new(),
-        expeditions_automatiques: Vec::new(),
-        attaques_a_choisir: Vec::new(),
-        forge: Default::default(),
-    })
-    .unwrap();
-    let maintenant = Horodatage::depuis_secondes(0);
-    let deux_choisis = Choisis::default()
-        .avec(Emplacement::Equipe(1))
-        .and_then(|choisis| choisis.avec(Emplacement::Camp(29)))
-        .unwrap();
-    let vues = [
-        Vue::Gestion(None),
-        Vue::Gestion(Some(Emplacement::Camp(29))),
-        Vue::Expeditions,
-        Vue::Preparation {
-            zone: 1,
-            choisis: Choisis::default(),
-        },
-        Vue::Preparation {
-            zone: 1,
-            choisis: deux_choisis,
-        },
-        Vue::Camp,
-        Vue::Marchand,
-        Vue::Vente,
-        Vue::Attaques(Emplacement::Equipe(0)),
-        Vue::Attaques(Emplacement::Camp(29)),
-        Vue::Coffre,
-        Vue::Options,
+    // L'enclos au niveau 3 accueille 60 monstres au camp (section 13.4).
+    let mut grand_camp = partie.collection().camp().to_vec();
+    while grand_camp.len() < 60 {
+        grand_camp.push(loup.clone());
+    }
+    let agrandi = Ameliorations::new(3, 0).unwrap();
+    let configurations = [
+        (partie.collection().clone(), Forge::default()),
+        (
+            Collection::restaurer(
+                partie.collection().equipe().to_vec(),
+                grand_camp,
+                agrandi.tailles(),
+            )
+            .unwrap(),
+            Forge::restaurer(true, agrandi, None).unwrap(),
+        ),
     ];
-    let mut questions: Vec<_> = vues
-        .into_iter()
-        .map(|vue| crate::ecran_camp::question(&partie, vue, &contenu, maintenant))
-        .collect();
-    questions.push(crate::ecran_expedition::place_manquante(
-        &loup,
-        partie.collection(),
-    ));
-    for question in questions {
-        let affiche = Message {
-            texte: question.texte,
-            rangees: question.rangees,
-            version: 1,
-        };
-        verifier_les_limites(&affiche);
+    for (collection, forge) in configurations {
+        let dernier = collection.camp().len() - 1;
+        let partie = Partie::restaurer(EtatPartie {
+            heros: partie.heros().clone(),
+            collection,
+            sac: Inventaire::new(45, 3, capsules[..1].to_vec()),
+            coffre_du_camp: Inventaire::new(1_000, 12, capsules[1..].to_vec()),
+            marchand_au_camp: true,
+            ames_donnees: Vec::new(),
+            ames_portees: Vec::new(),
+            ames_a_retrouver: Vec::new(),
+            codex: partie.codex().clone(),
+            zones_explorees: vec![ZoneId::new("lisiere"), ZoneId::new("marais")],
+            indices_trouves: 3,
+            apotres_vaincus: Vec::new(),
+            humains_vaincus: Vec::new(),
+            conseils_vus: Vec::new(),
+            expeditions_automatiques: Vec::new(),
+            attaques_a_choisir: Vec::new(),
+            forge,
+        })
+        .unwrap();
+        let maintenant = Horodatage::depuis_secondes(0);
+        let deux_choisis = Choisis::default()
+            .avec(Emplacement::Equipe(1))
+            .and_then(|choisis| choisis.avec(Emplacement::Camp(dernier)))
+            .unwrap();
+        let vues = [
+            Vue::Gestion(None),
+            Vue::Gestion(Some(Emplacement::Camp(dernier))),
+            Vue::Expeditions,
+            Vue::Preparation {
+                zone: 1,
+                choisis: Choisis::default(),
+            },
+            Vue::Preparation {
+                zone: 1,
+                choisis: deux_choisis,
+            },
+            Vue::Camp,
+            Vue::Marchand,
+            Vue::Vente,
+            Vue::Attaques(Emplacement::Equipe(0)),
+            Vue::Attaques(Emplacement::Camp(dernier)),
+            Vue::Coffre,
+            Vue::Options,
+            Vue::Forge,
+        ];
+        let mut questions: Vec<_> = vues
+            .into_iter()
+            .map(|vue| crate::ecran_camp::question(&partie, vue, &contenu, maintenant))
+            .collect();
+        questions.push(crate::ecran_expedition::place_manquante(
+            &loup,
+            partie.collection(),
+        ));
+        for question in questions {
+            let affiche = Message {
+                texte: question.texte,
+                rangees: question.rangees,
+                version: 1,
+            };
+            verifier_les_limites(&affiche);
+        }
     }
 }
 
@@ -675,6 +699,13 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
         "expédition automatique jamais accueillie"
     );
     assert_eq!(visite, Visite::Faite, "visite à Malvoise jamais faite");
+    // La défaite du Bourreau a libéré Gunther (section 13.4).
+    assert_eq!(
+        vus.iter()
+            .filter(|evenement| matches!(evenement, Evenement::GuntherLibere(_)))
+            .count(),
+        1
+    );
     // Malvoise est rencontré une fois ; les âmes recueillies passent par
     // l'écran du combat et le récit, puis sont données sur son étal (section
     // 14.2).
@@ -703,6 +734,119 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
     assert_eq!(partie.apotres_vaincus(), &[EspeceId::new("baron-pendu")]);
     assert_eq!(partie.collection().equipe()[0].nom(), "Braise");
     assert!(dossier.join(format!("{JOUEUR}.json")).exists());
+    let _ = fs::remove_dir_all(dossier);
+}
+
+/// Une construction lancée depuis la forge, confirmée, annoncée par message
+/// privé à son heure, puis constatée (section 13.4).
+#[test]
+fn gunther_agrandit_l_enclos_a_travers_les_ecrans_du_bot() {
+    use bersemon_core::amelioration::{Amelioration, Forge};
+    use bersemon_core::catalogue::Catalogue;
+    use bersemon_core::heros::Heros;
+    use bersemon_core::niveau::Niveau;
+    use bersemon_core::nom::Nom;
+    use bersemon_core::partie::Partie;
+    use bersemon_core::ressource::RessourceId;
+    use bersemon_core::sauvegarde::SauvegardeRepository;
+    use bersemon_core::stats::ValeursInternes;
+    use bersemon_storage::FichierJson;
+
+    let contenu = ContenuV1::new();
+    let loup = Monstre::creer(
+        contenu.espece(&EspeceId::new("loup")).unwrap(),
+        Niveau::new(5).unwrap(),
+        ValeursInternes::default(),
+        false,
+    )
+    .unwrap();
+    let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Mage);
+    let partie = Partie::nouvelle(heros, loup);
+    let ressource = |id: &str| contenu.ressource(&RessourceId::new(id)).unwrap();
+    let coffre = Inventaire::default()
+        .avec_ressources(ressource("croc-de-loup"), 5)
+        .avec_ressources(ressource("plume-de-corbeau"), 5)
+        .avec_ressources(ressource("ecaille-de-vipere"), 5);
+    let partie = Partie::restaurer(EtatPartie {
+        heros: partie.heros().clone(),
+        collection: partie.collection().clone(),
+        sac: Inventaire::default(),
+        coffre_du_camp: coffre,
+        marchand_au_camp: false,
+        ames_donnees: Vec::new(),
+        ames_portees: Vec::new(),
+        ames_a_retrouver: Vec::new(),
+        codex: partie.codex().clone(),
+        zones_explorees: Vec::new(),
+        indices_trouves: 0,
+        apotres_vaincus: Vec::new(),
+        humains_vaincus: Vec::new(),
+        conseils_vus: Vec::new(),
+        expeditions_automatiques: Vec::new(),
+        attaques_a_choisir: Vec::new(),
+        forge: Forge::restaurer(true, Default::default(), None).unwrap(),
+    })
+    .unwrap();
+    let dossier = dossier_de_test().join("forge");
+    fs::create_dir_all(&dossier).unwrap();
+    FichierJson::new(dossier.join(format!("{JOUEUR}.json")))
+        .enregistrer(&partie)
+        .unwrap();
+    let mut joueurs = Joueurs::new(dossier.clone(), 2026);
+    let afficher_a = |joueurs: &mut Joueurs, secondes: u64| {
+        let maintenant = Horodatage::depuis_secondes(secondes);
+        let session = joueurs.session(JOUEUR, &contenu);
+        let affiche = message(session, &[], None, &contenu, maintenant);
+        verifier_les_limites(&affiche);
+        affiche
+    };
+    let cliquer_a = |joueurs: &mut Joueurs, cle: Cle, secondes: u64| {
+        let affiche = afficher_a(joueurs, secondes);
+        assert!(
+            propose(&affiche, |propose| *propose == cle),
+            "{cle:?} absent : {}",
+            affiche.texte
+        );
+        let version = joueurs.session(JOUEUR, &contenu).version;
+        let maintenant = Horodatage::depuis_secondes(secondes);
+        match cle.commande(None, None).expect("composant lisible") {
+            Commande::Jouer(choix) => joueurs
+                .jouer(JOUEUR, version, choix, &contenu, maintenant)
+                .unwrap(),
+            Commande::Afficher(vue) => {
+                joueurs.afficher(JOUEUR, version, vue, &contenu).unwrap();
+                Vec::new()
+            }
+            Commande::Ouvrir(formulaire) => panic!("formulaire {formulaire:?}"),
+        }
+    };
+    cliquer_a(&mut joueurs, Cle::ReprendreLaPartie, 1_000);
+    cliquer_a(&mut joueurs, Cle::Afficher(Vue::Forge), 1_000);
+    cliquer_a(&mut joueurs, Cle::Ameliorer(Amelioration::Enclos), 1_000);
+    let lancee = cliquer_a(&mut joueurs, Cle::Oui, 1_000);
+    assert!(matches!(
+        &lancee[..],
+        [Evenement::AmeliorationLancee { .. }]
+    ));
+    // Rien à constater avant l'heure ; à l'heure, le bot l'annonce.
+    let avant = afficher_a(&mut joueurs, 4_599);
+    assert!(!propose(&avant, |cle| *cle == Cle::Constater));
+    let fin = Horodatage::depuis_secondes(4_600);
+    assert!(
+        joueurs
+            .retours_echus(Horodatage::depuis_secondes(4_599))
+            .is_empty()
+    );
+    assert_eq!(joueurs.retours_echus(fin).len(), 1);
+    let constatee = cliquer_a(&mut joueurs, Cle::Constater, 4_600);
+    assert!(matches!(
+        &constatee[..],
+        [Evenement::AmeliorationConstatee(_)]
+    ));
+    let session = joueurs.session(JOUEUR, &contenu);
+    let partie = session.deroulement.partie().unwrap();
+    assert_eq!(partie.collection().tailles().camp, 40);
+    assert!(joueurs.retours_echus(fin).is_empty());
     let _ = fs::remove_dir_all(dossier);
 }
 
@@ -874,7 +1018,17 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         conseils_vus: Vec::new(),
         expeditions_automatiques: Vec::new(),
         attaques_a_choisir: Vec::new(),
-        forge: Default::default(),
+        // Gunther a fini un chantier, qui attend d'être constaté.
+        forge: bersemon_core::amelioration::Forge::restaurer(
+            true,
+            bersemon_core::amelioration::Ameliorations::new(2, 1).unwrap(),
+            Some(bersemon_core::amelioration::Chantier {
+                amelioration: bersemon_core::amelioration::Amelioration::Filets,
+                niveau: 2,
+                fin: Horodatage::depuis_secondes(0),
+            }),
+        )
+        .unwrap(),
     };
     let afficher = |partie: &Partie, vue: Vue| {
         let question =
@@ -898,7 +1052,10 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         assert!(cles.contains(&Cle::AcheterPierre(PierreDEvolution::Lune)));
         afficher(&partie, Vue::Coffre);
         afficher(&partie, Vue::Vente);
-        afficher(&partie, Vue::Camp);
+        let cles = afficher(&partie, Vue::Camp);
+        assert!(cles.contains(&Cle::Afficher(Vue::Forge)));
+        let cles = afficher(&partie, Vue::Forge);
+        assert!(cles.contains(&Cle::Constater));
         // Un monstre de l'équipe, qui peut monter et descendre, et un du
         // camp, qui peut s'échanger.
         for emplacement in [Emplacement::Equipe(1), Emplacement::Camp(0)] {

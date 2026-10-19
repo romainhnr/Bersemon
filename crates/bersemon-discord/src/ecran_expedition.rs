@@ -9,12 +9,11 @@ use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_presentation::monstres::ligne_monstre;
 use bersemon_presentation::partie::{
-    annonce as texte_d_annonce, collection as liste_des_monstres,
-    place_manquante as texte_de_place_manquante, sac_en_expedition,
+    annonce as texte_d_annonce, place_manquante as texte_de_place_manquante, sac_en_expedition,
 };
 
 use crate::composants::Cle;
-use crate::ecran_camp::{menus_de_monstres, options_d_equipe};
+use crate::ecran_camp::{liste_des_monstres, menus_de_monstres, options_d_equipe};
 use crate::ecran_combat::options_de_soins;
 use crate::message::{PRINCIPAL, Question, SECONDAIRE, bouton, menu, rangees};
 
