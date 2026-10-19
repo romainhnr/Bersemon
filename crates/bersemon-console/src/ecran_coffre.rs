@@ -5,7 +5,9 @@ use bersemon_core::deroulement::Choix;
 use bersemon_core::inventaire::{Inventaire, Objet};
 use bersemon_core::partie::Partie;
 use bersemon_presentation::monstres::decrire_attaque;
-use bersemon_presentation::partie::{coffre_du_camp, ressources as texte_des_ressources};
+use bersemon_presentation::partie::{
+    coffre_du_camp, pierres as texte_des_pierres, ressources as texte_des_ressources,
+};
 
 use crate::ecran_combat::choisir_soin;
 use crate::saisie::Entree;
@@ -27,9 +29,11 @@ pub fn choisir(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
         println!("  8. Ranger des capsules d'habileté");
         println!("  9. Prendre des ressources");
         println!("  10. Ranger des ressources");
-        println!("  11. Tout ranger dans le coffre");
+        println!("  11. Prendre des pierres d'évolution");
+        println!("  12. Ranger des pierres d'évolution");
+        println!("  13. Tout ranger dans le coffre");
         println!("  0. Retour au camp");
-        let choix = match entree.choix(0, 11)? {
+        let choix = match entree.choix(0, 13)? {
             0 => return Some(None),
             1 => soins(coffre, entree)?.map(Choix::SortirDuCoffre),
             2 => soins(sac, entree)?.map(Choix::RangerAuCoffre),
@@ -45,6 +49,8 @@ pub fn choisir(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
                 .map(|nombre| Choix::RangerAuCoffre(Objet::CapsulesDHabilete(nombre))),
             9 => ressources(coffre, entree)?.map(Choix::SortirDuCoffre),
             10 => ressources(sac, entree)?.map(Choix::RangerAuCoffre),
+            11 => pierres(coffre, entree)?.map(Choix::SortirDuCoffre),
+            12 => pierres(sac, entree)?.map(Choix::RangerAuCoffre),
             _ => Some(Choix::ToutRangerAuCoffre),
         };
         if choix.is_some() {
@@ -94,6 +100,29 @@ fn ressources(inventaire: &Inventaire, entree: &mut Entree) -> Option<Option<Obj
     let (ressource, disponible) = &presentes[choix - 1];
     let nombre = quantite(*disponible, "ressources", entree)?;
     Some(nombre.map(|nombre| Objet::Ressources(ressource.id().clone(), nombre)))
+}
+
+fn pierres(inventaire: &Inventaire, entree: &mut Entree) -> Option<Option<Objet>> {
+    let presentes = inventaire.pierres();
+    if presentes.is_empty() {
+        println!("Il n'y a aucune pierre d'évolution.");
+        return Some(None);
+    }
+    for (position, (pierre, nombre)) in presentes.iter().enumerate() {
+        println!(
+            "  {}. {}",
+            position + 1,
+            texte_des_pierres(*pierre, *nombre)
+        );
+    }
+    println!("Laquelle ? (0 pour annuler)");
+    let choix = entree.choix(0, presentes.len())?;
+    if choix == 0 {
+        return Some(None);
+    }
+    let (pierre, disponible) = presentes[choix - 1];
+    let nombre = quantite(disponible, "pierres", entree)?;
+    Some(nombre.map(|nombre| Objet::Pierres(pierre, nombre)))
 }
 
 fn capsule(inventaire: &Inventaire, entree: &mut Entree) -> Option<Option<Objet>> {

@@ -799,6 +799,7 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
     use bersemon_core::niveau::Niveau;
     use bersemon_core::nom::Nom;
     use bersemon_core::partie::Partie;
+    use bersemon_core::pierre::PierreDEvolution;
     use bersemon_core::stats::ValeursInternes;
 
     let contenu = ContenuV1::new();
@@ -815,7 +816,7 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
     let marchand = |id: &str| contenu.marchand_mort(&MarchandId::new(id)).unwrap();
     let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Mage);
     let mut partie = Partie::nouvelle(heros, creer("salamandre"));
-    for id in ["loup", "corbeau", "vipere"] {
+    for id in ["loup", "corbeau", "vipere", "feu-follet"] {
         partie.prendre_monstre_rare(creer(id));
     }
     while partie.collection().camp().len() < 30 {
@@ -832,7 +833,10 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         } else {
             Vec::new()
         };
-        let mut inventaire = Inventaire::new(1_000, 9, capsules).avec_capsules_d_habilete(3);
+        let mut inventaire = Inventaire::new(1_000, 9, capsules)
+            .avec_capsules_d_habilete(3)
+            .avec_pierres(PierreDEvolution::Braise, 2)
+            .avec_pierres(PierreDEvolution::Lune, 2);
         for soin in [Soin::Remede, Soin::GrandePotion, Soin::Elixir] {
             inventaire = inventaire.avec_soins(soin, 7);
         }
@@ -887,6 +891,7 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         let partie = Partie::restaurer(etat(donnees, portees)).unwrap();
         let cles = afficher(&partie, Vue::Marchand);
         assert!(cles.contains(&Cle::AcheterCapsuleDHabilete));
+        assert!(cles.contains(&Cle::AcheterPierre(PierreDEvolution::Lune)));
         afficher(&partie, Vue::Coffre);
         afficher(&partie, Vue::Vente);
         afficher(&partie, Vue::Camp);
@@ -897,6 +902,10 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
             assert!(cles.contains(&Cle::ChangerDHabilete(emplacement)));
             assert!(cles.contains(&Cle::FaireEvoluer(emplacement)));
         }
+        // Le Feu follet, deuxième du camp, évolue avec la Pierre de braise.
+        let feu_follet = Emplacement::Camp(1);
+        let cles = afficher(&partie, Vue::Gestion(Some(feu_follet)));
+        assert!(cles.contains(&Cle::FaireEvoluer(feu_follet)));
         let dernier = contenu.especes().len() - 1;
         for fiche in [None, Some(0), Some(dernier)] {
             afficher(&partie, Vue::Codex(fiche));

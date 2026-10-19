@@ -1,13 +1,14 @@
 //! Le coffre du camp sur Discord (section 13.3) : un menu pour prendre dans
 //! le coffre, un autre pour ranger ce que contient le sac, et de même pour
-//! les ressources.
+//! les ressources et les pierres d'évolution.
 
 use bersemon_core::inventaire::{Inventaire, Objet};
 use bersemon_core::partie::Partie;
 use bersemon_core::soin::Soin;
 use bersemon_presentation::monstres::decrire_attaque;
 use bersemon_presentation::partie::{
-    argent, capsules_d_habilete as capsules_d_habilete_en_texte, coffre_du_camp, ressources,
+    argent, capsules_d_habilete as capsules_d_habilete_en_texte, coffre_du_camp, pierres,
+    ressources,
 };
 use bersemon_presentation::soins::soins;
 
@@ -38,12 +39,12 @@ pub fn coffre(partie: &Partie) -> Question {
     ));
     lignes.extend(menu(
         Cle::SortirRessourcesDuCoffre,
-        "Prendre des ressources dans le coffre",
+        "Prendre des ressources ou des pierres dans le coffre",
         options_de_ressources(partie.coffre_du_camp()),
     ));
     lignes.extend(menu(
         Cle::RangerRessourcesAuCoffre,
-        "Ranger des ressources dans le coffre",
+        "Ranger des ressources ou des pierres dans le coffre",
         options_de_ressources(partie.sac()),
     ));
     let mut boutons = Vec::new();
@@ -130,10 +131,21 @@ fn options(inventaire: &Inventaire) -> Vec<OptionDeMenu> {
     options
 }
 
-/// Une, puis toutes, pour chaque sorte : avec les neuf ressources du
-/// contenu, 18 options au plus (section 14.3).
+/// Une, puis toutes, pour chaque sorte de ressource et de pierre : avec les
+/// neuf ressources et les deux pierres du contenu, 22 options au plus
+/// (sections 5.4 et 14.3).
 fn options_de_ressources(inventaire: &Inventaire) -> Vec<OptionDeMenu> {
     let mut options = Vec::new();
+    for &(pierre, nombre) in inventaire.pierres() {
+        if nombre > 1 {
+            options.push(option(Objet::Pierres(pierre, 1), pierres(pierre, 1), None));
+        }
+        options.push(option(
+            Objet::Pierres(pierre, nombre),
+            pierres(pierre, nombre),
+            Some("Tout".to_string()),
+        ));
+    }
     for (ressource, nombre) in inventaire.ressources() {
         let id = ressource.id().clone();
         if *nombre > 1 {

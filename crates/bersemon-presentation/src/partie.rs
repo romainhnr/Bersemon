@@ -15,6 +15,7 @@ use bersemon_core::heros::Classe;
 use bersemon_core::inventaire::Inventaire;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
+use bersemon_core::pierre::PierreDEvolution;
 use bersemon_core::ressource::Ressource;
 use bersemon_core::zone::Zone;
 
@@ -123,6 +124,16 @@ pub fn capsules_d_habilete(nombre: u32) -> String {
     }
 }
 
+/// « 1 Pierre de braise », « 2 Pierres de lune » (section 5.4).
+pub fn pierres(pierre: PierreDEvolution, nombre: u32) -> String {
+    let nom = pierre.nom();
+    if nombre > 1 {
+        format!("{nombre} {}", nom.replacen("Pierre", "Pierres", 1))
+    } else {
+        format!("{nombre} {nom}")
+    }
+}
+
 /// « 2 potions, 30 pièces d'argent et la capsule d'attaque Brasier », ou
 /// « vide ».
 pub fn contenu(inventaire: &Inventaire) -> String {
@@ -139,6 +150,12 @@ pub fn contenu(inventaire: &Inventaire) -> String {
             .ressources()
             .iter()
             .map(|(ressource, nombre)| ressources(ressource, *nombre)),
+    );
+    elements.extend(
+        inventaire
+            .pierres()
+            .iter()
+            .map(|(pierre, nombre)| pierres(*pierre, *nombre)),
     );
     if elements.is_empty() {
         "vide".to_string()
@@ -351,6 +368,9 @@ pub fn fiche_d_espece(espece: &Espece, catalogue: &dyn Catalogue) -> Vec<String>
 pub fn condition_d_evolution(condition: &ConditionEvolution) -> String {
     match condition {
         ConditionEvolution::Niveau(niveau) => format!("au niveau {}", niveau.valeur()),
+        ConditionEvolution::Pierre(pierre) => {
+            format!("avec une {}", pierre.nom().to_lowercase())
+        }
     }
 }
 
@@ -379,11 +399,20 @@ pub fn question_de_confirmation(confirmation: &Confirmation) -> String {
             nouvelle.nom(),
             effet_d_habilete(*nouvelle)
         ),
-        Confirmation::Evoluer { monstre, vers } => format!(
-            "Faire évoluer {} en {} ? L'évolution est définitive.",
-            monstre.nom(),
-            vers.nom()
-        ),
+        Confirmation::Evoluer {
+            monstre,
+            vers,
+            pierre,
+        } => {
+            let pierre = pierre
+                .map(|pierre| format!(" Elle consomme une {}.", pierre.nom().to_lowercase()))
+                .unwrap_or_default();
+            format!(
+                "Faire évoluer {} en {} ? L'évolution est définitive.{pierre}",
+                monstre.nom(),
+                vers.nom()
+            )
+        }
         Confirmation::Suicide(heros) => format!(
             "Vous suicider ? Votre partie sera effacée pour de bon : {}, vos monstres, votre sac, votre coffre, votre codex et vos expéditions automatiques en cours.",
             heros.nom().as_str()

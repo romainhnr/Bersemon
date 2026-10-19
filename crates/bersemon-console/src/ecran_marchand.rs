@@ -1,11 +1,13 @@
 //! Malvoise, le nécromancien du camp (section 14.2) : soins, capsules,
-//! rachat des monstres et des ressources, et don des âmes. Les achats se font sans confirmation ; la vente
+//! pierres d'évolution, rachat des monstres et des ressources, et don des
+//! âmes. Les achats se font sans confirmation ; la vente
 //! est confirmée par le déroulement.
 
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::Choix;
-use bersemon_core::marchand::{PRIX_CAPSULE_D_HABILETE, prix_du_soin};
+use bersemon_core::marchand::{PRIX_CAPSULE_D_HABILETE, PRIX_PIERRE_D_EVOLUTION, prix_du_soin};
 use bersemon_core::partie::Partie;
+use bersemon_core::pierre::PierreDEvolution;
 use bersemon_presentation::marchand::{
     capsules_en_vente, etal, offre_de_capsule, offre_de_ressources, ressources_a_vendre,
 };
@@ -29,15 +31,20 @@ pub fn choisir(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Opt
             argent(PRIX_CAPSULE_D_HABILETE)
         );
         println!("  6. Vendre des ressources");
+        println!(
+            "  7. Acheter des pierres d'évolution ({} l'une)",
+            argent(PRIX_PIERRE_D_EVOLUTION)
+        );
         println!("  0. Retour au camp");
-        let choix = match entree.choix(0, 6)? {
+        let choix = match entree.choix(0, 7)? {
             0 => return Some(None),
             1 => acheter_soins(partie, entree)?,
             2 => acheter_capsule(partie, contenu, entree)?,
             3 => vendre(partie.collection(), entree)?,
             4 => donner_ame(partie, entree)?,
             5 => acheter_capsules_d_habilete(partie, entree)?,
-            _ => vendre_ressources(partie, entree)?,
+            6 => vendre_ressources(partie, entree)?,
+            _ => acheter_pierres(partie, entree)?,
         };
         if choix.is_some() {
             return Some(choix);
@@ -118,6 +125,28 @@ fn acheter_capsules_d_habilete(partie: &Partie, entree: &mut Entree) -> Option<O
     println!("Combien en acheter ? (0 pour annuler)");
     let nombre = entree.choix(0, au_plus as usize)?;
     Some((nombre > 0).then_some(Choix::AcheterCapsulesDHabilete(nombre as u32)))
+}
+
+/// Le joueur ne choisit que ce qu'il peut payer (section 5.4).
+fn acheter_pierres(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
+    let au_plus = partie.argent() / PRIX_PIERRE_D_EVOLUTION;
+    if au_plus == 0 {
+        println!("Vous n'avez pas assez d'argent pour une pierre d'évolution.");
+        return Some(None);
+    }
+    println!("Pierres d'évolution en vente :");
+    for (position, pierre) in PierreDEvolution::TOUTES.iter().enumerate() {
+        println!("  {}. {}", position + 1, pierre.nom());
+    }
+    println!("Laquelle acheter ? (0 pour annuler)");
+    let choix = entree.choix(0, PierreDEvolution::TOUTES.len())?;
+    if choix == 0 {
+        return Some(None);
+    }
+    println!("Combien en acheter ? (0 pour annuler)");
+    let nombre = entree.choix(0, au_plus as usize)?;
+    let pierre = PierreDEvolution::TOUTES[choix - 1];
+    Some((nombre > 0).then_some(Choix::AcheterPierres(pierre, nombre as u32)))
 }
 
 /// Toutes celles d'une sorte, du sac et du coffre, sans confirmation

@@ -14,7 +14,7 @@ use crate::mise_en_valeur::important;
 use crate::monstres::{effet_d_habilete, nom_en_valeur, nom_sauvage};
 use crate::partie::{
     argent, argent_et_part_du_pillard, capsule as nom_de_capsule, capsules_d_habilete, contenu,
-    enumerer, potions, ressources,
+    enumerer, pierres, potions, ressources,
 };
 use crate::soins::{le_soin, soin_utilise, soins};
 
@@ -75,6 +75,7 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             argent_du_pillard,
             capsule,
             capsule_d_habilete,
+            pierre,
         } => {
             let mut contenu = vec![potions(*nombre)];
             if *montant > 0 {
@@ -83,6 +84,9 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             contenu.extend(capsule.iter().map(nom_de_capsule));
             if *capsule_d_habilete {
                 contenu.push(capsules_d_habilete(1));
+            }
+            if let Some(pierre) = pierre {
+                contenu.push(pierres(*pierre, 1));
             }
             (
                 format!("Vous trouvez un coffre : {}.", enumerer(&contenu)),
@@ -337,6 +341,18 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             ),
             false,
         ),
+        Evenement::PierresAchetees {
+            pierre,
+            nombre,
+            prix,
+        } => (
+            format!(
+                "Vous achetez {} pour {}.",
+                pierres(*pierre, *nombre),
+                argent(*prix)
+            ),
+            false,
+        ),
         Evenement::CapsulesDHabileteAchetees { nombre, prix } => (
             format!(
                 "Vous achetez {} pour {}.",
@@ -450,6 +466,7 @@ mod tests {
             argent_du_pillard: 0,
             capsule: None,
             capsule_d_habilete: false,
+            pierre: None,
         }])[0];
         assert_eq!(
             recit.texte,
@@ -461,6 +478,7 @@ mod tests {
             argent_du_pillard: 0,
             capsule: None,
             capsule_d_habilete: false,
+            pierre: None,
         }])[0];
         assert_eq!(sans_argent.texte, "Vous trouvez un coffre : 1 potion.");
         let avec_capsule = &raconter(&[Evenement::Coffre {
@@ -469,6 +487,7 @@ mod tests {
             argent_du_pillard: 0,
             capsule: Some(brasier()),
             capsule_d_habilete: false,
+            pierre: None,
         }])[0];
         assert_eq!(
             avec_capsule.texte,
@@ -480,10 +499,23 @@ mod tests {
             argent_du_pillard: 7,
             capsule: None,
             capsule_d_habilete: false,
+            pierre: None,
         }])[0];
         assert_eq!(
             avec_pillard.texte,
             "Vous trouvez un coffre : 1 potion et 22 pièces d'argent, dont 7 grâce à l'habileté Pillard."
+        );
+        let avec_pierre = &raconter(&[Evenement::Coffre {
+            potions: 2,
+            argent: 0,
+            argent_du_pillard: 0,
+            capsule: None,
+            capsule_d_habilete: false,
+            pierre: Some(bersemon_core::pierre::PierreDEvolution::Lune),
+        }])[0];
+        assert_eq!(
+            avec_pierre.texte,
+            "Vous trouvez un coffre : 2 potions et 1 Pierre de lune."
         );
     }
 

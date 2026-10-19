@@ -1,10 +1,11 @@
 //! Malvoise sur Discord (section 14.2) : son étal, où l'on achète
-//! soins et capsules d'attaque, et la vente des monstres. Les achats se
+//! soins, capsules et pierres d'évolution, et la vente des monstres. Les achats se
 //! font sans confirmation ; la vente est confirmée par le déroulement.
 
 use bersemon_core::contenu::ContenuV1;
-use bersemon_core::marchand::{PRIX_CAPSULE_D_HABILETE, prix_du_soin};
+use bersemon_core::marchand::{PRIX_CAPSULE_D_HABILETE, PRIX_PIERRE_D_EVOLUTION, prix_du_soin};
 use bersemon_core::partie::Partie;
+use bersemon_core::pierre::PierreDEvolution;
 use bersemon_presentation::marchand::{
     capsules_en_vente, etal as texte_de_l_etal, offre_de_rachat, offre_de_ressources,
     ressources_a_vendre,
@@ -73,15 +74,25 @@ pub fn etal(partie: &Partie, contenu: &ContenuV1) -> Question {
         "Acheter une capsule d'habileté ({})",
         argent(PRIX_CAPSULE_D_HABILETE)
     );
-    lignes.extend(rangees(vec![
-        bouton(Cle::AcheterCapsuleDHabilete, &libelle, PRINCIPAL),
+    // Cinq boutons : la dernière rangée est pleine (section 5.4).
+    let mut boutons = vec![bouton(Cle::AcheterCapsuleDHabilete, &libelle, PRINCIPAL)];
+    for pierre in PierreDEvolution::TOUTES {
+        let libelle = format!(
+            "Acheter une {} ({})",
+            pierre.nom(),
+            argent(PRIX_PIERRE_D_EVOLUTION)
+        );
+        boutons.push(bouton(Cle::AcheterPierre(pierre), &libelle, PRINCIPAL));
+    }
+    boutons.extend([
         bouton(
             Cle::Afficher(Vue::Vente),
             "Vendre monstres et ressources",
             DANGER,
         ),
         retour(),
-    ]));
+    ]);
+    lignes.extend(rangees(boutons));
     Question {
         texte: texte_de_l_etal(partie),
         rangees: lignes,

@@ -8,7 +8,6 @@ use bersemon_core::codex::EtatCodex;
 use bersemon_core::collection::{Collection, Emplacement, TriDuCamp};
 use bersemon_core::combat::Cote;
 use bersemon_core::contenu::ContenuV1;
-use bersemon_core::evolution::evolution_possible;
 use bersemon_core::habilete::autre_habilete;
 use bersemon_core::horodatage::Horodatage;
 use bersemon_core::marchand::prix_de_revente;
@@ -274,7 +273,8 @@ fn gestion(partie: &Partie, choisi: Option<Emplacement>, contenu: &ContenuV1) ->
             ));
         }
     }
-    if let Some(vers) = evolution_possible(monstre, contenu) {
+    // Par niveau, ou par une pierre que le joueur a (section 5.4).
+    if let Ok((_, vers, _)) = partie.estimer_evolution(emplacement, contenu) {
         let libelle = format!("Évoluer en {}", vers.nom());
         boutons.push(bouton(Cle::FaireEvoluer(emplacement), &libelle, PRINCIPAL));
     }

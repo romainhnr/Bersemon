@@ -14,6 +14,7 @@ use bersemon_core::deroulement::{ActionDeGestion, Choix};
 use bersemon_core::expedition_automatique::MONSTRES_MAX;
 use bersemon_core::heros::Classe;
 use bersemon_core::inventaire::Objet;
+use bersemon_core::pierre::PierreDEvolution;
 use bersemon_core::ressource::RessourceId;
 use bersemon_core::soin::Soin;
 use bersemon_core::zone::ZoneId;
@@ -198,6 +199,8 @@ pub enum Cle {
     ChangerDHabilete(Emplacement),
     /// Une capsule d'habileté, chez Malvoise.
     AcheterCapsuleDHabilete,
+    /// Une pierre d'évolution, chez Malvoise (section 5.4).
+    AcheterPierre(PierreDEvolution),
     /// Menu des attaques à apprendre par ce monstre, en oubliant celle en
     /// position `oubliee` s'il en connaît déjà 4.
     Apprendre {
@@ -308,6 +311,7 @@ impl Cle {
             Cle::VendreCeMonstre(emplacement) => jouer(Choix::Vendre(*emplacement)),
             Cle::ChangerDHabilete(emplacement) => jouer(Choix::ChangerDHabilete(*emplacement)),
             Cle::AcheterCapsuleDHabilete => jouer(Choix::AcheterCapsulesDHabilete(1)),
+            Cle::AcheterPierre(pierre) => jouer(Choix::AcheterPierres(*pierre, 1)),
             Cle::Apprendre {
                 emplacement,
                 oubliee,
@@ -418,6 +422,7 @@ impl Cle {
                 format!("changer-habilete:{}", emplacement_en_texte(*emplacement))
             }
             Cle::AcheterCapsuleDHabilete => "acheter-capsule-d-habilete".to_string(),
+            Cle::AcheterPierre(pierre) => format!("acheter-pierre:{}", pierre_en_texte(*pierre)),
             Cle::VendreCeMonstre(emplacement) => {
                 format!("vendre-monstre:{}", emplacement_en_texte(*emplacement))
             }
@@ -548,6 +553,7 @@ impl Cle {
                     "vendre-monstre" => Cle::VendreCeMonstre(emplacement()?),
                     "changer-habilete" => Cle::ChangerDHabilete(emplacement()?),
                     "faire-evoluer" => Cle::FaireEvoluer(emplacement()?),
+                    "acheter-pierre" => Cle::AcheterPierre(lire_pierre(parametre)?),
                     "fiche" => Cle::Fiche(numero()?),
                     "apprendre" => {
                         let (emplacement, oubliee) = parametre.split_once(':')?;
@@ -599,6 +605,20 @@ fn lire_emplacement(texte: &str) -> Option<Emplacement> {
 }
 
 /// Nom fixé ici, et non le nom Rust, comme dans la sauvegarde.
+fn pierre_en_texte(pierre: PierreDEvolution) -> &'static str {
+    match pierre {
+        PierreDEvolution::Braise => "braise",
+        PierreDEvolution::Lune => "lune",
+    }
+}
+
+fn lire_pierre(texte: &str) -> Option<PierreDEvolution> {
+    PierreDEvolution::TOUTES
+        .into_iter()
+        .find(|pierre| pierre_en_texte(*pierre) == texte)
+}
+
+/// Nom fixé ici, et non le nom Rust, comme dans la sauvegarde.
 pub fn soin_en_texte(soin: Soin) -> &'static str {
     match soin {
         Soin::Potion => "potion",
@@ -627,13 +647,15 @@ fn lire_soin_et_position(texte: &str) -> Option<(Soin, usize)> {
 
 /// Valeur d'option des menus du coffre : `soins:` suivi du soin et de la
 /// quantité, `argent:` suivi de la quantité, `capsule:` suivi de
-/// l'attaque, ou `capsules-d-habilete:` suivi de la quantité.
+/// l'attaque, `capsules-d-habilete:` suivi de la quantité, ou `pierres:`
+/// suivi de la pierre et de la quantité.
 pub fn objet_en_texte(objet: &Objet) -> String {
     match objet {
         Objet::Soins(soin, nombre) => format!("soins:{}:{nombre}", soin_en_texte(*soin)),
         Objet::Argent(montant) => format!("argent:{montant}"),
         Objet::Capsule(attaque) => format!("capsule:{}", attaque.as_str()),
         Objet::CapsulesDHabilete(nombre) => format!("capsules-d-habilete:{nombre}"),
+        Objet::Pierres(pierre, nombre) => format!("pierres:{}:{nombre}", pierre_en_texte(*pierre)),
         Objet::Ressources(id, nombre) => format!("ressources:{}:{nombre}", id.as_str()),
     }
 }
@@ -648,6 +670,10 @@ fn lire_objet(texte: &str) -> Option<Objet> {
         "argent" => Some(Objet::Argent(parametre.parse().ok()?)),
         "capsule" => Some(Objet::Capsule(AttaqueId::new(parametre))),
         "capsules-d-habilete" => Some(Objet::CapsulesDHabilete(parametre.parse().ok()?)),
+        "pierres" => {
+            let (pierre, nombre) = parametre.split_once(':')?;
+            Some(Objet::Pierres(lire_pierre(pierre)?, nombre.parse().ok()?))
+        }
         "ressources" => {
             let (id, nombre) = parametre.rsplit_once(':')?;
             Some(Objet::Ressources(
@@ -769,6 +795,8 @@ mod tests {
             Cle::VendreCeMonstre(Emplacement::Equipe(2)),
             Cle::ChangerDHabilete(Emplacement::Camp(7)),
             Cle::AcheterCapsuleDHabilete,
+            Cle::AcheterPierre(PierreDEvolution::Braise),
+            Cle::AcheterPierre(PierreDEvolution::Lune),
             Cle::Apprendre {
                 emplacement: Emplacement::Camp(29),
                 oubliee: None,
@@ -958,6 +986,7 @@ mod tests {
             Objet::Capsule(AttaqueId::new("brasier")),
             Objet::CapsulesDHabilete(3),
             Objet::Ressources(RessourceId::new("croc-de-loup"), 2),
+            Objet::Pierres(PierreDEvolution::Lune, 4),
         ] {
             let valeur = objet_en_texte(&objet);
             assert_eq!(
