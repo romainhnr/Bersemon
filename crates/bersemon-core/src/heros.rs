@@ -4,23 +4,30 @@
 use crate::nom::Nom;
 use crate::stats::{BonusDeStats, Stats};
 
-/// Guerrier et Mage dans la V1 (Q2), puis le Templier ; l'Assassin viendra
-/// plus tard (section 4.1).
+/// Guerrier et Mage dans la V1 (Q2), puis le Templier et l'Assassin
+/// (section 4.1).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Classe {
     Guerrier,
     Mage,
     Templier,
+    Assassin,
 }
 
 impl Classe {
-    pub const TOUTES: [Classe; 3] = [Classe::Guerrier, Classe::Mage, Classe::Templier];
+    pub const TOUTES: [Classe; 4] = [
+        Classe::Guerrier,
+        Classe::Mage,
+        Classe::Templier,
+        Classe::Assassin,
+    ];
 
     pub fn nom(self) -> &'static str {
         match self {
             Classe::Guerrier => "Guerrier",
             Classe::Mage => "Mage",
             Classe::Templier => "Templier",
+            Classe::Assassin => "Assassin",
         }
     }
 
@@ -39,6 +46,10 @@ impl Classe {
             Classe::Templier => Stats {
                 defense: 10,
                 defense_speciale: 10,
+                ..Stats::default()
+            },
+            Classe::Assassin => Stats {
+                vitesse: 10,
                 ..Stats::default()
             },
         }
@@ -78,5 +89,8 @@ mod tests {
         let templier = Classe::Templier.bonus();
         assert_eq!((templier.defense, templier.defense_speciale), (10, 10));
         assert_eq!((templier.attaque, templier.attaque_speciale), (0, 0));
+        let assassin = Classe::Assassin.bonus();
+        assert_eq!(assassin.vitesse, 10);
+        assert_eq!((assassin.attaque, assassin.defense), (0, 0));
     }
 }

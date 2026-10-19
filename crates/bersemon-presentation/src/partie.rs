@@ -160,6 +160,7 @@ pub fn decrire_classe(classe: Classe, contenu: &ContenuV1) -> String {
         Classe::Guerrier => "d'Attaque",
         Classe::Mage => "d'Attaque spéciale",
         Classe::Templier => "de Défense et de Défense spéciale",
+        Classe::Assassin => "de Vitesse",
     };
     format!(
         "{} : +10 % {bonus} pour vos monstres en combat ; premier monstre : {}",

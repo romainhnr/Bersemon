@@ -48,6 +48,9 @@ pub fn fin_de_l_introduction(classe: Classe) -> &'static str {
         Classe::Templier => {
             "Le gardien du camp observe votre bouclier, puis ouvre une cage : une mandragore en sort à pas lents, ses racines tressées comme une armure. Elle encaisse ce qui en abattrait d'autres. Elle partagera votre route."
         }
+        Classe::Assassin => {
+            "Le gardien du camp remarque la lame cachée dans votre manche, puis ouvre une cage : un chat noir s'en glisse sans un bruit, les yeux luisants. Il frappe avant qu'on le voie, mais ne supporte pas les coups. Il partagera votre route."
+        }
     }
 }
 
@@ -80,8 +83,9 @@ pub fn texte_du_conseil(conseil: Conseil) -> &'static str {
     }
 }
 
-/// Les monstres de départ sont les trois premières espèces du codex.
-const NOMBRE_DE_DEPARTS: usize = 3;
+/// Les monstres de départ, un par classe, sont les premières espèces du
+/// codex.
+const NOMBRE_DE_DEPARTS: usize = 4;
 
 pub struct ContenuV1 {
     especes: Vec<Espece>,
@@ -188,6 +192,7 @@ impl ContenuV1 {
             Classe::Guerrier => "crapaud",
             Classe::Mage => "salamandre",
             Classe::Templier => "mandragore",
+            Classe::Assassin => "chat-noir",
         };
         self.especes_de_depart()
             .iter()
@@ -274,7 +279,7 @@ const fn avec_effet(fiche: FicheAttaque, statut: Statut, chance: u8) -> FicheAtt
 }
 
 /// Section 1 de docs/contenu-v1.md, dans le même ordre.
-const ATTAQUES: [FicheAttaque; 41] = [
+const ATTAQUES: [FicheAttaque; 44] = [
     fiche(
         "souffle-chaud",
         "Souffle chaud",
@@ -551,6 +556,28 @@ const ATTAQUES: [FicheAttaque; 41] = [
         Paralysie,
         20,
     ),
+    // Attaques du Chat noir, monstre de l'Assassin.
+    fiche(
+        "coup-sournois",
+        "Coup sournois",
+        Type::Tenebres,
+        Physique,
+        40,
+        100,
+    ),
+    avec_effet(
+        fiche("feulement", "Feulement", Type::Normal, Speciale, 40, 100),
+        Paralysie,
+        20,
+    ),
+    fiche(
+        "coup-de-grace",
+        "Coup de grâce",
+        Type::Tenebres,
+        Physique,
+        85,
+        90,
+    ),
 ];
 
 struct FicheCapsule {
@@ -610,7 +637,7 @@ struct FicheEspece {
 
 /// Section 2 de docs/contenu-v1.md, dans l'ordre du codex : les monstres de
 /// départ, les communs, les rares, puis l'Apôtre.
-const ESPECES: [FicheEspece; 11] = [
+const ESPECES: [FicheEspece; 12] = [
     FicheEspece {
         id: "salamandre",
         nom: "Salamandre",
@@ -657,6 +684,22 @@ const ESPECES: [FicheEspece; 11] = [
             (7, "cri-strident"),
             (10, "ronces"),
             (14, "spores-putrides"),
+        ],
+    },
+    FicheEspece {
+        id: "chat-noir",
+        nom: "Chat noir",
+        types: &[Type::Tenebres],
+        role: Role::Offensif,
+        stats_de_base: [40, 72, 35, 40, 38, 90],
+        rendement_experience: 62,
+        rarete: Rarete::Commune,
+        apprentissage: &[
+            (1, "griffure"),
+            (3, "coup-sournois"),
+            (7, "feulement"),
+            (10, "morsure"),
+            (14, "coup-de-grace"),
         ],
     },
     FicheEspece {
@@ -977,7 +1020,7 @@ mod tests {
     #[test]
     fn contenu_conforme_aux_regles() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.especes().len(), 11);
+        assert_eq!(contenu.especes().len(), 12);
         assert_eq!(contenu.zones().len(), 2);
         assert_eq!(contenu.piste().indices().len(), 3);
         // Toute espèce rencontrée en zone se retrouve au chargement d'une
@@ -1018,7 +1061,10 @@ mod tests {
             .iter()
             .map(|classe| contenu.espece_de_depart(*classe).id().as_str())
             .collect();
-        assert_eq!(ids, vec!["crapaud", "salamandre", "mandragore"]);
+        assert_eq!(
+            ids,
+            vec!["crapaud", "salamandre", "mandragore", "chat-noir"]
+        );
     }
 
     #[test]
@@ -1029,7 +1075,10 @@ mod tests {
             .iter()
             .map(|espece| espece.id().as_str())
             .collect();
-        assert_eq!(ids, vec!["salamandre", "crapaud", "mandragore"]);
+        assert_eq!(
+            ids,
+            vec!["salamandre", "crapaud", "mandragore", "chat-noir"]
+        );
         for espece in contenu.especes_de_depart() {
             let monstre = creer(&contenu, espece.id().as_str(), 5);
             let types: Vec<Type> = monstre

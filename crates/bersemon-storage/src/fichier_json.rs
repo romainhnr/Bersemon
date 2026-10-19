@@ -314,15 +314,17 @@ mod tests {
     }
 
     #[test]
-    fn la_classe_templier_se_relit() {
-        let chemin = chemin_de_test("templier");
-        let fichier = FichierJson::new(&chemin);
-        let heros = Heros::new(Nom::new("Ysolde").unwrap(), Classe::Templier);
-        let partie = Partie::nouvelle(heros, creer("salamandre", 5));
-        fichier.enregistrer(&partie).unwrap();
-        let rechargee = fichier.charger(&catalogue());
-        nettoyer(&chemin);
-        assert_eq!(rechargee, Ok(Some(partie)));
+    fn chaque_classe_se_relit() {
+        for classe in Classe::TOUTES {
+            let chemin = chemin_de_test(classe.nom());
+            let fichier = FichierJson::new(&chemin);
+            let heros = Heros::new(Nom::new("Ysolde").unwrap(), classe);
+            let partie = Partie::nouvelle(heros, creer("salamandre", 5));
+            fichier.enregistrer(&partie).unwrap();
+            let rechargee = fichier.charger(&catalogue());
+            nettoyer(&chemin);
+            assert_eq!(rechargee, Ok(Some(partie)));
+        }
     }
 
     #[test]

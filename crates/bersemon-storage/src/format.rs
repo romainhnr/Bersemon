@@ -457,6 +457,7 @@ fn nom_de_classe(classe: Classe) -> &'static str {
         Classe::Guerrier => "guerrier",
         Classe::Mage => "mage",
         Classe::Templier => "templier",
+        Classe::Assassin => "assassin",
     }
 }
 
@@ -465,6 +466,7 @@ fn classe(texte: &str) -> Result<Classe, ErreurSauvegarde> {
         "guerrier" => Ok(Classe::Guerrier),
         "mage" => Ok(Classe::Mage),
         "templier" => Ok(Classe::Templier),
+        "assassin" => Ok(Classe::Assassin),
         autre => Err(ErreurSauvegarde::Incoherente(format!(
             "classe inconnue : {autre}"
         ))),

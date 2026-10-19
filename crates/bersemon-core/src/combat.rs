@@ -1526,6 +1526,16 @@ mod tests {
     }
 
     #[test]
+    fn le_bonus_de_l_assassin_departage_sans_tirage() {
+        // 10 de Vitesse de chaque côté : le bonus en donne 11 au joueur, qui
+        // agit en premier sans tirage au sort.
+        let mut combat = combat(vec![lent()], vec![lent()])
+            .avec_bonus_du_joueur(crate::heros::Classe::Assassin.bonus());
+        let evenements = tour(&mut combat, Action::Attaquer(0), &[2, 100, 2, 100]);
+        assert_eq!(evenements[0], lancee(j(0), coup()));
+    }
+
+    #[test]
     fn une_potion_soigne_puis_l_adversaire_agit() {
         let mut combat = combat(vec![affaibli(rapide(), 5)], vec![lent()]).avec_potions(2);
         // 50 % de 20 PV max : 10 PV rendus.
