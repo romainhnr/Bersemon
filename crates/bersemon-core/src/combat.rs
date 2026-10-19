@@ -230,6 +230,9 @@ pub struct Combat {
     potions: u32,
     /// Face à un Apôtre, ni fuite ni filet (section 9.4).
     contre_un_apotre: bool,
+    /// Face à un humain, ni fuite ni filet, une IA qui choisit son attaque
+    /// et une seule capture après la victoire (section 10.7).
+    contre_un_humain: bool,
     phase: Phase,
 }
 
@@ -258,6 +261,7 @@ impl Combat {
             bonus_joueur: BonusDeStats::default(),
             potions: 0,
             contre_un_apotre: false,
+            contre_un_humain: false,
             phase: Phase::ChoixAction,
         };
         combat.noter_participation();
@@ -286,12 +290,24 @@ impl Combat {
         self.contre_un_apotre
     }
 
+    /// Combat contre un humain et son équipe : ni fuite ni filet, son IA
+    /// choisit l'attaque la plus forte, et le joueur ne prend qu'un de ses
+    /// monstres après la victoire (section 10.7).
+    pub fn contre_un_humain(mut self) -> Self {
+        self.contre_un_humain = true;
+        self
+    }
+
+    pub fn est_contre_un_humain(&self) -> bool {
+        self.contre_un_humain
+    }
+
     pub fn fuite_possible(&self) -> bool {
-        !self.contre_un_apotre
+        !self.contre_un_apotre && !self.contre_un_humain
     }
 
     pub fn filet_possible(&self) -> bool {
-        !self.contre_un_apotre
+        !self.contre_un_apotre && !self.contre_un_humain
     }
 
     /// Bonus appliqué aux stats des monstres du joueur pendant tout le combat,
@@ -390,8 +406,11 @@ impl Combat {
             Phase::Termine(_) => return Err(ErreurCombat::CombatTermine),
         }
         self.valider(action)?;
-        let attaque_adversaire =
-            choisir_attaque_au_hasard(self.monstre(self.actif(Cote::Adversaire)), aleatoire);
+        let attaque_adversaire = if self.contre_un_humain {
+            self.attaque_la_plus_forte()
+        } else {
+            choisir_attaque_au_hasard(self.monstre(self.actif(Cote::Adversaire)), aleatoire)
+        };
 
         let mut evenements = Vec::new();
         match action {
@@ -479,9 +498,12 @@ impl Combat {
     }
 
     /// Monstres adverses KO, pas encore capturés, qu'il est possible de
-    /// capturer après une victoire (Q29).
+    /// capturer après une victoire (Q29) ; un seul pour un humain (section
+    /// 10.7).
     pub fn adversaires_capturables(&self) -> Vec<usize> {
-        if self.phase != Phase::Termine(Issue::Victoire) {
+        if self.phase != Phase::Termine(Issue::Victoire)
+            || (self.contre_un_humain && !self.captures.is_empty())
+        {
             return Vec::new();
         }
         (0..self.adversaires.len())
@@ -573,6 +595,36 @@ impl Combat {
                 (gain > 0).then(|| monstre.gagner_experience(gain))
             })
             .collect()
+    }
+
+    /// IA simple d'un humain : l'attaque aux dégâts estimés les plus hauts
+    /// contre le monstre actif du joueur, la première à égalité ; aucun
+    /// tirage (section 10.7).
+    fn attaque_la_plus_forte(&self) -> usize {
+        let attaquant = self.actif(Cote::Adversaire);
+        let cible = self.actif(Cote::Joueur);
+        let stats_attaquant = self.stats_en_combat(attaquant);
+        let stats_cible = self.stats_en_combat(cible);
+        let mut meilleure = (0, 0);
+        for (position, attaque) in self
+            .monstre(attaquant)
+            .attaques()
+            .liste()
+            .iter()
+            .enumerate()
+        {
+            let (_, degats_max) = estimer_degats(
+                self.monstre(attaquant),
+                &stats_attaquant,
+                attaque,
+                self.monstre(cible),
+                &stats_cible,
+            );
+            if degats_max > meilleure.1 {
+                meilleure = (position, degats_max);
+            }
+        }
+        meilleure.0
     }
 
     /// Retient que le monstre actif du joueur affronte le monstre adverse
@@ -1294,6 +1346,58 @@ mod tests {
             Err(ErreurCombat::FiletImpossible)
         );
         assert_eq!(combat.phase(), Phase::ChoixAction);
+    }
+
+    #[test]
+    fn ni_fuite_ni_filet_face_a_un_humain() {
+        let mut combat = combat(vec![rapide()], vec![lent()]).contre_un_humain();
+        assert!(!combat.fuite_possible() && !combat.filet_possible());
+        assert_eq!(
+            combat.jouer_tour(Action::Fuir, &mut AleatoireScripte::new([])),
+            Err(ErreurCombat::FuiteImpossible)
+        );
+        assert_eq!(
+            combat.jouer_tour(Action::LancerFilet, &mut AleatoireScripte::new([])),
+            Err(ErreurCombat::FiletImpossible)
+        );
+    }
+
+    #[test]
+    fn l_ia_d_un_humain_choisit_l_attaque_la_plus_forte_sans_tirage() {
+        let braise = attaque("braise", Type::Feu, Categorie::Speciale, 40, 100);
+        let base_rapide = Stats {
+            vitesse: 60,
+            ..stats_uniformes(50)
+        };
+        let plante = monstre(&[Type::Plante], base_rapide, 5, vec![coup()]);
+        let adversaire = monstre(
+            &[Type::Feu],
+            stats_uniformes(50),
+            5,
+            vec![coup(), braise.clone()],
+        );
+        let mut combat = combat(vec![plante], vec![adversaire]).contre_un_humain();
+        // Braise, très efficace contre la Plante, l'emporte sur le coup.
+        let evenements = tour(&mut combat, Action::Attaquer(0), &[2, 100, 2, 100]);
+        assert_eq!(evenements[2], lancee(a(0), braise));
+    }
+
+    #[test]
+    fn un_seul_monstre_d_un_humain_se_prend_apres_la_victoire() {
+        let mut combat = combat(
+            vec![rapide()],
+            vec![affaibli(lent(), 1), affaibli(lent(), 1)],
+        )
+        .contre_un_humain();
+        tour(&mut combat, Action::Attaquer(0), &[2, 100]);
+        tour(&mut combat, Action::Attaquer(0), &[2, 100]);
+        assert_eq!(combat.adversaires_capturables(), vec![0, 1]);
+        combat.capturer_ko(1).unwrap();
+        assert!(combat.adversaires_capturables().is_empty());
+        assert_eq!(
+            combat.capturer_ko(0),
+            Err(ErreurCombat::CaptureImpossible(0))
+        );
     }
 
     #[test]

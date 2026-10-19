@@ -1,4 +1,4 @@
-//! Format JSON de la sauvegarde, version 8, et sa conversion vers les types
+//! Format JSON de la sauvegarde, version 9, et sa conversion vers les types
 //! du noyau. Les énumérations sont écrites avec des noms fixés ici, et non
 //! avec les noms Rust, pour qu'un renommage dans le code ne casse pas les
 //! sauvegardes existantes.
@@ -16,6 +16,7 @@ use bersemon_core::expedition_automatique::ExpeditionAutomatique;
 use bersemon_core::habilete::Habilete;
 use bersemon_core::heros::{Classe, Heros};
 use bersemon_core::horodatage::Horodatage;
+use bersemon_core::humain::HumainId;
 use bersemon_core::inventaire::Inventaire;
 use bersemon_core::monstre::{EtatMonstre, Monstre};
 use bersemon_core::niveau::Niveau;
@@ -29,7 +30,7 @@ use bersemon_core::zone::ZoneId;
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 8;
+pub(crate) const VERSION: u64 = 9;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -38,11 +39,11 @@ const VERSION_DU_COFFRE: u64 = 7;
 /// les expéditions automatiques et les attaques à choisir à leur retour, la
 /// version 4 l'argent, la version 5 le marchand, la version 6 les capsules
 /// d'attaque, la version 7 le sac et le coffre du camp, la version 8
-/// l'habileté de chaque monstre. Une sauvegarde d'une version précédente se
-/// lit avec cette structure : les champs ajoutés y prennent leur valeur de
-/// début de partie.
+/// l'habileté de chaque monstre, la version 9 les humains vaincus. Une
+/// sauvegarde d'une version précédente se lit avec cette structure : les
+/// champs ajoutés y prennent leur valeur de début de partie.
 #[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct SauvegardeV8 {
+pub(crate) struct SauvegardeV9 {
     pub(crate) version: u64,
     heros: HerosV1,
     equipe: Vec<MonstreV1>,
@@ -67,6 +68,8 @@ pub(crate) struct SauvegardeV8 {
     indices_trouves: usize,
     #[serde(default)]
     apotres_vaincus: Vec<String>,
+    #[serde(default)]
+    humains_vaincus: Vec<String>,
     #[serde(default)]
     conseils_vus: Vec<String>,
     #[serde(default)]
@@ -142,9 +145,9 @@ struct CodexV1 {
     capturees: Vec<String>,
 }
 
-pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV8 {
+pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV9 {
     let collection = partie.collection();
-    SauvegardeV8 {
+    SauvegardeV9 {
         version: VERSION,
         heros: HerosV1 {
             nom: partie.heros().nom().as_str().to_string(),
@@ -169,6 +172,11 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV8 {
             .collect(),
         indices_trouves: partie.indices_trouves(),
         apotres_vaincus: ids(partie.apotres_vaincus()),
+        humains_vaincus: partie
+            .humains_vaincus()
+            .iter()
+            .map(|humain| humain.as_str().to_string())
+            .collect(),
         conseils_vus: partie
             .conseils_vus()
             .iter()
@@ -228,7 +236,7 @@ fn vers_inventaire(
 }
 
 pub(crate) fn vers_partie(
-    sauvegarde: SauvegardeV8,
+    sauvegarde: SauvegardeV9,
     catalogue: &dyn Catalogue,
 ) -> Result<Partie, ErreurSauvegarde> {
     let heros = Heros::new(
@@ -285,6 +293,13 @@ pub(crate) fn vers_partie(
             None => Err(ErreurSauvegarde::EspeceInconnue(id)),
         })
         .collect::<Result<Vec<_>, _>>()?;
+    // Un humain disparu du jeu ne gêne pas : il ne sert qu'à ne plus faire
+    // revenir celui qui a été vaincu (section 10.7).
+    let humains_vaincus = sauvegarde
+        .humains_vaincus
+        .into_iter()
+        .map(HumainId::new)
+        .collect();
     let conseils_vus = sauvegarde
         .conseils_vus
         .iter()
@@ -301,6 +316,7 @@ pub(crate) fn vers_partie(
         zones_explorees,
         indices_trouves: sauvegarde.indices_trouves,
         apotres_vaincus,
+        humains_vaincus,
         conseils_vus,
         expeditions_automatiques,
         attaques_a_choisir,

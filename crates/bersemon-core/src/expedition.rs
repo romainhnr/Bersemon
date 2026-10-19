@@ -8,6 +8,7 @@ use crate::aleatoire::Aleatoire;
 use crate::attaque::AttaqueId;
 use crate::capsule::Capsule;
 use crate::expedition_automatique::ErreurParametres;
+use crate::humain::Humain;
 use crate::monstre::Monstre;
 use crate::traque::Apotre;
 use crate::zone::{MonstreRare, Zone, tirer_entre};
@@ -59,6 +60,12 @@ pub enum EvenementExpedition {
     MonstreRare(MonstreRare),
     /// Combat, sans fuite, contre l'Apôtre (section 9.4).
     Apotre(Monstre),
+    /// Combat, ni fuite ni filet, contre un humain et son équipe (section
+    /// 10.7).
+    Humain {
+        humain: Humain,
+        equipe: Vec<Monstre>,
+    },
     /// Le marchand rencontré se réfugie aussitôt au camp (section 14.2).
     Marchand,
 }
@@ -91,6 +98,9 @@ pub struct Expedition {
     defaite: bool,
     /// L'Apôtre qui attend à la dernière étape, une fois son antre localisé.
     apotre: Option<Apotre>,
+    /// L'humain qui attend à la dernière étape tant qu'il n'est pas vaincu
+    /// (section 10.7).
+    humain: Option<Humain>,
     /// Tant qu'aucun marchand n'est au camp, une étape peut tirer sa
     /// rencontre, une fois au plus (section 9.2).
     marchand_possible: bool,
@@ -111,6 +121,7 @@ impl Expedition {
             etapes_faites: 0,
             defaite: false,
             apotre: None,
+            humain: None,
             marchand_possible: false,
             capsules_possedees: Vec::new(),
             capsules_trouvees: Vec::new(),
@@ -120,6 +131,16 @@ impl Expedition {
     pub(crate) fn vers_l_antre(mut self, apotre: Apotre) -> Self {
         self.apotre = Some(apotre);
         self
+    }
+
+    pub(crate) fn contre_l_humain(mut self, humain: Humain) -> Self {
+        self.humain = Some(humain);
+        self
+    }
+
+    /// Celui qui attend au bout de cette expédition.
+    pub fn humain(&self) -> Option<&Humain> {
+        self.humain.as_ref()
     }
 
     pub(crate) fn avec_marchand_possible(mut self) -> Self {
@@ -168,7 +189,7 @@ impl Expedition {
     /// contenu : pour un coffre, ses potions, son argent puis sa capsule.
     /// Une zone sans monstre rare donne un combat à la place. L'Apôtre
     /// remplace l'événement de la dernière étape, sans tirage de sa nature
-    /// (Q57).
+    /// (Q57), comme l'humain de la zone, sans aucun tirage (section 10.7).
     pub fn etape_suivante(&mut self, aleatoire: &mut dyn Aleatoire) -> Option<EvenementExpedition> {
         if self.est_terminee() {
             return None;
@@ -177,6 +198,12 @@ impl Expedition {
         let derniere = self.etapes_faites == self.nombre_etapes;
         if let Some(apotre) = self.apotre.as_ref().filter(|_| derniere) {
             return Some(EvenementExpedition::Apotre(apotre.generer(aleatoire)));
+        }
+        if let Some(humain) = self.humain.as_ref().filter(|_| derniere) {
+            return Some(EvenementExpedition::Humain {
+                humain: humain.clone(),
+                equipe: humain.generer_equipe(),
+            });
         }
         let evenement = match aleatoire.tirer(1..=100) {
             71..=80 if self.marchand_possible => {
@@ -336,6 +363,33 @@ mod tests {
         assert!(matches!(
             expedition.etape_suivante(&mut AleatoireScripte::new([2])),
             Some(EvenementExpedition::Apotre(apotre)) if apotre.niveau() == Niveau::new(7).unwrap()
+        ));
+        assert!(expedition.est_terminee());
+    }
+
+    #[test]
+    fn l_humain_attend_a_la_derniere_etape_sans_tirage() {
+        let niveau = Niveau::new(5).unwrap();
+        let brigand = Humain::new(
+            crate::humain::HumainId::new("brigand"),
+            "Brigand",
+            vec![(espece("loup"), niveau)],
+            60,
+            "",
+            "",
+        )
+        .unwrap();
+        let mut expedition = Expedition::partir(zone(false)).contre_l_humain(brigand);
+        for _ in 0..3 {
+            assert!(matches!(
+                expedition.etape_suivante(&mut AleatoireScripte::new([81, 1])),
+                Some(EvenementExpedition::Coffre { .. })
+            ));
+        }
+        assert!(matches!(
+            expedition.etape_suivante(&mut AleatoireScripte::new([])),
+            Some(EvenementExpedition::Humain { humain, equipe })
+                if humain.nom() == "Brigand" && equipe.len() == 1
         ));
         assert!(expedition.est_terminee());
     }

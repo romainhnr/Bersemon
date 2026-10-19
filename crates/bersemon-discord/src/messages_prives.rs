@@ -286,6 +286,7 @@ mod tests {
             zones_explorees: vec![ZoneId::new("lisiere")],
             indices_trouves: 1,
             apotres_vaincus: Vec::new(),
+            humains_vaincus: Vec::new(),
             conseils_vus: Vec::new(),
             expeditions_automatiques: Vec::new(),
             attaques_a_choisir: Vec::new(),

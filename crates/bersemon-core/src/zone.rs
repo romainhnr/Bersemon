@@ -11,6 +11,7 @@ use crate::aleatoire::Aleatoire;
 use crate::espece::{Espece, EspeceId};
 use crate::expedition::ParametresCoffre;
 use crate::expedition_automatique::ParametresExpeditionAutomatique;
+use crate::humain::Humain;
 use crate::monstre::{Monstre, tirer_shiny, tirer_valeurs_internes};
 use crate::niveau::Niveau;
 use crate::stats::ValeursInternes;
@@ -97,6 +98,10 @@ pub struct Zone {
     rares: Vec<EspeceRare>,
     /// Il remplace parfois un monstre rare (section 9.2).
     cache: Option<EspeceRare>,
+    /// Il attend à la dernière étape tant qu'il n'est pas vaincu (section
+    /// 10.7). En boîte, pour que la zone reste légère : elle est copiée dans
+    /// chaque expédition.
+    humain: Option<Box<Humain>>,
     expedition_automatique: ParametresExpeditionAutomatique,
     coffre: ParametresCoffre,
 }
@@ -148,6 +153,7 @@ impl Zone {
             especes,
             rares,
             cache: None,
+            humain: None,
             expedition_automatique,
             coffre,
         })
@@ -194,6 +200,15 @@ impl Zone {
 
     pub fn monstre_cache(&self) -> Option<&EspeceRare> {
         self.cache.as_ref()
+    }
+
+    pub fn avec_humain(mut self, humain: Humain) -> Self {
+        self.humain = Some(Box::new(humain));
+        self
+    }
+
+    pub fn humain(&self) -> Option<&Humain> {
+        self.humain.as_deref()
     }
 
     /// Durée, dégâts et récompenses d'une expédition automatique (section

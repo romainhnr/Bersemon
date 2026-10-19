@@ -23,6 +23,7 @@ pub mod experience;
 pub mod habilete;
 pub mod heros;
 pub mod horodatage;
+pub mod humain;
 pub mod inventaire;
 pub mod marchand;
 pub mod monstre;

@@ -8,7 +8,7 @@ use bersemon_core::catalogue::Catalogue;
 use bersemon_core::partie::Partie;
 use bersemon_core::sauvegarde::{ErreurSauvegarde, SauvegardeRepository};
 
-use crate::format::{self, SauvegardeV8, VERSION};
+use crate::format::{self, SauvegardeV9, VERSION};
 
 pub struct FichierJson {
     chemin: PathBuf,
@@ -38,7 +38,7 @@ impl FichierJson {
         if !(1..=VERSION).contains(&version) {
             return Err(ErreurSauvegarde::VersionInconnue(version));
         }
-        let sauvegarde: SauvegardeV8 = serde_json::from_value(valeur)
+        let sauvegarde: SauvegardeV9 = serde_json::from_value(valeur)
             .map_err(|erreur| ErreurSauvegarde::Illisible(erreur.to_string()))?;
         format::vers_partie(sauvegarde, catalogue)
     }
@@ -93,6 +93,7 @@ mod tests {
     use bersemon_core::habilete::Habilete;
     use bersemon_core::heros::{Classe, Heros};
     use bersemon_core::horodatage::Horodatage;
+    use bersemon_core::humain::HumainId;
     use bersemon_core::inventaire::Inventaire;
     use bersemon_core::monstre::Monstre;
     use bersemon_core::niveau::Niveau;
@@ -259,6 +260,7 @@ mod tests {
             zones_explorees: vec![ZoneId::new("lisiere")],
             indices_trouves: 3,
             apotres_vaincus: vec![EspeceId::new("loup")],
+            humains_vaincus: vec![HumainId::new("brigand")],
             conseils_vus: partie.conseils_vus().to_vec(),
             expeditions_automatiques: partie.expeditions_automatiques().to_vec(),
             attaques_a_choisir,
@@ -446,10 +448,10 @@ mod tests {
 
     #[test]
     fn version_inconnue() {
-        let texte = texte_de_partie().replacen("\"version\":8", "\"version\":9", 1);
+        let texte = texte_de_partie().replacen("\"version\":9", "\"version\":10", 1);
         assert_eq!(
             charger_texte(&texte),
-            Err(ErreurSauvegarde::VersionInconnue(9))
+            Err(ErreurSauvegarde::VersionInconnue(10))
         );
     }
 
@@ -554,12 +556,18 @@ mod tests {
         let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
         let objet = valeur.as_object_mut().unwrap();
         objet.insert("version".to_string(), 1.into());
-        for champ in ["indices_trouves", "apotres_vaincus", "conseils_vus"] {
+        for champ in [
+            "indices_trouves",
+            "apotres_vaincus",
+            "humains_vaincus",
+            "conseils_vus",
+        ] {
             objet.remove(champ);
         }
         let partie = charger_texte(&valeur.to_string()).unwrap().unwrap();
         assert_eq!(partie.indices_trouves(), 0);
         assert!(partie.apotres_vaincus().is_empty());
+        assert!(partie.humains_vaincus().is_empty());
         assert!(partie.conseils_vus().is_empty());
         assert_eq!(partie.collection(), partie_complete().collection());
     }

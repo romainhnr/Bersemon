@@ -18,6 +18,7 @@ use crate::expedition_automatique::{
 use crate::habilete::{BONUS_DU_PILLARD, CHANCES_DU_FOUINEUR, Habilete};
 use crate::heros::Heros;
 use crate::horodatage::Horodatage;
+use crate::humain::{Humain, HumainId};
 use crate::inventaire::{ErreurObjet, ErreurPotion, Inventaire, Objet};
 use crate::marchand::{ErreurMarchand, PRIX_DE_LA_POTION, prix_de_revente};
 use crate::monstre::{Monstre, tirer_shiny, tirer_valeurs_internes};
@@ -60,6 +61,8 @@ pub struct Partie {
     /// Indices trouvés sur la piste de l'Apôtre (section 9.4).
     indices_trouves: usize,
     apotres_vaincus: Vec<EspeceId>,
+    /// Un humain vaincu ne revient plus (section 10.7).
+    humains_vaincus: Vec<HumainId>,
     conseils_vus: Vec<Conseil>,
     /// Une au plus par zone, dans l'ordre des départs (section 12.1).
     expeditions_automatiques: Vec<ExpeditionAutomatique>,
@@ -90,6 +93,7 @@ pub struct EtatPartie {
     pub zones_explorees: Vec<ZoneId>,
     pub indices_trouves: usize,
     pub apotres_vaincus: Vec<EspeceId>,
+    pub humains_vaincus: Vec<HumainId>,
     pub conseils_vus: Vec<Conseil>,
     pub expeditions_automatiques: Vec<ExpeditionAutomatique>,
     pub attaques_a_choisir: Vec<AttaqueAChoisir>,
@@ -154,6 +158,7 @@ impl Partie {
             zones_explorees: Vec::new(),
             indices_trouves: 0,
             apotres_vaincus: Vec::new(),
+            humains_vaincus: Vec::new(),
             conseils_vus: Vec::new(),
             expeditions_automatiques: Vec::new(),
             attaques_a_choisir: Vec::new(),
@@ -384,6 +389,10 @@ impl Partie {
         self.apotres_vaincus.contains(apotre.espece().id())
     }
 
+    pub fn humains_vaincus(&self) -> &[HumainId] {
+        &self.humains_vaincus
+    }
+
     pub fn conseils_vus(&self) -> &[Conseil] {
         &self.conseils_vus
     }
@@ -444,6 +453,7 @@ impl Partie {
             zones_explorees: etat.zones_explorees,
             indices_trouves: etat.indices_trouves,
             apotres_vaincus: etat.apotres_vaincus,
+            humains_vaincus: etat.humains_vaincus,
             conseils_vus: etat.conseils_vus,
             expeditions_automatiques: etat.expeditions_automatiques,
             attaques_a_choisir: etat.attaques_a_choisir,
@@ -491,6 +501,12 @@ impl Partie {
         {
             return Ok(expedition.vers_l_antre(apotre.clone()));
         }
+        if let Some(humain) = zone
+            .humain()
+            .filter(|humain| !self.humains_vaincus.contains(humain.id()))
+        {
+            expedition = expedition.contre_l_humain(humain.clone());
+        }
         Ok(expedition)
     }
 
@@ -518,6 +534,25 @@ impl Partie {
     ) -> Result<Combat, ErreurCombat> {
         self.preparer_combat(vec![apotre])
             .map(Combat::contre_un_apotre)
+    }
+
+    /// Ni fuite ni filet contre un humain (section 10.7). Ses monstres entrent
+    /// au codex comme rencontrés.
+    pub fn preparer_combat_contre_humain(
+        &mut self,
+        equipe: Vec<Monstre>,
+    ) -> Result<Combat, ErreurCombat> {
+        self.preparer_combat(equipe).map(Combat::contre_un_humain)
+    }
+
+    /// Un humain vaincu ne revient plus ; son argent va dans le sac (section
+    /// 10.7). Rend cet argent.
+    pub fn vaincre_humain(&mut self, humain: &Humain) -> u32 {
+        if !self.humains_vaincus.contains(humain.id()) {
+            self.humains_vaincus.push(humain.id().clone());
+        }
+        self.sac.ajouter_argent(humain.argent());
+        humain.argent()
     }
 
     /// Après la victoire, capturé ou non, l'Apôtre ne réapparaît plus
@@ -847,6 +882,29 @@ mod tests {
         partie.collection_mut().actualiser_equipe(equipe).unwrap();
         assert_eq!(partie.ouvrir_coffre(0, 10, None), 0);
         assert_eq!(partie.sac().argent(), 32);
+    }
+
+    #[test]
+    fn l_humain_attend_au_bout_de_sa_zone_jusqu_a_sa_defaite() {
+        let brigand = Humain::new(
+            HumainId::new("brigand"),
+            "Brigand",
+            vec![(espece("loup"), Niveau::new(5).unwrap())],
+            60,
+            "",
+            "",
+        )
+        .unwrap();
+        let bois = zone("bois").avec_humain(brigand.clone());
+        let (_, piste) = carte();
+        let mut partie = partie();
+        let expedition = partie.partir_en_expedition(&bois, &piste).unwrap();
+        assert_eq!(expedition.humain(), Some(&brigand));
+        assert_eq!(partie.vaincre_humain(&brigand), 60);
+        assert_eq!(partie.sac().argent(), 60);
+        assert_eq!(partie.humains_vaincus(), &[HumainId::new("brigand")]);
+        let expedition = partie.partir_en_expedition(&bois, &piste).unwrap();
+        assert_eq!(expedition.humain(), None);
     }
 
     #[test]
@@ -1504,6 +1562,7 @@ mod tests {
             zones_explorees: partie.zones_explorees().to_vec(),
             indices_trouves: partie.indices_trouves(),
             apotres_vaincus: partie.apotres_vaincus().to_vec(),
+            humains_vaincus: partie.humains_vaincus().to_vec(),
             conseils_vus: partie.conseils_vus().to_vec(),
             expeditions_automatiques: partie.expeditions_automatiques().to_vec(),
             attaques_a_choisir: partie.attaques_a_choisir().to_vec(),

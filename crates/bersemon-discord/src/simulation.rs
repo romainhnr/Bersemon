@@ -398,6 +398,7 @@ fn l_equipe_et_le_camp_pleins_tiennent_dans_les_limites() {
         zones_explorees: vec![ZoneId::new("lisiere"), ZoneId::new("marais")],
         indices_trouves: 3,
         apotres_vaincus: Vec::new(),
+        humains_vaincus: Vec::new(),
         conseils_vus: Vec::new(),
         expeditions_automatiques: Vec::new(),
         attaques_a_choisir: Vec::new(),
@@ -480,6 +481,7 @@ fn les_attaques_au_camp_se_choisissent_par_menu() {
         zones_explorees: Vec::new(),
         indices_trouves: 0,
         apotres_vaincus: Vec::new(),
+        humains_vaincus: Vec::new(),
         conseils_vus: Vec::new(),
         expeditions_automatiques: Vec::new(),
         attaques_a_choisir: Vec::new(),
@@ -606,6 +608,13 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
         vus.iter()
             .any(|evenement| matches!(evenement, Evenement::Epilogue(_)))
     );
+    // Le brigand barre la Lisière jusqu'à sa défaite, une seule (section
+    // 10.7).
+    let brigands_vaincus = vus
+        .iter()
+        .filter(|evenement| matches!(evenement, Evenement::HumainVaincu { .. }))
+        .count();
+    assert_eq!(brigands_vaincus, 1);
     assert!(
         automatique_faite,
         "expédition automatique jamais accueillie"
@@ -654,6 +663,7 @@ fn toute_l_equipe_se_prepare_d_un_bouton_s_il_y_a_de_la_place_au_camp() {
             zones_explorees: vec![ZoneId::new("lisiere")],
             indices_trouves: 1,
             apotres_vaincus: Vec::new(),
+            humains_vaincus: Vec::new(),
             conseils_vus: Vec::new(),
             expeditions_automatiques: Vec::new(),
             attaques_a_choisir: Vec::new(),

@@ -80,7 +80,19 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             false,
         ),
         Evenement::MonstreRareLaisse => ("Vous le laissez partir.".to_string(), false),
-        Evenement::RecitDeLApotre(recit) => (recit.clone(), false),
+        Evenement::RecitDeLApotre(recit) | Evenement::HumainRencontre(recit) => {
+            (recit.clone(), false)
+        }
+        Evenement::HumainVaincu {
+            texte,
+            argent: montant,
+        } => (
+            format!(
+                "{texte} Vous ramassez {}, qui vont dans le sac.",
+                argent(*montant)
+            ),
+            true,
+        ),
         Evenement::Rencontre(combat) => (crate::combat::rencontre(combat), true),
         Evenement::Combat { evenements, combat } => {
             let lignes: Vec<String> = evenements
@@ -322,6 +334,19 @@ mod tests {
             recit.texte,
             "Grâce à son habileté Fouineur, **Loup** déniche une potion, rangée dans le sac."
         );
+    }
+
+    #[test]
+    fn le_brigand_vaincu_laisse_sa_bourse() {
+        let recit = &raconter(&[Evenement::HumainVaincu {
+            texte: "Le brigand détale.".to_string(),
+            argent: 60,
+        }])[0];
+        assert_eq!(
+            recit.texte,
+            "Le brigand détale. Vous ramassez 60 pièces d'argent, qui vont dans le sac."
+        );
+        assert!(recit.nouveau_paragraphe);
     }
 
     fn brasier() -> bersemon_core::capsule::Capsule {

@@ -216,6 +216,13 @@ pub enum Evenement {
     MonstreRareHostile(Monstre),
     MonstreRareLaisse,
     RecitDeLApotre(String),
+    /// Le texte qui présente l'humain avant le combat (section 10.7).
+    HumainRencontre(String),
+    /// Son texte après la victoire, et l'argent mis dans le sac.
+    HumainVaincu {
+        texte: String,
+        argent: u32,
+    },
     Rencontre(Combat),
     /// Événements d'un tour, avec le combat qui permet de les mettre en texte.
     Combat {
@@ -947,6 +954,7 @@ enum Moment {
 struct FinDeCombat {
     issue: Option<Issue>,
     contre_un_apotre: bool,
+    contre_un_humain: bool,
     /// Le contenu du sac, perdu après une défaite (section 9.3).
     sac_perdu: Inventaire,
 }
@@ -1141,6 +1149,7 @@ impl EnExpedition {
         let fin = FinDeCombat {
             issue: None,
             contre_un_apotre: combat.est_contre_un_apotre(),
+            contre_un_humain: combat.est_contre_un_humain(),
             sac_perdu: Inventaire::default(),
         };
         let bilan = combat.terminer(&mut *contexte.aleatoire);
@@ -1317,8 +1326,9 @@ impl EnExpedition {
         Ok(self.placer(partie, attente.restantes, attente.fin, contexte, evenements))
     }
 
-    /// L'Apôtre vaincu ne réapparaît plus et l'épilogue suit ; une défaite met
-    /// fin à l'expédition (sections 9.3 et 9.4).
+    /// L'Apôtre vaincu ne réapparaît plus et l'épilogue suit ; un humain
+    /// vaincu non plus, et son argent va dans le sac ; une défaite met fin à
+    /// l'expédition (sections 9.3, 9.4 et 10.7).
     fn conclure(
         &mut self,
         partie: &mut Partie,
@@ -1331,6 +1341,16 @@ impl EnExpedition {
                 let apotre = contexte.contenu.piste().apotre();
                 partie.noter_apotre_vaincu(apotre);
                 evenements.push(Evenement::Epilogue(apotre.epilogue().to_string()));
+            }
+            let humain = self.expedition.humain().cloned();
+            if let Some(humain) =
+                humain.filter(|_| fin.contre_un_humain && fin.issue == Some(Issue::Victoire))
+            {
+                let argent = partie.vaincre_humain(&humain);
+                evenements.push(Evenement::HumainVaincu {
+                    texte: humain.apres_victoire().to_string(),
+                    argent,
+                });
             }
             if fin.issue == Some(Issue::Defaite) {
                 self.expedition.noter_defaite();
@@ -1412,6 +1432,16 @@ impl EnExpedition {
                     .expect(EQUIPE_APTE);
                 self.engager(partie, combat, evenements)
             }
+            EvenementExpedition::Humain { humain, equipe } => {
+                // Comme pour l'Apôtre, son texte annonce la rencontre.
+                evenements.push(Evenement::HumainRencontre(
+                    humain.avant_combat().to_string(),
+                ));
+                let combat = partie
+                    .preparer_combat_contre_humain(equipe)
+                    .expect(EQUIPE_APTE);
+                self.engager(partie, combat, evenements)
+            }
         }
     }
 
@@ -1471,6 +1501,7 @@ mod tests {
     use crate::codex::EtatCodex;
     use crate::espece::EspeceId;
     use crate::habilete::Habilete;
+    use crate::humain::HumainId;
     use crate::niveau::Niveau;
     use crate::partie::EtatPartie;
     use crate::stats::ValeursInternes;
@@ -1552,6 +1583,7 @@ mod tests {
             zones_explorees: partie.zones_explorees().to_vec(),
             indices_trouves: partie.indices_trouves(),
             apotres_vaincus: partie.apotres_vaincus().to_vec(),
+            humains_vaincus: partie.humains_vaincus().to_vec(),
             conseils_vus: partie.conseils_vus().to_vec(),
             expeditions_automatiques: partie.expeditions_automatiques().to_vec(),
             attaques_a_choisir: partie.attaques_a_choisir().to_vec(),
@@ -2381,12 +2413,17 @@ mod tests {
             sauvegarde.apotres_vaincus(),
             &[EspeceId::new("baron-pendu")]
         );
+        // Le brigand a barré la Lisière jusqu'à sa défaite (section 10.7).
+        assert_eq!(sauvegarde.humains_vaincus(), &[HumainId::new("brigand")]);
         // Sans expédition automatique ni marchand, l'argent du joueur est
-        // celui des coffres, moins celui des sacs perdus (section 9.3).
+        // celui des coffres et du brigand, moins celui des sacs perdus
+        // (section 9.3).
         let trouve: u32 = vus
             .iter()
             .map(|evenement| match evenement {
-                Evenement::Coffre { argent, .. } => *argent,
+                Evenement::Coffre { argent, .. } | Evenement::HumainVaincu { argent, .. } => {
+                    *argent
+                }
                 _ => 0,
             })
             .sum();
@@ -2399,7 +2436,6 @@ mod tests {
             .sum();
         assert!(trouve > 0);
         assert_eq!(sauvegarde.sac().argent(), trouve - perdu);
-
         assert!(sauvegarde.coffre_du_camp().est_vide());
         // Le marchand rencontré reste au camp : il ne se croise qu'une fois
         // (section 14.2).
@@ -2480,6 +2516,7 @@ mod tests {
             zones_explorees: vec![ZoneId::new("lisiere"), ZoneId::new("marais")],
             indices_trouves: 3,
             apotres_vaincus: Vec::new(),
+            humains_vaincus: Vec::new(),
             conseils_vus: Vec::new(),
             expeditions_automatiques: Vec::new(),
             attaques_a_choisir: Vec::new(),

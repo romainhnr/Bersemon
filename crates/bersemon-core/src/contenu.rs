@@ -18,6 +18,7 @@ use crate::expedition::ParametresCoffre;
 use crate::expedition_automatique::ParametresExpeditionAutomatique;
 use crate::habilete::Habilete;
 use crate::heros::Classe;
+use crate::humain::{Humain, HumainId};
 use crate::niveau::Niveau;
 use crate::stats::Stats;
 use crate::statut::Statut;
@@ -65,6 +66,11 @@ const INDICE_3: &str = "un gibet se dresse sur une île de vase, plus haut que l
 /// Le marchand se réfugie aussitôt au camp, même si l'expédition finit mal
 /// (section 14.2).
 pub const RENCONTRE_DU_MARCHAND: &str = "Un marchand ambulant surgit de la brume, sa carriole chargée de fioles. Les routes ne sont plus sûres pour lui : il part se réfugier au camp, où vous le retrouverez.";
+
+const AVANT_LE_BRIGAND: &str = "Au sortir de la Lisière, un brigand vous barre la route, un loup et un corbeau à ses côtés. Ses bêtes ont faim, et lui aussi.";
+
+const APRES_LE_BRIGAND: &str =
+    "Le brigand détale dans les fourrés, abandonnant ses bêtes et sa bourse.";
 
 const AVANT_LE_BARON: &str = "Sous le gibet, une silhouette se déplie lentement, la corde encore au cou. Le Baron pendu, Apôtre du Démiurge, vous a senti venir. Il n'y aura pas de fuite.";
 
@@ -124,6 +130,20 @@ impl ContenuV1 {
             espece: trouver("schnoz"),
             pacifique: true,
         };
+        // Il attend au bout de la Lisière tant qu'il n'est pas vaincu
+        // (section 10.7).
+        let brigand = Humain::new(
+            HumainId::new("brigand"),
+            "Brigand",
+            vec![
+                (trouver("loup"), niveau(7)),
+                (trouver("corbeau"), niveau(8)),
+            ],
+            60,
+            AVANT_LE_BRIGAND,
+            APRES_LE_BRIGAND,
+        )
+        .expect("brigand conforme aux règles");
         let lisiere = Zone::new(
             ZoneId::new("lisiere"),
             "Lisière du Bois-Sombre",
@@ -139,6 +159,7 @@ impl ContenuV1 {
             coffre(10..=25, capsules_de("lisiere")),
         )
         .and_then(|zone| zone.avec_monstre_cache(schnoz()))
+        .map(|zone| zone.avec_humain(brigand))
         .expect("Lisière conforme aux règles");
         let marais = Zone::new(
             ZoneId::new("marais"),
@@ -1148,6 +1169,29 @@ mod tests {
                 "{habilete:?} sans espèce"
             );
         }
+    }
+
+    #[test]
+    fn le_brigand_attend_au_bout_de_la_lisiere_avec_un_loup_et_un_corbeau() {
+        let contenu = ContenuV1::new();
+        let brigand = contenu.zones()[0].humain().unwrap();
+        assert_eq!(brigand.id().as_str(), "brigand");
+        assert_eq!(brigand.argent(), 60);
+        let equipe: Vec<(String, u8)> = brigand
+            .generer_equipe()
+            .iter()
+            .map(|monstre| {
+                (
+                    monstre.espece().id().as_str().to_string(),
+                    monstre.niveau().valeur(),
+                )
+            })
+            .collect();
+        assert_eq!(
+            equipe,
+            vec![("loup".to_string(), 7), ("corbeau".to_string(), 8)]
+        );
+        assert!(contenu.zones()[1].humain().is_none());
     }
 
     #[test]
