@@ -32,6 +32,7 @@ pub mod monstre;
 pub mod niveau;
 pub mod nom;
 pub mod partie;
+pub mod pierre;
 pub mod ressource;
 pub mod sauvegarde;
 pub mod soin;

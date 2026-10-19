@@ -22,6 +22,9 @@ pub fn prix_du_soin(soin: Soin) -> u32 {
 /// En pièces d'argent (section 5.9, Q81).
 pub const PRIX_CAPSULE_D_HABILETE: u32 = 200;
 
+/// En pièces d'argent, pour chaque pierre (section 5.4, Q84).
+pub const PRIX_PIERRE_D_EVOLUTION: u32 = 300;
+
 /// Le niveau multiplié par le total des stats de base est divisé par ce
 /// nombre (section 14.5).
 const DIVISEUR_DE_REVENTE: u32 = 50;

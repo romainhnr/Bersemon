@@ -13,12 +13,15 @@ use crate::collection::ErreurCollection;
 use crate::espece::{Espece, EspeceId};
 use crate::monstre::Monstre;
 use crate::niveau::Niveau;
+use crate::pierre::PierreDEvolution;
 
 /// Ce qu'il faut à un monstre pour évoluer.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ConditionEvolution {
     /// Avoir atteint ce niveau.
     Niveau(Niveau),
+    /// Recevoir cette pierre, au camp, à tout niveau.
+    Pierre(PierreDEvolution),
 }
 
 /// L'évolution d'une espèce vers une autre, désignée par son identifiant :
@@ -53,16 +56,26 @@ impl Evolution {
         &self.attaque
     }
 
-    /// Une condition de niveau se remplit au camp comme après un combat.
+    /// La pierre qu'il faut utiliser au camp, si c'est la condition.
+    pub fn pierre(&self) -> Option<PierreDEvolution> {
+        match self.condition {
+            ConditionEvolution::Pierre(pierre) => Some(pierre),
+            ConditionEvolution::Niveau(_) => None,
+        }
+    }
+
+    /// Une condition de niveau se remplit au camp comme après un combat ;
+    /// une pierre ne se donne qu'au camp, sur demande du joueur.
     fn est_remplie(&self, monstre: &Monstre) -> bool {
         match &self.condition {
             ConditionEvolution::Niveau(niveau) => monstre.niveau() >= *niveau,
+            ConditionEvolution::Pierre(_) => false,
         }
     }
 }
 
 /// L'espèce en laquelle ce monstre peut évoluer maintenant, s'il en remplit
-/// la condition.
+/// la condition, sans pierre.
 pub fn evolution_possible(monstre: &Monstre, catalogue: &dyn Catalogue) -> Option<Espece> {
     let evolution = monstre.espece().evolution()?;
     if !evolution.est_remplie(monstre) {
@@ -113,6 +126,8 @@ pub enum ErreurEvolution {
     Collection(ErreurCollection),
     /// Son espèce n'évolue pas, ou il n'en remplit pas la condition.
     ImpossiblePourLInstant,
+    /// Ni le sac ni le coffre n'ont la pierre qu'il lui faut.
+    PierreManquante(PierreDEvolution),
 }
 
 impl fmt::Display for ErreurEvolution {
@@ -121,6 +136,9 @@ impl fmt::Display for ErreurEvolution {
             ErreurEvolution::Collection(erreur) => write!(f, "{erreur}"),
             ErreurEvolution::ImpossiblePourLInstant => {
                 write!(f, "ce monstre ne peut pas évoluer pour l'instant")
+            }
+            ErreurEvolution::PierreManquante(pierre) => {
+                write!(f, "il lui faut une {}", pierre.nom().to_lowercase())
             }
         }
     }

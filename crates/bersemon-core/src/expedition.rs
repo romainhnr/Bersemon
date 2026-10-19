@@ -11,6 +11,7 @@ use crate::capsule::Capsule;
 use crate::expedition_automatique::ErreurParametres;
 use crate::humain::Humain;
 use crate::monstre::Monstre;
+use crate::pierre::PierreDEvolution;
 use crate::traque::Apotre;
 use crate::zone::{MonstreRare, Zone, tirer_entre};
 
@@ -19,8 +20,12 @@ const POTIONS_MIN: u32 = 1;
 const POTIONS_MAX: u32 = 2;
 /// Un coffre sur 5 contient une capsule d'attaque (Q69).
 const CHANCE_DE_CAPSULE: u32 = 20;
-/// Un coffre sur 10 contient une capsule d'habileté (section 5.9, Q81).
+/// Un coffre sur 10 contient une capsule d'habileté (section 5.9, Q81), et
+/// un autre sur 10 une pierre d'évolution, chacune pour moitié (section 5.4,
+/// Q84) : un même tirage sur 100 décide des deux, 1 à 10 pour la capsule,
+/// puis 5 chances par pierre.
 const CHANCE_DE_CAPSULE_D_HABILETE: u32 = 10;
+const CHANCE_PAR_PIERRE: u32 = 5;
 
 /// Contenu des coffres propre à chaque zone (section 14.5).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -60,6 +65,7 @@ pub enum EvenementExpedition {
         argent: u32,
         capsule: Option<Capsule>,
         capsule_d_habilete: bool,
+        pierre: Option<PierreDEvolution>,
     },
     MonstreRare(MonstreRare),
     /// Combat, sans fuite, contre l'Apôtre (section 9.4).
@@ -281,12 +287,18 @@ impl Expedition {
         if let Some(capsule) = &capsule {
             self.capsules_trouvees.push(capsule.clone());
         }
-        let capsule_d_habilete = aleatoire.tirer(1..=100) <= CHANCE_DE_CAPSULE_D_HABILETE;
+        let tirage = aleatoire.tirer(1..=100);
+        let capsule_d_habilete = tirage <= CHANCE_DE_CAPSULE_D_HABILETE;
+        let pierre = tirage
+            .checked_sub(CHANCE_DE_CAPSULE_D_HABILETE + 1)
+            .map(|rang| (rang / CHANCE_PAR_PIERRE) as usize)
+            .and_then(|rang| PierreDEvolution::TOUTES.get(rang).copied());
         EvenementExpedition::Coffre {
             potions,
             argent,
             capsule,
             capsule_d_habilete,
+            pierre,
         }
     }
 
@@ -364,12 +376,13 @@ mod tests {
             Some(EvenementExpedition::Combat(groupe)) if groupe.len() == 1
         ));
         assert_eq!(
-            expedition.etape_suivante(&mut AleatoireScripte::new([81, 2, 11])),
+            expedition.etape_suivante(&mut AleatoireScripte::new([81, 2, 21])),
             Some(EvenementExpedition::Coffre {
                 potions: 2,
                 argent: 10,
                 capsule: None,
-                capsule_d_habilete: false
+                capsule_d_habilete: false,
+                pierre: None
             })
         );
         let mut rare = vec![96];
@@ -478,16 +491,32 @@ mod tests {
             ParametresCoffre::new(10..=25, Vec::new()).unwrap(),
         )
         .unwrap();
-        let mut expedition = Expedition::partir(zone);
+        let mut expedition = Expedition::partir(zone.clone());
         assert_eq!(
             expedition.etape_suivante(&mut AleatoireScripte::new([90, 1, 25, 10])),
             Some(EvenementExpedition::Coffre {
                 potions: 1,
                 argent: 25,
                 capsule: None,
-                capsule_d_habilete: true
+                capsule_d_habilete: true,
+                pierre: None
             })
         );
+        // Le même tirage donne une pierre, de 11 à 20.
+        for (tirage, pierre) in [
+            (11, Some(PierreDEvolution::Braise)),
+            (15, Some(PierreDEvolution::Braise)),
+            (16, Some(PierreDEvolution::Lune)),
+            (20, Some(PierreDEvolution::Lune)),
+            (21, None),
+        ] {
+            let mut expedition = Expedition::partir(zone.clone());
+            assert!(matches!(
+                expedition.etape_suivante(&mut AleatoireScripte::new([90, 1, 25, tirage])),
+                Some(EvenementExpedition::Coffre { capsule_d_habilete: false, pierre: trouvee, .. })
+                    if trouvee == pierre
+            ));
+        }
     }
 
     #[test]

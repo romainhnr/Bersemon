@@ -1,4 +1,4 @@
-//! Format JSON de la sauvegarde, version 12, et sa conversion vers les types
+//! Format JSON de la sauvegarde, version 13, et sa conversion vers les types
 //! du noyau. Les énumérations sont écrites avec des noms fixés ici, et non
 //! avec les noms Rust, pour qu'un renommage dans le code ne casse pas les
 //! sauvegardes existantes.
@@ -23,6 +23,7 @@ use bersemon_core::monstre::{EtatMonstre, Monstre};
 use bersemon_core::niveau::Niveau;
 use bersemon_core::nom::Nom;
 use bersemon_core::partie::{AttaqueAChoisir, EtatPartie, Partie};
+use bersemon_core::pierre::PierreDEvolution;
 use bersemon_core::ressource::RessourceId;
 use bersemon_core::sauvegarde::ErreurSauvegarde;
 use bersemon_core::soin::Soin;
@@ -33,7 +34,7 @@ use bersemon_core::zone::ZoneId;
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 12;
+pub(crate) const VERSION: u64 = 13;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -55,11 +56,12 @@ const VERSION_DE_MALVOISE: u64 = 11;
 /// remède, la grande potion, l'élixir et les âmes recueillies, et Malvoise
 /// remplace le marchand ; avec la version 12, une attaque à choisir peut
 /// désigner un monstre de l'équipe, et s'ajoutent les âmes portées et à
-/// retrouver, les capsules d'habileté et les ressources. Une sauvegarde d'une version
+/// retrouver, les capsules d'habileté et les ressources ; la version 13
+/// ajoute les pierres d'évolution. Une sauvegarde d'une version
 /// précédente se lit avec cette structure : les champs ajoutés y prennent
 /// leur valeur de début de partie.
 #[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct SauvegardeV12 {
+pub(crate) struct SauvegardeV13 {
     pub(crate) version: u64,
     heros: HerosV1,
     equipe: Vec<MonstreV1>,
@@ -129,6 +131,31 @@ struct InventaireV7 {
     /// Depuis la version 12 (section 14.3).
     #[serde(default)]
     ressources: Vec<RessourceV12>,
+    /// Depuis la version 13 (section 5.4).
+    #[serde(default)]
+    pierres: Vec<PierreV13>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct PierreV13 {
+    pierre: String,
+    nombre: u32,
+}
+
+fn pierre_en_texte(pierre: PierreDEvolution) -> &'static str {
+    match pierre {
+        PierreDEvolution::Braise => "braise",
+        PierreDEvolution::Lune => "lune",
+    }
+}
+
+fn lire_pierre(texte: &str) -> Result<PierreDEvolution, ErreurSauvegarde> {
+    PierreDEvolution::TOUTES
+        .into_iter()
+        .find(|pierre| pierre_en_texte(*pierre) == texte)
+        .ok_or_else(|| {
+            ErreurSauvegarde::Incoherente(format!("pierre d'évolution inconnue : {texte}"))
+        })
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -200,9 +227,9 @@ struct CodexV1 {
     capturees: Vec<String>,
 }
 
-pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV12 {
+pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV13 {
     let collection = partie.collection();
-    SauvegardeV12 {
+    SauvegardeV13 {
         version: VERSION,
         heros: HerosV1 {
             nom: partie.heros().nom().as_str().to_string(),
@@ -293,6 +320,14 @@ fn depuis_inventaire(inventaire: &Inventaire) -> InventaireV7 {
                 nombre: *nombre,
             })
             .collect(),
+        pierres: inventaire
+            .pierres()
+            .iter()
+            .map(|(pierre, nombre)| PierreV13 {
+                pierre: pierre_en_texte(*pierre).to_string(),
+                nombre: *nombre,
+            })
+            .collect(),
     }
 }
 
@@ -321,11 +356,14 @@ fn vers_inventaire(
             resultat.ajouter_ressources(connue, ressource.nombre);
         }
     }
+    for pierre in inventaire.pierres {
+        resultat.ajouter_pierres(lire_pierre(&pierre.pierre)?, pierre.nombre);
+    }
     Ok(resultat)
 }
 
 pub(crate) fn vers_partie(
-    sauvegarde: SauvegardeV12,
+    sauvegarde: SauvegardeV13,
     catalogue: &dyn Catalogue,
 ) -> Result<Partie, ErreurSauvegarde> {
     let heros = Heros::new(

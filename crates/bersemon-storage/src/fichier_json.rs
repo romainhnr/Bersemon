@@ -8,7 +8,7 @@ use bersemon_core::catalogue::Catalogue;
 use bersemon_core::partie::Partie;
 use bersemon_core::sauvegarde::{ErreurSauvegarde, SauvegardeRepository};
 
-use crate::format::{self, SauvegardeV12, VERSION};
+use crate::format::{self, SauvegardeV13, VERSION};
 
 pub struct FichierJson {
     chemin: PathBuf,
@@ -38,7 +38,7 @@ impl FichierJson {
         if !(1..=VERSION).contains(&version) {
             return Err(ErreurSauvegarde::VersionInconnue(version));
         }
-        let sauvegarde: SauvegardeV12 = serde_json::from_value(valeur)
+        let sauvegarde: SauvegardeV13 = serde_json::from_value(valeur)
             .map_err(|erreur| ErreurSauvegarde::Illisible(erreur.to_string()))?;
         format::vers_partie(sauvegarde, catalogue)
     }
@@ -100,6 +100,7 @@ mod tests {
     use bersemon_core::niveau::Niveau;
     use bersemon_core::nom::Nom;
     use bersemon_core::partie::{AttaqueAChoisir, EtatPartie};
+    use bersemon_core::pierre::PierreDEvolution;
     use bersemon_core::ressource::{Ressource, RessourceId};
     use bersemon_core::soin::Soin;
     use bersemon_core::stats::{Stats, ValeursInternes};
@@ -327,7 +328,9 @@ mod tests {
                 .avec_soins(Soin::GrandePotion, 1)
                 .avec_soins(Soin::Elixir, 3)
                 .avec_capsules_d_habilete(2)
-                .avec_ressources(croc(), 4),
+                .avec_ressources(croc(), 4)
+                .avec_pierres(PierreDEvolution::Lune, 2)
+                .avec_pierres(PierreDEvolution::Braise, 1),
             marchand_au_camp: true,
             ames_donnees: vec![bertrand()],
             ames_portees: vec![grete()],
@@ -539,10 +542,10 @@ mod tests {
 
     #[test]
     fn version_inconnue() {
-        let texte = texte_de_partie().replacen("\"version\":12", "\"version\":13", 1);
+        let texte = texte_de_partie().replacen("\"version\":13", "\"version\":14", 1);
         assert_eq!(
             charger_texte(&texte),
-            Err(ErreurSauvegarde::VersionInconnue(13))
+            Err(ErreurSauvegarde::VersionInconnue(14))
         );
     }
 
@@ -724,6 +727,29 @@ mod tests {
         assert!(partie.humains_vaincus().is_empty());
         assert!(partie.conseils_vus().is_empty());
         assert_eq!(partie.collection(), partie_complete().collection());
+    }
+
+    #[test]
+    fn avant_la_version_13_ni_sac_ni_coffre_n_ont_de_pierre() {
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        let objet = valeur.as_object_mut().unwrap();
+        objet.insert("version".to_string(), 12.into());
+        for inventaire in ["sac", "coffre_du_camp"] {
+            objet[inventaire].as_object_mut().unwrap().remove("pierres");
+        }
+        let partie = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        assert!(partie.coffre_du_camp().pierres().is_empty());
+        assert!(partie.sac().pierres().is_empty());
+        assert_eq!(partie.coffre_du_camp().capsules_d_habilete(), 2);
+    }
+
+    #[test]
+    fn pierre_inconnue() {
+        let texte = texte_de_partie().replace("\"lune\"", "\"soleil\"");
+        assert!(matches!(
+            charger_texte(&texte),
+            Err(ErreurSauvegarde::Incoherente(_))
+        ));
     }
 
     #[test]

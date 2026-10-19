@@ -34,6 +34,7 @@ use crate::marchand::ErreurMarchand;
 use crate::monstre::{Monstre, RapportExperience};
 use crate::nom::{ErreurNom, Nom};
 use crate::partie::{Partie, creer_monstre_de_depart};
+use crate::pierre::PierreDEvolution;
 use crate::ressource::{Ressource, RessourceId};
 use crate::sauvegarde::{ErreurSauvegarde, SauvegardeRepository};
 use crate::soin::{EffetDuSoin, ErreurSoin, Soin, Soins, soin_sans_effet, verifier_cible};
@@ -91,6 +92,8 @@ pub enum Choix {
     DonnerAme(MarchandId),
     /// Au camp, chez Malvoise, sans confirmation (section 5.9).
     AcheterCapsulesDHabilete(u32),
+    /// Au camp, chez Malvoise, sans confirmation (section 5.4).
+    AcheterPierres(PierreDEvolution, u32),
     /// Au camp, chez Malvoise, sans confirmation : toutes les ressources de
     /// cette sorte, du sac et du coffre (section 14.3).
     VendreRessources(RessourceId),
@@ -241,10 +244,12 @@ pub enum Confirmation {
         monstre: Monstre,
         nouvelle: Habilete,
     },
-    /// L'évolution est définitive (section 5.4).
+    /// L'évolution est définitive, et consomme la pierre éventuelle (section
+    /// 5.4).
     Evoluer {
         monstre: Monstre,
         vers: Espece,
+        pierre: Option<PierreDEvolution>,
     },
 }
 
@@ -274,6 +279,8 @@ pub enum Evenement {
         capsule: Option<Capsule>,
         /// Elle va dans le sac (section 5.9).
         capsule_d_habilete: bool,
+        /// Elle va dans le sac (section 5.4).
+        pierre: Option<PierreDEvolution>,
     },
     MonstreRarePacifique(Monstre),
     MonstreRareHostile(Monstre),
@@ -386,6 +393,11 @@ pub enum Evenement {
         avec_une_ame: bool,
     },
     CapsulesDHabileteAchetees {
+        nombre: u32,
+        prix: u32,
+    },
+    PierresAchetees {
+        pierre: PierreDEvolution,
         nombre: u32,
         prix: u32,
     },
@@ -899,6 +911,19 @@ impl EnJeu {
                 sauvegarder(&self.partie, contexte.depot, evenements);
                 Ok(Reponse::Faite)
             }
+            Choix::AcheterPierres(pierre, nombre) => {
+                let prix = self
+                    .partie
+                    .acheter_pierres(*pierre, *nombre)
+                    .map_err(ErreurChoix::Marchand)?;
+                evenements.push(Evenement::PierresAchetees {
+                    pierre: *pierre,
+                    nombre: *nombre,
+                    prix,
+                });
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
             Choix::AcheterCapsulesDHabilete(nombre) => {
                 let prix = self
                     .partie
@@ -942,13 +967,14 @@ impl EnJeu {
                 if !confirme {
                     // Une évolution impossible est refusée sans demander de
                     // confirmation.
-                    let (monstre, vers) = self
+                    let (monstre, vers, pierre) = self
                         .partie
                         .estimer_evolution(*emplacement, contexte.contenu)
                         .map_err(ErreurChoix::Evolution)?;
                     return Ok(Reponse::a_confirmer(Confirmation::Evoluer {
                         monstre,
                         vers,
+                        pierre,
                     }));
                 }
                 let (avant, resultat) = self
@@ -1786,10 +1812,14 @@ impl EnExpedition {
                 argent,
                 capsule,
                 capsule_d_habilete,
+                pierre,
             } => {
                 let argent_du_pillard = partie.ouvrir_coffre(potions, argent, capsule.clone());
                 if capsule_d_habilete {
                     partie.trouver_capsule_d_habilete();
+                }
+                if let Some(pierre) = pierre {
+                    partie.trouver_pierre(pierre);
                 }
                 evenements.push(Evenement::Coffre {
                     potions,
@@ -1797,6 +1827,7 @@ impl EnExpedition {
                     argent_du_pillard,
                     capsule,
                     capsule_d_habilete,
+                    pierre,
                 });
                 self.apres_l_etape(partie, evenements)
             }
@@ -2235,7 +2266,8 @@ mod tests {
                     argent: 12,
                     argent_du_pillard: 0,
                     capsule: None,
-                    capsule_d_habilete: false
+                    capsule_d_habilete: false,
+                    pierre: None
                 },
                 Evenement::Conseil(Conseil::PremierArretEntreDeuxEtapes),
             ]
@@ -3062,7 +3094,11 @@ mod tests {
         let mut deroulement = au_camp(partie_de(salamandre(&contenu, 16)), &contenu, &depot);
         let evoluer = Choix::FaireEvoluer(Emplacement::Equipe(0));
         repondre_sans_tirage(&mut deroulement, evoluer, &contenu, &depot).unwrap();
-        let Attente::Confirmation(Confirmation::Evoluer { monstre, vers }) = deroulement.attente()
+        let Attente::Confirmation(Confirmation::Evoluer {
+            monstre,
+            vers,
+            pierre: None,
+        }) = deroulement.attente()
         else {
             panic!("confirmation attendue");
         };
@@ -3104,6 +3140,62 @@ mod tests {
                 ErreurEvolution::ImpossiblePourLInstant
             ))
         );
+    }
+
+    #[test]
+    fn une_pierre_fait_evoluer_au_camp_et_se_consomme() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let feu_follet = Monstre::creer(
+            contenu.espece(&EspeceId::new("feu-follet")).unwrap(),
+            Niveau::new(8).unwrap(),
+            ValeursInternes::default(),
+            false,
+        )
+        .unwrap();
+        let mut etat = etat_de(&partie_de(feu_follet));
+        etat.marchand_au_camp = true;
+        etat.coffre_du_camp = Inventaire::new(300, 0, Vec::new());
+        let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
+        let evoluer = Choix::FaireEvoluer(Emplacement::Equipe(0));
+        // Ni le niveau ni un combat ne suffisent : il faut la pierre.
+        assert_eq!(
+            repondre_sans_tirage(&mut deroulement, evoluer.clone(), &contenu, &depot),
+            Err(ErreurChoix::Evolution(ErreurEvolution::PierreManquante(
+                PierreDEvolution::Braise
+            )))
+        );
+        let achat = Choix::AcheterPierres(PierreDEvolution::Braise, 1);
+        let evenements = repondre_sans_tirage(&mut deroulement, achat, &contenu, &depot).unwrap();
+        assert_eq!(
+            evenements,
+            vec![Evenement::PierresAchetees {
+                pierre: PierreDEvolution::Braise,
+                nombre: 1,
+                prix: 300
+            }]
+        );
+        repondre_sans_tirage(&mut deroulement, evoluer, &contenu, &depot).unwrap();
+        assert!(matches!(
+            deroulement.attente(),
+            Attente::Confirmation(Confirmation::Evoluer {
+                vers,
+                pierre: Some(PierreDEvolution::Braise),
+                ..
+            }) if vers.id().as_str() == "lanterne-des-morts"
+        ));
+        let evenements =
+            repondre_sans_tirage(&mut deroulement, Choix::Oui, &contenu, &depot).unwrap();
+        // Au niveau 8, il connaît 2 attaques : il apprend Flamme funèbre.
+        assert!(matches!(
+            &evenements[..],
+            [Evenement::Evolution { apres, attaque: Some(attaque), .. }]
+                if apres.espece().id().as_str() == "lanterne-des-morts"
+                    && attaque.id().as_str() == "flamme-funebre"
+        ));
+        let partie = deroulement.partie().unwrap();
+        assert_eq!(partie.nombre_de_pierres(PierreDEvolution::Braise), 0);
+        assert_eq!(deroulement.attente(), Attente::Camp);
     }
 
     #[test]

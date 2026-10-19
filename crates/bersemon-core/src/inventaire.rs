@@ -1,7 +1,7 @@
 //! Objets du joueur, rangés dans le sac, qu'il emporte en expédition
 //! manuelle, ou dans le coffre du camp, où ils sont à l'abri (sections 13.3
-//! et 14.4) : argent, soins, capsules d'attaque, capsules d'habileté et
-//! ressources.
+//! et 14.4) : argent, soins, capsules d'attaque, capsules d'habileté,
+//! ressources et pierres d'évolution.
 
 use std::fmt;
 
@@ -9,6 +9,7 @@ use crate::aleatoire::Aleatoire;
 use crate::attaque::AttaqueId;
 use crate::capsule::Capsule;
 use crate::monstre::Monstre;
+use crate::pierre::PierreDEvolution;
 use crate::ressource::{Ressource, RessourceId};
 use crate::soin::{EffetDuSoin, ErreurSoin, Soin, Soins, appliquer_soin, verifier_cible};
 
@@ -26,6 +27,9 @@ pub struct Inventaire {
     /// Dans l'ordre où elles ont été trouvées, sans nombre nul (section
     /// 14.3).
     ressources: Vec<(Ressource, u32)>,
+    /// Dans l'ordre de `PierreDEvolution::TOUTES`, sans nombre nul (section
+    /// 5.4).
+    pierres: Vec<(PierreDEvolution, u32)>,
 }
 
 /// Ce que le joueur déplace entre le sac et le coffre du camp.
@@ -36,6 +40,7 @@ pub enum Objet {
     Capsule(AttaqueId),
     CapsulesDHabilete(u32),
     Ressources(RessourceId, u32),
+    Pierres(PierreDEvolution, u32),
 }
 
 impl Inventaire {
@@ -49,6 +54,7 @@ impl Inventaire {
             capsules: Vec::new(),
             capsules_d_habilete: 0,
             ressources: Vec::new(),
+            pierres: Vec::new(),
         };
         inventaire.soins.ajouter(Soin::Potion, potions);
         for capsule in capsules {
@@ -73,6 +79,47 @@ impl Inventaire {
 
     pub fn ajouter_capsules_d_habilete(&mut self, nombre: u32) {
         self.capsules_d_habilete = self.capsules_d_habilete.saturating_add(nombre);
+    }
+
+    pub fn pierres(&self) -> &[(PierreDEvolution, u32)] {
+        &self.pierres
+    }
+
+    pub fn nombre_de_pierres(&self, pierre: PierreDEvolution) -> u32 {
+        self.pierres
+            .iter()
+            .find(|(presente, _)| *presente == pierre)
+            .map_or(0, |(_, nombre)| *nombre)
+    }
+
+    pub fn ajouter_pierres(&mut self, pierre: PierreDEvolution, nombre: u32) {
+        if nombre == 0 {
+            return;
+        }
+        match self
+            .pierres
+            .iter_mut()
+            .find(|(presente, _)| *presente == pierre)
+        {
+            Some((_, present)) => *present = present.saturating_add(nombre),
+            None => {
+                self.pierres.push((pierre, nombre));
+                let rang = |pierre: &PierreDEvolution| {
+                    PierreDEvolution::TOUTES.iter().position(|p| p == pierre)
+                };
+                self.pierres.sort_by_key(|(pierre, _)| rang(pierre));
+            }
+        }
+    }
+
+    pub fn avec_pierres(mut self, pierre: PierreDEvolution, nombre: u32) -> Self {
+        self.ajouter_pierres(pierre, nombre);
+        self
+    }
+
+    /// Rend `false` sans rien changer s'il n'y en a pas.
+    pub(crate) fn utiliser_pierre(&mut self, pierre: PierreDEvolution) -> bool {
+        self.retirer(&Objet::Pierres(pierre, 1)).is_ok()
     }
 
     pub fn ressources(&self) -> &[(Ressource, u32)] {
@@ -149,6 +196,7 @@ impl Inventaire {
             && self.capsules.is_empty()
             && self.capsules_d_habilete == 0
             && self.ressources.is_empty()
+            && self.pierres.is_empty()
     }
 
     pub fn contient_capsule(&self, id: &AttaqueId) -> bool {
@@ -187,6 +235,9 @@ impl Inventaire {
         for (ressource, nombre) in autre.ressources {
             self.ajouter_ressources(ressource, nombre);
         }
+        for (pierre, nombre) in autre.pierres {
+            self.ajouter_pierres(pierre, nombre);
+        }
     }
 
     /// Retire l'objet et le rend, seul dans un inventaire, sans rien changer
@@ -197,7 +248,8 @@ impl Inventaire {
             Objet::Argent(0)
             | Objet::Soins(_, 0)
             | Objet::CapsulesDHabilete(0)
-            | Objet::Ressources(_, 0) => {
+            | Objet::Ressources(_, 0)
+            | Objet::Pierres(_, 0) => {
                 return Err(ErreurObjet::QuantiteNulle);
             }
             Objet::Argent(montant) => {
@@ -243,6 +295,21 @@ impl Inventaire {
                 if *present == 0 {
                     self.ressources.remove(position);
                 }
+            }
+            Objet::Pierres(pierre, nombre) => {
+                if *nombre > self.nombre_de_pierres(*pierre) {
+                    return Err(ErreurObjet::Insuffisant);
+                }
+                let position = self
+                    .pierres
+                    .iter()
+                    .position(|(presente, _)| presente == pierre)
+                    .expect("pierre présente");
+                self.pierres[position].1 -= nombre;
+                if self.pierres[position].1 == 0 {
+                    self.pierres.remove(position);
+                }
+                retire.ajouter_pierres(*pierre, *nombre);
             }
         }
         Ok(retire)
@@ -423,5 +490,33 @@ mod tests {
         let mut coffre = Inventaire::new(5, 0, Vec::new());
         coffre.ajouter(capsule_a);
         assert_eq!(coffre, Inventaire::new(5, 0, vec![capsule("a")]));
+    }
+
+    #[test]
+    fn les_pierres_se_rangent_dans_l_ordre_et_se_deplacent_par_lots() {
+        let mut sac = Inventaire::default()
+            .avec_pierres(PierreDEvolution::Lune, 1)
+            .avec_pierres(PierreDEvolution::Braise, 2);
+        assert_eq!(
+            sac.pierres(),
+            &[(PierreDEvolution::Braise, 2), (PierreDEvolution::Lune, 1)]
+        );
+        assert!(!sac.est_vide());
+        assert_eq!(
+            sac.retirer(&Objet::Pierres(PierreDEvolution::Lune, 2)),
+            Err(ErreurObjet::Insuffisant)
+        );
+        let lot = sac
+            .retirer(&Objet::Pierres(PierreDEvolution::Lune, 1))
+            .unwrap();
+        assert_eq!(lot.nombre_de_pierres(PierreDEvolution::Lune), 1);
+        assert_eq!(sac.pierres(), &[(PierreDEvolution::Braise, 2)]);
+        assert!(sac.utiliser_pierre(PierreDEvolution::Braise));
+        assert!(sac.utiliser_pierre(PierreDEvolution::Braise));
+        assert!(!sac.utiliser_pierre(PierreDEvolution::Braise));
+        assert!(sac.est_vide());
+        let mut coffre = Inventaire::default();
+        coffre.ajouter(lot);
+        assert_eq!(coffre.nombre_de_pierres(PierreDEvolution::Lune), 1);
     }
 }

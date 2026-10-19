@@ -25,9 +25,12 @@ use crate::heros::Heros;
 use crate::horodatage::Horodatage;
 use crate::humain::{Humain, HumainId, IaHumain};
 use crate::inventaire::{ErreurObjet, Inventaire, Objet};
-use crate::marchand::{ErreurMarchand, PRIX_CAPSULE_D_HABILETE, prix_de_revente, prix_du_soin};
+use crate::marchand::{
+    ErreurMarchand, PRIX_CAPSULE_D_HABILETE, PRIX_PIERRE_D_EVOLUTION, prix_de_revente, prix_du_soin,
+};
 use crate::monstre::{Monstre, tirer_shiny, tirer_valeurs_internes};
 use crate::niveau::Niveau;
+use crate::pierre::PierreDEvolution;
 use crate::ressource::{Ressource, RessourceId};
 use crate::soin::{EffetDuSoin, ErreurSoin, Soin};
 use crate::traque::{Apotre, Indice, Piste};
@@ -502,34 +505,80 @@ impl Partie {
         }
     }
 
-    /// Le monstre et l'espèce en laquelle il évoluerait au camp, sans rien
-    /// changer : de quoi demander confirmation. Refuse ce que refuserait
-    /// `faire_evoluer`.
+    /// Le monstre, l'espèce en laquelle il évoluerait au camp et la pierre
+    /// que l'évolution consommerait, sans rien changer : de quoi demander
+    /// confirmation. Refuse ce que refuserait `faire_evoluer`.
     pub fn estimer_evolution(
         &self,
         emplacement: Emplacement,
         catalogue: &dyn Catalogue,
-    ) -> Result<(Monstre, Espece), ErreurEvolution> {
+    ) -> Result<(Monstre, Espece, Option<PierreDEvolution>), ErreurEvolution> {
         let monstre = self
             .collection
             .monstre(emplacement)
             .ok_or(ErreurEvolution::Collection(
                 ErreurCollection::EmplacementInexistant(emplacement),
             ))?;
-        let vers = evolution_possible(monstre, catalogue)
-            .ok_or(ErreurEvolution::ImpossiblePourLInstant)?;
-        Ok((monstre.clone(), vers))
+        let evolution = monstre.espece().evolution();
+        let pierre = evolution.and_then(|evolution| evolution.pierre());
+        let vers = match pierre {
+            Some(pierre) => {
+                if self.nombre_de_pierres(pierre) == 0 {
+                    return Err(ErreurEvolution::PierreManquante(pierre));
+                }
+                evolution.and_then(|evolution| catalogue.espece(evolution.vers()))
+            }
+            None => evolution_possible(monstre, catalogue),
+        };
+        let vers = vers.ok_or(ErreurEvolution::ImpossiblePourLInstant)?;
+        Ok((monstre.clone(), vers, pierre))
+    }
+
+    /// Celles du sac et du coffre : au camp, elles servent toutes (section
+    /// 5.4).
+    pub fn nombre_de_pierres(&self, pierre: PierreDEvolution) -> u32 {
+        self.sac
+            .nombre_de_pierres(pierre)
+            .saturating_add(self.coffre_du_camp.nombre_de_pierres(pierre))
+    }
+
+    /// Au camp, sans confirmation ; les pierres vont dans le coffre (section
+    /// 5.4). Rend le prix payé.
+    pub fn acheter_pierres(
+        &mut self,
+        pierre: PierreDEvolution,
+        nombre: u32,
+    ) -> Result<u32, ErreurMarchand> {
+        self.verifier_marchand()?;
+        if nombre == 0 {
+            return Err(ErreurMarchand::QuantiteNulle);
+        }
+        let prix = nombre.saturating_mul(PRIX_PIERRE_D_EVOLUTION);
+        self.payer(prix)?;
+        self.coffre_du_camp.ajouter_pierres(pierre, nombre);
+        Ok(prix)
+    }
+
+    /// Trouvée dans un coffre, elle va dans le sac (section 5.4).
+    pub fn trouver_pierre(&mut self, pierre: PierreDEvolution) {
+        self.sac.ajouter_pierres(pierre, 1);
     }
 
     /// Au camp, après confirmation (section 5.4) : la forme évoluée compte
-    /// comme capturée au codex. Une attaque d'évolution en attente rejoint
+    /// comme capturée au codex, et la pierre éventuelle est consommée, du sac
+    /// d'abord, puis du coffre. Une attaque d'évolution en attente rejoint
     /// les attaques à choisir. Rend le monstre d'avant l'évolution.
     pub fn faire_evoluer(
         &mut self,
         emplacement: Emplacement,
         catalogue: &dyn Catalogue,
     ) -> Result<(Monstre, ResultatEvolution), ErreurEvolution> {
-        let (avant, vers) = self.estimer_evolution(emplacement, catalogue)?;
+        let (avant, vers, pierre) = self.estimer_evolution(emplacement, catalogue)?;
+        if let Some(pierre) = pierre {
+            if !self.sac.utiliser_pierre(pierre) {
+                self.coffre_du_camp.utiliser_pierre(pierre);
+            }
+        }
         self.codex.noter_capture(vers.id());
         let monstre = self
             .collection
@@ -545,8 +594,9 @@ impl Partie {
         Ok((avant, resultat))
     }
 
-    /// Les monstres de l'équipe puis du camp qui peuvent évoluer au camp, et
-    /// en quelle espèce (section 5.4).
+    /// Les monstres de l'équipe puis du camp qui peuvent évoluer au camp, y
+    /// compris par une pierre que le joueur a, et en quelle espèce (section
+    /// 5.4).
     pub fn evolutions_possibles(&self, catalogue: &dyn Catalogue) -> Vec<(Emplacement, Espece)> {
         let equipe = self
             .collection
@@ -562,8 +612,9 @@ impl Partie {
             .map(|(index, monstre)| (Emplacement::Camp(index), monstre));
         equipe
             .chain(camp)
-            .filter_map(|(emplacement, monstre)| {
-                Some((emplacement, evolution_possible(monstre, catalogue)?))
+            .filter_map(|(emplacement, _)| {
+                let (_, vers, _) = self.estimer_evolution(emplacement, catalogue).ok()?;
+                Some((emplacement, vers))
             })
             .collect()
     }
