@@ -61,6 +61,8 @@ pub enum ErreurMarchand {
     SoinIndisponible(Soin),
     /// Une capsule sert sans s'user : en racheter une ne sert à rien.
     CapsuleDejaPossedee,
+    /// Le joueur ne porte pas l'âme de ce marchand (section 14.2).
+    AmeNonPortee,
     /// La revente suit les règles du relâcher.
     Collection(ErreurCollection),
 }
@@ -78,6 +80,7 @@ impl fmt::Display for ErreurMarchand {
                 write!(f, "le marchand ne vend pas encore ce soin : {soin:?}")
             }
             ErreurMarchand::CapsuleDejaPossedee => write!(f, "cette capsule est déjà obtenue"),
+            ErreurMarchand::AmeNonPortee => write!(f, "le joueur ne porte pas cette âme"),
             ErreurMarchand::Collection(erreur) => write!(f, "{erreur}"),
         }
     }

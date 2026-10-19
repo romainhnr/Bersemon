@@ -297,11 +297,12 @@ Déroulement dans la V1 :
 
 - Une expédition compte de 4 à 6 étapes, nombre tiré au départ et inconnu du joueur.
 - Après la V1, le nombre d'étapes est fixe pour chaque zone et connu du joueur, affiché en haut de l'écran d'expédition sous la forme « [Étape : 2/3] ». Il suit la difficulté : 3 dans la première zone, 4 dans la deuxième, 5 dans la troisième et la quatrième, 6 dans la cinquième et la sixième, puis 7 au plus.
+- Remplacé le 19/10/2026, pour l'étape 33 : toute zone compte 5 étapes, les zones à venir comprises.
 - Chaque étape tire un événement : combat contre un groupe sauvage (80 %), coffre (15 %) ou monstre rare (5 %). Le marchand est hors V1.
 - Depuis l'étape 27 (19/10/2026), quand une étape tire un monstre rare, c'est le Schnoz, monstre caché, une fois sur 20, dans toute zone ; sinon, c'est un monstre rare de la zone, comme avant. Il se rencontre donc environ une étape sur 400. Pacifique, il se laisse prendre ; son niveau est tiré parmi ceux de la zone, et il peut se rencontrer de nouveau. Au codex, il reste inconnu tant qu'il n'est pas rencontré, comme toute espèce.
 - Après la V1, tant qu'aucun marchand n'est au camp, la rencontre d'un marchand prend 10 % sur les combats : combat 70 %, marchand 10 %, coffre 15 %, monstre rare 5 % (section 14.2). Une fois le marchand au camp, les combats retrouvent leurs 80 %.
 - Depuis l'étape 31, le marchand ne se rencontre plus : c'est l'âme du marchand mort de la zone qui prend ces 10 %, tant qu'elle n'est pas recueillie et une fois Malvoise au camp (section 14.2, Q80).
-- Remplacé le 19/10/2026, pour les étapes 33 et 34 (section 14.2) : l'âme d'un marchand se rencontre même sans Malvoise au camp. Celle de Bertrand est garantie à l'étape 2 de chaque expédition dans la Lisière, tant qu'il n'a pas été rencontré. Celles de Grete et d'Ulrich gardent leurs 10 % tant qu'elles n'ont pas été rencontrées. Après une fuite ou une défaite face à son gardien, une âme est à retrouver : la prochaine expédition dans sa zone la rencontre à coup sûr, à une étape tirée au départ parmi celles qui précèdent la dernière, sans tirage des 10 %.
+- Remplacé le 19/10/2026, pour les étapes 33 et 34 (section 14.2) : l'âme d'un marchand se rencontre même sans Malvoise au camp. Celle de Bertrand est garantie à l'étape 4 de chaque expédition dans la Lisière, tant qu'elle n'est pas recueillie : le brigand de l'étape 5 l'abat sous les yeux du joueur. Celles de Grete et d'Ulrich gardent leurs 10 % tant qu'elles n'ont pas été rencontrées. Après une fuite ou une défaite face à leur gardien, elles sont à retrouver : la prochaine expédition dans leur zone les rencontre à coup sûr, à une étape tirée au départ parmi celles qui précèdent la dernière, sans tirage des 10 %.
 - Un groupe sauvage compte de 1 à 2 monstres dans la zone facile, de 1 à 3 dans la zone difficile ; la taille est tirée à chaque combat.
 - Un coffre contient 1 à 2 potions (section 14.4). Après la V1, il contient aussi de l'argent, selon la zone, et, une fois sur 5, une capsule d'attaque de la zone que le joueur n'a pas encore (sections 13.10 et 14.5). Depuis l'étape 28, l'habileté Pillard augmente cet argent de 50 %, et l'habileté Fouineur peut trouver une potion après un combat gagné (section 5.9).
 - Depuis l'étape 35 (19/10/2026), un coffre contient aussi, une fois sur 10, une capsule d'habileté (section 5.9), tirée après la capsule d'attaque.
@@ -657,10 +658,10 @@ Premier marchand, après la V1 :
   - le marchand zombie n'est pas dit sauvage en combat ; une âme dont le marchand disparaîtrait du jeu serait oubliée par la sauvegarde.
 - Décidé le 19/10/2026, pour les étapes 33 et 34, et remplace l'hypothèse de Q80 et le recueil de l'âme pour Malvoise :
   - une âme est un objet rare et indestructible : la victoire sur son gardien la donne au joueur, qui la porte dans un inventaire à part, ni sac ni coffre. Une défaite ne la lui fait pas perdre (section 9.3) ;
-  - l'âme de Bertrand se trouve dès la première expédition dans la Lisière, sans Malvoise au camp : son gardien attaque à l'étape 2, garantie tant que Bertrand n'a pas été rencontré. Le joueur la recueille sans savoir ce que c'est ;
+  - l'âme de Bertrand se trouve dès la première expédition dans la Lisière, sans Malvoise au camp, à l'étape 4, garantie tant qu'elle n'est pas recueillie. Précisé le 19/10/2026 par l'utilisateur : le brigand de l'étape 5 abat Bertrand sous les yeux du joueur, s'enfuit, et une bête qui le suivait attaque. Hypothèse retenue, à confirmer (Q83) : cette bête est tirée parmi les espèces communes de la Lisière, au niveau 7, comme le monstre qui tuait Bertrand à l'étape 31 ; le combat est ordinaire, fuite et filet compris. Le joueur recueille l'âme sans savoir ce que c'est ;
   - Malvoise est rencontré au bout de la première expédition menée au bout, après le brigand, et rentre au camp avec le joueur, où il s'installe. S'il porte l'âme de Bertrand, il lui dit l'avoir vu la recueillir et qu'elle l'intéresse ; sinon, il lui demande de rapporter les âmes des marchands morts. Il vient dans les deux cas, puisqu'il tient l'étal ;
   - au camp, chez Malvoise, le joueur lui donne l'âme qu'il veut, quand il veut, sans confirmation (hypothèse retenue, à confirmer) ; il peut aussi la garder sans limite de temps. Chaque âme donnée ajoute à l'étal l'objet de son marchand. Il en va de même pour les âmes de Grete et d'Ulrich ;
-  - après une fuite ou une défaite face au gardien d'une âme, celui-ci revient à coup sûr à la prochaine expédition dans sa zone, à une étape tirée parmi celles qui précèdent la dernière (section 9.2) ; quitter l'expédition avant cette étape la repousse à la suivante. Cela vaut pour les trois marchands, le marchand zombie compris.
+  - après une fuite ou une défaite face au gardien d'une âme, celui-ci revient à coup sûr à la prochaine expédition dans sa zone, à une étape tirée parmi celles qui précèdent la dernière (section 9.2) ; quitter l'expédition avant cette étape la repousse à la suivante. Cela vaut pour Grete, le marchand zombie, et pour Ulrich ; Bertrand, lui, revient toujours à l'étape 4.
 - Plus tard, d'autres personnages pourront être rencontrés de la même façon et enrichir le camp, comme un pêcheur qui apprend à pêcher (section 13.8).
 
 ### 14.3 Objets et ressources cités dans ce document
@@ -709,7 +710,7 @@ Premier marchand, après la V1 :
 | Capsule d'habileté (étape 35) | 200 ; un coffre sur 10 (section 5.9) |
 | Ressource rachetée par Malvoise (étape 36) | 5 pour une espèce commune, 15 pour une rare ; lâchée 1 fois sur 3 (section 14.3) |
 
-Repères : un Loup de niveau 5 se revend 28 pièces d'argent, un Feu follet de niveau 10 64, un Cerf blanc de niveau 5 80, un Schnoz de niveau 10 180, le Baron pendu au niveau 15 576. Une expédition dans la Lisière rapporte de l'ordre de 40 à 60 pièces d'argent avec une ou deux captures revendues, une expédition dans le Marais de 100 à 130. Ces estimations datent des expéditions de 4 à 6 étapes ; depuis l'étape 26, elles en comptent 3 dans la Lisière et 4 dans le Marais. Une expédition croise le marchand 27 fois sur 100 dans la Lisière, 34 dans le Marais. À vérifier en jouant.
+Repères : un Loup de niveau 5 se revend 28 pièces d'argent, un Feu follet de niveau 10 64, un Cerf blanc de niveau 5 80, un Schnoz de niveau 10 180, le Baron pendu au niveau 15 576. Une expédition dans la Lisière rapporte de l'ordre de 40 à 60 pièces d'argent avec une ou deux captures revendues, une expédition dans le Marais de 100 à 130. Ces estimations datent des expéditions de 4 à 6 étapes ; depuis l'étape 26, elles en comptent 3 dans la Lisière et 4 dans le Marais, et 5 partout depuis l'étape 33. Une expédition croise le marchand 27 fois sur 100 dans la Lisière, 34 dans le Marais. À vérifier en jouant.
 
 ## 15. Multijoueur (après l'adaptation à Discord)
 
@@ -749,7 +750,7 @@ Les questions Q81 et suivantes ont été relevées le 19/10/2026 lors de la conc
 
 - Q81. (Étape 35) Capsule d'habileté : prix de 200 pièces d'argent et un coffre sur 10, hypothèses retenues, à confirmer en jouant.
 - Q82. (Étape 36) Ressources : leurs noms, la chance de 1 sur 3, les prix de 5 et 15 et le rachat de toute une sorte d'un coup sont des hypothèses retenues. Leurs usages futurs (fabrication, améliorations, sections 13.4 et 13.5) restent à définir.
-- Q83. (Étapes 33 et 34) Hypothèses retenues, à confirmer : le gardien d'une âme à retrouver attaque à une étape tirée parmi celles qui précèdent la dernière ; le don d'une âme à Malvoise se fait sans confirmation ; une partie antérieure qui n'a pas recueilli l'âme de Bertrand le rencontre à l'étape 2 de sa prochaine expédition dans la Lisière, même avec Malvoise déjà au camp.
+- Q83. (Étapes 33 et 34) Hypothèses retenues, à confirmer : le gardien d'une âme à retrouver attaque à une étape tirée parmi celles qui précèdent la dernière ; le don d'une âme à Malvoise se fait sans confirmation ; une partie antérieure qui n'a pas recueilli l'âme de Bertrand le rencontre à l'étape 4 de sa prochaine expédition dans la Lisière, même avec Malvoise déjà au camp ; la bête du brigand qui attaque à l'étape 4 est un monstre commun de la Lisière tiré au niveau 7, et le texte du brigand de l'étape 5 ne change pas, même s'il a perdu cette bête.
 
 ## 17. Journal des décisions
 
@@ -1052,3 +1053,9 @@ Les questions Q81 et suivantes ont été relevées le 19/10/2026 lors de la conc
 - Âmes : objets rares et indestructibles, portés à part du sac. L'âme de Bertrand est garantie à l'étape 2 de la première expédition dans la Lisière. Malvoise est rencontré au bout de la première expédition menée au bout et rentre au camp avec le joueur, qui lui donne les âmes quand il veut ; chaque âme donnée ajoute son soin à l'étal. Remplace Q80, qui est retirée (section 14.2).
 - Capsule d'habileté : vendue par Malvoise et trouvée dans les coffres, consommée à l'usage ; elle fait passer un monstre à l'autre habileté de son espèce (section 5.9). Prix et taux en hypothèse (Q81).
 - Ressources : lâchées par les monstres sauvages battus, revendues à Malvoise (section 14.3). Q71 est retirée ; détails en hypothèse (Q82).
+
+19/10/2026 (conception des étapes 32 à 36, précisions de l'utilisateur) :
+
+- Le retour d'une expédition automatique garde la place réservée au camp : il n'est jamais bloqué, même équipe et camp pleins.
+- Toute zone compte 5 étapes (section 9.2), au lieu de 3, 4, 5, puis jusqu'à 7.
+- Bertrand est à l'étape 4 de la Lisière, au lieu de l'étape 2 : le brigand de l'étape 5 l'abat sous les yeux du joueur, et une de ses bêtes attaque. Il revient à l'étape 4 tant que son âme n'est pas recueillie ; la règle de l'étape tirée ne vaut que pour Grete et Ulrich.

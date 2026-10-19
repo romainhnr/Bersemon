@@ -10,7 +10,7 @@ use bersemon_presentation::marchand::{
 };
 use bersemon_presentation::monstres::decrire_attaque;
 use bersemon_presentation::partie::argent;
-use bersemon_presentation::soins::soins;
+use bersemon_presentation::soins::{le_soin, soins};
 
 use crate::composants::{Cle, Vue};
 use crate::ecran_camp::{menus_de_monstres_decrits, retour};
@@ -54,6 +54,20 @@ pub fn etal(partie: &Partie, contenu: &ContenuV1) -> Question {
         "Acheter une capsule d'attaque",
         capsules,
     ));
+    // Au plus une âme par zone : le menu reste loin de ses 25 options.
+    let ames = partie
+        .ames_portees()
+        .iter()
+        .map(|marchand| OptionDeMenu {
+            libelle: format!("Âme de {}", marchand.nom()),
+            valeur: marchand.id().as_str().to_string(),
+            description: Some(format!(
+                "Malvoise vendra {}",
+                le_soin(marchand.soin()).to_lowercase()
+            )),
+        })
+        .collect();
+    lignes.extend(menu(Cle::DonnerAme, "Donner une âme à Malvoise", ames));
     lignes.extend(rangees(vec![
         bouton(Cle::Afficher(Vue::Vente), "Vendre des monstres", DANGER),
         retour(),

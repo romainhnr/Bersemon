@@ -7,7 +7,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use bersemon_core::ame::MarchandId;
+use bersemon_core::ame::{MarchandId, MarchandMort};
 use bersemon_core::attaque::{AttaqueId, AttaquesMonstre};
 use bersemon_core::catalogue::Catalogue;
 use bersemon_core::codex::Codex;
@@ -77,9 +77,18 @@ pub(crate) struct SauvegardeV12 {
     /// Depuis la version 11 : Malvoise au camp.
     #[serde(default)]
     marchand_au_camp: bool,
-    /// Identifiants des marchands morts.
+    /// Identifiants des marchands morts dont l'âme est donnée à Malvoise ;
+    /// avant la version 12, recueillies, ce qui revient au même (section
+    /// 14.2).
     #[serde(default)]
     ames_recueillies: Vec<String>,
+    /// Depuis la version 12 : âmes portées, pas encore données.
+    #[serde(default)]
+    ames_portees: Vec<String>,
+    /// Depuis la version 12 : âmes à retrouver après une fuite ou une
+    /// défaite.
+    #[serde(default)]
+    ames_a_retrouver: Vec<String>,
     codex: CodexV1,
     zones_explorees: Vec<String>,
     #[serde(default)]
@@ -193,10 +202,12 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV12 {
         sac: depuis_inventaire(partie.sac()),
         coffre_du_camp: depuis_inventaire(partie.coffre_du_camp()),
         marchand_au_camp: partie.marchand_au_camp(),
-        ames_recueillies: partie
-            .ames_recueillies()
+        ames_recueillies: ids_de_marchands(partie.ames_donnees()),
+        ames_portees: ids_de_marchands(partie.ames_portees()),
+        ames_a_retrouver: partie
+            .ames_a_retrouver()
             .iter()
-            .map(|marchand| marchand.id().as_str().to_string())
+            .map(|marchand| marchand.as_str().to_string())
             .collect(),
         codex: CodexV1 {
             rencontrees: ids(partie.codex().rencontrees()),
@@ -367,10 +378,11 @@ pub(crate) fn vers_partie(
     };
     // Une âme dont le marchand a disparu du jeu ne vend plus rien : elle est
     // oubliée, comme un humain disparu.
-    let ames_recueillies = sauvegarde
-        .ames_recueillies
+    let ames_donnees = vers_marchands(&sauvegarde.ames_recueillies, catalogue);
+    let ames_portees = vers_marchands(&sauvegarde.ames_portees, catalogue);
+    let ames_a_retrouver = vers_marchands(&sauvegarde.ames_a_retrouver, catalogue)
         .iter()
-        .filter_map(|id| catalogue.marchand_mort(&MarchandId::new(id.as_str())))
+        .map(|marchand| marchand.id().clone())
         .collect();
     let conseils_vus = sauvegarde
         .conseils_vus
@@ -384,7 +396,9 @@ pub(crate) fn vers_partie(
         sac,
         coffre_du_camp,
         marchand_au_camp,
-        ames_recueillies,
+        ames_donnees,
+        ames_portees,
+        ames_a_retrouver,
         codex,
         zones_explorees,
         indices_trouves,
@@ -395,6 +409,19 @@ pub(crate) fn vers_partie(
         attaques_a_choisir,
     })
     .map_err(incoherente)
+}
+
+fn ids_de_marchands(marchands: &[MarchandMort]) -> Vec<String> {
+    marchands
+        .iter()
+        .map(|marchand| marchand.id().as_str().to_string())
+        .collect()
+}
+
+fn vers_marchands(ids: &[String], catalogue: &dyn Catalogue) -> Vec<MarchandMort> {
+    ids.iter()
+        .filter_map(|id| catalogue.marchand_mort(&MarchandId::new(id.as_str())))
+        .collect()
 }
 
 fn vers_expedition_automatique(

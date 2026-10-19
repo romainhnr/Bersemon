@@ -59,6 +59,7 @@ pub fn erreur_marchand(erreur: &ErreurMarchand) -> String {
         ErreurMarchand::CapsuleDejaPossedee => {
             "Vous avez déjà cette capsule : elle sert sans s'user.".to_string()
         }
+        ErreurMarchand::AmeNonPortee => "Vous ne portez pas cette âme.".to_string(),
         ErreurMarchand::Collection(erreur) => erreur_collection(erreur),
     }
 }

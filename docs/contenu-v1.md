@@ -180,7 +180,7 @@ Le Schnoz, monstre caché, se rencontre dans toutes les zones, à la place d'un 
 
 La Lisière est accessible dès le départ. Depuis l'étape 30 (gamedesign.md, section 9.4) : le brigand attend au bout de la Lisière, et la première expédition menée au bout donne l'indice 1, qui ouvre le Marais ; le Bourreau attend au bout du Marais, et la première expédition menée au bout donne l'indice 2, qui ouvre la Vallée des Brumes ; chaque expédition dans la Vallée s'achève par le Baron pendu tant qu'il n'est pas vaincu. Jusqu'à l'étape 29, deux expéditions complètes dans le Marais donnaient les indices 2 et 3, et le Baron pendu attendait au bout du Marais.
 
-Nombre d'étapes d'une expédition manuelle, fixe depuis l'étape 26 (décidé le 18/10/2026, gamedesign.md, section 9.2) : 3 dans la Lisière, 4 dans le Marais, 5 dans la Vallée. Dans la V1, il était tiré entre 4 et 6.
+Nombre d'étapes d'une expédition manuelle, fixe depuis l'étape 26 (décidé le 18/10/2026, gamedesign.md, section 9.2) : 3 dans la Lisière, 4 dans le Marais, 5 dans la Vallée. Dans la V1, il était tiré entre 4 et 6. Depuis l'étape 33 (19/10/2026), 5 dans chaque zone.
 
 Expéditions automatiques, ajoutées après la V1 le 18/10/2026 (section 12) :
 
@@ -302,7 +302,11 @@ Après la victoire, suivi de "Malvoise vendra désormais le remède." (la grande
 
 > L'âme de Bertrand, colporteur, flotte au-dessus de son corps. Vous la recueillez pour Malvoise.
 
-Remplacé le 19/10/2026, pour l'étape 34 : l'âme de Bertrand se recueille avant que le joueur connaisse Malvoise, et le soin ne s'ajoute à l'étal qu'au don de l'âme. Le texte de Bertrand devient :
+Remplacé le 19/10/2026, pour l'étape 34 : Bertrand est abattu à l'étape 4 de la Lisière par le brigand qui attend à l'étape 5, et une bête qui le suivait attaque. Le texte avant le combat devient :
+
+> Un cri déchire la Lisière : un brigand abat un colporteur sous vos yeux, lui arrache sa bourse et s'enfuit vers la sortie du bois. Une bête qui le suivait se tourne vers vous.
+
+L'âme de Bertrand se recueille avant que le joueur connaisse Malvoise, et le soin ne s'ajoute à l'étal qu'au don de l'âme. Le texte après la victoire devient :
 
 > L'âme de Bertrand, colporteur, flotte au-dessus de son corps. Vous la recueillez, sans trop savoir ce que c'est.
 
@@ -338,11 +342,11 @@ Ajoutés à l'étape 34, le 19/10/2026 (gamedesign.md, section 14.2) : Malvoise 
 
 Si le joueur porte l'âme de Bertrand :
 
-> Au sortir de la Lisière, un homme en robe noire vous attend, un crâne posé au creux du bras. "Je t'ai vu recueillir cette âme. Elle m'intéresse, si tu ne sais pas quoi en faire. Je suis Malvoise, et les marchands morts sur ces routes ont encore des choses à vendre." Il vous suit jusqu'au camp et s'y installe.
+> Sur le chemin du camp, un homme en robe noire vous attend, un crâne posé au creux du bras. "Je t'ai vu recueillir cette âme. Elle m'intéresse, si tu ne sais pas quoi en faire. Je suis Malvoise, et les marchands morts sur ces routes ont encore des choses à vendre." Il vous suit jusqu'au camp et s'y installe.
 
 Sinon :
 
-> Au sortir de la Lisière, un homme en robe noire vous attend, un crâne posé au creux du bras. "Je suis Malvoise. Les marchands meurent vite sur ces routes : rapporte-moi leur âme, et je te vendrai ce qu'ils vendaient de leur vivant." Il vous suit jusqu'au camp et s'y installe.
+> Sur le chemin du camp, un homme en robe noire vous attend, un crâne posé au creux du bras. "Je suis Malvoise. Les marchands meurent vite sur ces routes : rapporte-moi leur âme, et je te vendrai ce qu'ils vendaient de leur vivant." Il vous suit jusqu'au camp et s'y installe.
 
 Don d'une âme, au camp, chez Malvoise (le remède pour Bertrand, la grande potion pour Grete, l'élixir pour Ulrich) :
 

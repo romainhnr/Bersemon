@@ -1,5 +1,5 @@
-//! Malvoise, le nécromancien du camp (section 14.2) : soins, capsules d'attaque
-//! et rachat des monstres. Les achats se font sans confirmation ; la vente
+//! Malvoise, le nécromancien du camp (section 14.2) : soins, capsules d'attaque,
+//! rachat des monstres et don des âmes. Les achats se font sans confirmation ; la vente
 //! est confirmée par le déroulement.
 
 use bersemon_core::contenu::ContenuV1;
@@ -7,7 +7,7 @@ use bersemon_core::deroulement::Choix;
 use bersemon_core::marchand::prix_du_soin;
 use bersemon_core::partie::Partie;
 use bersemon_presentation::marchand::{capsules_en_vente, etal, offre_de_capsule};
-use bersemon_presentation::soins::offre_de_soin;
+use bersemon_presentation::soins::{le_soin, offre_de_soin};
 
 use crate::ecran_camp::vendre;
 use crate::saisie::Entree;
@@ -20,12 +20,14 @@ pub fn choisir(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Opt
         println!("  1. Acheter des soins");
         println!("  2. Acheter une capsule d'attaque");
         println!("  3. Vendre un monstre");
+        println!("  4. Donner une âme");
         println!("  0. Retour au camp");
-        let choix = match entree.choix(0, 3)? {
+        let choix = match entree.choix(0, 4)? {
             0 => return Some(None),
             1 => acheter_soins(partie, entree)?,
             2 => acheter_capsule(partie, contenu, entree)?,
-            _ => vendre(partie.collection(), entree)?,
+            3 => vendre(partie.collection(), entree)?,
+            _ => donner_ame(partie, entree)?,
         };
         if choix.is_some() {
             return Some(choix);
@@ -73,4 +75,25 @@ fn acheter_capsule(
     println!("Laquelle acheter ? (0 pour annuler)");
     let choix = entree.choix(0, en_vente.len())?;
     Some((choix > 0).then(|| Choix::AcheterCapsule(en_vente[choix - 1].id().clone())))
+}
+
+/// Sans confirmation : donner une âme ne fait rien perdre (section 14.2).
+fn donner_ame(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
+    let ames = partie.ames_portees();
+    if ames.is_empty() {
+        println!("Vous ne portez aucune âme.");
+        return Some(None);
+    }
+    println!("Âmes portées :");
+    for (position, marchand) in ames.iter().enumerate() {
+        println!(
+            "  {}. Âme de {} : Malvoise vendra {}",
+            position + 1,
+            marchand.nom(),
+            le_soin(marchand.soin()).to_lowercase()
+        );
+    }
+    println!("Laquelle donner à Malvoise ? (0 pour annuler)");
+    let choix = entree.choix(0, ames.len())?;
+    Some((choix > 0).then(|| Choix::DonnerAme(ames[choix - 1].id().clone())))
 }

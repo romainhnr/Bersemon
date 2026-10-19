@@ -10,7 +10,7 @@ use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 
 use crate::monstres::{decrire_attaque, nom};
-use crate::partie::argent;
+use crate::partie::{argent, ligne_des_ames};
 use crate::soins::offre_de_soin;
 
 /// Ce que le joueur peut dépenser : l'argent du sac et du coffre paient
@@ -22,10 +22,11 @@ pub fn etal(partie: &Partie) -> String {
         .map(|soin| format!("  {}", offre_de_soin(soin)))
         .collect();
     format!(
-        "Malvoise vous attend près du feu. Vous avez {}, entre votre sac et le coffre ; vos achats iront dans le coffre.\nSoins en vente :\n{}\n{}",
+        "Malvoise vous attend près du feu. Vous avez {}, entre votre sac et le coffre ; vos achats iront dans le coffre.\nSoins en vente :\n{}\n{}{}",
         argent(partie.argent()),
         soins.join("\n"),
-        capsules_obtenues(partie)
+        capsules_obtenues(partie),
+        ligne_des_ames(partie)
     )
 }
 

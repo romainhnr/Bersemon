@@ -118,19 +118,40 @@ pub fn contenu(inventaire: &Inventaire) -> String {
 /// L'écran du coffre du camp (section 13.3).
 pub fn coffre_du_camp(partie: &Partie) -> String {
     format!(
-        "Ce qui est rangé dans le coffre du camp est à l'abri. Le sac part avec vous en expédition : une défaite le fait perdre.\nSac : {}.\nCoffre du camp : {}.",
+        "Ce qui est rangé dans le coffre du camp est à l'abri. Le sac part avec vous en expédition : une défaite le fait perdre.\nSac : {}.\nCoffre du camp : {}.{}",
         contenu(partie.sac()),
-        contenu(partie.coffre_du_camp())
+        contenu(partie.coffre_du_camp()),
+        ligne_des_ames(partie)
     )
 }
 
 /// Le sac en expédition : une défaite le ferait perdre (section 9.3).
 pub fn sac_en_expedition(partie: &Partie) -> String {
     let sac = partie.sac();
-    if sac.est_vide() {
-        return "Sac : vide.".to_string();
+    let sac = if sac.est_vide() {
+        "Sac : vide.".to_string()
+    } else {
+        format!("Sac : {}. Une défaite le ferait perdre.", contenu(sac))
+    };
+    format!("{sac}{}", ligne_des_ames(partie))
+}
+
+/// Les âmes portées, à part du sac : rien ne les fait perdre (section
+/// 14.2). Une ligne qui commence par un saut de ligne, ou rien.
+pub fn ligne_des_ames(partie: &Partie) -> String {
+    let noms: Vec<String> = partie
+        .ames_portees()
+        .iter()
+        .map(|marchand| marchand.nom().to_string())
+        .collect();
+    if noms.is_empty() {
+        String::new()
+    } else {
+        format!(
+            "\nÂmes portées, que rien ne vous fait perdre : {}.",
+            enumerer(&noms)
+        )
     }
-    format!("Sac : {}. Une défaite le ferait perdre.", contenu(sac))
 }
 
 /// En haut de chaque écran d'expédition (section 9.2).
@@ -198,11 +219,12 @@ pub fn partie_en_cours(partie: &Partie) -> String {
 /// Le sac, que le joueur emporte, et le coffre, à l'abri (section 13.3).
 pub fn en_tete_du_camp(partie: &Partie) -> String {
     format!(
-        "Camp de base ({}, {}).\nSac : {}. Coffre du camp : {}.",
+        "Camp de base ({}, {}).\nSac : {}. Coffre du camp : {}.{}",
         partie.heros().nom().as_str(),
         partie.heros().classe().nom(),
         contenu(partie.sac()),
-        contenu(partie.coffre_du_camp())
+        contenu(partie.coffre_du_camp()),
+        ligne_des_ames(partie)
     )
 }
 

@@ -11,7 +11,7 @@ use crate::codex::Codex;
 use crate::collection::{Collection, Emplacement, ErreurCollection, Placement};
 use crate::combat::{BilanCombat, Combat, ErreurCombat, Issue};
 use crate::espece::{Espece, EspeceId};
-use crate::expedition::{ErreurExpedition, Expedition};
+use crate::expedition::{ErreurExpedition, Expedition, RencontreDeLAme};
 use crate::expedition_automatique::{
     BilanExpeditionAutomatique, ErreurExpeditionAutomatique, Estimation, ExpeditionAutomatique,
     MONSTRES_MAX, MONSTRES_MIN,
@@ -59,8 +59,14 @@ pub struct Partie {
     /// Malvoise, le nécromancien, tient l'étal du camp une fois arrivé
     /// (section 14.2).
     marchand_au_camp: bool,
-    /// Chaque âme ajoute à son étal l'objet de son marchand.
-    ames_recueillies: Vec<MarchandMort>,
+    /// Chaque âme donnée ajoute à son étal l'objet de son marchand.
+    ames_donnees: Vec<MarchandMort>,
+    /// Recueillies et pas encore données : à part du sac, aucune défaite ne
+    /// les fait perdre (section 14.2).
+    ames_portees: Vec<MarchandMort>,
+    /// Après une fuite ou une défaite face à leur gardien : la prochaine
+    /// expédition dans leur zone les rencontre à coup sûr.
+    ames_a_retrouver: Vec<MarchandId>,
     codex: Codex,
     zones_explorees: Vec<ZoneId>,
     /// Indices trouvés sur la piste de l'Apôtre (section 9.4).
@@ -95,7 +101,9 @@ pub struct EtatPartie {
     pub sac: Inventaire,
     pub coffre_du_camp: Inventaire,
     pub marchand_au_camp: bool,
-    pub ames_recueillies: Vec<MarchandMort>,
+    pub ames_donnees: Vec<MarchandMort>,
+    pub ames_portees: Vec<MarchandMort>,
+    pub ames_a_retrouver: Vec<MarchandId>,
     pub codex: Codex,
     pub zones_explorees: Vec<ZoneId>,
     pub indices_trouves: usize,
@@ -161,7 +169,9 @@ impl Partie {
             sac: Inventaire::default(),
             coffre_du_camp: Inventaire::default(),
             marchand_au_camp: false,
-            ames_recueillies: Vec::new(),
+            ames_donnees: Vec::new(),
+            ames_portees: Vec::new(),
+            ames_a_retrouver: Vec::new(),
             codex,
             zones_explorees: Vec::new(),
             indices_trouves: 0,
@@ -240,39 +250,72 @@ impl Partie {
         self.marchand_au_camp
     }
 
-    /// Malvoise arrive au camp au retour de la première expédition menée
-    /// au bout, et y reste (section 14.2).
+    /// Malvoise, rencontré au bout de la première expédition menée au bout,
+    /// rentre au camp avec le joueur et y reste (section 14.2).
     pub(crate) fn accueillir_malvoise(&mut self) {
         self.marchand_au_camp = true;
     }
 
-    pub fn ames_recueillies(&self) -> &[MarchandMort] {
-        &self.ames_recueillies
+    pub fn ames_donnees(&self) -> &[MarchandMort] {
+        &self.ames_donnees
     }
 
+    pub fn ames_portees(&self) -> &[MarchandMort] {
+        &self.ames_portees
+    }
+
+    pub fn ames_a_retrouver(&self) -> &[MarchandId] {
+        &self.ames_a_retrouver
+    }
+
+    /// Portée ou déjà donnée à Malvoise.
     pub fn a_recueilli_l_ame(&self, marchand: &MarchandId) -> bool {
-        self.ames_recueillies
+        self.ames_donnees
             .iter()
+            .chain(&self.ames_portees)
             .any(|recueillie| recueillie.id() == marchand)
     }
 
-    /// Acquise dès la victoire, même si l'expédition finit en défaite
-    /// (section 14.2).
+    /// Acquise dès la victoire et portée à part du sac : une défaite ne la
+    /// fait pas perdre (section 14.2).
     pub(crate) fn recueillir_ame(&mut self, marchand: MarchandMort) {
+        self.ames_a_retrouver.retain(|id| id != marchand.id());
         if !self.a_recueilli_l_ame(marchand.id()) {
-            self.ames_recueillies.push(marchand);
+            self.ames_portees.push(marchand);
         }
     }
 
+    /// Après une fuite ou une défaite face à son gardien (section 14.2).
+    pub(crate) fn noter_ame_a_retrouver(&mut self, marchand: &MarchandId) {
+        if !self.ames_a_retrouver.contains(marchand) && !self.a_recueilli_l_ame(marchand) {
+            self.ames_a_retrouver.push(marchand.clone());
+        }
+    }
+
+    /// Au camp, chez Malvoise, sans confirmation : l'âme rejoint son crâne
+    /// et l'objet de son marchand, son étal (section 14.2). Rend le
+    /// marchand.
+    pub fn donner_ame(&mut self, marchand: &MarchandId) -> Result<MarchandMort, ErreurMarchand> {
+        self.verifier_marchand()?;
+        let position = self
+            .ames_portees
+            .iter()
+            .position(|portee| portee.id() == marchand)
+            .ok_or(ErreurMarchand::AmeNonPortee)?;
+        let donnee = self.ames_portees.remove(position);
+        self.ames_donnees.push(donnee.clone());
+        Ok(donnee)
+    }
+
     /// Ce que vend Malvoise, dans l'ordre de `Soin::TOUS` : la potion, puis
-    /// l'objet de chaque marchand dont l'âme est recueillie (section 14.2).
+    /// l'objet de chaque marchand dont l'âme lui est donnée (section 14.2).
     pub fn soins_en_vente(&self) -> Vec<Soin> {
         Soin::TOUS
             .into_iter()
             .filter(|soin| {
                 *soin == Soin::Potion
                     || self
-                        .ames_recueillies
+                        .ames_donnees
                         .iter()
                         .any(|marchand| marchand.soin() == *soin)
             })
@@ -493,7 +536,9 @@ impl Partie {
             sac: etat.sac,
             coffre_du_camp: etat.coffre_du_camp,
             marchand_au_camp: etat.marchand_au_camp,
-            ames_recueillies: etat.ames_recueillies,
+            ames_donnees: etat.ames_donnees,
+            ames_portees: etat.ames_portees,
+            ames_a_retrouver: etat.ames_a_retrouver,
             codex: etat.codex,
             zones_explorees: etat.zones_explorees,
             indices_trouves: etat.indices_trouves,
@@ -516,9 +561,10 @@ impl Partie {
 
     /// Une fois tous les indices trouvés, une expédition dans la zone de
     /// l'Apôtre s'achève par le combat contre lui, tant qu'il n'est pas
-    /// vaincu (section 9.4). Une fois Malvoise au camp, elle peut trouver
-    /// l'âme du marchand mort de la zone, tant qu'elle n'est pas recueillie
-    /// (section 14.2). Ses coffres ne contiennent que des
+    /// vaincu (section 9.4). Elle peut trouver l'âme du marchand mort de la
+    /// zone, tant qu'elle n'est pas recueillie : à son étape s'il en a une,
+    /// à coup sûr si elle est à retrouver, sinon à 10 % des étapes (section
+    /// 14.2). Ses coffres ne contiennent que des
     /// capsules que le joueur n'a pas encore (section 13.10). Une équipe vide
     /// ne part pas (section 13.2).
     pub fn partir_en_expedition(
@@ -539,9 +585,16 @@ impl Partie {
         let mut expedition = Expedition::partir(zone.clone()).avec_capsules_possedees(possedees);
         if let Some(marchand) = zone
             .marchand_mort()
-            .filter(|marchand| self.marchand_au_camp && !self.a_recueilli_l_ame(marchand.id()))
+            .filter(|marchand| !self.a_recueilli_l_ame(marchand.id()))
         {
-            expedition = expedition.avec_ame_possible(marchand.clone());
+            let rencontre = match marchand.etape() {
+                Some(etape) => RencontreDeLAme::AEtape(etape),
+                None if self.ames_a_retrouver.contains(marchand.id()) => {
+                    RencontreDeLAme::ARetrouver
+                }
+                None => RencontreDeLAme::Tiree,
+            };
+            expedition = expedition.avec_ame(marchand.clone(), rencontre);
         }
         let apotre = piste.apotre();
         if piste.antre_localise(self.indices_trouves)
@@ -1125,7 +1178,7 @@ mod tests {
     }
 
     #[test]
-    fn l_ame_ne_se_trouve_qu_avec_malvoise_et_tant_qu_elle_n_est_pas_recueillie() {
+    fn l_ame_se_trouve_sans_malvoise_tant_qu_elle_n_est_pas_recueillie() {
         let (mut zones, piste) = carte();
         let bertrand = MarchandMort::new(
             MarchandId::new("bertrand"),
@@ -1137,8 +1190,8 @@ mod tests {
         )
         .unwrap();
         zones[0] = zones[0].clone().avec_marchand_mort(bertrand.clone());
-        // Le monstre du groupe, ou celui qui tue Bertrand, tire son shiny et
-        // ses valeurs internes.
+        // Le monstre du groupe, ou celui qui garde Bertrand, tire son shiny
+        // et ses valeurs internes.
         let tirages = [71, 2, 0, 0, 0, 0, 0, 0];
         let etape = |partie: &Partie| {
             let mut expedition = partie.partir_en_expedition(&zones[0], &piste).unwrap();
@@ -1147,21 +1200,69 @@ mod tests {
         let mut partie = partie();
         assert!(matches!(
             etape(&partie),
-            Some(EvenementExpedition::Combat(_))
-        ));
-        partie.accueillir_malvoise();
-        assert!(matches!(
-            etape(&partie),
             Some(EvenementExpedition::Ame { .. })
         ));
         partie.recueillir_ame(bertrand.clone());
         partie.recueillir_ame(bertrand);
-        assert_eq!(partie.ames_recueillies().len(), 1);
+        assert_eq!(partie.ames_portees().len(), 1);
         assert!(matches!(
             etape(&partie),
             Some(EvenementExpedition::Combat(_))
         ));
+        // Portée, l'âme n'ajoute encore rien à l'étal.
+        assert_eq!(partie.soins_en_vente(), vec![Soin::Potion]);
+        let bertrand = MarchandId::new("bertrand");
+        assert_eq!(
+            partie.donner_ame(&bertrand),
+            Err(ErreurMarchand::AucunMarchand)
+        );
+        partie.accueillir_malvoise();
+        assert_eq!(partie.donner_ame(&bertrand).unwrap().nom(), "Bertrand");
+        assert!(partie.ames_portees().is_empty());
+        assert_eq!(partie.ames_donnees().len(), 1);
         assert_eq!(partie.soins_en_vente(), vec![Soin::Potion, Soin::Remede]);
+        assert_eq!(
+            partie.donner_ame(&bertrand),
+            Err(ErreurMarchand::AmeNonPortee)
+        );
+    }
+
+    #[test]
+    fn une_ame_a_retrouver_revient_a_une_etape_tiree() {
+        let (mut zones, piste) = carte();
+        let grete = MarchandMort::new(
+            MarchandId::new("grete"),
+            "Grete",
+            Soin::GrandePotion,
+            Gardien::MonstreDeLaZone,
+            "",
+            "",
+        )
+        .unwrap();
+        zones[0] = zones[0].clone().avec_marchand_mort(grete.clone());
+        let mut partie = partie();
+        partie.noter_ame_a_retrouver(grete.id());
+        partie.noter_ame_a_retrouver(grete.id());
+        assert_eq!(partie.ames_a_retrouver().len(), 1);
+        let mut expedition = partie.partir_en_expedition(&zones[0], &piste).unwrap();
+        // L'étape de l'âme, tirée parmi celles qui précèdent la dernière (1 à
+        // 3 sur 4), puis la première étape, un coffre : sa nature et ses
+        // potions.
+        let mut aleatoire = AleatoireScripte::new([2, 81, 1]);
+        assert!(matches!(
+            expedition.etape_suivante(&mut aleatoire),
+            Some(EvenementExpedition::Coffre { .. })
+        ));
+        drop(aleatoire);
+        // À la deuxième, sans tirage de sa nature : seulement son gardien.
+        let mut aleatoire = AleatoireScripte::new([2, 0, 0, 0, 0, 0, 0]);
+        assert!(matches!(
+            expedition.etape_suivante(&mut aleatoire),
+            Some(EvenementExpedition::Ame { .. })
+        ));
+        drop(aleatoire);
+        partie.recueillir_ame(grete);
+        assert!(partie.ames_a_retrouver().is_empty());
     }
 
     /// Le marchand au camp et 50 pièces d'argent dans le coffre.
@@ -1663,7 +1764,9 @@ mod tests {
             sac: partie.sac().clone(),
             coffre_du_camp: partie.coffre_du_camp().clone(),
             marchand_au_camp: partie.marchand_au_camp(),
-            ames_recueillies: partie.ames_recueillies().to_vec(),
+            ames_donnees: partie.ames_donnees().to_vec(),
+            ames_portees: partie.ames_portees().to_vec(),
+            ames_a_retrouver: partie.ames_a_retrouver().to_vec(),
             codex: partie.codex().clone(),
             zones_explorees: partie.zones_explorees().to_vec(),
             indices_trouves: partie.indices_trouves(),

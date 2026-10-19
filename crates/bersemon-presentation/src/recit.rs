@@ -2,7 +2,7 @@
 
 use bersemon_core::combat::Cote;
 use bersemon_core::contenu::{
-    ARRIVEE_DE_MALVOISE, INTRODUCTION, fin_de_l_introduction, texte_du_conseil,
+    INTRODUCTION, MALVOISE_ET_L_AME, MALVOISE_SANS_AME, fin_de_l_introduction, texte_du_conseil,
 };
 use bersemon_core::deroulement::Evenement;
 
@@ -23,6 +23,19 @@ pub struct Recit {
     /// Le récit ouvre un nouveau paragraphe, séparé du précédent par une
     /// ligne vide.
     pub nouveau_paragraphe: bool,
+}
+
+/// "de Bertrand", mais "d'Ulrich".
+fn de(nom: &str) -> String {
+    let voyelle = nom
+        .chars()
+        .next()
+        .is_some_and(|initiale| "AEIOUYÉÈaeiouyéè".contains(initiale));
+    if voyelle {
+        format!("d'{nom}")
+    } else {
+        format!("de {nom}")
+    }
 }
 
 pub fn raconter(evenements: &[Evenement]) -> Vec<Recit> {
@@ -84,12 +97,14 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
         Evenement::RecitDeLApotre(recit)
         | Evenement::HumainRencontre(recit)
         | Evenement::AmeRencontree(recit) => (recit.clone(), false),
-        Evenement::AmeRecueillie { texte, soin } => (
+        Evenement::AmeRecueillie(texte) => (texte.clone(), true),
+        Evenement::AmeDonnee { marchand, soin } => (
             format!(
-                "{texte} Malvoise vendra désormais {}.",
+                "Vous remettez l'âme {} à Malvoise, qui l'enferme dans le crâne. Malvoise vendra désormais {}.",
+                de(marchand),
                 le_soin(*soin).to_lowercase()
             ),
-            true,
+            false,
         ),
         Evenement::HumainVaincu {
             texte,
@@ -220,7 +235,14 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
         Evenement::ExpeditionAutomatiqueRentree { zone, bilan } => {
             (expeditions_automatiques::retour(zone, bilan), true)
         }
-        Evenement::MalvoiseArrive => (ARRIVEE_DE_MALVOISE.to_string(), true),
+        Evenement::MalvoiseRencontre { avec_une_ame } => {
+            let texte = if *avec_une_ame {
+                MALVOISE_ET_L_AME
+            } else {
+                MALVOISE_SANS_AME
+            };
+            (texte.to_string(), true)
+        }
         Evenement::SoinsAchetes { soin, nombre, prix } => (
             format!("Vous achetez {} pour {}.", soins(*soin, *nombre), argent(*prix)),
             false,
@@ -387,13 +409,13 @@ mod tests {
 
     #[test]
     fn une_ame_recueillie_dit_ce_que_malvoise_vendra() {
-        let recit = &raconter(&[Evenement::AmeRecueillie {
-            texte: "L'âme d'Ulrich s'échappe.".to_string(),
+        let recit = &raconter(&[Evenement::AmeDonnee {
+            marchand: "Ulrich".to_string(),
             soin: bersemon_core::soin::Soin::Elixir,
         }])[0];
         assert_eq!(
             recit.texte,
-            "L'âme d'Ulrich s'échappe. Malvoise vendra désormais l'élixir."
+            "Vous remettez l'âme d'Ulrich à Malvoise, qui l'enferme dans le crâne. Malvoise vendra désormais l'élixir."
         );
     }
 

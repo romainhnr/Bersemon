@@ -76,6 +76,18 @@ pub enum EvenementExpedition {
     },
 }
 
+/// Quand l'âme du marchand mort de la zone se rencontre (section 14.2).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RencontreDeLAme {
+    /// 10 % des étapes, à la place d'un combat.
+    Tiree,
+    /// À coup sûr, à cette étape.
+    AEtape(u32),
+    /// Après une fuite ou une défaite : à coup sûr, à une étape tirée au
+    /// départ.
+    ARetrouver,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ErreurExpedition {
     ZoneFermee,
@@ -107,9 +119,9 @@ pub struct Expedition {
     /// L'humain qui attend à la dernière étape tant qu'il n'est pas vaincu
     /// (section 10.7).
     humain: Option<Humain>,
-    /// Le marchand mort de la zone, tant que son âme peut être trouvée : une
-    /// étape peut la tirer, une fois au plus (section 14.2).
-    ame_possible: Option<MarchandMort>,
+    /// Le marchand mort de la zone, tant que son âme peut être trouvée, et
+    /// l'étape où elle se rencontre ; une fois au plus (section 14.2).
+    ame: Option<(MarchandMort, RencontreDeLAme)>,
     /// Un coffre ne contient qu'une capsule que le joueur n'a pas encore.
     capsules_possedees: Vec<AttaqueId>,
     /// Pour qu'un autre coffre de la même expédition ne la contienne pas.
@@ -128,7 +140,7 @@ impl Expedition {
             defaite: false,
             apotre: None,
             humain: None,
-            ame_possible: None,
+            ame: None,
             capsules_possedees: Vec::new(),
             capsules_trouvees: Vec::new(),
         }
@@ -149,8 +161,8 @@ impl Expedition {
         self.humain.as_ref()
     }
 
-    pub(crate) fn avec_ame_possible(mut self, marchand: MarchandMort) -> Self {
-        self.ame_possible = Some(marchand);
+    pub(crate) fn avec_ame(mut self, marchand: MarchandMort, rencontre: RencontreDeLAme) -> Self {
+        self.ame = Some((marchand, rencontre));
         self
     }
 
@@ -189,17 +201,23 @@ impl Expedition {
     }
 
     /// Passe à l'étape suivante et tire son événement ; `None` si
-    /// l'expédition est terminée. Tirages : nature de l'événement (combat
-    /// 80 %, coffre 15 %, monstre rare 5 %, Q38 ; tant que l'âme du marchand
-    /// de la zone peut être trouvée, combat 70 % et âme 10 %, section 14.2),
-    /// puis ceux de son contenu : pour un coffre, ses potions, son argent
-    /// puis sa capsule ; pour une âme, ceux de son adversaire.
+    /// l'expédition est terminée. Tirages : à la première étape, celle d'une
+    /// âme à retrouver, parmi celles qui précèdent la dernière ; puis la
+    /// nature de l'événement (combat 80 %, coffre 15 %, monstre rare 5 %,
+    /// Q38 ; tant que l'âme du marchand de la zone peut être tirée, combat
+    /// 70 % et âme 10 %, section 14.2), puis ceux de son contenu : pour un
+    /// coffre, ses potions, son argent puis sa capsule ; pour une âme, ceux
+    /// de son adversaire. L'âme attendue à cette étape remplace l'événement,
+    /// sans tirage de sa nature.
     /// Une zone sans monstre rare donne un combat à la place. L'Apôtre
     /// remplace l'événement de la dernière étape, sans tirage de sa nature
     /// (Q57), comme l'humain de la zone, sans aucun tirage (section 10.7).
     pub fn etape_suivante(&mut self, aleatoire: &mut dyn Aleatoire) -> Option<EvenementExpedition> {
         if self.est_terminee() {
             return None;
+        }
+        if self.etapes_faites == 0 {
+            self.placer_l_ame_a_retrouver(aleatoire);
         }
         self.etapes_faites += 1;
         let derniere = self.etapes_faites == self.nombre_etapes;
@@ -212,15 +230,13 @@ impl Expedition {
                 equipe: humain.generer_equipe(),
             });
         }
+        let etape = self.etapes_faites;
+        if matches!(&self.ame, Some((_, RencontreDeLAme::AEtape(attendue))) if *attendue == etape) {
+            return Some(self.rencontrer_l_ame(aleatoire));
+        }
+        let tirable = matches!(&self.ame, Some((_, RencontreDeLAme::Tiree)));
         let evenement = match aleatoire.tirer(1..=100) {
-            71..=80 if self.ame_possible.is_some() => {
-                let marchand = self.ame_possible.take().expect("âme possible");
-                let adversaire = marchand.generer_adversaire(&self.zone, aleatoire);
-                EvenementExpedition::Ame {
-                    marchand: Box::new(marchand),
-                    adversaire,
-                }
-            }
+            71..=80 if tirable => self.rencontrer_l_ame(aleatoire),
             1..=80 => EvenementExpedition::Combat(self.zone.generer_groupe(aleatoire)),
             81..=95 => self.tirer_un_coffre(aleatoire),
             _ => match self.zone.generer_monstre_rare(aleatoire) {
@@ -229,6 +245,28 @@ impl Expedition {
             },
         };
         Some(evenement)
+    }
+
+    /// Une âme à retrouver se rencontre à une étape tirée parmi celles qui
+    /// précèdent la dernière, réservée aux combats de fin de zone (section
+    /// 14.2).
+    fn placer_l_ame_a_retrouver(&mut self, aleatoire: &mut dyn Aleatoire) {
+        let derniere_possible = self.nombre_etapes.saturating_sub(1).max(1);
+        if let Some((_, rencontre)) = &mut self.ame {
+            if *rencontre == RencontreDeLAme::ARetrouver {
+                *rencontre = RencontreDeLAme::AEtape(aleatoire.tirer(1..=derniere_possible));
+            }
+        }
+    }
+
+    /// Tirages : ceux de l'adversaire.
+    fn rencontrer_l_ame(&mut self, aleatoire: &mut dyn Aleatoire) -> EvenementExpedition {
+        let (marchand, _) = self.ame.take().expect("âme attendue");
+        let adversaire = marchand.generer_adversaire(&self.zone, aleatoire);
+        EvenementExpedition::Ame {
+            marchand: Box::new(marchand),
+            adversaire,
+        }
     }
 
     fn tirer_un_coffre(&mut self, aleatoire: &mut dyn Aleatoire) -> EvenementExpedition {
@@ -462,7 +500,8 @@ mod tests {
             "",
         )
         .unwrap();
-        let mut expedition = Expedition::partir(zone(false)).avec_ame_possible(bertrand);
+        let mut expedition =
+            Expedition::partir(zone(false)).avec_ame(bertrand, RencontreDeLAme::Tiree);
         let mut combat = vec![70];
         combat.extend(MONSTRE);
         assert!(matches!(
@@ -482,6 +521,32 @@ mod tests {
         assert!(matches!(
             expedition.etape_suivante(&mut AleatoireScripte::new(combat)),
             Some(EvenementExpedition::Combat(_))
+        ));
+    }
+
+    #[test]
+    fn l_ame_attendue_a_son_etape_remplace_l_evenement_sans_tirage() {
+        let bertrand = MarchandMort::new(
+            MarchandId::new("bertrand"),
+            "Bertrand",
+            Soin::Remede,
+            Gardien::MonstreDeLaZone,
+            "",
+            "",
+        )
+        .unwrap();
+        let mut expedition =
+            Expedition::partir(zone(false)).avec_ame(bertrand, RencontreDeLAme::AEtape(2));
+        // À la première étape, le tirage de 71 à 80 reste un combat.
+        let mut combat = vec![71];
+        combat.extend(MONSTRE);
+        assert!(matches!(
+            expedition.etape_suivante(&mut AleatoireScripte::new(combat)),
+            Some(EvenementExpedition::Combat(_))
+        ));
+        assert!(matches!(
+            expedition.etape_suivante(&mut AleatoireScripte::new(MONSTRE)),
+            Some(EvenementExpedition::Ame { .. })
         ));
     }
 

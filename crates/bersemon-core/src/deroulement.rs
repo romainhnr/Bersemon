@@ -14,7 +14,7 @@ use std::collections::VecDeque;
 use std::fmt;
 
 use crate::aleatoire::Aleatoire;
-use crate::ame::{Gardien, MarchandMort};
+use crate::ame::{Gardien, MarchandId, MarchandMort};
 use crate::attaque::{Attaque, AttaqueId, ErreurAttaquesMonstre};
 use crate::capsule::{Capsule, ErreurApprentissage};
 use crate::collection::{Emplacement, ErreurCollection, Placement, TriDuCamp};
@@ -82,6 +82,9 @@ pub enum Choix {
     /// Au camp, chez le marchand, sans confirmation : une capsule de
     /// `ContenuV1::capsules` (section 14.2).
     AcheterCapsule(AttaqueId),
+    /// Au camp, chez Malvoise, sans confirmation : une âme que le joueur
+    /// porte (section 14.2).
+    DonnerAme(MarchandId),
     /// Au camp : du sac vers le coffre (section 13.3).
     RangerAuCoffre(Objet),
     /// Au camp : du coffre vers le sac (section 13.3).
@@ -249,11 +252,8 @@ pub enum Evenement {
     },
     /// Le texte du marchand mort trouvé, avant le combat (section 14.2).
     AmeRencontree(String),
-    /// Son texte après la victoire, et le soin que Malvoise vend désormais.
-    AmeRecueillie {
-        texte: String,
-        soin: Soin,
-    },
+    /// Son texte après la victoire : le joueur porte désormais l'âme.
+    AmeRecueillie(String),
     Rencontre(Combat),
     /// Événements d'un tour, avec le combat qui permet de les mettre en texte.
     Combat {
@@ -326,8 +326,17 @@ pub enum Evenement {
         zone: String,
         bilan: BilanExpeditionAutomatique,
     },
-    /// Au retour de la première expédition menée au bout (section 14.2).
-    MalvoiseArrive,
+    /// Au bout de la première expédition menée au bout, avant le retour au
+    /// camp, selon que le joueur porte une âme ou non (section 14.2).
+    MalvoiseRencontre {
+        avec_une_ame: bool,
+    },
+    /// Nom du marchand dont l'âme est donnée, et le soin que Malvoise vend
+    /// désormais.
+    AmeDonnee {
+        marchand: String,
+        soin: Soin,
+    },
     /// Prix payé, en pièces d'argent.
     SoinsAchetes {
         soin: Soin,
@@ -796,6 +805,18 @@ impl EnJeu {
                 sauvegarder(&self.partie, contexte.depot, evenements);
                 Ok(Reponse::Faite)
             }
+            Choix::DonnerAme(marchand) => {
+                let donnee = self
+                    .partie
+                    .donner_ame(marchand)
+                    .map_err(ErreurChoix::Marchand)?;
+                evenements.push(Evenement::AmeDonnee {
+                    marchand: donnee.nom().to_string(),
+                    soin: donnee.soin(),
+                });
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
             Choix::ApprendreAttaque {
                 emplacement,
                 attaque,
@@ -916,6 +937,15 @@ impl EnJeu {
                 en_cours.expedition.zone().nom().to_string(),
             ));
         }
+        // La première expédition menée au bout ne peut être que dans la
+        // Lisière, seule zone ouverte avant elle ; Malvoise rentre au camp
+        // avec le joueur (section 14.2).
+        if en_cours.expedition.est_reussie() && !self.partie.marchand_au_camp() {
+            self.partie.accueillir_malvoise();
+            evenements.push(Evenement::MalvoiseRencontre {
+                avec_une_ame: !self.partie.ames_portees().is_empty(),
+            });
+        }
         evenements.push(Evenement::RetourAuCamp);
         if let Some(indice) = indice {
             evenements.push(Evenement::Indice {
@@ -925,12 +955,6 @@ impl EnJeu {
         }
         if let Some(nouvelle) = self.partie.zones_accessibles(zones, piste).get(avant) {
             evenements.push(Evenement::NouvelleZone(nouvelle.nom().to_string()));
-        }
-        // La première expédition menée au bout ne peut être que dans la
-        // Lisière, seule zone ouverte avant elle (section 14.2).
-        if en_cours.expedition.est_reussie() && !self.partie.marchand_au_camp() {
-            self.partie.accueillir_malvoise();
-            evenements.push(Evenement::MalvoiseArrive);
         }
         montrer_conseil(&mut self.partie, Conseil::PremierRetourAuCamp, evenements);
         sauvegarder(&self.partie, contexte.depot, evenements);
@@ -1419,7 +1443,8 @@ impl EnExpedition {
 
     /// L'Apôtre vaincu ne réapparaît plus et l'épilogue suit ; un humain
     /// vaincu non plus, et son argent va dans le sac ; une victoire recueille
-    /// l'âme du marchand mort ; une défaite met fin à l'expédition (sections
+    /// l'âme du marchand mort, que la fuite ou la défaite laisse à retrouver ;
+    /// une défaite met fin à l'expédition (sections
     /// 9.3, 9.4, 10.7 et 14.2).
     fn conclure(
         &mut self,
@@ -1444,16 +1469,16 @@ impl EnExpedition {
                     argent,
                 });
             }
-            if let Some(marchand) = self
-                .ame
-                .take()
-                .filter(|_| fin.issue == Some(Issue::Victoire))
-            {
-                evenements.push(Evenement::AmeRecueillie {
-                    texte: marchand.apres_victoire().to_string(),
-                    soin: marchand.soin(),
-                });
-                partie.recueillir_ame(marchand);
+            // Une fuite ou une défaite laisse l'âme à retrouver.
+            if let Some(marchand) = self.ame.take() {
+                if fin.issue == Some(Issue::Victoire) {
+                    evenements.push(Evenement::AmeRecueillie(
+                        marchand.apres_victoire().to_string(),
+                    ));
+                    partie.recueillir_ame(marchand);
+                } else {
+                    partie.noter_ame_a_retrouver(marchand.id());
+                }
             }
             if fin.issue == Some(Issue::Defaite) {
                 self.expedition.noter_defaite();
@@ -1705,7 +1730,9 @@ mod tests {
             sac: partie.sac().clone(),
             coffre_du_camp: partie.coffre_du_camp().clone(),
             marchand_au_camp: partie.marchand_au_camp(),
-            ames_recueillies: partie.ames_recueillies().to_vec(),
+            ames_donnees: partie.ames_donnees().to_vec(),
+            ames_portees: partie.ames_portees().to_vec(),
+            ames_a_retrouver: partie.ames_a_retrouver().to_vec(),
             codex: partie.codex().clone(),
             zones_explorees: partie.zones_explorees().to_vec(),
             indices_trouves: partie.indices_trouves(),
@@ -1931,7 +1958,7 @@ mod tests {
                 Evenement::Depart("Lisière du Bois-Sombre".to_string()),
                 Evenement::Etape {
                     numero: 1,
-                    total: 3
+                    total: 5
                 },
                 Evenement::Coffre {
                     potions: 1,
@@ -2003,11 +2030,13 @@ mod tests {
             Err(ErreurChoix::Marchand(ErreurMarchand::AucunMarchand))
         );
 
-        // Le brigand déjà vaincu, la Lisière ne finit que par des coffres :
-        // une potion et 10 pièces d'argent chacun, sans capsule.
+        // Le brigand déjà vaincu et l'âme de Bertrand portée, la Lisière ne
+        // finit que par des coffres : une potion et 10 pièces d'argent
+        // chacun, sans capsule.
         let coffre = vec![81, 1, 10, 100];
         let mut etat = etat_de(deroulement.partie().unwrap());
         etat.humains_vaincus = vec![HumainId::new("brigand")];
+        etat.ames_portees = vec![bertrand(&contenu)];
         let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
         let lisiere = Choix::PartirEnExpedition(ZoneId::new("lisiere"));
         repondre_a(
@@ -2019,7 +2048,7 @@ mod tests {
             coffre.clone(),
         )
         .unwrap();
-        for _ in 0..2 {
+        for _ in 0..4 {
             let continuer = Choix::ContinuerLExpedition;
             repondre_a(
                 &mut deroulement,
@@ -2034,11 +2063,15 @@ mod tests {
         assert_eq!(deroulement.attente(), Attente::Annonce(Annonce::Indice));
         let evenements =
             repondre_sans_tirage(&mut deroulement, Choix::Poursuivre, &contenu, &depot).unwrap();
-        // Malvoise arrive après l'indice (section 14.2).
+        // Malvoise, qui a vu le joueur recueillir l'âme, rentre au camp avec
+        // lui ; l'indice se lit au camp (section 14.2).
         let position = |cherche: fn(&Evenement) -> bool| evenements.iter().position(cherche);
+        let malvoise =
+            position(|evenement| *evenement == Evenement::MalvoiseRencontre { avec_une_ame: true });
+        let retour = position(|evenement| *evenement == Evenement::RetourAuCamp);
         let indice = position(|evenement| matches!(evenement, Evenement::Indice { .. }));
-        let malvoise = position(|evenement| *evenement == Evenement::MalvoiseArrive);
-        assert!(indice.unwrap() < malvoise.unwrap());
+        assert!(malvoise.unwrap() < retour.unwrap());
+        assert!(retour.unwrap() < indice.unwrap());
         let partie = deroulement.partie().unwrap();
         assert!(partie.marchand_au_camp());
         assert!(
@@ -2049,15 +2082,20 @@ mod tests {
                 .unwrap()
                 .marchand_au_camp()
         );
-        // 30 pièces d'argent trouvées : une potion, et pas de quoi en payer
-        // une seconde.
+        // 50 pièces d'argent trouvées : deux potions, et pas de quoi en payer
+        // une troisième.
         let acheter = || Choix::AcheterSoins(Soin::Potion, 1);
         assert_eq!(
-            repondre_sans_tirage(&mut deroulement, acheter(), &contenu, &depot),
+            repondre_sans_tirage(
+                &mut deroulement,
+                Choix::AcheterSoins(Soin::Potion, 2),
+                &contenu,
+                &depot
+            ),
             Ok(vec![Evenement::SoinsAchetes {
                 soin: Soin::Potion,
-                nombre: 1,
-                prix: 20
+                nombre: 2,
+                prix: 40
             }])
         );
         assert_eq!(
@@ -2127,22 +2165,50 @@ mod tests {
     }
 
     #[test]
-    fn l_ame_de_bertrand_ajoute_le_remede_a_l_etal_de_malvoise() {
+    fn bertrand_est_abattu_a_l_etape_4_et_son_ame_portee_sans_malvoise() {
         let contenu = ContenuV1::new();
         let depot = DepotMemoire::default();
-        let mut etat = etat_de(&partie_pour_les_expeditions(&contenu));
-        etat.marchand_au_camp = true;
-        let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
-        // Dès la première étape : un Loup, première espèce de la Lisière, au
-        // niveau 7, le plus haut de la zone, non shiny, valeurs internes
-        // nulles, première habileté.
-        let tirages = vec![71, 0, 2, 0, 0, 0, 0, 0, 0, 0];
+        let mut deroulement = au_camp(partie_pour_les_expeditions(&contenu), &contenu, &depot);
+        // Trois coffres d'une potion et de 10 pièces d'argent, sans capsule.
+        let coffre = vec![81, 1, 10, 100];
         let lisiere = Choix::PartirEnExpedition(ZoneId::new("lisiere"));
-        let evenements =
-            repondre_a(&mut deroulement, lisiere, &contenu, &depot, 0, tirages).unwrap();
+        repondre_a(
+            &mut deroulement,
+            lisiere,
+            &contenu,
+            &depot,
+            0,
+            coffre.clone(),
+        )
+        .unwrap();
+        for _ in 0..2 {
+            let continuer = Choix::ContinuerLExpedition;
+            repondre_a(
+                &mut deroulement,
+                continuer,
+                &contenu,
+                &depot,
+                0,
+                coffre.clone(),
+            )
+            .unwrap();
+        }
+        // À l'étape 4, sans tirage de sa nature : un Loup, première espèce
+        // de la Lisière, au niveau 7, le plus haut de la zone, non shiny,
+        // valeurs internes nulles, première habileté.
+        let tirages = vec![0, 2, 0, 0, 0, 0, 0, 0, 0];
+        let evenements = repondre_a(
+            &mut deroulement,
+            Choix::ContinuerLExpedition,
+            &contenu,
+            &depot,
+            0,
+            tirages,
+        )
+        .unwrap();
         assert!(matches!(
-            &evenements[2],
-            Evenement::AmeRencontree(texte) if texte.contains("colporteur")
+            &evenements[1],
+            Evenement::AmeRencontree(texte) if texte.contains("brigand")
         ));
         let Attente::ActionDeCombat(combat) = deroulement.attente() else {
             panic!("combat attendu");
@@ -2153,11 +2219,52 @@ mod tests {
         let vus = jouer_le_combat(&mut deroulement, &contenu, &depot);
         assert!(vus.iter().any(|evenement| matches!(
             evenement,
-            Evenement::AmeRecueillie { texte, soin: Soin::Remede } if texte.contains("Bertrand")
+            Evenement::AmeRecueillie(texte) if texte.contains("sans trop savoir")
         )));
         let partie = deroulement.partie().unwrap();
         assert!(partie.a_recueilli_l_ame(&MarchandId::new("bertrand")));
-        assert_eq!(partie.soins_en_vente(), vec![Soin::Potion, Soin::Remede]);
+        assert_eq!(partie.ames_portees().len(), 1);
+        // Portée, elle n'ajoute rien à l'étal tant qu'elle n'est pas donnée.
+        assert_eq!(partie.soins_en_vente(), vec![Soin::Potion]);
+    }
+
+    #[test]
+    fn l_ame_donnee_a_malvoise_ajoute_le_remede_a_son_etal() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut etat = etat_de(&partie_pour_les_expeditions(&contenu));
+        etat.ames_portees = vec![bertrand(&contenu)];
+        let mut deroulement = au_camp(Partie::restaurer(etat.clone()).unwrap(), &contenu, &depot);
+        let donner = || Choix::DonnerAme(MarchandId::new("bertrand"));
+        assert_eq!(
+            repondre_sans_tirage(&mut deroulement, donner(), &contenu, &depot),
+            Err(ErreurChoix::Marchand(ErreurMarchand::AucunMarchand))
+        );
+        etat.marchand_au_camp = true;
+        let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
+        assert_eq!(
+            repondre_sans_tirage(&mut deroulement, donner(), &contenu, &depot),
+            Ok(vec![Evenement::AmeDonnee {
+                marchand: "Bertrand".to_string(),
+                soin: Soin::Remede
+            }])
+        );
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert!(sauvegarde.ames_portees().is_empty());
+        assert_eq!(
+            sauvegarde.soins_en_vente(),
+            vec![Soin::Potion, Soin::Remede]
+        );
+        assert_eq!(
+            repondre_sans_tirage(&mut deroulement, donner(), &contenu, &depot),
+            Err(ErreurChoix::Marchand(ErreurMarchand::AmeNonPortee))
+        );
+    }
+
+    fn bertrand(contenu: &ContenuV1) -> MarchandMort {
+        contenu
+            .marchand_mort(&MarchandId::new("bertrand"))
+            .expect("Bertrand est au contenu")
     }
 
     #[test]
@@ -2199,7 +2306,23 @@ mod tests {
                 .iter()
                 .any(|evenement| matches!(evenement, Evenement::AmeRecueillie { .. }))
         );
-        assert!(deroulement.partie().unwrap().ames_recueillies().is_empty());
+        let partie = deroulement.partie().unwrap();
+        assert!(partie.ames_portees().is_empty());
+        assert_eq!(partie.ames_a_retrouver(), &[MarchandId::new("grete")]);
+        // Elle revient à coup sûr, à une étape tirée parmi les 4 premières :
+        // ici la première, sans tirage de sa nature.
+        let mut etat = etat_de(partie);
+        etat.marchand_au_camp = true;
+        let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
+        let marais = Choix::PartirEnExpedition(ZoneId::new("marais"));
+        repondre_a(&mut deroulement, marais, &contenu, &depot, 0, vec![1]).unwrap();
+        let Attente::ActionDeCombat(combat) = deroulement.attente() else {
+            panic!("combat attendu");
+        };
+        assert_eq!(
+            combat.adversaires()[0].espece().id().as_str(),
+            "marchand-zombie"
+        );
     }
 
     #[test]
@@ -2752,11 +2875,12 @@ mod tests {
         assert!(trouve > 0);
         assert_eq!(sauvegarde.sac().argent(), trouve - perdu);
         assert!(sauvegarde.coffre_du_camp().est_vide());
-        // Malvoise arrive une fois et reste au camp ; chaque âme recueillie
-        // l'est une fois, et seulement après sa rencontre (section 14.2).
+        // Malvoise est rencontré une fois et reste au camp ; chaque âme
+        // recueillie l'est une fois, et reste portée tant qu'elle n'est pas
+        // donnée (section 14.2).
         let malvoise = vus
             .iter()
-            .filter(|evenement| **evenement == Evenement::MalvoiseArrive)
+            .filter(|evenement| matches!(evenement, Evenement::MalvoiseRencontre { .. }))
             .count();
         assert_eq!(malvoise, 1);
         assert!(sauvegarde.marchand_au_camp());
@@ -2764,7 +2888,7 @@ mod tests {
         let rencontrees = compter(|evenement| matches!(evenement, Evenement::AmeRencontree(_)));
         let recueillies = compter(|evenement| matches!(evenement, Evenement::AmeRecueillie { .. }));
         assert!(rencontrees >= recueillies);
-        assert_eq!(sauvegarde.ames_recueillies().len(), recueillies);
+        assert_eq!(sauvegarde.ames_portees().len(), recueillies);
         assert!(recueillies > 0);
         // Les capsules du joueur sont celles des coffres, moins celles des sacs
         // perdus.
@@ -2833,7 +2957,9 @@ mod tests {
             sac: partie.sac().clone(),
             coffre_du_camp: partie.coffre_du_camp().clone(),
             marchand_au_camp: partie.marchand_au_camp(),
-            ames_recueillies: Vec::new(),
+            ames_donnees: Vec::new(),
+            ames_portees: Vec::new(),
+            ames_a_retrouver: Vec::new(),
             codex: partie.codex().clone(),
             zones_explorees: vec![ZoneId::new("lisiere"), ZoneId::new("marais")],
             indices_trouves: 3,

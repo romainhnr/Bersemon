@@ -63,15 +63,23 @@ const INDICE_1: &str = "au bout de la Lisière, des cordes neuves pendent encore
 
 const INDICE_2: &str = "le bourreau vaincu a parlé : son maître, le Baron pendu, s'est retiré au fond de la Vallée des Brumes, au-delà du Marais, là où les morts ne dorment pas.";
 
-/// Au retour de la première expédition menée au bout, après l'indice
-/// (section 14.2).
-pub const ARRIVEE_DE_MALVOISE: &str = "Au camp, un homme en robe noire vous attend près du feu, un crâne posé sur les genoux. Malvoise, nécromancien, a vu mourir bien des marchands sur ces routes. Rapportez-lui leur âme, et il vous vendra ce qu'ils vendaient de leur vivant.";
+/// Au bout de la première expédition menée au bout, quand le joueur porte
+/// l'âme de Bertrand (section 14.2).
+pub const MALVOISE_ET_L_AME: &str = "Sur le chemin du camp, un homme en robe noire vous attend, un crâne posé au creux du bras. \"Je t'ai vu recueillir cette âme. Elle m'intéresse, si tu ne sais pas quoi en faire. Je suis Malvoise, et les marchands morts sur ces routes ont encore des choses à vendre.\" Il vous suit jusqu'au camp et s'y installe.";
 
-// Le monstre qui tue Bertrand ou garde Ulrich n'est pas nommé : le combat
-// le présente aussitôt, et son nom ne dit pas son genre.
-const AVANT_BERTRAND: &str = "Un cri déchire la Lisière : un monstre se jette sur un colporteur et l'abat sous vos yeux. La bête se tourne vers vous.";
+/// Au bout de la première expédition menée au bout, sans âme.
+pub const MALVOISE_SANS_AME: &str = "Sur le chemin du camp, un homme en robe noire vous attend, un crâne posé au creux du bras. \"Je suis Malvoise. Les marchands meurent vite sur ces routes : rapporte-moi leur âme, et je te vendrai ce qu'ils vendaient de leur vivant.\" Il vous suit jusqu'au camp et s'y installe.";
 
-const APRES_BERTRAND: &str = "L'âme de Bertrand, colporteur, flotte au-dessus de son corps. Vous la recueillez pour Malvoise.";
+/// Bertrand est abattu à l'étape 4 de la Lisière par le brigand qui attend
+/// à l'étape 5 (section 14.2).
+const ETAPE_DE_BERTRAND: u32 = 4;
+
+// La bête qui attaque à la place de Bertrand ou garde Ulrich n'est pas
+// nommée : le combat la présente aussitôt, et son nom ne dit pas son genre.
+const AVANT_BERTRAND: &str = "Un cri déchire la Lisière : un brigand abat un colporteur sous vos yeux, lui arrache sa bourse et s'enfuit vers la sortie du bois. Une bête qui le suivait se tourne vers vous.";
+
+// Le joueur ne connaît pas encore Malvoise (section 14.2).
+const APRES_BERTRAND: &str = "L'âme de Bertrand, colporteur, flotte au-dessus de son corps. Vous la recueillez, sans trop savoir ce que c'est.";
 
 const AVANT_GRETE: &str = "Une marchande titube vers vous entre les roseaux, la peau verdie, sa carriole renversée derrière elle. Elle n'est plus tout à fait morte.";
 
@@ -178,8 +186,8 @@ impl ContenuV1 {
         )
         .expect("Bourreau conforme aux règles")
         .avec_ia(IaHumain::Relevee);
-        // Un marchand mort par zone, dont l'âme rejoint Malvoise (section
-        // 14.2).
+        // Un marchand mort par zone, dont le joueur donne l'âme à Malvoise
+        // (section 14.2).
         let marchand = |id: &str, nom: &str, soin, gardien, avant: &str, apres: &str| {
             MarchandMort::new(MarchandId::new(id), nom, soin, gardien, avant, apres)
                 .unwrap_or_else(|_| panic!("{nom} conforme aux règles"))
@@ -191,7 +199,8 @@ impl ContenuV1 {
             Gardien::MonstreDeLaZone,
             AVANT_BERTRAND,
             APRES_BERTRAND,
-        );
+        )
+        .a_l_etape(ETAPE_DE_BERTRAND);
         let grete = marchand(
             "grete",
             "Grete",
@@ -215,7 +224,7 @@ impl ContenuV1 {
             ZoneId::new("lisiere"),
             "Lisière du Bois-Sombre",
             (niveau(3), niveau(7)),
-            3,
+            5,
             2,
             vec![trouver("loup"), trouver("corbeau"), trouver("vipere")],
             vec![EspeceRare {
@@ -232,7 +241,7 @@ impl ContenuV1 {
             ZoneId::new("marais"),
             "Marais des Pendus",
             (niveau(8), niveau(13)),
-            4,
+            5,
             3,
             vec![
                 trouver("feu-follet"),

@@ -70,6 +70,10 @@ pub struct MarchandMort {
     gardien: Gardien,
     avant_combat: String,
     apres_victoire: String,
+    /// L'étape où son âme se rencontre à coup sûr, tant qu'elle n'est pas
+    /// recueillie ; sans elle, 10 % des étapes, puis une étape tirée après
+    /// une fuite ou une défaite (section 14.2).
+    etape: Option<u32>,
 }
 
 impl MarchandMort {
@@ -98,7 +102,17 @@ impl MarchandMort {
             gardien,
             avant_combat: avant_combat.into(),
             apres_victoire: apres_victoire.into(),
+            etape: None,
         })
+    }
+
+    pub fn a_l_etape(mut self, etape: u32) -> Self {
+        self.etape = Some(etape);
+        self
+    }
+
+    pub fn etape(&self) -> Option<u32> {
+        self.etape
     }
 
     pub fn id(&self) -> &MarchandId {

@@ -6,6 +6,7 @@
 //! Un bouton porte tout son choix ; un menu porte le genre du choix, et
 //! l'option choisie le complète ; un formulaire porte le genre du texte saisi.
 
+use bersemon_core::ame::MarchandId;
 use bersemon_core::attaque::AttaqueId;
 use bersemon_core::collection::{Emplacement, TriDuCamp};
 use bersemon_core::combat::Action;
@@ -180,6 +181,8 @@ pub enum Cle {
     AcheterSoins(Soin, u32),
     /// Menu des capsules en vente.
     AcheterCapsule,
+    /// Menu des âmes portées, à donner à Malvoise (section 14.2).
+    DonnerAme,
     /// Menu de monstres numéroté, avec leur prix.
     Vendre(u8),
     /// Le monstre choisi dans la gestion.
@@ -280,6 +283,7 @@ impl Cle {
             Cle::Rappeler(zone) => jouer(Choix::RappelerExpeditionAutomatique(zone.clone())),
             Cle::AcheterSoins(soin, nombre) => jouer(Choix::AcheterSoins(*soin, *nombre)),
             Cle::AcheterCapsule => jouer(Choix::AcheterCapsule(AttaqueId::new(valeur?))),
+            Cle::DonnerAme => jouer(Choix::DonnerAme(MarchandId::new(valeur?))),
             Cle::Vendre(_) => jouer(Choix::Vendre(lire_emplacement(valeur?)?)),
             Cle::VendreCeMonstre(emplacement) => jouer(Choix::Vendre(*emplacement)),
             Cle::Apprendre {
@@ -378,6 +382,7 @@ impl Cle {
                 format!("acheter-soins:{}:{nombre}", soin_en_texte(*soin))
             }
             Cle::AcheterCapsule => "acheter-capsule".to_string(),
+            Cle::DonnerAme => "donner-ame".to_string(),
             Cle::Vendre(numero) => format!("vendre:{numero}"),
             Cle::VendreCeMonstre(emplacement) => {
                 format!("vendre-monstre:{}", emplacement_en_texte(*emplacement))
@@ -432,6 +437,7 @@ impl Cle {
             "vue:options" => Cle::Afficher(Vue::Options),
             "se-suicider" => Cle::SeSuicider,
             "acheter-capsule" => Cle::AcheterCapsule,
+            "donner-ame" => Cle::DonnerAme,
             "fiche" => Cle::Fiche,
             "continuer" => Cle::Continuer,
             "rentrer" => Cle::Rentrer,
@@ -697,6 +703,7 @@ mod tests {
             Cle::AcheterSoins(Soin::Potion, 5),
             Cle::AcheterSoins(Soin::GrandePotion, 1),
             Cle::AcheterCapsule,
+            Cle::DonnerAme,
             Cle::Vendre(2),
             Cle::VendreCeMonstre(Emplacement::Equipe(2)),
             Cle::Apprendre {

@@ -155,6 +155,33 @@ mod tests {
         .unwrap()
     }
 
+    fn grete() -> MarchandMort {
+        marchand("grete", "Grete", Soin::GrandePotion)
+    }
+
+    fn ulrich() -> MarchandMort {
+        marchand("ulrich", "Ulrich", Soin::Elixir)
+    }
+
+    fn marchand(id: &str, nom: &str, soin: Soin) -> MarchandMort {
+        MarchandMort::new(
+            MarchandId::new(id),
+            nom,
+            soin,
+            Gardien::MonstreDeLaZone,
+            "",
+            "",
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn les_ames_portees_et_a_retrouver_se_relisent() {
+        let partie = charger_texte(&texte_de_partie()).unwrap().unwrap();
+        assert_eq!(partie.ames_portees()[0].id().as_str(), "grete");
+        assert_eq!(partie.ames_a_retrouver(), &[MarchandId::new("ulrich")]);
+    }
+
     fn capsule(id: &str, type_attaque: Type) -> Capsule {
         let attaque = Attaque::new(
             AttaqueId::new(id),
@@ -239,7 +266,7 @@ mod tests {
                 capsule("grand-coup", Type::Normal),
                 capsule("vague", Type::Eau),
             ],
-            marchands: vec![bertrand()],
+            marchands: vec![bertrand(), grete(), ulrich()],
         }
     }
 
@@ -282,7 +309,9 @@ mod tests {
                 .avec_soins(Soin::GrandePotion, 1)
                 .avec_soins(Soin::Elixir, 3),
             marchand_au_camp: true,
-            ames_recueillies: vec![bertrand()],
+            ames_donnees: vec![bertrand()],
+            ames_portees: vec![grete()],
+            ames_a_retrouver: vec![MarchandId::new("ulrich")],
             codex: partie.codex().clone(),
             zones_explorees: vec![ZoneId::new("lisiere")],
             indices_trouves: 3,
@@ -562,7 +591,7 @@ mod tests {
             .insert("version".to_string(), 10.into());
         let rechargee = charger_texte(&valeur.to_string()).unwrap().unwrap();
         assert!(rechargee.marchand_au_camp());
-        assert!(rechargee.ames_recueillies().is_empty());
+        assert!(rechargee.ames_donnees().is_empty());
         // Depuis la version 11, Malvoise n'est au camp que s'il y est arrivé.
         let rechargee = charger_texte(&en_version_11).unwrap().unwrap();
         assert!(!rechargee.marchand_au_camp());
@@ -572,7 +601,7 @@ mod tests {
     fn une_ame_dont_le_marchand_a_disparu_est_oubliee() {
         let texte = texte_de_partie().replacen("\"bertrand\"", "\"inconnu\"", 1);
         let rechargee = charger_texte(&texte).unwrap().unwrap();
-        assert!(rechargee.ames_recueillies().is_empty());
+        assert!(rechargee.ames_donnees().is_empty());
     }
 
     #[test]
