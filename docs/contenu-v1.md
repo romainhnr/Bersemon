@@ -526,7 +526,7 @@ Stades suivants, nommés seulement, à coder avec des zones au-delà du niveau 2
 | Mandragore, Mandragore ancienne | Arbre-pendu (Plante, Spectre), niveau 36 | aucune |
 | Chat noir, Chat des ombres | Cait sith (Ténèbres, Spectre), niveau 36 | aucune |
 | Loup, Warg | Loup-garou (Combat, Ténèbres), niveau 36 | aucune |
-| Fée noire, Fée-sorcière | Reine des ronces, niveau 25 | aucune |
+| Fée noire, Fée-sorcière | Reine des ronces, niveau 25, codée à l'étape 47 | aucune |
 
 La Vouivre évoluera une fois, en Dragon des brumes, au niveau 45. L'Elfe, le Baron pendu, le Schnoz et le marchand zombie n'évoluent pas ; les autres espèces s'arrêtent à leur première évolution.
 

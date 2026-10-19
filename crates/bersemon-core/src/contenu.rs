@@ -552,7 +552,7 @@ const fn avec_effet(fiche: FicheAttaque, statut: Statut, chance: u8) -> FicheAtt
 }
 
 /// Section 1 de docs/contenu-v1.md, dans le même ordre.
-const ATTAQUES: [FicheAttaque; 76] = [
+const ATTAQUES: [FicheAttaque; 77] = [
     fiche(
         "souffle-chaud",
         "Souffle chaud",
@@ -1056,6 +1056,19 @@ const ATTAQUES: [FicheAttaque; 76] = [
         Paralysie,
         20,
     ),
+    // Attaque d'évolution de la Reine des ronces (étape 47).
+    avec_effet(
+        fiche(
+            "ronces-maudites",
+            "Ronces maudites",
+            Type::Plante,
+            Speciale,
+            85,
+            90,
+        ),
+        Poison,
+        20,
+    ),
 ];
 
 struct FicheCapsule {
@@ -1221,7 +1234,7 @@ const MARCHAND_ZOMBIE: FicheEspece = FicheEspece {
 /// Section 2 de docs/contenu-v1.md, dans l'ordre du codex : les monstres de
 /// départ, les communs, les rares, l'Apôtre, le monstre caché, puis les
 /// formes évoluées de la section 8.
-const ESPECES: [FicheEspece; 36] = [
+const ESPECES: [FicheEspece; 37] = [
     FicheEspece {
         id: "salamandre",
         nom: "Salamandre",
@@ -1654,7 +1667,7 @@ const ESPECES: [FicheEspece; 36] = [
             (12, "nuee"),
             (12, "sentence"),
         ],
-        evolution: None,
+        evolution: par_niveau("reine-des-ronces", 25, "ronces-maudites"),
     },
     FicheEspece {
         id: "basilic-royal",
@@ -1846,6 +1859,27 @@ const ESPECES: [FicheEspece; 36] = [
             (20, "bucher"),
             (25, "flagellation"),
             (28, "psaume-impie"),
+        ],
+        evolution: None,
+    },
+    // Deuxième évolution de la Fée-sorcière (étape 47).
+    FicheEspece {
+        id: "reine-des-ronces",
+        nom: "Reine des ronces",
+        types: &[Type::Insecte, Type::Plante],
+        role: Role::Offensif,
+        stats_de_base: [70, 55, 65, 110, 85, 95],
+        rendement_experience: 140,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Sorcellerie, Habilete::Celerite],
+        apprentissage: &[
+            (1, "bourdonnement"),
+            (4, "regard-funeste"),
+            (8, "malefice"),
+            (12, "nuee"),
+            (12, "sentence"),
+            (25, "ronces-maudites"),
+            (25, "lianes-etrangleuses"),
         ],
         evolution: None,
     },
@@ -2213,7 +2247,7 @@ mod tests {
     #[test]
     fn contenu_conforme_aux_regles() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.especes().len(), 36);
+        assert_eq!(contenu.especes().len(), 37);
         assert_eq!(contenu.zones().len(), 4);
         assert_eq!(contenu.piste().indices().count(), 4);
         // Toute espèce rencontrée en zone se retrouve au chargement d'une
@@ -2322,7 +2356,7 @@ mod tests {
                 assert!(zone.especes().iter().all(|espece| espece.id() != vers.id()));
             }
         }
-        assert_eq!(evoluees, 13);
+        assert_eq!(evoluees, 14);
     }
 
     #[test]

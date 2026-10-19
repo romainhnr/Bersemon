@@ -381,4 +381,19 @@ mod tests {
             Some(PierreDEvolution::Lune)
         );
     }
+
+    #[test]
+    fn la_fee_sorciere_evolue_une_deuxieme_fois_au_niveau_25() {
+        let contenu = ContenuV1::new();
+        let mut fee = creer(&contenu, "fee-noire", 25);
+        let vers = evolution_possible(&fee, &AU_CAMP, &contenu).unwrap();
+        faire_evoluer(&mut fee, vers);
+        assert_eq!(fee.espece().id().as_str(), "fee-sorciere");
+        let vers = evolution_possible(&fee, &AU_CAMP, &contenu).unwrap();
+        assert_eq!(vers.id().as_str(), "reine-des-ronces");
+        faire_evoluer(&mut fee, vers);
+        assert_eq!(evolution_possible(&fee, &AU_CAMP, &contenu), None);
+        let fee_sorciere = creer(&contenu, "fee-sorciere", 24);
+        assert_eq!(evolution_possible(&fee_sorciere, &AU_CAMP, &contenu), None);
+    }
 }
