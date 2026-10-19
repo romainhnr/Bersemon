@@ -1057,6 +1057,22 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         assert!(cles.contains(&Cle::AcheterCapsuleDHabilete));
         assert!(cles.contains(&Cle::AcheterPierre(PierreDEvolution::Lune)));
         afficher(&partie, Vue::Coffre);
+        // Aucun menu du coffre n'est coupé : chaque ressource et chaque pierre
+        // se déplace (section 14.3).
+        let coffre = crate::ecran_coffre::coffre(&partie);
+        let sortes = contenu
+            .especes()
+            .iter()
+            .filter(|espece| espece.ressource().is_some())
+            .count();
+        for rangee in &coffre.rangees {
+            if let Rangee::Menu(menu) = rangee {
+                assert!(menu.options.len() < OPTIONS_PAR_MENU, "{}", menu.indication);
+                if menu.cle == Cle::SortirRessourcesDuCoffre {
+                    assert_eq!(menu.options.len(), sortes + 4);
+                }
+            }
+        }
         afficher(&partie, Vue::Vente);
         let cles = afficher(&partie, Vue::Camp);
         assert!(cles.contains(&Cle::Afficher(Vue::Forge)));

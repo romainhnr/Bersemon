@@ -298,6 +298,34 @@ impl ContenuV1 {
         .and_then(|zone| zone.avec_monstre_cache(schnoz()))
         .map(|zone| zone.avec_marchand_mort(ulrich))
         .expect("Vallée conforme aux règles");
+        // Ouverte par l'indice que laisse le Baron pendu (section 9.4).
+        let abbaye = Zone::new(
+            ZoneId::new("abbaye"),
+            "Abbaye des Cendres",
+            (niveau(21), niveau(27)),
+            5,
+            3,
+            vec![
+                trouver("squelette"),
+                trouver("gargouille"),
+                trouver("goule"),
+                trouver("chauve-souris-de-crypte"),
+            ],
+            vec![
+                EspeceRare {
+                    espece: trouver("chimere"),
+                    pacifique: false,
+                },
+                EspeceRare {
+                    espece: trouver("ange-dechu"),
+                    pacifique: true,
+                },
+            ],
+            expedition_automatique(4, 150..=320, 1300..=2200, 1..=3, 120..=220),
+            coffre(90..=150, capsules_de("abbaye")),
+        )
+        .and_then(|zone| zone.avec_monstre_cache(schnoz()))
+        .expect("Abbaye conforme aux règles");
         // Le Baron pendu attend au fond de la Vallée, que le second indice,
         // donné par le Bourreau, ouvre (section 9.4).
         let baron = Apotre::new(trouver("baron-pendu"), &vallee, AVANT_LE_BARON, EPILOGUE)
@@ -338,7 +366,7 @@ impl ContenuV1 {
             .collect();
         Self {
             especes,
-            zones: vec![lisiere, marais, vallee],
+            zones: vec![lisiere, marais, vallee, abbaye],
             piste,
             capsules,
             plans_d_amelioration,
@@ -480,7 +508,7 @@ const fn avec_effet(fiche: FicheAttaque, statut: Statut, chance: u8) -> FicheAtt
 }
 
 /// Section 1 de docs/contenu-v1.md, dans le même ordre.
-const ATTAQUES: [FicheAttaque; 67] = [
+const ATTAQUES: [FicheAttaque; 74] = [
     fiche(
         "souffle-chaud",
         "Souffle chaud",
@@ -923,6 +951,46 @@ const ATTAQUES: [FicheAttaque; 67] = [
         85,
         90,
     ),
+    // Abbaye des Cendres (étape 45).
+    fiche(
+        "griffe-de-pierre",
+        "Griffe de pierre",
+        Type::Roche,
+        Physique,
+        50,
+        100,
+    ),
+    fiche(
+        "chute-de-pierres",
+        "Chute de pierres",
+        Type::Roche,
+        Physique,
+        75,
+        90,
+    ),
+    fiche(
+        "festin-macabre",
+        "Festin macabre",
+        Type::Tenebres,
+        Physique,
+        80,
+        90,
+    ),
+    avec_effet(
+        fiche("ultrason", "Ultrason", Type::Normal, Speciale, 70, 100),
+        Paralysie,
+        10,
+    ),
+    fiche(
+        "onde-psychique",
+        "Onde psychique",
+        Type::Psychique,
+        Speciale,
+        65,
+        100,
+    ),
+    fiche("jugement", "Jugement", Type::Psychique, Speciale, 90, 90),
+    fiche("bucher", "Bûcher", Type::Feu, Speciale, 90, 85),
 ];
 
 struct FicheCapsule {
@@ -933,7 +1001,7 @@ struct FicheCapsule {
 }
 
 /// Section 6 de docs/contenu-v1.md, dans le même ordre.
-const CAPSULES: [FicheCapsule; 9] = [
+const CAPSULES: [FicheCapsule; 12] = [
     FicheCapsule {
         attaque: "brasier",
         prix: 150,
@@ -978,6 +1046,21 @@ const CAPSULES: [FicheCapsule; 9] = [
         attaque: "furie-draconique",
         prix: 400,
         zone: "vallee",
+    },
+    FicheCapsule {
+        attaque: "bucher",
+        prix: 450,
+        zone: "abbaye",
+    },
+    FicheCapsule {
+        attaque: "festin-macabre",
+        prix: 400,
+        zone: "abbaye",
+    },
+    FicheCapsule {
+        attaque: "ultrason",
+        prix: 400,
+        zone: "abbaye",
     },
 ];
 
@@ -1073,7 +1156,7 @@ const MARCHAND_ZOMBIE: FicheEspece = FicheEspece {
 /// Section 2 de docs/contenu-v1.md, dans l'ordre du codex : les monstres de
 /// départ, les communs, les rares, l'Apôtre, le monstre caché, puis les
 /// formes évoluées de la section 8.
-const ESPECES: [FicheEspece; 30] = [
+const ESPECES: [FicheEspece; 35] = [
     FicheEspece {
         id: "salamandre",
         nom: "Salamandre",
@@ -1601,6 +1684,86 @@ const ESPECES: [FicheEspece; 30] = [
         ],
         evolution: None,
     },
+    // Abbaye des Cendres, section 10 de docs/contenu-v1.md (étape 45).
+    FicheEspece {
+        id: "gargouille",
+        nom: "Gargouille",
+        types: &[Type::Roche, Type::Vol],
+        role: Role::Soutien,
+        stats_de_base: [60, 80, 90, 30, 50, 40],
+        rendement_experience: 105,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Carapace, Habilete::Ferocite],
+        apprentissage: &[
+            (1, "griffe-de-pierre"),
+            (10, "pique"),
+            (22, "chute-de-pierres"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "goule",
+        nom: "Goule",
+        types: &[Type::Poison, Type::Tenebres],
+        role: Role::Offensif,
+        stats_de_base: [65, 78, 55, 40, 45, 57],
+        rendement_experience: 102,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Instinct, Habilete::Ferocite],
+        apprentissage: &[
+            (1, "morsure"),
+            (1, "morsure-venimeuse"),
+            (18, "croc-de-venin"),
+            (24, "festin-macabre"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "chauve-souris-de-crypte",
+        nom: "Chauve-souris de crypte",
+        types: &[Type::Vol, Type::Poison],
+        role: Role::Offensif,
+        stats_de_base: [50, 55, 45, 55, 45, 90],
+        rendement_experience: 100,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Celerite, Habilete::Eclaireur],
+        apprentissage: &[
+            (1, "coup-de-bec"),
+            (1, "cri-strident"),
+            (8, "morsure-venimeuse"),
+            (22, "ultrason"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "chimere",
+        nom: "Chimère",
+        types: &[Type::Feu, Type::Dragon],
+        role: Role::Offensif,
+        stats_de_base: [75, 80, 65, 85, 60, 55],
+        rendement_experience: 185,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Affinite, Habilete::Ferocite],
+        apprentissage: &[
+            (1, "crachat-de-braises"),
+            (1, "souffle-draconique"),
+            (15, "flamme-vive"),
+            (25, "furie-draconique"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "ange-dechu",
+        nom: "Ange déchu",
+        types: &[Type::Psychique, Type::Vol],
+        role: Role::Soutien,
+        stats_de_base: [70, 50, 60, 95, 90, 55],
+        rendement_experience: 180,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Volonte, Habilete::Instinct],
+        apprentissage: &[(1, "onde-psychique"), (12, "bourrasque"), (24, "jugement")],
+        evolution: None,
+    },
 ];
 
 fn creer_espece(fiche: &FicheEspece) -> Espece {
@@ -1739,7 +1902,7 @@ const PRIX_D_UNE_RESSOURCE_RARE: u32 = 15;
 
 /// Espèce, identifiant et nom de chaque ressource : seules les espèces
 /// sauvages qui se combattent en ont une (section 14.3).
-const RESSOURCES: [(&str, &str, &str); 9] = [
+const RESSOURCES: [(&str, &str, &str); 13] = [
     ("loup", "croc-de-loup", "Croc de loup"),
     ("corbeau", "plume-de-corbeau", "Plume de corbeau"),
     ("vipere", "ecaille-de-vipere", "Écaille de vipère"),
@@ -1749,6 +1912,14 @@ const RESSOURCES: [(&str, &str, &str); 9] = [
     ("squelette", "os-de-squelette", "Os de squelette"),
     ("basilic", "croc-de-basilic", "Croc de basilic"),
     ("vouivre", "ecaille-de-vouivre", "Écaille de vouivre"),
+    ("gargouille", "eclat-de-gargouille", "Éclat de gargouille"),
+    ("goule", "dent-de-goule", "Dent de goule"),
+    (
+        "chauve-souris-de-crypte",
+        "aile-de-chauve-souris",
+        "Aile de chauve-souris",
+    ),
+    ("chimere", "crin-de-chimere", "Crin de chimère"),
 ];
 
 fn creer_attaque(id: &str) -> Attaque {
@@ -1916,7 +2087,7 @@ mod tests {
     #[test]
     fn chaque_capsule_sert_a_une_espece_qui_ne_l_apprend_pas() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.capsules().len(), 9);
+        assert_eq!(contenu.capsules().len(), 12);
         for capsule in contenu.capsules() {
             let utile = contenu.especes().iter().any(|espece| {
                 capsule.convient_a(espece) && espece.attaque_apprise(capsule.id()).is_none()
@@ -1948,13 +2119,17 @@ mod tests {
             ids(&contenu.zones()[2]),
             vec!["malefice", "bourrasque", "furie-draconique"]
         );
+        assert_eq!(
+            ids(&contenu.zones()[3]),
+            vec!["bucher", "festin-macabre", "ultrason"]
+        );
     }
 
     #[test]
     fn contenu_conforme_aux_regles() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.especes().len(), 30);
-        assert_eq!(contenu.zones().len(), 3);
+        assert_eq!(contenu.especes().len(), 35);
+        assert_eq!(contenu.zones().len(), 4);
         assert_eq!(contenu.piste().indices().count(), 2);
         // Toute espèce rencontrée en zone se retrouve au chargement d'une
         // sauvegarde.

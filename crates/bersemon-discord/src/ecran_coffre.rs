@@ -27,15 +27,17 @@ const LOTS_D_ARGENT: [u32; 4] = [10, 50, 100, 500];
 
 pub fn coffre(partie: &Partie) -> Question {
     let mut lignes: Vec<Rangee> = Vec::new();
+    // Une capsule d'attaque sert où qu'elle soit (section 13.3) : la
+    // prendre dans le coffre ne ferait que l'exposer à une défaite.
     lignes.extend(menu(
         Cle::SortirDuCoffre,
         "Prendre dans le coffre",
-        options(partie.coffre_du_camp()),
+        options(partie.coffre_du_camp(), false),
     ));
     lignes.extend(menu(
         Cle::RangerAuCoffre,
         "Ranger dans le coffre",
-        options(partie.sac()),
+        options(partie.sac(), true),
     ));
     lignes.extend(menu(
         Cle::SortirRessourcesDuCoffre,
@@ -64,8 +66,8 @@ pub fn coffre(partie: &Partie) -> Question {
 }
 
 /// Les lots plus petits que ce qu'il y a, puis le tout, pour chaque soin et
-/// l'argent ; puis chaque capsule.
-fn options(inventaire: &Inventaire) -> Vec<OptionDeMenu> {
+/// l'argent ; puis chaque capsule, si on la propose.
+fn options(inventaire: &Inventaire, avec_capsules: bool) -> Vec<OptionDeMenu> {
     let mut options = Vec::new();
     for (soin, disponible) in inventaire.soins().presents() {
         let lots: &[u32] = if soin == Soin::Potion {
@@ -116,24 +118,22 @@ fn options(inventaire: &Inventaire) -> Vec<OptionDeMenu> {
             Some("Tout".to_string()),
         ));
     }
-    for capsule in inventaire.capsules() {
+    for capsule in inventaire.capsules().iter().filter(|_| avec_capsules) {
         options.push(option(
             Objet::Capsule(capsule.id().clone()),
             format!("Capsule {}", capsule.attaque().nom()),
             Some(decrire_attaque(capsule.attaque())),
         ));
     }
-    // Avec les neuf capsules d'attaque du contenu, tous les soins et les
-    // capsules d'habileté, la limite est tout juste atteinte ; elle est tenue
-    // au cas où il y en aurait davantage, aux dépens des dernières capsules
-    // d'attaque.
+    // Sans capsule, 16 options au plus ; un sac qui en porterait beaucoup
+    // perdrait les dernières du menu, que "Tout ranger" range quand même.
     options.truncate(OPTIONS_PAR_MENU);
     options
 }
 
-/// Une, puis toutes, pour chaque sorte de ressource et de pierre : avec les
-/// neuf ressources et les deux pierres du contenu, 22 options au plus
-/// (sections 5.4 et 14.3).
+/// Toutes celles d'une sorte pour chaque ressource, une ou toutes pour
+/// chaque pierre : avec les treize ressources et les deux pierres du
+/// contenu, 17 options au plus (sections 5.4 et 14.3).
 fn options_de_ressources(inventaire: &Inventaire) -> Vec<OptionDeMenu> {
     let mut options = Vec::new();
     for &(pierre, nombre) in inventaire.pierres() {
@@ -147,16 +147,8 @@ fn options_de_ressources(inventaire: &Inventaire) -> Vec<OptionDeMenu> {
         ));
     }
     for (ressource, nombre) in inventaire.ressources() {
-        let id = ressource.id().clone();
-        if *nombre > 1 {
-            options.push(option(
-                Objet::Ressources(id.clone(), 1),
-                ressources(ressource, 1),
-                None,
-            ));
-        }
         options.push(option(
-            Objet::Ressources(id, *nombre),
+            Objet::Ressources(ressource.id().clone(), *nombre),
             ressources(ressource, *nombre),
             Some("Tout".to_string()),
         ));
