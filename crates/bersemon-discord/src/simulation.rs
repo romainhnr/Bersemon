@@ -321,11 +321,13 @@ fn jouer_un_coup(
             }
             let partie = session.deroulement.partie().unwrap();
             let niveau = partie.collection().equipe()[0].niveau().valeur();
+            let abbaye = choisir_dans(message, |cle| *cle == Cle::Partir, "abbaye");
             let vallee = choisir_dans(message, |cle| *cle == Cle::Partir, "vallee");
             let marais = choisir_dans(message, |cle| *cle == Cle::Partir, "marais");
-            match (vallee, marais) {
-                (Some(clic), _) if niveau >= 24 => clic,
-                (_, Some(clic)) if niveau >= 12 => clic,
+            match (abbaye, vallee, marais) {
+                (Some(clic), _, _) if niveau >= 34 => clic,
+                (_, Some(clic), _) if niveau >= 24 => clic,
+                (_, _, Some(clic)) if niveau >= 12 => clic,
                 _ => choisir_dans(message, |cle| *cle == Cle::Partir, "lisiere").expect("lisière"),
             }
         }
@@ -641,10 +643,12 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
         let session = joueurs.session(JOUEUR, &contenu);
         let affiche = message(session, &evenements, None, &contenu, maintenant);
         verifier_les_limites(&affiche);
-        if evenements
+        // Jusqu'à la chute du deuxième Apôtre, puis le retour au camp.
+        let epilogues = vus
             .iter()
-            .any(|evenement| matches!(evenement, Evenement::Epilogue(_)))
-        {
+            .filter(|evenement| matches!(evenement, Evenement::Epilogue(_)))
+            .count();
+        if epilogues == 2 && session.deroulement.attente() == Attente::Camp {
             break;
         }
         let clic = jouer_un_coup(session, &affiche, &mut tour, automatique_faite, visite);
@@ -693,13 +697,13 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
         vus.iter()
             .any(|evenement| matches!(evenement, Evenement::Epilogue(_)))
     );
-    // Le brigand et le Bourreau barrent la Lisière et le Marais jusqu'à leur
-    // défaite, une seule chacun (section 10.7).
+    // Le brigand, le Bourreau et l'Inquisiteur barrent leur zone jusqu'à
+    // leur défaite, une seule chacun (section 10.7).
     let humains_vaincus = vus
         .iter()
         .filter(|evenement| matches!(evenement, Evenement::HumainVaincu { .. }))
         .count();
-    assert_eq!(humains_vaincus, 2);
+    assert_eq!(humains_vaincus, 3);
     assert!(
         automatique_faite,
         "expédition automatique jamais accueillie"
@@ -736,8 +740,14 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
     let session = joueurs.session(JOUEUR, &contenu);
     assert_eq!(session.deroulement.attente(), Attente::Camp);
     let partie = session.deroulement.partie().unwrap();
-    assert_eq!(partie.indices_trouves(), 2);
-    assert_eq!(partie.apotres_vaincus(), &[EspeceId::new("baron-pendu")]);
+    assert_eq!(partie.indices_trouves(), 4);
+    assert_eq!(
+        partie.apotres_vaincus(),
+        &[
+            EspeceId::new("baron-pendu"),
+            EspeceId::new("abbesse-ecorchee")
+        ]
+    );
     assert_eq!(partie.collection().equipe()[0].nom(), "Braise");
     assert!(dossier.join(format!("{JOUEUR}.json")).exists());
     let _ = fs::remove_dir_all(dossier);

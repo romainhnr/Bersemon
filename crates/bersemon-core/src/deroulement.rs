@@ -3086,7 +3086,8 @@ mod tests {
 
     /// Joueur simple : la meilleure attaque, une potion sous la moitié des
     /// PV, retour au camp en mauvaise posture, le Marais à partir du niveau
-    /// 12, la Vallée à partir du niveau 24, toutes les captures possibles.
+    /// 12, la Vallée à partir du niveau 24, l'Abbaye à partir du niveau 34,
+    /// toutes les captures possibles.
     fn jouer_un_coup(deroulement: &Deroulement, contenu: &ContenuV1) -> Choix {
         let partie = deroulement.partie();
         match deroulement.attente() {
@@ -3098,7 +3099,9 @@ mod tests {
                 let partie = partie.unwrap();
                 let zones = partie.zones_accessibles(contenu.zones(), contenu.piste());
                 let niveau = partie.collection().equipe()[0].niveau().valeur();
-                let zone = if zones.len() > 2 && niveau >= 24 {
+                let zone = if zones.len() > 3 && niveau >= 34 {
+                    zones[3]
+                } else if zones.len() > 2 && niveau >= 24 {
                     zones[2]
                 } else if zones.len() > 1 && niveau >= 12 {
                     zones[1]
@@ -3583,11 +3586,13 @@ mod tests {
             let evenements = deroulement
                 .repondre(choix.clone(), &mut contexte)
                 .unwrap_or_else(|erreur| panic!("{choix:?} refusé : {erreur}"));
-            let fin = evenements
-                .iter()
-                .any(|evenement| matches!(evenement, Evenement::Epilogue(_)));
             vus.extend(evenements);
-            if fin {
+            // Jusqu'à la chute du deuxième Apôtre, puis le retour au camp.
+            let epilogues = vus
+                .iter()
+                .filter(|evenement| matches!(evenement, Evenement::Epilogue(_)))
+                .count();
+            if epilogues == 2 && deroulement.attente() == Attente::Camp {
                 break;
             }
         }
@@ -3595,7 +3600,7 @@ mod tests {
             .iter()
             .filter(|evenement| matches!(evenement, Evenement::Indice { .. }))
             .count();
-        assert_eq!(indices, 2);
+        assert_eq!(indices, 4);
         // Chaque indice et chaque combat de fin de zone sont d'abord annoncés
         // par un bouton (section 9.2).
         let annonces_d_indice = annonces
@@ -3616,7 +3621,7 @@ mod tests {
             .iter()
             .filter(|annonce| **annonce == Annonce::Combat)
             .count();
-        assert!(fins_de_zone >= 3);
+        assert!(fins_de_zone >= 5);
         assert_eq!(annonces_de_combat, fins_de_zone);
         assert!(
             vus.iter()
@@ -3633,20 +3638,28 @@ mod tests {
                 .count();
             assert_eq!(montres, 1, "{conseil:?}");
         }
-        // L'Apôtre attendait à la dernière étape : l'épilogue est suivi du
-        // retour au camp et de la sauvegarde.
+        // Chaque Apôtre attendait à la dernière étape : l'épilogue est suivi
+        // du retour au camp et de la sauvegarde. Le Baron laisse l'indice 3,
+        // qui ouvre l'Abbaye (section 9.4).
         assert_eq!(deroulement.attente(), Attente::Camp);
         let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
-        assert_eq!(sauvegarde.indices_trouves(), 2);
+        assert_eq!(sauvegarde.indices_trouves(), 4);
         assert_eq!(
             sauvegarde.apotres_vaincus(),
-            &[EspeceId::new("baron-pendu")]
+            &[
+                EspeceId::new("baron-pendu"),
+                EspeceId::new("abbesse-ecorchee")
+            ]
         );
-        // Le brigand et le Bourreau ont barré la Lisière et le Marais jusqu'à
-        // leur défaite (section 10.7).
+        // Le brigand, le Bourreau et l'Inquisiteur ont barré leur zone
+        // jusqu'à leur défaite (section 10.7).
         assert_eq!(
             sauvegarde.humains_vaincus(),
-            &[HumainId::new("brigand"), HumainId::new("bourreau")]
+            &[
+                HumainId::new("brigand"),
+                HumainId::new("bourreau"),
+                HumainId::new("inquisiteur")
+            ]
         );
         // La défaite du Bourreau a libéré Gunther, une fois (section 13.4).
         let liberations = vus

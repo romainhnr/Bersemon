@@ -570,7 +570,7 @@ Les ressources rares sont lentes à réunir : une expédition dans le Marais rap
 
 ## 10. Abbaye des Cendres et deuxième Apôtre
 
-Décidés le 19/10/2026, pour les étapes 44 à 47 (gamedesign.md, sections 5.2, 9.1 et 9.4), contenu validé par l'utilisateur. À coder après les améliorations du camp.
+Décidés le 19/10/2026, pour les étapes 44 à 47 (gamedesign.md, sections 5.2, 9.1 et 9.4), contenu validé par l'utilisateur. Codés aux étapes 45 (zone, espèces, capsules, ressources) et 46 (Inquisiteur, Abbesse écorchée, indices 3 et 4). L'Inquisiteur a l'IA relevée du Bourreau (hypothèse, gamedesign.md, Q86).
 
 Zone :
 

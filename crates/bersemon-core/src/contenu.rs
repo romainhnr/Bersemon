@@ -67,6 +67,10 @@ const INDICE_1: &str = "au bout de la Lisière, des cordes neuves pendent encore
 
 const INDICE_2: &str = "le bourreau vaincu a parlé : son maître, le Baron pendu, s'est retiré au fond de la Vallée des Brumes, au-delà du Marais, là où les morts ne dorment pas.";
 
+const INDICE_3: &str = "parmi les reliques du Baron, une lettre scellée du même sceau, signée de l'Abbesse : à l'est, l'Abbaye des Cendres brûle sans jamais s'éteindre. Une autre Apôtre y attend.";
+
+const INDICE_4: &str = "l'inquisiteur vaincu a parlé : l'Abbesse écorchée se terre sous le chœur, dans la crypte où elle a livré ses sœurs au bûcher.";
+
 /// Au bout de la première expédition menée au bout, quand le joueur porte
 /// l'âme de Bertrand (section 14.2).
 pub const MALVOISE_ET_L_AME: &str = "Sur le chemin du camp, un homme en robe noire vous attend, un crâne posé au creux du bras. \"Je t'ai vu recueillir cette âme. Elle m'intéresse, si tu ne sais pas quoi en faire. Je suis Malvoise, et les marchands morts sur ces routes ont encore des choses à vendre.\" Il vous suit jusqu'au camp et s'y installe.";
@@ -105,6 +109,15 @@ const APRES_LE_BOURREAU: &str = "Le bourreau s'effondre dans la vase, sa hache b
 
 // Après la victoire sur le Bourreau (section 13.4).
 const LIBERATION_DE_GUNTHER: &str = "Derrière le gibet, un homme enchaîné relève la tête : Gunther, forgeron, que le bourreau gardait pour forger ses chaînes. Libéré, il vous suit jusqu'au camp et y installe sa forge.";
+
+const AVANT_L_INQUISITEUR: &str = "Sur le parvis de l'abbaye, un inquisiteur en robe rouge vous attend, entouré de trois bêtes. Il brûle au nom de l'Abbesse, et il compte bien vous brûler aussi.";
+
+const APRES_L_INQUISITEUR: &str =
+    "L'inquisiteur s'effondre sur les dalles, son livre de prières en cendres.";
+
+const AVANT_L_ABBESSE: &str = "Au fond de la crypte, une silhouette sans peau prie devant un autel de chair. L'Abbesse écorchée, Apôtre du Démiurge, se retourne lentement. Il n'y aura pas de fuite.";
+
+const EPILOGUE_DE_L_ABBESSE: &str = "L'Abbesse écorchée s'effondre sur l'autel. Le même sceau, une main ouverte, est gravé dans sa chair. Deux Apôtres sont tombés ; le Démiurge, lui, attend toujours. Votre traque continue.";
 
 const AVANT_LE_BARON: &str = "Au fond de la Vallée, la brume se déchire sur un gibet dressé contre le ciel. Le Baron pendu, Apôtre du Démiurge, s'y balance encore, puis ouvre les yeux. Il n'y aura pas de fuite.";
 
@@ -298,6 +311,21 @@ impl ContenuV1 {
         .and_then(|zone| zone.avec_monstre_cache(schnoz()))
         .map(|zone| zone.avec_marchand_mort(ulrich))
         .expect("Vallée conforme aux règles");
+        // Au service de l'Abbesse, il garde l'Abbaye (section 9.4).
+        let inquisiteur = Humain::new(
+            HumainId::new("inquisiteur"),
+            "Inquisiteur",
+            vec![
+                (trouver("gargouille"), niveau(27)),
+                (trouver("goule"), niveau(27)),
+                (trouver("chimere"), niveau(28)),
+            ],
+            300,
+            AVANT_L_INQUISITEUR,
+            APRES_L_INQUISITEUR,
+        )
+        .expect("Inquisiteur conforme aux règles")
+        .avec_ia(IaHumain::Relevee);
         // Ouverte par l'indice que laisse le Baron pendu (section 9.4).
         let abbaye = Zone::new(
             ZoneId::new("abbaye"),
@@ -325,6 +353,7 @@ impl ContenuV1 {
             coffre(90..=150, capsules_de("abbaye")),
         )
         .and_then(|zone| zone.avec_monstre_cache(schnoz()))
+        .map(|zone| zone.avec_humain(inquisiteur))
         .expect("Abbaye conforme aux règles");
         // Le Baron pendu attend au fond de la Vallée, que le second indice,
         // donné par le Bourreau, ouvre (section 9.4).
@@ -339,7 +368,22 @@ impl ContenuV1 {
             baron,
         )
         .expect("chapitre du Baron conforme aux règles");
-        let piste = Piste::new(vec![chapitre_du_baron]).expect("piste conforme aux règles");
+        // Le troisième indice se trouve au bout de l'expédition qui abat le
+        // Baron, dans la Vallée, et ouvre l'Abbaye (section 9.4).
+        let abbesse = Apotre::new(
+            trouver("abbesse-ecorchee"),
+            &abbaye,
+            AVANT_L_ABBESSE,
+            EPILOGUE_DE_L_ABBESSE,
+        )
+        .expect("Abbesse écorchée conforme aux règles");
+        let chapitre_de_l_abbesse = Chapitre::new(
+            vec![indice(&vallee, INDICE_3), indice(&abbaye, INDICE_4)],
+            abbesse,
+        )
+        .expect("chapitre de l'Abbesse conforme aux règles");
+        let piste = Piste::new(vec![chapitre_du_baron, chapitre_de_l_abbesse])
+            .expect("piste conforme aux règles");
         let ressource = |id: &str| {
             especes
                 .iter()
@@ -508,7 +552,7 @@ const fn avec_effet(fiche: FicheAttaque, statut: Statut, chance: u8) -> FicheAtt
 }
 
 /// Section 1 de docs/contenu-v1.md, dans le même ordre.
-const ATTAQUES: [FicheAttaque; 74] = [
+const ATTAQUES: [FicheAttaque; 76] = [
     fiche(
         "souffle-chaud",
         "Souffle chaud",
@@ -991,6 +1035,27 @@ const ATTAQUES: [FicheAttaque; 74] = [
     ),
     fiche("jugement", "Jugement", Type::Psychique, Speciale, 90, 90),
     fiche("bucher", "Bûcher", Type::Feu, Speciale, 90, 85),
+    // Attaques Obscur de l'Abbesse écorchée (étape 46).
+    fiche(
+        "flagellation",
+        "Flagellation",
+        Type::Obscur,
+        Physique,
+        85,
+        95,
+    ),
+    avec_effet(
+        fiche(
+            "psaume-impie",
+            "Psaume impie",
+            Type::Obscur,
+            Speciale,
+            90,
+            95,
+        ),
+        Paralysie,
+        20,
+    ),
 ];
 
 struct FicheCapsule {
@@ -1156,7 +1221,7 @@ const MARCHAND_ZOMBIE: FicheEspece = FicheEspece {
 /// Section 2 de docs/contenu-v1.md, dans l'ordre du codex : les monstres de
 /// départ, les communs, les rares, l'Apôtre, le monstre caché, puis les
 /// formes évoluées de la section 8.
-const ESPECES: [FicheEspece; 35] = [
+const ESPECES: [FicheEspece; 36] = [
     FicheEspece {
         id: "salamandre",
         nom: "Salamandre",
@@ -1764,6 +1829,26 @@ const ESPECES: [FicheEspece; 35] = [
         apprentissage: &[(1, "onde-psychique"), (12, "bourrasque"), (24, "jugement")],
         evolution: None,
     },
+    // Deuxième Apôtre (étape 46).
+    FicheEspece {
+        id: "abbesse-ecorchee",
+        nom: "Abbesse écorchée",
+        types: &[Type::Obscur],
+        role: Role::Offensif,
+        stats_de_base: [90, 75, 80, 100, 90, 75],
+        rendement_experience: 280,
+        rarete: Rarete::Apotre,
+        habiletes: &[Habilete::Sorcellerie, Habilete::Volonte],
+        apprentissage: &[
+            (1, "lamentation"),
+            (8, "malefice"),
+            (15, "hurlement-des-abysses"),
+            (20, "bucher"),
+            (25, "flagellation"),
+            (28, "psaume-impie"),
+        ],
+        evolution: None,
+    },
 ];
 
 fn creer_espece(fiche: &FicheEspece) -> Espece {
@@ -2128,9 +2213,9 @@ mod tests {
     #[test]
     fn contenu_conforme_aux_regles() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.especes().len(), 35);
+        assert_eq!(contenu.especes().len(), 36);
         assert_eq!(contenu.zones().len(), 4);
-        assert_eq!(contenu.piste().indices().count(), 2);
+        assert_eq!(contenu.piste().indices().count(), 4);
         // Toute espèce rencontrée en zone se retrouve au chargement d'une
         // sauvegarde.
         for zone in contenu.zones() {
@@ -2376,6 +2461,35 @@ mod tests {
     }
 
     #[test]
+    fn l_abbesse_obscure_attend_au_bout_de_l_abbaye_au_niveau_29() {
+        let contenu = ContenuV1::new();
+        let abbesse = contenu.piste().apotres().nth(1).unwrap();
+        assert_eq!(abbesse.niveau(), niveau(29));
+        assert_eq!(abbesse.zone().as_str(), "abbaye");
+        assert_eq!(abbesse.espece().types().liste(), &[Type::Obscur]);
+        assert_eq!(abbesse.espece().rarete(), Rarete::Apotre);
+        let monstre = creer(&contenu, "abbesse-ecorchee", 29);
+        let ids: Vec<&str> = monstre
+            .attaques()
+            .liste()
+            .iter()
+            .map(|attaque| attaque.id().as_str())
+            .collect();
+        assert_eq!(
+            ids,
+            vec![
+                "hurlement-des-abysses",
+                "bucher",
+                "flagellation",
+                "psaume-impie"
+            ]
+        );
+        let inquisiteur = contenu.zones()[3].humain().unwrap();
+        assert_eq!(inquisiteur.id().as_str(), "inquisiteur");
+        assert_eq!(inquisiteur.argent(), 300);
+    }
+
+    #[test]
     fn la_piste_commence_dans_la_lisiere() {
         let contenu = ContenuV1::new();
         let zones: Vec<&str> = contenu
@@ -2383,6 +2497,6 @@ mod tests {
             .indices()
             .map(|indice| indice.zone.as_str())
             .collect();
-        assert_eq!(zones, vec!["lisiere", "marais"]);
+        assert_eq!(zones, vec!["lisiere", "marais", "vallee", "abbaye"]);
     }
 }
