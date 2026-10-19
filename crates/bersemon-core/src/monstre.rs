@@ -297,6 +297,29 @@ impl Monstre {
         }
     }
 
+    /// Change d'espèce, en gardant valeurs internes, shiny, surnom, niveau,
+    /// XP, statut et attaques connues (section 5.4). L'habileté garde sa
+    /// position dans la liste de l'espèce ; les PV actuels augmentent
+    /// d'autant que les PV max, sauf pour un monstre KO, qui le reste.
+    pub(crate) fn evoluer(&mut self, vers: Espece) {
+        let position = self
+            .habilete
+            .and_then(|habilete| self.espece.habiletes().iter().position(|h| *h == habilete));
+        let pv_max_avant = self.stats().pv;
+        self.espece = vers;
+        let habiletes = self.espece.habiletes();
+        if let Some(habilete) = position
+            .and_then(|position| habiletes.get(position))
+            .or(habiletes.first())
+        {
+            self.habilete = Some(*habilete);
+        }
+        let pv_max = self.stats().pv;
+        if !self.est_ko() {
+            self.pv_actuels = (self.pv_actuels + pv_max.saturating_sub(pv_max_avant)).min(pv_max);
+        }
+    }
+
     /// Oublie l'attaque en `position` pour apprendre `attaque` (Q33).
     pub fn remplacer_attaque(
         &mut self,

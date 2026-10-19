@@ -11,6 +11,8 @@ use crate::codex::Codex;
 use crate::collection::{Collection, Emplacement, ErreurCollection, Placement};
 use crate::combat::{BilanCombat, Combat, ErreurCombat, Issue};
 use crate::espece::{Espece, EspeceId};
+use crate::evolution::{ErreurEvolution, ResultatEvolution, evolution_possible, faire_evoluer};
+use crate::catalogue::Catalogue;
 use crate::expedition::{ErreurExpedition, Expedition, RencontreDeLAme};
 use crate::expedition_automatique::{
     BilanExpeditionAutomatique, ErreurExpeditionAutomatique, Estimation, ExpeditionAutomatique,
@@ -498,6 +500,54 @@ impl Partie {
                     .map_err(ErreurApprentissage::Attaque)
             }
         }
+    }
+
+    /// Le monstre et l'espèce en laquelle il évoluerait au camp, sans rien
+    /// changer : de quoi demander confirmation. Refuse ce que refuserait
+    /// `faire_evoluer`.
+    pub fn estimer_evolution(
+        &self,
+        emplacement: Emplacement,
+        catalogue: &dyn Catalogue,
+    ) -> Result<(Monstre, Espece), ErreurEvolution> {
+        let monstre = self
+            .collection
+            .monstre(emplacement)
+            .ok_or(ErreurEvolution::Collection(
+                ErreurCollection::EmplacementInexistant(emplacement),
+            ))?;
+        let vers =
+            evolution_possible(monstre, catalogue).ok_or(ErreurEvolution::ImpossiblePourLInstant)?;
+        Ok((monstre.clone(), vers))
+    }
+
+    /// Au camp, après confirmation (section 5.4) : la forme évoluée compte
+    /// comme capturée au codex. Une attaque d'évolution en attente rejoint
+    /// les attaques à choisir. Rend le monstre d'avant l'évolution.
+    pub fn faire_evoluer(
+        &mut self,
+        emplacement: Emplacement,
+        catalogue: &dyn Catalogue,
+    ) -> Result<(Monstre, ResultatEvolution), ErreurEvolution> {
+        let (avant, vers) = self.estimer_evolution(emplacement, catalogue)?;
+        self.codex.noter_capture(vers.id());
+        let monstre = self
+            .collection
+            .monstre_a_modifier(emplacement)
+            .expect("emplacement vérifié");
+        let resultat = faire_evoluer(monstre, vers);
+        if let Some(attaque) = &resultat.attaque_en_attente {
+            self.attaques_a_choisir.push(AttaqueAChoisir {
+                emplacement,
+                attaque: attaque.clone(),
+            });
+        }
+        Ok((avant, resultat))
+    }
+
+    /// Une évolution après un combat, sur l'équipe du bilan.
+    pub(crate) fn noter_evolution(&mut self, espece: &EspeceId) {
+        self.codex.noter_capture(espece);
     }
 
     fn verifier_marchand(&self) -> Result<(), ErreurMarchand> {

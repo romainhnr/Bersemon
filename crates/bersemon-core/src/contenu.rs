@@ -15,6 +15,7 @@ use crate::attaque::{Attaque, AttaqueId, Categorie, EffetSecondaire};
 use crate::capsule::Capsule;
 use crate::catalogue::Catalogue;
 use crate::espece::{AttaqueApprise, Espece, EspeceId, Rarete, Role};
+use crate::evolution::{ConditionEvolution, Evolution};
 use crate::expedition::ParametresCoffre;
 use crate::expedition_automatique::ParametresExpeditionAutomatique;
 use crate::habilete::Habilete;
@@ -430,7 +431,7 @@ const fn avec_effet(fiche: FicheAttaque, statut: Statut, chance: u8) -> FicheAtt
 }
 
 /// Section 1 de docs/contenu-v1.md, dans le même ordre.
-const ATTAQUES: [FicheAttaque; 54] = [
+const ATTAQUES: [FicheAttaque; 63] = [
     fiche(
         "souffle-chaud",
         "Souffle chaud",
@@ -802,6 +803,16 @@ const ATTAQUES: [FicheAttaque; 54] = [
         Paralysie,
         10,
     ),
+    // Attaques d'évolution (section 5.4).
+    fiche("jet-de-lave", "Jet de lave", Type::Feu, Speciale, 85, 90),
+    fiche("trombe", "Trombe", Type::Eau, Physique, 85, 90),
+    avec_effet(fiche("hurlement-de-mandragore", "Hurlement de mandragore", Type::Plante, Speciale, 75, 100), Paralysie, 20),
+    fiche("griffe-d-ombre", "Griffe d'ombre", Type::Tenebres, Physique, 80, 95),
+    fiche("croc-noir", "Croc noir", Type::Tenebres, Physique, 75, 95),
+    fiche("bec-funeste", "Bec funeste", Type::Vol, Physique, 75, 95),
+    avec_effet(fiche("venin-noir", "Venin noir", Type::Poison, Speciale, 75, 100), Poison, 30),
+    fiche("nuee", "Nuée", Type::Insecte, Speciale, 75, 100),
+    fiche("regard-de-mort", "Regard de mort", Type::Poison, Speciale, 85, 90),
 ];
 
 struct FicheCapsule {
@@ -874,6 +885,27 @@ struct FicheEspece {
     habiletes: &'static [Habilete],
     /// Niveau d'apprentissage et identifiant de l'attaque.
     apprentissage: &'static [(u8, &'static str)],
+    /// Section 8 de docs/contenu-v1.md.
+    evolution: Option<FicheEvolution>,
+}
+
+struct FicheEvolution {
+    vers: &'static str,
+    condition: FicheCondition,
+    /// Dans la liste d'apprentissage de l'espèce d'arrivée.
+    attaque: &'static str,
+}
+
+enum FicheCondition {
+    Niveau(u8),
+}
+
+const fn par_niveau(vers: &'static str, niveau: u8, attaque: &'static str) -> Option<FicheEvolution> {
+    Some(FicheEvolution {
+        vers,
+        condition: FicheCondition::Niveau(niveau),
+        attaque,
+    })
 }
 
 /// Grete relevée d'entre les morts : hors du codex, elle n'est pas parmi
@@ -892,11 +924,13 @@ const MARCHAND_ZOMBIE: FicheEspece = FicheEspece {
         (1, "morsure-venimeuse"),
         (1, "charge-spectrale"),
     ],
+    evolution: None,
 };
 
 /// Section 2 de docs/contenu-v1.md, dans l'ordre du codex : les monstres de
-/// départ, les communs, les rares, l'Apôtre, puis le monstre caché.
-const ESPECES: [FicheEspece; 17] = [
+/// départ, les communs, les rares, l'Apôtre, le monstre caché, puis les
+/// formes évoluées de la section 8.
+const ESPECES: [FicheEspece; 26] = [
     FicheEspece {
         id: "salamandre",
         nom: "Salamandre",
@@ -913,6 +947,7 @@ const ESPECES: [FicheEspece; 17] = [
             (10, "flamme-vive"),
             (14, "fournaise"),
         ],
+        evolution: par_niveau("lezard-de-braise", 16, "jet-de-lave"),
     },
     FicheEspece {
         id: "crapaud",
@@ -930,6 +965,7 @@ const ESPECES: [FicheEspece; 17] = [
             (10, "langue-venimeuse"),
             (14, "lame-de-fond"),
         ],
+        evolution: par_niveau("crapaud-geant", 16, "trombe"),
     },
     FicheEspece {
         id: "mandragore",
@@ -947,6 +983,7 @@ const ESPECES: [FicheEspece; 17] = [
             (10, "ronces"),
             (14, "spores-putrides"),
         ],
+        evolution: par_niveau("mandragore-ancienne", 16, "hurlement-de-mandragore"),
     },
     FicheEspece {
         id: "chat-noir",
@@ -964,6 +1001,7 @@ const ESPECES: [FicheEspece; 17] = [
             (10, "morsure"),
             (14, "coup-de-grace"),
         ],
+        evolution: par_niveau("chat-des-ombres", 16, "griffe-d-ombre"),
     },
     FicheEspece {
         id: "loup",
@@ -975,6 +1013,7 @@ const ESPECES: [FicheEspece; 17] = [
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Traqueur, Habilete::Fouineur],
         apprentissage: &[(1, "griffure"), (4, "morsure"), (9, "curee")],
+        evolution: par_niveau("warg", 16, "croc-noir"),
     },
     FicheEspece {
         id: "corbeau",
@@ -986,6 +1025,7 @@ const ESPECES: [FicheEspece; 17] = [
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Pillard, Habilete::Eclaireur],
         apprentissage: &[(1, "coup-de-bec"), (4, "pique"), (8, "regard-funeste")],
+        evolution: par_niveau("corbeau-des-gibets", 16, "bec-funeste"),
     },
     FicheEspece {
         id: "vipere",
@@ -1001,6 +1041,7 @@ const ESPECES: [FicheEspece; 17] = [
             (3, "regard-petrifiant"),
             (9, "etreinte"),
         ],
+        evolution: par_niveau("aspic", 16, "venin-noir"),
     },
     FicheEspece {
         id: "feu-follet",
@@ -1017,6 +1058,7 @@ const ESPECES: [FicheEspece; 17] = [
             (10, "flamme-vive"),
             (12, "frisson-d-outre-tombe"),
         ],
+        evolution: None,
     },
     FicheEspece {
         id: "armure-hantee",
@@ -1032,6 +1074,7 @@ const ESPECES: [FicheEspece; 17] = [
             (8, "lame-rouillee"),
             (11, "charge-spectrale"),
         ],
+        evolution: None,
     },
     FicheEspece {
         id: "fee-noire",
@@ -1043,6 +1086,7 @@ const ESPECES: [FicheEspece; 17] = [
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Sorcellerie, Habilete::Celerite],
         apprentissage: &[(1, "bourdonnement"), (4, "regard-funeste"), (8, "malefice")],
+        evolution: par_niveau("fee-sorciere", 12, "nuee"),
     },
     FicheEspece {
         id: "squelette",
@@ -1058,6 +1102,7 @@ const ESPECES: [FicheEspece; 17] = [
             (8, "lame-rouillee"),
             (11, "charge-spectrale"),
         ],
+        evolution: None,
     },
     FicheEspece {
         id: "cerf-blanc",
@@ -1069,6 +1114,7 @@ const ESPECES: [FicheEspece; 17] = [
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Volonte, Habilete::Instinct],
         apprentissage: &[(1, "coup-de-bois"), (5, "ruade"), (8, "lumiere-d-aube")],
+        evolution: None,
     },
     FicheEspece {
         id: "basilic",
@@ -1085,6 +1131,7 @@ const ESPECES: [FicheEspece; 17] = [
             (10, "souffle-putride"),
             (13, "croc-de-venin"),
         ],
+        evolution: par_niveau("basilic-royal", 22, "regard-de-mort"),
     },
     FicheEspece {
         id: "elfe",
@@ -1100,6 +1147,7 @@ const ESPECES: [FicheEspece; 17] = [
             (5, "bourrasque"),
             (9, "lumiere-d-aube"),
         ],
+        evolution: None,
     },
     FicheEspece {
         id: "vouivre",
@@ -1115,6 +1163,7 @@ const ESPECES: [FicheEspece; 17] = [
             (8, "pique"),
             (12, "furie-draconique"),
         ],
+        evolution: None,
     },
     FicheEspece {
         id: "baron-pendu",
@@ -1133,6 +1182,7 @@ const ESPECES: [FicheEspece; 17] = [
             (18, "etreinte-obscure"),
             (21, "hurlement-des-abysses"),
         ],
+        evolution: None,
     },
     FicheEspece {
         id: "schnoz",
@@ -1148,6 +1198,179 @@ const ESPECES: [FicheEspece; 17] = [
             (1, "lueur-trompeuse"),
             (10, "rayon-astral"),
         ],
+        evolution: None,
+    },
+    // Premières évolutions par niveau, section 8 de docs/contenu-v1.md.
+    FicheEspece {
+        id: "lezard-de-braise",
+        nom: "Lézard de braise",
+        types: &[Type::Feu],
+        role: Role::Offensif,
+        stats_de_base: [60, 50, 55, 92, 70, 83],
+        rendement_experience: 86,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Affinite, Habilete::Sorcellerie],
+        apprentissage: &[
+            (1, "souffle-chaud"),
+            (3, "crachat-de-braises"),
+            (7, "souffle-draconique"),
+            (10, "flamme-vive"),
+            (14, "fournaise"),
+            (16, "jet-de-lave"),
+            (16, "souffle-putride"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "crapaud-geant",
+        nom: "Crapaud géant",
+        types: &[Type::Eau],
+        role: Role::Offensif,
+        stats_de_base: [72, 88, 70, 45, 58, 67],
+        rendement_experience: 88,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Ferocite, Habilete::Carapace],
+        apprentissage: &[
+            (1, "charge-gluante"),
+            (3, "plongeon"),
+            (7, "coup-de-langue"),
+            (10, "langue-venimeuse"),
+            (14, "lame-de-fond"),
+            (16, "trombe"),
+            (16, "deferlante"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "mandragore-ancienne",
+        nom: "Mandragore ancienne",
+        types: &[Type::Plante],
+        role: Role::Soutien,
+        stats_de_base: [90, 58, 90, 58, 84, 30],
+        rendement_experience: 89,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Carapace, Habilete::Volonte],
+        apprentissage: &[
+            (1, "coup-de-racine"),
+            (3, "feuille-tranchante"),
+            (7, "cri-strident"),
+            (10, "ronces"),
+            (14, "spores-putrides"),
+            (16, "hurlement-de-mandragore"),
+            (16, "lianes-etrangleuses"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "chat-des-ombres",
+        nom: "Chat des ombres",
+        types: &[Type::Tenebres],
+        role: Role::Offensif,
+        stats_de_base: [52, 92, 45, 50, 48, 113],
+        rendement_experience: 86,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Celerite, Habilete::Traqueur],
+        apprentissage: &[
+            (1, "griffure"),
+            (3, "coup-sournois"),
+            (7, "feulement"),
+            (10, "morsure"),
+            (14, "coup-de-grace"),
+            (16, "griffe-d-ombre"),
+            (16, "malefice"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "warg",
+        nom: "Warg",
+        types: &[Type::Normal, Type::Tenebres],
+        role: Role::Offensif,
+        stats_de_base: [65, 80, 58, 38, 52, 75],
+        rendement_experience: 98,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Traqueur, Habilete::Fouineur],
+        apprentissage: &[
+            (1, "griffure"),
+            (4, "morsure"),
+            (9, "curee"),
+            (16, "croc-noir"),
+            (16, "coup-sournois"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "corbeau-des-gibets",
+        nom: "Corbeau des gibets",
+        types: &[Type::Vol, Type::Tenebres],
+        role: Role::Offensif,
+        stats_de_base: [55, 72, 48, 58, 48, 90],
+        rendement_experience: 92,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Pillard, Habilete::Eclaireur],
+        apprentissage: &[
+            (1, "coup-de-bec"),
+            (4, "pique"),
+            (8, "regard-funeste"),
+            (16, "bec-funeste"),
+            (16, "bourrasque"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "aspic",
+        nom: "Aspic",
+        types: &[Type::Poison],
+        role: Role::Offensif,
+        stats_de_base: [52, 64, 52, 64, 58, 80],
+        rendement_experience: 95,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Celerite, Habilete::Instinct],
+        apprentissage: &[
+            (1, "morsure-venimeuse"),
+            (3, "regard-petrifiant"),
+            (9, "etreinte"),
+            (16, "venin-noir"),
+            (16, "croc-de-venin"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "fee-sorciere",
+        nom: "Fée-sorcière",
+        types: &[Type::Insecte, Type::Tenebres],
+        role: Role::Offensif,
+        stats_de_base: [50, 44, 50, 84, 64, 96],
+        rendement_experience: 100,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Sorcellerie, Habilete::Celerite],
+        apprentissage: &[
+            (1, "bourdonnement"),
+            (4, "regard-funeste"),
+            (8, "malefice"),
+            (12, "nuee"),
+            (12, "sentence"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "basilic-royal",
+        nom: "Basilic royal",
+        types: &[Type::Poison, Type::Dragon],
+        role: Role::Offensif,
+        stats_de_base: [90, 88, 80, 92, 75, 70],
+        rendement_experience: 238,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Affinite, Habilete::Ferocite],
+        apprentissage: &[
+            (1, "morsure-venimeuse"),
+            (8, "regard-petrifiant"),
+            (10, "souffle-putride"),
+            (13, "croc-de-venin"),
+            (22, "regard-de-mort"),
+            (22, "furie-draconique"),
+        ],
+        evolution: None,
     },
 ];
 
@@ -1186,6 +1409,10 @@ fn creer_espece(fiche: &FicheEspece) -> Espece {
     )
     .avec_rarete(fiche.rarete)
     .avec_habiletes(fiche.habiletes.to_vec());
+    let espece = match &fiche.evolution {
+        Some(evolution) => espece.avec_evolution(creer_evolution(evolution)),
+        None => espece,
+    };
     match RESSOURCES.iter().find(|(espece, _, _)| *espece == fiche.id) {
         Some((_, id, nom)) => {
             let prix = match fiche.rarete {
@@ -1196,6 +1423,17 @@ fn creer_espece(fiche: &FicheEspece) -> Espece {
         }
         None => espece,
     }
+}
+
+fn creer_evolution(fiche: &FicheEvolution) -> Evolution {
+    let condition = match fiche.condition {
+        FicheCondition::Niveau(valeur) => ConditionEvolution::Niveau(niveau(valeur)),
+    };
+    Evolution::new(
+        EspeceId::new(fiche.vers),
+        condition,
+        AttaqueId::new(fiche.attaque),
+    )
 }
 
 /// Ce que Malvoise donne d'une ressource, selon la rareté de son espèce
@@ -1419,7 +1657,7 @@ mod tests {
     #[test]
     fn contenu_conforme_aux_regles() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.especes().len(), 17);
+        assert_eq!(contenu.especes().len(), 26);
         assert_eq!(contenu.zones().len(), 3);
         assert_eq!(contenu.piste().indices().len(), 2);
         // Toute espèce rencontrée en zone se retrouve au chargement d'une
@@ -1447,7 +1685,14 @@ mod tests {
             .collect();
         let apotre = contenu.piste().apotre().espece().id();
         for espece in contenu.especes() {
-            let attendue = if espece.id() == apotre {
+            // Une forme évoluée a la rareté de sa forme de base (section 5.4).
+            let base = contenu.especes().iter().find(|base| {
+                base.evolution()
+                    .is_some_and(|evolution| evolution.vers() == espece.id())
+            });
+            let attendue = if let Some(base) = base {
+                base.rarete()
+            } else if espece.id() == apotre {
                 Rarete::Apotre
             } else if rares.contains(&espece.id()) {
                 Rarete::Rare
@@ -1456,6 +1701,50 @@ mod tests {
             };
             assert_eq!(espece.rarete(), attendue, "{}", espece.id().as_str());
         }
+    }
+
+    #[test]
+    fn chaque_evolution_mene_a_une_forme_conforme() {
+        let contenu = ContenuV1::new();
+        let mut evoluees = 0;
+        for base in contenu.especes() {
+            let Some(evolution) = base.evolution() else {
+                continue;
+            };
+            evoluees += 1;
+            let vers = contenu
+                .espece(evolution.vers())
+                .unwrap_or_else(|| panic!("évolution de {} absente", base.id().as_str()));
+            let nom = vers.id().as_str();
+            assert!(
+                vers.attaque_apprise(evolution.attaque()).is_some(),
+                "{nom} n'apprend pas son attaque d'évolution"
+            );
+            for apprise in base.apprentissage() {
+                assert!(
+                    vers.apprentissage().contains(apprise),
+                    "{nom} n'apprend pas {}",
+                    apprise.attaque.id().as_str()
+                );
+            }
+            assert_eq!(vers.habiletes(), base.habiletes(), "{nom}");
+            assert_eq!(vers.role(), base.role(), "{nom}");
+            assert_eq!(vers.ressource(), None, "{nom}");
+            assert_eq!(
+                vers.rendement_experience(),
+                base.rendement_experience() * 14 / 10,
+                "{nom}"
+            );
+            assert!(
+                vers.total_des_stats_de_base() > base.total_des_stats_de_base(),
+                "{nom}"
+            );
+            // Aucune forme évoluée n'est sauvage (section 5.4).
+            for zone in contenu.zones() {
+                assert!(zone.especes().iter().all(|espece| espece.id() != vers.id()));
+            }
+        }
+        assert_eq!(evoluees, 9);
     }
 
     #[test]

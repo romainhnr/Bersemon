@@ -20,6 +20,8 @@ use crate::capsule::{Capsule, ErreurApprentissage};
 use crate::collection::{Emplacement, ErreurCollection, Placement, TriDuCamp};
 use crate::combat::{self, Action, BilanCombat, Combat, ErreurCombat, Issue, Phase};
 use crate::contenu::ContenuV1;
+use crate::espece::Espece;
+use crate::evolution::{ErreurEvolution, evolution_possible, faire_evoluer};
 use crate::expedition::{ErreurExpedition, EvenementExpedition, Expedition};
 use crate::expedition_automatique::{
     BilanExpeditionAutomatique, ErreurExpeditionAutomatique, ExpeditionAutomatique,
@@ -95,6 +97,9 @@ pub enum Choix {
     /// Au camp, après confirmation : une capsule d'habileté fait passer ce
     /// monstre à l'autre habileté de son espèce (section 5.9).
     ChangerDHabilete(Emplacement),
+    /// Au camp, après confirmation, pour un monstre qui remplit la condition
+    /// de son évolution (section 5.4).
+    FaireEvoluer(Emplacement),
     /// Au camp : du sac vers le coffre (section 13.3).
     RangerAuCoffre(Objet),
     /// Au camp : du coffre vers le sac (section 13.3).
@@ -131,6 +136,9 @@ pub enum Choix {
     /// Position de l'attaque oubliée pour apprendre la nouvelle.
     OublierAttaque(usize),
     RenoncerALAttaque,
+    /// Répond à l'évolution proposée après un combat (section 5.4).
+    Evoluer,
+    NePasEvoluer,
     RelacherPourLaCapture(Emplacement),
     RelacherLaCapture,
     /// Répond à une annonce : combattre, ou lire l'indice (section 9.2).
@@ -193,6 +201,12 @@ pub enum Attente<'a> {
         monstre: &'a Monstre,
         nouvelle: &'a Attaque,
     },
+    /// Après un combat, le joueur fait évoluer ce monstre ou repousse son
+    /// évolution (section 5.4).
+    Evolution {
+        monstre: &'a Monstre,
+        vers: &'a Espece,
+    },
     /// L'équipe et le camp sont pleins : le joueur relâche un de ses monstres
     /// pour garder la capture, ou relâche la capture (Q12).
     PlaceManquante(&'a Monstre),
@@ -226,6 +240,11 @@ pub enum Confirmation {
     ChangerDHabilete {
         monstre: Monstre,
         nouvelle: Habilete,
+    },
+    /// L'évolution est définitive (section 5.4).
+    Evoluer {
+        monstre: Monstre,
+        vers: Espece,
     },
 }
 
@@ -302,6 +321,15 @@ pub enum Evenement {
         monstre: Monstre,
         nouvelle: Attaque,
     },
+    /// Le monstre avant et après son évolution, et l'attaque d'évolution
+    /// apprise sans rien oublier ; sinon, son choix suit (section 5.4).
+    Evolution {
+        avant: Monstre,
+        apres: Monstre,
+        attaque: Option<Attaque>,
+    },
+    /// Le joueur a repoussé l'évolution de ce monstre.
+    EvolutionRepoussee(Monstre),
     /// Au camp, sans rien oublier ; sinon `AttaqueRemplacee` (section
     /// 13.10).
     AttaqueApprise {
@@ -419,6 +447,7 @@ pub enum ErreurChoix {
     CapsuleInconnue(AttaqueId),
     Apprentissage(ErreurApprentissage),
     Habilete(ErreurChangementDHabilete),
+    Evolution(ErreurEvolution),
 }
 
 impl fmt::Display for ErreurChoix {
@@ -441,6 +470,7 @@ impl fmt::Display for ErreurChoix {
             }
             ErreurChoix::Apprentissage(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Habilete(erreur) => write!(f, "{erreur}"),
+            ErreurChoix::Evolution(erreur) => write!(f, "{erreur}"),
         }
     }
 }
@@ -593,6 +623,20 @@ impl Deroulement {
         self.etat = suivant;
         Ok(Reponse::Faite)
     }
+}
+
+/// Après un combat, seul un monstre qui a gagné un niveau se voit proposer
+/// son évolution : un refus vaut ainsi jusqu'au niveau suivant (section 5.4).
+fn evolution_a_proposer(
+    bilan: &BilanCombat,
+    index: usize,
+    contexte: &Contexte<'_>,
+) -> Option<Espece> {
+    let rapport = bilan.experience.get(index)?.as_ref()?;
+    if rapport.niveau_apres <= rapport.niveau_avant {
+        return None;
+    }
+    evolution_possible(&bilan.equipe[index], contexte.contenu)
 }
 
 fn zone_du_contenu<'c>(contenu: &'c ContenuV1, id: &ZoneId) -> Result<&'c Zone, ErreurChoix> {
@@ -894,6 +938,34 @@ impl EnJeu {
                 sauvegarder(&self.partie, contexte.depot, evenements);
                 Ok(Reponse::Faite)
             }
+            Choix::FaireEvoluer(emplacement) => {
+                if !confirme {
+                    // Une évolution impossible est refusée sans demander de
+                    // confirmation.
+                    let (monstre, vers) = self
+                        .partie
+                        .estimer_evolution(*emplacement, contexte.contenu)
+                        .map_err(ErreurChoix::Evolution)?;
+                    return Ok(Reponse::a_confirmer(Confirmation::Evoluer { monstre, vers }));
+                }
+                let (avant, resultat) = self
+                    .partie
+                    .faire_evoluer(*emplacement, contexte.contenu)
+                    .map_err(ErreurChoix::Evolution)?;
+                let apres = self
+                    .partie
+                    .collection()
+                    .monstre(*emplacement)
+                    .cloned()
+                    .expect("le monstre vient d'évoluer");
+                evenements.push(Evenement::Evolution {
+                    avant,
+                    apres,
+                    attaque: resultat.attaque_apprise,
+                });
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
             Choix::DonnerAme(marchand) => {
                 let donnee = self
                     .partie
@@ -1114,6 +1186,7 @@ enum Moment {
     AnnonceDeCombat(Combat),
     Combat(Combat),
     OubliAttaque(OubliEnCours),
+    Evolution(EvolutionEnCours),
     PlaceManquante(CaptureSansPlace),
     /// L'expédition est finie et révèle un indice au retour (section 9.2).
     AnnonceDIndice,
@@ -1139,6 +1212,19 @@ struct OubliEnCours {
     nouvelle: Attaque,
     /// Attaques qu'il voudra apprendre ensuite.
     suivantes: VecDeque<Attaque>,
+    /// L'attaque d'évolution : après son choix, le bilan passe au monstre
+    /// suivant, sans proposer d'autre évolution.
+    apres_evolution: bool,
+}
+
+/// Lecture du bilan d'un combat : l'évolution d'un monstre est proposée
+/// (section 5.4).
+struct EvolutionEnCours {
+    bilan: BilanCombat,
+    fin: FinDeCombat,
+    /// Position du monstre dans l'équipe du bilan.
+    monstre: usize,
+    vers: Espece,
 }
 
 /// Capture qui ne trouve pas de place, et celles qui restent à placer.
@@ -1164,6 +1250,10 @@ impl EnExpedition {
             Moment::OubliAttaque(oubli) => Attente::OubliAttaque {
                 monstre: &oubli.bilan.equipe[oubli.monstre],
                 nouvelle: &oubli.nouvelle,
+            },
+            Moment::Evolution(evolution) => Attente::Evolution {
+                monstre: &evolution.bilan.equipe[evolution.monstre],
+                vers: &evolution.vers,
             },
             Moment::PlaceManquante(attente) => Attente::PlaceManquante(&attente.capture),
         }
@@ -1195,6 +1285,9 @@ impl EnExpedition {
                 self.combattre(partie, combat, choix, confirme, contexte, evenements)
             }
             Moment::OubliAttaque(oubli) => self.oublier(partie, oubli, choix, contexte, evenements),
+            Moment::Evolution(evolution) => {
+                self.evoluer(partie, evolution, choix, contexte, evenements)
+            }
             Moment::PlaceManquante(attente) => {
                 self.faire_place(partie, attente, choix, confirme, contexte, evenements)
             }
@@ -1392,6 +1485,16 @@ impl EnExpedition {
                     monstre: index,
                     nouvelle,
                     suivantes: attaques,
+                    apres_evolution: false,
+                });
+                return Reponse::Faite;
+            }
+            if let Some(vers) = evolution_a_proposer(&bilan, index, contexte) {
+                self.moment = Moment::Evolution(EvolutionEnCours {
+                    bilan,
+                    fin,
+                    monstre: index,
+                    vers,
                 });
                 return Reponse::Faite;
             }
@@ -1454,11 +1557,74 @@ impl EnExpedition {
             self.moment = Moment::OubliAttaque(oubli);
             return Ok(Reponse::Faite);
         }
+        if !oubli.apres_evolution {
+            if let Some(vers) = evolution_a_proposer(&oubli.bilan, oubli.monstre, contexte) {
+                self.moment = Moment::Evolution(EvolutionEnCours {
+                    bilan: oubli.bilan,
+                    fin: oubli.fin,
+                    monstre: oubli.monstre,
+                    vers,
+                });
+                return Ok(Reponse::Faite);
+            }
+        }
         let suivant = oubli.monstre + 1;
         Ok(self.lire_le_bilan(
             partie,
             oubli.bilan,
             oubli.fin,
+            suivant,
+            contexte,
+            evenements,
+        ))
+    }
+
+    /// Une évolution acceptée peut encore demander de choisir l'attaque à
+    /// oublier ; repoussée, elle sera proposée au prochain niveau gagné.
+    fn evoluer(
+        &mut self,
+        partie: &mut Partie,
+        mut evolution: EvolutionEnCours,
+        choix: &Choix,
+        contexte: &mut Contexte<'_>,
+        evenements: &mut Vec<Evenement>,
+    ) -> Result<Reponse, ErreurChoix> {
+        let monstre = &mut evolution.bilan.equipe[evolution.monstre];
+        match choix {
+            Choix::Evoluer => {
+                let avant = monstre.clone();
+                partie.noter_evolution(evolution.vers.id());
+                let resultat = faire_evoluer(monstre, evolution.vers);
+                evenements.push(Evenement::Evolution {
+                    avant,
+                    apres: monstre.clone(),
+                    attaque: resultat.attaque_apprise,
+                });
+                if let Some(nouvelle) = resultat.attaque_en_attente {
+                    self.moment = Moment::OubliAttaque(OubliEnCours {
+                        bilan: evolution.bilan,
+                        fin: evolution.fin,
+                        monstre: evolution.monstre,
+                        nouvelle,
+                        suivantes: VecDeque::new(),
+                        apres_evolution: true,
+                    });
+                    return Ok(Reponse::Faite);
+                }
+            }
+            Choix::NePasEvoluer => {
+                evenements.push(Evenement::EvolutionRepoussee(monstre.clone()));
+            }
+            _ => {
+                self.moment = Moment::Evolution(evolution);
+                return Err(ErreurChoix::HorsDePropos);
+            }
+        }
+        let suivant = evolution.monstre + 1;
+        Ok(self.lire_le_bilan(
+            partie,
+            evolution.bilan,
+            evolution.fin,
             suivant,
             contexte,
             evenements,
@@ -2252,6 +2418,7 @@ mod tests {
                 | Attente::Remplacement(_)
                 | Attente::CaptureDesKo(_)
                 | Attente::OubliAttaque { .. }
+                | Attente::Evolution { .. }
                 | Attente::PlaceManquante(_)
         ) {
             let choix = jouer_un_coup(deroulement, contenu);
@@ -2863,10 +3030,129 @@ mod tests {
                     Choix::RenoncerALAttaque
                 }
             }
+            Attente::Evolution { .. } => Choix::Evoluer,
             Attente::PlaceManquante(_) => Choix::RelacherLaCapture,
             Attente::Annonce(_) => Choix::Poursuivre,
             Attente::Confirmation(_) => Choix::Oui,
         }
+    }
+
+    fn salamandre(contenu: &ContenuV1, niveau: u8) -> Monstre {
+        Monstre::creer(
+            contenu.espece(&EspeceId::new("salamandre")).unwrap(),
+            Niveau::new(niveau).unwrap(),
+            ValeursInternes::default(),
+            false,
+        )
+        .unwrap()
+    }
+
+    fn partie_de(monstre: Monstre) -> Partie {
+        let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Mage);
+        Partie::nouvelle(heros, monstre)
+    }
+
+    #[test]
+    fn faire_evoluer_au_camp_apres_confirmation() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut deroulement = au_camp(partie_de(salamandre(&contenu, 16)), &contenu, &depot);
+        let evoluer = Choix::FaireEvoluer(Emplacement::Equipe(0));
+        repondre_sans_tirage(&mut deroulement, evoluer, &contenu, &depot).unwrap();
+        let Attente::Confirmation(Confirmation::Evoluer { monstre, vers }) = deroulement.attente()
+        else {
+            panic!("confirmation attendue");
+        };
+        assert_eq!(monstre.espece().id().as_str(), "salamandre");
+        assert_eq!(vers.id().as_str(), "lezard-de-braise");
+        let evenements =
+            repondre_sans_tirage(&mut deroulement, Choix::Oui, &contenu, &depot).unwrap();
+        let [Evenement::Evolution { avant, apres, attaque: None }] = &evenements[..] else {
+            panic!("évolution attendue : {evenements:?}");
+        };
+        assert_eq!(avant.espece().id().as_str(), "salamandre");
+        assert_eq!(apres.espece().id().as_str(), "lezard-de-braise");
+        // Elle connaît déjà 4 attaques : l'attaque d'évolution est à choisir,
+        // et la partie est sauvegardée avec ce choix en attente.
+        let Attente::OubliAttaque { nouvelle, .. } = deroulement.attente() else {
+            panic!("choix de l'attaque à oublier attendu");
+        };
+        assert_eq!(nouvelle.id().as_str(), "jet-de-lave");
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert_eq!(sauvegarde.attaques_a_choisir().len(), 1);
+        let lezard = EspeceId::new("lezard-de-braise");
+        assert_eq!(sauvegarde.codex().etat(&lezard), EtatCodex::Capturee);
+        repondre_sans_tirage(&mut deroulement, Choix::OublierAttaque(0), &contenu, &depot)
+            .unwrap();
+        assert_eq!(deroulement.attente(), Attente::Camp);
+        let monstre = &deroulement.partie().unwrap().collection().equipe()[0];
+        assert!(monstre.attaques().connait(&AttaqueId::new("jet-de-lave")));
+        // Une forme sans évolution est refusée sans confirmation.
+        let encore = Choix::FaireEvoluer(Emplacement::Equipe(0));
+        assert_eq!(
+            repondre_sans_tirage(&mut deroulement, encore, &contenu, &depot),
+            Err(ErreurChoix::Evolution(ErreurEvolution::ImpossiblePourLInstant))
+        );
+    }
+
+    #[test]
+    fn pas_d_evolution_au_camp_avant_le_niveau() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut deroulement = au_camp(partie_de(salamandre(&contenu, 15)), &contenu, &depot);
+        let evoluer = Choix::FaireEvoluer(Emplacement::Equipe(0));
+        assert_eq!(
+            repondre_sans_tirage(&mut deroulement, evoluer, &contenu, &depot),
+            Err(ErreurChoix::Evolution(ErreurEvolution::ImpossiblePourLInstant))
+        );
+        assert_eq!(deroulement.attente(), Attente::Camp);
+    }
+
+    /// Une évolution repoussée après un combat revient au niveau suivant, et
+    /// seulement alors (section 5.4).
+    #[test]
+    fn evolution_proposee_apres_un_combat_puis_repoussee() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut depart = salamandre(&contenu, 15);
+        depart.gagner_experience(16 * 16 * 16 - 1 - depart.experience());
+        let mut deroulement = Deroulement::demarrer(Ok(Some(partie_de(depart))));
+        let mut aleatoire = GenerateurAleatoire::new(7);
+        let mut propositions = Vec::new();
+        for _ in 0..5_000 {
+            let choix = match deroulement.attente() {
+                Attente::Evolution { monstre, vers } => {
+                    propositions.push(monstre.niveau().valeur());
+                    assert_eq!(vers.id().as_str(), "lezard-de-braise");
+                    if propositions.len() == 1 {
+                        Choix::NePasEvoluer
+                    } else {
+                        Choix::Evoluer
+                    }
+                }
+                _ => jouer_un_coup(&deroulement, &contenu),
+            };
+            let repousse = choix == Choix::NePasEvoluer;
+            let mut contexte = Contexte {
+                contenu: &contenu,
+                aleatoire: &mut aleatoire,
+                depot: &depot,
+                maintenant: Horodatage::depuis_secondes(0),
+            };
+            let evenements = deroulement.repondre(choix, &mut contexte).unwrap();
+            if repousse {
+                assert!(matches!(&evenements[..], [Evenement::EvolutionRepoussee(_), ..]));
+            }
+            if propositions.len() == 2 && deroulement.attente() == Attente::Camp {
+                break;
+            }
+        }
+        assert_eq!(propositions, vec![16, 17]);
+        let partie = deroulement.partie().unwrap();
+        let monstre = &partie.collection().equipe()[0];
+        assert_eq!(monstre.espece().id().as_str(), "lezard-de-braise");
+        let lezard = EspeceId::new("lezard-de-braise");
+        assert_eq!(partie.codex().etat(&lezard), EtatCodex::Capturee);
     }
 
     #[test]

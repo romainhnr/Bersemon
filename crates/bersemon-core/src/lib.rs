@@ -18,6 +18,7 @@ pub mod contenu;
 mod degats;
 pub mod deroulement;
 pub mod espece;
+pub mod evolution;
 pub mod expedition;
 pub mod expedition_automatique;
 pub mod experience;

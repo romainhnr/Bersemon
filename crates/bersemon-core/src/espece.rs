@@ -2,6 +2,7 @@
 //! commun (sections 5.1 et 7).
 
 use crate::attaque::{Attaque, AttaqueId};
+use crate::evolution::Evolution;
 use crate::habilete::Habilete;
 use crate::niveau::Niveau;
 use crate::ressource::Ressource;
@@ -65,6 +66,8 @@ pub struct Espece {
     /// Lâchée par un monstre sauvage de l'espèce mis KO (section 14.3). En
     /// boîte, pour que chaque monstre, qui porte son espèce, reste léger.
     ressource: Option<Box<Ressource>>,
+    /// En boîte, pour la même raison (section 5.4).
+    evolution: Option<Box<Evolution>>,
 }
 
 impl Espece {
@@ -93,7 +96,18 @@ impl Espece {
             rarete: Rarete::Commune,
             habiletes: Vec::new(),
             ressource: None,
+            evolution: None,
         }
+    }
+
+    pub fn avec_evolution(mut self, evolution: Evolution) -> Self {
+        self.evolution = Some(Box::new(evolution));
+        self
+    }
+
+    /// `None` pour une espèce qui n'évolue pas (section 5.4).
+    pub fn evolution(&self) -> Option<&Evolution> {
+        self.evolution.as_deref()
     }
 
     pub fn avec_ressource(mut self, ressource: Ressource) -> Self {
