@@ -9,6 +9,8 @@ use std::fmt;
 
 use crate::aleatoire::Aleatoire;
 use crate::espece::{Espece, EspeceId};
+use crate::expedition::ParametresCoffre;
+use crate::expedition_automatique::ParametresExpeditionAutomatique;
 use crate::monstre::{Monstre, tirer_shiny};
 use crate::niveau::Niveau;
 use crate::stats::ValeursInternes;
@@ -45,6 +47,8 @@ pub struct MonstreRare {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ErreurZone {
     NiveauxInverses,
+    /// Une expédition compte au moins une étape.
+    AucuneEtape,
     GroupeVide,
     AucuneEspece,
     /// L'espèce n'apprend aucune attaque, ou en apprend une en double,
@@ -61,6 +65,7 @@ impl fmt::Display for ErreurZone {
             ErreurZone::NiveauxInverses => {
                 write!(f, "le niveau minimal dépasse le niveau maximal")
             }
+            ErreurZone::AucuneEtape => write!(f, "une expédition compte au moins une étape"),
             ErreurZone::GroupeVide => write!(f, "un groupe sauvage compte au moins un monstre"),
             ErreurZone::AucuneEspece => write!(f, "une zone doit avoir au moins une espèce"),
             ErreurZone::EspeceInvalide { espece, niveau } => write!(
@@ -81,26 +86,41 @@ pub struct Zone {
     nom: String,
     niveau_min: Niveau,
     niveau_max: Niveau,
+    /// Fixe et connu du joueur ; il suit la difficulté (section 9.2).
+    etapes: u32,
     taille_max_groupe: u8,
     especes: Vec<Espece>,
     rares: Vec<EspeceRare>,
+    expedition_automatique: ParametresExpeditionAutomatique,
+    coffre: ParametresCoffre,
 }
 
 impl Zone {
     /// Vérifie que chaque espèce, rares comprises, peut être créée à chaque
     /// niveau de la zone : la génération des monstres ne peut ensuite plus
     /// échouer.
+    ///
+    /// Tous les paramètres sont obligatoires, pour qu'aucune zone n'oublie
+    /// une règle ; les regrouper ne servirait qu'à contourner la limite de
+    /// clippy.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: ZoneId,
         nom: impl Into<String>,
         niveaux: (Niveau, Niveau),
+        etapes: u32,
         taille_max_groupe: u8,
         especes: Vec<Espece>,
         rares: Vec<EspeceRare>,
+        expedition_automatique: ParametresExpeditionAutomatique,
+        coffre: ParametresCoffre,
     ) -> Result<Self, ErreurZone> {
         let (niveau_min, niveau_max) = niveaux;
         if niveau_min > niveau_max {
             return Err(ErreurZone::NiveauxInverses);
+        }
+        if etapes == 0 {
+            return Err(ErreurZone::AucuneEtape);
         }
         if taille_max_groupe == 0 {
             return Err(ErreurZone::GroupeVide);
@@ -125,9 +145,12 @@ impl Zone {
             nom: nom.into(),
             niveau_min,
             niveau_max,
+            etapes,
             taille_max_groupe,
             especes,
             rares,
+            expedition_automatique,
+            coffre,
         })
     }
 
@@ -145,6 +168,11 @@ impl Zone {
         (self.niveau_min, self.niveau_max)
     }
 
+    /// Le nombre d'étapes de chaque expédition manuelle (section 9.2).
+    pub fn etapes(&self) -> u32 {
+        self.etapes
+    }
+
     pub fn taille_max_groupe(&self) -> u8 {
         self.taille_max_groupe
     }
@@ -155,6 +183,17 @@ impl Zone {
 
     pub fn rares(&self) -> &[EspeceRare] {
         &self.rares
+    }
+
+    /// Durée, dégâts et récompenses d'une expédition automatique (section
+    /// 12.8).
+    pub fn expedition_automatique(&self) -> &ParametresExpeditionAutomatique {
+        &self.expedition_automatique
+    }
+
+    /// Ce que contiennent ses coffres, en plus des potions (section 14.5).
+    pub fn coffre(&self) -> &ParametresCoffre {
+        &self.coffre
     }
 
     /// Tirages : taille du groupe, puis pour chaque monstre ceux de
@@ -198,7 +237,8 @@ impl Zone {
     }
 }
 
-fn tirer_entre(min: u32, max: u32, aleatoire: &mut dyn Aleatoire) -> u32 {
+/// Aucun tirage quand la plage n'a qu'une valeur.
+pub(crate) fn tirer_entre(min: u32, max: u32, aleatoire: &mut dyn Aleatoire) -> u32 {
     if min == max {
         min
     } else {
@@ -215,7 +255,9 @@ mod tests {
     use super::*;
     use crate::aleatoire::AleatoireScripte;
     use crate::attaque::Categorie;
-    use crate::donnees_de_test::{attaque, espece, stats_uniformes};
+    use crate::donnees_de_test::{
+        attaque, espece, parametres_coffre, parametres_expedition_automatique, stats_uniformes,
+    };
     use crate::espece::{AttaqueApprise, Role};
     use crate::types::{Type, TypesMonstre};
 
@@ -233,9 +275,12 @@ mod tests {
             ZoneId::new("bois"),
             "Bois",
             (niveau(niveaux.0), niveau(niveaux.1)),
+            4,
             taille,
             especes,
             rares,
+            parametres_expedition_automatique(),
+            parametres_coffre(),
         )
     }
 

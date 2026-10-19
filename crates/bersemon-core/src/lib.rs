@@ -7,6 +7,7 @@
 
 pub mod aleatoire;
 pub mod attaque;
+pub mod capsule;
 pub mod capture;
 pub mod catalogue;
 pub mod codex;
@@ -14,11 +15,15 @@ pub mod collection;
 pub mod combat;
 pub mod contenu;
 mod degats;
+pub mod deroulement;
 pub mod espece;
 pub mod expedition;
+pub mod expedition_automatique;
 pub mod experience;
 pub mod heros;
+pub mod horodatage;
 pub mod inventaire;
+pub mod marchand;
 pub mod monstre;
 pub mod niveau;
 pub mod nom;

@@ -54,14 +54,21 @@ Catégorie : P pour physique, S pour spéciale. L'effet est la chance d'infliger
 | lamentation | Lamentation | Spectre | S | 70 | 100 | paralysie 10 % |
 | sentence | Sentence | Ténèbres | S | 80 | 95 | |
 | trappe-du-gibet | Trappe du gibet | Ténèbres | P | 90 | 85 | |
+| brasier | Brasier | Feu | S | 70 | 100 | |
+| deferlante | Déferlante | Eau | P | 65 | 100 | |
+| lianes-etrangleuses | Lianes étrangleuses | Plante | P | 55 | 100 | paralysie 20 % |
+
+Les trois dernières attaques sont ajoutées après la V1, le 18/10/2026, pour les capsules d'attaque (section 6) : aucune espèce ne les apprend.
 
 ## 2. Espèces
 
 Stats de base dans l'ordre PV / Attaque / Défense / Attaque spéciale / Défense spéciale / Vitesse. Le rôle n'a pas d'effet dans la V1 (section 5.1).
 
+Rareté, ajoutée après la V1 le 18/10/2026 pour la revente au marchand (section 6) : les monstres de départ et les monstres communs sont d'espèce commune, les monstres rares d'espèce rare, et le Baron pendu est un Apôtre.
+
 ### Monstres de départ
 
-Trois profils distincts : la Salamandre frappe en attaque spéciale, le Crapaud en attaque physique, la Mandragore encaisse.
+Trois profils distincts : la Salamandre frappe en attaque spéciale, le Crapaud en attaque physique, la Mandragore encaisse. Depuis le 18/10/2026, chacun est attitré à une classe : Salamandre au Mage, Crapaud au Guerrier, Mandragore au Templier (section 6).
 
 | Identifiant | Nom | Types | Rôle | Profil | Stats de base (total) | Rendement d'XP |
 |---|---|---|---|---|---|---|
@@ -126,19 +133,47 @@ Autrefois seigneur des terres du Marais, il a livré son propre fief au gibet po
 
 La Lisière est accessible dès le départ. Le Marais s'ouvre avec le premier indice, au bout de la première expédition complète dans la Lisière ; deux expéditions complètes dans le Marais donnent les indices 2 et 3 ; l'expédition suivante dans le Marais s'achève par le Baron pendu (section 9.4).
 
+Nombre d'étapes d'une expédition manuelle, fixe depuis l'étape 26 (décidé le 18/10/2026, gamedesign.md, section 9.2) : 3 dans la Lisière, 4 dans le Marais. Dans la V1, il était tiré entre 4 et 6.
+
+Expéditions automatiques, ajoutées après la V1 le 18/10/2026 (section 12) :
+
+| Identifiant | Durée de base, pour un monstre | Dégâts | XP par monstre non KO | Potions | Argent |
+|---|---|---|---|---|---|
+| lisiere | 1 h | 15 à 60 | 100 à 200 | 0 à 1 | 15 à 30 |
+| marais | 2 h | 40 à 120 | 300 à 600 | 1 à 2 | 40 à 80 |
+
+L'argent est ajouté le 18/10/2026, avec l'économie (section 6).
+
+Coffres des expéditions manuelles, après la V1 (section 6) :
+
+| Identifiant | Potions | Argent | Capsules d'attaque |
+|---|---|---|---|
+| lisiere | 1 à 2 | 10 à 25 | Brasier, Déferlante, Lianes étrangleuses |
+| marais | 1 à 2 | 25 à 50 | Croc de venin, Frisson d'outre-tombe, Sentence |
+
 ## 4. Textes
 
 ### Introduction
 
-Affichée après le choix de la classe, juste avant le choix du premier monstre (section 6) :
+Affichée après le choix de la classe (section 6). Dans la V1, elle précédait le choix du premier monstre et finissait par : "Le gardien du camp soulève le drap qui couvre trois cages. Choisissez la créature qui partagera votre route." Depuis le 18/10/2026, chaque classe a son monstre attitré, et le dernier paragraphe dépend de la classe (Q67).
 
 > Le royaume s'est éteint sous un ciel de cendre. Sur les routes que les hommes ont désertées, les bêtes ont repris leurs droits, et des choses plus anciennes rôdent au bord des bois.
 >
 > Ces choses ont un nom : les Apôtres. Autrefois des hommes, ils ont sacrifié ce qu'ils aimaient pour une chair de monstre, et ils servent un maître que nul n'a vu en face, le Démiurge. Une nuit, ses Apôtres ont fondu sur les vôtres. Vous êtes le seul à vous être relevé.
 >
 > Vous atteignez le camp de base, dernier feu allumé avant les terres sauvages. Ceux qui survivent ici ne le doivent pas à leur seule lame : ils se lient aux créatures, les capturent au filet et les mènent au combat. Pour atteindre le Démiurge, il faudra abattre ses Apôtres, un par un.
->
-> Le gardien du camp soulève le drap qui couvre trois cages. Choisissez la créature qui partagera votre route.
+
+Dernier paragraphe pour le Guerrier :
+
+> Le gardien du camp jauge votre lame, puis ouvre une cage : un crapaud massif s'en extrait, la peau couverte de cicatrices. Il frappe fort et ne recule pas. Il partagera votre route.
+
+Pour le Mage :
+
+> Le gardien du camp remarque la cendre sur vos doigts, puis ouvre une cage : une salamandre s'en glisse, et l'air tremble autour d'elle. Ses flammes répondront aux vôtres. Elle partagera votre route.
+
+Pour le Templier :
+
+> Le gardien du camp observe votre bouclier, puis ouvre une cage : une mandragore en sort à pas lents, ses racines tressées comme une armure. Elle encaisse ce qui en abattrait d'autres. Elle partagera votre route.
 
 ### Indices sur l'Apôtre
 
@@ -160,6 +195,12 @@ Avant le combat :
 
 > Le Baron pendu s'effondre dans la vase. Sur sa poitrine, un sceau gravé d'une main ouverte : le signe du Démiurge. D'autres Apôtres portent ce sceau, au-delà des terres connues. Votre traque ne fait que commencer.
 
+### Rencontre du marchand
+
+Ajoutée après la V1, le 18/10/2026 : affichée à l'étape où le marchand est rencontré, avant qu'il se réfugie au camp (gamedesign.md, section 14.2).
+
+> Un marchand ambulant surgit de la brume, sa carriole chargée de fioles. Les routes ne sont plus sûres pour lui : il part se réfugier au camp, où vous le retrouverez.
+
 ### Conseils du tutoriel
 
 Chaque conseil n'apparaît qu'une fois par partie. Pour s'en souvenir d'une session à l'autre, la sauvegarde gardera la liste des conseils déjà montrés.
@@ -168,13 +209,23 @@ Au début du premier combat :
 
 > Conseil : affaiblissez un monstre avant de lancer un filet, car plus il a perdu de PV, plus la capture a de chances de réussir. Fuir réussit toujours, mais le monstre adverse frappe une dernière fois.
 
-Au premier arrêt entre deux étapes :
+Au premier arrêt entre deux étapes. Depuis l'étape 26 et le coffre du camp, le 19/10/2026, la fin du texte est « une défaite vous fait perdre tout votre sac, mais pas ce qui est rangé dans le coffre du camp » ; elle était « une défaite vous fait perdre toutes vos potions ».
 
-> Conseil : vos monstres ne récupèrent leurs PV qu'au camp. Entre deux étapes, soignez-les avec une potion, changez l'ordre de votre équipe, ou rentrez avant qu'il ne soit trop tard : une défaite vous fait perdre toutes vos potions.
+> Conseil : vos monstres ne récupèrent leurs PV qu'au camp. Entre deux étapes, soignez-les avec une potion, changez l'ordre de votre équipe, ou rentrez avant qu'il ne soit trop tard : une défaite vous fait perdre tout votre sac, mais pas ce qui est rangé dans le coffre du camp.
 
 Au premier retour au camp :
 
 > Conseil : au camp, vos monstres sont soignés et la partie est sauvegardée. Trois monstres vous accompagnent ; les autres attendent ici, et vous pouvez les échanger à tout moment.
+
+### Suicide du héros
+
+Ajouté après la V1, le 19/10/2026 (gamedesign.md, section 13.9). Question de confirmation, avec le nom du héros :
+
+> Vous suicider ? Votre partie sera effacée pour de bon : Aldric, vos monstres, votre sac, votre coffre, votre codex et vos expéditions automatiques en cours.
+
+Après la confirmation, avant la création d'un nouveau héros :
+
+> Vous retournez votre lame contre vous. Le feu du camp s'éteint, vos monstres se dispersent dans la nuit, et votre nom s'efface des routes. Ailleurs, une autre âme se relève parmi les cendres.
 
 ## 5. Points d'équilibrage
 
@@ -184,3 +235,30 @@ Au premier retour au camp :
 - Le Baron pendu est le combat le plus dur de la V1. Seul le type Féérique lui est très efficace : la Lumière d'aube du Cerf blanc, monstre rare pacifique de la Lisière, en fait une prise précieuse pour l'affronter.
 - Rythme estimé : une expédition dans la Lisière rapporte de l'ordre de 200 à 400 XP par participant, soit le passage du niveau 5 au niveau 8 environ en trois expéditions. Le Marais devient abordable vers le niveau 9, le Baron pendu vers le niveau 13 ou 14. À vérifier en jouant.
 - Place du combat contre l'Apôtre (Q57) : à la dernière étape de l'expédition qui suit le 3e indice, à la place de l'événement tiré ; rentrer avant cette étape le repousse à l'expédition suivante.
+
+## 6. Économie
+
+Ajoutée après la V1, le 18/10/2026 (gamedesign.md, sections 13.10 et 14). Les montants se comptent en pièces d'argent.
+
+Revente d'un monstre au marchand, depuis l'étape 26 : son niveau multiplié par le total des stats de base de son espèce, divisé par 50 en division entière, puis multiplié par le coefficient de rareté de l'espèce, et doublé pour un shiny. Avant l'étape 26, c'était son niveau multiplié par 5, 15 ou 40 selon la rareté.
+
+| Rareté | Espèces | Coefficient | Exemple |
+|---|---|---|---|
+| commune | monstres de départ et monstres communs | 1 | Loup de niveau 5 (285 de stats de base) : 28 |
+| rare | Cerf blanc, Basilic | 2 | Cerf blanc de niveau 5 (400) : 80 |
+| Apôtre | Baron pendu | 4 | Baron pendu de niveau 15 (480) : 576 |
+
+Prix du marchand : une potion coûte 20. Il vend toutes les capsules d'attaque.
+
+Capsules d'attaque : chacune enseigne son attaque à tout monstre qui a le type de cette attaque. Un coffre en contient une fois sur 5, tirée parmi les capsules de sa zone que le joueur n'a pas encore.
+
+| Capsule | Type | Utile à | Zone des coffres | Prix |
+|---|---|---|---|---|
+| Brasier | Feu | Salamandre, Feu follet | lisiere | 150 |
+| Déferlante | Eau | Crapaud | lisiere | 150 |
+| Lianes étrangleuses | Plante | Mandragore | lisiere | 150 |
+| Croc de venin | Poison | Vipère | marais | 200 |
+| Frisson d'outre-tombe | Spectre | Armure hantée, Baron pendu | marais | 200 |
+| Sentence | Ténèbres | Corbeau | marais | 300 |
+
+Les capsules de la Lisière servent aux monstres de départ, dont l'espèce apprend déjà toutes les attaques de leur type qui existaient dans la V1 ; celles du Marais donnent aux monstres communs une attaque d'une autre espèce de leur type.

@@ -52,7 +52,69 @@ pub(crate) fn resoudre_attaque(
     }
     let critique = aleatoire.tirer(1..=CHANCES_CRITIQUE) == 1;
     let pourcentage = aleatoire.tirer(POURCENTAGE_MIN..=POURCENTAGE_MAX);
+    let degats = calculer_degats(&parametres(
+        attaquant,
+        stats_attaquant,
+        attaque,
+        stats_defenseur,
+        critique,
+        pourcentage,
+        efficacite,
+    ));
+    ResultatAttaque::Touchee {
+        degats,
+        critique,
+        efficacite,
+    }
+}
 
+/// Dégâts d'une attaque qui touche sans coup critique, du pourcentage
+/// minimal au maximal : ce que le joueur voit avant de choisir (section
+/// 10.6). (0, 0) contre une cible immunisée.
+pub(crate) fn estimer_degats(
+    attaquant: &Monstre,
+    stats_attaquant: &Stats<u32>,
+    attaque: &Attaque,
+    defenseur: &Monstre,
+    stats_defenseur: &Stats<u32>,
+) -> (u32, u32) {
+    let efficacite = efficacite(attaque.type_attaque(), defenseur.espece().types());
+    if efficacite == Efficacite::Nulle {
+        return (0, 0);
+    }
+    let avec = |pourcentage| {
+        calculer_degats(&parametres(
+            attaquant,
+            stats_attaquant,
+            attaque,
+            stats_defenseur,
+            false,
+            pourcentage,
+            efficacite,
+        ))
+    };
+    (avec(POURCENTAGE_MIN), avec(POURCENTAGE_MAX))
+}
+
+/// L'attaque a l'un des types du monstre qui l'utilise : dégâts x1,5
+/// (section 10.4).
+pub(crate) fn a_le_bonus_de_type(attaquant: &Monstre, attaque: &Attaque) -> bool {
+    attaquant
+        .espece()
+        .types()
+        .liste()
+        .contains(&attaque.type_attaque())
+}
+
+fn parametres(
+    attaquant: &Monstre,
+    stats_attaquant: &Stats<u32>,
+    attaque: &Attaque,
+    stats_defenseur: &Stats<u32>,
+    critique: bool,
+    pourcentage: u32,
+    efficacite: Efficacite,
+) -> ParametresDegats {
     let (stat_attaque, stat_defense) = match attaque.categorie() {
         Categorie::Physique => (stats_attaquant.attaque, stats_defenseur.defense),
         Categorie::Speciale => (
@@ -60,23 +122,14 @@ pub(crate) fn resoudre_attaque(
             stats_defenseur.defense_speciale,
         ),
     };
-    let degats = calculer_degats(&ParametresDegats {
+    ParametresDegats {
         niveau: attaquant.niveau().valeur(),
         puissance: attaque.puissance(),
         stat_attaque,
         stat_defense,
         critique,
         pourcentage,
-        bonus_de_type: attaquant
-            .espece()
-            .types()
-            .liste()
-            .contains(&attaque.type_attaque()),
-        efficacite,
-    });
-    ResultatAttaque::Touchee {
-        degats,
-        critique,
+        bonus_de_type: a_le_bonus_de_type(attaquant, attaque),
         efficacite,
     }
 }

@@ -3,7 +3,9 @@ resolver = "3"
 members = [
     "crates/bersemon-core",
     "crates/bersemon-storage",
+    "crates/bersemon-presentation",
     "crates/bersemon-console",
+    "crates/bersemon-discord",
 ]
 
 # rust-version suit le poste Windows 10 (Rust installé par MSI, sans rustup) :
@@ -16,10 +18,13 @@ rust-version = "1.85"
 publish = false
 
 # Dépendances externes, centralisées ici pour que tous les crates utilisent
-# les mêmes versions. Seul le stockage en dépend : le noyau n'en a aucune.
+# les mêmes versions. Le noyau n'en a aucune : serde sert au stockage, poise
+# et tokio au bot Discord.
 [workspace.dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+poise = "0.7.1"
+tokio = { version = "1.53.3", features = ["macros", "rt-multi-thread", "time"] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

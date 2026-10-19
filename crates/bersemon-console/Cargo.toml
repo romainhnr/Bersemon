@@ -7,6 +7,7 @@ publish.workspace = true
 
 [dependencies]
 bersemon-core = { path = "../bersemon-core" }
+bersemon-presentation = { path = "../bersemon-presentation" }
 bersemon-storage = { path = "../bersemon-storage" }
 
 [lints]

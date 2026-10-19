@@ -13,6 +13,10 @@ pub trait SauvegardeRepository {
     fn charger(&self, catalogue: &dyn Catalogue) -> Result<Option<Partie>, ErreurSauvegarde>;
 
     fn enregistrer(&self, partie: &Partie) -> Result<(), ErreurSauvegarde>;
+
+    /// Après le suicide du héros (section 13.9). Sans sauvegarde, il n'y a
+    /// rien à faire.
+    fn supprimer(&self) -> Result<(), ErreurSauvegarde>;
 }
 
 /// Le détail technique reste en texte, pour que le contrat ne dépende pas de
@@ -25,6 +29,10 @@ pub enum ErreurSauvegarde {
     Illisible(String),
     VersionInconnue(u64),
     EspeceInconnue(String),
+    /// Zone d'une expédition automatique en cours (section 12).
+    ZoneInconnue(String),
+    /// Capsule d'attaque obtenue (section 13.10).
+    CapsuleInconnue(String),
     AttaqueInconnue {
         espece: String,
         attaque: String,
@@ -43,6 +51,10 @@ impl fmt::Display for ErreurSauvegarde {
             }
             ErreurSauvegarde::EspeceInconnue(espece) => {
                 write!(f, "espèce inconnue : {espece}")
+            }
+            ErreurSauvegarde::ZoneInconnue(zone) => write!(f, "zone inconnue : {zone}"),
+            ErreurSauvegarde::CapsuleInconnue(capsule) => {
+                write!(f, "capsule d'attaque inconnue : {capsule}")
             }
             ErreurSauvegarde::AttaqueInconnue { espece, attaque } => {
                 write!(f, "l'espèce {espece} n'apprend pas l'attaque {attaque}")

@@ -1,26 +1,138 @@
-//! Gestion des monstres au camp de base (section 13.2). Les monstres sont
+//! Camp de base : départ en expédition par la carte, expéditions
+//! automatiques, gestion des monstres (section 13.2), coffre du camp (section
+//! 13.3), codex, marchand et options (section 13.9). Les monstres sont
 //! désignés par leur numéro dans la liste de la collection : l'équipe
 //! d'abord, le camp ensuite.
 
-use bersemon_core::collection::{Collection, Emplacement, ErreurCollection};
-use bersemon_core::nom::Nom;
+use bersemon_core::collection::{Collection, Emplacement, TriDuCamp};
+use bersemon_core::contenu::ContenuV1;
+use bersemon_core::deroulement::{ActionDeGestion, Choix};
 use bersemon_core::partie::Partie;
-use bersemon_core::sauvegarde::SauvegardeRepository;
+use bersemon_presentation::expeditions_automatiques::expeditions_rentrees;
+use bersemon_presentation::marchand::liste_de_rachat;
+use bersemon_presentation::monstres::{attaques_connues, decrire_attaque, fiche_du_monstre};
+use bersemon_presentation::partie::{collection as liste_des_monstres, en_tete_du_camp};
 
 use crate::affichage;
+use crate::ecran_coffre;
+use crate::ecran_expeditions_automatiques;
+use crate::ecran_marchand;
+use crate::horloge::maintenant;
 use crate::saisie::Entree;
 
-/// La partie est sauvegardée après chaque action (section 13.9). Rend
-/// `false` si l'entrée est fermée.
-pub fn gerer_monstres(
-    partie: &mut Partie,
-    depot: &dyn SauvegardeRepository,
+/// Le menu de gestion, celui du coffre et celui du marchand restent ouverts
+/// d'une action à l'autre, jusqu'au retour.
+#[derive(Debug, Default)]
+pub struct MenuDuCamp {
+    ouvert: SousMenu,
+}
+
+#[derive(Debug, Default, PartialEq, Eq)]
+enum SousMenu {
+    #[default]
+    Aucun,
+    Gestion,
+    Coffre,
+    Marchand,
+}
+
+/// Rend `None` si le joueur quitte ou que l'entrée est fermée.
+pub fn choisir(
+    partie: &Partie,
+    contenu: &ContenuV1,
+    menu: &mut MenuDuCamp,
     entree: &mut Entree,
-) -> bool {
+) -> Option<Choix> {
     loop {
-        let collection = partie.collection_mut();
+        let sous_menu = match menu.ouvert {
+            SousMenu::Aucun => None,
+            SousMenu::Gestion => Some(gerer(partie, entree)?),
+            SousMenu::Coffre => Some(ecran_coffre::choisir(partie, entree)?),
+            SousMenu::Marchand => Some(ecran_marchand::choisir(partie, contenu, entree)?),
+        };
+        match sous_menu {
+            Some(Some(choix)) => return Some(choix),
+            Some(None) => {
+                menu.ouvert = SousMenu::Aucun;
+                continue;
+            }
+            None => {}
+        }
         println!();
-        println!("{}", affichage::collection(collection));
+        println!("{}", en_tete_du_camp(partie));
+        for avis in expeditions_rentrees(partie, maintenant()) {
+            println!("{avis}");
+        }
+        println!("  1. Partir en expédition");
+        println!("  2. Expéditions automatiques");
+        println!("  3. Gérer vos monstres");
+        println!("  4. Coffre du camp");
+        println!("  5. Consulter le codex");
+        // Le marchand n'apparaît qu'une fois réfugié au camp (section 14.2).
+        let marchand = partie.marchand_au_camp();
+        if marchand {
+            println!("  6. Voir le marchand");
+        }
+        let options = if marchand { 7 } else { 6 };
+        println!("  {options}. Options");
+        let quitter = options + 1;
+        println!("  {quitter}. Quitter");
+        let choix = match entree.choix(1, quitter)? {
+            1 => carte(partie, contenu, entree)?,
+            2 => ecran_expeditions_automatiques::choisir(partie, contenu, entree)?,
+            3 => {
+                menu.ouvert = SousMenu::Gestion;
+                None
+            }
+            4 => {
+                menu.ouvert = SousMenu::Coffre;
+                None
+            }
+            5 => {
+                println!("{}", affichage::codex(partie.codex(), contenu.especes()));
+                None
+            }
+            6 if marchand => {
+                menu.ouvert = SousMenu::Marchand;
+                None
+            }
+            numero if numero == options => choisir_une_option(entree)?,
+            _ => return None,
+        };
+        if choix.is_some() {
+            return choix;
+        }
+    }
+}
+
+/// `Some(None)` au retour vers le menu du camp. Le déroulement demande
+/// ensuite confirmation du suicide (section 13.9).
+fn choisir_une_option(entree: &mut Entree) -> Option<Option<Choix>> {
+    println!();
+    println!("Options :");
+    println!("  1. Se suicider (la partie est effacée)");
+    println!("  0. Retour au camp");
+    let choix = entree.choix(0, 1)?;
+    Some((choix == 1).then_some(Choix::SeSuicider))
+}
+
+/// `Some(None)` si le joueur reste au camp.
+fn carte(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Option<Option<Choix>> {
+    let accessibles = partie.zones_accessibles(contenu.zones(), contenu.piste());
+    println!();
+    println!("{}", affichage::carte(partie, &accessibles));
+    println!("  0. Rester au camp");
+    let choix = entree.choix(0, accessibles.len())?;
+    Some((choix > 0).then(|| Choix::PartirEnExpedition(accessibles[choix - 1].id().clone())))
+}
+
+/// `Some(None)` au retour vers le menu du camp.
+fn gerer(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
+    let collection = partie.collection();
+    let marchand = partie.marchand_au_camp();
+    loop {
+        println!();
+        println!("{}", liste_des_monstres(collection));
         println!("Que faire ?");
         println!("  1. Changer l'ordre de l'équipe");
         println!("  2. Envoyer un monstre de l'équipe au camp");
@@ -28,168 +140,220 @@ pub fn gerer_monstres(
         println!("  4. Échanger un monstre de l'équipe et un du camp");
         println!("  5. Renommer un monstre");
         println!("  6. Relâcher un monstre");
+        println!("  7. Voir la fiche d'un monstre");
+        println!("  8. Gérer les attaques d'un monstre");
+        println!("  9. Trier le camp");
+        if marchand {
+            println!("  10. Vendre un monstre au marchand");
+        }
         println!("  0. Retour");
-        let Some(choix) = entree.choix(0, 6) else {
-            return false;
+        let dernier = if marchand { 10 } else { 9 };
+        let gestion = |action: Option<ActionDeGestion>| action.map(Choix::Gerer);
+        let choix = match entree.choix(0, dernier)? {
+            0 => return Some(None),
+            1 => gestion(changer_ordre(collection, entree)?),
+            2 => gestion(envoyer_au_camp(collection, entree)?),
+            3 => gestion(faire_venir(collection, entree)?),
+            4 => gestion(echanger(collection, entree)?),
+            5 => gestion(renommer(collection, entree)?),
+            6 => gestion(relacher(collection, entree)?),
+            7 => {
+                fiche(collection, entree)?;
+                None
+            }
+            8 => attaques(partie, entree)?,
+            9 => gestion(trier(entree)?),
+            _ => vendre(collection, entree)?,
         };
-        let continuer = match choix {
-            0 => return true,
-            1 => changer_ordre(collection, entree),
-            2 => envoyer_au_camp(collection, entree),
-            3 => faire_venir(collection, entree),
-            4 => echanger(collection, entree),
-            5 => renommer(collection, entree),
-            _ => relacher(collection, entree),
-        };
-        crate::sauvegarder(depot, partie);
-        if !continuer {
-            return false;
+        if let Some(choix) = choix {
+            return Some(Some(choix));
         }
     }
 }
 
-/// Ce que le joueur a désigné : un monstre, rien (0), ou la fin de l'entrée.
-enum Designation {
-    Monstre(Emplacement),
-    Annulee,
-    EntreeFermee,
-}
-
-fn designer(collection: &Collection, entree: &mut Entree, question: &str) -> Designation {
+/// Ce que le joueur a désigné : un monstre, ou rien (0). `None` si l'entrée
+/// est fermée.
+fn designer(
+    collection: &Collection,
+    entree: &mut Entree,
+    question: &str,
+) -> Option<Option<Emplacement>> {
     println!("{question} (0 pour annuler)");
+    let total = collection.equipe().len() + collection.camp().len();
+    let emplacement = match entree.choix(0, total)? {
+        0 => None,
+        numero => Some(emplacement_du_numero(collection, numero)),
+    };
+    Some(emplacement)
+}
+
+/// Le numéro, à partir de 1, d'un monstre de la liste de la collection.
+pub fn emplacement_du_numero(collection: &Collection, numero: usize) -> Emplacement {
     let taille_equipe = collection.equipe().len();
-    let total = taille_equipe + collection.camp().len();
-    match entree.choix(0, total) {
-        None => Designation::EntreeFermee,
-        Some(0) => Designation::Annulee,
-        Some(numero) if numero <= taille_equipe => {
-            Designation::Monstre(Emplacement::Equipe(numero - 1))
-        }
-        Some(numero) => Designation::Monstre(Emplacement::Camp(numero - 1 - taille_equipe)),
+    if numero <= taille_equipe {
+        Emplacement::Equipe(numero - 1)
+    } else {
+        Emplacement::Camp(numero - 1 - taille_equipe)
     }
 }
 
-fn changer_ordre(collection: &mut Collection, entree: &mut Entree) -> bool {
-    let de = match designer(collection, entree, "Quel monstre de l'équipe déplacer ?") {
-        Designation::Monstre(Emplacement::Equipe(index)) => index,
-        Designation::Monstre(Emplacement::Camp(_)) => {
+fn changer_ordre(collection: &Collection, entree: &mut Entree) -> Option<Option<ActionDeGestion>> {
+    let de = match designer(collection, entree, "Quel monstre de l'équipe déplacer ?")? {
+        Some(Emplacement::Equipe(index)) => index,
+        Some(Emplacement::Camp(_)) => {
             println!("Choisissez un monstre de l'équipe.");
-            return true;
+            return Some(None);
         }
-        Designation::Annulee => return true,
-        Designation::EntreeFermee => return false,
+        None => return Some(None),
     };
     println!("À quelle place le mettre ?");
-    let Some(vers) = entree.choix(1, collection.equipe().len()) else {
-        return false;
-    };
-    rapporter(collection.deplacer_dans_l_equipe(de, vers - 1));
-    true
+    let vers = entree.choix(1, collection.equipe().len())?;
+    Some(Some(ActionDeGestion::ChangerLOrdre { de, vers: vers - 1 }))
 }
 
-fn envoyer_au_camp(collection: &mut Collection, entree: &mut Entree) -> bool {
-    match designer(collection, entree, "Quel monstre envoyer au camp ?") {
-        Designation::Monstre(Emplacement::Equipe(index)) => {
-            rapporter(collection.envoyer_au_camp(index));
-        }
-        Designation::Monstre(Emplacement::Camp(_)) => {
+fn envoyer_au_camp(
+    collection: &Collection,
+    entree: &mut Entree,
+) -> Option<Option<ActionDeGestion>> {
+    let action = match designer(collection, entree, "Quel monstre envoyer au camp ?")? {
+        Some(Emplacement::Equipe(index)) => Some(ActionDeGestion::EnvoyerAuCamp(index)),
+        Some(Emplacement::Camp(_)) => {
             println!("Ce monstre est déjà au camp.");
+            None
         }
-        Designation::Annulee => {}
-        Designation::EntreeFermee => return false,
-    }
-    true
+        None => None,
+    };
+    Some(action)
 }
 
-fn faire_venir(collection: &mut Collection, entree: &mut Entree) -> bool {
-    match designer(collection, entree, "Quel monstre faire venir du camp ?") {
-        Designation::Monstre(Emplacement::Camp(index)) => {
-            rapporter(collection.faire_venir(index));
-        }
-        Designation::Monstre(Emplacement::Equipe(_)) => {
+fn faire_venir(collection: &Collection, entree: &mut Entree) -> Option<Option<ActionDeGestion>> {
+    let action = match designer(collection, entree, "Quel monstre faire venir du camp ?")? {
+        Some(Emplacement::Camp(index)) => Some(ActionDeGestion::FaireVenir(index)),
+        Some(Emplacement::Equipe(_)) => {
             println!("Ce monstre est déjà dans l'équipe.");
+            None
         }
-        Designation::Annulee => {}
-        Designation::EntreeFermee => return false,
-    }
-    true
+        None => None,
+    };
+    Some(action)
 }
 
-fn echanger(collection: &mut Collection, entree: &mut Entree) -> bool {
-    let index_equipe = match designer(collection, entree, "Quel monstre de l'équipe ?") {
-        Designation::Monstre(Emplacement::Equipe(index)) => index,
-        Designation::Monstre(Emplacement::Camp(_)) => {
+fn echanger(collection: &Collection, entree: &mut Entree) -> Option<Option<ActionDeGestion>> {
+    let equipe = match designer(collection, entree, "Quel monstre de l'équipe ?")? {
+        Some(Emplacement::Equipe(index)) => index,
+        Some(Emplacement::Camp(_)) => {
             println!("Choisissez d'abord un monstre de l'équipe.");
-            return true;
+            return Some(None);
         }
-        Designation::Annulee => return true,
-        Designation::EntreeFermee => return false,
+        None => return Some(None),
     };
-    match designer(collection, entree, "Avec quel monstre du camp ?") {
-        Designation::Monstre(Emplacement::Camp(index_camp)) => {
-            rapporter(collection.echanger(index_equipe, index_camp));
-        }
-        Designation::Monstre(Emplacement::Equipe(_)) => {
+    let action = match designer(collection, entree, "Avec quel monstre du camp ?")? {
+        Some(Emplacement::Camp(camp)) => Some(ActionDeGestion::Echanger { equipe, camp }),
+        Some(Emplacement::Equipe(_)) => {
             println!("Choisissez un monstre du camp.");
+            None
         }
-        Designation::Annulee => {}
-        Designation::EntreeFermee => return false,
-    }
-    true
+        None => None,
+    };
+    Some(action)
 }
 
-fn renommer(collection: &mut Collection, entree: &mut Entree) -> bool {
-    let emplacement = match designer(collection, entree, "Quel monstre renommer ?") {
-        Designation::Monstre(emplacement) => emplacement,
-        Designation::Annulee => return true,
-        Designation::EntreeFermee => return false,
+fn renommer(collection: &Collection, entree: &mut Entree) -> Option<Option<ActionDeGestion>> {
+    let Some(emplacement) = designer(collection, entree, "Quel monstre renommer ?")? else {
+        return Some(None);
     };
-    let Some(texte) = entree.texte("Surnom (laisser vide pour l'effacer) : ") else {
-        return false;
+    let surnom = entree.texte("Surnom (laisser vide pour l'effacer) : ")?;
+    Some(Some(ActionDeGestion::Renommer {
+        emplacement,
+        surnom,
+    }))
+}
+
+/// Types, stats et valeurs internes (section 13.2).
+fn fiche(collection: &Collection, entree: &mut Entree) -> Option<()> {
+    let emplacement = designer(collection, entree, "Quel monstre ?")?;
+    if let Some(monstre) = emplacement.and_then(|emplacement| collection.monstre(emplacement)) {
+        println!();
+        println!("{}", fiche_du_monstre(monstre));
+        println!("{}", attaques_connues(monstre));
+    }
+    Some(())
+}
+
+/// L'ordre du camp change pour de bon (section 13.2).
+fn trier(entree: &mut Entree) -> Option<Option<ActionDeGestion>> {
+    println!("Trier le camp par :");
+    println!("  1. Nom");
+    println!("  2. Niveau");
+    println!("  3. Type");
+    println!("  0. Annuler");
+    let tri = match entree.choix(0, 3)? {
+        0 => return Some(None),
+        1 => TriDuCamp::Nom,
+        2 => TriDuCamp::Niveau,
+        _ => TriDuCamp::Type,
     };
-    let surnom = if texte.trim().is_empty() {
-        None
+    Some(Some(ActionDeGestion::TrierLeCamp(tri)))
+}
+
+/// La confirmation est demandée par le déroulement.
+fn relacher(collection: &Collection, entree: &mut Entree) -> Option<Option<ActionDeGestion>> {
+    let emplacement = designer(collection, entree, "Quel monstre relâcher ?")?;
+    Some(emplacement.map(ActionDeGestion::Relacher))
+}
+
+/// Avec le prix de chaque monstre ; la confirmation est demandée par le
+/// déroulement (section 14.2).
+pub fn vendre(collection: &Collection, entree: &mut Entree) -> Option<Option<Choix>> {
+    println!();
+    println!("{}", liste_de_rachat(collection));
+    let emplacement = designer(collection, entree, "Quel monstre vendre au marchand ?")?;
+    Some(emplacement.map(Choix::Vendre))
+}
+
+/// Une attaque de son espèce jusqu'à son niveau, ou d'une capsule de son
+/// type ; s'il en connaît déjà 4, il en oublie une (section 13.10).
+fn attaques(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
+    let collection = partie.collection();
+    let Some(emplacement) = designer(collection, entree, "Quel monstre ?")? else {
+        return Some(None);
+    };
+    let Some(monstre) = collection.monstre(emplacement) else {
+        return Some(None);
+    };
+    println!();
+    println!("{}", fiche_du_monstre(monstre));
+    println!("{}", attaques_connues(monstre));
+    let a_apprendre = partie.attaques_a_apprendre(emplacement).unwrap_or_default();
+    if a_apprendre.is_empty() {
+        println!("Rien de nouveau à apprendre au camp.");
+        return Some(None);
+    }
+    println!("À apprendre au camp :");
+    for (position, attaque) in a_apprendre.iter().enumerate() {
+        println!("  {}. {}", position + 1, decrire_attaque(attaque));
+    }
+    println!("Quelle attaque apprendre ? (0 pour annuler)");
+    let choix = entree.choix(0, a_apprendre.len())?;
+    if choix == 0 {
+        return Some(None);
+    }
+    let attaque = a_apprendre[choix - 1].id().clone();
+    let oubliee = if monstre.attaques().est_complete() {
+        println!(
+            "{} connaît déjà 4 attaques. Laquelle oublier ? (0 pour annuler)",
+            monstre.nom()
+        );
+        match entree.choix(0, monstre.attaques().liste().len())? {
+            0 => return Some(None),
+            position => Some(position - 1),
+        }
     } else {
-        match Nom::new(&texte) {
-            Ok(nom) => Some(nom),
-            Err(erreur) => {
-                println!("Surnom refusé : {erreur}.");
-                return true;
-            }
-        }
+        None
     };
-    rapporter(collection.renommer(emplacement, surnom));
-    true
-}
-
-fn relacher(collection: &mut Collection, entree: &mut Entree) -> bool {
-    let emplacement = match designer(collection, entree, "Quel monstre relâcher ?") {
-        Designation::Monstre(emplacement) => emplacement,
-        Designation::Annulee => return true,
-        Designation::EntreeFermee => return false,
-    };
-    let Some(nom) = collection
-        .monstre(emplacement)
-        .map(|monstre| monstre.nom().to_string())
-    else {
-        println!("Ce monstre n'existe pas.");
-        return true;
-    };
-    match entree.confirmation(&format!("Relâcher définitivement {nom} ?")) {
-        None => false,
-        Some(false) => true,
-        Some(true) => {
-            match collection.relacher(emplacement) {
-                Ok(relache) => println!("Vous relâchez {}.", relache.nom()),
-                Err(erreur) => println!("{}", affichage::erreur_collection(&erreur)),
-            }
-            true
-        }
-    }
-}
-
-fn rapporter(resultat: Result<(), ErreurCollection>) {
-    if let Err(erreur) = resultat {
-        println!("{}", affichage::erreur_collection(&erreur));
-    }
+    Some(Some(Choix::ApprendreAttaque {
+        emplacement,
+        attaque,
+        oubliee,
+    }))
 }

@@ -1,4 +1,4 @@
-//! Format JSON de la sauvegarde, version 2, et sa conversion vers les types
+//! Format JSON de la sauvegarde, version 7, et sa conversion vers les types
 //! du noyau. Les énumérations sont écrites avec des noms fixés ici, et non
 //! avec les noms Rust, pour qu'un renommage dans le code ne casse pas les
 //! sauvegardes existantes.
@@ -12,12 +12,14 @@ use bersemon_core::catalogue::Catalogue;
 use bersemon_core::codex::Codex;
 use bersemon_core::collection::Collection;
 use bersemon_core::espece::EspeceId;
+use bersemon_core::expedition_automatique::ExpeditionAutomatique;
 use bersemon_core::heros::{Classe, Heros};
+use bersemon_core::horodatage::Horodatage;
 use bersemon_core::inventaire::Inventaire;
 use bersemon_core::monstre::{EtatMonstre, Monstre};
 use bersemon_core::niveau::Niveau;
 use bersemon_core::nom::Nom;
-use bersemon_core::partie::{EtatPartie, Partie};
+use bersemon_core::partie::{AttaqueAChoisir, EtatPartie, Partie};
 use bersemon_core::sauvegarde::ErreurSauvegarde;
 use bersemon_core::stats::{Stats, ValeursInternes};
 use bersemon_core::statut::Statut;
@@ -26,18 +28,37 @@ use bersemon_core::zone::ZoneId;
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 2;
+pub(crate) const VERSION: u64 = 7;
 
-/// La version 2 ajoute la traque de l'Apôtre et le tutoriel. Une sauvegarde
-/// en version 1 se lit avec cette structure : les champs ajoutés y prennent
-/// leur valeur de début de partie.
+/// La version de la sauvegarde qui sépare le sac du coffre du camp.
+const VERSION_DU_COFFRE: u64 = 7;
+
+/// La version 2 ajoute la traque de l'Apôtre et le tutoriel, la version 3
+/// les expéditions automatiques et les attaques à choisir à leur retour, la
+/// version 4 l'argent, la version 5 le marchand, la version 6 les capsules
+/// d'attaque, la version 7 le sac et le coffre du camp. Une sauvegarde d'une
+/// version précédente se lit avec cette structure : les champs ajoutés y
+/// prennent leur valeur de début de partie.
 #[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct SauvegardeV2 {
+pub(crate) struct SauvegardeV7 {
     pub(crate) version: u64,
     heros: HerosV1,
     equipe: Vec<MonstreV1>,
     camp: Vec<MonstreV1>,
+    /// Jusqu'à la version 6 : tout ce que possédait le joueur, rangé dans le
+    /// coffre du camp à la lecture (section 13.3). N'est plus écrit.
+    #[serde(default, skip_serializing)]
     potions: u32,
+    #[serde(default, skip_serializing)]
+    argent: u32,
+    #[serde(default, skip_serializing)]
+    capsules: Vec<String>,
+    #[serde(default)]
+    sac: InventaireV7,
+    #[serde(default)]
+    coffre_du_camp: InventaireV7,
+    #[serde(default)]
+    marchand_au_camp: bool,
     codex: CodexV1,
     zones_explorees: Vec<String>,
     #[serde(default)]
@@ -46,6 +67,38 @@ pub(crate) struct SauvegardeV2 {
     apotres_vaincus: Vec<String>,
     #[serde(default)]
     conseils_vus: Vec<String>,
+    #[serde(default)]
+    expeditions_automatiques: Vec<ExpeditionAutomatiqueV3>,
+    #[serde(default)]
+    attaques_a_choisir: Vec<AttaqueAChoisirV3>,
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+struct InventaireV7 {
+    #[serde(default)]
+    argent: u32,
+    #[serde(default)]
+    potions: u32,
+    /// Identifiants de leurs attaques.
+    #[serde(default)]
+    capsules: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct ExpeditionAutomatiqueV3 {
+    zone: String,
+    monstres: Vec<MonstreV1>,
+    /// Secondes depuis le 1er janvier 1970 (UTC).
+    depart: u64,
+    /// Fixé au départ, et non recalculé à la lecture : un rééquilibrage des
+    /// durées ne change pas une expédition déjà partie.
+    retour: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct AttaqueAChoisirV3 {
+    position_au_camp: usize,
+    attaque: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -83,9 +136,9 @@ struct CodexV1 {
     capturees: Vec<String>,
 }
 
-pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV2 {
+pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV7 {
     let collection = partie.collection();
-    SauvegardeV2 {
+    SauvegardeV7 {
         version: VERSION,
         heros: HerosV1 {
             nom: partie.heros().nom().as_str().to_string(),
@@ -93,7 +146,12 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV2 {
         },
         equipe: collection.equipe().iter().map(depuis_monstre).collect(),
         camp: collection.camp().iter().map(depuis_monstre).collect(),
-        potions: partie.inventaire().potions(),
+        potions: 0,
+        argent: 0,
+        capsules: Vec::new(),
+        sac: depuis_inventaire(partie.sac()),
+        coffre_du_camp: depuis_inventaire(partie.coffre_du_camp()),
+        marchand_au_camp: partie.marchand_au_camp(),
         codex: CodexV1 {
             rencontrees: ids(partie.codex().rencontrees()),
             capturees: ids(partie.codex().capturees()),
@@ -110,11 +168,61 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV2 {
             .iter()
             .map(|conseil| nom_de_conseil(*conseil).to_string())
             .collect(),
+        expeditions_automatiques: partie
+            .expeditions_automatiques()
+            .iter()
+            .map(|expedition| ExpeditionAutomatiqueV3 {
+                zone: expedition.zone().id().as_str().to_string(),
+                monstres: expedition.monstres().iter().map(depuis_monstre).collect(),
+                depart: expedition.depart().secondes(),
+                retour: expedition.retour().secondes(),
+            })
+            .collect(),
+        attaques_a_choisir: partie
+            .attaques_a_choisir()
+            .iter()
+            .map(|a_choisir| AttaqueAChoisirV3 {
+                position_au_camp: a_choisir.position_au_camp,
+                attaque: a_choisir.attaque.id().as_str().to_string(),
+            })
+            .collect(),
     }
 }
 
+fn depuis_inventaire(inventaire: &Inventaire) -> InventaireV7 {
+    InventaireV7 {
+        argent: inventaire.argent(),
+        potions: inventaire.potions(),
+        capsules: inventaire
+            .capsules()
+            .iter()
+            .map(|capsule| capsule.id().as_str().to_string())
+            .collect(),
+    }
+}
+
+fn vers_inventaire(
+    inventaire: InventaireV7,
+    catalogue: &dyn Catalogue,
+) -> Result<Inventaire, ErreurSauvegarde> {
+    let capsules = inventaire
+        .capsules
+        .into_iter()
+        .map(|id| {
+            catalogue
+                .capsule(&AttaqueId::new(id.as_str()))
+                .ok_or(ErreurSauvegarde::CapsuleInconnue(id))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(Inventaire::new(
+        inventaire.argent,
+        inventaire.potions,
+        capsules,
+    ))
+}
+
 pub(crate) fn vers_partie(
-    sauvegarde: SauvegardeV2,
+    sauvegarde: SauvegardeV7,
     catalogue: &dyn Catalogue,
 ) -> Result<Partie, ErreurSauvegarde> {
     let heros = Heros::new(
@@ -123,10 +231,33 @@ pub(crate) fn vers_partie(
     );
     let equipe = vers_monstres(sauvegarde.equipe, catalogue)?;
     let camp = vers_monstres(sauvegarde.camp, catalogue)?;
+    let attaques_a_choisir = sauvegarde
+        .attaques_a_choisir
+        .into_iter()
+        .map(|a_choisir| vers_attaque_a_choisir(a_choisir, &camp))
+        .collect::<Result<Vec<_>, _>>()?;
+    let expeditions_automatiques = sauvegarde
+        .expeditions_automatiques
+        .into_iter()
+        .map(|expedition| vers_expedition_automatique(expedition, catalogue))
+        .collect::<Result<Vec<_>, _>>()?;
     let collection = Collection::restaurer(equipe, camp)
         .map_err(|erreur| ErreurSauvegarde::Incoherente(erreur.to_string()))?;
-    let mut inventaire = Inventaire::default();
-    inventaire.ajouter_potions(sauvegarde.potions);
+    // Avant la version 7, tout ce que possédait le joueur est rangé dans le
+    // coffre du camp, à l'abri (section 13.3).
+    let (sac, coffre_du_camp) = if sauvegarde.version < VERSION_DU_COFFRE {
+        let ancien = InventaireV7 {
+            argent: sauvegarde.argent,
+            potions: sauvegarde.potions,
+            capsules: sauvegarde.capsules,
+        };
+        (Inventaire::default(), vers_inventaire(ancien, catalogue)?)
+    } else {
+        (
+            vers_inventaire(sauvegarde.sac, catalogue)?,
+            vers_inventaire(sauvegarde.coffre_du_camp, catalogue)?,
+        )
+    };
     let mut codex = Codex::default();
     for espece in &sauvegarde.codex.rencontrees {
         codex.noter_rencontre(&EspeceId::new(espece.as_str()));
@@ -154,16 +285,63 @@ pub(crate) fn vers_partie(
         .map(String::as_str)
         .map(conseil)
         .collect::<Result<Vec<_>, _>>()?;
-    Ok(Partie::restaurer(EtatPartie {
+    Partie::restaurer(EtatPartie {
         heros,
         collection,
-        inventaire,
+        sac,
+        coffre_du_camp,
+        marchand_au_camp: sauvegarde.marchand_au_camp,
         codex,
         zones_explorees,
         indices_trouves: sauvegarde.indices_trouves,
         apotres_vaincus,
         conseils_vus,
-    }))
+        expeditions_automatiques,
+        attaques_a_choisir,
+    })
+    .map_err(incoherente)
+}
+
+fn vers_expedition_automatique(
+    expedition: ExpeditionAutomatiqueV3,
+    catalogue: &dyn Catalogue,
+) -> Result<ExpeditionAutomatique, ErreurSauvegarde> {
+    let zone = catalogue
+        .zone(&ZoneId::new(expedition.zone.as_str()))
+        .ok_or(ErreurSauvegarde::ZoneInconnue(expedition.zone))?;
+    let monstres = vers_monstres(expedition.monstres, catalogue)?;
+    ExpeditionAutomatique::restaurer(
+        zone,
+        monstres,
+        Horodatage::depuis_secondes(expedition.depart),
+        Horodatage::depuis_secondes(expedition.retour),
+    )
+    .map_err(incoherente)
+}
+
+/// L'attaque se retrouve parmi celles que l'espèce du monstre apprend.
+fn vers_attaque_a_choisir(
+    a_choisir: AttaqueAChoisirV3,
+    camp: &[Monstre],
+) -> Result<AttaqueAChoisir, ErreurSauvegarde> {
+    let monstre = camp.get(a_choisir.position_au_camp).ok_or_else(|| {
+        ErreurSauvegarde::Incoherente(format!(
+            "attaque à choisir pour un monstre absent du camp (position {})",
+            a_choisir.position_au_camp
+        ))
+    })?;
+    let espece = monstre.espece();
+    let attaque = espece
+        .attaque_apprise(&AttaqueId::new(a_choisir.attaque.as_str()))
+        .cloned()
+        .ok_or_else(|| ErreurSauvegarde::AttaqueInconnue {
+            espece: espece.id().as_str().to_string(),
+            attaque: a_choisir.attaque,
+        })?;
+    Ok(AttaqueAChoisir {
+        position_au_camp: a_choisir.position_au_camp,
+        attaque,
+    })
 }
 
 fn depuis_monstre(monstre: &Monstre) -> MonstreV1 {
@@ -212,13 +390,23 @@ fn vers_monstre(
     let espece = catalogue
         .espece(&EspeceId::new(monstre.espece.as_str()))
         .ok_or_else(|| ErreurSauvegarde::EspeceInconnue(monstre.espece.clone()))?;
+    // Une attaque hors de la liste de l'espèce vient d'une capsule de son
+    // type (section 13.10).
     let attaques = monstre
         .attaques
         .iter()
         .map(|id| {
+            let id_attaque = AttaqueId::new(id.as_str());
+            let de_capsule = || {
+                catalogue
+                    .capsule(&id_attaque)
+                    .filter(|capsule| capsule.convient_a(&espece))
+                    .map(|capsule| capsule.attaque().clone())
+            };
             espece
-                .attaque_apprise(&AttaqueId::new(id.as_str()))
+                .attaque_apprise(&id_attaque)
                 .cloned()
+                .or_else(de_capsule)
                 .ok_or_else(|| ErreurSauvegarde::AttaqueInconnue {
                     espece: monstre.espece.clone(),
                     attaque: id.clone(),
@@ -268,6 +456,7 @@ fn nom_de_classe(classe: Classe) -> &'static str {
     match classe {
         Classe::Guerrier => "guerrier",
         Classe::Mage => "mage",
+        Classe::Templier => "templier",
     }
 }
 
@@ -275,6 +464,7 @@ fn classe(texte: &str) -> Result<Classe, ErreurSauvegarde> {
     match texte {
         "guerrier" => Ok(Classe::Guerrier),
         "mage" => Ok(Classe::Mage),
+        "templier" => Ok(Classe::Templier),
         autre => Err(ErreurSauvegarde::Incoherente(format!(
             "classe inconnue : {autre}"
         ))),

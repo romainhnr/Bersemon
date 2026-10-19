@@ -1,204 +1,16 @@
-//! Combat contre un groupe sauvage ou un Apôtre, puis ses suites : XP,
-//! apprentissage d'attaques et placement des captures.
+//! Questions posées pendant un combat et à sa suite : action du tour,
+//! remplacement d'un monstre KO, capture des KO et attaque à oublier.
 
-use bersemon_core::aleatoire::Aleatoire;
 use bersemon_core::attaque::Attaque;
-use bersemon_core::collection::{Collection, Emplacement, Placement};
-use bersemon_core::combat::{Action, Combat, Cote, ErreurCombat, Evenement, Issue, Phase};
-use bersemon_core::inventaire::potion_sans_effet;
+use bersemon_core::collection::Collection;
+use bersemon_core::combat::{Action, Combat, Cote};
+use bersemon_core::deroulement::Choix;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
-use bersemon_core::tutoriel::Conseil;
+use bersemon_presentation::partie::places_pour_une_capture;
 
 use crate::affichage;
 use crate::saisie::Entree;
-use crate::tutoriel::montrer_conseil;
-
-pub struct FinDeCombat {
-    pub issue: Option<Issue>,
-    /// `false` si l'entrée a été fermée : la partie s'arrête alors.
-    pub entree_ouverte: bool,
-}
-
-pub fn combattre(
-    partie: &mut Partie,
-    groupe: Vec<Monstre>,
-    aleatoire: &mut dyn Aleatoire,
-    entree: &mut Entree,
-) -> FinDeCombat {
-    // En expédition, l'équipe garde toujours un monstre en état de combattre
-    // entre deux combats : sinon une défaite l'aurait ramenée au camp.
-    let combat = partie
-        .preparer_combat(groupe)
-        .expect("l'équipe a un monstre en état de combattre");
-    println!();
-    println!("{}", affichage::rencontre(&combat));
-    mener(partie, combat, aleatoire, entree)
-}
-
-/// Combat sans fuite ni filet (section 9.4) ; le récit de l'Apôtre, montré
-/// avant, tient lieu d'annonce.
-pub fn combattre_l_apotre(
-    partie: &mut Partie,
-    apotre: Monstre,
-    aleatoire: &mut dyn Aleatoire,
-    entree: &mut Entree,
-) -> FinDeCombat {
-    let combat = partie
-        .preparer_combat_contre_apotre(apotre)
-        .expect("l'équipe a un monstre en état de combattre");
-    mener(partie, combat, aleatoire, entree)
-}
-
-fn mener(
-    partie: &mut Partie,
-    mut combat: Combat,
-    aleatoire: &mut dyn Aleatoire,
-    entree: &mut Entree,
-) -> FinDeCombat {
-    montrer_conseil(partie, Conseil::PremierCombat);
-    let mut entree_ouverte =
-        jouer(&mut combat, aleatoire, entree) && capturer_les_ko(&mut combat, entree);
-
-    let mut bilan = combat.terminer(aleatoire);
-    let issue = bilan.issue;
-    for (index, rapport) in bilan.experience.iter().enumerate() {
-        let Some(rapport) = rapport else {
-            continue;
-        };
-        let monstre = &mut bilan.equipe[index];
-        println!();
-        println!("{}", affichage::rapport_experience(monstre, rapport));
-        for attaque in &rapport.attaques_en_attente {
-            entree_ouverte = entree_ouverte && choisir_attaque_a_oublier(monstre, attaque, entree);
-        }
-    }
-    let captures = partie
-        .conclure_combat(bilan)
-        .expect("le combat rend l'équipe qu'il a reçue");
-    for capture in captures {
-        let placement = partie.collection_mut().accueillir_capture(capture);
-        entree_ouverte =
-            traiter_placement(partie.collection_mut(), placement, entree_ouverte, entree);
-    }
-    FinDeCombat {
-        issue,
-        entree_ouverte,
-    }
-}
-
-/// Dans l'équipe s'il y a de la place, sinon au camp ; si tout est plein, le
-/// joueur relâche un monstre ou la capture (Q12). Sans entrée, la capture est
-/// relâchée faute de place. Rend `false` si l'entrée est fermée.
-pub fn traiter_placement(
-    collection: &mut Collection,
-    placement: Placement,
-    entree_ouverte: bool,
-    entree: &mut Entree,
-) -> bool {
-    let capture = match placement {
-        Placement::Equipe(index) => {
-            println!("{} rejoint votre équipe.", collection.equipe()[index].nom());
-            return entree_ouverte;
-        }
-        Placement::Camp(index) => {
-            println!("{} part pour le camp.", collection.camp()[index].nom());
-            return entree_ouverte;
-        }
-        Placement::PlaceManquante(capture) => capture,
-    };
-    if !entree_ouverte {
-        return false;
-    }
-    loop {
-        println!();
-        println!(
-            "Votre équipe et le camp sont pleins. Quel monstre relâcher pour garder {} ?",
-            capture.nom()
-        );
-        println!("{}", affichage::collection(collection));
-        println!("  0. Relâcher {}", capture.nom());
-        let taille_equipe = collection.equipe().len();
-        let total = taille_equipe + collection.camp().len();
-        let Some(choix) = entree.choix(0, total) else {
-            return false;
-        };
-        if choix == 0 {
-            println!("Vous relâchez {}.", capture.nom());
-            return true;
-        }
-        let emplacement = if choix <= taille_equipe {
-            Emplacement::Equipe(choix - 1)
-        } else {
-            Emplacement::Camp(choix - 1 - taille_equipe)
-        };
-        let nom = collection
-            .monstre(emplacement)
-            .map(|monstre| monstre.nom().to_string())
-            .unwrap_or_default();
-        match entree.confirmation(&format!("Relâcher définitivement {nom} ?")) {
-            None => return false,
-            Some(false) => continue,
-            Some(true) => {}
-        }
-        let nom_capture = capture.nom().to_string();
-        match collection.relacher_pour_capture(emplacement, capture) {
-            Ok(relache) => println!(
-                "Vous relâchez {}. {nom_capture} prend sa place.",
-                relache.nom()
-            ),
-            Err(erreur) => println!("{}", affichage::erreur_collection(&erreur)),
-        }
-        return true;
-    }
-}
-
-fn jouer(combat: &mut Combat, aleatoire: &mut dyn Aleatoire, entree: &mut Entree) -> bool {
-    loop {
-        let resultat = match combat.phase() {
-            Phase::ChoixAction => {
-                println!();
-                println!("{}", affichage::etat(combat));
-                let Some(action) = choisir_action(combat, entree) else {
-                    return false;
-                };
-                combat.jouer_tour(action, aleatoire)
-            }
-            Phase::Remplacement => {
-                println!();
-                println!("Quel monstre envoyer ?");
-                println!("{}", affichage::liste_equipe(combat, false));
-                let Some(choix) = entree.choix(1, combat.equipe().len()) else {
-                    return false;
-                };
-                combat.remplacer(choix - 1)
-            }
-            Phase::Termine(_) => return true,
-        };
-        afficher(resultat, combat);
-    }
-}
-
-/// Plusieurs monstres KO peuvent être capturés après une victoire (Q29).
-fn capturer_les_ko(combat: &mut Combat, entree: &mut Entree) -> bool {
-    loop {
-        let capturables = combat.adversaires_capturables();
-        if capturables.is_empty() {
-            return true;
-        }
-        println!();
-        println!("Capturer un monstre KO ?");
-        println!("{}", affichage::liste_capturables(combat, &capturables));
-        match entree.choix(0, capturables.len()) {
-            None => return false,
-            Some(0) => return true,
-            Some(choix) => {
-                let resultat = combat.capturer_ko(capturables[choix - 1]);
-                afficher(resultat, combat);
-            }
-        }
-    }
-}
 
 /// Entrées du menu de combat, numérotées dans l'ordre de la liste.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -224,76 +36,86 @@ fn commandes(combat: &Combat) -> Vec<Commande> {
 }
 
 /// Rend `None` si l'entrée est fermée. Le choix 0 d'un sous-menu ramène au
-/// menu principal.
-fn choisir_action(combat: &Combat, entree: &mut Entree) -> Option<Action> {
+/// menu principal. Les types d'un adversaire ne s'affichent que si son
+/// espèce est capturée (section 10.6).
+pub fn choisir_action(combat: &Combat, partie: &Partie, entree: &mut Entree) -> Option<Choix> {
+    println!();
+    println!(
+        "{}",
+        bersemon_presentation::combat::etat(combat, partie.codex())
+    );
+    if combat.filet_possible() {
+        println!("{}", places_pour_une_capture(partie.collection()));
+    }
     let commandes = commandes(combat);
     loop {
         println!("{}", affichage::menu_action(combat, &commandes));
-        match commandes[entree.choix(1, commandes.len())? - 1] {
+        let action = match commandes[entree.choix(1, commandes.len())? - 1] {
             Commande::Attaquer => {
                 let monstre = combat.monstre(combat.actif(Cote::Joueur));
-                println!("{}", affichage::liste_attaques(monstre));
+                println!("{}", affichage::liste_attaques(combat));
                 let choix = entree.choix(0, monstre.attaques().liste().len())?;
-                if choix > 0 {
-                    return Some(Action::Attaquer(choix - 1));
-                }
+                (choix > 0).then(|| Action::Attaquer(choix - 1))
             }
             Commande::Changer => {
                 println!("{}", affichage::liste_equipe(combat, true));
                 let choix = entree.choix(0, combat.equipe().len())?;
-                if choix > 0 {
-                    return Some(Action::Changer(choix - 1));
-                }
+                (choix > 0).then(|| Action::Changer(choix - 1))
             }
-            Commande::LancerFilet => return Some(Action::LancerFilet),
+            Commande::LancerFilet => Some(Action::LancerFilet),
+            // La confirmation d'une potion perdue est demandée par le
+            // déroulement (Q53).
             Commande::UtiliserPotion => {
                 println!("Soigner quel monstre ?");
                 println!("{}", affichage::liste_equipe(combat, true));
                 let choix = entree.choix(0, combat.equipe().len())?;
-                if choix > 0 {
-                    let monstre = &combat.equipe()[choix - 1];
-                    // Sur un monstre qui a tous ses PV, la potion serait
-                    // perdue : le joueur confirme d'abord (Q53).
-                    let perdue = combat.potions() > 0 && potion_sans_effet(monstre);
-                    if !perdue || entree.confirmation(&affichage::potion_perdue(monstre))? {
-                        return Some(Action::UtiliserPotion(choix - 1));
-                    }
-                }
+                (choix > 0).then(|| Action::UtiliserPotion(choix - 1))
             }
-            Commande::Fuir => return Some(Action::Fuir),
+            Commande::Fuir => Some(Action::Fuir),
+        };
+        if let Some(action) = action {
+            return Some(Choix::Combat(action));
         }
     }
+}
+
+pub fn choisir_remplacant(combat: &Combat, entree: &mut Entree) -> Option<Choix> {
+    println!();
+    println!("Quel monstre envoyer ?");
+    println!("{}", affichage::liste_equipe(combat, false));
+    let choix = entree.choix(1, combat.equipe().len())?;
+    Some(Choix::Remplacer(choix - 1))
+}
+
+/// Plusieurs monstres KO peuvent être capturés après une victoire (Q29).
+pub fn choisir_capture(
+    combat: &Combat,
+    collection: &Collection,
+    entree: &mut Entree,
+) -> Option<Choix> {
+    let capturables = combat.adversaires_capturables();
+    println!();
+    println!("Capturer un monstre KO ?");
+    println!("{}", places_pour_une_capture(collection));
+    println!("{}", affichage::liste_capturables(combat, &capturables));
+    let choix = match entree.choix(0, capturables.len())? {
+        0 => Choix::NePlusCapturer,
+        choix => Choix::Capturer(capturables[choix - 1]),
+    };
+    Some(choix)
 }
 
 /// Le monstre connaît déjà 4 attaques : le joueur en oublie une pour
-/// apprendre la nouvelle, ou y renonce (Q33). Rend `false` si l'entrée est
-/// fermée, le monstre renonçant alors à l'attaque.
-fn choisir_attaque_a_oublier(
-    monstre: &mut Monstre,
+/// apprendre la nouvelle, ou y renonce (Q33).
+pub fn choisir_attaque_a_oublier(
+    monstre: &Monstre,
     nouvelle: &Attaque,
     entree: &mut Entree,
-) -> bool {
+) -> Option<Choix> {
     println!("{}", affichage::question_oubli(monstre, nouvelle));
-    let choix = entree.choix(0, monstre.attaques().liste().len());
-    let Some(position) = choix.filter(|&choix| choix > 0).map(|choix| choix - 1) else {
-        println!("{}", affichage::renoncement(monstre, nouvelle));
-        return choix.is_some();
+    let choix = match entree.choix(0, monstre.attaques().liste().len())? {
+        0 => Choix::RenoncerALAttaque,
+        choix => Choix::OublierAttaque(choix - 1),
     };
-    let oubliee = monstre.attaques().liste()[position].clone();
-    match monstre.remplacer_attaque(position, nouvelle.clone()) {
-        Ok(()) => println!("{}", affichage::remplacement(monstre, &oubliee, nouvelle)),
-        Err(erreur) => println!("Impossible d'apprendre cette attaque : {erreur}."),
-    }
-    true
-}
-
-fn afficher(resultat: Result<Vec<Evenement>, ErreurCombat>, combat: &Combat) {
-    match resultat {
-        Ok(evenements) => {
-            for evenement in &evenements {
-                println!("{}", affichage::evenement(evenement, combat));
-            }
-        }
-        Err(erreur) => println!("{}", affichage::erreur(&erreur)),
-    }
+    Some(choix)
 }

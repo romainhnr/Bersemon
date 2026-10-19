@@ -1,14 +1,22 @@
 //! Contenu de la V1, tel que validé dans docs/contenu-v1.md : attaques,
-//! espèces, zones, piste de l'Apôtre et textes de l'histoire. Toute
-//! modification se reporte d'abord dans ce document.
+//! espèces, zones, piste de l'Apôtre et textes de l'histoire, puis, après la
+//! V1, capsules d'attaque. Toute modification se reporte d'abord dans ce
+//! document.
 //!
 //! Ce contenu vit dans le noyau pour être partagé tel quel par la console et
 //! le futur bot Discord. Les règles, elles, n'en dépendent pas : elles le
 //! reçoivent de l'appelant, comme le hasard.
 
+use std::ops::RangeInclusive;
+use std::time::Duration;
+
 use crate::attaque::{Attaque, AttaqueId, Categorie, EffetSecondaire};
+use crate::capsule::Capsule;
 use crate::catalogue::Catalogue;
-use crate::espece::{AttaqueApprise, Espece, EspeceId, Role};
+use crate::espece::{AttaqueApprise, Espece, EspeceId, Rarete, Role};
+use crate::expedition::ParametresCoffre;
+use crate::expedition_automatique::ParametresExpeditionAutomatique;
+use crate::heros::Classe;
 use crate::niveau::Niveau;
 use crate::stats::Stats;
 use crate::statut::Statut;
@@ -20,15 +28,28 @@ use crate::zone::{EspeceRare, Zone, ZoneId};
 use Categorie::{Physique, Speciale};
 use Statut::{Paralysie, Poison};
 
-/// Affichée après le choix de la classe, juste avant le choix du premier
-/// monstre (section 6).
+/// Affichée après le choix de la classe (section 6), suivie du paragraphe
+/// propre à la classe, `fin_de_l_introduction`.
 pub const INTRODUCTION: &str = "Le royaume s'est éteint sous un ciel de cendre. Sur les routes que les hommes ont désertées, les bêtes ont repris leurs droits, et des choses plus anciennes rôdent au bord des bois.
 
 Ces choses ont un nom : les Apôtres. Autrefois des hommes, ils ont sacrifié ce qu'ils aimaient pour une chair de monstre, et ils servent un maître que nul n'a vu en face, le Démiurge. Une nuit, ses Apôtres ont fondu sur les vôtres. Vous êtes le seul à vous être relevé.
 
-Vous atteignez le camp de base, dernier feu allumé avant les terres sauvages. Ceux qui survivent ici ne le doivent pas à leur seule lame : ils se lient aux créatures, les capturent au filet et les mènent au combat. Pour atteindre le Démiurge, il faudra abattre ses Apôtres, un par un.
+Vous atteignez le camp de base, dernier feu allumé avant les terres sauvages. Ceux qui survivent ici ne le doivent pas à leur seule lame : ils se lient aux créatures, les capturent au filet et les mènent au combat. Pour atteindre le Démiurge, il faudra abattre ses Apôtres, un par un.";
 
-Le gardien du camp soulève le drap qui couvre trois cages. Choisissez la créature qui partagera votre route.";
+/// Le gardien confie au héros le monstre attitré de sa classe (Q67).
+pub fn fin_de_l_introduction(classe: Classe) -> &'static str {
+    match classe {
+        Classe::Guerrier => {
+            "Le gardien du camp jauge votre lame, puis ouvre une cage : un crapaud massif s'en extrait, la peau couverte de cicatrices. Il frappe fort et ne recule pas. Il partagera votre route."
+        }
+        Classe::Mage => {
+            "Le gardien du camp remarque la cendre sur vos doigts, puis ouvre une cage : une salamandre s'en glisse, et l'air tremble autour d'elle. Ses flammes répondront aux vôtres. Elle partagera votre route."
+        }
+        Classe::Templier => {
+            "Le gardien du camp observe votre bouclier, puis ouvre une cage : une mandragore en sort à pas lents, ses racines tressées comme une armure. Elle encaisse ce qui en abattrait d'autres. Elle partagera votre route."
+        }
+    }
+}
 
 // Chaque indice s'affiche après son numéro, d'où la minuscule initiale.
 const INDICE_1: &str = "au bout de la Lisière, des cordes neuves pendent encore à un chêne mort. Les traces d'une procession s'enfoncent vers le sud, là où la forêt se noie : le Marais des Pendus. Quelque chose y règne.";
@@ -36,6 +57,10 @@ const INDICE_1: &str = "au bout de la Lisière, des cordes neuves pendent encore
 const INDICE_2: &str = "des noyés flottent entre les roseaux, tous tournés vers le même point de la brume, comme s'ils écoutaient un appel.";
 
 const INDICE_3: &str = "un gibet se dresse sur une île de vase, plus haut que les arbres. À son pied, la terre est retournée par des pas trop lourds pour un homme. L'antre de l'Apôtre est là.";
+
+/// Le marchand se réfugie aussitôt au camp, même si l'expédition finit mal
+/// (section 14.2).
+pub const RENCONTRE_DU_MARCHAND: &str = "Un marchand ambulant surgit de la brume, sa carriole chargée de fioles. Les routes ne sont plus sûres pour lui : il part se réfugier au camp, où vous le retrouverez.";
 
 const AVANT_LE_BARON: &str = "Sous le gibet, une silhouette se déplie lentement, la corde encore au cou. Le Baron pendu, Apôtre du Démiurge, vous a senti venir. Il n'y aura pas de fuite.";
 
@@ -47,7 +72,7 @@ pub fn texte_du_conseil(conseil: Conseil) -> &'static str {
             "Conseil : affaiblissez un monstre avant de lancer un filet, car plus il a perdu de PV, plus la capture a de chances de réussir. Fuir réussit toujours, mais le monstre adverse frappe une dernière fois."
         }
         Conseil::PremierArretEntreDeuxEtapes => {
-            "Conseil : vos monstres ne récupèrent leurs PV qu'au camp. Entre deux étapes, soignez-les avec une potion, changez l'ordre de votre équipe, ou rentrez avant qu'il ne soit trop tard : une défaite vous fait perdre toutes vos potions."
+            "Conseil : vos monstres ne récupèrent leurs PV qu'au camp. Entre deux étapes, soignez-les avec une potion, changez l'ordre de votre équipe, ou rentrez avant qu'il ne soit trop tard : une défaite vous fait perdre tout votre sac, mais pas ce qui est rangé dans le coffre du camp."
         }
         Conseil::PremierRetourAuCamp => {
             "Conseil : au camp, vos monstres sont soignés et la partie est sauvegardée. Trois monstres vous accompagnent ; les autres attendent ici, et vous pouvez les échanger à tout moment."
@@ -62,6 +87,7 @@ pub struct ContenuV1 {
     especes: Vec<Espece>,
     zones: Vec<Zone>,
     piste: Piste,
+    capsules: Vec<Capsule>,
 }
 
 impl ContenuV1 {
@@ -69,6 +95,18 @@ impl ContenuV1 {
     /// de programmation, que les tests de ce module détectent.
     pub fn new() -> Self {
         let especes: Vec<Espece> = ESPECES.iter().map(creer_espece).collect();
+        let capsules: Vec<Capsule> = CAPSULES
+            .iter()
+            .map(|fiche| Capsule::new(creer_attaque(fiche.attaque), fiche.prix))
+            .collect();
+        let capsules_de = |zone: &str| {
+            CAPSULES
+                .iter()
+                .zip(&capsules)
+                .filter(|(fiche, _)| fiche.zone == zone)
+                .map(|(_, capsule)| capsule.clone())
+                .collect()
+        };
         let trouver = |id: &str| {
             especes
                 .iter()
@@ -80,18 +118,22 @@ impl ContenuV1 {
             ZoneId::new("lisiere"),
             "Lisière du Bois-Sombre",
             (niveau(3), niveau(7)),
+            3,
             2,
             vec![trouver("loup"), trouver("corbeau"), trouver("vipere")],
             vec![EspeceRare {
                 espece: trouver("cerf-blanc"),
                 pacifique: true,
             }],
+            expedition_automatique(1, 15..=60, 100..=200, 0..=1, 15..=30),
+            coffre(10..=25, capsules_de("lisiere")),
         )
         .expect("Lisière conforme aux règles");
         let marais = Zone::new(
             ZoneId::new("marais"),
             "Marais des Pendus",
             (niveau(8), niveau(13)),
+            4,
             3,
             vec![
                 trouver("feu-follet"),
@@ -103,6 +145,8 @@ impl ContenuV1 {
                 espece: trouver("basilic"),
                 pacifique: false,
             }],
+            expedition_automatique(2, 40..=120, 300..=600, 1..=2, 40..=80),
+            coffre(25..=50, capsules_de("marais")),
         )
         .expect("Marais conforme aux règles");
         let baron = Apotre::new(trouver("baron-pendu"), &marais, AVANT_LE_BARON, EPILOGUE)
@@ -124,6 +168,7 @@ impl ContenuV1 {
             especes,
             zones: vec![lisiere, marais],
             piste,
+            capsules,
         }
     }
 
@@ -136,6 +181,20 @@ impl ContenuV1 {
         &self.especes[..NOMBRE_DE_DEPARTS]
     }
 
+    /// Chaque classe a son monstre de départ, qui reprend son profil
+    /// (section 6).
+    pub fn espece_de_depart(&self, classe: Classe) -> &Espece {
+        let id = match classe {
+            Classe::Guerrier => "crapaud",
+            Classe::Mage => "salamandre",
+            Classe::Templier => "mandragore",
+        };
+        self.especes_de_depart()
+            .iter()
+            .find(|espece| espece.id().as_str() == id)
+            .expect("chaque classe a son monstre de départ dans le contenu")
+    }
+
     /// De la plus facile à la plus difficile, dans l'ordre de la carte.
     pub fn zones(&self) -> &[Zone] {
         &self.zones
@@ -143,6 +202,12 @@ impl ContenuV1 {
 
     pub fn piste(&self) -> &Piste {
         &self.piste
+    }
+
+    /// Toutes les capsules d'attaque, que le marchand vend (section 14.2),
+    /// dans l'ordre de docs/contenu-v1.md.
+    pub fn capsules(&self) -> &[Capsule] {
+        &self.capsules
     }
 }
 
@@ -157,6 +222,17 @@ impl Catalogue for ContenuV1 {
         self.especes
             .iter()
             .find(|espece| espece.id() == id)
+            .cloned()
+    }
+
+    fn zone(&self, id: &ZoneId) -> Option<Zone> {
+        self.zones.iter().find(|zone| zone.id() == id).cloned()
+    }
+
+    fn capsule(&self, id: &AttaqueId) -> Option<Capsule> {
+        self.capsules
+            .iter()
+            .find(|capsule| capsule.id() == id)
             .cloned()
     }
 }
@@ -198,7 +274,7 @@ const fn avec_effet(fiche: FicheAttaque, statut: Statut, chance: u8) -> FicheAtt
 }
 
 /// Section 1 de docs/contenu-v1.md, dans le même ordre.
-const ATTAQUES: [FicheAttaque; 38] = [
+const ATTAQUES: [FicheAttaque; 41] = [
     fiche(
         "souffle-chaud",
         "Souffle chaud",
@@ -460,6 +536,62 @@ const ATTAQUES: [FicheAttaque; 38] = [
         90,
         85,
     ),
+    // Attaques des capsules, qu'aucune espèce n'apprend (section 6).
+    fiche("brasier", "Brasier", Type::Feu, Speciale, 70, 100),
+    fiche("deferlante", "Déferlante", Type::Eau, Physique, 65, 100),
+    avec_effet(
+        fiche(
+            "lianes-etrangleuses",
+            "Lianes étrangleuses",
+            Type::Plante,
+            Physique,
+            55,
+            100,
+        ),
+        Paralysie,
+        20,
+    ),
+];
+
+struct FicheCapsule {
+    attaque: &'static str,
+    prix: u32,
+    /// Identifiant de la zone dont les coffres la contiennent.
+    zone: &'static str,
+}
+
+/// Section 6 de docs/contenu-v1.md, dans le même ordre.
+const CAPSULES: [FicheCapsule; 6] = [
+    FicheCapsule {
+        attaque: "brasier",
+        prix: 150,
+        zone: "lisiere",
+    },
+    FicheCapsule {
+        attaque: "deferlante",
+        prix: 150,
+        zone: "lisiere",
+    },
+    FicheCapsule {
+        attaque: "lianes-etrangleuses",
+        prix: 150,
+        zone: "lisiere",
+    },
+    FicheCapsule {
+        attaque: "croc-de-venin",
+        prix: 200,
+        zone: "marais",
+    },
+    FicheCapsule {
+        attaque: "frisson-d-outre-tombe",
+        prix: 200,
+        zone: "marais",
+    },
+    FicheCapsule {
+        attaque: "sentence",
+        prix: 300,
+        zone: "marais",
+    },
 ];
 
 struct FicheEspece {
@@ -470,6 +602,8 @@ struct FicheEspece {
     /// PV, Attaque, Défense, Attaque spéciale, Défense spéciale, Vitesse.
     stats_de_base: [u16; 6],
     rendement_experience: u16,
+    /// Fixe le prix de revente (section 14.5).
+    rarete: Rarete,
     /// Niveau d'apprentissage et identifiant de l'attaque.
     apprentissage: &'static [(u8, &'static str)],
 }
@@ -484,6 +618,7 @@ const ESPECES: [FicheEspece; 11] = [
         role: Role::Offensif,
         stats_de_base: [45, 40, 40, 70, 55, 65],
         rendement_experience: 62,
+        rarete: Rarete::Commune,
         apprentissage: &[
             (1, "souffle-chaud"),
             (3, "crachat-de-braises"),
@@ -499,6 +634,7 @@ const ESPECES: [FicheEspece; 11] = [
         role: Role::Offensif,
         stats_de_base: [55, 68, 55, 35, 45, 55],
         rendement_experience: 63,
+        rarete: Rarete::Commune,
         apprentissage: &[
             (1, "charge-gluante"),
             (3, "plongeon"),
@@ -514,6 +650,7 @@ const ESPECES: [FicheEspece; 11] = [
         role: Role::Soutien,
         stats_de_base: [70, 45, 70, 45, 65, 25],
         rendement_experience: 64,
+        rarete: Rarete::Commune,
         apprentissage: &[
             (1, "coup-de-racine"),
             (3, "feuille-tranchante"),
@@ -529,6 +666,7 @@ const ESPECES: [FicheEspece; 11] = [
         role: Role::Offensif,
         stats_de_base: [50, 62, 45, 30, 40, 58],
         rendement_experience: 70,
+        rarete: Rarete::Commune,
         apprentissage: &[(1, "griffure"), (4, "morsure"), (9, "curee")],
     },
     FicheEspece {
@@ -538,6 +676,7 @@ const ESPECES: [FicheEspece; 11] = [
         role: Role::Offensif,
         stats_de_base: [42, 57, 38, 45, 38, 72],
         rendement_experience: 66,
+        rarete: Rarete::Commune,
         apprentissage: &[(1, "coup-de-bec"), (4, "pique"), (8, "regard-funeste")],
     },
     FicheEspece {
@@ -547,6 +686,7 @@ const ESPECES: [FicheEspece; 11] = [
         role: Role::Offensif,
         stats_de_base: [40, 50, 40, 50, 45, 63],
         rendement_experience: 68,
+        rarete: Rarete::Commune,
         apprentissage: &[
             (1, "morsure-venimeuse"),
             (3, "regard-petrifiant"),
@@ -560,6 +700,7 @@ const ESPECES: [FicheEspece; 11] = [
         role: Role::Offensif,
         stats_de_base: [45, 30, 40, 70, 60, 75],
         rendement_experience: 85,
+        rarete: Rarete::Commune,
         apprentissage: &[
             (1, "lueur-trompeuse"),
             (1, "crachat-de-braises"),
@@ -574,6 +715,7 @@ const ESPECES: [FicheEspece; 11] = [
         role: Role::Offensif,
         stats_de_base: [60, 75, 85, 30, 50, 30],
         rendement_experience: 95,
+        rarete: Rarete::Commune,
         apprentissage: &[
             (1, "coup-de-garde"),
             (8, "lame-rouillee"),
@@ -587,6 +729,7 @@ const ESPECES: [FicheEspece; 11] = [
         role: Role::Soutien,
         stats_de_base: [70, 60, 60, 65, 70, 75],
         rendement_experience: 150,
+        rarete: Rarete::Rare,
         apprentissage: &[(1, "coup-de-bois"), (5, "ruade"), (8, "lumiere-d-aube")],
     },
     FicheEspece {
@@ -596,6 +739,7 @@ const ESPECES: [FicheEspece; 11] = [
         role: Role::Offensif,
         stats_de_base: [75, 70, 65, 75, 60, 55],
         rendement_experience: 170,
+        rarete: Rarete::Rare,
         apprentissage: &[
             (1, "morsure-venimeuse"),
             (8, "regard-petrifiant"),
@@ -610,6 +754,7 @@ const ESPECES: [FicheEspece; 11] = [
         role: Role::Offensif,
         stats_de_base: [85, 85, 75, 90, 80, 65],
         rendement_experience: 250,
+        rarete: Rarete::Apotre,
         apprentissage: &[
             (1, "corde-du-gibet"),
             (5, "lamentation"),
@@ -652,6 +797,7 @@ fn creer_espece(fiche: &FicheEspece) -> Espece {
         fiche.rendement_experience,
         apprentissage,
     )
+    .avec_rarete(fiche.rarete)
 }
 
 fn creer_attaque(id: &str) -> Attaque {
@@ -679,6 +825,29 @@ fn niveau(valeur: u8) -> Niveau {
     Niveau::new(valeur).expect("niveau du contenu valide")
 }
 
+/// Expéditions automatiques de la section 3 de docs/contenu-v1.md.
+fn expedition_automatique(
+    heures: u64,
+    degats: RangeInclusive<u32>,
+    experience: RangeInclusive<u32>,
+    potions: RangeInclusive<u32>,
+    argent: RangeInclusive<u32>,
+) -> ParametresExpeditionAutomatique {
+    ParametresExpeditionAutomatique::new(
+        Duration::from_secs(heures * 3_600),
+        degats,
+        experience,
+        potions,
+        argent,
+    )
+    .expect("expédition automatique conforme aux règles")
+}
+
+/// Coffres de la section 3 de docs/contenu-v1.md.
+fn coffre(argent: RangeInclusive<u32>, capsules: Vec<Capsule>) -> ParametresCoffre {
+    ParametresCoffre::new(argent, capsules).expect("coffre conforme aux règles")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -688,6 +857,48 @@ mod tests {
     fn creer(contenu: &ContenuV1, id: &str, valeur: u8) -> Monstre {
         let espece = contenu.espece(&EspeceId::new(id)).unwrap();
         Monstre::creer(espece, niveau(valeur), ValeursInternes::default(), false).unwrap()
+    }
+
+    /// Monstre aux valeurs internes de 15, la moyenne des tirages.
+    fn creer_moyen(contenu: &ContenuV1, id: &str, valeur: u8) -> Monstre {
+        let espece = contenu.espece(&EspeceId::new(id)).unwrap();
+        let moyennes = ValeursInternes::new(Stats {
+            pv: 15,
+            attaque: 15,
+            defense: 15,
+            attaque_speciale: 15,
+            defense_speciale: 15,
+            vitesse: 15,
+        })
+        .unwrap();
+        Monstre::creer(espece, niveau(valeur), moyennes, false).unwrap()
+    }
+
+    /// Repères de la section 12.8 de docs/gamedesign.md.
+    #[test]
+    fn reperes_des_expeditions_automatiques() {
+        let contenu = ContenuV1::new();
+        let chances = |zone: usize, equipe: &[(&str, u8)]| {
+            let monstres: Vec<Monstre> = equipe
+                .iter()
+                .map(|&(id, valeur)| creer_moyen(&contenu, id, valeur))
+                .collect();
+            contenu.zones()[zone]
+                .expedition_automatique()
+                .chances_de_reussite(&monstres)
+                .pourcentage()
+        };
+        let salamandre = ("salamandre", 8);
+        assert_eq!(chances(0, &[salamandre]), 23);
+        assert_eq!(chances(0, &[salamandre, ("loup", 6)]), 71);
+        assert_eq!(chances(0, &[salamandre, ("loup", 6), ("vipere", 5)]), 100);
+        let salamandre = ("salamandre", 12);
+        assert_eq!(chances(1, &[salamandre]), 0);
+        assert_eq!(chances(1, &[salamandre, ("crapaud", 11)]), 34);
+        assert_eq!(
+            chances(1, &[salamandre, ("crapaud", 11), ("mandragore", 10)]),
+            77
+        );
     }
 
     #[test]
@@ -713,7 +924,7 @@ mod tests {
     }
 
     #[test]
-    fn chaque_attaque_est_apprise_par_une_espece() {
+    fn chaque_attaque_est_apprise_par_une_espece_ou_une_capsule() {
         for fiche in &ATTAQUES {
             let apprise = ESPECES.iter().any(|espece| {
                 espece
@@ -721,8 +932,46 @@ mod tests {
                     .iter()
                     .any(|&(_, attaque)| attaque == fiche.id)
             });
-            assert!(apprise, "attaque {} apprise par aucune espèce", fiche.id);
+            let en_capsule = CAPSULES.iter().any(|capsule| capsule.attaque == fiche.id);
+            assert!(
+                apprise || en_capsule,
+                "attaque {} apprise par aucune espèce ni capsule",
+                fiche.id
+            );
         }
+    }
+
+    #[test]
+    fn chaque_capsule_sert_a_une_espece_qui_ne_l_apprend_pas() {
+        let contenu = ContenuV1::new();
+        assert_eq!(contenu.capsules().len(), 6);
+        for capsule in contenu.capsules() {
+            let utile = contenu.especes().iter().any(|espece| {
+                capsule.convient_a(espece) && espece.attaque_apprise(capsule.id()).is_none()
+            });
+            assert!(utile, "capsule {} inutile", capsule.id().as_str());
+            assert_eq!(contenu.capsule(capsule.id()).as_ref(), Some(capsule));
+        }
+    }
+
+    #[test]
+    fn les_coffres_de_chaque_zone_ont_leurs_capsules() {
+        let contenu = ContenuV1::new();
+        let ids = |zone: &Zone| -> Vec<String> {
+            zone.coffre()
+                .capsules()
+                .iter()
+                .map(|capsule| capsule.id().as_str().to_string())
+                .collect()
+        };
+        assert_eq!(
+            ids(&contenu.zones()[0]),
+            vec!["brasier", "deferlante", "lianes-etrangleuses"]
+        );
+        assert_eq!(
+            ids(&contenu.zones()[1]),
+            vec!["croc-de-venin", "frisson-d-outre-tombe", "sentence"]
+        );
     }
 
     #[test]
@@ -739,6 +988,37 @@ mod tests {
                 assert_eq!(contenu.espece(espece.id()).as_ref(), Some(espece));
             }
         }
+    }
+
+    #[test]
+    fn la_rarete_suit_la_place_de_l_espece_dans_le_jeu() {
+        let contenu = ContenuV1::new();
+        let rares: Vec<&EspeceId> = contenu
+            .zones()
+            .iter()
+            .flat_map(|zone| zone.rares().iter().map(|rare| rare.espece.id()))
+            .collect();
+        let apotre = contenu.piste().apotre().espece().id();
+        for espece in contenu.especes() {
+            let attendue = if espece.id() == apotre {
+                Rarete::Apotre
+            } else if rares.contains(&espece.id()) {
+                Rarete::Rare
+            } else {
+                Rarete::Commune
+            };
+            assert_eq!(espece.rarete(), attendue, "{}", espece.id().as_str());
+        }
+    }
+
+    #[test]
+    fn chaque_classe_a_son_monstre_de_depart() {
+        let contenu = ContenuV1::new();
+        let ids: Vec<&str> = Classe::TOUTES
+            .iter()
+            .map(|classe| contenu.espece_de_depart(*classe).id().as_str())
+            .collect();
+        assert_eq!(ids, vec!["crapaud", "salamandre", "mandragore"]);
     }
 
     #[test]

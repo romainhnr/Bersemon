@@ -1,271 +1,93 @@
-//! Carte et expédition manuelle (section 9) : choix de la zone, puis les
-//! étapes jusqu'au retour au camp, avec la traque de l'Apôtre (section 9.4).
+//! Questions posées en expédition (section 9.2) : entre deux étapes, devant
+//! un monstre rare pacifique, et quand une capture ne trouve pas de place.
 
-use bersemon_core::aleatoire::Aleatoire;
-use bersemon_core::combat::{Cote, Issue};
-use bersemon_core::contenu::ContenuV1;
-use bersemon_core::expedition::{EvenementExpedition, Expedition};
-use bersemon_core::inventaire::potion_sans_effet;
+use bersemon_core::collection::{Collection, Emplacement};
+use bersemon_core::deroulement::{ActionDeGestion, Choix};
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
-use bersemon_core::traque::Apotre;
-use bersemon_core::tutoriel::Conseil;
+use bersemon_presentation::partie::{
+    collection as liste_des_monstres, place_manquante as place_manquante_texte,
+};
 
 use crate::affichage;
-use crate::ecran_combat;
 use crate::saisie::Entree;
-use crate::tutoriel::montrer_conseil;
 
-/// Rend `false` si l'entrée est fermée.
-pub fn partir(
-    partie: &mut Partie,
-    contenu: &ContenuV1,
-    aleatoire: &mut dyn Aleatoire,
-    entree: &mut Entree,
-) -> bool {
-    let piste = contenu.piste();
-    let accessibles = partie.zones_accessibles(contenu.zones(), piste);
-    println!();
-    println!("{}", affichage::carte(partie, &accessibles));
-    println!("  0. Rester au camp");
-    let Some(choix) = entree.choix(0, accessibles.len()) else {
-        return false;
-    };
-    if choix == 0 {
-        return true;
-    }
-    let mut expedition = partie
-        .partir_en_expedition(accessibles[choix - 1], piste, aleatoire)
-        .expect("zone choisie sur la carte");
-    let nombre_avant = accessibles.len();
-    println!();
-    println!("Vous partez pour {}.", expedition.zone().nom());
-
-    let entree_ouverte = explorer(partie, &mut expedition, piste.apotre(), aleatoire, entree);
-    let indice = partie.rentrer_au_camp(&expedition, piste);
-    println!();
-    if expedition.est_reussie() {
-        println!(
-            "Vous avez exploré {} jusqu'au bout.",
-            expedition.zone().nom()
-        );
-    }
-    println!("Retour au camp : vos monstres sont soignés.");
-    if let Some(indice) = indice {
-        println!();
-        println!("Indice {} : {}", partie.indices_trouves(), indice.texte);
-    }
-    let accessibles = partie.zones_accessibles(contenu.zones(), piste);
-    if let Some(nouvelle) = accessibles.get(nombre_avant) {
-        println!(
-            "Une nouvelle zone apparaît sur la carte : {}.",
-            nouvelle.nom()
-        );
-    }
-    montrer_conseil(partie, Conseil::PremierRetourAuCamp);
-    entree_ouverte
-}
-
-/// Ce que décide le joueur entre deux étapes.
-enum Decision {
-    Continuer,
-    Rentrer,
-    EntreeFermee,
-}
-
-/// Rend `false` si l'entrée est fermée.
-fn explorer(
-    partie: &mut Partie,
-    expedition: &mut Expedition,
-    apotre: &Apotre,
-    aleatoire: &mut dyn Aleatoire,
-    entree: &mut Entree,
-) -> bool {
-    while let Some(evenement) = expedition.etape_suivante(aleatoire) {
-        println!();
-        println!("Étape {}.", expedition.etapes_faites());
-        let entree_ouverte = match evenement {
-            EvenementExpedition::Combat(groupe) => {
-                combattre(partie, expedition, groupe, aleatoire, entree)
-            }
-            EvenementExpedition::Coffre { potions } => {
-                partie.ouvrir_coffre(potions);
-                println!("Vous trouvez un coffre : {}.", affichage::potions(potions));
-                true
-            }
-            EvenementExpedition::MonstreRare(rare) => {
-                partie.noter_rencontre(&rare.monstre);
-                let nom = affichage::nom_sauvage(&rare.monstre);
-                if rare.pacifique {
-                    println!("Un monstre rare apparaît : {nom}. Il ne semble pas hostile.");
-                    match entree.confirmation("Le prendre avec vous ?") {
-                        None => false,
-                        Some(true) => {
-                            let placement = partie.prendre_monstre_rare(rare.monstre);
-                            ecran_combat::traiter_placement(
-                                partie.collection_mut(),
-                                placement,
-                                true,
-                                entree,
-                            )
-                        }
-                        Some(false) => {
-                            println!("Vous le laissez partir.");
-                            true
-                        }
-                    }
-                } else {
-                    println!("Un monstre rare vous attaque : {nom} !");
-                    combattre(partie, expedition, vec![rare.monstre], aleatoire, entree)
-                }
-            }
-            EvenementExpedition::Apotre(monstre) => {
-                affronter_l_apotre(partie, expedition, apotre, monstre, aleatoire, entree)
-            }
-        };
-        if !entree_ouverte {
-            return false;
-        }
-        if expedition.est_terminee() {
-            return true;
-        }
-        match entre_deux_etapes(partie, aleatoire, entree) {
-            Decision::Continuer => {}
-            Decision::Rentrer => return true,
-            Decision::EntreeFermee => return false,
-        }
-    }
-    true
-}
-
-/// Rend `false` si l'entrée est fermée.
-fn combattre(
-    partie: &mut Partie,
-    expedition: &mut Expedition,
-    groupe: Vec<Monstre>,
-    aleatoire: &mut dyn Aleatoire,
-    entree: &mut Entree,
-) -> bool {
-    let fin = ecran_combat::combattre(partie, groupe, aleatoire, entree);
-    noter_defaite(expedition, fin.issue);
-    fin.entree_ouverte
-}
-
-/// Après la victoire, l'épilogue annonce la suite de la traque (section 6).
-/// Rend `false` si l'entrée est fermée.
-fn affronter_l_apotre(
-    partie: &mut Partie,
-    expedition: &mut Expedition,
-    apotre: &Apotre,
-    monstre: Monstre,
-    aleatoire: &mut dyn Aleatoire,
-    entree: &mut Entree,
-) -> bool {
-    println!("{}", apotre.avant_combat());
-    let fin = ecran_combat::combattre_l_apotre(partie, monstre, aleatoire, entree);
-    if fin.issue == Some(Issue::Victoire) {
-        partie.noter_apotre_vaincu(apotre);
-        println!();
-        println!("{}", apotre.epilogue());
-    }
-    noter_defaite(expedition, fin.issue);
-    fin.entree_ouverte
-}
-
-/// Une défaite met fin à l'expédition et fait perdre les potions (section
-/// 9.3).
-fn noter_defaite(expedition: &mut Expedition, issue: Option<Issue>) {
-    if issue == Some(Issue::Defaite) {
-        expedition.noter_defaite();
-        println!();
-        println!("Toute votre équipe est KO : vous rentrez au camp et perdez vos potions.");
-    }
-}
-
-fn entre_deux_etapes(
-    partie: &mut Partie,
-    aleatoire: &mut dyn Aleatoire,
-    entree: &mut Entree,
-) -> Decision {
-    montrer_conseil(partie, Conseil::PremierArretEntreDeuxEtapes);
+/// Rend `None` si l'entrée est fermée. Le contenu du sac est rappelé : une
+/// défaite le ferait perdre (section 9.3).
+pub fn entre_deux_etapes(partie: &Partie, entree: &mut Entree) -> Option<Choix> {
     loop {
         println!();
         println!("{}", affichage::equipe_en_expedition(partie));
         println!("Que faire ?");
         println!("  1. Continuer l'expédition");
-        println!(
-            "  2. Utiliser une potion ({})",
-            partie.inventaire().potions()
-        );
+        println!("  2. Utiliser une potion ({})", partie.sac().potions());
         println!("  3. Changer l'ordre de l'équipe");
         println!("  4. Rentrer au camp");
-        let poursuivre = match entree.choix(1, 4) {
-            None => return Decision::EntreeFermee,
-            Some(1) => return Decision::Continuer,
-            Some(2) => utiliser_potion(partie, aleatoire, entree),
-            Some(3) => changer_ordre(partie, entree),
-            _ => return Decision::Rentrer,
-        };
-        if !poursuivre {
-            return Decision::EntreeFermee;
+        match entree.choix(1, 4)? {
+            1 => return Some(Choix::ContinuerLExpedition),
+            2 => {
+                println!("Soigner quel monstre ? (0 pour annuler)");
+                let choix = entree.choix(0, partie.collection().equipe().len())?;
+                if choix > 0 {
+                    return Some(Choix::UtiliserPotion(choix - 1));
+                }
+            }
+            3 => {
+                if let Some(choix) = changer_ordre(partie, entree)? {
+                    return Some(choix);
+                }
+            }
+            _ => return Some(Choix::RentrerAuCamp),
         }
     }
-}
-
-/// Rend `false` si l'entrée est fermée.
-fn utiliser_potion(
-    partie: &mut Partie,
-    aleatoire: &mut dyn Aleatoire,
-    entree: &mut Entree,
-) -> bool {
-    println!("Soigner quel monstre ? (0 pour annuler)");
-    let Some(choix) = entree.choix(0, partie.collection().equipe().len()) else {
-        return false;
-    };
-    if choix == 0 {
-        return true;
-    }
-    let monstre = &partie.collection().equipe()[choix - 1];
-    // Sur un monstre qui a tous ses PV, la potion serait perdue : le joueur
-    // confirme d'abord (Q53).
-    if partie.inventaire().potions() > 0 && potion_sans_effet(monstre) {
-        match entree.confirmation(&affichage::potion_perdue(monstre)) {
-            None => return false,
-            Some(false) => return true,
-            Some(true) => {}
-        }
-    }
-    match partie.utiliser_potion(choix - 1, aleatoire) {
-        Ok(pv) => {
-            let nom = affichage::nom(&partie.collection().equipe()[choix - 1], Cote::Joueur);
-            println!("{}", affichage::soin_de_potion(&nom, pv));
-        }
-        Err(erreur) => println!("{}", affichage::erreur_potion(&erreur)),
-    }
-    true
 }
 
 /// Le premier monstre en état de combattre commencera le prochain combat ;
-/// les échanges avec le camp restent impossibles en expédition (Q55). Rend
-/// `false` si l'entrée est fermée.
-fn changer_ordre(partie: &mut Partie, entree: &mut Entree) -> bool {
+/// les échanges avec le camp restent impossibles en expédition (Q55).
+/// `Some(None)` si le joueur annule.
+fn changer_ordre(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
     let taille = partie.collection().equipe().len();
     println!("Quel monstre déplacer ? (0 pour annuler)");
-    let Some(de) = entree.choix(0, taille) else {
-        return false;
-    };
+    let de = entree.choix(0, taille)?;
     if de == 0 {
-        return true;
+        return Some(None);
     }
     println!("À quelle place le mettre ?");
-    let Some(vers) = entree.choix(1, taille) else {
-        return false;
+    let vers = entree.choix(1, taille)?;
+    Some(Some(Choix::Gerer(ActionDeGestion::ChangerLOrdre {
+        de: de - 1,
+        vers: vers - 1,
+    })))
+}
+
+pub fn monstre_rare(entree: &mut Entree) -> Option<Choix> {
+    let choix = if entree.confirmation("Le prendre avec vous ?")? {
+        Choix::PrendreLeMonstreRare
+    } else {
+        Choix::LaisserLeMonstreRare
     };
-    if let Err(erreur) = partie
-        .collection_mut()
-        .deplacer_dans_l_equipe(de - 1, vers - 1)
-    {
-        println!("{}", affichage::erreur_collection(&erreur));
-    }
-    true
+    Some(choix)
+}
+
+/// Le joueur relâche un de ses monstres pour garder la capture, ou relâche
+/// la capture (Q12).
+pub fn place_manquante(
+    capture: &Monstre,
+    collection: &Collection,
+    entree: &mut Entree,
+) -> Option<Choix> {
+    println!();
+    println!("{}", place_manquante_texte(capture));
+    println!("{}", liste_des_monstres(collection));
+    println!("  0. Relâcher {}", capture.nom());
+    let taille_equipe = collection.equipe().len();
+    let total = taille_equipe + collection.camp().len();
+    let choix = match entree.choix(0, total)? {
+        0 => Choix::RelacherLaCapture,
+        numero if numero <= taille_equipe => {
+            Choix::RelacherPourLaCapture(Emplacement::Equipe(numero - 1))
+        }
+        numero => Choix::RelacherPourLaCapture(Emplacement::Camp(numero - 1 - taille_equipe)),
+    };
+    Some(choix)
 }

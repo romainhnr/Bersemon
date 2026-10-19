@@ -246,6 +246,14 @@ impl Monstre {
         self.attaques.remplacer(position, attaque)
     }
 
+    /// Au camp, quand il connaît moins de 4 attaques (section 13.10).
+    pub(crate) fn ajouter_attaque(
+        &mut self,
+        attaque: Attaque,
+    ) -> Result<(), ErreurAttaquesMonstre> {
+        self.attaques.ajouter(attaque)
+    }
+
     /// Reconstitue un monstre depuis une sauvegarde. L'XP doit correspondre
     /// au niveau. Les PV sont ramenés aux PV max s'ils les dépassent, ce qui
     /// arrive quand une espèce a été rééquilibrée depuis la sauvegarde.

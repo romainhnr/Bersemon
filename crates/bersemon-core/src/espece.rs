@@ -31,6 +31,15 @@ pub enum Role {
     Offensif,
 }
 
+/// Rareté d'une espèce, qui fixe son prix de revente (section 14.5).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Rarete {
+    /// Monstres de départ compris.
+    Commune,
+    Rare,
+    Apotre,
+}
+
 /// Attaque qu'un monstre de l'espèce apprend en atteignant ce niveau (Q33).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AttaqueApprise {
@@ -47,11 +56,13 @@ pub struct Espece {
     stats_de_base: StatsDeBase,
     rendement_experience: u16,
     apprentissage: Vec<AttaqueApprise>,
+    rarete: Rarete,
 }
 
 impl Espece {
     /// `apprentissage` est rangé par niveau ; à niveau égal, l'ordre donné est
-    /// conservé.
+    /// conservé. L'espèce est commune, sauf rareté donnée ensuite avec
+    /// `avec_rarete`.
     pub fn new(
         id: EspeceId,
         nom: impl Into<String>,
@@ -70,7 +81,13 @@ impl Espece {
             stats_de_base,
             rendement_experience,
             apprentissage,
+            rarete: Rarete::Commune,
         }
+    }
+
+    pub fn avec_rarete(mut self, rarete: Rarete) -> Self {
+        self.rarete = rarete;
+        self
     }
 
     pub fn id(&self) -> &EspeceId {
@@ -93,6 +110,22 @@ impl Espece {
         &self.stats_de_base
     }
 
+    /// Avec la rareté, il fixe le prix de revente (section 14.5).
+    pub fn total_des_stats_de_base(&self) -> u32 {
+        let base = &self.stats_de_base;
+        [
+            base.pv,
+            base.attaque,
+            base.defense,
+            base.attaque_speciale,
+            base.defense_speciale,
+            base.vitesse,
+        ]
+        .iter()
+        .map(|&stat| u32::from(stat))
+        .sum()
+    }
+
     /// Sert au calcul de l'XP que rapporte un monstre de l'espèce vaincu
     /// (section 7).
     pub fn rendement_experience(&self) -> u16 {
@@ -101,6 +134,10 @@ impl Espece {
 
     pub fn apprentissage(&self) -> &[AttaqueApprise] {
         &self.apprentissage
+    }
+
+    pub fn rarete(&self) -> Rarete {
+        self.rarete
     }
 
     pub fn attaques_du_niveau(&self, niveau: Niveau) -> impl Iterator<Item = &Attaque> {

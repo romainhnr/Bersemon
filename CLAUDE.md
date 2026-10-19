@@ -20,6 +20,7 @@ Jeu RPG textuel au tour par tour, écrit en Rust, qui mêle un univers dark fant
 - Sur le poste Windows 10, Rust est installé par l'installateur MSI, sans rustup, derrière un proxy d'entreprise. N'utilise rien qui exige rustup, une version nightly ou une version de Rust plus récente que celle disponible sur ce poste.
 - Commandes : `cargo build`, `cargo test`, `cargo fmt`, `cargo clippy`.
 - Avant de considérer une tâche comme terminée : `cargo fmt`, puis `cargo clippy` sans avertissement, puis `cargo test` au vert, lorsque ces outils sont disponibles sur le poste.
+- Les sessions cloud tournent sous Linux : le code doit compiler et passer ses tests sous Windows comme sous Linux. Ne code rien de propre à un seul système sans le signaler.
 
 ## Posture
 
@@ -48,5 +49,7 @@ Jeu RPG textuel au tour par tour, écrit en Rust, qui mêle un univers dark fant
 - Limite tes modifications à ce qui est demandé. Si tu repères un autre problème (bug, incohérence, dette technique), signale-le sans le corriger d'office.
 - N'ajoute pas de dépendance (crate) sans l'indiquer et la justifier, et attends mon accord.
 - Respecte le style des fichiers existants : indentation, encodage, fins de ligne et conventions en place.
-- Ne fais pas de commit git sans que je le demande.
+- En session locale, ne fais pas de commit git sans que je le demande.
+- En session cloud, travaille sur une branche dédiée, jamais sur main : fais des commits réguliers et pousse la branche, pour que le travail ne soit pas perdu si la session s'arrête. Ne fusionne jamais toi-même dans main.
+- En session cloud, je ne suis souvent pas là pour répondre : quand une règle du game design manque ou qu'un choix me revient, ne l'invente pas. Note la question dans la section des questions ouvertes de `docs/gamedesign.md`, avance sur le reste de la tâche et signale la question dans ton compte rendu final.
 - À la fin d'une tâche, liste les fichiers créés, modifiés, supprimés ou renommés, et précise ce qui a été compilé et testé.
