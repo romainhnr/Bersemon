@@ -1,17 +1,24 @@
 //! Chance de capture d'un monstre sauvage au filet (section 11.2).
 
+use crate::habilete::{FACTEUR_DU_TRAQUEUR, Habilete};
 use crate::monstre::Monstre;
 use crate::niveau::Niveau;
 
-/// Pourcentage de 0 à 100 : PV perdus / PV max x facteur de niveau (Q28). Un
-/// monstre KO est capturé à coup sûr ; un monstre à PV pleins, jamais.
+/// Pourcentage de 0 à 100 : PV perdus / PV max x facteur de niveau (Q28), et
+/// x1,25 si le monstre actif est Traqueur (section 5.9). Un monstre KO est
+/// capturé à coup sûr ; un monstre à PV pleins, jamais.
 pub fn calculer_chance_capture(monstre_actif: &Monstre, sauvage: &Monstre) -> u32 {
     if sauvage.est_ko() {
         return 100;
     }
     let pv_max = u64::from(sauvage.stats().pv);
     let pv_perdus = pv_max.saturating_sub(u64::from(sauvage.pv_actuels()));
-    let (numerateur, denominateur) = facteur_de_niveau(monstre_actif.niveau(), sauvage.niveau());
+    let (mut numerateur, mut denominateur) =
+        facteur_de_niveau(monstre_actif.niveau(), sauvage.niveau());
+    if monstre_actif.a_l_habilete(Habilete::Traqueur) {
+        numerateur *= FACTEUR_DU_TRAQUEUR.0;
+        denominateur *= FACTEUR_DU_TRAQUEUR.1;
+    }
     let chance = pv_perdus * 100 * numerateur / (pv_max * denominateur);
     // Au plus 100, donc tient dans un u32.
     chance.min(100) as u32
@@ -77,6 +84,23 @@ mod tests {
                 "actif niv. {niveau_actif}, sauvage niv. {niveau_sauvage} à {pv_restants} PV"
             );
         }
+    }
+
+    #[test]
+    fn le_traqueur_multiplie_la_chance_par_1_25_sans_depasser_100() {
+        let traqueur = monstre_a_20_pv(5, 20).avec_habilete(Habilete::Traqueur);
+        assert_eq!(
+            calculer_chance_capture(&traqueur, &monstre_a_20_pv(5, 10)),
+            62
+        );
+        assert_eq!(
+            calculer_chance_capture(&traqueur, &monstre_a_20_pv(5, 2)),
+            100
+        );
+        assert_eq!(
+            calculer_chance_capture(&traqueur, &monstre_a_20_pv(5, 20)),
+            0
+        );
     }
 
     #[test]

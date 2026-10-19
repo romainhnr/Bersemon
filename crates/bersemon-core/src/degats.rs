@@ -7,6 +7,7 @@
 
 use crate::aleatoire::Aleatoire;
 use crate::attaque::{Attaque, Categorie};
+use crate::habilete::{BONUS_D_AFFINITE, Habilete};
 use crate::monstre::Monstre;
 use crate::stats::Stats;
 use crate::types::{Efficacite, efficacite};
@@ -122,6 +123,7 @@ fn parametres(
             stats_defenseur.defense_speciale,
         ),
     };
+    let bonus_de_type = a_le_bonus_de_type(attaquant, attaque);
     ParametresDegats {
         niveau: attaquant.niveau().valeur(),
         puissance: attaque.puissance(),
@@ -129,7 +131,8 @@ fn parametres(
         stat_defense,
         critique,
         pourcentage,
-        bonus_de_type: a_le_bonus_de_type(attaquant, attaque),
+        bonus_de_type,
+        affinite: bonus_de_type && attaquant.a_l_habilete(Habilete::Affinite),
         efficacite,
     }
 }
@@ -143,6 +146,9 @@ struct ParametresDegats {
     critique: bool,
     pourcentage: u32,
     bonus_de_type: bool,
+    /// L'habileté Affinité ne renforce que les attaques qui ont le bonus de
+    /// type (section 5.9).
+    affinite: bool,
     efficacite: Efficacite,
 }
 
@@ -164,6 +170,9 @@ fn calculer_degats(parametres: &ParametresDegats) -> u32 {
     degats = degats * u64::from(parametres.pourcentage) / 100;
     if parametres.bonus_de_type {
         degats = degats * 3 / 2;
+    }
+    if parametres.affinite {
+        degats = degats * (100 + BONUS_D_AFFINITE) / 100;
     }
     degats = match parametres.efficacite {
         Efficacite::Nulle => return 0,
@@ -200,8 +209,39 @@ mod tests {
             critique: false,
             pourcentage: 100,
             bonus_de_type: false,
+            affinite: false,
             efficacite: Efficacite::Normale,
         }
+    }
+
+    #[test]
+    fn affinite_apres_le_bonus_de_type() {
+        let mut p = parametres(5, 40, 10, 10);
+        p.bonus_de_type = true;
+        assert_eq!(calculer_degats(&p), 7);
+        p.affinite = true;
+        assert_eq!(calculer_degats(&p), 8);
+    }
+
+    #[test]
+    fn affinite_seulement_pour_les_attaques_de_son_type() {
+        let braise = attaque("braise", Type::Feu, Categorie::Speciale, 40, 100);
+        let coup = attaque("coup", Type::Normal, Categorie::Physique, 40, 100);
+        let attaquant = monstre(
+            &[Type::Feu],
+            stats_uniformes(50),
+            5,
+            vec![braise.clone(), coup.clone()],
+        )
+        .avec_habilete(Habilete::Affinite);
+        let defenseur = monstre(&[Type::Normal], stats_uniformes(50), 5, vec![coup.clone()]);
+        let (stats, stats_du_defenseur) = (attaquant.stats(), defenseur.stats());
+        // Braise : 4 à 5, x1,5 pour le bonus de type, puis x1,2.
+        let estimer = |attaque: &Attaque| {
+            estimer_degats(&attaquant, &stats, attaque, &defenseur, &stats_du_defenseur)
+        };
+        assert_eq!(estimer(&braise), (7, 8));
+        assert_eq!(estimer(&coup), (4, 5));
     }
 
     #[test]

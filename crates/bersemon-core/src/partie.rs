@@ -15,6 +15,7 @@ use crate::expedition_automatique::{
     BilanExpeditionAutomatique, ErreurExpeditionAutomatique, Estimation, ExpeditionAutomatique,
     MONSTRES_MAX, MONSTRES_MIN,
 };
+use crate::habilete::{BONUS_DU_PILLARD, CHANCES_DU_FOUINEUR, Habilete};
 use crate::heros::Heros;
 use crate::horodatage::Horodatage;
 use crate::inventaire::{ErreurObjet, ErreurPotion, Inventaire, Objet};
@@ -28,9 +29,9 @@ use crate::zone::{Zone, ZoneId};
 /// Le monstre de départ est au niveau 5 (section 6).
 const NIVEAU_DE_DEPART: u8 = 5;
 
-/// 1 chance sur 512 d'être shiny et valeurs internes tirées au hasard, comme
-/// un monstre sauvage (section 6). Tirages : shiny, puis valeurs internes
-/// s'il n'est pas shiny.
+/// 1 chance sur 512 d'être shiny, valeurs internes et habileté tirées au
+/// hasard, comme un monstre sauvage (sections 5.9 et 6). Tirages : shiny,
+/// valeurs internes s'il n'est pas shiny, puis habileté.
 /// Échoue si l'espèce n'apprend aucune attaque jusqu'au niveau 5.
 pub fn creer_monstre_de_depart(
     espece: Espece,
@@ -40,6 +41,7 @@ pub fn creer_monstre_de_depart(
     let valeurs_internes = tirer_valeurs_internes(shiny, aleatoire);
     let niveau = Niveau::new(NIVEAU_DE_DEPART).expect("niveau de départ valide");
     Monstre::creer(espece, niveau, valeurs_internes, shiny)
+        .map(|monstre| monstre.tirer_son_habilete(aleatoire))
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -571,13 +573,44 @@ impl Partie {
     }
 
     /// Ce que contient un coffre trouvé en expédition va dans le sac (section
-    /// 13.3).
-    pub fn ouvrir_coffre(&mut self, potions: u32, argent: u32, capsule: Option<Capsule>) {
+    /// 13.3). Un Pillard de l'équipe qui n'est pas KO ajoute 50 % à son
+    /// argent (section 5.9). Rend cet argent en plus.
+    pub fn ouvrir_coffre(&mut self, potions: u32, argent: u32, capsule: Option<Capsule>) -> u32 {
+        let argent_du_pillard = if self.membre_debout(Habilete::Pillard).is_some() {
+            argent * BONUS_DU_PILLARD / 100
+        } else {
+            0
+        };
         self.sac.ajouter_potions(potions);
-        self.sac.ajouter_argent(argent);
+        self.sac.ajouter_argent(argent + argent_du_pillard);
         if let Some(capsule) = capsule {
             self.sac.ajouter_capsule(capsule);
         }
+        argent_du_pillard
+    }
+
+    /// Après un combat gagné, un Fouineur de l'équipe qui n'est pas KO trouve
+    /// une potion 1 fois sur 4 ; deux Fouineurs n'en valent qu'un (section
+    /// 5.9). La potion va dans le sac. Rend le Fouineur qui l'a trouvée.
+    /// Tirage, seulement s'il y a un Fouineur : sa chance.
+    pub fn fouiller_apres_une_victoire(
+        &mut self,
+        aleatoire: &mut dyn Aleatoire,
+    ) -> Option<Monstre> {
+        let fouineur = self.membre_debout(Habilete::Fouineur)?.clone();
+        if aleatoire.tirer(1..=CHANCES_DU_FOUINEUR) != 1 {
+            return None;
+        }
+        self.sac.ajouter_potions(1);
+        Some(fouineur)
+    }
+
+    /// Le premier monstre de l'équipe qui a cette habileté et n'est pas KO.
+    fn membre_debout(&self, habilete: Habilete) -> Option<&Monstre> {
+        self.collection
+            .equipe()
+            .iter()
+            .find(|monstre| !monstre.est_ko() && monstre.a_l_habilete(habilete))
     }
 
     /// Potion du sac, utilisée entre deux étapes d'une expédition. Rend les
@@ -637,7 +670,7 @@ impl Partie {
             .collect();
         let parametres = zone.expedition_automatique();
         Ok(Estimation {
-            duree: parametres.duree(monstres.len()),
+            duree: parametres.duree_pour(&monstres),
             chances: parametres.chances_de_reussite(&monstres),
         })
     }
@@ -800,6 +833,41 @@ mod tests {
     fn partie() -> Partie {
         let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Guerrier);
         Partie::nouvelle(heros, creer("depart", 5))
+    }
+
+    #[test]
+    fn un_pillard_debout_ajoute_50_pour_cent_a_l_argent_d_un_coffre() {
+        let mut partie = partie();
+        partie.prendre_monstre_rare(creer("loup", 5).avec_habilete(Habilete::Pillard));
+        assert_eq!(partie.ouvrir_coffre(1, 15, None), 7);
+        assert_eq!(partie.sac().argent(), 22);
+        // KO, il ne pille plus.
+        let mut equipe = partie.collection().equipe().to_vec();
+        equipe[1].subir_degats(u32::MAX);
+        partie.collection_mut().actualiser_equipe(equipe).unwrap();
+        assert_eq!(partie.ouvrir_coffre(0, 10, None), 0);
+        assert_eq!(partie.sac().argent(), 32);
+    }
+
+    #[test]
+    fn un_fouineur_debout_trouve_une_potion_une_fois_sur_4() {
+        let mut partie = partie();
+        // Sans Fouineur, aucun tirage.
+        assert_eq!(
+            partie.fouiller_apres_une_victoire(&mut AleatoireScripte::new([])),
+            None
+        );
+        partie.prendre_monstre_rare(creer("loup", 5).avec_habilete(Habilete::Fouineur));
+        assert_eq!(
+            partie.fouiller_apres_une_victoire(&mut AleatoireScripte::new([2])),
+            None
+        );
+        let trouvee = partie.fouiller_apres_une_victoire(&mut AleatoireScripte::new([1]));
+        assert_eq!(
+            trouvee.map(|fouineur| fouineur.nom().to_string()),
+            Some("loup".to_string())
+        );
+        assert_eq!(partie.sac().potions(), 1);
     }
 
     #[test]

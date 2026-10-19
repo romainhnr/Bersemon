@@ -12,6 +12,9 @@ use std::time::Duration;
 
 use crate::aleatoire::Aleatoire;
 use crate::collection::ErreurCollection;
+use crate::habilete::{
+    BONUS_D_INSTINCT, BONUS_DU_PILLARD, Habilete, REDUCTION_D_ECLAIREUR, majorer,
+};
 use crate::horodatage::Horodatage;
 use crate::monstre::{Monstre, RapportExperience};
 use crate::zone::{Zone, ZoneId, tirer_entre};
@@ -106,6 +109,20 @@ impl ParametresExpeditionAutomatique {
         let en_plus = nombre_de_monstres.saturating_sub(1) as u64;
         let pourcentage = 100u64.saturating_sub(REDUCTION_PAR_MONSTRE_EN_PLUS * en_plus);
         Duration::from_secs(self.duree_de_base.as_secs().saturating_mul(pourcentage) / 100)
+    }
+
+    /// La durée pour ces monstres, réduite encore de 20 % si l'un d'eux est
+    /// Éclaireur ; deux Éclaireurs n'en valent qu'un (section 5.9).
+    pub fn duree_pour(&self, monstres: &[Monstre]) -> Duration {
+        let duree = self.duree(monstres.len());
+        if monstres
+            .iter()
+            .any(|monstre| monstre.a_l_habilete(Habilete::Eclaireur))
+        {
+            Duration::from_secs(duree.as_secs() * (100 - REDUCTION_D_ECLAIREUR) / 100)
+        } else {
+            duree
+        }
     }
 
     /// Calcul exact : chaque total de la fourchette de dégâts est aussi
@@ -208,7 +225,7 @@ impl ExpeditionAutomatique {
     /// Le départ passe par `Partie::envoyer_en_expedition_automatique`, qui
     /// vérifie la zone et les monstres envoyés.
     pub(crate) fn partir(zone: Zone, monstres: Vec<Monstre>, maintenant: Horodatage) -> Self {
-        let duree = zone.expedition_automatique().duree(monstres.len());
+        let duree = zone.expedition_automatique().duree_pour(&monstres);
         Self {
             zone,
             monstres,
@@ -275,7 +292,8 @@ impl ExpeditionAutomatique {
     /// l'expédition ; ils retournent au camp à la suite les uns des autres,
     /// à partir de `premiere_position_au_camp`. Tirages : total des dégâts,
     /// puis, après une réussite, le gain d'XP, le nombre de potions et
-    /// l'argent.
+    /// l'argent. Instinct augmente l'XP de son monstre, et Pillard l'argent
+    /// s'il rentre debout (section 5.9).
     pub(crate) fn resoudre(
         self,
         premiere_position_au_camp: usize,
@@ -286,7 +304,7 @@ impl ExpeditionAutomatique {
         let pv = pv_max(&self.monstres);
         let subis = repartir_degats(degats, &pv);
         let reussite = est_reussie(&subis, &pv);
-        let (experience, potions, argent) = if reussite {
+        let (experience, potions, mut argent) = if reussite {
             let experience = tirer_dans(parametres.experience(), aleatoire);
             let potions = tirer_dans(parametres.potions(), aleatoire);
             (
@@ -299,12 +317,26 @@ impl ExpeditionAutomatique {
         };
 
         let mut monstres = self.monstres;
+        let pillard_debout = monstres.iter().enumerate().any(|(index, monstre)| {
+            subis[index] < pv[index] && monstre.a_l_habilete(Habilete::Pillard)
+        });
+        let argent_du_pillard = if pillard_debout {
+            argent * BONUS_DU_PILLARD / 100
+        } else {
+            0
+        };
+        argent += argent_du_pillard;
         let mut rentres = Vec::with_capacity(monstres.len());
         for (index, monstre) in monstres.iter_mut().enumerate() {
             let ko = subis[index] >= pv[index];
             // Le même gain, reçu en entier par chaque monstre debout, comme
             // l'XP d'un monstre vaincu (sections 7 et 12.6).
-            let rapport = (reussite && !ko).then(|| monstre.gagner_experience(experience));
+            let gain = if monstre.a_l_habilete(Habilete::Instinct) {
+                majorer(experience, BONUS_D_INSTINCT)
+            } else {
+                experience
+            };
+            let rapport = (reussite && !ko).then(|| monstre.gagner_experience(gain));
             rentres.push(MonstreRentre {
                 monstre: monstre.clone(),
                 degats_subis: subis[index],
@@ -319,6 +351,7 @@ impl ExpeditionAutomatique {
             reussite,
             potions,
             argent,
+            argent_du_pillard,
             monstres: rentres,
         };
         (bilan, monstres)
@@ -335,8 +368,11 @@ pub struct BilanExpeditionAutomatique {
     pub reussite: bool,
     /// Ajoutées à celles du joueur ; aucune après un échec.
     pub potions: u32,
-    /// Ajouté à celui du joueur ; rien après un échec (section 12.6).
+    /// Ajouté à celui du joueur ; rien après un échec (section 12.6). Il
+    /// comprend `argent_du_pillard`.
     pub argent: u32,
+    /// La part due à l'habileté Pillard (section 5.9).
+    pub argent_du_pillard: u32,
     /// Dans l'ordre de l'expédition.
     pub monstres: Vec<MonstreRentre>,
 }
@@ -577,5 +613,56 @@ mod tests {
         assert_eq!(bilan.monstres[0].rapport, None);
         // Les monstres reviennent soignés : ils n'ont jamais perdu de PV.
         assert!(!monstres[0].est_ko());
+    }
+
+    #[test]
+    fn un_eclaireur_raccourcit_l_expedition_de_20_pour_cent() {
+        let parametres = parametres(10..=40);
+        let eclaireur = monstre(5).avec_habilete(Habilete::Eclaireur);
+        // 45 minutes à deux, puis 20 % de moins : 36 minutes.
+        assert_eq!(
+            parametres.duree_pour(&[monstre(5), eclaireur.clone()]),
+            Duration::from_secs(2_160)
+        );
+        // Deux Éclaireurs n'en valent qu'un.
+        assert_eq!(
+            parametres.duree_pour(&[eclaireur.clone(), eclaireur]),
+            Duration::from_secs(2_160)
+        );
+        assert_eq!(
+            parametres.duree_pour(&[monstre(5), monstre(5)]),
+            Duration::from_secs(2_700)
+        );
+    }
+
+    #[test]
+    fn instinct_et_pillard_au_retour_d_une_reussite() {
+        let depart = Horodatage::depuis_secondes(0);
+        let monstres = vec![
+            monstre(5).avec_habilete(Habilete::Instinct),
+            monstre(10).avec_habilete(Habilete::Pillard),
+        ];
+        let expedition = ExpeditionAutomatique::partir(bois(), monstres, depart);
+        let (bilan, _) = expedition.resoudre(0, &mut AleatoireScripte::new([30, 150, 1]));
+        // 150 XP, et 20 % de plus pour Instinct.
+        let gains: Vec<u32> = bilan
+            .monstres
+            .iter()
+            .map(|rentre| rentre.rapport.as_ref().unwrap().experience_gagnee)
+            .collect();
+        assert_eq!(gains, vec![180, 150]);
+        // 20 pièces d'argent, et 50 % de plus pour le Pillard debout.
+        assert_eq!((bilan.argent, bilan.argent_du_pillard), (30, 10));
+    }
+
+    #[test]
+    fn un_pillard_ko_ne_rapporte_rien_de_plus() {
+        let depart = Horodatage::depuis_secondes(0);
+        let monstres = vec![monstre(5).avec_habilete(Habilete::Pillard), monstre(10)];
+        let expedition = ExpeditionAutomatique::partir(bois(), monstres, depart);
+        // 40 dégâts : le Pillard, à 20 PV, tombe.
+        let (bilan, _) = expedition.resoudre(0, &mut AleatoireScripte::new([40, 100, 0]));
+        assert!(bilan.reussite && bilan.monstres[0].ko);
+        assert_eq!((bilan.argent, bilan.argent_du_pillard), (20, 0));
     }
 }

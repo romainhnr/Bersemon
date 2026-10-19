@@ -6,6 +6,7 @@ use crate::aleatoire::Aleatoire;
 use crate::attaque::{Attaque, AttaquesMonstre, ErreurAttaquesMonstre};
 use crate::espece::Espece;
 use crate::experience::experience_requise;
+use crate::habilete::{Habilete, tirer_habilete};
 use crate::niveau::Niveau;
 use crate::nom::Nom;
 use crate::stats::{Stats, ValeursInternes, calculer_stats};
@@ -53,13 +54,17 @@ pub struct Monstre {
     shiny: bool,
     pv_actuels: u32,
     statut: Option<Statut>,
+    /// `None` seulement pour une espèce sans habileté (section 5.9).
+    habilete: Option<Habilete>,
 }
 
 impl Monstre {
     /// Crée un monstre avec tous ses PV, sans statut, et l'XP minimale de son
     /// niveau. Le shiny est reçu déjà décidé : il ne se tire que pour un
     /// monstre sauvage (`tirer_shiny`). Un shiny a 31 dans chaque valeur
-    /// interne, quelles que soient celles reçues (section 5.1).
+    /// interne, quelles que soient celles reçues (section 5.1). L'habileté
+    /// est la première de l'espèce, sauf si `tirer_son_habilete` en tire une
+    /// autre.
     pub fn new(
         espece: Espece,
         niveau: Niveau,
@@ -77,9 +82,25 @@ impl Monstre {
             shiny,
             pv_actuels: 0,
             statut: None,
+            habilete: None,
         };
+        monstre.habilete = monstre.espece.habiletes().first().copied();
         monstre.soigner_completement();
         monstre
+    }
+
+    /// Tirée parmi les habiletés possibles de l'espèce, à la création du
+    /// monstre (section 5.9).
+    pub fn tirer_son_habilete(mut self, aleatoire: &mut dyn Aleatoire) -> Self {
+        if let Some(habilete) = tirer_habilete(&self.espece, aleatoire) {
+            self.habilete = Some(habilete);
+        }
+        self
+    }
+
+    pub fn avec_habilete(mut self, habilete: Habilete) -> Self {
+        self.habilete = Some(habilete);
+        self
     }
 
     /// Comme `new`, avec les 4 dernières attaques de la liste d'apprentissage
@@ -163,6 +184,14 @@ impl Monstre {
 
     pub fn statut(&self) -> Option<Statut> {
         self.statut
+    }
+
+    pub fn habilete(&self) -> Option<Habilete> {
+        self.habilete
+    }
+
+    pub fn a_l_habilete(&self, habilete: Habilete) -> bool {
+        self.habilete == Some(habilete)
     }
 
     /// Un monstre KO, déjà atteint d'un statut ou immunisé ne peut pas en
@@ -268,7 +297,9 @@ impl Monstre {
     /// Reconstitue un monstre depuis une sauvegarde. L'XP doit correspondre
     /// au niveau. Les PV sont ramenés aux PV max s'ils les dépassent, ce qui
     /// arrive quand une espèce a été rééquilibrée depuis la sauvegarde. Un
-    /// shiny d'une sauvegarde antérieure passe à 31 partout (section 5.1).
+    /// shiny d'une sauvegarde antérieure passe à 31 partout (section 5.1),
+    /// et un monstre sans habileté reçoit la première de son espèce (section
+    /// 5.9).
     pub fn restaurer(etat: EtatMonstre) -> Result<Self, ErreurRestauration> {
         let minimum = experience_requise(etat.niveau);
         let suivant = Niveau::new(etat.niveau.valeur() + 1).ok();
@@ -293,7 +324,11 @@ impl Monstre {
             shiny: etat.shiny,
             pv_actuels: 0,
             statut: etat.statut,
+            habilete: etat.habilete,
         };
+        if monstre.habilete.is_none() {
+            monstre.habilete = monstre.espece.habiletes().first().copied();
+        }
         monstre.pv_actuels = etat.pv_actuels.min(monstre.stats().pv);
         Ok(monstre)
     }
@@ -319,6 +354,8 @@ pub struct EtatMonstre {
     pub shiny: bool,
     pub pv_actuels: u32,
     pub statut: Option<Statut>,
+    /// Absente des sauvegardes antérieures à la version 8.
+    pub habilete: Option<Habilete>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -635,6 +672,7 @@ mod tests {
             shiny: monstre.est_shiny(),
             pv_actuels: monstre.pv_actuels(),
             statut: monstre.statut(),
+            habilete: monstre.habilete(),
         }
     }
 

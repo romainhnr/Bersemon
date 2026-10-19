@@ -2,6 +2,7 @@
 //! commun (sections 5.1 et 7).
 
 use crate::attaque::{Attaque, AttaqueId};
+use crate::habilete::Habilete;
 use crate::niveau::Niveau;
 use crate::stats::StatsDeBase;
 use crate::types::TypesMonstre;
@@ -57,12 +58,16 @@ pub struct Espece {
     rendement_experience: u16,
     apprentissage: Vec<AttaqueApprise>,
     rarete: Rarete,
+    /// Celles qu'un monstre de l'espèce peut avoir ; la première est donnée
+    /// aux monstres des sauvegardes antérieures (section 5.9).
+    habiletes: Vec<Habilete>,
 }
 
 impl Espece {
     /// `apprentissage` est rangé par niveau ; à niveau égal, l'ordre donné est
     /// conservé. L'espèce est commune, sauf rareté donnée ensuite avec
-    /// `avec_rarete`.
+    /// `avec_rarete`, et sans habileté, sauf celles données avec
+    /// `avec_habiletes`.
     pub fn new(
         id: EspeceId,
         nom: impl Into<String>,
@@ -82,11 +87,17 @@ impl Espece {
             rendement_experience,
             apprentissage,
             rarete: Rarete::Commune,
+            habiletes: Vec::new(),
         }
     }
 
     pub fn avec_rarete(mut self, rarete: Rarete) -> Self {
         self.rarete = rarete;
+        self
+    }
+
+    pub fn avec_habiletes(mut self, habiletes: Vec<Habilete>) -> Self {
+        self.habiletes = habiletes;
         self
     }
 
@@ -138,6 +149,10 @@ impl Espece {
 
     pub fn rarete(&self) -> Rarete {
         self.rarete
+    }
+
+    pub fn habiletes(&self) -> &[Habilete] {
+        &self.habiletes
     }
 
     pub fn attaques_du_niveau(&self, niveau: Niveau) -> impl Iterator<Item = &Attaque> {

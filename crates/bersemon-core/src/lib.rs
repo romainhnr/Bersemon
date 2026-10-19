@@ -20,6 +20,7 @@ pub mod espece;
 pub mod expedition;
 pub mod expedition_automatique;
 pub mod experience;
+pub mod habilete;
 pub mod heros;
 pub mod horodatage;
 pub mod inventaire;

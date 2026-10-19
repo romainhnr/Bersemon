@@ -106,8 +106,8 @@ impl Apotre {
     }
 
     /// Les valeurs internes de l'Apôtre sont fixes, au maximum ; comme un
-    /// monstre sauvage, il a 1 chance sur 512 d'être shiny (Q58). Un seul
-    /// tirage : le shiny.
+    /// monstre sauvage, il a 1 chance sur 512 d'être shiny (Q58) et tire son
+    /// habileté (section 5.9). Tirages : le shiny, puis l'habileté.
     pub fn generer(&self, aleatoire: &mut dyn Aleatoire) -> Monstre {
         let shiny = tirer_shiny(aleatoire);
         Monstre::creer(
@@ -117,6 +117,7 @@ impl Apotre {
             shiny,
         )
         .expect("espèce vérifiée au niveau de l'Apôtre par Apotre::new")
+        .tirer_son_habilete(aleatoire)
     }
 }
 

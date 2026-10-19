@@ -23,9 +23,10 @@ use crate::attaque::{Attaque, EffetSecondaire};
 use crate::capture::calculer_chance_capture;
 use crate::degats::{ResultatAttaque, a_le_bonus_de_type, estimer_degats, resoudre_attaque};
 use crate::experience::tirer_gain_experience;
+use crate::habilete::{BONUS_D_INSTINCT, Habilete, majorer};
 use crate::inventaire::{ErreurPotion, appliquer_potion, verifier_cible};
 use crate::monstre::{Monstre, RapportExperience};
-use crate::stats::{BonusDeStats, Stats, appliquer_bonus};
+use crate::stats::{BonusDeStats, Stats, appliquer_bonus, cumuler_bonus};
 use crate::statut::{CHANCES_BLOCAGE_PARALYSIE, Statut, degats_de_poison};
 use crate::types::{Efficacite, efficacite};
 
@@ -300,14 +301,20 @@ impl Combat {
         self
     }
 
-    /// Stats utilisées en combat : celles du monstre, plus le bonus du joueur
-    /// pour ses monstres.
+    /// Stats utilisées en combat : celles du monstre, plus le bonus de son
+    /// habileté, de chaque côté, et le bonus du joueur pour ses monstres
+    /// (section 5.9).
     pub fn stats_en_combat(&self, combattant: Combattant) -> Stats<u32> {
-        let stats = self.monstre(combattant).stats();
-        match combattant.cote {
-            Cote::Joueur => appliquer_bonus(&stats, &self.bonus_joueur),
-            Cote::Adversaire => stats,
-        }
+        let monstre = self.monstre(combattant);
+        let habilete = monstre
+            .habilete()
+            .map(Habilete::bonus_de_stats)
+            .unwrap_or_default();
+        let bonus = match combattant.cote {
+            Cote::Joueur => cumuler_bonus(&habilete, &self.bonus_joueur),
+            Cote::Adversaire => habilete,
+        };
+        appliquer_bonus(&monstre.stats(), &bonus)
     }
 
     pub fn phase(&self) -> Phase {
@@ -524,9 +531,10 @@ impl Combat {
     }
 
     /// Un monstre adverse KO ou capturé rapporte son XP, en entier, à chaque
-    /// monstre de l'équipe qui l'a affronté et n'est pas KO (section 7). Un
-    /// tirage par monstre vaincu qui a au moins un bénéficiaire, dans l'ordre
-    /// du groupe.
+    /// monstre de l'équipe qui l'a affronté et n'est pas KO (section 7) ;
+    /// Instinct augmente le total du combat (section 5.9). Un tirage par
+    /// monstre vaincu qui a au moins un bénéficiaire, dans l'ordre du
+    /// groupe.
     fn verser_experience(
         &mut self,
         aleatoire: &mut dyn Aleatoire,
@@ -556,7 +564,14 @@ impl Combat {
         self.equipe
             .iter_mut()
             .zip(gains)
-            .map(|(monstre, gain)| (gain > 0).then(|| monstre.gagner_experience(gain)))
+            .map(|(monstre, gain)| {
+                let gain = if monstre.a_l_habilete(Habilete::Instinct) {
+                    majorer(gain, BONUS_D_INSTINCT)
+                } else {
+                    gain
+                };
+                (gain > 0).then(|| monstre.gagner_experience(gain))
+            })
             .collect()
     }
 
@@ -1523,6 +1538,27 @@ mod tests {
         let evenements = tour(&mut combat, Action::Attaquer(0), &[2, 100, 2, 100]);
         assert_eq!(evenements[1], degats(a(0), 21));
         assert_eq!(evenements[3], degats(j(0), 19));
+    }
+
+    #[test]
+    fn l_habilete_de_stats_joue_des_deux_cotes_et_s_ajoute_a_la_classe() {
+        let joueur = lent().avec_habilete(Habilete::Ferocite);
+        let adversaire = lent().avec_habilete(Habilete::Carapace);
+        let combat = combat(vec![joueur], vec![adversaire]).avec_bonus_du_joueur(bonus_d_attaque());
+        // 10, puis +10 % de la classe et +10 % de l'habileté : 12.
+        assert_eq!(combat.stats_en_combat(j(0)).attaque, 12);
+        assert_eq!(combat.stats_en_combat(a(0)).defense, 11);
+        assert_eq!(combat.stats_en_combat(a(0)).attaque, 10);
+    }
+
+    #[test]
+    fn instinct_ajoute_20_pour_cent_a_l_xp_du_combat() {
+        let instinct = rapide().avec_habilete(Habilete::Instinct);
+        let mut combat = combat(vec![instinct], vec![affaibli(lent(), 2)]);
+        tour(&mut combat, Action::LancerFilet, &[90]);
+        // 50 XP de base, 60 avec Instinct.
+        let bilan = terminer(combat, &[100]);
+        assert_eq!(xp_gagnee(&bilan, 0), Some(60));
     }
 
     #[test]

@@ -82,6 +82,18 @@ pub fn argent(montant: u32) -> String {
     }
 }
 
+/// "22 pièces d'argent, dont 7 grâce à l'habileté Pillard" (section 5.9).
+pub fn argent_et_part_du_pillard(montant: u32, part_du_pillard: u32) -> String {
+    if part_du_pillard == 0 {
+        argent(montant)
+    } else {
+        format!(
+            "{}, dont {part_du_pillard} grâce à l'habileté Pillard",
+            argent(montant)
+        )
+    }
+}
+
 /// « la capsule d'attaque Brasier ».
 pub fn capsule(capsule: &Capsule) -> String {
     format!("la capsule d'attaque {}", capsule.attaque().nom())
@@ -223,9 +235,9 @@ pub fn types_connus(codex: &Codex, espece: &Espece) -> String {
     }
 }
 
-/// Types, stats de base et attaques, montrés pour une espèce capturée
-/// (section 5.6).
-pub fn fiche_d_espece(espece: &Espece) -> [String; 3] {
+/// Types, habiletés possibles, stats de base et attaques, montrés pour une
+/// espèce capturée (sections 5.6 et 5.9).
+pub fn fiche_d_espece(espece: &Espece) -> [String; 4] {
     let base = espece.stats_de_base();
     let total = u32::from(base.pv)
         + u32::from(base.attaque)
@@ -245,8 +257,19 @@ pub fn fiche_d_espece(espece: &Espece) -> [String; 3] {
             )
         })
         .collect();
+    let habiletes: Vec<String> = espece
+        .habiletes()
+        .iter()
+        .map(|habilete| habilete.nom().to_string())
+        .collect();
+    let habiletes = if habiletes.is_empty() {
+        "aucune".to_string()
+    } else {
+        enumerer(&habiletes)
+    };
     [
         format!("Types : {}", types_de(espece)),
+        format!("Habiletés possibles : {habiletes}"),
         stats,
         format!("Attaques : {}", attaques.join(", ")),
     ]

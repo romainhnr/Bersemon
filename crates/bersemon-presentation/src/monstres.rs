@@ -6,6 +6,7 @@ use bersemon_core::attaque::{Attaque, Categorie};
 use bersemon_core::combat::{Combat, Combattant, Cote};
 use bersemon_core::espece::Espece;
 use bersemon_core::experience::experience_requise;
+use bersemon_core::habilete::Habilete;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::niveau::Niveau;
 use bersemon_core::stats::Stats;
@@ -97,19 +98,44 @@ pub fn decrire_attaque(attaque: &Attaque) -> String {
     )
 }
 
-/// Sa ligne, ses types, ses stats et ses valeurs internes (section 13.2).
+/// Sa ligne, ses types, son habileté, ses stats et ses valeurs internes
+/// (sections 5.9 et 13.2).
 pub fn fiche_du_monstre(monstre: &Monstre) -> String {
-    [
+    let mut lignes = vec![
         ligne_monstre(monstre, Cote::Joueur),
         format!("XP : {}", progression_d_experience(monstre)),
         format!("Types : {}", types_de(monstre.espece())),
-        format!("Stats : {}", decrire_stats(&monstre.stats())),
-        format!(
-            "Valeurs internes : {}",
-            decrire_stats(monstre.valeurs_internes().valeurs())
-        ),
-    ]
-    .join("\n")
+    ];
+    if let Some(habilete) = monstre.habilete() {
+        lignes.push(format!("Habileté : {}", decrire_habilete(habilete)));
+    }
+    lignes.push(format!("Stats : {}", decrire_stats(&monstre.stats())));
+    lignes.push(format!(
+        "Valeurs internes : {}",
+        decrire_stats(monstre.valeurs_internes().valeurs())
+    ));
+    lignes.join("\n")
+}
+
+/// "Férocité (+10 % d'Attaque en combat)" (section 5.9).
+pub fn decrire_habilete(habilete: Habilete) -> String {
+    format!("{} ({})", habilete.nom(), effet_d_habilete(habilete))
+}
+
+pub fn effet_d_habilete(habilete: Habilete) -> &'static str {
+    match habilete {
+        Habilete::Ferocite => "+10 % d'Attaque en combat",
+        Habilete::Carapace => "+10 % de Défense en combat",
+        Habilete::Sorcellerie => "+10 % d'Attaque spéciale en combat",
+        Habilete::Volonte => "+10 % de Défense spéciale en combat",
+        Habilete::Celerite => "+10 % de Vitesse en combat",
+        Habilete::Affinite => "+20 % de dégâts pour les attaques de son type",
+        Habilete::Instinct => "+20 % d'XP gagnée",
+        Habilete::Eclaireur => "expédition automatique plus courte de 20 %",
+        Habilete::Traqueur => "chance de capture x1,25 quand il est actif",
+        Habilete::Pillard => "+50 % d'argent dans les coffres et les expéditions automatiques",
+        Habilete::Fouineur => "1 chance sur 4 de trouver une potion après une victoire",
+    }
 }
 
 /// L'XP totale du monstre et celle qu'il lui faut au total pour le niveau

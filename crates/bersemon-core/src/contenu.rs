@@ -16,6 +16,7 @@ use crate::catalogue::Catalogue;
 use crate::espece::{AttaqueApprise, Espece, EspeceId, Rarete, Role};
 use crate::expedition::ParametresCoffre;
 use crate::expedition_automatique::ParametresExpeditionAutomatique;
+use crate::habilete::Habilete;
 use crate::heros::Classe;
 use crate::niveau::Niveau;
 use crate::stats::Stats;
@@ -655,6 +656,8 @@ struct FicheEspece {
     rendement_experience: u16,
     /// Fixe le prix de revente (section 14.5).
     rarete: Rarete,
+    /// Section 7 de docs/contenu-v1.md, dans le même ordre.
+    habiletes: &'static [Habilete],
     /// Niveau d'apprentissage et identifiant de l'attaque.
     apprentissage: &'static [(u8, &'static str)],
 }
@@ -670,6 +673,7 @@ const ESPECES: [FicheEspece; 13] = [
         stats_de_base: [45, 40, 40, 70, 55, 65],
         rendement_experience: 62,
         rarete: Rarete::Commune,
+        habiletes: &[Habilete::Affinite, Habilete::Sorcellerie],
         apprentissage: &[
             (1, "souffle-chaud"),
             (3, "crachat-de-braises"),
@@ -686,6 +690,7 @@ const ESPECES: [FicheEspece; 13] = [
         stats_de_base: [55, 68, 55, 35, 45, 55],
         rendement_experience: 63,
         rarete: Rarete::Commune,
+        habiletes: &[Habilete::Ferocite, Habilete::Carapace],
         apprentissage: &[
             (1, "charge-gluante"),
             (3, "plongeon"),
@@ -702,6 +707,7 @@ const ESPECES: [FicheEspece; 13] = [
         stats_de_base: [70, 45, 70, 45, 65, 25],
         rendement_experience: 64,
         rarete: Rarete::Commune,
+        habiletes: &[Habilete::Carapace, Habilete::Volonte],
         apprentissage: &[
             (1, "coup-de-racine"),
             (3, "feuille-tranchante"),
@@ -718,6 +724,7 @@ const ESPECES: [FicheEspece; 13] = [
         stats_de_base: [40, 72, 35, 40, 38, 90],
         rendement_experience: 62,
         rarete: Rarete::Commune,
+        habiletes: &[Habilete::Celerite, Habilete::Traqueur],
         apprentissage: &[
             (1, "griffure"),
             (3, "coup-sournois"),
@@ -734,6 +741,7 @@ const ESPECES: [FicheEspece; 13] = [
         stats_de_base: [50, 62, 45, 30, 40, 58],
         rendement_experience: 70,
         rarete: Rarete::Commune,
+        habiletes: &[Habilete::Traqueur, Habilete::Fouineur],
         apprentissage: &[(1, "griffure"), (4, "morsure"), (9, "curee")],
     },
     FicheEspece {
@@ -744,6 +752,7 @@ const ESPECES: [FicheEspece; 13] = [
         stats_de_base: [42, 57, 38, 45, 38, 72],
         rendement_experience: 66,
         rarete: Rarete::Commune,
+        habiletes: &[Habilete::Pillard, Habilete::Eclaireur],
         apprentissage: &[(1, "coup-de-bec"), (4, "pique"), (8, "regard-funeste")],
     },
     FicheEspece {
@@ -754,6 +763,7 @@ const ESPECES: [FicheEspece; 13] = [
         stats_de_base: [40, 50, 40, 50, 45, 63],
         rendement_experience: 68,
         rarete: Rarete::Commune,
+        habiletes: &[Habilete::Celerite, Habilete::Instinct],
         apprentissage: &[
             (1, "morsure-venimeuse"),
             (3, "regard-petrifiant"),
@@ -768,6 +778,7 @@ const ESPECES: [FicheEspece; 13] = [
         stats_de_base: [45, 30, 40, 70, 60, 75],
         rendement_experience: 85,
         rarete: Rarete::Commune,
+        habiletes: &[Habilete::Eclaireur, Habilete::Sorcellerie],
         apprentissage: &[
             (1, "lueur-trompeuse"),
             (1, "crachat-de-braises"),
@@ -783,6 +794,7 @@ const ESPECES: [FicheEspece; 13] = [
         stats_de_base: [60, 75, 85, 30, 50, 30],
         rendement_experience: 95,
         rarete: Rarete::Commune,
+        habiletes: &[Habilete::Carapace, Habilete::Ferocite],
         apprentissage: &[
             (1, "coup-de-garde"),
             (8, "lame-rouillee"),
@@ -797,6 +809,7 @@ const ESPECES: [FicheEspece; 13] = [
         stats_de_base: [70, 60, 60, 65, 70, 75],
         rendement_experience: 150,
         rarete: Rarete::Rare,
+        habiletes: &[Habilete::Volonte, Habilete::Instinct],
         apprentissage: &[(1, "coup-de-bois"), (5, "ruade"), (8, "lumiere-d-aube")],
     },
     FicheEspece {
@@ -807,6 +820,7 @@ const ESPECES: [FicheEspece; 13] = [
         stats_de_base: [75, 70, 65, 75, 60, 55],
         rendement_experience: 170,
         rarete: Rarete::Rare,
+        habiletes: &[Habilete::Affinite, Habilete::Ferocite],
         apprentissage: &[
             (1, "morsure-venimeuse"),
             (8, "regard-petrifiant"),
@@ -822,6 +836,7 @@ const ESPECES: [FicheEspece; 13] = [
         stats_de_base: [85, 85, 75, 90, 80, 65],
         rendement_experience: 250,
         rarete: Rarete::Apotre,
+        habiletes: &[Habilete::Sorcellerie, Habilete::Volonte],
         apprentissage: &[
             (1, "corde-du-gibet"),
             (5, "lamentation"),
@@ -837,6 +852,7 @@ const ESPECES: [FicheEspece; 13] = [
         stats_de_base: [60, 50, 60, 90, 90, 100],
         rendement_experience: 200,
         rarete: Rarete::Rare,
+        habiletes: &[Habilete::Pillard, Habilete::Fouineur],
         apprentissage: &[
             (1, "eclat-astral"),
             (1, "lueur-trompeuse"),
@@ -879,6 +895,7 @@ fn creer_espece(fiche: &FicheEspece) -> Espece {
         apprentissage,
     )
     .avec_rarete(fiche.rarete)
+    .avec_habiletes(fiche.habiletes.to_vec())
 }
 
 fn creer_attaque(id: &str) -> Attaque {
@@ -1112,6 +1129,25 @@ mod tests {
             .map(|espece| espece.id().as_str())
             .collect();
         assert_eq!(stellaires, vec!["schnoz"]);
+    }
+
+    #[test]
+    fn chaque_espece_a_deux_habiletes_et_chaque_habilete_sert() {
+        let contenu = ContenuV1::new();
+        for espece in contenu.especes() {
+            let habiletes = espece.habiletes();
+            assert_eq!(habiletes.len(), 2, "{}", espece.id().as_str());
+            assert_ne!(habiletes[0], habiletes[1], "{}", espece.id().as_str());
+        }
+        for habilete in Habilete::TOUTES {
+            assert!(
+                contenu
+                    .especes()
+                    .iter()
+                    .any(|espece| espece.habiletes().contains(&habilete)),
+                "{habilete:?} sans espèce"
+            );
+        }
     }
 
     #[test]

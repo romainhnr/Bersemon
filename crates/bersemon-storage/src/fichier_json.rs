@@ -8,7 +8,7 @@ use bersemon_core::catalogue::Catalogue;
 use bersemon_core::partie::Partie;
 use bersemon_core::sauvegarde::{ErreurSauvegarde, SauvegardeRepository};
 
-use crate::format::{self, SauvegardeV7, VERSION};
+use crate::format::{self, SauvegardeV8, VERSION};
 
 pub struct FichierJson {
     chemin: PathBuf,
@@ -38,7 +38,7 @@ impl FichierJson {
         if !(1..=VERSION).contains(&version) {
             return Err(ErreurSauvegarde::VersionInconnue(version));
         }
-        let sauvegarde: SauvegardeV7 = serde_json::from_value(valeur)
+        let sauvegarde: SauvegardeV8 = serde_json::from_value(valeur)
             .map_err(|erreur| ErreurSauvegarde::Illisible(erreur.to_string()))?;
         format::vers_partie(sauvegarde, catalogue)
     }
@@ -90,6 +90,7 @@ mod tests {
     use bersemon_core::espece::{AttaqueApprise, Espece, EspeceId, Role};
     use bersemon_core::expedition::ParametresCoffre;
     use bersemon_core::expedition_automatique::ParametresExpeditionAutomatique;
+    use bersemon_core::habilete::Habilete;
     use bersemon_core::heros::{Classe, Heros};
     use bersemon_core::horodatage::Horodatage;
     use bersemon_core::inventaire::Inventaire;
@@ -178,6 +179,7 @@ mod tests {
             64,
             apprentissage,
         )
+        .avec_habiletes(vec![Habilete::Pillard, Habilete::Fouineur])
     }
 
     fn lisiere() -> Zone {
@@ -234,7 +236,7 @@ mod tests {
     fn partie_complete() -> Partie {
         let heros = Heros::new(Nom::new("Éléonore").unwrap(), Classe::Mage);
         let mut partie = Partie::nouvelle(heros, creer("salamandre", 5));
-        let mut loup = creer("loup", 4);
+        let mut loup = creer("loup", 4).avec_habilete(Habilete::Fouineur);
         loup.renommer(Some(Nom::new("Croc").unwrap()));
         loup.gagner_experience(30);
         loup.subir_degats(5);
@@ -411,6 +413,26 @@ mod tests {
     }
 
     #[test]
+    fn une_sauvegarde_en_version_7_donne_la_premiere_habilete_et_31_aux_shiny() {
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        let objet = valeur.as_object_mut().unwrap();
+        objet.insert("version".to_string(), 7.into());
+        let equipe = objet["equipe"].as_array_mut().unwrap();
+        for monstre in equipe.iter_mut() {
+            monstre.as_object_mut().unwrap().remove("habilete");
+        }
+        equipe[0]["shiny"] = true.into();
+        let rechargee = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        let equipe = rechargee.collection().equipe();
+        // Croc était Fouineur : sans habileté écrite, il reçoit la première
+        // de son espèce.
+        assert_eq!(equipe[1].nom(), "Croc");
+        assert_eq!(equipe[1].habilete(), Some(Habilete::Pillard));
+        assert!(equipe[0].est_shiny());
+        assert_eq!(equipe[0].valeurs_internes(), &ValeursInternes::maximales());
+    }
+
+    #[test]
     fn fichier_illisible() {
         assert!(matches!(
             charger_texte("pas du json"),
@@ -424,10 +446,10 @@ mod tests {
 
     #[test]
     fn version_inconnue() {
-        let texte = texte_de_partie().replacen("\"version\":7", "\"version\":8", 1);
+        let texte = texte_de_partie().replacen("\"version\":8", "\"version\":9", 1);
         assert_eq!(
             charger_texte(&texte),
-            Err(ErreurSauvegarde::VersionInconnue(8))
+            Err(ErreurSauvegarde::VersionInconnue(9))
         );
     }
 

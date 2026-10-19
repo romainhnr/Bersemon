@@ -1,4 +1,4 @@
-//! Format JSON de la sauvegarde, version 7, et sa conversion vers les types
+//! Format JSON de la sauvegarde, version 8, et sa conversion vers les types
 //! du noyau. Les énumérations sont écrites avec des noms fixés ici, et non
 //! avec les noms Rust, pour qu'un renommage dans le code ne casse pas les
 //! sauvegardes existantes.
@@ -13,6 +13,7 @@ use bersemon_core::codex::Codex;
 use bersemon_core::collection::Collection;
 use bersemon_core::espece::EspeceId;
 use bersemon_core::expedition_automatique::ExpeditionAutomatique;
+use bersemon_core::habilete::Habilete;
 use bersemon_core::heros::{Classe, Heros};
 use bersemon_core::horodatage::Horodatage;
 use bersemon_core::inventaire::Inventaire;
@@ -28,7 +29,7 @@ use bersemon_core::zone::ZoneId;
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 7;
+pub(crate) const VERSION: u64 = 8;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -36,11 +37,12 @@ const VERSION_DU_COFFRE: u64 = 7;
 /// La version 2 ajoute la traque de l'Apôtre et le tutoriel, la version 3
 /// les expéditions automatiques et les attaques à choisir à leur retour, la
 /// version 4 l'argent, la version 5 le marchand, la version 6 les capsules
-/// d'attaque, la version 7 le sac et le coffre du camp. Une sauvegarde d'une
-/// version précédente se lit avec cette structure : les champs ajoutés y
-/// prennent leur valeur de début de partie.
+/// d'attaque, la version 7 le sac et le coffre du camp, la version 8
+/// l'habileté de chaque monstre. Une sauvegarde d'une version précédente se
+/// lit avec cette structure : les champs ajoutés y prennent leur valeur de
+/// début de partie.
 #[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct SauvegardeV7 {
+pub(crate) struct SauvegardeV8 {
     pub(crate) version: u64,
     heros: HerosV1,
     equipe: Vec<MonstreV1>,
@@ -118,6 +120,10 @@ struct MonstreV1 {
     shiny: bool,
     pv: u32,
     statut: Option<String>,
+    /// Depuis la version 8 ; avant, le monstre reçoit la première habileté
+    /// de son espèce (section 5.9).
+    #[serde(default)]
+    habilete: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -136,9 +142,9 @@ struct CodexV1 {
     capturees: Vec<String>,
 }
 
-pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV7 {
+pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV8 {
     let collection = partie.collection();
-    SauvegardeV7 {
+    SauvegardeV8 {
         version: VERSION,
         heros: HerosV1 {
             nom: partie.heros().nom().as_str().to_string(),
@@ -222,7 +228,7 @@ fn vers_inventaire(
 }
 
 pub(crate) fn vers_partie(
-    sauvegarde: SauvegardeV7,
+    sauvegarde: SauvegardeV8,
     catalogue: &dyn Catalogue,
 ) -> Result<Partie, ErreurSauvegarde> {
     let heros = Heros::new(
@@ -370,6 +376,9 @@ fn depuis_monstre(monstre: &Monstre) -> MonstreV1 {
         statut: monstre
             .statut()
             .map(|statut| nom_de_statut(statut).to_string()),
+        habilete: monstre
+            .habilete()
+            .map(|habilete| nom_d_habilete(habilete).to_string()),
     }
 }
 
@@ -427,6 +436,7 @@ fn vers_monstre(
     .map_err(incoherente)?;
     let surnom = monstre.surnom.as_deref().map(nom).transpose()?;
     let statut = monstre.statut.as_deref().map(statut).transpose()?;
+    let habilete = monstre.habilete.as_deref().map(habilete).transpose()?;
     Monstre::restaurer(EtatMonstre {
         espece,
         surnom,
@@ -437,6 +447,7 @@ fn vers_monstre(
         shiny: monstre.shiny,
         pv_actuels: monstre.pv,
         statut,
+        habilete,
     })
     .map_err(incoherente)
 }
@@ -488,6 +499,29 @@ fn statut(texte: &str) -> Result<Statut, ErreurSauvegarde> {
             "statut inconnu : {autre}"
         ))),
     }
+}
+
+fn nom_d_habilete(habilete: Habilete) -> &'static str {
+    match habilete {
+        Habilete::Ferocite => "ferocite",
+        Habilete::Carapace => "carapace",
+        Habilete::Sorcellerie => "sorcellerie",
+        Habilete::Volonte => "volonte",
+        Habilete::Celerite => "celerite",
+        Habilete::Affinite => "affinite",
+        Habilete::Instinct => "instinct",
+        Habilete::Eclaireur => "eclaireur",
+        Habilete::Traqueur => "traqueur",
+        Habilete::Pillard => "pillard",
+        Habilete::Fouineur => "fouineur",
+    }
+}
+
+fn habilete(texte: &str) -> Result<Habilete, ErreurSauvegarde> {
+    Habilete::TOUTES
+        .into_iter()
+        .find(|habilete| nom_d_habilete(*habilete) == texte)
+        .ok_or_else(|| ErreurSauvegarde::Incoherente(format!("habileté inconnue : {texte}")))
 }
 
 fn nom_de_conseil(conseil: Conseil) -> &'static str {

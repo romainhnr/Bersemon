@@ -235,7 +235,8 @@ impl Zone {
         })
     }
 
-    /// Tirages : niveau, shiny, puis valeurs internes s'il n'est pas shiny.
+    /// Tirages : niveau, shiny, valeurs internes s'il n'est pas shiny, puis
+    /// habileté.
     fn generer_monstre(&self, espece: &Espece, aleatoire: &mut dyn Aleatoire) -> Monstre {
         let valeur = tirer_entre(
             u32::from(self.niveau_min.valeur()),
@@ -248,6 +249,7 @@ impl Zone {
         let valeurs_internes = tirer_valeurs_internes(shiny, aleatoire);
         Monstre::creer(espece.clone(), niveau, valeurs_internes, shiny)
             .expect("espèce vérifiée à chaque niveau par Zone::new")
+            .tirer_son_habilete(aleatoire)
     }
 }
 

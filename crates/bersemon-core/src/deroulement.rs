@@ -206,7 +206,10 @@ pub enum Evenement {
     /// (section 9.3).
     Coffre {
         potions: u32,
+        /// Avec `argent_du_pillard`, la part due à l'habileté Pillard
+        /// (section 5.9).
         argent: u32,
+        argent_du_pillard: u32,
         capsule: Option<Capsule>,
     },
     MonstreRarePacifique(Monstre),
@@ -223,6 +226,9 @@ pub enum Evenement {
         monstre: Monstre,
         rapport: RapportExperience,
     },
+    /// Après une victoire, grâce à l'habileté Fouineur de ce monstre ; la
+    /// potion va dans le sac (section 5.9).
+    PotionTrouvee(Monstre),
     AttaqueRemplacee {
         monstre: Monstre,
         oubliee: Attaque,
@@ -1180,6 +1186,11 @@ impl EnExpedition {
         let (captures, sac_perdu) = partie
             .conclure_combat(bilan)
             .expect("le combat rend l'équipe qu'il a reçue");
+        if fin.issue == Some(Issue::Victoire) {
+            if let Some(fouineur) = partie.fouiller_apres_une_victoire(&mut *contexte.aleatoire) {
+                evenements.push(Evenement::PotionTrouvee(fouineur));
+            }
+        }
         let fin = FinDeCombat { sac_perdu, ..fin };
         self.placer(partie, captures.into(), Some(fin), contexte, evenements)
     }
@@ -1364,10 +1375,11 @@ impl EnExpedition {
                 argent,
                 capsule,
             } => {
-                partie.ouvrir_coffre(potions, argent, capsule.clone());
+                let argent_du_pillard = partie.ouvrir_coffre(potions, argent, capsule.clone());
                 evenements.push(Evenement::Coffre {
                     potions,
-                    argent,
+                    argent: argent + argent_du_pillard,
+                    argent_du_pillard,
                     capsule,
                 });
                 self.apres_l_etape(partie, evenements)
@@ -1458,6 +1470,7 @@ mod tests {
     use crate::catalogue::Catalogue;
     use crate::codex::EtatCodex;
     use crate::espece::EspeceId;
+    use crate::habilete::Habilete;
     use crate::niveau::Niveau;
     use crate::partie::EtatPartie;
     use crate::stats::ValeursInternes;
@@ -1564,8 +1577,9 @@ mod tests {
         repondre_sans_tirage(&mut deroulement, nom, &contenu, &depot).unwrap();
         assert_eq!(deroulement.attente(), Attente::Classe);
 
-        // Shiny : ses valeurs internes ne se tirent pas.
-        let mut aleatoire = AleatoireScripte::new([1]);
+        // Shiny : ses valeurs internes ne se tirent pas ; puis son habileté,
+        // la première des deux de la Mandragore.
+        let mut aleatoire = AleatoireScripte::new([1, 0]);
         let mut contexte = Contexte {
             contenu: &contenu,
             aleatoire: &mut aleatoire,
@@ -1763,6 +1777,7 @@ mod tests {
                 Evenement::Coffre {
                     potions: 1,
                     argent: 12,
+                    argent_du_pillard: 0,
                     capsule: None
                 },
                 Evenement::Conseil(Conseil::PremierArretEntreDeuxEtapes),
@@ -2078,8 +2093,8 @@ mod tests {
         repondre_sans_tirage(&mut deroulement, Choix::ReprendreLaPartie, &contenu, &depot).unwrap();
 
         // Un monstre rare, qui n'est pas le Schnoz : niveau 5, non shiny,
-        // valeurs internes.
-        let mut aleatoire = AleatoireScripte::new([96, 2, 5, 2, 0, 0, 0, 0, 0, 0]);
+        // valeurs internes, habileté.
+        let mut aleatoire = AleatoireScripte::new([96, 2, 5, 2, 0, 0, 0, 0, 0, 0, 0]);
         let mut contexte = Contexte {
             contenu: &contenu,
             aleatoire: &mut aleatoire,
@@ -2129,8 +2144,8 @@ mod tests {
         repondre_sans_tirage(&mut deroulement, Choix::ReprendreLaPartie, &contenu, &depot).unwrap();
 
         // Le monstre caché, une fois sur 20 : niveau 3, non shiny, valeurs
-        // internes.
-        let mut aleatoire = AleatoireScripte::new([96, 1, 3, 2, 0, 0, 0, 0, 0, 0]);
+        // internes, habileté.
+        let mut aleatoire = AleatoireScripte::new([96, 1, 3, 2, 0, 0, 0, 0, 0, 0, 1]);
         let mut contexte = Contexte {
             contenu: &contenu,
             aleatoire: &mut aleatoire,
@@ -2163,6 +2178,13 @@ mod tests {
             partie.codex().etat(&EspeceId::new("schnoz")),
             EtatCodex::Capturee
         );
+        // La seconde de ses habiletés possibles.
+        let schnoz = collection
+            .equipe()
+            .iter()
+            .find(|monstre| monstre.nom() == "Schnoz")
+            .unwrap();
+        assert_eq!(schnoz.habilete(), Some(Habilete::Fouineur));
     }
 
     #[test]
@@ -2270,6 +2292,41 @@ mod tests {
     }
 
     #[test]
+    fn un_fouineur_trouve_des_potions_apres_des_victoires() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let loup = Monstre::creer(
+            contenu.espece(&EspeceId::new("loup")).unwrap(),
+            Niveau::new(40).unwrap(),
+            ValeursInternes::default(),
+            false,
+        )
+        .unwrap()
+        .avec_habilete(Habilete::Fouineur);
+        let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Guerrier);
+        let mut deroulement = Deroulement::demarrer(Ok(Some(Partie::nouvelle(heros, loup))));
+        let mut aleatoire = GenerateurAleatoire::new(28);
+        let mut trouvees = 0;
+        for _ in 0..2_000 {
+            let choix = jouer_un_coup(&deroulement, &contenu);
+            let mut contexte = Contexte {
+                contenu: &contenu,
+                aleatoire: &mut aleatoire,
+                depot: &depot,
+                maintenant: Horodatage::depuis_secondes(0),
+            };
+            let evenements = deroulement.repondre(choix, &mut contexte).unwrap();
+            for evenement in &evenements {
+                if let Evenement::PotionTrouvee(fouineur) = evenement {
+                    assert!(fouineur.a_l_habilete(Habilete::Fouineur));
+                    trouvees += 1;
+                }
+            }
+        }
+        assert!(trouvees > 0);
+    }
+
+    #[test]
     fn une_partie_complete_jusqu_a_l_epilogue() {
         let contenu = ContenuV1::new();
         let depot = DepotMemoire::default();
@@ -2342,6 +2399,7 @@ mod tests {
             .sum();
         assert!(trouve > 0);
         assert_eq!(sauvegarde.sac().argent(), trouve - perdu);
+
         assert!(sauvegarde.coffre_du_camp().est_vide());
         // Le marchand rencontré reste au camp : il ne se croise qu'une fois
         // (section 14.2).

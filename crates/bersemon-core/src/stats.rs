@@ -28,6 +28,23 @@ pub type StatsDeBase = Stats<u16>;
 /// (section 4.2).
 pub type BonusDeStats = Stats<u8>;
 
+/// Les pourcentages s'additionnent : la classe et une habileté qui renforcent
+/// la même stat donnent +20 % (section 5.9).
+pub fn cumuler_bonus(premier: &BonusDeStats, second: &BonusDeStats) -> BonusDeStats {
+    Stats {
+        pv: premier.pv.saturating_add(second.pv),
+        attaque: premier.attaque.saturating_add(second.attaque),
+        defense: premier.defense.saturating_add(second.defense),
+        attaque_speciale: premier
+            .attaque_speciale
+            .saturating_add(second.attaque_speciale),
+        defense_speciale: premier
+            .defense_speciale
+            .saturating_add(second.defense_speciale),
+        vitesse: premier.vitesse.saturating_add(second.vitesse),
+    }
+}
+
 /// Chaque stat est augmentée de son pourcentage de bonus, arrondi à l'entier
 /// inférieur.
 pub fn appliquer_bonus(stats: &Stats<u32>, bonus: &BonusDeStats) -> Stats<u32> {

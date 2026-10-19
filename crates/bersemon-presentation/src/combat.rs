@@ -314,6 +314,19 @@ mod tests {
     }
 
     #[test]
+    fn la_fiche_montre_l_habilete_et_son_effet() {
+        let contenu = ContenuV1::new();
+        let loup = creer(&contenu, "loup", 5);
+        let fiche = crate::monstres::fiche_du_monstre(&loup);
+        assert!(
+            fiche.contains("\nHabileté : Traqueur (chance de capture x1,25 quand il est actif)\n"),
+            "{fiche}"
+        );
+        let espece = crate::partie::fiche_d_espece(loup.espece());
+        assert_eq!(espece[1], "Habiletés possibles : Traqueur et Fouineur");
+    }
+
+    #[test]
     fn au_niveau_100_l_xp_n_a_plus_de_suite() {
         let contenu = ContenuV1::new();
         let loup = creer(&contenu, "loup", 100);

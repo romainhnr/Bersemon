@@ -14,7 +14,7 @@ use bersemon_core::partie::Partie;
 use bersemon_core::zone::Zone;
 
 use crate::erreurs::erreur_collection;
-use crate::partie::{argent, potions};
+use crate::partie::{argent_et_part_du_pillard, potions};
 
 /// Une zone explorée : libre, en cours ou rentrée (section 12.1).
 pub fn etat_de_la_zone(partie: &Partie, zone: &Zone, maintenant: Horodatage) -> String {
@@ -171,7 +171,10 @@ pub fn retour(zone: &str, bilan: &BilanExpeditionAutomatique) -> String {
         gains.push(potions(bilan.potions));
     }
     if bilan.argent > 0 {
-        gains.push(argent(bilan.argent));
+        gains.push(argent_et_part_du_pillard(
+            bilan.argent,
+            bilan.argent_du_pillard,
+        ));
     }
     let conclusion = if !bilan.reussite {
         "Échec : tous vos monstres sont tombés KO, l'expédition ne rapporte rien.".to_string()
@@ -291,8 +294,15 @@ mod tests {
             texte.contains("Réussite : vos monstres rapportent 1 potion et 25 pièces d'argent."),
             "{texte}"
         );
+        bilan.argent_du_pillard = 8;
+        let texte = retour("Lisière du Bois-Sombre", &bilan);
+        assert!(
+            texte.contains("25 pièces d'argent, dont 8 grâce à l'habileté Pillard."),
+            "{texte}"
+        );
         bilan.potions = 0;
         bilan.argent = 0;
+        bilan.argent_du_pillard = 0;
         let texte = retour("Lisière du Bois-Sombre", &bilan);
         assert!(
             texte.contains("Réussite, mais vos monstres ne rapportent rien."),

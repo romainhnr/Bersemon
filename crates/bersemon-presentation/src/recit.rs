@@ -11,7 +11,9 @@ use crate::erreurs::erreur_sauvegarde;
 use crate::expeditions_automatiques;
 use crate::mise_en_valeur::important;
 use crate::monstres::{nom_en_valeur, nom_sauvage};
-use crate::partie::{argent, capsule as nom_de_capsule, contenu, enumerer, potions};
+use crate::partie::{
+    argent, argent_et_part_du_pillard, capsule as nom_de_capsule, contenu, enumerer, potions,
+};
 
 /// Une ou plusieurs lignes de récit.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -50,11 +52,12 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
         Evenement::Coffre {
             potions: nombre,
             argent: montant,
+            argent_du_pillard,
             capsule,
         } => {
             let mut contenu = vec![potions(*nombre)];
             if *montant > 0 {
-                contenu.push(argent(*montant));
+                contenu.push(argent_et_part_du_pillard(*montant, *argent_du_pillard));
             }
             contenu.extend(capsule.iter().map(nom_de_capsule));
             (
@@ -87,6 +90,13 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             (lignes.join("\n"), false)
         }
         Evenement::Experience { monstre, rapport } => (rapport_experience(monstre, rapport), true),
+        Evenement::PotionTrouvee(fouineur) => (
+            format!(
+                "Grâce à son habileté Fouineur, {} déniche une potion, rangée dans le sac.",
+                nom_en_valeur(fouineur, Cote::Joueur)
+            ),
+            false,
+        ),
         Evenement::AttaqueRemplacee {
             monstre,
             oubliee,
@@ -258,6 +268,7 @@ mod tests {
         let recit = &raconter(&[Evenement::Coffre {
             potions: 2,
             argent: 15,
+            argent_du_pillard: 0,
             capsule: None,
         }])[0];
         assert_eq!(
@@ -267,17 +278,49 @@ mod tests {
         let sans_argent = &raconter(&[Evenement::Coffre {
             potions: 1,
             argent: 0,
+            argent_du_pillard: 0,
             capsule: None,
         }])[0];
         assert_eq!(sans_argent.texte, "Vous trouvez un coffre : 1 potion.");
         let avec_capsule = &raconter(&[Evenement::Coffre {
             potions: 1,
             argent: 12,
+            argent_du_pillard: 0,
             capsule: Some(brasier()),
         }])[0];
         assert_eq!(
             avec_capsule.texte,
             "Vous trouvez un coffre : 1 potion, 12 pièces d'argent et la capsule d'attaque Brasier."
+        );
+        let avec_pillard = &raconter(&[Evenement::Coffre {
+            potions: 1,
+            argent: 22,
+            argent_du_pillard: 7,
+            capsule: None,
+        }])[0];
+        assert_eq!(
+            avec_pillard.texte,
+            "Vous trouvez un coffre : 1 potion et 22 pièces d'argent, dont 7 grâce à l'habileté Pillard."
+        );
+    }
+
+    #[test]
+    fn le_fouineur_annonce_sa_potion() {
+        use bersemon_core::catalogue::Catalogue;
+        let contenu = bersemon_core::contenu::ContenuV1::new();
+        let loup = bersemon_core::monstre::Monstre::creer(
+            contenu
+                .espece(&bersemon_core::espece::EspeceId::new("loup"))
+                .unwrap(),
+            bersemon_core::niveau::Niveau::new(5).unwrap(),
+            bersemon_core::stats::ValeursInternes::default(),
+            false,
+        )
+        .unwrap();
+        let recit = &raconter(&[Evenement::PotionTrouvee(loup)])[0];
+        assert_eq!(
+            recit.texte,
+            "Grâce à son habileté Fouineur, **Loup** déniche une potion, rangée dans le sac."
         );
     }
 
