@@ -113,13 +113,14 @@ L'objectif du jeu est de proposer des boucles de gameplay intéressantes et stim
   - ses monstres.
 - Dans la V1, le héros se résume à un nom, choisi librement par le joueur (de 1 à 20 caractères), et à une classe, Guerrier ou Mage. Il n'a ni niveau, ni stats, ni équipement.
 - Après la V1, le Templier rejoint les classes jouables : Guerrier, Mage ou Templier. Chaque classe a son monstre de départ attitré (section 6).
+- Depuis l'étape 27 (19/10/2026), l'Assassin aussi : Guerrier, Mage, Templier ou Assassin.
 
 ### 4.2 Rôle en combat
 
 - Pour le moment, seuls les monstres combattent, un à un. Le héros ne combat pas et n'a pas de PV en combat.
 - La classe et l'équipement du héros donnent des bonus aux monstres et quelques actions de soutien, par exemple des ordres ou l'utilisation d'objets.
-- Bonus de classe : en combat, les monstres du joueur ont +10 % dans une stat, arrondi à l'entier inférieur. Guerrier : Attaque. Mage : Attaque spéciale. Après la V1, Templier : Défense et Défense spéciale, à chacune +10 % ; Assassin : Vitesse, plus tard. Les actions de soutien viendront après la V1.
-- Décidé le 18/10/2026, pour l'étape 27 : l'Assassin devient jouable, avec un monstre attitré rapide, qui frappe fort mais encaisse mal. Son type et sa fiche restent à proposer (Q72).
+- Bonus de classe : en combat, les monstres du joueur ont +10 % dans une stat, arrondi à l'entier inférieur. Guerrier : Attaque. Mage : Attaque spéciale. Après la V1, Templier : Défense et Défense spéciale, à chacune +10 % ; depuis l'étape 27, Assassin : Vitesse. Les actions de soutien viendront après la V1.
+- Décidé le 18/10/2026, pour l'étape 27 : l'Assassin devient jouable, avec un monstre attitré rapide, qui frappe fort mais encaisse mal. Précisé le 19/10/2026 (Q72) : ce monstre est le Chat noir, de type Ténèbres, offensif en attaque physique (section 6, fiche dans docs/contenu-v1.md).
 - À terme, option hybride envisagée : le héros combat lui-même uniquement lorsque tous ses monstres sont KO.
 
 ## 5. Les monstres
@@ -149,6 +150,7 @@ Chaque monstre possède :
   - En défense : les attaques Féérique, Psychique et Stellaire lui sont très efficaces ; les attaques Ténèbres, Poison, Insecte, Dragon et Spectre sont neutres ; il résiste à toutes les autres.
   - En attaque : une attaque Obscur est très efficace contre tous les types, sauf Féérique et Stellaire, qui y résistent, et Psychique, Ténèbres, Poison, Insecte, Dragon et Spectre, contre qui elle est neutre.
   - Le type Stellaire, opposé de l'Obscur, est très rare : un seul monstre l'aura. Le type Féérique, autre opposé de l'Obscur, reste rare.
+  - Depuis l'étape 27 (19/10/2026), ce monstre est le Schnoz (section 5.3). En attendant l'Obscur, le type Stellaire est neutre : ses attaques sont neutres contre tous les types, et il n'a ni faiblesse, ni résistance, ni immunité. Ses relations avec l'Obscur, décidées ci-dessus, seront codées à l'étape 29 ; ses autres relations restent ouvertes (Q76).
   - Restent à définir : Obscur contre Obscur, les autres relations du Stellaire, et l'équilibrage du combat contre un Apôtre (Q76). L'Apôtre combat seul contre les 3 monstres du joueur : on l'équilibrera en jouant, s'il le faut.
 
 ### 5.3 Bestiaire
@@ -159,6 +161,8 @@ Chaque monstre possède :
 - Le contenu de la V1 (espèces, attaques, zones et textes) est décrit dans docs/contenu-v1.md, validé le 17/10/2026.
 - Après la V1, chaque espèce a une rareté : commune (monstres de départ compris), rare ou Apôtre. Avec le total de ses stats de base, elle fixe son prix de revente (section 14.5).
 - Décidé le 18/10/2026, pour l'étape 27 : de nouveaux monstres plus proches de l'univers de Berserk, parmi lesquels des fées, des elfes, des squelettes et des dragons (Q73).
+- Précisé le 19/10/2026 : ces monstres peupleront la troisième zone, à l'étape 29, et non les deux zones actuelles (Q73).
+- Monstre caché, depuis l'étape 27 (19/10/2026) : le Schnoz, seul monstre de type Stellaire, d'espèce rare. Il se rencontre très rarement, dans toute zone (section 9.2). Fiche dans docs/contenu-v1.md.
 
 ### 5.4 Évolution
 
@@ -208,7 +212,7 @@ Le joueur peut :
 - Fil de l'histoire, inspiré de Berserk : le héros veut se venger du Démiurge, maître des Apôtres, de puissants monstres. Pour l'atteindre, il traque les Apôtres un par un, de zone en zone : dans chaque zone, il réunit des indices sur la cachette d'un Apôtre, s'en approche peu à peu, puis l'affronte avant de passer au suivant (section 9.4).
 - Dans la V1, un seul Apôtre est à vaincre, dans la zone difficile. Le Démiurge est annoncé dès l'introduction, mais il ne sera affronté que dans une version suivante. Après la victoire contre l'Apôtre, un court épilogue annonce la suite de la traque, puis le joueur peut continuer à explorer, capturer et compléter son codex.
 - Dans la V1, après le choix de la classe, l'histoire amène le joueur à choisir son premier monstre parmi 3. Ce monstre est au niveau 5. Ses valeurs internes sont tirées au hasard et il a, comme un monstre sauvage, 1 chance sur 512 d'être shiny.
-- Après la V1, le premier monstre n'est plus choisi : chaque classe a son monstre attitré, qui reprend son profil. Guerrier : Crapaud, offensif en attaque physique. Mage : Salamandre, offensive en attaque spéciale. Templier : Mandragore, défensive. Il reste au niveau 5, avec des valeurs internes tirées au hasard et 1 chance sur 512 d'être shiny. L'écran du choix de la classe annonce le monstre de chacune. Le dernier paragraphe de l'introduction présente le monstre de la classe choisie (Q67, textes dans docs/contenu-v1.md).
+- Après la V1, le premier monstre n'est plus choisi : chaque classe a son monstre attitré, qui reprend son profil. Guerrier : Crapaud, offensif en attaque physique. Mage : Salamandre, offensive en attaque spéciale. Templier : Mandragore, défensive. Depuis l'étape 27, Assassin : Chat noir, rapide et offensif en attaque physique, mais fragile. Il reste au niveau 5, avec des valeurs internes tirées au hasard et 1 chance sur 512 d'être shiny. L'écran du choix de la classe annonce le monstre de chacune. Le dernier paragraphe de l'introduction présente le monstre de la classe choisie (Q67, textes dans docs/contenu-v1.md).
 - Dans la V1 : une courte introduction d'ambiance après le choix de la classe, jusqu'au choix du premier monstre ; un tutoriel fait de quelques conseils, chacun montré une seule fois par partie, au premier combat, au premier arrêt entre deux étapes et au premier retour au camp. Les textes sont proposés dans docs/contenu-v1.md.
 
 ## 7. Progression
@@ -256,6 +260,7 @@ Déroulement dans la V1 :
 - Une expédition compte de 4 à 6 étapes, nombre tiré au départ et inconnu du joueur.
 - Après la V1, le nombre d'étapes est fixe pour chaque zone et connu du joueur, affiché en haut de l'écran d'expédition sous la forme « [Étape : 2/3] ». Il suit la difficulté : 3 dans la première zone, 4 dans la deuxième, 5 dans la troisième et la quatrième, 6 dans la cinquième et la sixième, puis 7 au plus.
 - Chaque étape tire un événement : combat contre un groupe sauvage (80 %), coffre (15 %) ou monstre rare (5 %). Le marchand est hors V1.
+- Depuis l'étape 27 (19/10/2026), quand une étape tire un monstre rare, c'est le Schnoz, monstre caché, une fois sur 20, dans toute zone ; sinon, c'est un monstre rare de la zone, comme avant. Il se rencontre donc environ une étape sur 400. Pacifique, il se laisse prendre ; son niveau est tiré parmi ceux de la zone, et il peut se rencontrer de nouveau. Au codex, il reste inconnu tant qu'il n'est pas rencontré, comme toute espèce.
 - Après la V1, tant qu'aucun marchand n'est au camp, la rencontre d'un marchand prend 10 % sur les combats : combat 70 %, marchand 10 %, coffre 15 %, monstre rare 5 % (section 14.2). Une fois le marchand au camp, les combats retrouvent leurs 80 %.
 - Un groupe sauvage compte de 1 à 2 monstres dans la zone facile, de 1 à 3 dans la zone difficile ; la taille est tirée à chaque combat.
 - Un coffre contient 1 à 2 potions (section 14.4). Après la V1, il contient aussi de l'argent, selon la zone, et, une fois sur 5, une capsule d'attaque de la zone que le joueur n'a pas encore (sections 13.10 et 14.5).
@@ -528,6 +533,7 @@ Le joueur peut construire des machines pour automatiser certaines tâches, par e
 - Une capsule d'attaque enseigne une attaque précise à tout monstre qui a le type de cette attaque et ne la connaît pas déjà, de la même façon. Elle n'est pas consommée : une fois obtenue, elle sert autant de fois qu'on veut.
 - Les capsules se trouvent dans les coffres des expéditions manuelles (section 9.2), ou s'achètent chez le marchand, qui les vend toutes (section 14.2). Chaque zone a ses capsules : un coffre en contient une fois sur 5, tirée parmi celles de la zone que le joueur n'a pas encore ; quand il les a toutes, le coffre n'en contient plus.
 - Un monstre de départ n'a qu'un type, et son espèce apprend déjà toutes les attaques de ce type qui existaient dans la V1. Les capsules comptent donc des attaques nouvelles pour les types Feu, Eau et Plante, trouvées dans la zone facile, et des attaques d'autres espèces, trouvées dans la zone difficile. Liste, types et prix dans docs/contenu-v1.md (section 6).
+- Le Chat noir, monstre de départ ajouté à l'étape 27, n'apprend pas toutes les attaques Ténèbres : la capsule Sentence lui sert aussi.
 
 ## 14. Économie, marchands, objets et ressources
 
@@ -594,7 +600,7 @@ Premier marchand, après la V1 :
 | Capsule d'attaque | 150 pour celles de la Lisière, 200 à 300 pour celles du Marais (docs/contenu-v1.md, section 6) |
 | Rencontre du marchand | 10 % des étapes d'une expédition manuelle, tant qu'il n'est pas au camp |
 
-Repères : un Loup de niveau 5 se revend 28 pièces d'argent, un Feu follet de niveau 10 64, un Cerf blanc de niveau 5 80, le Baron pendu au niveau 15 576. Une expédition dans la Lisière rapporte de l'ordre de 40 à 60 pièces d'argent avec une ou deux captures revendues, une expédition dans le Marais de 100 à 130. Ces estimations datent des expéditions de 4 à 6 étapes ; depuis l'étape 26, elles en comptent 3 dans la Lisière et 4 dans le Marais. Une expédition croise le marchand 27 fois sur 100 dans la Lisière, 34 dans le Marais. À vérifier en jouant.
+Repères : un Loup de niveau 5 se revend 28 pièces d'argent, un Feu follet de niveau 10 64, un Cerf blanc de niveau 5 80, un Schnoz de niveau 10 180, le Baron pendu au niveau 15 576. Une expédition dans la Lisière rapporte de l'ordre de 40 à 60 pièces d'argent avec une ou deux captures revendues, une expédition dans le Marais de 100 à 130. Ces estimations datent des expéditions de 4 à 6 étapes ; depuis l'étape 26, elles en comptent 3 dans la Lisière et 4 dans le Marais. Une expédition croise le marchand 27 fois sur 100 dans la Lisière, 34 dans le Marais. À vérifier en jouant.
 
 ## 15. Multijoueur (après l'adaptation à Discord)
 
@@ -628,11 +634,10 @@ Les questions Q67 et suivantes ont été relevées le 18/10/2026 après les prem
 
 Les questions Q72 et suivantes ont été relevées le 18/10/2026 après les essais de l'économie, découpés en étapes : 25 interface, 26 règles (coffre et sac, équipe vide, revente, étapes fixes), 27 classe Assassin et nouveaux monstres, 28 combats contre des humains, 29 troisième zone, Baron et Apôtre de type Obscur, 30 marchands par zone.
 
-- Q72. (Étape 27) Classe Assassin : type, nom, stats, attaques et texte de présentation de son monstre attitré.
-- Q73. (Étape 27) Nouveaux monstres inspirés de Berserk (fées, elfes, squelettes, dragons) : liste, fiches et zones. Le Schnoz, surnom donné par les fans au chimimoryo, créature astrale croisée près du Qliphoth dans l'épisode 215 du manga (page https://berserk.fandom.com/wiki/Chimimoryo transmise par l'utilisateur), sera un monstre caché, obtenu par un easter egg ou extrêmement rare, peut-être le seul de type Stellaire. C'est une créature de l'œuvre, protégée : sans souci pour un jeu privé, mais si le bot devient public, mieux vaudra une créature qui s'en inspire, avec son propre nom et sa propre apparence (voir aussi Q64).
+- Q73. (Étape 29) Nouveaux monstres inspirés de Berserk (fées, elfes, squelettes, dragons), pour la troisième zone : liste, fiches et place dans la zone. Premier jet proposé le 19/10/2026, à confirmer : Fée noire (commune, Insecte et Ténèbres), Elfe (rare et pacifique, Féérique et Vol), Squelette (commun, Spectre et Combat), Vouivre (rare et hostile, Dragon et Vol) ; le type Féérique y reste réservé à une espèce rare (section 5.2). Le Schnoz, surnom donné par les fans au chimimoryo, créature astrale croisée près du Qliphoth dans l'épisode 215 du manga (page https://berserk.fandom.com/wiki/Chimimoryo transmise par l'utilisateur), est le monstre caché de l'étape 27. C'est une créature de l'œuvre, protégée : sans souci pour un jeu privé, mais si le bot devient public, mieux vaudra une créature qui s'en inspire, avec son propre nom et sa propre apparence (voir aussi Q64).
 - Q74. (Étape 28) Combats contre des humains et leurs monstres, à la fin de la première zone pour commencer : nombre et niveaux des monstres adverses, fuite et filet, capture après la victoire (section 11.3), récompenses, et règles de l'IA d'un humain ordinaire (simple, mais pas au hasard).
 - Q75. (Étape 29) Troisième zone et nouvelle traque : un indice par zone à sa première expédition menée au bout ; à la fin de la deuxième zone, un humain plus fort, au service de l'Apôtre, donne l'indice de la troisième, où attend l'Apôtre. Restent à définir la zone (nom, niveaux, espèces), les noms (l'Apôtre actuel s'appelle déjà Baron pendu : l'un des deux sera renommé), l'IA du Baron et celle de l'Apôtre, et la conversion des sauvegardes qui ont déjà trouvé 3 indices. L'utilisateur accepte ces conséquences.
-- Q76. (Étape 29) Type Obscur : Obscur contre Obscur, attaques des Apôtres, équilibrage ; autres relations du type Stellaire (voir Q5).
+- Q76. (Étape 29) Type Obscur : Obscur contre Obscur, attaques des Apôtres, équilibrage ; autres relations du type Stellaire, neutre envers tous les types depuis l'étape 27 (voir Q5). À vérifier aussi : le Chat noir, de type Ténèbres, résiste à toutes les attaques du Baron pendu (Spectre et Ténèbres) ; l'équilibre de son départ contre le nouvel Apôtre.
 - Q77. (Étape 30) Nécromancien et âmes de marchands : nom et texte de la rencontre du nécromancien, noms et articles de chaque marchand, façon de trouver leur âme (marchand tué sous les yeux du joueur, cadavre qui attaque), sort du marchand actuel et conversion des sauvegardes où il est déjà au camp.
 - Q78. (Plus tard) Chaque Apôtre est unique : un événement quand le joueur les a tous réunis.
 
@@ -879,3 +884,10 @@ Les questions Q72 et suivantes ont été relevées le 18/10/2026 après les essa
 
 - XP : la fiche d'un monstre (gestion, attaques) et chaque gain d'XP, en combat comme au retour d'une expédition automatique, montrent l'XP totale et celle du niveau suivant, « XP : 130/216 » (section 7). Les listes de monstres restent sans XP.
 - Suicide : sous-menu « Options » au camp, dans la console et sur Discord, avec « Se suicider » et une confirmation ; la sauvegarde est effacée dès la confirmation, puis un nouveau héros est créé (section 13.9). Le bot n'annonce plus les retours des expéditions de la partie effacée.
+
+19/10/2026 (étape 27) :
+
+- Q72 : le monstre attitré de l'Assassin est le Chat noir, de type Ténèbres, offensif en attaque physique : rapide, il frappe fort mais encaisse mal (315 de stats de base). Le dernier paragraphe de l'introduction le présente. L'Assassin donne +10 % en Vitesse, comme prévu (Q34). Son avantage contre le Baron pendu, dont il résiste aux attaques, est accepté ; il sera revu avec l'Apôtre de l'étape 29 (Q76).
+- Q73 en partie : les nouveaux monstres inspirés de Berserk peupleront la troisième zone, à l'étape 29 ; un premier jet de quatre espèces est noté dans Q73.
+- Q73 en partie : le Schnoz est un monstre caché, de type Stellaire, d'espèce rare. Dans toute zone, un monstre rare sur 20 est le Schnoz ; pacifique, il se laisse prendre, au niveau de la zone, et peut se rencontrer de nouveau.
+- En attendant l'Obscur, le type Stellaire est neutre envers tous les types, en attaque comme en défense.

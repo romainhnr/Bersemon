@@ -8,7 +8,7 @@ Contraintes que le code impose au contenu :
 - une espèce n'apprend jamais deux fois la même attaque ;
 - un monstre créé à un niveau donné connaît les 4 dernières attaques de sa liste jusqu'à ce niveau (section 7).
 
-Repères de puissance : avec les formules de la V1, deux monstres de niveau 5 aux stats de base 50 s'infligent 4 à 5 dégâts sur 20 PV avec une attaque de puissance 40. Les stats de base des espèces communes vont de 285 à 330 au total, celles des rares de 400.
+Repères de puissance : avec les formules de la V1, deux monstres de niveau 5 aux stats de base 50 s'infligent 4 à 5 dégâts sur 20 PV avec une attaque de puissance 40. Les stats de base des espèces communes vont de 285 à 330 au total, celles des rares de 400, et celles du Schnoz, monstre caché ajouté à l'étape 27, de 450.
 
 ## 1. Attaques
 
@@ -57,30 +57,39 @@ Catégorie : P pour physique, S pour spéciale. L'effet est la chance d'infliger
 | brasier | Brasier | Feu | S | 70 | 100 | |
 | deferlante | Déferlante | Eau | P | 65 | 100 | |
 | lianes-etrangleuses | Lianes étrangleuses | Plante | P | 55 | 100 | paralysie 20 % |
+| coup-sournois | Coup sournois | Ténèbres | P | 40 | 100 | |
+| feulement | Feulement | Normal | S | 40 | 100 | paralysie 20 % |
+| coup-de-grace | Coup de grâce | Ténèbres | P | 85 | 90 | |
+| eclat-astral | Éclat astral | Stellaire | S | 40 | 100 | |
+| rayon-astral | Rayon astral | Stellaire | S | 75 | 100 | |
 
-Les trois dernières attaques sont ajoutées après la V1, le 18/10/2026, pour les capsules d'attaque (section 6) : aucune espèce ne les apprend.
+Brasier, Déferlante et Lianes étrangleuses sont ajoutées après la V1, le 18/10/2026, pour les capsules d'attaque (section 6) : aucune espèce ne les apprend.
+
+Les cinq dernières attaques sont ajoutées à l'étape 27, le 19/10/2026 : les trois premières pour le Chat noir, les deux autres pour le Schnoz. Le type Stellaire est neutre envers tous les types en attendant le type Obscur (gamedesign.md, section 5.2).
 
 ## 2. Espèces
 
 Stats de base dans l'ordre PV / Attaque / Défense / Attaque spéciale / Défense spéciale / Vitesse. Le rôle n'a pas d'effet dans la V1 (section 5.1).
 
-Rareté, ajoutée après la V1 le 18/10/2026 pour la revente au marchand (section 6) : les monstres de départ et les monstres communs sont d'espèce commune, les monstres rares d'espèce rare, et le Baron pendu est un Apôtre.
+Rareté, ajoutée après la V1 le 18/10/2026 pour la revente au marchand (section 6) : les monstres de départ et les monstres communs sont d'espèce commune, les monstres rares et le Schnoz d'espèce rare, et le Baron pendu est un Apôtre.
 
 ### Monstres de départ
 
-Trois profils distincts : la Salamandre frappe en attaque spéciale, le Crapaud en attaque physique, la Mandragore encaisse. Depuis le 18/10/2026, chacun est attitré à une classe : Salamandre au Mage, Crapaud au Guerrier, Mandragore au Templier (section 6).
+Trois profils distincts : la Salamandre frappe en attaque spéciale, le Crapaud en attaque physique, la Mandragore encaisse. Depuis le 18/10/2026, chacun est attitré à une classe : Salamandre au Mage, Crapaud au Guerrier, Mandragore au Templier (section 6). Le Chat noir, ajouté à l'étape 27 le 19/10/2026, est attitré à l'Assassin : il frappe vite et fort en attaque physique, mais encaisse mal.
 
 | Identifiant | Nom | Types | Rôle | Profil | Stats de base (total) | Rendement d'XP |
 |---|---|---|---|---|---|---|
 | salamandre | Salamandre | Feu | offensif | offensif spécial | 45 / 40 / 40 / 70 / 55 / 65 (315) | 62 |
 | crapaud | Crapaud | Eau | offensif | offensif physique | 55 / 68 / 55 / 35 / 45 / 55 (313) | 63 |
 | mandragore | Mandragore | Plante | soutien | défensif | 70 / 45 / 70 / 45 / 65 / 25 (320) | 64 |
+| chat-noir | Chat noir | Ténèbres | offensif | rapide et fragile, offensif physique | 40 / 72 / 35 / 40 / 38 / 90 (315) | 62 |
 
 Attaques apprises :
 
 - Salamandre, uniquement des attaques spéciales : Souffle chaud (niv. 1), Crachat de braises (niv. 3), Souffle draconique (niv. 7), Flamme vive (niv. 10), Fournaise (niv. 14).
 - Crapaud, uniquement des attaques physiques : Charge gluante (niv. 1), Plongeon (niv. 3), Coup de langue (niv. 7), Langue venimeuse (niv. 10), Lame de fond (niv. 14).
 - Mandragore, des attaques des deux catégories et deux effets de statut, pour user l'adversaire : Coup de racine (niv. 1), Feuille tranchante (niv. 3), Cri strident (niv. 7), Ronces (niv. 10), Spores putrides (niv. 14).
+- Chat noir, surtout des attaques physiques : Griffure (niv. 1), Coup sournois (niv. 3), Feulement (niv. 7), Morsure (niv. 10), Coup de grâce (niv. 14). Griffure et Morsure sont aussi celles du Loup.
 
 Au niveau 5, chaque monstre de départ connaît 2 attaques : une de type Normal et une de son type. La Mandragore est le départ le plus exigeant (section 5), ce qui est assumé.
 
@@ -124,12 +133,26 @@ Attaques apprises : Corde du gibet (niv. 1), Lamentation (niv. 5), Sentence (niv
 
 Autrefois seigneur des terres du Marais, il a livré son propre fief au gibet pour devenir un Apôtre. Ses types le rendent insensible aux attaques Normal et Combat ; seul le type Féérique lui est très efficace.
 
+### Monstre caché
+
+Ajouté à l'étape 27, le 19/10/2026 (gamedesign.md, sections 5.3 et 9.2).
+
+| Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP | Comportement |
+|---|---|---|---|---|---|---|
+| schnoz | Schnoz | Stellaire | soutien | 60 / 50 / 60 / 90 / 90 / 100 (450) | 200 | pacifique : se laisse prendre |
+
+Attaques apprises : Éclat astral (niv. 1), Lueur trompeuse (niv. 1), Rayon astral (niv. 10).
+
+Seul monstre de type Stellaire. Dans toute zone, quand une étape tire un monstre rare, c'est le Schnoz une fois sur 20, au niveau de la zone ; il peut se rencontrer de nouveau.
+
 ## 3. Zones
 
 | Identifiant | Nom | Niveaux | Taille des groupes | Espèces | Monstre rare | Apôtre |
 |---|---|---|---|---|---|---|
 | lisiere | Lisière du Bois-Sombre | 3 à 7 | 1 à 2 | Loup, Corbeau, Vipère | Cerf blanc (pacifique) | aucun |
 | marais | Marais des Pendus | 8 à 13 | 1 à 3 | Feu follet, Armure hantée, Vipère, Corbeau | Basilic (hostile) | Baron pendu |
+
+Le Schnoz, monstre caché, se rencontre dans les deux zones, à la place d'un monstre rare sur 20 (section 2).
 
 La Lisière est accessible dès le départ. Le Marais s'ouvre avec le premier indice, au bout de la première expédition complète dans la Lisière ; deux expéditions complètes dans le Marais donnent les indices 2 et 3 ; l'expédition suivante dans le Marais s'achève par le Baron pendu (section 9.4).
 
@@ -174,6 +197,10 @@ Pour le Mage :
 Pour le Templier :
 
 > Le gardien du camp observe votre bouclier, puis ouvre une cage : une mandragore en sort à pas lents, ses racines tressées comme une armure. Elle encaisse ce qui en abattrait d'autres. Elle partagera votre route.
+
+Pour l'Assassin, depuis l'étape 27 :
+
+> Le gardien du camp remarque la lame cachée dans votre manche, puis ouvre une cage : un chat noir s'en glisse sans un bruit, les yeux luisants. Il frappe avant qu'on le voie, mais ne supporte pas les coups. Il partagera votre route.
 
 ### Indices sur l'Apôtre
 
@@ -234,6 +261,8 @@ Après la confirmation, avant la création d'un nouveau héros :
 - Le Basilic, rare et hostile dans le Marais, est nettement plus fort que les monstres communs (400 de stats de base) : c'est un combat redoutable, qui rapporte beaucoup d'XP.
 - Le Baron pendu est le combat le plus dur de la V1. Seul le type Féérique lui est très efficace : la Lumière d'aube du Cerf blanc, monstre rare pacifique de la Lisière, en fait une prise précieuse pour l'affronter.
 - Rythme estimé : une expédition dans la Lisière rapporte de l'ordre de 200 à 400 XP par participant, soit le passage du niveau 5 au niveau 8 environ en trois expéditions. Le Marais devient abordable vers le niveau 9, le Baron pendu vers le niveau 13 ou 14. À vérifier en jouant.
+- Le Chat noir, de type Ténèbres, résiste aux attaques Spectre et Ténèbres : contre les Spectre du Marais et le Baron pendu, l'Assassin a le départ le plus facile, ce qui est accepté jusqu'à l'Apôtre de l'étape 29 (gamedesign.md, Q76). En contrepartie, il a le moins de PV et de défenses des monstres de départ.
+- Le Schnoz, très rare, est un cadeau : 450 de stats de base, sans faiblesse ni résistance tant que le type Stellaire est neutre.
 - Place du combat contre l'Apôtre (Q57) : à la dernière étape de l'expédition qui suit le 3e indice, à la place de l'événement tiré ; rentrer avant cette étape le repousse à l'expédition suivante.
 
 ## 6. Économie
@@ -245,7 +274,7 @@ Revente d'un monstre au marchand, depuis l'étape 26 : son niveau multiplié par
 | Rareté | Espèces | Coefficient | Exemple |
 |---|---|---|---|
 | commune | monstres de départ et monstres communs | 1 | Loup de niveau 5 (285 de stats de base) : 28 |
-| rare | Cerf blanc, Basilic | 2 | Cerf blanc de niveau 5 (400) : 80 |
+| rare | Cerf blanc, Basilic, Schnoz | 2 | Cerf blanc de niveau 5 (400) : 80 ; Schnoz de niveau 10 (450) : 180 |
 | Apôtre | Baron pendu | 4 | Baron pendu de niveau 15 (480) : 576 |
 
 Prix du marchand : une potion coûte 20. Il vend toutes les capsules d'attaque.
@@ -259,6 +288,6 @@ Capsules d'attaque : chacune enseigne son attaque à tout monstre qui a le type 
 | Lianes étrangleuses | Plante | Mandragore | lisiere | 150 |
 | Croc de venin | Poison | Vipère | marais | 200 |
 | Frisson d'outre-tombe | Spectre | Armure hantée, Baron pendu | marais | 200 |
-| Sentence | Ténèbres | Corbeau | marais | 300 |
+| Sentence | Ténèbres | Corbeau, Chat noir | marais | 300 |
 
 Les capsules de la Lisière servent aux monstres de départ, dont l'espèce apprend déjà toutes les attaques de leur type qui existaient dans la V1 ; celles du Marais donnent aux monstres communs une attaque d'une autre espèce de leur type.
