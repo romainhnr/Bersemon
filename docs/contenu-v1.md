@@ -261,7 +261,7 @@ Après la confirmation, avant la création d'un nouveau héros :
 - Le Basilic, rare et hostile dans le Marais, est nettement plus fort que les monstres communs (400 de stats de base) : c'est un combat redoutable, qui rapporte beaucoup d'XP.
 - Le Baron pendu est le combat le plus dur de la V1. Seul le type Féérique lui est très efficace : la Lumière d'aube du Cerf blanc, monstre rare pacifique de la Lisière, en fait une prise précieuse pour l'affronter.
 - Rythme estimé : une expédition dans la Lisière rapporte de l'ordre de 200 à 400 XP par participant, soit le passage du niveau 5 au niveau 8 environ en trois expéditions. Le Marais devient abordable vers le niveau 9, le Baron pendu vers le niveau 13 ou 14. À vérifier en jouant.
-- Le Chat noir, de type Ténèbres, résiste aux attaques Spectre et Ténèbres : contre les Spectre du Marais et le Baron pendu, l'Assassin a le départ le plus facile, ce qui est accepté jusqu'à l'Apôtre de l'étape 29 (gamedesign.md, Q76). En contrepartie, il a le moins de PV et de défenses des monstres de départ.
+- Le Chat noir, de type Ténèbres, résiste aux attaques Spectre et Ténèbres : contre les Spectre du Marais et le Baron pendu, l'Assassin a le départ le plus facile, ce qui est accepté jusqu'à l'Apôtre de l'étape 30 (gamedesign.md, Q76). En contrepartie, il a le moins de PV et de défenses des monstres de départ.
 - Le Schnoz, très rare, est un cadeau : 450 de stats de base, sans faiblesse ni résistance tant que le type Stellaire est neutre.
 - Place du combat contre l'Apôtre (Q57) : à la dernière étape de l'expédition qui suit le 3e indice, à la place de l'événement tiré ; rentrer avant cette étape le repousse à l'expédition suivante.
 
@@ -291,3 +291,25 @@ Capsules d'attaque : chacune enseigne son attaque à tout monstre qui a le type 
 | Sentence | Ténèbres | Corbeau, Chat noir | marais | 300 |
 
 Les capsules de la Lisière servent aux monstres de départ, dont l'espèce apprend déjà toutes les attaques de leur type qui existaient dans la V1 ; celles du Marais donnent aux monstres communs une attaque d'une autre espèce de leur type.
+
+## 7. Habiletés
+
+Ajoutées à l'étape 28, le 19/10/2026 (gamedesign.md, section 5.9). Chaque espèce a 2 habiletés possibles ; un monstre tire la sienne à sa création. La première de la liste est donnée aux monstres des sauvegardes antérieures. La répartition suit le profil de chaque espèce ; elle est à ajuster en jouant.
+
+| Espèce | Habiletés possibles |
+|---|---|
+| Salamandre | Affinité, Sorcellerie |
+| Crapaud | Férocité, Carapace |
+| Mandragore | Carapace, Volonté |
+| Chat noir | Célérité, Traqueur |
+| Loup | Traqueur, Fouineur |
+| Corbeau | Pillard, Éclaireur |
+| Vipère | Célérité, Instinct |
+| Feu follet | Éclaireur, Sorcellerie |
+| Armure hantée | Carapace, Férocité |
+| Cerf blanc | Volonté, Instinct |
+| Basilic | Affinité, Férocité |
+| Baron pendu | Sorcellerie, Volonté |
+| Schnoz | Pillard, Fouineur |
+
+Valeurs : +10 % pour les habiletés de stats (Férocité, Carapace, Sorcellerie, Volonté, Célérité), +20 % de dégâts pour Affinité, +20 % d'XP pour Instinct, -20 % de durée pour Éclaireur, capture x1,25 pour Traqueur, +50 % d'argent pour Pillard, une potion 1 fois sur 4 pour Fouineur.

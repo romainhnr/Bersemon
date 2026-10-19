@@ -121,6 +121,7 @@ L'objectif du jeu est de proposer des boucles de gameplay intéressantes et stim
 - La classe et l'équipement du héros donnent des bonus aux monstres et quelques actions de soutien, par exemple des ordres ou l'utilisation d'objets.
 - Bonus de classe : en combat, les monstres du joueur ont +10 % dans une stat, arrondi à l'entier inférieur. Guerrier : Attaque. Mage : Attaque spéciale. Après la V1, Templier : Défense et Défense spéciale, à chacune +10 % ; depuis l'étape 27, Assassin : Vitesse. Les actions de soutien viendront après la V1.
 - Décidé le 18/10/2026, pour l'étape 27 : l'Assassin devient jouable, avec un monstre attitré rapide, qui frappe fort mais encaisse mal. Précisé le 19/10/2026 (Q72) : ce monstre est le Chat noir, de type Ténèbres, offensif en attaque physique (section 6, fiche dans docs/contenu-v1.md).
+- Depuis l'étape 28, les habiletés de stats des monstres s'ajoutent à ce bonus (section 5.9).
 - À terme, option hybride envisagée : le héros combat lui-même uniquement lorsque tous ses monstres sont KO.
 
 ## 5. Les monstres
@@ -135,8 +136,8 @@ Chaque monstre possède :
 - six stats, comme dans Pokémon : PV, Attaque, Défense, Attaque spéciale, Défense spéciale, Vitesse (section 5.8) ;
 - de 1 à 4 attaques distinctes, chacune d'un seul type, physique ou spéciale (section 10.4) ;
 - des valeurs internes aléatoires, de 0 à 31 pour chaque stat, qui influent sur ses stats (similaires aux IV de Pokémon), ce qui rend chaque monstre unique. Ces valeurs sont visibles dans le résumé du monstre ;
-- une habileté unique (équivalent des talents de Pokémon), qui a un effet secondaire lors des expéditions, des combats, etc. Les habiletés sont hors V1 ;
-- une faible chance d'être "shiny", 1 sur 512 pour un monstre sauvage comme pour le monstre de départ : sa couleur change, sans incidence sur les stats. Dans la console, un shiny est signalé par la mention "(shiny)" après son nom ;
+- une habileté unique (équivalent des talents de Pokémon), qui a un effet secondaire lors des expéditions, des combats, etc. Les habiletés sont hors V1 ; elles arrivent à l'étape 28 (section 5.9) ;
+- une faible chance d'être "shiny", 1 sur 512 pour un monstre sauvage comme pour le monstre de départ : sa couleur change, sans incidence sur les stats. Dans la console, un shiny est signalé par la mention "(shiny)" après son nom. Depuis l'étape 28 (19/10/2026), un shiny a 31 dans chaque valeur interne : ses valeurs internes ne sont plus tirées, et les shiny des sauvegardes antérieures passent à 31 à leur reprise ;
 - un sprite (une image), pour rendre le jeu plus vivant. La console de la V1 n'affiche pas d'image, et le jeu reste textuel sur Discord pour l'instant : les sprites viendront plus tard, une fois décidées la source des images et leurs droits.
 
 ### 5.2 Types
@@ -146,11 +147,11 @@ Chaque monstre possède :
 - Table d'efficacité : celle de Pokémon, avec une modification : le type Glace résiste au type Eau.
 - Une attaque a un seul type. Contre un monstre à 2 ou 3 types, les coefficients de chacun de ses types se multiplient, puis le résultat est borné entre x0,25 et x4. Une immunité (x0) l'emporte sur tout le reste. Exemple : une attaque Roche contre un monstre Feu, Vol et Glace vaudrait x8 ; elle inflige x4.
 - Les types Stellaire, Obscur, Lumière et Son sont traités dans un second temps : leurs relations d'efficacité restent à définir et ils ne font pas partie de la V1 (voir Q5).
-- Type Obscur, décidé le 18/10/2026 pour l'étape 29 : il n'appartient qu'aux Apôtres, qui n'ont que ce type.
+- Type Obscur, décidé le 18/10/2026 pour l'étape 30 : il n'appartient qu'aux Apôtres, qui n'ont que ce type.
   - En défense : les attaques Féérique, Psychique et Stellaire lui sont très efficaces ; les attaques Ténèbres, Poison, Insecte, Dragon et Spectre sont neutres ; il résiste à toutes les autres.
   - En attaque : une attaque Obscur est très efficace contre tous les types, sauf Féérique et Stellaire, qui y résistent, et Psychique, Ténèbres, Poison, Insecte, Dragon et Spectre, contre qui elle est neutre.
   - Le type Stellaire, opposé de l'Obscur, est très rare : un seul monstre l'aura. Le type Féérique, autre opposé de l'Obscur, reste rare.
-  - Depuis l'étape 27 (19/10/2026), ce monstre est le Schnoz (section 5.3). En attendant l'Obscur, le type Stellaire est neutre : ses attaques sont neutres contre tous les types, et il n'a ni faiblesse, ni résistance, ni immunité. Ses relations avec l'Obscur, décidées ci-dessus, seront codées à l'étape 29 ; ses autres relations restent ouvertes (Q76).
+  - Depuis l'étape 27 (19/10/2026), ce monstre est le Schnoz (section 5.3). En attendant l'Obscur, le type Stellaire est neutre : ses attaques sont neutres contre tous les types, et il n'a ni faiblesse, ni résistance, ni immunité. Ses relations avec l'Obscur, décidées ci-dessus, seront codées à l'étape 30 ; ses autres relations restent ouvertes (Q76).
   - Restent à définir : Obscur contre Obscur, les autres relations du Stellaire, et l'équilibrage du combat contre un Apôtre (Q76). L'Apôtre combat seul contre les 3 monstres du joueur : on l'équilibrera en jouant, s'il le faut.
 
 ### 5.3 Bestiaire
@@ -161,7 +162,7 @@ Chaque monstre possède :
 - Le contenu de la V1 (espèces, attaques, zones et textes) est décrit dans docs/contenu-v1.md, validé le 17/10/2026.
 - Après la V1, chaque espèce a une rareté : commune (monstres de départ compris), rare ou Apôtre. Avec le total de ses stats de base, elle fixe son prix de revente (section 14.5).
 - Décidé le 18/10/2026, pour l'étape 27 : de nouveaux monstres plus proches de l'univers de Berserk, parmi lesquels des fées, des elfes, des squelettes et des dragons (Q73).
-- Précisé le 19/10/2026 : ces monstres peupleront la troisième zone, à l'étape 29, et non les deux zones actuelles (Q73).
+- Précisé le 19/10/2026 : ces monstres peupleront la troisième zone, à l'étape 30, et non les deux zones actuelles (Q73).
 - Monstre caché, depuis l'étape 27 (19/10/2026) : le Schnoz, seul monstre de type Stellaire, d'espèce rare. Il se rencontre très rarement, dans toute zone (section 9.2). Fiche dans docs/contenu-v1.md.
 
 ### 5.4 Évolution
@@ -186,7 +187,7 @@ Le joueur peut :
 - Le codex répertorie tous les monstres du jeu (comme le Pokédex de Pokémon).
 - Une entrée est déverrouillée partiellement à la rencontre d'un monstre, et entièrement à sa capture.
 - Dans la V1, le codex se consulte au camp. Une espèce rencontrée en expédition montre son nom et ses types ; une espèce capturée montre aussi ses stats de base et la liste des attaques qu'elle apprend. Le monstre de départ compte comme capturé.
-- La fiche d'une espèce capturée rappelle aussi ses types.
+- La fiche d'une espèce capturée rappelle aussi ses types. Depuis l'étape 28, elle montre aussi ses 2 habiletés possibles (section 5.9).
 - Après la V1 : une espèce seulement rencontrée ne montre plus que son nom ; ses types n'apparaissent qu'à sa capture, comme en combat (section 10.6). La fiche d'une espèce capturée montre aussi le total de ses stats de base.
 
 ### 5.7 KO (pas de mort définitive)
@@ -204,6 +205,34 @@ Le joueur peut :
   - autres stats = (2 x base + valeur interne) x niveau / 100 + 5.
 - Les valeurs internes vont de 0 à 31. Elles sont tirées uniformément, une par stat, à la création du monstre.
 - Exemple pour une stat de base 50 : au niveau 100, avec une valeur interne de 0, 210 PV ou 105 pour une autre stat ; avec une valeur interne de 31, 241 PV ou 136.
+- Depuis l'étape 28, un shiny a 31 dans chaque valeur interne (section 5.1).
+
+### 5.9 Habiletés (après la V1)
+
+Décidé le 19/10/2026, pour l'étape 28 :
+
+- Chaque monstre a une habileté : un bonus passif. Chaque espèce a 2 habiletés possibles, et chaque monstre tire la sienne à sa création, monstres de départ, sauvages et Apôtres compris. La liste par espèce est dans docs/contenu-v1.md, section 7.
+- À la reprise d'une sauvegarde antérieure, un monstre reçoit la première habileté de son espèce : une habileté tirée à la lecture changerait d'une reprise à l'autre.
+- Les monstres sauvages et les Apôtres ont aussi leur habileté, mais seules les habiletés de combat jouent pour eux.
+- Les habiletés de stats s'ajoutent au bonus de la classe (section 4.2) : le monstre Férocité d'un Guerrier a +20 % d'Attaque.
+- Les habiletés d'équipe (Pillard, Éclaireur, Fouineur) ne se cumulent pas : deux monstres qui ont la même valent un seul.
+- Les valeurs sont prudentes, à ajuster en jouant. Les arrondis se font à l'entier inférieur.
+
+| Habileté | Effet |
+|---|---|
+| Férocité | +10 % d'Attaque en combat |
+| Carapace | +10 % de Défense en combat |
+| Sorcellerie | +10 % d'Attaque spéciale en combat |
+| Volonté | +10 % de Défense spéciale en combat |
+| Célérité | +10 % de Vitesse en combat |
+| Affinité | ses attaques qui ont le bonus de type (section 10.4) infligent 20 % de dégâts en plus |
+| Instinct | il gagne 20 % d'XP en plus, en combat comme en expédition automatique |
+| Éclaireur | l'expédition automatique où il part dure 20 % de moins, après la réduction due au nombre de monstres (section 12.2) |
+| Traqueur | quand il est le monstre actif, la chance de capture au filet est multipliée par 1,25, sans dépasser 100 % (section 11.2) |
+| Pillard | s'il est dans l'équipe sans être KO, l'argent d'un coffre augmente de 50 % ; s'il rentre debout d'une expédition automatique réussie, l'argent qu'elle rapporte aussi |
+| Fouineur | après un combat gagné, s'il est dans l'équipe sans être KO, 1 chance sur 4 de trouver une potion, qui va dans le sac |
+
+- Affichage : la fiche d'un monstre, dans sa gestion et l'écran de ses attaques, montre son habileté et son effet ; la fiche d'une espèce capturée au codex montre ses 2 habiletés possibles. Le bilan d'un coffre ou d'une expédition automatique signale l'argent dû au Pillard, et la potion du Fouineur est annoncée après le combat.
 
 ## 6. Histoire et démarrage
 
@@ -223,7 +252,7 @@ Le joueur peut :
 - Après la V1 (19/10/2026), la fiche d'un monstre et chaque gain d'XP montrent son XP totale et celle qu'il faut au total pour le niveau suivant : un Loup de niveau 5 qui a 130 XP affiche « XP : 130/216 », et un gain s'écrit « Loup gagne 45 XP (175/216). ». Au niveau 100, « niveau maximum » remplace l'XP du niveau suivant.
 - À chaque niveau gagné, les stats sont recalculées et les PV actuels augmentent d'autant que les PV max.
 - XP rapportée par un monstre sauvage vaincu, c'est-à-dire mis KO ou capturé : rendement de son espèce x son niveau / 7, multiplié par un pourcentage tiré de 90 % à 110 %, en divisions entières. Exemple : un monstre de niveau 5 et de rendement 64 rapporte de 40 à 49 XP.
-- Chaque monstre de l'équipe qui a été actif face au monstre vaincu et qui n'est pas KO à la fin du combat reçoit cette XP en entier.
+- Chaque monstre de l'équipe qui a été actif face au monstre vaincu et qui n'est pas KO à la fin du combat reçoit cette XP en entier. Depuis l'étape 28, un monstre qui a l'habileté Instinct en reçoit 20 % de plus, sur le total du combat (section 5.9).
 - L'XP est versée à la fin du combat, quelle que soit son issue ; les montées de niveau et l'apprentissage d'attaques se font donc après le combat, jamais pendant.
 - Chaque espèce a une liste d'attaques apprises à des niveaux donnés. En atteignant un de ces niveaux, le monstre apprend l'attaque ; s'il en connaît déjà 4, le joueur choisit l'attaque à oublier ou renonce à la nouvelle. Un monstre créé à un niveau donné connaît les 4 dernières attaques de sa liste jusqu'à ce niveau.
 - Une expédition automatique réussie rapporte aussi de l'XP (section 12.6).
@@ -263,10 +292,10 @@ Déroulement dans la V1 :
 - Depuis l'étape 27 (19/10/2026), quand une étape tire un monstre rare, c'est le Schnoz, monstre caché, une fois sur 20, dans toute zone ; sinon, c'est un monstre rare de la zone, comme avant. Il se rencontre donc environ une étape sur 400. Pacifique, il se laisse prendre ; son niveau est tiré parmi ceux de la zone, et il peut se rencontrer de nouveau. Au codex, il reste inconnu tant qu'il n'est pas rencontré, comme toute espèce.
 - Après la V1, tant qu'aucun marchand n'est au camp, la rencontre d'un marchand prend 10 % sur les combats : combat 70 %, marchand 10 %, coffre 15 %, monstre rare 5 % (section 14.2). Une fois le marchand au camp, les combats retrouvent leurs 80 %.
 - Un groupe sauvage compte de 1 à 2 monstres dans la zone facile, de 1 à 3 dans la zone difficile ; la taille est tirée à chaque combat.
-- Un coffre contient 1 à 2 potions (section 14.4). Après la V1, il contient aussi de l'argent, selon la zone, et, une fois sur 5, une capsule d'attaque de la zone que le joueur n'a pas encore (sections 13.10 et 14.5).
+- Un coffre contient 1 à 2 potions (section 14.4). Après la V1, il contient aussi de l'argent, selon la zone, et, une fois sur 5, une capsule d'attaque de la zone que le joueur n'a pas encore (sections 13.10 et 14.5). Depuis l'étape 28, l'habileté Pillard augmente cet argent de 50 %, et l'habileté Fouineur peut trouver une potion après un combat gagné (section 5.9).
 - Entre deux étapes, le joueur continue, rentre au camp en gardant ses gains, utilise des potions ou change l'ordre de son équipe ; les échanges avec le camp restent impossibles. Les PV et les statuts sont conservés d'une étape à l'autre.
 - Après la V1, l'écran entre deux étapes rappelle l'argent et les capsules trouvés pendant l'expédition, qu'une défaite ferait perdre (section 9.3). Avec le coffre du camp, il montre le contenu du sac (section 13.3).
-- Décidé le 18/10/2026, pour l'étape 29 : un événement important (un indice, un humain à vaincre en fin de zone, un Apôtre) est d'abord présenté par un texte et un bouton (« Combattre », « Lire l'indice ») avant de se produire, pour que le joueur ne le rate pas en enchaînant les actions.
+- Décidé le 18/10/2026, pour l'étape 30 : un événement important (un indice, un humain à vaincre en fin de zone, un Apôtre) est d'abord présenté par un texte et un bouton (« Combattre », « Lire l'indice ») avant de se produire, pour que le joueur ne le rate pas en enchaînant les actions.
 - Après la dernière étape, le joueur rentre au camp et la zone compte comme explorée.
 
 ### 9.3 Défaite
@@ -289,7 +318,7 @@ Si tous les monstres du joueur sont KO pendant une expédition manuelle :
 - Combat contre un Apôtre : il combat seul, 2 niveaux au-dessus du niveau maximal de sa zone, avec des stats de base bien plus hautes que celles des monstres communs (environ 480). Ses valeurs internes sont fixes, au maximum : 31 pour chaque stat. Comme un monstre sauvage, il a 1 chance sur 512 d'être shiny. La fuite est impossible, et le filet aussi : on ne lance pas de filet sur un Apôtre pendant le combat.
 - Une défaite contre l'Apôtre est une défaite ordinaire (section 9.3) ; les indices restent acquis et l'on peut retenter.
 - Après la victoire, l'Apôtre, mis KO, peut être capturé, à coup sûr, comme tout monstre KO à la fin d'un combat gagné (section 11.2) : c'est la seule façon de le capturer. Capturé ou non, il ne réapparaît plus.
-- Décidé le 18/10/2026, pour l'étape 29 : un indice par zone, trouvé à la première expédition menée au bout dans cette zone. La première zone s'achève par un combat contre un humain et ses monstres (étape 28). La deuxième s'achève par un humain plus fort, au service de l'Apôtre, qui donne l'indice de la troisième zone ; l'Apôtre attend à la fin de la troisième. Les détails sont dans Q75.
+- Décidé le 18/10/2026, pour l'étape 30 : un indice par zone, trouvé à la première expédition menée au bout dans cette zone. La première zone s'achève par un combat contre un humain et ses monstres (étape 29). La deuxième s'achève par un humain plus fort, au service de l'Apôtre, qui donne l'indice de la troisième zone ; l'Apôtre attend à la fin de la troisième. Les détails sont dans Q75.
 
 ## 10. Combat
 
@@ -298,7 +327,7 @@ Si tous les monstres du joueur sont KO pendant une expédition manuelle :
 - Combat au tour par tour.
 - Adversaires possibles : un ou plusieurs monstres, ou un humain (seul ou avec ses monstres, selon la difficulté).
 - L'adversaire est contrôlé par une IA (l'ordinateur, et non un vrai joueur). Dans la V1, l'IA d'un monstre sauvage choisit son attaque au hasard.
-- Décidé le 18/10/2026, pour les étapes 28 et 29 : les humains combattent avec leurs monstres et une IA qui n'agit pas au hasard. Un humain ordinaire a une IA simple ; l'humain qui termine la deuxième zone, une IA plus relevée ; l'Apôtre, une IA avancée et stratégique (Q74 et Q75).
+- Décidé le 18/10/2026, pour les étapes 29 et 30 : les humains combattent avec leurs monstres et une IA qui n'agit pas au hasard. Un humain ordinaire a une IA simple ; l'humain qui termine la deuxième zone, une IA plus relevée ; l'Apôtre, une IA avancée et stratégique (Q74 et Q75).
 
 ### 10.2 Format
 
@@ -323,7 +352,7 @@ Le format reprend celui des combats de Pokémon, comme base de départ qui pourr
 - Bonus de type : x1,5 quand l'attaque a l'un des types du monstre qui l'utilise.
 - Dégâts, selon la formule de Pokémon, en divisions entières de gauche à droite :
   - base = (2 x niveau / 5 + 2) x puissance x A / D / 50 + 2, où A et D sont l'Attaque de l'attaquant et la Défense du défenseur pour une attaque physique, l'Attaque spéciale et la Défense spéciale pour une attaque spéciale ;
-  - puis, dans cet ordre et en arrondissant à l'entier inférieur à chaque étape : x1,5 en cas de coup critique, x un pourcentage tiré de 85 % à 100 %, x1,5 pour le bonus de type, x l'efficacité (section 5.2) ;
+  - puis, dans cet ordre et en arrondissant à l'entier inférieur à chaque étape : x1,5 en cas de coup critique, x un pourcentage tiré de 85 % à 100 %, x1,5 pour le bonus de type, x1,2 pour l'habileté Affinité quand l'attaque a le bonus de type (depuis l'étape 28, section 5.9), x l'efficacité (section 5.2) ;
   - une attaque qui n'est pas sans effet inflige au moins 1 dégât.
 - Exemple : au niveau 5, une attaque de puissance 40, quand l'Attaque de l'attaquant égale la Défense du défenseur, inflige de 4 à 5 dégâts sans autre modificateur.
 - Le nombre d'utilisations des attaques n'est pas limité dans la V1 (pas d'équivalent des PP de Pokémon).
@@ -367,7 +396,7 @@ Décidé le 18/10/2026, pour l'étape 25 :
   - monstre non KO : chances inversement proportionnelles au nombre de PV restants du monstre (moins il a de PV, plus la capture est probable) ;
   - plus le monstre est faible par rapport au joueur, plus la capture est facilitée ;
   - chaque niveau d'amélioration du filet augmente les chances de capture (section 13.5).
-- Calcul pour un monstre non KO : chance = PV perdus / PV max x facteur, bornée à 100 %. Le facteur vaut le niveau du monstre actif du joueur divisé par celui du monstre sauvage, borné entre x0,5 et x2. Un monstre à PV pleins ne peut donc pas être capturé. Exemple : à niveau égal, un monstre à 2 PV sur 20 est capturé 9 fois sur 10.
+- Calcul pour un monstre non KO : chance = PV perdus / PV max x facteur, bornée à 100 %. Depuis l'étape 28, elle est multipliée par 1,25 quand le monstre actif du joueur a l'habileté Traqueur, toujours bornée à 100 % (section 5.9). Le facteur vaut le niveau du monstre actif du joueur divisé par celui du monstre sauvage, borné entre x0,5 et x2. Un monstre à PV pleins ne peut donc pas être capturé. Exemple : à niveau égal, un monstre à 2 PV sur 20 est capturé 9 fois sur 10.
 - Lancer un filet sur le monstre adverse actif est l'action du tour : si la capture échoue, l'adversaire agit. Un monstre sauvage mis KO peut être capturé à la fin du combat, si le joueur l'emporte.
 - Plusieurs monstres peuvent être capturés au cours d'un même combat : chaque monstre d'un groupe sauvage peut l'être, au filet pendant le combat ou, s'il est KO, à la fin d'un combat gagné. Un Apôtre ne se capture que KO, à la fin du combat (section 9.4).
 - Les filets de capture sont illimités dans la V1.
@@ -399,6 +428,7 @@ Décidé le 18/10/2026, pour l'étape 25 :
 - La durée est fixe, et non tirée au hasard (la section 1.4 vise les dégâts et les gains), pour être connue avant le départ.
 - Chaque zone a une durée de base, pour un seul monstre (section 12.8) : plus la zone est difficile, plus l'expédition est longue.
 - Chaque monstre envoyé en plus du premier réduit la durée de 25 % de la durée de base : 100 % avec 1 monstre, 75 % avec 2, 50 % avec 3.
+- Depuis l'étape 28, si un des monstres envoyés a l'habileté Éclaireur, cette durée baisse encore de 20 % : dans la Lisière, 2 monstres dont un Éclaireur partent 36 minutes au lieu de 45 (section 5.9).
 
 ### 12.3 Dégâts et résultat
 
@@ -431,6 +461,7 @@ Décidé le 18/10/2026, pour l'étape 25 :
 - Chaque monstre qui n'est pas KO au retour d'une expédition réussie reçoit en entier le même gain d'XP, tiré une fois dans la fourchette de la zone (section 12.8) ; les monstres KO ne gagnent rien, comme en combat (section 7). Ce gain vaut environ la moitié de ce que rapporte une expédition manuelle dans la même zone.
 - Un nombre de potions est tiré dans la fourchette de la zone et ajouté à celles du joueur (section 14.4).
 - Une somme d'argent est tirée dans la fourchette de la zone et ajoutée à celui du joueur (section 14.1).
+- Depuis l'étape 28, l'habileté Instinct ajoute 20 % à l'XP du monstre qui l'a, et l'habileté Pillard 50 % à l'argent, si son monstre rentre debout (section 5.9).
 - Les ressources et les autres objets (section 14.3) viendront plus tard (sections 13.4 et 14).
 
 ### 12.7 Retour, accueil et rappel
@@ -471,7 +502,7 @@ Repères, avec des valeurs internes de 15 : dans la Lisière, une Salamandre de 
   - gérer les attaques d'un monstre (section 13.10) ;
   - une fois le marchand au camp, lui revendre un monstre (section 14.2) ;
   - après la V1 (étape 25), trier le camp par nom, niveau ou type : l'ordre du camp change pour de bon, et les numéros des monstres le suivent.
-- Après la V1 (étape 25), la gestion d'un monstre et l'écran de ses attaques montrent ses types, ses stats et ses valeurs internes. La liste « Vos monstres » disparaît du camp : la gestion des monstres la montre déjà.
+- Après la V1 (étape 25), la gestion d'un monstre et l'écran de ses attaques montrent ses types, ses stats et ses valeurs internes. Depuis l'étape 28, aussi son habileté et son effet (section 5.9). La liste « Vos monstres » disparaît du camp : la gestion des monstres la montre déjà.
 
 ### 13.3 Équipement et stockage
 
@@ -525,6 +556,7 @@ Le joueur peut construire des machines pour automatiser certaines tâches, par e
 - Elle garde aussi l'avancée de la traque (indices trouvés, Apôtres vaincus) et les conseils du tutoriel déjà montrés.
 - Après la V1, elle garde les expéditions automatiques en cours : zone, monstres envoyés, heures de départ et de retour (section 12). Elle garde aussi les attaques qui restent à choisir après l'accueil d'une expédition (section 12.7). Le départ, le rappel et l'accueil d'une expédition automatique sont des actions au camp, suivies d'une sauvegarde.
 - Avec l'économie, elle garde aussi l'argent du joueur, la présence du marchand au camp et les capsules d'attaque obtenues (section 14). Les achats et les ventes sont des actions au camp, suivies d'une sauvegarde.
+- Depuis l'étape 28, elle garde aussi l'habileté de chaque monstre (section 5.9).
 - Après la V1 (19/10/2026), un sous-menu « Options » du camp permet au joueur de se suicider, après confirmation, pour recommencer sans attendre la reprise au lancement. La sauvegarde est effacée dès la confirmation, avec le héros, les monstres, le sac, le coffre, le codex et les expéditions automatiques en cours ; un court texte suit, puis la création d'un nouveau héros. Ce n'est possible qu'au camp. Le texte est dans docs/contenu-v1.md, section 4.
 
 ### 13.10 Attaques des monstres
@@ -563,7 +595,7 @@ Premier marchand, après la V1 :
 - Écrans : une fois le marchand au camp, le camp propose de le voir (une entrée du menu dans la console, un bouton sur Discord). Son étal montre l'argent, les potions et les capsules obtenues, vend des potions (au nombre choisi dans la console, par 1 ou 5 sur Discord) et les capsules que le joueur n'a pas encore. La vente montre le prix de chaque monstre ; on peut aussi vendre le monstre choisi depuis la gestion des monstres.
 - Les attaques d'un monstre se gèrent depuis la gestion des monstres : ses attaques connues, puis celles qu'il peut apprendre au camp ; s'il en connaît déjà 4, le joueur choisit aussi celle à oublier (section 13.10).
 - Tuer un monstre pour en tirer des ressources est envisagé, mais reporté tant qu'aucune ressource n'a d'usage (Q71).
-- Décidé le 19/10/2026, pour l'étape 30, à la place d'un marchand par zone : un nécromancien, unique, s'installe au camp. Sa rencontre est scriptée, juste après la première expédition menée au bout dans la première zone, et ne se reproduit plus. En expédition, le joueur trouve des marchands tués, par exemple sous ses yeux par un monstre, ou un cadavre de marchand qui l'attaque ; il rapporte leur âme au nécromancien, dont l'étal s'enrichit des articles de chaque marchand. Chaque marchand a son nom. Ce que vend chacun, la façon de trouver les âmes et le sort du marchand actuel restent à définir (Q77).
+- Décidé le 19/10/2026, pour l'étape 31, à la place d'un marchand par zone : un nécromancien, unique, s'installe au camp. Sa rencontre est scriptée, juste après la première expédition menée au bout dans la première zone, et ne se reproduit plus. En expédition, le joueur trouve des marchands tués, par exemple sous ses yeux par un monstre, ou un cadavre de marchand qui l'attaque ; il rapporte leur âme au nécromancien, dont l'étal s'enrichit des articles de chaque marchand. Chaque marchand a son nom. Ce que vend chacun, la façon de trouver les âmes et le sort du marchand actuel restent à définir (Q77).
 - Plus tard, d'autres personnages pourront être rencontrés de la même façon et enrichir le camp, comme un pêcheur qui apprend à pêcher (section 13.8).
 
 ### 14.3 Objets et ressources cités dans ce document
@@ -632,13 +664,13 @@ Les questions Q67 et suivantes ont été relevées le 18/10/2026 après les prem
 
 - Q71. (Après l'économie) Tuer un monstre pour des ressources : reporté tant qu'aucune ressource n'a d'usage (fabrication, améliorations).
 
-Les questions Q72 et suivantes ont été relevées le 18/10/2026 après les essais de l'économie, découpés en étapes : 25 interface, 26 règles (coffre et sac, équipe vide, revente, étapes fixes), 27 classe Assassin et nouveaux monstres, 28 combats contre des humains, 29 troisième zone, Baron et Apôtre de type Obscur, 30 marchands par zone.
+Les questions Q72 et suivantes ont été relevées le 18/10/2026 après les essais de l'économie, découpés en étapes : 25 interface, 26 règles (coffre et sac, équipe vide, revente, étapes fixes), 27 classe Assassin et nouveaux monstres, 28 combats contre des humains, 29 troisième zone, Baron et Apôtre de type Obscur, 30 marchands par zone. Découpage révisé le 19/10/2026 : 28 shiny et habiletés, 29 combats contre des humains, 30 troisième zone, Baron et Apôtre de type Obscur, 31 nécromancien et âmes de marchands.
 
-- Q73. (Étape 29) Nouveaux monstres inspirés de Berserk (fées, elfes, squelettes, dragons), pour la troisième zone : liste, fiches et place dans la zone. Premier jet proposé le 19/10/2026, à confirmer : Fée noire (commune, Insecte et Ténèbres), Elfe (rare et pacifique, Féérique et Vol), Squelette (commun, Spectre et Combat), Vouivre (rare et hostile, Dragon et Vol) ; le type Féérique y reste réservé à une espèce rare (section 5.2). Le Schnoz, surnom donné par les fans au chimimoryo, créature astrale croisée près du Qliphoth dans l'épisode 215 du manga (page https://berserk.fandom.com/wiki/Chimimoryo transmise par l'utilisateur), est le monstre caché de l'étape 27. C'est une créature de l'œuvre, protégée : sans souci pour un jeu privé, mais si le bot devient public, mieux vaudra une créature qui s'en inspire, avec son propre nom et sa propre apparence (voir aussi Q64).
-- Q74. (Étape 28) Combats contre des humains et leurs monstres, à la fin de la première zone pour commencer : nombre et niveaux des monstres adverses, fuite et filet, capture après la victoire (section 11.3), récompenses, et règles de l'IA d'un humain ordinaire (simple, mais pas au hasard).
-- Q75. (Étape 29) Troisième zone et nouvelle traque : un indice par zone à sa première expédition menée au bout ; à la fin de la deuxième zone, un humain plus fort, au service de l'Apôtre, donne l'indice de la troisième, où attend l'Apôtre. Restent à définir la zone (nom, niveaux, espèces), les noms (l'Apôtre actuel s'appelle déjà Baron pendu : l'un des deux sera renommé), l'IA du Baron et celle de l'Apôtre, et la conversion des sauvegardes qui ont déjà trouvé 3 indices. L'utilisateur accepte ces conséquences.
-- Q76. (Étape 29) Type Obscur : Obscur contre Obscur, attaques des Apôtres, équilibrage ; autres relations du type Stellaire, neutre envers tous les types depuis l'étape 27 (voir Q5). À vérifier aussi : le Chat noir, de type Ténèbres, résiste à toutes les attaques du Baron pendu (Spectre et Ténèbres) ; l'équilibre de son départ contre le nouvel Apôtre.
-- Q77. (Étape 30) Nécromancien et âmes de marchands : nom et texte de la rencontre du nécromancien, noms et articles de chaque marchand, façon de trouver leur âme (marchand tué sous les yeux du joueur, cadavre qui attaque), sort du marchand actuel et conversion des sauvegardes où il est déjà au camp.
+- Q73. (Étape 30) Nouveaux monstres inspirés de Berserk (fées, elfes, squelettes, dragons), pour la troisième zone : liste, fiches et place dans la zone. Premier jet proposé le 19/10/2026, à confirmer : Fée noire (commune, Insecte et Ténèbres), Elfe (rare et pacifique, Féérique et Vol), Squelette (commun, Spectre et Combat), Vouivre (rare et hostile, Dragon et Vol) ; le type Féérique y reste réservé à une espèce rare (section 5.2). Le Schnoz, surnom donné par les fans au chimimoryo, créature astrale croisée près du Qliphoth dans l'épisode 215 du manga (page https://berserk.fandom.com/wiki/Chimimoryo transmise par l'utilisateur), est le monstre caché de l'étape 27. C'est une créature de l'œuvre, protégée : sans souci pour un jeu privé, mais si le bot devient public, mieux vaudra une créature qui s'en inspire, avec son propre nom et sa propre apparence (voir aussi Q64).
+- Q74. (Étape 29) Combats contre des humains et leurs monstres, à la fin de la première zone pour commencer : nombre et niveaux des monstres adverses, fuite et filet, capture après la victoire (section 11.3), récompenses, et règles de l'IA d'un humain ordinaire (simple, mais pas au hasard).
+- Q75. (Étape 30) Troisième zone et nouvelle traque : un indice par zone à sa première expédition menée au bout ; à la fin de la deuxième zone, un humain plus fort, au service de l'Apôtre, donne l'indice de la troisième, où attend l'Apôtre. Restent à définir la zone (nom, niveaux, espèces), les noms (l'Apôtre actuel s'appelle déjà Baron pendu : l'un des deux sera renommé), l'IA du Baron et celle de l'Apôtre, et la conversion des sauvegardes qui ont déjà trouvé 3 indices. L'utilisateur accepte ces conséquences.
+- Q76. (Étape 30) Type Obscur : Obscur contre Obscur, attaques des Apôtres, équilibrage ; autres relations du type Stellaire, neutre envers tous les types depuis l'étape 27 (voir Q5). À vérifier aussi : le Chat noir, de type Ténèbres, résiste à toutes les attaques du Baron pendu (Spectre et Ténèbres) ; l'équilibre de son départ contre le nouvel Apôtre.
+- Q77. (Étape 31) Nécromancien et âmes de marchands : nom et texte de la rencontre du nécromancien, noms et articles de chaque marchand, façon de trouver leur âme (marchand tué sous les yeux du joueur, cadavre qui attaque), sort du marchand actuel et conversion des sauvegardes où il est déjà au camp.
 - Q78. (Plus tard) Chaque Apôtre est unique : un événement quand le joueur les a tous réunis.
 
 ## 17. Journal des décisions
@@ -891,3 +923,11 @@ Les questions Q72 et suivantes ont été relevées le 18/10/2026 après les essa
 - Q73 en partie : les nouveaux monstres inspirés de Berserk peupleront la troisième zone, à l'étape 29 ; un premier jet de quatre espèces est noté dans Q73.
 - Q73 en partie : le Schnoz est un monstre caché, de type Stellaire, d'espèce rare. Dans toute zone, un monstre rare sur 20 est le Schnoz ; pacifique, il se laisse prendre, au niveau de la zone, et peut se rencontrer de nouveau.
 - En attendant l'Obscur, le type Stellaire est neutre envers tous les types, en attaque comme en défense.
+
+19/10/2026 (shiny et habiletés, étape 28) :
+
+- Découpage révisé : 28 shiny et habiletés, 29 combats contre des humains, 30 troisième zone, Baron et Apôtre de type Obscur, 31 nécromancien. Les habiletés passent avant la troisième zone, pour que ses espèces en aient dès leur création.
+- Un shiny a 31 dans chaque valeur interne ; les shiny des sauvegardes antérieures passent à 31 à leur reprise. Remplace "sans incidence sur les stats" (section 5.1).
+- Habiletés (section 5.9) : 2 possibles par espèce, une tirée pour chaque monstre à sa création ; la première de l'espèce pour les monstres des sauvegardes antérieures. Catalogue de onze habiletés d'après la liste de l'utilisateur : cinq bonus de stats de +10 %, Affinité (+20 % de dégâts avec le bonus de type), Instinct (+20 % d'XP), Éclaireur (-20 % de durée d'expédition automatique), Traqueur (capture x1,25), Pillard (+50 % d'argent des coffres et des expéditions automatiques) et Fouineur (une potion 1 fois sur 4 après un combat gagné). Valeurs à ajuster en jouant.
+- "Booste le taux de drop" est compris comme plus de butin : c'est l'habileté Pillard.
+- Les habiletés d'équipe ne se cumulent pas ; celles de stats s'ajoutent au bonus de la classe ; seules les habiletés de combat jouent pour les monstres sauvages et les Apôtres.
