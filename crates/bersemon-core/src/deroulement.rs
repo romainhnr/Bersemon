@@ -1639,7 +1639,9 @@ impl EnExpedition {
                     marchand.avant_combat().to_string(),
                 ));
                 let combat = match marchand.gardien() {
-                    Gardien::MonstreDeLaZone => partie.preparer_combat(vec![adversaire]),
+                    Gardien::MonstreDeLaZone | Gardien::Bete { .. } => {
+                        partie.preparer_combat(vec![adversaire])
+                    }
                     Gardien::MortVivant { .. } => {
                         partie.preparer_combat_sans_capture(vec![adversaire])
                     }
@@ -2293,10 +2295,9 @@ mod tests {
             )
             .unwrap();
         }
-        // À l'étape 4, sans tirage de sa nature : un Loup, première espèce
-        // de la Lisière, au niveau 7, le plus haut de la zone, non shiny,
-        // valeurs internes nulles, première habileté.
-        let tirages = vec![0, 2, 0, 0, 0, 0, 0, 0, 0];
+        // À l'étape 4, sans tirage de sa nature : le Loup du brigand, au
+        // niveau 7, non shiny, valeurs internes nulles, première habileté.
+        let tirages = vec![2, 0, 0, 0, 0, 0, 0, 0];
         let evenements = repondre_a(
             &mut deroulement,
             Choix::ContinuerLExpedition,
@@ -2315,7 +2316,9 @@ mod tests {
         };
         // Un combat ordinaire contre un monstre sauvage (section 14.2).
         assert!(combat.filet_possible() && combat.fuite_possible());
-        assert_eq!(combat.adversaires()[0].niveau().valeur(), 7);
+        let loup = &combat.adversaires()[0];
+        assert_eq!(loup.espece().id().as_str(), "loup");
+        assert_eq!(loup.niveau().valeur(), 7);
         let vus = jouer_le_combat(&mut deroulement, &contenu, &depot);
         assert!(vus.iter().any(|evenement| matches!(
             evenement,

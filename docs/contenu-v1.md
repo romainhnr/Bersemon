@@ -292,7 +292,7 @@ Arrivée de Malvoise, au retour de la première expédition menée au bout dans 
 | Grete, herboriste | Marais des Pendus | elle s'est relevée en marchand zombie, qui attaque | Grande potion, 60 |
 | Ulrich, alchimiste | Vallée des Brumes | il pend au gibet, gardé par un monstre de la zone | Élixir, 150 |
 
-Le monstre qui tue Bertrand ou garde Ulrich est tiré parmi les espèces communes de la zone, au niveau maximal de la zone.
+Le monstre qui tue Bertrand ou garde Ulrich est tiré parmi les espèces communes de la zone, au niveau maximal de la zone. Depuis le 19/10/2026, la bête du brigand qui attaque à la place de Bertrand est toujours un Loup de niveau 7, aux valeurs internes, shiny et habileté tirés.
 
 Bertrand, avant le combat (le monstre n'est pas nommé : le combat le présente aussitôt, et son nom ne dit pas son genre) :
 

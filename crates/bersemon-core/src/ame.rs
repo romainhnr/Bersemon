@@ -10,7 +10,7 @@ use crate::humain::valeurs_internes_fixes;
 use crate::monstre::Monstre;
 use crate::niveau::Niveau;
 use crate::soin::Soin;
-use crate::zone::Zone;
+use crate::zone::{Zone, creer_monstre_sauvage};
 
 /// Identifiant stable d'un marchand, enregistré dans la sauvegarde une fois
 /// son âme recueillie.
@@ -33,6 +33,10 @@ pub enum Gardien {
     /// Une espèce commune de la zone, au niveau maximal de la zone : un
     /// combat ordinaire contre un monstre sauvage.
     MonstreDeLaZone,
+    /// Une bête précise, à un niveau donné : un combat ordinaire contre un
+    /// monstre sauvage, aux valeurs internes, shiny et habileté tirés,
+    /// comme le Loup du brigand qui abat Bertrand (section 14.2).
+    Bete { espece: Espece, niveau: Niveau },
     /// Le marchand relevé d'entre les morts : fuite possible, mais ni filet
     /// ni capture, et il n'entre pas au codex. Valeurs internes fixes,
     /// jamais shiny, comme les monstres d'un humain.
@@ -41,8 +45,8 @@ pub enum Gardien {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ErreurMarchandMort {
-    /// L'espèce du mort-vivant n'apprend aucune attaque, ou en apprend une
-    /// en double, jusqu'à son niveau.
+    /// L'espèce de la bête ou du mort-vivant n'apprend aucune attaque, ou
+    /// en apprend une en double, jusqu'à son niveau.
     EspeceInvalide { espece: EspeceId, niveau: Niveau },
 }
 
@@ -77,8 +81,8 @@ pub struct MarchandMort {
 }
 
 impl MarchandMort {
-    /// Vérifie que le mort-vivant peut être créé à son niveau : sa
-    /// génération ne peut ensuite plus échouer.
+    /// Vérifie que la bête ou le mort-vivant peut être créé à son niveau :
+    /// sa génération ne peut ensuite plus échouer.
     pub fn new(
         id: MarchandId,
         nom: impl Into<String>,
@@ -87,7 +91,8 @@ impl MarchandMort {
         avant_combat: impl Into<String>,
         apres_victoire: impl Into<String>,
     ) -> Result<Self, ErreurMarchandMort> {
-        if let Gardien::MortVivant { espece, niveau } = &gardien {
+        if let Gardien::MortVivant { espece, niveau } | Gardien::Bete { espece, niveau } = &gardien
+        {
             Monstre::creer(espece.clone(), *niveau, valeurs_internes_fixes(), false).map_err(
                 |_| ErreurMarchandMort::EspeceInvalide {
                     espece: espece.id().clone(),
@@ -140,11 +145,13 @@ impl MarchandMort {
     }
 
     /// Le monstre qui attaque le joueur dans `zone`. Tirages : ceux de
-    /// `Zone::generer_gardien` pour un monstre de la zone, aucun pour un
-    /// mort-vivant.
+    /// `Zone::generer_gardien` pour un monstre de la zone ; pour une bête,
+    /// son shiny, ses valeurs internes s'il n'est pas shiny, puis son
+    /// habileté ; aucun pour un mort-vivant.
     pub(crate) fn generer_adversaire(&self, zone: &Zone, aleatoire: &mut dyn Aleatoire) -> Monstre {
         match &self.gardien {
             Gardien::MonstreDeLaZone => zone.generer_gardien(aleatoire),
+            Gardien::Bete { espece, niveau } => creer_monstre_sauvage(espece, *niveau, aleatoire),
             Gardien::MortVivant { espece, niveau } => {
                 Monstre::creer(espece.clone(), *niveau, valeurs_internes_fixes(), false)
                     .expect("mort-vivant vérifié par MarchandMort::new")
@@ -200,6 +207,21 @@ mod tests {
         let loup = bertrand.generer_adversaire(&zone("lisiere"), &mut aleatoire);
         assert_eq!(loup.espece().id().as_str(), "loup");
         assert_eq!(loup.niveau(), niveau(5));
+    }
+
+    #[test]
+    fn une_bete_est_sauvage_a_son_espece_et_son_niveau() {
+        let bertrand = mort(Gardien::Bete {
+            espece: espece("loup"),
+            niveau: niveau(7),
+        })
+        .unwrap();
+        // Shiny (2 : non), puis six valeurs internes ; pas d'habileté à tirer.
+        let mut aleatoire = AleatoireScripte::new([2, 4, 0, 0, 0, 0, 0]);
+        let loup = bertrand.generer_adversaire(&zone("lisiere"), &mut aleatoire);
+        assert_eq!(loup.espece().id().as_str(), "loup");
+        assert_eq!(loup.niveau(), niveau(7));
+        assert_eq!(loup.valeurs_internes().valeurs().pv, 4);
     }
 
     #[test]

@@ -288,7 +288,7 @@ impl Zone {
 
 /// À un niveau de la zone de l'espèce. Tirages : shiny, valeurs internes
 /// s'il n'est pas shiny, puis habileté.
-fn creer_monstre_sauvage(
+pub(crate) fn creer_monstre_sauvage(
     espece: &Espece,
     niveau: Niveau,
     aleatoire: &mut dyn Aleatoire,
@@ -296,7 +296,7 @@ fn creer_monstre_sauvage(
     let shiny = tirer_shiny(aleatoire);
     let valeurs_internes = tirer_valeurs_internes(shiny, aleatoire);
     Monstre::creer(espece.clone(), niveau, valeurs_internes, shiny)
-        .expect("espèce vérifiée à chaque niveau par Zone::new")
+        .expect("espèce vérifiée à ce niveau par Zone::new ou MarchandMort::new")
         .tirer_son_habilete(aleatoire)
 }
 

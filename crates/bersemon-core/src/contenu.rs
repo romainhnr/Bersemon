@@ -197,7 +197,10 @@ impl ContenuV1 {
             "bertrand",
             "Bertrand",
             Soin::Remede,
-            Gardien::MonstreDeLaZone,
+            Gardien::Bete {
+                espece: trouver("loup"),
+                niveau: niveau(7),
+            },
             AVANT_BERTRAND,
             APRES_BERTRAND,
         )
