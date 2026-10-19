@@ -19,6 +19,16 @@ pub fn tirer_shiny(aleatoire: &mut dyn Aleatoire) -> bool {
     aleatoire.tirer(1..=CHANCES_SHINY) == 1
 }
 
+/// Un shiny a 31 partout (section 5.1) : ses valeurs internes ne se tirent
+/// pas.
+pub fn tirer_valeurs_internes(shiny: bool, aleatoire: &mut dyn Aleatoire) -> ValeursInternes {
+    if shiny {
+        ValeursInternes::maximales()
+    } else {
+        ValeursInternes::tirer(aleatoire)
+    }
+}
+
 /// Ce qu'a produit un gain d'XP.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RapportExperience {
@@ -48,7 +58,8 @@ pub struct Monstre {
 impl Monstre {
     /// Crée un monstre avec tous ses PV, sans statut, et l'XP minimale de son
     /// niveau. Le shiny est reçu déjà décidé : il ne se tire que pour un
-    /// monstre sauvage (`tirer_shiny`).
+    /// monstre sauvage (`tirer_shiny`). Un shiny a 31 dans chaque valeur
+    /// interne, quelles que soient celles reçues (section 5.1).
     pub fn new(
         espece: Espece,
         niveau: Niveau,
@@ -61,7 +72,7 @@ impl Monstre {
             surnom: None,
             niveau,
             experience: experience_requise(niveau),
-            valeurs_internes,
+            valeurs_internes: valeurs_internes_d_un(shiny, valeurs_internes),
             attaques,
             shiny,
             pv_actuels: 0,
@@ -256,7 +267,8 @@ impl Monstre {
 
     /// Reconstitue un monstre depuis une sauvegarde. L'XP doit correspondre
     /// au niveau. Les PV sont ramenés aux PV max s'ils les dépassent, ce qui
-    /// arrive quand une espèce a été rééquilibrée depuis la sauvegarde.
+    /// arrive quand une espèce a été rééquilibrée depuis la sauvegarde. Un
+    /// shiny d'une sauvegarde antérieure passe à 31 partout (section 5.1).
     pub fn restaurer(etat: EtatMonstre) -> Result<Self, ErreurRestauration> {
         let minimum = experience_requise(etat.niveau);
         let suivant = Niveau::new(etat.niveau.valeur() + 1).ok();
@@ -276,7 +288,7 @@ impl Monstre {
             surnom: etat.surnom,
             niveau: etat.niveau,
             experience: etat.experience,
-            valeurs_internes: etat.valeurs_internes,
+            valeurs_internes: valeurs_internes_d_un(etat.shiny, etat.valeurs_internes),
             attaques: etat.attaques,
             shiny: etat.shiny,
             pv_actuels: 0,
@@ -284,6 +296,14 @@ impl Monstre {
         };
         monstre.pv_actuels = etat.pv_actuels.min(monstre.stats().pv);
         Ok(monstre)
+    }
+}
+
+fn valeurs_internes_d_un(shiny: bool, valeurs_internes: ValeursInternes) -> ValeursInternes {
+    if shiny {
+        ValeursInternes::maximales()
+    } else {
+        valeurs_internes
     }
 }
 
@@ -649,5 +669,21 @@ mod tests {
         let mut etat = etat_de(&cree(5));
         etat.pv_actuels = 500;
         assert_eq!(Monstre::restaurer(etat).unwrap().pv_actuels(), 21);
+    }
+
+    #[test]
+    fn un_shiny_a_31_partout() {
+        let niveau = Niveau::new(5).unwrap();
+        let shiny =
+            Monstre::creer(espece_de_test(), niveau, ValeursInternes::default(), true).unwrap();
+        assert_eq!(shiny.valeurs_internes(), &ValeursInternes::maximales());
+    }
+
+    #[test]
+    fn un_shiny_d_une_sauvegarde_anterieure_passe_a_31_partout() {
+        let mut etat = etat_de(&cree(5));
+        etat.shiny = true;
+        let monstre = Monstre::restaurer(etat).unwrap();
+        assert_eq!(monstre.valeurs_internes(), &ValeursInternes::maximales());
     }
 }

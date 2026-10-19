@@ -11,7 +11,7 @@ use crate::aleatoire::Aleatoire;
 use crate::espece::{Espece, EspeceId};
 use crate::expedition::ParametresCoffre;
 use crate::expedition_automatique::ParametresExpeditionAutomatique;
-use crate::monstre::{Monstre, tirer_shiny};
+use crate::monstre::{Monstre, tirer_shiny, tirer_valeurs_internes};
 use crate::niveau::Niveau;
 use crate::stats::ValeursInternes;
 
@@ -235,7 +235,7 @@ impl Zone {
         })
     }
 
-    /// Tirages : niveau, shiny, puis valeurs internes.
+    /// Tirages : niveau, shiny, puis valeurs internes s'il n'est pas shiny.
     fn generer_monstre(&self, espece: &Espece, aleatoire: &mut dyn Aleatoire) -> Monstre {
         let valeur = tirer_entre(
             u32::from(self.niveau_min.valeur()),
@@ -245,7 +245,7 @@ impl Zone {
         // Le tirage reste entre deux niveaux valides de la zone.
         let niveau = Niveau::new(valeur as u8).expect("niveau compris dans la zone");
         let shiny = tirer_shiny(aleatoire);
-        let valeurs_internes = ValeursInternes::tirer(aleatoire);
+        let valeurs_internes = tirer_valeurs_internes(shiny, aleatoire);
         Monstre::creer(espece.clone(), niveau, valeurs_internes, shiny)
             .expect("espèce vérifiée à chaque niveau par Zone::new")
     }
@@ -323,7 +323,7 @@ mod tests {
         let mut aleatoire = AleatoireScripte::new([
             2, // deux monstres
             1, 4, 512, 0, 0, 0, 0, 0, 0, // vipère niveau 4, non shiny
-            0, 6, 1, 31, 31, 31, 31, 31, 31, // loup niveau 6, shiny
+            0, 6, 1, // loup niveau 6, shiny : 31 partout, sans tirage
         ]);
         let groupe = zone.generer_groupe(&mut aleatoire);
         assert_eq!(groupe.len(), 2);
@@ -333,6 +333,7 @@ mod tests {
         assert_eq!(groupe[1].espece().id().as_str(), "loup");
         assert_eq!(groupe[1].niveau(), niveau(6));
         assert!(groupe[1].est_shiny());
+        assert_eq!(groupe[1].valeurs_internes(), &ValeursInternes::maximales());
     }
 
     #[test]

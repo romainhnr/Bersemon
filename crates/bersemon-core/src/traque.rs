@@ -7,7 +7,7 @@ use crate::aleatoire::Aleatoire;
 use crate::espece::{Espece, EspeceId};
 use crate::monstre::{Monstre, tirer_shiny};
 use crate::niveau::Niveau;
-use crate::stats::{Stats, ValeursInternes};
+use crate::stats::ValeursInternes;
 use crate::zone::{Zone, ZoneId};
 
 /// Un Apôtre combat 2 niveaux au-dessus du niveau maximal de sa zone (section
@@ -113,24 +113,11 @@ impl Apotre {
         Monstre::creer(
             self.espece.clone(),
             self.niveau,
-            valeurs_internes_maximales(),
+            ValeursInternes::maximales(),
             shiny,
         )
         .expect("espèce vérifiée au niveau de l'Apôtre par Apotre::new")
     }
-}
-
-fn valeurs_internes_maximales() -> ValeursInternes {
-    let max = ValeursInternes::MAX;
-    ValeursInternes::new(Stats {
-        pv: max,
-        attaque: max,
-        defense: max,
-        attaque_speciale: max,
-        defense_speciale: max,
-        vitesse: max,
-    })
-    .expect("valeurs internes maximales valides")
 }
 
 /// Piste d'un Apôtre : ses indices, dans l'ordre où on les trouve, puis son
@@ -223,7 +210,7 @@ mod tests {
         // Seul le shiny est tiré.
         let monstre = apotre.generer(&mut AleatoireScripte::new([1]));
         assert_eq!(monstre.niveau(), Niveau::new(15).unwrap());
-        assert_eq!(monstre.valeurs_internes(), &valeurs_internes_maximales());
+        assert_eq!(monstre.valeurs_internes(), &ValeursInternes::maximales());
         assert!(monstre.est_shiny());
         assert_eq!(monstre.espece().id().as_str(), "baron");
     }

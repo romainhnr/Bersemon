@@ -19,9 +19,8 @@ use crate::heros::Heros;
 use crate::horodatage::Horodatage;
 use crate::inventaire::{ErreurObjet, ErreurPotion, Inventaire, Objet};
 use crate::marchand::{ErreurMarchand, PRIX_DE_LA_POTION, prix_de_revente};
-use crate::monstre::{Monstre, tirer_shiny};
+use crate::monstre::{Monstre, tirer_shiny, tirer_valeurs_internes};
 use crate::niveau::Niveau;
-use crate::stats::ValeursInternes;
 use crate::traque::{Apotre, Indice, Piste};
 use crate::tutoriel::Conseil;
 use crate::zone::{Zone, ZoneId};
@@ -29,15 +28,16 @@ use crate::zone::{Zone, ZoneId};
 /// Le monstre de départ est au niveau 5 (section 6).
 const NIVEAU_DE_DEPART: u8 = 5;
 
-/// Valeurs internes tirées au hasard et 1 chance sur 512 d'être shiny, comme
-/// un monstre sauvage (section 6). Tirages : valeurs internes, puis shiny.
+/// 1 chance sur 512 d'être shiny et valeurs internes tirées au hasard, comme
+/// un monstre sauvage (section 6). Tirages : shiny, puis valeurs internes
+/// s'il n'est pas shiny.
 /// Échoue si l'espèce n'apprend aucune attaque jusqu'au niveau 5.
 pub fn creer_monstre_de_depart(
     espece: Espece,
     aleatoire: &mut dyn Aleatoire,
 ) -> Result<Monstre, ErreurAttaquesMonstre> {
-    let valeurs_internes = ValeursInternes::tirer(aleatoire);
     let shiny = tirer_shiny(aleatoire);
+    let valeurs_internes = tirer_valeurs_internes(shiny, aleatoire);
     let niveau = Niveau::new(NIVEAU_DE_DEPART).expect("niveau de départ valide");
     Monstre::creer(espece, niveau, valeurs_internes, shiny)
 }
@@ -783,6 +783,7 @@ mod tests {
     use crate::expedition::EvenementExpedition;
     use crate::heros::Classe;
     use crate::nom::Nom;
+    use crate::stats::ValeursInternes;
     use crate::types::Type;
     use std::time::Duration;
 
@@ -1186,12 +1187,21 @@ mod tests {
 
     #[test]
     fn monstre_de_depart_au_niveau_5() {
-        let mut tirages = vec![31; 6];
-        tirages.push(1);
+        // Pas shiny : ses valeurs internes sont tirées.
+        let tirages = [2, 0, 1, 2, 3, 4, 5];
         let depart =
             creer_monstre_de_depart(espece("depart"), &mut AleatoireScripte::new(tirages)).unwrap();
         assert_eq!(depart.niveau(), Niveau::new(5).unwrap());
+        assert!(!depart.est_shiny());
+        assert_eq!(depart.valeurs_internes().valeurs().vitesse, 5);
+    }
+
+    #[test]
+    fn un_monstre_de_depart_shiny_a_31_partout_sans_tirage() {
+        let depart =
+            creer_monstre_de_depart(espece("depart"), &mut AleatoireScripte::new([1])).unwrap();
         assert!(depart.est_shiny());
+        assert_eq!(depart.valeurs_internes(), &ValeursInternes::maximales());
     }
 
     #[test]

@@ -1564,8 +1564,8 @@ mod tests {
         repondre_sans_tirage(&mut deroulement, nom, &contenu, &depot).unwrap();
         assert_eq!(deroulement.attente(), Attente::Classe);
 
-        // Valeurs internes, puis shiny.
-        let mut aleatoire = AleatoireScripte::new([31, 31, 31, 31, 31, 31, 1]);
+        // Shiny : ses valeurs internes ne se tirent pas.
+        let mut aleatoire = AleatoireScripte::new([1]);
         let mut contexte = Contexte {
             contenu: &contenu,
             aleatoire: &mut aleatoire,

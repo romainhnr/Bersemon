@@ -68,6 +68,19 @@ impl ValeursInternes {
         }
     }
 
+    /// 31 partout : celles d'un shiny et d'un Apôtre (sections 5.1 et 9.4).
+    pub fn maximales() -> Self {
+        let max = Self::MAX;
+        Self(Stats {
+            pv: max,
+            attaque: max,
+            defense: max,
+            attaque_speciale: max,
+            defense_speciale: max,
+            vitesse: max,
+        })
+    }
+
     /// Tire chaque valeur uniformément de 0 à 31, dans l'ordre des champs de
     /// `Stats`.
     pub fn tirer(aleatoire: &mut dyn Aleatoire) -> Self {
