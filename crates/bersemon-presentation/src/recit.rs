@@ -18,6 +18,10 @@ use crate::partie::{
 };
 use crate::soins::{le_soin, soin_utilise, soins};
 
+/// La forme évoluée apprend d'autres attaques que son attaque d'évolution
+/// (section 5.4).
+const AUTRES_ATTAQUES_AU_CAMP: &str = "D'autres attaques peuvent s'apprendre au camp.";
+
 /// Une ou plusieurs lignes de récit.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Recit {
@@ -151,6 +155,33 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
                 "{} apprend {}.",
                 nom_en_valeur(monstre, Cote::Joueur),
                 attaque.nom()
+            ),
+            false,
+        ),
+        Evenement::Evolution {
+            avant,
+            apres,
+            attaque,
+        } => {
+            let mut lignes = vec![format!(
+                "{} évolue en {} !",
+                nom_en_valeur(avant, Cote::Joueur),
+                important(apres.espece().nom())
+            )];
+            if let Some(attaque) = attaque {
+                lignes.push(format!(
+                    "{} apprend {}.",
+                    nom_en_valeur(apres, Cote::Joueur),
+                    attaque.nom()
+                ));
+            }
+            lignes.push(AUTRES_ATTAQUES_AU_CAMP.to_string());
+            (lignes.join("\n"), true)
+        }
+        Evenement::EvolutionRepoussee(monstre) => (
+            format!(
+                "{} n'évolue pas pour l'instant.",
+                nom_en_valeur(monstre, Cote::Joueur)
             ),
             false,
         ),
@@ -369,6 +400,46 @@ mod tests {
             ]
         );
         assert!(raconter(&[Evenement::RetourAuCamp])[0].nouveau_paragraphe);
+    }
+
+    #[test]
+    fn l_evolution_dit_l_attaque_apprise_et_rappelle_le_camp() {
+        use bersemon_core::catalogue::Catalogue;
+        use bersemon_core::contenu::ContenuV1;
+        use bersemon_core::espece::EspeceId;
+        use bersemon_core::monstre::Monstre;
+        use bersemon_core::niveau::Niveau;
+        use bersemon_core::stats::ValeursInternes;
+
+        let contenu = ContenuV1::new();
+        let creer = |id: &str| {
+            Monstre::creer(
+                contenu.espece(&EspeceId::new(id)).unwrap(),
+                Niveau::new(16).unwrap(),
+                ValeursInternes::default(),
+                false,
+            )
+            .unwrap()
+        };
+        let apres = creer("lezard-de-braise");
+        let attaque = apres.attaques().liste()[0].clone();
+        let recits = raconter(&[
+            Evenement::Evolution {
+                avant: creer("salamandre"),
+                apres: apres.clone(),
+                attaque: Some(attaque.clone()),
+            },
+            Evenement::EvolutionRepoussee(creer("loup")),
+        ]);
+        assert_eq!(
+            recits[0].texte,
+            format!(
+                "**Salamandre** évolue en **Lézard de braise** !\n**Lézard de braise** apprend {}.\nD'autres attaques peuvent s'apprendre au camp.",
+                attaque.nom()
+            )
+        );
+        assert!(recits[0].nouveau_paragraphe);
+        assert_eq!(recits[1].texte, "**Loup** n'évolue pas pour l'instant.");
     }
 
     #[test]

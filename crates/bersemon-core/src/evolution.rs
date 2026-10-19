@@ -150,7 +150,10 @@ mod tests {
     #[test]
     fn possible_a_partir_du_niveau_de_la_condition() {
         let contenu = ContenuV1::new();
-        assert_eq!(evolution_possible(&salamandre(&contenu, 15), &contenu), None);
+        assert_eq!(
+            evolution_possible(&salamandre(&contenu, 15), &contenu),
+            None
+        );
         let vers = evolution_possible(&salamandre(&contenu, 16), &contenu).unwrap();
         assert_eq!(vers.id().as_str(), "lezard-de-braise");
         assert!(evolution_possible(&salamandre(&contenu, 40), &contenu).is_some());
@@ -220,8 +223,8 @@ mod tests {
     fn apprend_l_attaque_d_evolution_s_il_a_la_place() {
         let contenu = ContenuV1::new();
         let espece = contenu.espece(&EspeceId::new("salamandre")).unwrap();
-        let attaques = AttaquesMonstre::new(vec![espece.apprentissage()[0].attaque.clone()])
-            .unwrap();
+        let attaques =
+            AttaquesMonstre::new(vec![espece.apprentissage()[0].attaque.clone()]).unwrap();
         let mut monstre = Monstre::new(
             espece,
             niveau(16),
@@ -247,7 +250,9 @@ mod tests {
         let resultat = faire_evoluer(&mut monstre, vers);
         assert_eq!(resultat.attaque_apprise, None);
         assert_eq!(
-            resultat.attaque_en_attente.map(|attaque| attaque.id().clone()),
+            resultat
+                .attaque_en_attente
+                .map(|attaque| attaque.id().clone()),
             Some(AttaqueId::new("jet-de-lave"))
         );
         assert_eq!(monstre.attaques(), &avant);

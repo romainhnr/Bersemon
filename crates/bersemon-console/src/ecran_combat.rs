@@ -1,14 +1,16 @@
 //! Questions posées pendant un combat et à sa suite : action du tour,
-//! remplacement d'un monstre KO, capture des KO et attaque à oublier.
+//! remplacement d'un monstre KO, capture des KO, attaque à oublier et
+//! évolution.
 
 use bersemon_core::attaque::Attaque;
 use bersemon_core::collection::Collection;
 use bersemon_core::combat::{Action, Combat, Cote};
 use bersemon_core::deroulement::Choix;
+use bersemon_core::espece::Espece;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_core::soin::{Soin, Soins};
-use bersemon_presentation::partie::places_pour_une_capture;
+use bersemon_presentation::partie::{places_pour_une_capture, proposition_d_evolution};
 use bersemon_presentation::soins::{effet_du_soin, nom_du_soin};
 
 use crate::affichage;
@@ -134,6 +136,17 @@ pub fn choisir_capture(
 
 /// Le monstre connaît déjà 4 attaques : le joueur en oublie une pour
 /// apprendre la nouvelle, ou y renonce (Q33).
+/// Refusée, l'évolution sera proposée de nouveau au prochain niveau gagné
+/// (section 5.4).
+pub fn choisir_evolution(monstre: &Monstre, vers: &Espece, entree: &mut Entree) -> Option<Choix> {
+    let choix = if entree.confirmation(&proposition_d_evolution(monstre, vers))? {
+        Choix::Evoluer
+    } else {
+        Choix::NePasEvoluer
+    };
+    Some(choix)
+}
+
 pub fn choisir_attaque_a_oublier(
     monstre: &Monstre,
     nouvelle: &Attaque,

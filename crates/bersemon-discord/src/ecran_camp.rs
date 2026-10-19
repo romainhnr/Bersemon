@@ -8,6 +8,7 @@ use bersemon_core::codex::EtatCodex;
 use bersemon_core::collection::{Collection, Emplacement, TriDuCamp};
 use bersemon_core::combat::Cote;
 use bersemon_core::contenu::ContenuV1;
+use bersemon_core::evolution::evolution_possible;
 use bersemon_core::habilete::autre_habilete;
 use bersemon_core::horodatage::Horodatage;
 use bersemon_core::marchand::prix_de_revente;
@@ -37,14 +38,14 @@ pub fn question(
     match vue {
         Vue::Camp => principale(partie, contenu, maintenant),
         Vue::Codex(fiche) => codex(partie, fiche, contenu),
-        Vue::Gestion(choisi) => gestion(partie, choisi),
+        Vue::Gestion(choisi) => gestion(partie, choisi, contenu),
         Vue::Expeditions => ecran_expeditions_automatiques::liste(partie, contenu, maintenant),
         Vue::Preparation { zone, choisis } => {
             ecran_expeditions_automatiques::preparation(partie, contenu, zone, choisis, maintenant)
         }
         Vue::Marchand => ecran_marchand::etal(partie, contenu),
         Vue::Vente => ecran_marchand::vente(partie),
-        Vue::Attaques(emplacement) => attaques(partie, emplacement),
+        Vue::Attaques(emplacement) => attaques(partie, emplacement, contenu),
         Vue::Coffre => ecran_coffre::coffre(partie),
         Vue::Options => options(),
     }
@@ -151,9 +152,9 @@ fn codex(partie: &Partie, fiche: Option<usize>, contenu: &ContenuV1) -> Question
     if let Some(espece) = ouverte {
         lignes.push(String::new());
         lignes.push(espece.nom().to_string());
-        lignes.extend(fiche_d_espece(espece));
+        lignes.extend(fiche_d_espece(espece, contenu));
     }
-    let capturees = especes
+    let capturees: Vec<OptionDeMenu> = especes
         .iter()
         .enumerate()
         .filter(|(_, espece)| codex.etat(espece.id()) == EtatCodex::Capturee)
@@ -163,10 +164,21 @@ fn codex(partie: &Partie, fiche: Option<usize>, contenu: &ContenuV1) -> Question
             description: None,
         })
         .collect();
-    let mut rangees_du_codex: Vec<Rangee> =
-        menu(Cle::Fiche, "Voir la fiche d'une espèce capturée", capturees)
-            .into_iter()
-            .collect();
+    // 25 options au plus par menu : avec les formes évoluées, le codex
+    // dépasse 25 espèces (section 5.4).
+    let mut rangees_du_codex: Vec<Rangee> = capturees
+        .chunks(OPTIONS_PAR_MENU)
+        .enumerate()
+        .filter_map(|(numero, options)| {
+            let indication = if numero == 0 {
+                "Voir la fiche d'une espèce capturée".to_string()
+            } else {
+                format!("Voir la fiche d'une espèce capturée (suite {numero})")
+            };
+            let numero = u8::try_from(numero).ok()?;
+            menu(Cle::Fiche(numero), &indication, options.to_vec())
+        })
+        .collect();
     rangees_du_codex.extend(rangees(vec![retour()]));
     Question {
         texte: lignes.join("\n"),
@@ -176,7 +188,7 @@ fn codex(partie: &Partie, fiche: Option<usize>, contenu: &ContenuV1) -> Question
 
 /// Des menus pour choisir un monstre, puis les actions possibles pour le
 /// monstre choisi.
-fn gestion(partie: &Partie, choisi: Option<Emplacement>) -> Question {
+fn gestion(partie: &Partie, choisi: Option<Emplacement>, contenu: &ContenuV1) -> Question {
     let collection = partie.collection();
     let liste = liste_des_monstres(collection);
     let choisi = choisi.and_then(|emplacement| {
@@ -250,7 +262,8 @@ fn gestion(partie: &Partie, choisi: Option<Emplacement>) -> Question {
         let libelle = format!("Vendre ({})", argent(prix_de_revente(monstre)));
         boutons.push(bouton(Cle::VendreCeMonstre(emplacement), &libelle, DANGER));
     }
-    // Au plus 8 boutons : ils tiennent en deux rangées (section 5.9).
+    // Au plus 9 boutons : ils tiennent en deux rangées (sections 5.4 et
+    // 5.9).
     if partie.capsules_d_habilete() > 0 {
         if let Some(nouvelle) = autre_habilete(monstre) {
             let libelle = format!("Passer à {}", nouvelle.nom());
@@ -260,6 +273,10 @@ fn gestion(partie: &Partie, choisi: Option<Emplacement>) -> Question {
                 SECONDAIRE,
             ));
         }
+    }
+    if let Some(vers) = evolution_possible(monstre, contenu) {
+        let libelle = format!("Évoluer en {}", vers.nom());
+        boutons.push(bouton(Cle::FaireEvoluer(emplacement), &libelle, PRINCIPAL));
     }
     let mut lignes = rangees(boutons);
     lignes.extend(echange);
@@ -342,9 +359,9 @@ pub fn menus_de_monstres_decrits(
 
 /// Les attaques connues, puis un menu des attaques à apprendre ; s'il en
 /// connaît déjà 4, un menu par attaque à oublier (section 13.10).
-fn attaques(partie: &Partie, emplacement: Emplacement) -> Question {
+fn attaques(partie: &Partie, emplacement: Emplacement, contenu: &ContenuV1) -> Question {
     let Some(monstre) = partie.collection().monstre(emplacement) else {
-        return gestion(partie, None);
+        return gestion(partie, None, contenu);
     };
     let a_apprendre = partie.attaques_a_apprendre(emplacement).unwrap_or_default();
     let options = || -> Vec<OptionDeMenu> {

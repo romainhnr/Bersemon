@@ -5,7 +5,7 @@
 use bersemon_core::attaque::Attaque;
 use bersemon_core::codex::{Codex, EtatCodex};
 use bersemon_core::combat::{Combat, Combattant, Cote};
-use bersemon_core::espece::Espece;
+use bersemon_core::contenu::ContenuV1;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_core::soin::Soins;
@@ -152,7 +152,8 @@ pub fn equipe_en_expedition(partie: &Partie) -> String {
 
 /// Une espèce capturée montre aussi ses stats de base et ses attaques
 /// (section 5.6).
-pub fn codex(codex: &Codex, especes: &[Espece]) -> String {
+pub fn codex(codex: &Codex, contenu: &ContenuV1) -> String {
+    let especes = contenu.especes();
     let mut lignes = vec!["Codex :".to_string()];
     for (position, espece) in especes.iter().enumerate() {
         lignes.push(format!(
@@ -161,7 +162,7 @@ pub fn codex(codex: &Codex, especes: &[Espece]) -> String {
             ligne_du_codex(codex, espece)
         ));
         if codex.etat(espece.id()) == EtatCodex::Capturee {
-            for ligne in fiche_d_espece(espece) {
+            for ligne in fiche_d_espece(espece, contenu) {
                 lignes.push(format!("     {ligne}"));
             }
         }

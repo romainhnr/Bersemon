@@ -1,12 +1,14 @@
 //! Partie en cours : héros, camp, carte, codex et confirmations.
 
 use bersemon_core::capsule::Capsule;
+use bersemon_core::catalogue::Catalogue;
 use bersemon_core::codex::{Codex, EtatCodex};
 use bersemon_core::collection::Collection;
 use bersemon_core::combat::Cote;
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::{Annonce, Confirmation};
 use bersemon_core::espece::Espece;
+use bersemon_core::evolution::ConditionEvolution;
 use bersemon_core::expedition::Expedition;
 use bersemon_core::habilete::Habilete;
 use bersemon_core::heros::Classe;
@@ -293,9 +295,9 @@ pub fn types_connus(codex: &Codex, espece: &Espece) -> String {
     }
 }
 
-/// Types, habiletés possibles, stats de base et attaques, montrés pour une
-/// espèce capturée (sections 5.6 et 5.9).
-pub fn fiche_d_espece(espece: &Espece) -> [String; 4] {
+/// Types, habiletés possibles, stats de base, attaques et évolution, montrés
+/// pour une espèce capturée (sections 5.4, 5.6 et 5.9).
+pub fn fiche_d_espece(espece: &Espece, catalogue: &dyn Catalogue) -> Vec<String> {
     let base = espece.stats_de_base();
     let total = u32::from(base.pv)
         + u32::from(base.attaque)
@@ -325,12 +327,31 @@ pub fn fiche_d_espece(espece: &Espece) -> [String; 4] {
     } else {
         enumerer(&habiletes)
     };
-    [
+    let mut fiche = vec![
         format!("Types : {}", types_de(espece)),
         format!("Habiletés possibles : {habiletes}"),
         stats,
         format!("Attaques : {}", attaques.join(", ")),
-    ]
+    ];
+    let evolution = espece.evolution().and_then(|evolution| {
+        let vers = catalogue.espece(evolution.vers())?;
+        Some((vers, evolution.condition()))
+    });
+    if let Some((vers, condition)) = evolution {
+        fiche.push(format!(
+            "Évolution : {} {}",
+            vers.nom(),
+            condition_d_evolution(condition)
+        ));
+    }
+    fiche
+}
+
+/// Après le nom de l'espèce d'arrivée : "Lézard de braise au niveau 16".
+pub fn condition_d_evolution(condition: &ConditionEvolution) -> String {
+    match condition {
+        ConditionEvolution::Niveau(niveau) => format!("au niveau {}", niveau.valeur()),
+    }
 }
 
 pub fn question_de_confirmation(confirmation: &Confirmation) -> String {
@@ -358,11 +379,26 @@ pub fn question_de_confirmation(confirmation: &Confirmation) -> String {
             nouvelle.nom(),
             effet_d_habilete(*nouvelle)
         ),
+        Confirmation::Evoluer { monstre, vers } => format!(
+            "Faire évoluer {} en {} ? L'évolution est définitive.",
+            monstre.nom(),
+            vers.nom()
+        ),
         Confirmation::Suicide(heros) => format!(
             "Vous suicider ? Votre partie sera effacée pour de bon : {}, vos monstres, votre sac, votre coffre, votre codex et vos expéditions automatiques en cours.",
             heros.nom().as_str()
         ),
     }
+}
+
+/// Après un combat ; le joueur peut la repousser (section 5.4).
+pub fn proposition_d_evolution(monstre: &Monstre, vers: &Espece) -> String {
+    format!(
+        "{} peut évoluer en {}. Faire évoluer {} ?",
+        monstre.nom(),
+        vers.nom(),
+        monstre.nom()
+    )
 }
 
 /// L'équipe et le camp sont pleins (Q12).

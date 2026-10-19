@@ -99,6 +99,9 @@ fn demander(
         Attente::OubliAttaque { monstre, nouvelle } => {
             ecran_combat::choisir_attaque_a_oublier(monstre, nouvelle, entree)
         }
+        Attente::Evolution { monstre, vers } => {
+            ecran_combat::choisir_evolution(monstre, vers, entree)
+        }
         Attente::PlaceManquante(capture) => {
             let collection = deroulement.partie().expect(PARTIE_EN_JEU).collection();
             ecran_expedition::place_manquante(capture, collection, entree)

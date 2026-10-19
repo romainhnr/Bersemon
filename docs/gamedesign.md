@@ -195,6 +195,7 @@ Décidé le 19/10/2026, pour les étapes 37 à 40 :
 - Lieu (étape 40) : l'Armure hantée évolue en Chevalier noir si elle gagne un niveau dans la Vallée des Brumes, à partir du niveau 18, en expédition manuelle.
 - Événement (étape 40) : le Squelette évolue en Chevalier squelette s'il gagne un niveau, ou au camp, une fois le Baron pendu vaincu, à partir du niveau 20 : les morts de la Vallée s'éveillent à sa chute.
 - L'Elfe, le Baron pendu, le Schnoz et le marchand zombie n'évoluent pas. La Vouivre évoluera une fois, au niveau 45, plus tard.
+- Écrans, à l'étape 38 : après un combat, la question "Salamandre peut évoluer en Lézard de braise. Faire évoluer Salamandre ?", par oui ou non dans la console, par les boutons "Évoluer" et "Pas maintenant" sur Discord. Au camp, dans la console, la gestion des monstres propose "Faire évoluer un monstre", qui liste les monstres qui le peuvent et leur évolution, et "Vendre un monstre à Malvoise" passe au numéro 12 ; sur Discord, la fiche d'un monstre qui le peut montre le bouton "Évoluer en" suivi de l'espèce. La confirmation dit que l'évolution est définitive. Le récit annonce l'évolution, l'attaque apprise, et rappelle que d'autres attaques s'apprennent au camp. La fiche du codex dit l'évolution et sa condition ; sur Discord, le menu des fiches se coupe en menus de 25 espèces.
 
 ### 5.5 Personnalisation
 

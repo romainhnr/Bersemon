@@ -335,8 +335,9 @@ mod tests {
             fiche.contains("\nHabileté : Traqueur (chance de capture x1,25 quand il est actif)\n"),
             "{fiche}"
         );
-        let espece = crate::partie::fiche_d_espece(loup.espece());
+        let espece = crate::partie::fiche_d_espece(loup.espece(), &contenu);
         assert_eq!(espece[1], "Habiletés possibles : Traqueur et Fouineur");
+        assert_eq!(espece[4], "Évolution : Warg au niveau 16");
     }
 
     #[test]

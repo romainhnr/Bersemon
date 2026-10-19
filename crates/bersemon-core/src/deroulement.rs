@@ -946,7 +946,10 @@ impl EnJeu {
                         .partie
                         .estimer_evolution(*emplacement, contexte.contenu)
                         .map_err(ErreurChoix::Evolution)?;
-                    return Ok(Reponse::a_confirmer(Confirmation::Evoluer { monstre, vers }));
+                    return Ok(Reponse::a_confirmer(Confirmation::Evoluer {
+                        monstre,
+                        vers,
+                    }));
                 }
                 let (avant, resultat) = self
                     .partie
@@ -3067,7 +3070,14 @@ mod tests {
         assert_eq!(vers.id().as_str(), "lezard-de-braise");
         let evenements =
             repondre_sans_tirage(&mut deroulement, Choix::Oui, &contenu, &depot).unwrap();
-        let [Evenement::Evolution { avant, apres, attaque: None }] = &evenements[..] else {
+        let [
+            Evenement::Evolution {
+                avant,
+                apres,
+                attaque: None,
+            },
+        ] = &evenements[..]
+        else {
             panic!("évolution attendue : {evenements:?}");
         };
         assert_eq!(avant.espece().id().as_str(), "salamandre");
@@ -3082,8 +3092,7 @@ mod tests {
         assert_eq!(sauvegarde.attaques_a_choisir().len(), 1);
         let lezard = EspeceId::new("lezard-de-braise");
         assert_eq!(sauvegarde.codex().etat(&lezard), EtatCodex::Capturee);
-        repondre_sans_tirage(&mut deroulement, Choix::OublierAttaque(0), &contenu, &depot)
-            .unwrap();
+        repondre_sans_tirage(&mut deroulement, Choix::OublierAttaque(0), &contenu, &depot).unwrap();
         assert_eq!(deroulement.attente(), Attente::Camp);
         let monstre = &deroulement.partie().unwrap().collection().equipe()[0];
         assert!(monstre.attaques().connait(&AttaqueId::new("jet-de-lave")));
@@ -3091,7 +3100,9 @@ mod tests {
         let encore = Choix::FaireEvoluer(Emplacement::Equipe(0));
         assert_eq!(
             repondre_sans_tirage(&mut deroulement, encore, &contenu, &depot),
-            Err(ErreurChoix::Evolution(ErreurEvolution::ImpossiblePourLInstant))
+            Err(ErreurChoix::Evolution(
+                ErreurEvolution::ImpossiblePourLInstant
+            ))
         );
     }
 
@@ -3103,7 +3114,9 @@ mod tests {
         let evoluer = Choix::FaireEvoluer(Emplacement::Equipe(0));
         assert_eq!(
             repondre_sans_tirage(&mut deroulement, evoluer, &contenu, &depot),
-            Err(ErreurChoix::Evolution(ErreurEvolution::ImpossiblePourLInstant))
+            Err(ErreurChoix::Evolution(
+                ErreurEvolution::ImpossiblePourLInstant
+            ))
         );
         assert_eq!(deroulement.attente(), Attente::Camp);
     }
@@ -3141,7 +3154,10 @@ mod tests {
             };
             let evenements = deroulement.repondre(choix, &mut contexte).unwrap();
             if repousse {
-                assert!(matches!(&evenements[..], [Evenement::EvolutionRepoussee(_), ..]));
+                assert!(matches!(
+                    &evenements[..],
+                    [Evenement::EvolutionRepoussee(_), ..]
+                ));
             }
             if propositions.len() == 2 && deroulement.attente() == Attente::Camp {
                 break;

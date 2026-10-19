@@ -1,17 +1,19 @@
 //! Combat sur Discord : toutes les actions du tour dans un seul message, puis
-//! le remplacement d'un monstre KO, la capture des KO et l'attaque à oublier.
+//! le remplacement d'un monstre KO, la capture des KO, l'attaque à oublier
+//! et l'évolution.
 
 use bersemon_core::attaque::Attaque;
 use bersemon_core::codex::Codex;
 use bersemon_core::collection::Collection;
 use bersemon_core::combat::{ApercuAttaque, Combat, Combattant, Cote};
+use bersemon_core::espece::Espece;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_core::soin::{Soin, Soins};
 use bersemon_core::types::Efficacite;
 use bersemon_presentation::combat::{attaque_de_trop, attaque_en_combat, etat};
 use bersemon_presentation::monstres::{decrire_attaque, ligne_monstre, nom, nom_en_combat};
-use bersemon_presentation::partie::places_pour_une_capture;
+use bersemon_presentation::partie::{places_pour_une_capture, proposition_d_evolution};
 use bersemon_presentation::soins::nom_du_soin;
 use poise::serenity_prelude as serenity;
 
@@ -169,6 +171,18 @@ pub fn capture(combat: &Combat, collection: &Collection) -> Question {
 
 /// Le monstre connaît déjà 4 attaques : le joueur en oublie une pour
 /// apprendre la nouvelle, ou y renonce (Q33).
+/// Repoussée, l'évolution sera proposée de nouveau au prochain niveau gagné
+/// (section 5.4).
+pub fn evolution(monstre: &Monstre, vers: &Espece) -> Question {
+    Question {
+        texte: proposition_d_evolution(monstre, vers),
+        rangees: rangees(vec![
+            bouton(Cle::Evoluer, "Évoluer", PRINCIPAL),
+            bouton(Cle::NePasEvoluer, "Pas maintenant", SECONDAIRE),
+        ]),
+    }
+}
+
 pub fn oubli(monstre: &Monstre, nouvelle: &Attaque) -> Question {
     let connues = monstre.attaques().liste();
     let lignes: Vec<String> = connues

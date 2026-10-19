@@ -806,13 +806,42 @@ const ATTAQUES: [FicheAttaque; 63] = [
     // Attaques d'évolution (section 5.4).
     fiche("jet-de-lave", "Jet de lave", Type::Feu, Speciale, 85, 90),
     fiche("trombe", "Trombe", Type::Eau, Physique, 85, 90),
-    avec_effet(fiche("hurlement-de-mandragore", "Hurlement de mandragore", Type::Plante, Speciale, 75, 100), Paralysie, 20),
-    fiche("griffe-d-ombre", "Griffe d'ombre", Type::Tenebres, Physique, 80, 95),
+    avec_effet(
+        fiche(
+            "hurlement-de-mandragore",
+            "Hurlement de mandragore",
+            Type::Plante,
+            Speciale,
+            75,
+            100,
+        ),
+        Paralysie,
+        20,
+    ),
+    fiche(
+        "griffe-d-ombre",
+        "Griffe d'ombre",
+        Type::Tenebres,
+        Physique,
+        80,
+        95,
+    ),
     fiche("croc-noir", "Croc noir", Type::Tenebres, Physique, 75, 95),
     fiche("bec-funeste", "Bec funeste", Type::Vol, Physique, 75, 95),
-    avec_effet(fiche("venin-noir", "Venin noir", Type::Poison, Speciale, 75, 100), Poison, 30),
+    avec_effet(
+        fiche("venin-noir", "Venin noir", Type::Poison, Speciale, 75, 100),
+        Poison,
+        30,
+    ),
     fiche("nuee", "Nuée", Type::Insecte, Speciale, 75, 100),
-    fiche("regard-de-mort", "Regard de mort", Type::Poison, Speciale, 85, 90),
+    fiche(
+        "regard-de-mort",
+        "Regard de mort",
+        Type::Poison,
+        Speciale,
+        85,
+        90,
+    ),
 ];
 
 struct FicheCapsule {
@@ -900,7 +929,11 @@ enum FicheCondition {
     Niveau(u8),
 }
 
-const fn par_niveau(vers: &'static str, niveau: u8, attaque: &'static str) -> Option<FicheEvolution> {
+const fn par_niveau(
+    vers: &'static str,
+    niveau: u8,
+    attaque: &'static str,
+) -> Option<FicheEvolution> {
     Some(FicheEvolution {
         vers,
         condition: FicheCondition::Niveau(niveau),

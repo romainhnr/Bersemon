@@ -48,7 +48,7 @@ pub fn choisir(
     loop {
         let sous_menu = match menu.ouvert {
             SousMenu::Aucun => None,
-            SousMenu::Gestion => Some(gerer(partie, entree)?),
+            SousMenu::Gestion => Some(gerer(partie, contenu, entree)?),
             SousMenu::Coffre => Some(ecran_coffre::choisir(partie, entree)?),
             SousMenu::Marchand => Some(ecran_marchand::choisir(partie, contenu, entree)?),
         };
@@ -91,7 +91,7 @@ pub fn choisir(
                 None
             }
             5 => {
-                println!("{}", affichage::codex(partie.codex(), contenu.especes()));
+                println!("{}", affichage::codex(partie.codex(), contenu));
                 None
             }
             6 if marchand => {
@@ -129,7 +129,7 @@ fn carte(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Option<Op
 }
 
 /// `Some(None)` au retour vers le menu du camp.
-fn gerer(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
+fn gerer(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Option<Option<Choix>> {
     let collection = partie.collection();
     let marchand = partie.marchand_au_camp();
     loop {
@@ -149,11 +149,12 @@ fn gerer(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
             "  10. Changer l'habileté d'un monstre ({})",
             capsules_d_habilete(partie.capsules_d_habilete())
         );
+        println!("  11. Faire évoluer un monstre");
         if marchand {
-            println!("  11. Vendre un monstre à Malvoise");
+            println!("  12. Vendre un monstre à Malvoise");
         }
         println!("  0. Retour");
-        let dernier = if marchand { 11 } else { 10 };
+        let dernier = if marchand { 12 } else { 11 };
         let gestion = |action: Option<ActionDeGestion>| action.map(Choix::Gerer);
         let choix = match entree.choix(0, dernier)? {
             0 => return Some(None),
@@ -170,6 +171,7 @@ fn gerer(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
             8 => attaques(partie, entree)?,
             9 => gestion(trier(entree)?),
             10 => changer_d_habilete(collection, entree)?,
+            11 => faire_evoluer(partie, contenu, entree)?,
             _ => vendre(collection, entree)?,
         };
         if let Some(choix) = choix {
@@ -318,6 +320,30 @@ fn changer_d_habilete(collection: &Collection, entree: &mut Entree) -> Option<Op
         "Sur quel monstre utiliser une capsule d'habileté ?",
     )?;
     Some(emplacement.map(Choix::ChangerDHabilete))
+}
+
+/// Parmi les monstres qui en remplissent la condition ; la confirmation est
+/// demandée par le déroulement (section 5.4).
+fn faire_evoluer(
+    partie: &Partie,
+    contenu: &ContenuV1,
+    entree: &mut Entree,
+) -> Option<Option<Choix>> {
+    let possibles = partie.evolutions_possibles(contenu);
+    if possibles.is_empty() {
+        println!("Aucun monstre ne peut évoluer pour l'instant.");
+        return Some(None);
+    }
+    println!("Quel monstre faire évoluer ? (0 pour annuler)");
+    for (numero, (emplacement, vers)) in possibles.iter().enumerate() {
+        let monstre = partie
+            .collection()
+            .monstre(*emplacement)
+            .expect("emplacement de la collection");
+        println!("  {}. {} en {}", numero + 1, monstre.nom(), vers.nom());
+    }
+    let choix = entree.choix(0, possibles.len())?;
+    Some((choix > 0).then(|| Choix::FaireEvoluer(possibles[choix - 1].0)))
 }
 
 /// Avec le prix de chaque monstre ; la confirmation est demandée par le

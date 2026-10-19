@@ -128,8 +128,9 @@ pub enum Cle {
     /// Menu des zones.
     Partir,
     Afficher(Vue),
-    /// Menu des espèces capturées du codex.
-    Fiche,
+    /// Menu numéroté des espèces capturées du codex : il en faut plusieurs
+    /// au-delà de 25 espèces.
+    Fiche(u8),
     /// Menu des monstres à gérer.
     Choisir(u8),
     Monter(usize),
@@ -166,6 +167,11 @@ pub enum Cle {
     NePlusCapturer,
     Oublier(usize),
     Renoncer,
+    /// Répond à l'évolution proposée après un combat (section 5.4).
+    Evoluer,
+    NePasEvoluer,
+    /// Au camp, le monstre choisi dans la gestion.
+    FaireEvoluer(Emplacement),
     /// Menu de monstres numéroté : le monstre choisi s'ajoute à ceux de
     /// l'expédition automatique en préparation.
     Ajouter {
@@ -230,7 +236,7 @@ impl Cle {
             Cle::Non => jouer(Choix::Non),
             Cle::Partir => jouer(Choix::PartirEnExpedition(ZoneId::new(valeur?))),
             Cle::Afficher(vue) => Some(Commande::Afficher(*vue)),
-            Cle::Fiche => Some(Commande::Afficher(Vue::Codex(Some(position()?)))),
+            Cle::Fiche(_) => Some(Commande::Afficher(Vue::Codex(Some(position()?)))),
             Cle::Choisir(_) => Some(Commande::Afficher(Vue::Gestion(Some(lire_emplacement(
                 valeur?,
             )?)))),
@@ -282,6 +288,9 @@ impl Cle {
             Cle::NePlusCapturer => jouer(Choix::NePlusCapturer),
             Cle::Oublier(index) => jouer(Choix::OublierAttaque(*index)),
             Cle::Renoncer => jouer(Choix::RenoncerALAttaque),
+            Cle::Evoluer => jouer(Choix::Evoluer),
+            Cle::NePasEvoluer => jouer(Choix::NePasEvoluer),
+            Cle::FaireEvoluer(emplacement) => jouer(Choix::FaireEvoluer(*emplacement)),
             Cle::Ajouter { zone, choisis, .. } => Some(Commande::Afficher(Vue::Preparation {
                 zone: *zone,
                 choisis: choisis.avec(lire_emplacement(valeur?)?)?,
@@ -349,7 +358,7 @@ impl Cle {
             }
             Cle::Afficher(Vue::Coffre) => "vue:coffre".to_string(),
             Cle::Afficher(Vue::Options) => "vue:options".to_string(),
-            Cle::Fiche => "fiche".to_string(),
+            Cle::Fiche(numero) => format!("fiche:{numero}"),
             Cle::Choisir(numero) => format!("choisir:{numero}"),
             Cle::Monter(index) => format!("monter:{index}"),
             Cle::Descendre(index) => format!("descendre:{index}"),
@@ -384,6 +393,11 @@ impl Cle {
             Cle::NePlusCapturer => "ne-plus-capturer".to_string(),
             Cle::Oublier(index) => format!("oublier:{index}"),
             Cle::Renoncer => "renoncer".to_string(),
+            Cle::Evoluer => "evoluer".to_string(),
+            Cle::NePasEvoluer => "ne-pas-evoluer".to_string(),
+            Cle::FaireEvoluer(emplacement) => {
+                format!("faire-evoluer:{}", emplacement_en_texte(*emplacement))
+            }
             Cle::Ajouter {
                 menu,
                 zone,
@@ -465,7 +479,10 @@ impl Cle {
             "acheter-capsule" => Cle::AcheterCapsule,
             "acheter-capsule-d-habilete" => Cle::AcheterCapsuleDHabilete,
             "donner-ame" => Cle::DonnerAme,
-            "fiche" => Cle::Fiche,
+            // Le menu unique d'avant l'étape 38 (section 5.4).
+            "fiche" => Cle::Fiche(0),
+            "evoluer" => Cle::Evoluer,
+            "ne-pas-evoluer" => Cle::NePasEvoluer,
             "continuer" => Cle::Continuer,
             "rentrer" => Cle::Rentrer,
             "soin" => Cle::Soin,
@@ -530,6 +547,8 @@ impl Cle {
                     "vendre" => Cle::Vendre(numero()?),
                     "vendre-monstre" => Cle::VendreCeMonstre(emplacement()?),
                     "changer-habilete" => Cle::ChangerDHabilete(emplacement()?),
+                    "faire-evoluer" => Cle::FaireEvoluer(emplacement()?),
+                    "fiche" => Cle::Fiche(numero()?),
                     "apprendre" => {
                         let (emplacement, oubliee) = parametre.split_once(':')?;
                         let oubliee = match oubliee {
@@ -686,7 +705,8 @@ mod tests {
             Cle::Afficher(Vue::Codex(Some(10))),
             Cle::Afficher(Vue::Gestion(None)),
             Cle::Afficher(Vue::Gestion(Some(Emplacement::Camp(29)))),
-            Cle::Fiche,
+            Cle::Fiche(0),
+            Cle::Fiche(1),
             Cle::Choisir(2),
             Cle::Monter(1),
             Cle::Descendre(0),
@@ -715,6 +735,9 @@ mod tests {
             Cle::NePlusCapturer,
             Cle::Oublier(0),
             Cle::Renoncer,
+            Cle::Evoluer,
+            Cle::NePasEvoluer,
+            Cle::FaireEvoluer(Emplacement::Camp(12)),
             Cle::Afficher(Vue::Expeditions),
             Cle::Afficher(Vue::Preparation {
                 zone: 1,

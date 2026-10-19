@@ -293,7 +293,7 @@ fn jouer_un_coup(
             let premier = Emplacement::Equipe(0);
             match *tour {
                 1 => cliquer(message, |cle| *cle == Cle::Afficher(Vue::Codex(None))),
-                2 => choisir_dans(message, |cle| *cle == Cle::Fiche, "0").expect("fiche"),
+                2 => choisir_dans(message, |cle| matches!(cle, Cle::Fiche(_)), "0").expect("fiche"),
                 3 => cliquer(message, |cle| *cle == Cle::Afficher(Vue::Camp)),
                 4 => cliquer(message, |cle| *cle == Cle::Afficher(Vue::Gestion(None))),
                 5 => choisir_dans(message, |cle| matches!(cle, Cle::Choisir(_)), "e0")
@@ -383,6 +383,10 @@ fn jouer_un_coup(
             } else {
                 cliquer(message, |cle| *cle == Cle::Renoncer)
             }
+        }
+        Attente::Evolution { .. } => {
+            assert!(propose(message, |cle| *cle == Cle::NePasEvoluer));
+            cliquer(message, |cle| *cle == Cle::Evoluer)
         }
         Attente::PlaceManquante(_) => cliquer(message, |cle| *cle == Cle::RelacherLaCapture),
         Attente::Annonce(_) => cliquer(message, |cle| *cle == Cle::Poursuivre),
@@ -688,6 +692,8 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
             .any(|evenement| matches!(evenement, Evenement::RangeAuCoffre(_))),
         "sac jamais rangé"
     );
+    // La Salamandre de départ évolue après un combat (section 5.4).
+    assert!(compter(|evenement| matches!(evenement, Evenement::Evolution { .. })) > 0);
     let session = joueurs.session(JOUEUR, &contenu);
     assert_eq!(session.deroulement.attente(), Attente::Camp);
     let partie = session.deroulement.partie().unwrap();
@@ -796,10 +802,11 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
     use bersemon_core::stats::ValeursInternes;
 
     let contenu = ContenuV1::new();
+    // Au niveau 16, chacun peut évoluer (section 5.4).
     let creer = |id: &str| {
         Monstre::creer(
             contenu.espece(&EspeceId::new(id)).unwrap(),
-            Niveau::new(10).unwrap(),
+            Niveau::new(16).unwrap(),
             ValeursInternes::default(),
             false,
         )
@@ -838,6 +845,11 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         }
         inventaire
     };
+    // Toutes les espèces capturées : le codex a plus de 25 fiches.
+    let mut codex = partie.codex().clone();
+    for espece in contenu.especes() {
+        codex.noter_capture(espece.id());
+    }
     let etat = |donnees: Vec<&str>, portees: Vec<&str>| EtatPartie {
         heros: partie.heros().clone(),
         collection: partie.collection().clone(),
@@ -847,7 +859,7 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         ames_donnees: donnees.into_iter().map(marchand).collect(),
         ames_portees: portees.into_iter().map(marchand).collect(),
         ames_a_retrouver: Vec::new(),
-        codex: partie.codex().clone(),
+        codex: codex.clone(),
         zones_explorees: vec![ZoneId::new("lisiere")],
         indices_trouves: 1,
         apotres_vaincus: Vec::new(),
@@ -883,6 +895,11 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         for emplacement in [Emplacement::Equipe(1), Emplacement::Camp(0)] {
             let cles = afficher(&partie, Vue::Gestion(Some(emplacement)));
             assert!(cles.contains(&Cle::ChangerDHabilete(emplacement)));
+            assert!(cles.contains(&Cle::FaireEvoluer(emplacement)));
+        }
+        let dernier = contenu.especes().len() - 1;
+        for fiche in [None, Some(0), Some(dernier)] {
+            afficher(&partie, Vue::Codex(fiche));
         }
     }
 }

@@ -7,12 +7,12 @@ use crate::aleatoire::Aleatoire;
 use crate::ame::{MarchandId, MarchandMort};
 use crate::attaque::{Attaque, AttaqueId, ErreurAttaquesMonstre};
 use crate::capsule::{Capsule, ErreurApprentissage, attaques_a_apprendre};
+use crate::catalogue::Catalogue;
 use crate::codex::Codex;
 use crate::collection::{Collection, Emplacement, ErreurCollection, Placement};
 use crate::combat::{BilanCombat, Combat, ErreurCombat, Issue};
 use crate::espece::{Espece, EspeceId};
 use crate::evolution::{ErreurEvolution, ResultatEvolution, evolution_possible, faire_evoluer};
-use crate::catalogue::Catalogue;
 use crate::expedition::{ErreurExpedition, Expedition, RencontreDeLAme};
 use crate::expedition_automatique::{
     BilanExpeditionAutomatique, ErreurExpeditionAutomatique, Estimation, ExpeditionAutomatique,
@@ -516,8 +516,8 @@ impl Partie {
             .ok_or(ErreurEvolution::Collection(
                 ErreurCollection::EmplacementInexistant(emplacement),
             ))?;
-        let vers =
-            evolution_possible(monstre, catalogue).ok_or(ErreurEvolution::ImpossiblePourLInstant)?;
+        let vers = evolution_possible(monstre, catalogue)
+            .ok_or(ErreurEvolution::ImpossiblePourLInstant)?;
         Ok((monstre.clone(), vers))
     }
 
@@ -543,6 +543,29 @@ impl Partie {
             });
         }
         Ok((avant, resultat))
+    }
+
+    /// Les monstres de l'équipe puis du camp qui peuvent évoluer au camp, et
+    /// en quelle espèce (section 5.4).
+    pub fn evolutions_possibles(&self, catalogue: &dyn Catalogue) -> Vec<(Emplacement, Espece)> {
+        let equipe = self
+            .collection
+            .equipe()
+            .iter()
+            .enumerate()
+            .map(|(index, monstre)| (Emplacement::Equipe(index), monstre));
+        let camp = self
+            .collection
+            .camp()
+            .iter()
+            .enumerate()
+            .map(|(index, monstre)| (Emplacement::Camp(index), monstre));
+        equipe
+            .chain(camp)
+            .filter_map(|(emplacement, monstre)| {
+                Some((emplacement, evolution_possible(monstre, catalogue)?))
+            })
+            .collect()
     }
 
     /// Une évolution après un combat, sur l'équipe du bilan.
