@@ -1438,7 +1438,7 @@ impl EnExpedition {
                     humain.avant_combat().to_string(),
                 ));
                 let combat = partie
-                    .preparer_combat_contre_humain(equipe)
+                    .preparer_combat_contre_humain(equipe, humain.ia())
                     .expect(EQUIPE_APTE);
                 self.engager(partie, combat, evenements)
             }

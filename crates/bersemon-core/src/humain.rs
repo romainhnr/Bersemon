@@ -12,6 +12,16 @@ use crate::stats::{Stats, ValeursInternes};
 /// même pour tous les joueurs (section 10.7).
 const VALEUR_INTERNE: u8 = 15;
 
+/// IA d'un humain (section 10.7).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum IaHumain {
+    /// L'attaque aux dégâts estimés les plus hauts.
+    Simple,
+    /// La même, et un changement de monstre quand le sien ne peut que peu ou
+    /// pas blesser.
+    Relevee,
+}
+
 /// Identifiant stable d'un humain, enregistré dans la sauvegarde une fois
 /// qu'il est vaincu.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -64,11 +74,13 @@ pub struct Humain {
     argent: u32,
     avant_combat: String,
     apres_victoire: String,
+    ia: IaHumain,
 }
 
 impl Humain {
     /// Vérifie que chaque monstre de son équipe peut être créé à son niveau :
-    /// sa génération ne peut ensuite plus échouer.
+    /// sa génération ne peut ensuite plus échouer. Son IA est simple, sauf
+    /// autre donnée avec `avec_ia`.
     pub fn new(
         id: HumainId,
         nom: impl Into<String>,
@@ -95,7 +107,17 @@ impl Humain {
             argent,
             avant_combat: avant_combat.into(),
             apres_victoire: apres_victoire.into(),
+            ia: IaHumain::Simple,
         })
+    }
+
+    pub fn avec_ia(mut self, ia: IaHumain) -> Self {
+        self.ia = ia;
+        self
+    }
+
+    pub fn ia(&self) -> IaHumain {
+        self.ia
     }
 
     pub fn id(&self) -> &HumainId {

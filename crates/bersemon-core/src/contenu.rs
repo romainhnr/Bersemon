@@ -18,7 +18,7 @@ use crate::expedition::ParametresCoffre;
 use crate::expedition_automatique::ParametresExpeditionAutomatique;
 use crate::habilete::Habilete;
 use crate::heros::Classe;
-use crate::humain::{Humain, HumainId};
+use crate::humain::{Humain, HumainId, IaHumain};
 use crate::niveau::Niveau;
 use crate::stats::Stats;
 use crate::statut::Statut;
@@ -159,7 +159,8 @@ impl ContenuV1 {
             AVANT_LE_BOURREAU,
             APRES_LE_BOURREAU,
         )
-        .expect("Bourreau conforme aux règles");
+        .expect("Bourreau conforme aux règles")
+        .avec_ia(IaHumain::Relevee);
         let lisiere = Zone::new(
             ZoneId::new("lisiere"),
             "Lisière du Bois-Sombre",
@@ -1376,6 +1377,8 @@ mod tests {
             .map(|monstre| monstre.niveau().valeur())
             .collect();
         assert_eq!(niveaux, vec![14, 14, 15]);
+        assert_eq!(brigand.ia(), IaHumain::Simple);
+        assert_eq!(bourreau.ia(), IaHumain::Relevee);
         assert!(contenu.zones()[2].humain().is_none());
     }
 

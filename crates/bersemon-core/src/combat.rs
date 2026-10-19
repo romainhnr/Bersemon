@@ -24,6 +24,7 @@ use crate::capture::calculer_chance_capture;
 use crate::degats::{ResultatAttaque, a_le_bonus_de_type, estimer_degats, resoudre_attaque};
 use crate::experience::tirer_gain_experience;
 use crate::habilete::{BONUS_D_INSTINCT, Habilete, majorer};
+use crate::humain::IaHumain;
 use crate::inventaire::{ErreurPotion, appliquer_potion, verifier_cible};
 use crate::monstre::{Monstre, RapportExperience};
 use crate::stats::{BonusDeStats, Stats, appliquer_bonus, cumuler_bonus};
@@ -230,9 +231,10 @@ pub struct Combat {
     potions: u32,
     /// Face à un Apôtre, ni fuite ni filet (section 9.4).
     contre_un_apotre: bool,
-    /// Face à un humain, ni fuite ni filet, une IA qui choisit son attaque
-    /// et une seule capture après la victoire (section 10.7).
+    /// Face à un humain, ni fuite ni filet, et une seule capture après la
+    /// victoire (section 10.7).
     contre_un_humain: bool,
+    ia: Ia,
     phase: Phase,
 }
 
@@ -262,6 +264,7 @@ impl Combat {
             potions: 0,
             contre_un_apotre: false,
             contre_un_humain: false,
+            ia: Ia::Hasard,
             phase: Phase::ChoixAction,
         };
         combat.noter_participation();
@@ -280,9 +283,10 @@ impl Combat {
     }
 
     /// Combat contre un Apôtre : ni fuite ni filet ; il ne se capture que KO,
-    /// après la victoire (section 9.4).
+    /// après la victoire (section 9.4). Son IA est avancée (section 10.7).
     pub fn contre_un_apotre(mut self) -> Self {
         self.contre_un_apotre = true;
+        self.ia = Ia::Avancee;
         self
     }
 
@@ -291,10 +295,14 @@ impl Combat {
     }
 
     /// Combat contre un humain et son équipe : ni fuite ni filet, son IA
-    /// choisit l'attaque la plus forte, et le joueur ne prend qu'un de ses
-    /// monstres après la victoire (section 10.7).
-    pub fn contre_un_humain(mut self) -> Self {
+    /// ne joue pas au hasard, et le joueur ne prend qu'un de ses monstres
+    /// après la victoire (section 10.7).
+    pub fn contre_un_humain(mut self, ia: IaHumain) -> Self {
         self.contre_un_humain = true;
+        self.ia = match ia {
+            IaHumain::Simple => Ia::PlusForte,
+            IaHumain::Relevee => Ia::PlusForteEtChangement,
+        };
         self
     }
 
@@ -406,23 +414,40 @@ impl Combat {
             Phase::Termine(_) => return Err(ErreurCombat::CombatTermine),
         }
         self.valider(action)?;
-        let attaque_adversaire = if self.contre_un_humain {
-            self.attaque_la_plus_forte()
-        } else {
-            choisir_attaque_au_hasard(self.monstre(self.actif(Cote::Adversaire)), aleatoire)
-        };
+        // L'IA décide avant de connaître l'action du joueur.
+        let action_adversaire = self.choisir_action_adversaire(aleatoire);
 
         let mut evenements = Vec::new();
+        // Un changement de monstre passe avant toute attaque ; celui du
+        // joueur, s'il change aussi, passe le premier.
+        if !matches!(action, Action::Changer(_)) {
+            self.changer_d_adversaire(action_adversaire, &mut evenements);
+        }
+        let attaque_adversaire = match action_adversaire {
+            ActionAdversaire::Attaquer(attaque) => Some(attaque),
+            ActionAdversaire::Changer(_) => None,
+        };
         match action {
-            Action::Attaquer(attaque_joueur) => {
-                for cote in self.ordre_du_tour(aleatoire) {
-                    let attaque = match cote {
-                        Cote::Joueur => attaque_joueur,
-                        Cote::Adversaire => attaque_adversaire,
-                    };
-                    self.attaquer(cote, attaque, false, aleatoire, &mut evenements);
+            Action::Attaquer(attaque_joueur) => match attaque_adversaire {
+                Some(attaque_adversaire) => {
+                    for cote in self.ordre_du_tour(aleatoire) {
+                        let attaque = match cote {
+                            Cote::Joueur => attaque_joueur,
+                            Cote::Adversaire => attaque_adversaire,
+                        };
+                        self.attaquer(cote, attaque, false, aleatoire, &mut evenements);
+                    }
                 }
-            }
+                None => {
+                    self.attaquer(
+                        Cote::Joueur,
+                        attaque_joueur,
+                        false,
+                        aleatoire,
+                        &mut evenements,
+                    );
+                }
+            },
             // Changer de monstre, lancer un filet ou utiliser une potion passe
             // avant toute attaque, comme dans Pokémon, et laisse l'adversaire
             // agir.
@@ -430,23 +455,12 @@ impl Combat {
                 self.actif_joueur = index;
                 self.noter_participation();
                 evenements.push(Evenement::MonstreEnvoye(self.actif(Cote::Joueur)));
-                self.attaquer(
-                    Cote::Adversaire,
-                    attaque_adversaire,
-                    false,
-                    aleatoire,
-                    &mut evenements,
-                );
+                self.changer_d_adversaire(action_adversaire, &mut evenements);
+                self.riposter(attaque_adversaire, false, aleatoire, &mut evenements);
             }
             Action::LancerFilet => {
                 if !self.lancer_filet(aleatoire, &mut evenements) {
-                    self.attaquer(
-                        Cote::Adversaire,
-                        attaque_adversaire,
-                        false,
-                        aleatoire,
-                        &mut evenements,
-                    );
+                    self.riposter(attaque_adversaire, false, aleatoire, &mut evenements);
                 }
             }
             Action::UtiliserPotion(index) => {
@@ -459,22 +473,10 @@ impl Combat {
                     },
                     pv_rendus,
                 });
-                self.attaquer(
-                    Cote::Adversaire,
-                    attaque_adversaire,
-                    false,
-                    aleatoire,
-                    &mut evenements,
-                );
+                self.riposter(attaque_adversaire, false, aleatoire, &mut evenements);
             }
             Action::Fuir => {
-                self.attaquer(
-                    Cote::Adversaire,
-                    attaque_adversaire,
-                    true,
-                    aleatoire,
-                    &mut evenements,
-                );
+                self.riposter(attaque_adversaire, true, aleatoire, &mut evenements);
                 evenements.push(Evenement::Fuite);
                 self.terminer_avec(Issue::Fuite, &mut evenements);
                 return Ok(evenements);
@@ -597,34 +599,189 @@ impl Combat {
             .collect()
     }
 
-    /// IA simple d'un humain : l'attaque aux dégâts estimés les plus hauts
-    /// contre le monstre actif du joueur, la première à égalité ; aucun
-    /// tirage (section 10.7).
-    fn attaque_la_plus_forte(&self) -> usize {
-        let attaquant = self.actif(Cote::Adversaire);
+    /// Seule l'IA du hasard tire au sort ; les autres ne tirent rien
+    /// (sections 10.1 et 10.7).
+    fn choisir_action_adversaire(&self, aleatoire: &mut dyn Aleatoire) -> ActionAdversaire {
+        let actif = self.actif(Cote::Adversaire);
+        match self.ia {
+            Ia::Hasard => ActionAdversaire::Attaquer(choisir_attaque_au_hasard(
+                self.monstre(actif),
+                aleatoire,
+            )),
+            Ia::PlusForte => ActionAdversaire::Attaquer(self.attaque_la_plus_forte(actif).0),
+            Ia::PlusForteEtChangement => match self.changement_utile() {
+                Some(index) => ActionAdversaire::Changer(index),
+                None => ActionAdversaire::Attaquer(self.attaque_la_plus_forte(actif).0),
+            },
+            Ia::Avancee => ActionAdversaire::Attaquer(self.attaque_de_l_ia_avancee()),
+        }
+    }
+
+    fn changer_d_adversaire(&mut self, action: ActionAdversaire, evenements: &mut Vec<Evenement>) {
+        if let ActionAdversaire::Changer(index) = action {
+            self.actif_adversaire = index;
+            self.noter_participation();
+            evenements.push(Evenement::MonstreEnvoye(self.actif(Cote::Adversaire)));
+        }
+    }
+
+    /// L'adversaire attaque, s'il n'a pas changé de monstre.
+    fn riposter(
+        &mut self,
+        attaque: Option<usize>,
+        fuite: bool,
+        aleatoire: &mut dyn Aleatoire,
+        evenements: &mut Vec<Evenement>,
+    ) {
+        if let Some(attaque) = attaque {
+            self.attaquer(Cote::Adversaire, attaque, fuite, aleatoire, evenements);
+        }
+    }
+
+    /// Pour chaque attaque du monstre adverse, ses dégâts estimés contre le
+    /// monstre actif du joueur.
+    fn estimations_contre_le_joueur(&self, attaquant: Combattant) -> Vec<(u32, u32)> {
         let cible = self.actif(Cote::Joueur);
         let stats_attaquant = self.stats_en_combat(attaquant);
         let stats_cible = self.stats_en_combat(cible);
-        let mut meilleure = (0, 0);
-        for (position, attaque) in self
-            .monstre(attaquant)
+        self.monstre(attaquant)
             .attaques()
             .liste()
             .iter()
+            .map(|attaque| {
+                estimer_degats(
+                    self.monstre(attaquant),
+                    &stats_attaquant,
+                    attaque,
+                    self.monstre(cible),
+                    &stats_cible,
+                )
+            })
+            .collect()
+    }
+
+    /// IA simple d'un humain : l'attaque aux dégâts estimés les plus hauts
+    /// contre le monstre actif du joueur, la première à égalité (section
+    /// 10.7). Rend sa position et ce haut de fourchette.
+    fn attaque_la_plus_forte(&self, attaquant: Combattant) -> (usize, u32) {
+        let mut meilleure = (0, 0);
+        for (position, (_, degats_max)) in self
+            .estimations_contre_le_joueur(attaquant)
+            .into_iter()
             .enumerate()
         {
-            let (_, degats_max) = estimer_degats(
-                self.monstre(attaquant),
-                &stats_attaquant,
-                attaque,
-                self.monstre(cible),
-                &stats_cible,
-            );
             if degats_max > meilleure.1 {
                 meilleure = (position, degats_max);
             }
         }
-        meilleure.0
+        meilleure
+    }
+
+    /// IA relevée : si le monstre actif n'a que des attaques peu efficaces ou
+    /// sans effet contre le monstre actif du joueur, le monstre de l'équipe
+    /// adverse dont la meilleure attaque fait plus de dégâts estimés que la
+    /// sienne ; celui qui fait le plus, le premier à égalité (section 10.7).
+    fn changement_utile(&self) -> Option<usize> {
+        let actif = self.actif(Cote::Adversaire);
+        let defenseur = self.monstre(self.actif(Cote::Joueur)).espece().types();
+        let peu_efficace = self
+            .monstre(actif)
+            .attaques()
+            .liste()
+            .iter()
+            .all(|attaque| {
+                matches!(
+                    efficacite(attaque.type_attaque(), defenseur),
+                    Efficacite::Nulle | Efficacite::TresReduite | Efficacite::Reduite
+                )
+            });
+        if !peu_efficace {
+            return None;
+        }
+        let mut meilleur = (None, self.attaque_la_plus_forte(actif).1);
+        for index in 0..self.adversaires.len() {
+            let candidat = Combattant {
+                cote: Cote::Adversaire,
+                index,
+            };
+            if index == actif.index
+                || self.adversaires[index].est_ko()
+                || self.captures.contains(&index)
+            {
+                continue;
+            }
+            let degats = self.attaque_la_plus_forte(candidat).1;
+            if degats > meilleur.1 {
+                meilleur = (Some(index), degats);
+            }
+        }
+        meilleur.0
+    }
+
+    /// IA avancée de l'Apôtre (section 10.7) : la plus précise des attaques
+    /// qui mettent KO à coup sûr si elles touchent, la plus forte à précision
+    /// égale ; sinon l'attaque aux dégâts moyens attendus les plus hauts,
+    /// sauf qu'une attaque à statut que la cible peut subir et qui en vaut
+    /// au moins 80 % lui est préférée.
+    fn attaque_de_l_ia_avancee(&self) -> usize {
+        let attaquant = self.actif(Cote::Adversaire);
+        let cible = self.monstre(self.actif(Cote::Joueur));
+        let attaques = self.monstre(attaquant).attaques().liste();
+        let estimations = self.estimations_contre_le_joueur(attaquant);
+
+        let mut achevement: Option<(usize, u8, u32)> = None;
+        for (position, attaque) in attaques.iter().enumerate() {
+            let (minimum, maximum) = estimations[position];
+            if minimum == 0 || minimum < cible.pv_actuels() {
+                continue;
+            }
+            let meilleure = match achevement {
+                None => true,
+                Some((_, precision, plus_forte)) => {
+                    attaque.precision() > precision
+                        || (attaque.precision() == precision && maximum > plus_forte)
+                }
+            };
+            if meilleure {
+                achevement = Some((position, attaque.precision(), maximum));
+            }
+        }
+        if let Some((position, _, _)) = achevement {
+            return position;
+        }
+
+        // Dégâts moyens attendus, multipliés par 200 pour rester entiers :
+        // (minimum + maximum) x précision.
+        let attendus: Vec<u64> = attaques
+            .iter()
+            .zip(&estimations)
+            .map(|(attaque, (minimum, maximum))| {
+                u64::from(minimum + maximum) * u64::from(attaque.precision())
+            })
+            .collect();
+        let mut meilleure = 0;
+        for (position, attendu) in attendus.iter().enumerate() {
+            if *attendu > attendus[meilleure] {
+                meilleure = position;
+            }
+        }
+        let mut preferee: Option<usize> = None;
+        for (position, attaque) in attaques.iter().enumerate() {
+            let statut_possible = attaque
+                .effet()
+                .is_some_and(|effet| cible.peut_subir(effet.statut()));
+            let presque_aussi_bonne = attendus[position] * 100 >= attendus[meilleure] * 80;
+            let mieux_que_preferee =
+                preferee.is_none_or(|autre| attendus[position] > attendus[autre]);
+            if statut_possible
+                && presque_aussi_bonne
+                && attendus[position] > 0
+                && mieux_que_preferee
+            {
+                preferee = Some(position);
+            }
+        }
+        preferee.unwrap_or(meilleure)
     }
 
     /// Retient que le monstre actif du joueur affronte le monstre adverse
@@ -910,6 +1067,26 @@ fn tenter_effet(
     touche && cible.infliger_statut(effet.statut())
 }
 
+/// Façon dont l'adversaire choisit son action (sections 10.1 et 10.7).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Ia {
+    /// Monstres sauvages : une attaque au hasard (Q24).
+    Hasard,
+    /// Humain ordinaire.
+    PlusForte,
+    /// Humain qui termine la deuxième zone.
+    PlusForteEtChangement,
+    /// Apôtre.
+    Avancee,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ActionAdversaire {
+    Attaquer(usize),
+    /// Envoie ce monstre de son équipe, à la place de l'actif.
+    Changer(usize),
+}
+
 /// IA des monstres sauvages de la V1 : une attaque au hasard (Q24).
 fn choisir_attaque_au_hasard(monstre: &Monstre, aleatoire: &mut dyn Aleatoire) -> usize {
     let nombre = monstre.attaques().liste().len();
@@ -926,6 +1103,7 @@ mod tests {
     use crate::aleatoire::AleatoireScripte;
     use crate::attaque::Categorie;
     use crate::donnees_de_test::{attaque, monstre, stats_uniformes};
+    use crate::humain::IaHumain;
     use crate::niveau::Niveau;
     use crate::stats::Stats;
     use crate::types::Type;
@@ -1350,7 +1528,7 @@ mod tests {
 
     #[test]
     fn ni_fuite_ni_filet_face_a_un_humain() {
-        let mut combat = combat(vec![rapide()], vec![lent()]).contre_un_humain();
+        let mut combat = combat(vec![rapide()], vec![lent()]).contre_un_humain(IaHumain::Simple);
         assert!(!combat.fuite_possible() && !combat.filet_possible());
         assert_eq!(
             combat.jouer_tour(Action::Fuir, &mut AleatoireScripte::new([])),
@@ -1376,10 +1554,96 @@ mod tests {
             5,
             vec![coup(), braise.clone()],
         );
-        let mut combat = combat(vec![plante], vec![adversaire]).contre_un_humain();
+        let mut combat = combat(vec![plante], vec![adversaire]).contre_un_humain(IaHumain::Simple);
         // Braise, très efficace contre la Plante, l'emporte sur le coup.
         let evenements = tour(&mut combat, Action::Attaquer(0), &[2, 100, 2, 100]);
         assert_eq!(evenements[2], lancee(a(0), braise));
+    }
+
+    /// Un joueur Eau, rapide, face à un monstre Feu qui n'a que Braise, peu
+    /// efficace, et un monstre Plante dont le Fouet est très efficace.
+    fn combat_contre_un_humain(ia: IaHumain) -> Combat {
+        let base_rapide = Stats {
+            vitesse: 60,
+            ..stats_uniformes(50)
+        };
+        let eau = monstre(&[Type::Eau], base_rapide, 5, vec![coup()]);
+        let braise = attaque("braise", Type::Feu, Categorie::Speciale, 40, 100);
+        let fouet = attaque("fouet", Type::Plante, Categorie::Physique, 40, 100);
+        let feu = monstre(&[Type::Feu], stats_uniformes(50), 5, vec![braise]);
+        let plante = monstre(&[Type::Plante], stats_uniformes(50), 5, vec![fouet]);
+        combat(vec![eau], vec![feu, plante]).contre_un_humain(ia)
+    }
+
+    #[test]
+    fn l_ia_relevee_change_de_monstre_quand_le_sien_blesse_peu() {
+        let mut combat = combat_contre_un_humain(IaHumain::Relevee);
+        // Le changement passe avant l'attaque du joueur, qui touche le
+        // nouveau venu ; l'adversaire n'attaque pas, et aucun tirage ne
+        // départage l'ordre du tour.
+        let evenements = tour(&mut combat, Action::Attaquer(0), &[2, 100]);
+        assert_eq!(evenements[0], Evenement::MonstreEnvoye(a(1)));
+        assert_eq!(evenements[1], lancee(j(0), coup()));
+        assert!(
+            !evenements
+                .iter()
+                .any(|evenement| matches!(evenement, Evenement::AttaqueLancee { lanceur, .. } if lanceur.cote == Cote::Adversaire))
+        );
+        assert_eq!(combat.actif(Cote::Adversaire), a(1));
+    }
+
+    #[test]
+    fn l_ia_simple_ne_change_pas_de_monstre() {
+        let mut combat = combat_contre_un_humain(IaHumain::Simple);
+        let evenements = tour(&mut combat, Action::Attaquer(0), &[2, 100, 2, 100]);
+        assert!(matches!(
+            evenements[2],
+            Evenement::AttaqueLancee { lanceur, .. } if lanceur == a(0)
+        ));
+    }
+
+    /// Normal, puissance 120, précision 50 : 9 à 11 dégâts au niveau 5.
+    fn gros_coup() -> Attaque {
+        attaque("gros-coup", Type::Normal, Categorie::Physique, 120, 50)
+    }
+
+    /// Comme le coup, avec 20 % de paralysie : 4 à 5 dégâts.
+    fn cri() -> Attaque {
+        attaque("cri", Type::Normal, Categorie::Speciale, 40, 100)
+            .avec_effet(EffetSecondaire::new(Statut::Paralysie, 20).unwrap())
+    }
+
+    fn contre_un_apotre(joueur: Monstre, attaques: Vec<Attaque>) -> Combat {
+        let apotre = monstre(&[Type::Feu], stats_uniformes(50), 5, attaques);
+        combat(vec![joueur], vec![apotre]).contre_un_apotre()
+    }
+
+    #[test]
+    fn l_ia_avancee_acheve_avec_l_attaque_la_plus_precise() {
+        let mut combat = contre_un_apotre(affaibli(rapide(), 3), vec![gros_coup(), coup()]);
+        let evenements = tour(&mut combat, Action::Attaquer(0), &[2, 100, 2, 100]);
+        assert_eq!(evenements[2], lancee(a(0), coup()));
+    }
+
+    #[test]
+    fn l_ia_avancee_vise_les_degats_moyens_attendus() {
+        // Gros coup : (9 + 11) x 50 = 1000 ; coup : (4 + 5) x 100 = 900.
+        let mut combat = contre_un_apotre(rapide(), vec![coup(), gros_coup()]);
+        let evenements = tour(&mut combat, Action::Attaquer(0), &[2, 100, 50, 2, 100]);
+        assert_eq!(evenements[2], lancee(a(0), gros_coup()));
+    }
+
+    #[test]
+    fn l_ia_avancee_prefere_un_statut_presque_aussi_bon() {
+        // Le cri vaut 90 % du gros coup et la cible peut être paralysée.
+        let mut combat = contre_un_apotre(rapide(), vec![coup(), gros_coup(), cri()]);
+        let evenements = tour(&mut combat, Action::Attaquer(0), &[2, 100, 2, 100, 100]);
+        assert_eq!(evenements[2], lancee(a(0), cri()));
+        // Déjà paralysée, elle ne peut plus l'être : le gros coup revient.
+        // Le joueur, ralenti, agit en second.
+        let mut combat = contre_un_apotre(paralyse(rapide()), vec![coup(), gros_coup(), cri()]);
+        let evenements = tour(&mut combat, Action::Attaquer(0), &[50, 2, 100, 2, 2, 100]);
+        assert_eq!(evenements[0], lancee(a(0), gros_coup()));
     }
 
     #[test]
@@ -1388,7 +1652,7 @@ mod tests {
             vec![rapide()],
             vec![affaibli(lent(), 1), affaibli(lent(), 1)],
         )
-        .contre_un_humain();
+        .contre_un_humain(IaHumain::Simple);
         tour(&mut combat, Action::Attaquer(0), &[2, 100]);
         tour(&mut combat, Action::Attaquer(0), &[2, 100]);
         assert_eq!(combat.adversaires_capturables(), vec![0, 1]);

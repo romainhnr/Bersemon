@@ -18,7 +18,7 @@ use crate::expedition_automatique::{
 use crate::habilete::{BONUS_DU_PILLARD, CHANCES_DU_FOUINEUR, Habilete};
 use crate::heros::Heros;
 use crate::horodatage::Horodatage;
-use crate::humain::{Humain, HumainId};
+use crate::humain::{Humain, HumainId, IaHumain};
 use crate::inventaire::{ErreurObjet, ErreurPotion, Inventaire, Objet};
 use crate::marchand::{ErreurMarchand, PRIX_DE_LA_POTION, prix_de_revente};
 use crate::monstre::{Monstre, tirer_shiny, tirer_valeurs_internes};
@@ -541,8 +541,10 @@ impl Partie {
     pub fn preparer_combat_contre_humain(
         &mut self,
         equipe: Vec<Monstre>,
+        ia: IaHumain,
     ) -> Result<Combat, ErreurCombat> {
-        self.preparer_combat(equipe).map(Combat::contre_un_humain)
+        self.preparer_combat(equipe)
+            .map(|combat| combat.contre_un_humain(ia))
     }
 
     /// Un humain vaincu ne revient plus ; son argent va dans le sac (section
