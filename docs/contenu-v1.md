@@ -70,12 +70,27 @@ Catégorie : P pour physique, S pour spéciale. L'effet est la chance d'infliger
 | furie-draconique | Furie draconique | Dragon | P | 85 | 90 | |
 | etreinte-obscure | Étreinte obscure | Obscur | P | 80 | 95 | |
 | hurlement-des-abysses | Hurlement des abysses | Obscur | S | 80 | 100 | paralysie 10 % |
+| jet-de-lave | Jet de lave | Feu | S | 85 | 90 | |
+| trombe | Trombe | Eau | P | 85 | 90 | |
+| hurlement-de-mandragore | Hurlement de mandragore | Plante | S | 75 | 100 | paralysie 20 % |
+| griffe-d-ombre | Griffe d'ombre | Ténèbres | P | 80 | 95 | |
+| croc-noir | Croc noir | Ténèbres | P | 75 | 95 | |
+| bec-funeste | Bec funeste | Vol | P | 75 | 95 | |
+| venin-noir | Venin noir | Poison | S | 75 | 100 | poison 30 % |
+| nuee | Nuée | Insecte | S | 75 | 100 | |
+| flamme-funebre | Flamme funèbre | Spectre | S | 80 | 100 | |
+| rayon-de-lune | Rayon de lune | Féérique | S | 85 | 100 | |
+| taille-d-acier | Taille d'acier | Acier | P | 85 | 90 | |
+| epee-des-morts | Épée des morts | Combat | P | 85 | 95 | |
+| regard-de-mort | Regard de mort | Poison | S | 85 | 90 | |
 
 Brasier, Déferlante et Lianes étrangleuses sont ajoutées après la V1, le 18/10/2026, pour les capsules d'attaque (section 6) : aucune espèce ne les apprend.
 
 Coup sournois, Feulement, Coup de grâce, Éclat astral et Rayon astral sont ajoutées à l'étape 27, le 19/10/2026 : les trois premières pour le Chat noir, les deux autres pour le Schnoz. Le type Stellaire est neutre envers tous les types en attendant le type Obscur (gamedesign.md, section 5.2).
 
-Les huit dernières attaques sont ajoutées à l'étape 30, le 19/10/2026 : six pour les monstres de la Vallée des Brumes, deux, de type Obscur, pour le Baron pendu. Maléfice, Bourrasque et Furie draconique sont aussi les capsules de la Vallée (section 6).
+Les huit attaques de Maléfice à Hurlement des abysses sont ajoutées à l'étape 30, le 19/10/2026 : six pour les monstres de la Vallée des Brumes, deux, de type Obscur, pour le Baron pendu. Maléfice, Bourrasque et Furie draconique sont aussi les capsules de la Vallée (section 6).
+
+Les treize dernières attaques, de Jet de lave à Regard de mort, sont ajoutées à l'étape 37, le 19/10/2026 : ce sont les attaques d'évolution (section 8).
 
 ## 2. Espèces
 
@@ -410,6 +425,8 @@ Revente d'un monstre au marchand, depuis l'étape 26 : son niveau multiplié par
 
 Prix du marchand : une potion coûte 20. Il vend toutes les capsules d'attaque. Depuis l'étape 31, c'est Malvoise qui tient l'étal ; il vend aussi le remède (25), la grande potion (60) et l'élixir (150), chacun une fois l'âme de son marchand recueillie.
 
+Pierres d'évolution, ajoutées à l'étape 39 le 19/10/2026 (gamedesign.md, section 5.4) : la Pierre de braise (identifiant pierre-de-braise) et la Pierre de lune (pierre-de-lune), 300 chacune, vendues par Malvoise, et trouvées dans un coffre sur 10, tirées entre les deux. Elles se consomment. Prix et taux sont des hypothèses (gamedesign.md, Q84).
+
 Capsule d'habileté, ajoutée à l'étape 35 le 19/10/2026 (gamedesign.md, section 5.9) : 200, vendue par Malvoise, et trouvée dans un coffre sur 10. Elle fait passer un monstre à l'autre habileté de son espèce et se consomme.
 
 Ressources, ajoutées à l'étape 36 le 19/10/2026 (gamedesign.md, section 14.3) : une par espèce sauvage qui peut être combattue, lâchée 1 fois sur 3 par un monstre sauvage mis KO et non capturé, après un combat gagné. Malvoise les rachète 5 pour une espèce commune, 15 pour une rare. Noms, taux et prix sont des hypothèses (Q82).
@@ -467,3 +484,58 @@ Ajoutées à l'étape 28, le 19/10/2026 (gamedesign.md, section 5.9). Chaque esp
 | Vouivre | Affinité, Férocité |
 
 Valeurs : +10 % pour les habiletés de stats (Férocité, Carapace, Sorcellerie, Volonté, Célérité), +20 % de dégâts pour Affinité, +20 % d'XP pour Instinct, -20 % de durée pour Éclaireur, capture x1,25 pour Traqueur, +50 % d'argent pour Pillard, une potion 1 fois sur 4 pour Fouineur.
+
+## 8. Évolutions
+
+Ajoutées le 19/10/2026, pour les étapes 37 à 40 (gamedesign.md, section 5.4), contenu validé par l'utilisateur. Stats de base dans l'ordre PV / Attaque / Défense / Attaque spéciale / Défense spéciale / Vitesse.
+
+Chaque forme évoluée garde le rôle, la rareté et les habiletés de sa forme de base (hypothèse, gamedesign.md, Q84), n'a pas de ressource, et son rendement d'XP vaut 1,4 fois celui de sa forme de base, arrondi à l'entier inférieur. Dans le codex, les formes évoluées viennent après les 17 espèces d'avant l'étape 37, dans l'ordre du tableau.
+
+| Forme de base | Identifiant | Évolution | Condition | Types | Stats de base (total) | Rendement d'XP | Attaque d'évolution | Autre attaque, au même niveau |
+|---|---|---|---|---|---|---|---|---|
+| Salamandre | lezard-de-braise | Lézard de braise | niveau 16 | Feu | 60 / 50 / 55 / 92 / 70 / 83 (410) | 86 | Jet de lave | Souffle putride |
+| Crapaud | crapaud-geant | Crapaud géant | niveau 16 | Eau | 72 / 88 / 70 / 45 / 58 / 67 (400) | 88 | Trombe | Déferlante |
+| Mandragore | mandragore-ancienne | Mandragore ancienne | niveau 16 | Plante | 90 / 58 / 90 / 58 / 84 / 30 (410) | 89 | Hurlement de mandragore | Lianes étrangleuses |
+| Chat noir | chat-des-ombres | Chat des ombres | niveau 16 | Ténèbres | 52 / 92 / 45 / 50 / 48 / 113 (400) | 86 | Griffe d'ombre | Maléfice |
+| Loup | warg | Warg | niveau 16 | Normal, Ténèbres | 65 / 80 / 58 / 38 / 52 / 75 (368) | 98 | Croc noir | Coup sournois |
+| Corbeau | corbeau-des-gibets | Corbeau des gibets | niveau 16 | Vol, Ténèbres | 55 / 72 / 48 / 58 / 48 / 90 (371) | 92 | Bec funeste | Bourrasque |
+| Vipère | aspic | Aspic | niveau 16 | Poison | 52 / 64 / 52 / 64 / 58 / 80 (370) | 95 | Venin noir | Croc de venin |
+| Fée noire | fee-sorciere | Fée-sorcière | niveau 12 (type Insecte) | Insecte, Ténèbres | 50 / 44 / 50 / 84 / 64 / 96 (388) | 100 | Nuée | Sentence |
+| Basilic | basilic-royal | Basilic royal | niveau 22 (type Dragon) | Poison, Dragon | 90 / 88 / 80 / 92 / 75 / 70 (495) | 238 | Regard de mort | Furie draconique |
+| Feu follet | lanterne-des-morts | Lanterne des morts | Pierre de braise | Feu, Spectre | 58 / 38 / 52 / 90 / 78 / 96 (412) | 119 | Flamme funèbre | Brasier |
+| Cerf blanc | cerf-de-lune | Cerf de lune | Pierre de lune | Normal, Féérique | 85 / 75 / 75 / 82 / 88 / 95 (500) | 210 | Rayon de lune | aucune |
+| Armure hantée | chevalier-noir | Chevalier noir | niveau 18, dans la Vallée des Brumes | Acier, Spectre | 75 / 95 / 105 / 38 / 62 / 38 (413) | 133 | Taille d'acier | Frisson d'outre-tombe |
+| Squelette | chevalier-squelette | Chevalier squelette | niveau 20, Baron pendu vaincu | Spectre, Combat | 62 / 100 / 75 / 38 / 56 / 69 (400) | 128 | Épée des morts | Coup de garde |
+
+Attaques apprises : celles de la forme de base, aux mêmes niveaux, puis l'attaque d'évolution et l'autre attaque au niveau de la condition ; au niveau 1 pour une évolution par pierre. Exemple, Lézard de braise : Souffle chaud (niv. 1), Crachat de braises (niv. 3), Souffle draconique (niv. 7), Flamme vive (niv. 10), Fournaise (niv. 14), Jet de lave (niv. 16), Souffle putride (niv. 16).
+
+Stades suivants, nommés seulement, à coder avec des zones au-delà du niveau 20 (gamedesign.md, Q84) :
+
+| Lignée | Deuxième évolution | Troisième évolution |
+|---|---|---|
+| Salamandre, Lézard de braise | Wyverne de cendre (Feu, Dragon), niveau 36 | Dragon de feu, niveau 70 |
+| Crapaud, Crapaud géant | Crapaud-roi (Eau, Poison), niveau 36 | aucune |
+| Mandragore, Mandragore ancienne | Arbre-pendu (Plante, Spectre), niveau 36 | aucune |
+| Chat noir, Chat des ombres | Cait sith (Ténèbres, Spectre), niveau 36 | aucune |
+| Loup, Warg | Loup-garou (Combat, Ténèbres), niveau 36 | aucune |
+| Fée noire, Fée-sorcière | Reine des ronces, niveau 25 | aucune |
+
+La Vouivre évoluera une fois, en Dragon des brumes, au niveau 45. L'Elfe, le Baron pendu, le Schnoz et le marchand zombie n'évoluent pas ; les autres espèces s'arrêtent à leur première évolution.
+
+Textes, avec le nom affiché du monstre et le nom de l'espèce. Proposition, après un combat :
+
+> Salamandre peut évoluer en Lézard de braise. Faire évoluer Salamandre ?
+
+Les réponses sont "Évoluer" et "Pas maintenant". Au camp, la confirmation :
+
+> Faire évoluer Salamandre en Lézard de braise ? L'évolution est définitive.
+
+Après l'évolution, suivi de l'attaque apprise, comme à la montée de niveau, puis du rappel :
+
+> Salamandre évolue en Lézard de braise !
+
+> D'autres attaques peuvent s'apprendre au camp.
+
+Refus après un combat :
+
+> Salamandre n'évolue pas pour l'instant.

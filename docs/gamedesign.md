@@ -175,6 +175,27 @@ Chaque monstre possède :
   - une situation ou un lieu particulier.
 - Une évolution augmente les stats, peut modifier le ou les types et change la forme du monstre.
 
+Décidé le 19/10/2026, pour les étapes 37 à 40 :
+
+- Une espèce évolue 0, 1, 2 ou 3 fois : une lignée compte au plus 4 stades. Chaque stade est une espèce à part, avec son nom, ses types, ses stats de base, ses attaques et ses habiletés.
+- Niveaux d'évolution d'une espèce standard : 16 pour la première évolution, 36 pour la deuxième, 64 pour la troisième. Le type Insecte évolue plus tôt (12, 25, 50), le type Dragon plus tard (22, 45, 70). Ce sont les types de la forme qui évolue qui comptent ; une espèce à la fois Insecte et Dragon suivrait la grille standard (aucune aujourd'hui). Ces niveaux sont des repères : chaque espèce a le sien, fixé dans docs/contenu-v1.md, section 8.
+- Conditions : un niveau atteint ; une pierre d'évolution utilisée au camp ; un niveau atteint dans un lieu donné ; un niveau atteint après un événement donné.
+- Les zones s'arrêtent au niveau 20 : seules les premières évolutions sont jouables et codées. Les stades suivants sont seulement nommés (docs/contenu-v1.md, section 8) et seront codés avec des zones plus hautes.
+- Une évolution est proposée au joueur, qui peut la refuser ou la repousser :
+  - après un combat, à un monstre qui a gagné au moins un niveau pendant ce combat et qui remplit la condition, après ses attaques apprises. Refusée, elle sera proposée de nouveau au prochain niveau gagné ;
+  - au camp, depuis la gestion des monstres, tout monstre qui remplit une condition de niveau ou d'événement peut évoluer à la demande, après confirmation. Une condition de lieu ne se remplit qu'en expédition, après un combat dans ce lieu ;
+  - au retour d'une expédition automatique, rien n'est proposé : le monstre évoluera au camp, à la demande (hypothèse retenue, Q84).
+- Ce que change l'évolution : l'espèce, donc les stats de base, les types et la liste des attaques apprises. Les PV actuels augmentent d'autant que les PV max, sauf pour un monstre KO, qui le reste. L'habileté garde sa position : la première habileté de l'espèce donne la première de l'évolution, la seconde la seconde. Les capsules d'habileté (section 5.9) restent valables.
+- Ce qui ne change pas : les valeurs internes, le shiny, le surnom, le niveau, l'XP, le statut et les attaques connues.
+- Attaque d'évolution : chaque évolution enseigne une attaque liée à la nouvelle forme. S'il en connaît déjà 4, le joueur choisit celle à oublier ou renonce, comme à la montée de niveau (section 7) ; au camp, ce choix se fait comme au retour d'une expédition automatique (section 12.7). Une attaque refusée se réapprend au camp.
+- La liste d'attaques d'une forme évoluée reprend celle de sa forme de base, puis l'attaque d'évolution et une autre attaque au niveau de l'évolution : le récit de l'évolution rappelle que d'autres attaques peuvent s'apprendre au camp (section 13.10).
+- La forme évoluée compte comme capturée au codex. Elle a la rareté de sa forme de base, ne lâche pas de ressource et se revend au prix de sa propre espèce (section 14.5). Hypothèse retenue (Q84) : elle a les mêmes habiletés que sa forme de base, dans le même ordre.
+- Les monstres sauvages et ceux des humains restent à leur forme de base, quel que soit leur niveau. Un monstre capturé, ou d'une sauvegarde antérieure, déjà au-delà de son niveau d'évolution, pourra évoluer au camp ou au prochain niveau gagné.
+- Pierres d'évolution (étape 39) : la Pierre de braise fait évoluer le Feu follet, la Pierre de lune le Cerf blanc, à tout niveau. Elles s'utilisent au camp, depuis la gestion des monstres, après confirmation, et se consomment. Elles se trouvent dans un coffre sur 10, tirées entre les deux, et Malvoise les vend 300 pièces d'argent. Elles se rangent dans le sac ou le coffre, se déplacent par lots et se perdent avec le sac (section 9.3). Taux et prix sont des hypothèses (Q84).
+- Lieu (étape 40) : l'Armure hantée évolue en Chevalier noir si elle gagne un niveau dans la Vallée des Brumes, à partir du niveau 18, en expédition manuelle.
+- Événement (étape 40) : le Squelette évolue en Chevalier squelette s'il gagne un niveau, ou au camp, une fois le Baron pendu vaincu, à partir du niveau 20 : les morts de la Vallée s'éveillent à sa chute.
+- L'Elfe, le Baron pendu, le Schnoz et le marchand zombie n'évoluent pas. La Vouivre évoluera une fois, au niveau 45, plus tard.
+
 ### 5.5 Personnalisation
 
 Le joueur peut :
@@ -183,7 +204,8 @@ Le joueur peut :
 - ajuster ses attaques, au camp : réapprendre une attaque de son espèce ou en apprendre une nouvelle grâce à une capsule d'attaque (section 13.10) ;
 - ajuster ses statistiques à l'aide d'objets ;
 - depuis l'étape 35, changer son habileté pour l'autre de son espèce, au camp, avec une capsule d'habileté (section 5.9) ;
-- consulter le codex, par exemple pour savoir quand il évolue.
+- consulter le codex, par exemple pour savoir quand il évolue. Depuis l'étape 38, la fiche d'une espèce capturée dit son évolution et sa condition (section 5.4) ;
+- depuis l'étape 37, le faire évoluer au camp, depuis la gestion des monstres, quand il en remplit la condition (section 5.4).
 
 ### 5.6 Codex
 
@@ -266,6 +288,7 @@ Capsule d'habileté, décidée le 19/10/2026 pour l'étape 35 :
 - L'XP est versée à la fin du combat, quelle que soit son issue ; les montées de niveau et l'apprentissage d'attaques se font donc après le combat, jamais pendant.
 - Chaque espèce a une liste d'attaques apprises à des niveaux donnés. En atteignant un de ces niveaux, le monstre apprend l'attaque ; s'il en connaît déjà 4, le joueur choisit l'attaque à oublier ou renonce à la nouvelle. Un monstre créé à un niveau donné connaît les 4 dernières attaques de sa liste jusqu'à ce niveau.
 - Une expédition automatique réussie rapporte aussi de l'XP (section 12.6).
+- Depuis l'étape 37, après les attaques apprises, un monstre qui remplit la condition de son évolution se la voit proposer (section 5.4).
 - Le héros n'a pas de niveau dans la V1 (section 4.1).
 
 ## 8. Boucle de gameplay
@@ -677,7 +700,7 @@ Premier marchand, après la V1 :
 - Écrans, à l'étape 36 : les ressources s'écrivent avec leur nombre entre parenthèses, "Croc de loup (3)". Après une victoire, le récit dit celles que le joueur ramasse. Dans la console, l'étal de Malvoise propose "Vendre des ressources", par sorte, et le coffre les déplace au nombre choisi. Sur Discord, la vente des monstres devient "Vendre monstres et ressources", avec un menu des ressources, et le coffre a deux menus à part pour elles, une ou toutes de chaque sorte.
 - Capsule d'habileté, depuis l'étape 35 (section 5.9).
 - Argent (monnaie).
-- Objets d'évolution.
+- Objets d'évolution : depuis l'étape 39, la Pierre de braise et la Pierre de lune (section 5.4).
 - Objets de protection pour les expéditions automatiques.
 - Capsules d'attaque, qui enseignent une attaque (section 13.10).
 - Ressource très rare permettant de réanimer un monstre (en suspens, section 5.7).
@@ -712,6 +735,7 @@ Premier marchand, après la V1 :
 | Rencontre du marchand | 10 % des étapes d'une expédition manuelle, tant qu'il n'est pas au camp ; remplacée à l'étape 31 par l'âme du marchand de la zone, tant qu'elle n'est pas recueillie (section 14.2) |
 | Capsule d'habileté (étape 35) | 200 ; un coffre sur 10 (section 5.9) |
 | Ressource rachetée par Malvoise (étape 36) | 5 pour une espèce commune, 15 pour une rare ; lâchée 1 fois sur 3 (section 14.3) |
+| Pierre d'évolution (étape 39) | 300 ; un coffre sur 10 (section 5.4) |
 
 Repères : un Loup de niveau 5 se revend 28 pièces d'argent, un Feu follet de niveau 10 64, un Cerf blanc de niveau 5 80, un Schnoz de niveau 10 180, le Baron pendu au niveau 15 576. Une expédition dans la Lisière rapporte de l'ordre de 40 à 60 pièces d'argent avec une ou deux captures revendues, une expédition dans le Marais de 100 à 130. Ces estimations datent des expéditions de 4 à 6 étapes ; depuis l'étape 26, elles en comptent 3 dans la Lisière et 4 dans le Marais, et 5 partout depuis l'étape 33. Une expédition croise le marchand 27 fois sur 100 dans la Lisière, 34 dans le Marais. À vérifier en jouant.
 
@@ -753,6 +777,10 @@ Les questions Q81 et suivantes ont été relevées le 19/10/2026 lors de la conc
 
 - Q81. (Étape 35) Capsule d'habileté : prix de 200 pièces d'argent et un coffre sur 10, hypothèses retenues, à confirmer en jouant.
 - Q82. (Étape 36) Ressources : leurs noms, la chance de 1 sur 3, les prix de 5 et 15 et le rachat de toute une sorte d'un coup sont des hypothèses retenues. Leurs usages futurs (fabrication, améliorations, sections 13.4 et 13.5) restent à définir.
+Les questions Q84 et suivantes ont été relevées le 19/10/2026 lors de la conception des étapes 37 règles de l'évolution et premières évolutions par niveau, 38 écrans de l'évolution, 39 pierres d'évolution et sauvegarde en version 13, 40 évolutions par lieu et par événement.
+
+- Q84. (Étapes 37 à 40) Hypothèses retenues, à confirmer : les formes évoluées ont les mêmes habiletés que leur forme de base ; au retour d'une expédition automatique, aucune évolution n'est proposée, le monstre évolue au camp à la demande ; une condition de lieu ne se remplit qu'en expédition manuelle ; les pierres d'évolution valent 300 et se trouvent dans un coffre sur 10 ; le rendement d'XP d'une forme évoluée vaut 1,4 fois celui de sa forme de base ; la fiche du codex nomme l'évolution, même pas encore rencontrée. Restent à définir : les stades 3 et 4, à coder avec des zones au-delà du niveau 20, et des formes évoluées sauvages dans ces zones.
+
 - Q83. (Étapes 33 et 34) Hypothèses retenues, à confirmer : le gardien d'une âme à retrouver attaque à une étape tirée parmi celles qui précèdent la dernière ; le don d'une âme à Malvoise se fait sans confirmation ; une partie antérieure qui n'a pas recueilli l'âme de Bertrand le rencontre à l'étape 4 de sa prochaine expédition dans la Lisière, même avec Malvoise déjà au camp ; le texte du brigand de l'étape 5 ne change pas, même s'il a perdu son Loup à l'étape 4.
 
 ## 17. Journal des décisions
@@ -1067,3 +1095,12 @@ Les questions Q81 et suivantes ont été relevées le 19/10/2026 lors de la conc
 
 - Q83 en partie : la bête du brigand qui attaque à l'étape 4 de la Lisière, à la place de Bertrand, est toujours un Loup de niveau 7, tiré comme un monstre sauvage ; combat ordinaire, fuite et filet compris.
 - Rappel : les combats contre un humain de fin de zone ou un Apôtre sont uniques ; vaincus, ils laissent la place à un événement ordinaire. C'était déjà la règle (sections 9.4 et 10.7) et le code la suivait.
+
+19/10/2026 (conception des étapes 37 à 40, évolution) :
+
+- Évolution : 0 à 3 évolutions par espèce, chaque stade étant une espèce ; repères de niveau 16 / 36 / 64, 12 / 25 / 50 pour le type Insecte, 22 / 45 / 70 pour le type Dragon (section 5.4).
+- Seules les premières évolutions sont codées, les zones s'arrêtant au niveau 20 ; les stades suivants sont nommés dans docs/contenu-v1.md.
+- Choix de l'utilisateur : l'évolution est proposée au joueur, qui peut la refuser ; elle est proposée de nouveau au prochain niveau gagné, et possible à la demande au camp.
+- Valeurs internes, shiny, surnom, niveau et attaques connues ne changent pas ; l'habileté garde sa position ; une attaque d'évolution est apprise, avec choix de l'attaque à oublier.
+- Contenu validé par l'utilisateur : 13 premières évolutions, dont 9 par niveau, 2 par pierre (Pierre de braise, Pierre de lune), 1 par lieu (Armure hantée dans la Vallée) et 1 par événement (Squelette après la chute du Baron pendu), et 13 attaques d'évolution (docs/contenu-v1.md, section 8).
+- Hypothèses retenues, à confirmer : Q84.
