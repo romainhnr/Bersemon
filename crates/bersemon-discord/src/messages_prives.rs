@@ -120,7 +120,7 @@ impl Annonces {
                 Evenement::ExpeditionAutomatiquePartie(expedition) => {
                     self.a_annoncer.push(Retour::de(joueur, expedition));
                 }
-                Evenement::ExpeditionAutomatiqueRappelee(expedition) => {
+                Evenement::ExpeditionAutomatiqueRappelee { expedition, .. } => {
                     self.oublier(joueur, Some(expedition.zone().id()));
                 }
                 Evenement::ExpeditionAutomatiqueRentree { bilan, .. } => {
@@ -359,7 +359,10 @@ mod tests {
         assert_eq!(annonces.echus(heure).len(), 2);
         annonces.suivre(
             JOUEUR,
-            &[Evenement::ExpeditionAutomatiqueRappelee(expedition.clone())],
+            &[Evenement::ExpeditionAutomatiqueRappelee {
+                expedition: expedition.clone(),
+                places: Vec::new(),
+            }],
         );
         let echus = annonces.echus(heure);
         assert_eq!(echus.len(), 1);

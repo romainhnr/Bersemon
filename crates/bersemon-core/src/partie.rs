@@ -82,7 +82,8 @@ pub struct Partie {
 /// (sections 7 et 12.7).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AttaqueAChoisir {
-    pub position_au_camp: usize,
+    /// Là où le monstre est allé à son retour (section 12.7).
+    pub emplacement: Emplacement,
     pub attaque: Attaque,
 }
 
@@ -113,8 +114,8 @@ pub enum ErreurRestaurationPartie {
     Collection(ErreurCollection),
     ZoneNonExploree(ZoneId),
     ExpeditionEnDouble(ZoneId),
-    /// Aucun monstre du camp à cette position.
-    AttaqueAChoisirSansMonstre(usize),
+    /// Aucun monstre à cet emplacement.
+    AttaqueAChoisirSansMonstre(Emplacement),
     /// La même capsule dans le sac et dans le coffre.
     CapsuleEnDouble(AttaqueId),
     /// Ni monstre au camp, ni monstre en expédition automatique.
@@ -135,9 +136,9 @@ impl fmt::Display for ErreurRestaurationPartie {
                 "deux expéditions automatiques dans la zone {}",
                 zone.as_str()
             ),
-            ErreurRestaurationPartie::AttaqueAChoisirSansMonstre(position) => write!(
+            ErreurRestaurationPartie::AttaqueAChoisirSansMonstre(emplacement) => write!(
                 f,
-                "attaque à choisir pour un monstre absent du camp (position {position})"
+                "attaque à choisir pour un monstre absent ({emplacement:?})"
             ),
             ErreurRestaurationPartie::CapsuleEnDouble(capsule) => {
                 write!(f, "capsule obtenue deux fois : {}", capsule.as_str())
@@ -444,7 +445,7 @@ impl Partie {
     /// été revérifié par sa propre restauration. Il reste à vérifier ce qui
     /// les lie : les monstres partis gardent leur place au camp, une seule
     /// expédition automatique par zone explorée, chaque attaque à choisir
-    /// désigne un monstre du camp, une capsule n'est obtenue qu'une fois, et
+    /// désigne un monstre de l'équipe ou du camp, une capsule n'est obtenue qu'une fois, et
     /// le joueur a au moins un monstre, au camp ou parti.
     pub fn restaurer(etat: EtatPartie) -> Result<Self, ErreurRestaurationPartie> {
         if let Some(capsule) = etat
@@ -480,9 +481,9 @@ impl Partie {
             }
         }
         for a_choisir in &etat.attaques_a_choisir {
-            if a_choisir.position_au_camp >= collection.camp().len() {
+            if collection.monstre(a_choisir.emplacement).is_none() {
                 return Err(ErreurRestaurationPartie::AttaqueAChoisirSansMonstre(
-                    a_choisir.position_au_camp,
+                    a_choisir.emplacement,
                 ));
             }
         }
@@ -736,7 +737,7 @@ impl Partie {
     /// La prochaine attaque à choisir, avec le monstre qui veut l'apprendre.
     pub fn attaque_a_choisir(&self) -> Option<(&Monstre, &Attaque)> {
         let a_choisir = self.attaques_a_choisir.first()?;
-        let monstre = self.collection.camp().get(a_choisir.position_au_camp)?;
+        let monstre = self.collection.monstre(a_choisir.emplacement)?;
         Some((monstre, &a_choisir.attaque))
     }
 
@@ -795,24 +796,26 @@ impl Partie {
         Ok(())
     }
 
-    /// Avant le terme, les monstres reviennent au camp sans dégâts ni
-    /// récompense ; une expédition rentrée s'accueille (section 12.7).
+    /// Avant le terme, les monstres reviennent sans dégâts ni récompense,
+    /// dans l'équipe s'il y a de la place, sinon au camp ; une expédition
+    /// rentrée s'accueille (section 12.7). Rend leurs places, dans l'ordre de
+    /// l'expédition.
     pub fn rappeler_expedition_automatique(
         &mut self,
         zone: &ZoneId,
         maintenant: Horodatage,
-    ) -> Result<(), ErreurExpeditionAutomatique> {
+    ) -> Result<Vec<Emplacement>, ErreurExpeditionAutomatique> {
         let position = self.position_de_l_expedition(zone)?;
         if self.expeditions_automatiques[position].est_rentree(maintenant) {
             return Err(ErreurExpeditionAutomatique::DejaRentree);
         }
         let monstres = self.expeditions_automatiques.remove(position).rappeler();
-        self.collection.accueillir_retour(monstres);
-        Ok(())
+        Ok(self.collection.accueillir_retour(monstres))
     }
 
     /// Tire le résultat, range les potions et l'argent dans le coffre, et
-    /// ramène les monstres au camp (sections 12.3, 12.6, 12.7 et 13.3). Les
+    /// ramène les monstres dans l'équipe s'il y a de la place, sinon au camp
+    /// (sections 12.3, 12.6, 12.7 et 13.3). Les
     /// attaques en attente dans les rapports d'XP s'ajoutent aux attaques à
     /// choisir.
     pub fn accueillir_expedition_automatique(
@@ -826,8 +829,10 @@ impl Partie {
             return Err(ErreurExpeditionAutomatique::PasEncoreRentree);
         }
         let expedition = self.expeditions_automatiques.remove(position);
-        // Les monstres reviennent à la suite, à la fin du camp.
-        let (bilan, monstres) = expedition.resoudre(self.collection.camp().len(), aleatoire);
+        let places = self
+            .collection
+            .places_du_retour(expedition.monstres().len());
+        let (bilan, monstres) = expedition.resoudre(&places, aleatoire);
         self.coffre_du_camp.ajouter_potions(bilan.potions);
         self.coffre_du_camp.ajouter_argent(bilan.argent);
         self.collection.accueillir_retour(monstres);
@@ -838,7 +843,7 @@ impl Partie {
                 .flat_map(|rapport| &rapport.attaques_en_attente);
             for attaque in attaques {
                 self.attaques_a_choisir.push(AttaqueAChoisir {
-                    position_au_camp: rentre.position_au_camp,
+                    emplacement: rentre.emplacement,
                     attaque: attaque.clone(),
                 });
             }
@@ -1609,8 +1614,10 @@ mod tests {
             )
             .unwrap();
         assert!(bilan.reussite);
-        assert_eq!(bilan.monstres[0].position_au_camp, 0);
-        assert_eq!(partie.collection().camp()[0].experience(), 125 + 100);
+        // L'équipe a de la place : le monstre la rejoint (section 12.7).
+        assert_eq!(bilan.monstres[0].emplacement, Emplacement::Equipe(1));
+        assert_eq!(partie.collection().equipe()[1].experience(), 125 + 100);
+        assert!(partie.collection().camp().is_empty());
         assert_eq!(partie.collection().places_reservees(), 0);
         // Ce qui est gagné au camp va dans le coffre (section 13.3).
         assert_eq!(partie.coffre_du_camp().potions(), 1);
@@ -1638,12 +1645,13 @@ mod tests {
             partie.rappeler_expedition_automatique(&bois, a(3_600)),
             Err(ErreurExpeditionAutomatique::DejaRentree)
         );
-        partie
-            .rappeler_expedition_automatique(&bois, a(10))
-            .unwrap();
+        assert_eq!(
+            partie.rappeler_expedition_automatique(&bois, a(10)),
+            Ok(vec![Emplacement::Equipe(1)])
+        );
         assert!(partie.expeditions_automatiques().is_empty());
-        assert_eq!(partie.collection().camp().len(), 1);
-        assert_eq!(partie.collection().camp()[0].experience(), 125);
+        assert!(partie.collection().camp().is_empty());
+        assert_eq!(partie.collection().equipe()[1].experience(), 125);
         assert_eq!(partie.collection().places_reservees(), 0);
         assert!(partie.coffre_du_camp().est_vide());
     }
@@ -1698,12 +1706,14 @@ mod tests {
 
         let mut sans_monstre = etat(&partie);
         sans_monstre.attaques_a_choisir.push(AttaqueAChoisir {
-            position_au_camp: 0,
+            emplacement: Emplacement::Camp(0),
             attaque: creer("loup", 5).attaques().liste()[0].clone(),
         });
         assert_eq!(
             Partie::restaurer(sans_monstre),
-            Err(ErreurRestaurationPartie::AttaqueAChoisirSansMonstre(0))
+            Err(ErreurRestaurationPartie::AttaqueAChoisirSansMonstre(
+                Emplacement::Camp(0)
+            ))
         );
 
         // Le monstre parti a besoin de sa place dans un camp déjà plein.

@@ -338,12 +338,33 @@ impl Collection {
         Ok(partis)
     }
 
-    /// Les monstres rentrés d'une expédition automatique reprennent, à la
-    /// fin du camp, les places qui leur étaient réservées.
-    pub(crate) fn accueillir_retour(&mut self, monstres: Vec<Monstre>) {
+    /// Où iraient, dans l'ordre, `nombre` monstres rentrés d'une expédition
+    /// automatique : d'abord à la suite de l'équipe, tant qu'elle n'est pas
+    /// pleine, puis à la fin du camp (section 12.7).
+    pub(crate) fn places_du_retour(&self, nombre: usize) -> Vec<Emplacement> {
+        let dans_l_equipe = Self::TAILLE_EQUIPE
+            .saturating_sub(self.equipe.len())
+            .min(nombre);
+        let equipe = (0..dans_l_equipe).map(|rang| Emplacement::Equipe(self.equipe.len() + rang));
+        let camp =
+            (0..nombre - dans_l_equipe).map(|rang| Emplacement::Camp(self.camp.len() + rang));
+        equipe.chain(camp).collect()
+    }
+
+    /// Les monstres rentrés d'une expédition automatique rejoignent les
+    /// places de `places_du_retour` ; celles qui leur étaient réservées au
+    /// camp se libèrent. Rend ces places.
+    pub(crate) fn accueillir_retour(&mut self, monstres: Vec<Monstre>) -> Vec<Emplacement> {
         debug_assert!(monstres.len() <= self.places_reservees);
+        let places = self.places_du_retour(monstres.len());
         self.places_reservees = self.places_reservees.saturating_sub(monstres.len());
-        self.camp.extend(monstres);
+        for (monstre, place) in monstres.into_iter().zip(&places) {
+            match place {
+                Emplacement::Equipe(_) => self.equipe.push(monstre),
+                Emplacement::Camp(_) => self.camp.push(monstre),
+            }
+        }
+        places
     }
 
     /// À la reprise d'une sauvegarde : une place par monstre parti en
@@ -368,12 +389,8 @@ impl Collection {
         self.equipe.get_mut(index)
     }
 
-    /// Pour les attaques à choisir après une expédition automatique.
-    pub(crate) fn monstre_du_camp_mut(&mut self, index: usize) -> Option<&mut Monstre> {
-        self.camp.get_mut(index)
-    }
-
-    /// Pour les attaques apprises au camp (section 13.10).
+    /// Pour les attaques apprises au camp (section 13.10) et celles à
+    /// choisir après une expédition automatique (section 12.7).
     pub(crate) fn monstre_a_modifier(&mut self, emplacement: Emplacement) -> Option<&mut Monstre> {
         match emplacement {
             Emplacement::Equipe(index) => self.equipe.get_mut(index),
@@ -694,9 +711,38 @@ mod tests {
         assert_eq!(noms(collection.equipe()), vec!["b"]);
         assert_eq!(noms(collection.camp()), vec!["d"]);
         assert_eq!(collection.places_reservees(), 3);
-        collection.accueillir_retour(partis);
-        assert_eq!(noms(collection.camp()), vec!["d", "e", "a", "c"]);
+        // L'équipe a deux places libres : e et a les prennent, c va au camp.
+        let places = collection.accueillir_retour(partis);
+        assert_eq!(
+            places,
+            vec![
+                Emplacement::Equipe(1),
+                Emplacement::Equipe(2),
+                Emplacement::Camp(1)
+            ]
+        );
+        assert_eq!(noms(collection.equipe()), vec!["b", "e", "a"]);
+        assert_eq!(noms(collection.camp()), vec!["d", "c"]);
         assert_eq!(collection.places_reservees(), 0);
+    }
+
+    #[test]
+    fn une_equipe_vide_retrouve_les_trois_monstres_d_une_expedition() {
+        let mut collection = Collection::new(monstre_nomme("a"));
+        for nom in ["b", "c", "d"] {
+            collection.accueillir_capture(monstre_nomme(nom));
+        }
+        let partis = collection
+            .retirer_pour_expedition(&[
+                Emplacement::Equipe(2),
+                Emplacement::Equipe(0),
+                Emplacement::Equipe(1),
+            ])
+            .unwrap();
+        assert!(collection.equipe().is_empty());
+        collection.accueillir_retour(partis);
+        assert_eq!(noms(collection.equipe()), vec!["c", "a", "b"]);
+        assert_eq!(noms(collection.camp()), vec!["d"]);
     }
 
     #[test]

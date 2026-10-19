@@ -8,7 +8,7 @@ use bersemon_core::catalogue::Catalogue;
 use bersemon_core::partie::Partie;
 use bersemon_core::sauvegarde::{ErreurSauvegarde, SauvegardeRepository};
 
-use crate::format::{self, SauvegardeV11, VERSION};
+use crate::format::{self, SauvegardeV12, VERSION};
 
 pub struct FichierJson {
     chemin: PathBuf,
@@ -38,7 +38,7 @@ impl FichierJson {
         if !(1..=VERSION).contains(&version) {
             return Err(ErreurSauvegarde::VersionInconnue(version));
         }
-        let sauvegarde: SauvegardeV11 = serde_json::from_value(valeur)
+        let sauvegarde: SauvegardeV12 = serde_json::from_value(valeur)
             .map_err(|erreur| ErreurSauvegarde::Illisible(erreur.to_string()))?;
         format::vers_partie(sauvegarde, catalogue)
     }
@@ -312,7 +312,7 @@ mod tests {
             .cloned()
             .unwrap();
         let a_choisir = vec![AttaqueAChoisir {
-            position_au_camp: 0,
+            emplacement: Emplacement::Camp(0),
             attaque: griffe,
         }];
         Partie::restaurer(etat(&partie, a_choisir)).unwrap()
@@ -490,10 +490,10 @@ mod tests {
 
     #[test]
     fn version_inconnue() {
-        let texte = texte_de_partie().replacen("\"version\":11", "\"version\":12", 1);
+        let texte = texte_de_partie().replacen("\"version\":12", "\"version\":13", 1);
         assert_eq!(
             charger_texte(&texte),
-            Err(ErreurSauvegarde::VersionInconnue(12))
+            Err(ErreurSauvegarde::VersionInconnue(13))
         );
     }
 
@@ -620,11 +620,40 @@ mod tests {
 
     #[test]
     fn attaque_a_choisir_sans_monstre() {
-        let texte = texte_de_partie().replace("\"position_au_camp\":0", "\"position_au_camp\":7");
+        let texte = texte_de_partie().replace("\"position\":0", "\"position\":7");
         assert!(matches!(
             charger_texte(&texte),
             Err(ErreurSauvegarde::Incoherente(_))
         ));
+    }
+
+    #[test]
+    fn une_attaque_a_choisir_peut_designer_un_monstre_de_l_equipe() {
+        let texte = texte_de_partie().replace(
+            "\"position\":0,\"dans_l_equipe\":false",
+            "\"position\":1,\"dans_l_equipe\":true",
+        );
+        let partie = charger_texte(&texte).unwrap().unwrap();
+        assert_eq!(
+            partie.attaques_a_choisir()[0].emplacement,
+            Emplacement::Equipe(1)
+        );
+    }
+
+    #[test]
+    fn avant_la_version_12_une_attaque_a_choisir_designe_le_camp() {
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        let objet = valeur.as_object_mut().unwrap();
+        objet.insert("version".to_string(), 11.into());
+        let a_choisir = objet["attaques_a_choisir"][0].as_object_mut().unwrap();
+        a_choisir.remove("dans_l_equipe");
+        let position = a_choisir.remove("position").unwrap();
+        a_choisir.insert("position_au_camp".to_string(), position);
+        let partie = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        assert_eq!(
+            partie.attaques_a_choisir()[0].emplacement,
+            Emplacement::Camp(0)
+        );
     }
 
     #[test]

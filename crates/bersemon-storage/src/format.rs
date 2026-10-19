@@ -1,4 +1,4 @@
-//! Format JSON de la sauvegarde, version 11, et sa conversion vers les types
+//! Format JSON de la sauvegarde, version 12, et sa conversion vers les types
 //! du noyau. Les énumérations sont écrites avec des noms fixés ici, et non
 //! avec les noms Rust, pour qu'un renommage dans le code ne casse pas les
 //! sauvegardes existantes.
@@ -11,7 +11,7 @@ use bersemon_core::ame::MarchandId;
 use bersemon_core::attaque::{AttaqueId, AttaquesMonstre};
 use bersemon_core::catalogue::Catalogue;
 use bersemon_core::codex::Codex;
-use bersemon_core::collection::Collection;
+use bersemon_core::collection::{Collection, Emplacement};
 use bersemon_core::espece::EspeceId;
 use bersemon_core::expedition_automatique::ExpeditionAutomatique;
 use bersemon_core::habilete::Habilete;
@@ -32,7 +32,7 @@ use bersemon_core::zone::ZoneId;
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 11;
+pub(crate) const VERSION: u64 = 12;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -52,11 +52,12 @@ const VERSION_DE_MALVOISE: u64 = 11;
 /// l'habileté de chaque monstre, la version 9 les humains vaincus ; la
 /// version 10 suit la piste à deux indices ; la version 11 ajoute le
 /// remède, la grande potion, l'élixir et les âmes recueillies, et Malvoise
-/// remplace le marchand. Une sauvegarde d'une version
+/// remplace le marchand ; avec la version 12, une attaque à choisir peut
+/// désigner un monstre de l'équipe. Une sauvegarde d'une version
 /// précédente se lit avec cette structure : les champs ajoutés y prennent
 /// leur valeur de début de partie.
 #[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct SauvegardeV11 {
+pub(crate) struct SauvegardeV12 {
     pub(crate) version: u64,
     heros: HerosV1,
     equipe: Vec<MonstreV1>,
@@ -126,7 +127,14 @@ struct ExpeditionAutomatiqueV3 {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct AttaqueAChoisirV3 {
-    position_au_camp: usize,
+    /// Avant la version 12, toujours au camp, sous le nom
+    /// `position_au_camp`.
+    #[serde(alias = "position_au_camp")]
+    position: usize,
+    /// Depuis la version 12 : le monstre est revenu dans l'équipe (section
+    /// 12.7).
+    #[serde(default)]
+    dans_l_equipe: bool,
     attaque: String,
 }
 
@@ -169,9 +177,9 @@ struct CodexV1 {
     capturees: Vec<String>,
 }
 
-pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV11 {
+pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV12 {
     let collection = partie.collection();
-    SauvegardeV11 {
+    SauvegardeV12 {
         version: VERSION,
         heros: HerosV1 {
             nom: partie.heros().nom().as_str().to_string(),
@@ -224,9 +232,16 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV11 {
         attaques_a_choisir: partie
             .attaques_a_choisir()
             .iter()
-            .map(|a_choisir| AttaqueAChoisirV3 {
-                position_au_camp: a_choisir.position_au_camp,
-                attaque: a_choisir.attaque.id().as_str().to_string(),
+            .map(|a_choisir| {
+                let (position, dans_l_equipe) = match a_choisir.emplacement {
+                    Emplacement::Equipe(position) => (position, true),
+                    Emplacement::Camp(position) => (position, false),
+                };
+                AttaqueAChoisirV3 {
+                    position,
+                    dans_l_equipe,
+                    attaque: a_choisir.attaque.id().as_str().to_string(),
+                }
             })
             .collect(),
     }
@@ -269,7 +284,7 @@ fn vers_inventaire(
 }
 
 pub(crate) fn vers_partie(
-    sauvegarde: SauvegardeV11,
+    sauvegarde: SauvegardeV12,
     catalogue: &dyn Catalogue,
 ) -> Result<Partie, ErreurSauvegarde> {
     let heros = Heros::new(
@@ -281,7 +296,7 @@ pub(crate) fn vers_partie(
     let attaques_a_choisir = sauvegarde
         .attaques_a_choisir
         .into_iter()
-        .map(|a_choisir| vers_attaque_a_choisir(a_choisir, &camp))
+        .map(|a_choisir| vers_attaque_a_choisir(a_choisir, &equipe, &camp))
         .collect::<Result<Vec<_>, _>>()?;
     let expeditions_automatiques = sauvegarde
         .expeditions_automatiques
@@ -402,12 +417,17 @@ fn vers_expedition_automatique(
 /// L'attaque se retrouve parmi celles que l'espèce du monstre apprend.
 fn vers_attaque_a_choisir(
     a_choisir: AttaqueAChoisirV3,
+    equipe: &[Monstre],
     camp: &[Monstre],
 ) -> Result<AttaqueAChoisir, ErreurSauvegarde> {
-    let monstre = camp.get(a_choisir.position_au_camp).ok_or_else(|| {
+    let (emplacement, monstres) = if a_choisir.dans_l_equipe {
+        (Emplacement::Equipe(a_choisir.position), equipe)
+    } else {
+        (Emplacement::Camp(a_choisir.position), camp)
+    };
+    let monstre = monstres.get(a_choisir.position).ok_or_else(|| {
         ErreurSauvegarde::Incoherente(format!(
-            "attaque à choisir pour un monstre absent du camp (position {})",
-            a_choisir.position_au_camp
+            "attaque à choisir pour un monstre absent ({emplacement:?})"
         ))
     })?;
     let espece = monstre.espece();
@@ -419,7 +439,7 @@ fn vers_attaque_a_choisir(
             attaque: a_choisir.attaque,
         })?;
     Ok(AttaqueAChoisir {
-        position_au_camp: a_choisir.position_au_camp,
+        emplacement,
         attaque,
     })
 }

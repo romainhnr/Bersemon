@@ -314,8 +314,12 @@ pub enum Evenement {
     Relache(Monstre),
     /// Copie de l'expédition qui vient de partir.
     ExpeditionAutomatiquePartie(ExpeditionAutomatique),
-    /// Copie de l'expédition rappelée, avant le retour de ses monstres.
-    ExpeditionAutomatiqueRappelee(ExpeditionAutomatique),
+    /// Copie de l'expédition rappelée, avant le retour de ses monstres, et
+    /// la place de chacun, dans l'ordre de l'expédition (section 12.7).
+    ExpeditionAutomatiqueRappelee {
+        expedition: ExpeditionAutomatique,
+        places: Vec<Emplacement>,
+    },
     /// Suivi d'un événement `Experience` par monstre qui en a gagné.
     ExpeditionAutomatiqueRentree {
         /// Nom de la zone.
@@ -680,10 +684,11 @@ impl EnJeu {
                         expedition,
                     )));
                 }
-                self.partie
+                let places = self
+                    .partie
                     .rappeler_expedition_automatique(zone, contexte.maintenant)
                     .map_err(ErreurChoix::ExpeditionAutomatique)?;
-                evenements.push(Evenement::ExpeditionAutomatiqueRappelee(expedition));
+                evenements.push(Evenement::ExpeditionAutomatiqueRappelee { expedition, places });
                 sauvegarder(&self.partie, contexte.depot, evenements);
                 Ok(Reponse::Faite)
             }
@@ -851,7 +856,8 @@ impl EnJeu {
             ))
     }
 
-    /// Comme après un combat (Q33), sur un monstre rentré au camp. Chaque
+    /// Comme après un combat (Q33), sur un monstre rentré dans l'équipe ou
+    /// au camp. Chaque
     /// choix est sauvegardé (section 12.7).
     fn choisir_attaque(
         &mut self,
@@ -862,13 +868,13 @@ impl EnJeu {
         let Some(a_choisir) = self.partie.attaques_a_choisir().first().cloned() else {
             return Err(ErreurChoix::HorsDePropos);
         };
-        let position_au_camp = a_choisir.position_au_camp;
+        let emplacement = a_choisir.emplacement;
         let monstre = self
             .partie
             .collection_mut()
-            .monstre_du_camp_mut(position_au_camp)
+            .monstre_a_modifier(emplacement)
             .ok_or(ErreurChoix::Collection(
-                ErreurCollection::EmplacementInexistant(Emplacement::Camp(position_au_camp)),
+                ErreurCollection::EmplacementInexistant(emplacement),
             ))?;
         match choix {
             Choix::OublierAttaque(position) => {
@@ -2914,11 +2920,13 @@ mod tests {
         .unwrap();
         assert!(matches!(
             &evenements[..],
-            [Evenement::ExpeditionAutomatiqueRappelee(_)]
+            [Evenement::ExpeditionAutomatiqueRappelee { places, .. }]
+                if places == &[Emplacement::Equipe(2)]
         ));
         let partie = deroulement.partie().unwrap();
         assert!(partie.expeditions_automatiques().is_empty());
-        assert_eq!(partie.collection().camp().len(), 1);
+        assert_eq!(partie.collection().equipe().len(), 3);
+        assert!(partie.collection().camp().is_empty());
         assert_eq!(depot.sauvegardes.borrow().len(), 2);
     }
 
@@ -3017,7 +3025,10 @@ mod tests {
             [Evenement::AttaqueRemplacee { oubliee, .. }] if oubliee.id().as_str() == "souffle-chaud"
         ));
         assert_eq!(reprise.attente(), Attente::Camp);
-        let salamandre = &reprise.partie().unwrap().collection().camp()[0];
+        // Partie de l'équipe, elle y est revenue, après le Loup resté
+        // (section 12.7).
+        assert_eq!(bilan.monstres[0].emplacement, Emplacement::Equipe(1));
+        let salamandre = &reprise.partie().unwrap().collection().equipe()[1];
         assert!(
             salamandre
                 .attaques()

@@ -214,8 +214,8 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
         Evenement::ExpeditionAutomatiquePartie(expedition) => {
             (expeditions_automatiques::depart(expedition), true)
         }
-        Evenement::ExpeditionAutomatiqueRappelee(expedition) => {
-            (expeditions_automatiques::rappel(expedition), true)
+        Evenement::ExpeditionAutomatiqueRappelee { expedition, places } => {
+            (expeditions_automatiques::rappel(expedition, places), true)
         }
         Evenement::ExpeditionAutomatiqueRentree { zone, bilan } => {
             (expeditions_automatiques::retour(zone, bilan), true)

@@ -11,7 +11,7 @@ use std::ops::RangeInclusive;
 use std::time::Duration;
 
 use crate::aleatoire::Aleatoire;
-use crate::collection::ErreurCollection;
+use crate::collection::{Emplacement, ErreurCollection};
 use crate::habilete::{
     BONUS_D_INSTINCT, BONUS_DU_PILLARD, Habilete, REDUCTION_D_ECLAIREUR, majorer,
 };
@@ -289,14 +289,14 @@ impl ExpeditionAutomatique {
     }
 
     /// Rend le bilan et les monstres, XP comprise, dans l'ordre de
-    /// l'expédition ; ils retournent au camp à la suite les uns des autres,
-    /// à partir de `premiere_position_au_camp`. Tirages : total des dégâts,
+    /// l'expédition ; `places` dit où chacun va, dans le même ordre (section
+    /// 12.7). Tirages : total des dégâts,
     /// puis, après une réussite, le gain d'XP, le nombre de potions et
     /// l'argent. Instinct augmente l'XP de son monstre, et Pillard l'argent
     /// s'il rentre debout (section 5.9).
     pub(crate) fn resoudre(
         self,
-        premiere_position_au_camp: usize,
+        places: &[Emplacement],
         aleatoire: &mut dyn Aleatoire,
     ) -> (BilanExpeditionAutomatique, Vec<Monstre>) {
         let parametres = self.zone.expedition_automatique();
@@ -342,7 +342,7 @@ impl ExpeditionAutomatique {
                 degats_subis: subis[index],
                 ko,
                 rapport,
-                position_au_camp: premiere_position_au_camp + index,
+                emplacement: places[index],
             });
         }
         let bilan = BilanExpeditionAutomatique {
@@ -386,8 +386,8 @@ pub struct MonstreRentre {
     /// `None` pour un monstre KO ou après un échec. Les attaques en attente
     /// se choisissent comme après un combat (section 12.7).
     pub rapport: Option<RapportExperience>,
-    /// Le monstre est revenu au camp, à cette place (section 12.1).
-    pub position_au_camp: usize,
+    /// Dans l'équipe s'il y avait de la place, sinon au camp (section 12.7).
+    pub emplacement: Emplacement,
 }
 
 fn pv_max(monstres: &[Monstre]) -> Vec<u32> {
@@ -438,6 +438,9 @@ mod tests {
     use crate::donnees_de_test::{espece, zone};
     use crate::niveau::Niveau;
     use crate::stats::ValeursInternes;
+
+    /// Places de retour quelconques : la résolution les recopie seulement.
+    const PLACES: [Emplacement; 2] = [Emplacement::Equipe(2), Emplacement::Camp(4)];
 
     fn parametres(degats: RangeInclusive<u32>) -> ParametresExpeditionAutomatique {
         ParametresExpeditionAutomatique::new(
@@ -567,7 +570,8 @@ mod tests {
         let expedition =
             ExpeditionAutomatique::partir(bois(), vec![monstre(5), monstre(10)], depart);
         // 30 dégâts en deux parts de 15 : personne ne tombe.
-        let (bilan, monstres) = expedition.resoudre(4, &mut AleatoireScripte::new([30, 150, 1]));
+        let (bilan, monstres) =
+            expedition.resoudre(&PLACES, &mut AleatoireScripte::new([30, 150, 1]));
         assert!(bilan.reussite);
         assert_eq!(bilan.degats, 30);
         assert_eq!(bilan.potions, 1);
@@ -576,7 +580,7 @@ mod tests {
         for (index, rentre) in bilan.monstres.iter().enumerate() {
             assert_eq!(rentre.degats_subis, 15);
             assert!(!rentre.ko);
-            assert_eq!(rentre.position_au_camp, 4 + index);
+            assert_eq!(rentre.emplacement, PLACES[index]);
             let rapport = rentre.rapport.as_ref().unwrap();
             assert_eq!(rapport.experience_gagnee, 150);
             assert_eq!(rentre.monstre, monstres[index]);
@@ -591,7 +595,8 @@ mod tests {
             ExpeditionAutomatique::partir(bois(), vec![monstre(5), monstre(10)], depart);
         // 40 en deux parts de 20 : le monstre de 20 PV tombe, l'autre subit
         // ses 20 dégâts et reste debout avec 10 PV.
-        let (bilan, monstres) = expedition.resoudre(0, &mut AleatoireScripte::new([40, 100, 0]));
+        let (bilan, monstres) =
+            expedition.resoudre(&PLACES, &mut AleatoireScripte::new([40, 100, 0]));
         assert!(bilan.reussite);
         assert!(bilan.monstres[0].ko);
         assert_eq!(bilan.monstres[0].rapport, None);
@@ -605,7 +610,7 @@ mod tests {
     fn un_echec_ne_rapporte_rien_et_ne_tire_ni_xp_ni_potions() {
         let depart = Horodatage::depuis_secondes(0);
         let expedition = ExpeditionAutomatique::partir(bois(), vec![monstre(5)], depart);
-        let (bilan, monstres) = expedition.resoudre(0, &mut AleatoireScripte::new([25]));
+        let (bilan, monstres) = expedition.resoudre(&PLACES, &mut AleatoireScripte::new([25]));
         assert!(!bilan.reussite);
         assert_eq!(bilan.potions, 0);
         assert_eq!(bilan.argent, 0);
@@ -643,7 +648,7 @@ mod tests {
             monstre(10).avec_habilete(Habilete::Pillard),
         ];
         let expedition = ExpeditionAutomatique::partir(bois(), monstres, depart);
-        let (bilan, _) = expedition.resoudre(0, &mut AleatoireScripte::new([30, 150, 1]));
+        let (bilan, _) = expedition.resoudre(&PLACES, &mut AleatoireScripte::new([30, 150, 1]));
         // 150 XP, et 20 % de plus pour Instinct.
         let gains: Vec<u32> = bilan
             .monstres
@@ -661,7 +666,7 @@ mod tests {
         let monstres = vec![monstre(5).avec_habilete(Habilete::Pillard), monstre(10)];
         let expedition = ExpeditionAutomatique::partir(bois(), monstres, depart);
         // 40 dégâts : le Pillard, à 20 PV, tombe.
-        let (bilan, _) = expedition.resoudre(0, &mut AleatoireScripte::new([40, 100, 0]));
+        let (bilan, _) = expedition.resoudre(&PLACES, &mut AleatoireScripte::new([40, 100, 0]));
         assert!(bilan.reussite && bilan.monstres[0].ko);
         assert_eq!((bilan.argent, bilan.argent_du_pillard), (20, 0));
     }

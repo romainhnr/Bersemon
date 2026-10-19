@@ -3,7 +3,7 @@
 
 use std::time::Duration;
 
-use bersemon_core::collection::ErreurCollection;
+use bersemon_core::collection::{Emplacement, ErreurCollection};
 use bersemon_core::expedition_automatique::{
     BilanExpeditionAutomatique, Chances, ErreurExpeditionAutomatique, Estimation,
     ExpeditionAutomatique, MONSTRES_MAX, MONSTRES_MIN,
@@ -130,18 +130,31 @@ pub fn depart(expedition: &ExpeditionAutomatique) -> String {
     )
 }
 
-pub fn rappel(expedition: &ExpeditionAutomatique) -> String {
-    let monstres = expedition.monstres();
+pub fn rappel(expedition: &ExpeditionAutomatique, places: &[Emplacement]) -> String {
     format!(
-        "Vous rappelez l'expédition partie pour {} : {} {} au camp sans rien rapporter.",
+        "Vous rappelez l'expédition partie pour {} : elle ne rapporte rien. {}.",
         expedition.zone().nom(),
-        noms(monstres),
-        if monstres.len() > 1 {
-            "rentrent"
-        } else {
-            "rentre"
-        }
+        destinations(expedition.monstres().iter().zip(places.iter().copied()))
     )
+}
+
+/// "a rejoint l'équipe ; b et c retournent au camp" (section 12.7).
+fn destinations<'a>(retours: impl Iterator<Item = (&'a Monstre, Emplacement)>) -> String {
+    let (equipe, camp): (Vec<_>, Vec<_>) =
+        retours.partition(|(_, place)| matches!(place, Emplacement::Equipe(_)));
+    let groupe = |monstres: Vec<(&Monstre, Emplacement)>, un: &str, plusieurs: &str| {
+        let monstres: Vec<Monstre> = monstres.into_iter().map(|(m, _)| m.clone()).collect();
+        let verbe = if monstres.len() > 1 { plusieurs } else { un };
+        format!("{} {verbe}", noms(&monstres))
+    };
+    let mut parties = Vec::new();
+    if !equipe.is_empty() {
+        parties.push(groupe(equipe, "rejoint l'équipe", "rejoignent l'équipe"));
+    }
+    if !camp.is_empty() {
+        parties.push(groupe(camp, "retourne au camp", "retournent au camp"));
+    }
+    parties.join(" ; ")
 }
 
 pub fn question_de_rappel(expedition: &ExpeditionAutomatique) -> String {
@@ -184,7 +197,11 @@ pub fn retour(zone: &str, bilan: &BilanExpeditionAutomatique) -> String {
         format!("Réussite : vos monstres rapportent {}.", gains.join(" et "))
     };
     lignes.push(conclusion);
-    lignes.push("Ils rentrent au camp et sont soignés.".to_string());
+    let retours = bilan
+        .monstres
+        .iter()
+        .map(|rentre| (&rentre.monstre, rentre.emplacement));
+    lignes.push(format!("Soins faits : {}.", destinations(retours)));
     lignes.join("\n")
 }
 
@@ -296,6 +313,21 @@ mod tests {
             texte.contains("Réussite : vos monstres rapportent 1 potion et 25 pièces d'argent."),
             "{texte}"
         );
+        assert!(
+            texte.ends_with("Soins faits : Loup rejoint l'équipe."),
+            "{texte}"
+        );
+        bilan.monstres.push(bilan.monstres[0].clone());
+        bilan.monstres[1].emplacement = Emplacement::Camp(0);
+        bilan.monstres.push(bilan.monstres[1].clone());
+        let texte = retour("Lisière du Bois-Sombre", &bilan);
+        assert!(
+            texte.ends_with(
+                "Soins faits : Loup rejoint l'équipe ; Loup et Loup retournent au camp."
+            ),
+            "{texte}"
+        );
+        bilan.monstres.truncate(1);
         bilan.argent_du_pillard = 8;
         let texte = retour("Lisière du Bois-Sombre", &bilan);
         assert!(
