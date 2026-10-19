@@ -10,9 +10,10 @@ use crate::combat::{rapport_experience, remplacement, renoncement};
 use crate::erreurs::erreur_sauvegarde;
 use crate::expeditions_automatiques;
 use crate::mise_en_valeur::important;
-use crate::monstres::{nom_en_valeur, nom_sauvage};
+use crate::monstres::{effet_d_habilete, nom_en_valeur, nom_sauvage};
 use crate::partie::{
-    argent, argent_et_part_du_pillard, capsule as nom_de_capsule, contenu, enumerer, potions,
+    argent, argent_et_part_du_pillard, capsule as nom_de_capsule, capsules_d_habilete, contenu,
+    enumerer, potions,
 };
 use crate::soins::{le_soin, soin_utilise, soins};
 
@@ -68,12 +69,16 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             argent: montant,
             argent_du_pillard,
             capsule,
+            capsule_d_habilete,
         } => {
             let mut contenu = vec![potions(*nombre)];
             if *montant > 0 {
                 contenu.push(argent_et_part_du_pillard(*montant, *argent_du_pillard));
             }
             contenu.extend(capsule.iter().map(nom_de_capsule));
+            if *capsule_d_habilete {
+                contenu.push(capsules_d_habilete(1));
+            }
             (
                 format!("Vous trouvez un coffre : {}.", enumerer(&contenu)),
                 false,
@@ -267,6 +272,29 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             format!("Vous prenez dans le coffre : {}.", contenu(sorti)),
             false,
         ),
+        Evenement::CapsulesDHabileteAchetees { nombre, prix } => (
+            format!(
+                "Vous achetez {} pour {}.",
+                capsules_d_habilete(*nombre),
+                argent(*prix)
+            ),
+            false,
+        ),
+        Evenement::HabileteChangee { monstre, ancienne } => {
+            let avant = ancienne
+                .map(|habilete| format!(", à la place de {}", habilete.nom()))
+                .unwrap_or_default();
+            let texte = match monstre.habilete() {
+                Some(habilete) => format!(
+                    "{} a désormais l'habileté {}{avant} : {}.",
+                    nom_en_valeur(monstre, Cote::Joueur),
+                    habilete.nom(),
+                    effet_d_habilete(habilete)
+                ),
+                None => format!("{} n'a plus d'habileté.", nom_en_valeur(monstre, Cote::Joueur)),
+            };
+            (texte, false)
+        }
         Evenement::CapsuleAchetee { capsule, prix } => (
             format!(
                 "Vous achetez {} pour {}.",
@@ -316,6 +344,7 @@ mod tests {
             argent: 15,
             argent_du_pillard: 0,
             capsule: None,
+            capsule_d_habilete: false,
         }])[0];
         assert_eq!(
             recit.texte,
@@ -326,6 +355,7 @@ mod tests {
             argent: 0,
             argent_du_pillard: 0,
             capsule: None,
+            capsule_d_habilete: false,
         }])[0];
         assert_eq!(sans_argent.texte, "Vous trouvez un coffre : 1 potion.");
         let avec_capsule = &raconter(&[Evenement::Coffre {
@@ -333,6 +363,7 @@ mod tests {
             argent: 12,
             argent_du_pillard: 0,
             capsule: Some(brasier()),
+            capsule_d_habilete: false,
         }])[0];
         assert_eq!(
             avec_capsule.texte,
@@ -343,6 +374,7 @@ mod tests {
             argent: 22,
             argent_du_pillard: 7,
             capsule: None,
+            capsule_d_habilete: false,
         }])[0];
         assert_eq!(
             avec_pillard.texte,

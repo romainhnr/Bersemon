@@ -11,7 +11,9 @@ use bersemon_core::partie::Partie;
 use bersemon_presentation::expeditions_automatiques::expeditions_rentrees;
 use bersemon_presentation::marchand::liste_de_rachat;
 use bersemon_presentation::monstres::{attaques_connues, decrire_attaque, fiche_du_monstre};
-use bersemon_presentation::partie::{collection as liste_des_monstres, en_tete_du_camp};
+use bersemon_presentation::partie::{
+    capsules_d_habilete, collection as liste_des_monstres, en_tete_du_camp,
+};
 
 use crate::affichage;
 use crate::ecran_coffre;
@@ -143,11 +145,15 @@ fn gerer(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
         println!("  7. Voir la fiche d'un monstre");
         println!("  8. Gérer les attaques d'un monstre");
         println!("  9. Trier le camp");
+        println!(
+            "  10. Changer l'habileté d'un monstre ({})",
+            capsules_d_habilete(partie.capsules_d_habilete())
+        );
         if marchand {
-            println!("  10. Vendre un monstre à Malvoise");
+            println!("  11. Vendre un monstre à Malvoise");
         }
         println!("  0. Retour");
-        let dernier = if marchand { 10 } else { 9 };
+        let dernier = if marchand { 11 } else { 10 };
         let gestion = |action: Option<ActionDeGestion>| action.map(Choix::Gerer);
         let choix = match entree.choix(0, dernier)? {
             0 => return Some(None),
@@ -163,6 +169,7 @@ fn gerer(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
             }
             8 => attaques(partie, entree)?,
             9 => gestion(trier(entree)?),
+            10 => changer_d_habilete(collection, entree)?,
             _ => vendre(collection, entree)?,
         };
         if let Some(choix) = choix {
@@ -300,6 +307,17 @@ fn trier(entree: &mut Entree) -> Option<Option<ActionDeGestion>> {
 fn relacher(collection: &Collection, entree: &mut Entree) -> Option<Option<ActionDeGestion>> {
     let emplacement = designer(collection, entree, "Quel monstre relâcher ?")?;
     Some(emplacement.map(ActionDeGestion::Relacher))
+}
+
+/// La confirmation, qui annonce la nouvelle habileté, est demandée par le
+/// déroulement (section 5.9).
+fn changer_d_habilete(collection: &Collection, entree: &mut Entree) -> Option<Option<Choix>> {
+    let emplacement = designer(
+        collection,
+        entree,
+        "Sur quel monstre utiliser une capsule d'habileté ?",
+    )?;
+    Some(emplacement.map(Choix::ChangerDHabilete))
 }
 
 /// Avec le prix de chaque monstre ; la confirmation est demandée par le

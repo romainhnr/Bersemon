@@ -8,6 +8,7 @@ use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::{Annonce, Confirmation};
 use bersemon_core::espece::Espece;
 use bersemon_core::expedition::Expedition;
+use bersemon_core::habilete::Habilete;
 use bersemon_core::heros::Classe;
 use bersemon_core::inventaire::Inventaire;
 use bersemon_core::monstre::Monstre;
@@ -15,7 +16,7 @@ use bersemon_core::partie::Partie;
 use bersemon_core::zone::Zone;
 
 use crate::expeditions_automatiques::question_de_rappel;
-use crate::monstres::{decrire_stats, ligne_monstre, nom, types_de};
+use crate::monstres::{decrire_stats, effet_d_habilete, ligne_monstre, nom, types_de};
 use crate::soins::{liste_de_soins, question_du_soin_perdu};
 
 /// Équipe puis camp, numérotés à la suite : l'équipe de 1 à 3, le camp
@@ -100,6 +101,15 @@ pub fn capsule(capsule: &Capsule) -> String {
     format!("la capsule d'attaque {}", capsule.attaque().nom())
 }
 
+/// Elles se consomment, d'où leur nombre (section 5.9).
+pub fn capsules_d_habilete(nombre: u32) -> String {
+    if nombre > 1 {
+        format!("{nombre} capsules d'habileté")
+    } else {
+        format!("{nombre} capsule d'habileté")
+    }
+}
+
 /// « 2 potions, 30 pièces d'argent et la capsule d'attaque Brasier », ou
 /// « vide ».
 pub fn contenu(inventaire: &Inventaire) -> String {
@@ -108,6 +118,9 @@ pub fn contenu(inventaire: &Inventaire) -> String {
         elements.push(argent(inventaire.argent()));
     }
     elements.extend(inventaire.capsules().iter().map(capsule));
+    if inventaire.capsules_d_habilete() > 0 {
+        elements.push(capsules_d_habilete(inventaire.capsules_d_habilete()));
+    }
     if elements.is_empty() {
         "vide".to_string()
     } else {
@@ -320,6 +333,13 @@ pub fn question_de_confirmation(confirmation: &Confirmation) -> String {
             "Vendre définitivement {} à Malvoise pour {} ?",
             monstre.nom(),
             argent(*prix)
+        ),
+        Confirmation::ChangerDHabilete { monstre, nouvelle } => format!(
+            "Utiliser une capsule d'habileté sur {} ? Son habileté {} sera remplacée par {} : {}.",
+            monstre.nom(),
+            monstre.habilete().map_or("actuelle", Habilete::nom),
+            nouvelle.nom(),
+            effet_d_habilete(*nouvelle)
         ),
         Confirmation::Suicide(heros) => format!(
             "Vous suicider ? Votre partie sera effacée pour de bon : {}, vos monstres, votre sac, votre coffre, votre codex et vos expéditions automatiques en cours.",

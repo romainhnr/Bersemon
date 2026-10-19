@@ -8,6 +8,7 @@ use bersemon_core::codex::EtatCodex;
 use bersemon_core::collection::{Collection, Emplacement, TriDuCamp};
 use bersemon_core::combat::Cote;
 use bersemon_core::contenu::ContenuV1;
+use bersemon_core::habilete::autre_habilete;
 use bersemon_core::horodatage::Horodatage;
 use bersemon_core::marchand::prix_de_revente;
 use bersemon_core::monstre::Monstre;
@@ -248,6 +249,17 @@ fn gestion(partie: &Partie, choisi: Option<Emplacement>) -> Question {
     if partie.marchand_au_camp() {
         let libelle = format!("Vendre ({})", argent(prix_de_revente(monstre)));
         boutons.push(bouton(Cle::VendreCeMonstre(emplacement), &libelle, DANGER));
+    }
+    // Au plus 8 boutons : ils tiennent en deux rangées (section 5.9).
+    if partie.capsules_d_habilete() > 0 {
+        if let Some(nouvelle) = autre_habilete(monstre) {
+            let libelle = format!("Passer à {}", nouvelle.nom());
+            boutons.push(bouton(
+                Cle::ChangerDHabilete(emplacement),
+                &libelle,
+                SECONDAIRE,
+            ));
+        }
     }
     let mut lignes = rangees(boutons);
     lignes.extend(echange);

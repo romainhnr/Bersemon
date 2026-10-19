@@ -3,7 +3,7 @@
 //! font sans confirmation ; la vente est confirmée par le déroulement.
 
 use bersemon_core::contenu::ContenuV1;
-use bersemon_core::marchand::prix_du_soin;
+use bersemon_core::marchand::{PRIX_CAPSULE_D_HABILETE, prix_du_soin};
 use bersemon_core::partie::Partie;
 use bersemon_presentation::marchand::{
     capsules_en_vente, etal as texte_de_l_etal, offre_de_rachat,
@@ -68,7 +68,12 @@ pub fn etal(partie: &Partie, contenu: &ContenuV1) -> Question {
         })
         .collect();
     lignes.extend(menu(Cle::DonnerAme, "Donner une âme à Malvoise", ames));
+    let libelle = format!(
+        "Acheter une capsule d'habileté ({})",
+        argent(PRIX_CAPSULE_D_HABILETE)
+    );
     lignes.extend(rangees(vec![
+        bouton(Cle::AcheterCapsuleDHabilete, &libelle, PRINCIPAL),
         bouton(Cle::Afficher(Vue::Vente), "Vendre des monstres", DANGER),
         retour(),
     ]));

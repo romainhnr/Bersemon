@@ -121,6 +121,9 @@ struct InventaireV7 {
     /// Identifiants de leurs attaques.
     #[serde(default)]
     capsules: Vec<String>,
+    /// Depuis la version 12 (section 5.9).
+    #[serde(default)]
+    capsules_d_habilete: u32,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -270,6 +273,7 @@ fn depuis_inventaire(inventaire: &Inventaire) -> InventaireV7 {
             .iter()
             .map(|capsule| capsule.id().as_str().to_string())
             .collect(),
+        capsules_d_habilete: inventaire.capsules_d_habilete(),
     }
 }
 
@@ -290,7 +294,8 @@ fn vers_inventaire(
         Inventaire::new(inventaire.argent, inventaire.potions, capsules)
             .avec_soins(Soin::Remede, inventaire.remedes)
             .avec_soins(Soin::GrandePotion, inventaire.grandes_potions)
-            .avec_soins(Soin::Elixir, inventaire.elixirs),
+            .avec_soins(Soin::Elixir, inventaire.elixirs)
+            .avec_capsules_d_habilete(inventaire.capsules_d_habilete),
     )
 }
 

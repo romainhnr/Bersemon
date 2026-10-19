@@ -5,7 +5,9 @@ use bersemon_core::inventaire::{Inventaire, Objet};
 use bersemon_core::partie::Partie;
 use bersemon_core::soin::Soin;
 use bersemon_presentation::monstres::decrire_attaque;
-use bersemon_presentation::partie::{argent, coffre_du_camp};
+use bersemon_presentation::partie::{
+    argent, capsules_d_habilete as capsules_d_habilete_en_texte, coffre_du_camp,
+};
 use bersemon_presentation::soins::soins;
 
 use crate::composants::{Cle, objet_en_texte};
@@ -86,6 +88,22 @@ fn options(inventaire: &Inventaire) -> Vec<OptionDeMenu> {
             Some("Tout".to_string()),
         ));
     }
+    // Elles se consomment : un lot d'une, puis toutes (section 5.9).
+    let capsules_d_habilete = inventaire.capsules_d_habilete();
+    if capsules_d_habilete > 1 {
+        options.push(option(
+            Objet::CapsulesDHabilete(1),
+            capsules_d_habilete_en_texte(1),
+            None,
+        ));
+    }
+    if capsules_d_habilete > 0 {
+        options.push(option(
+            Objet::CapsulesDHabilete(capsules_d_habilete),
+            capsules_d_habilete_en_texte(capsules_d_habilete),
+            Some("Tout".to_string()),
+        ));
+    }
     for capsule in inventaire.capsules() {
         options.push(option(
             Objet::Capsule(capsule.id().clone()),
@@ -93,8 +111,10 @@ fn options(inventaire: &Inventaire) -> Vec<OptionDeMenu> {
             Some(decrire_attaque(capsule.attaque())),
         ));
     }
-    // Avec les six capsules du contenu, la limite n'est pas atteinte ; elle
-    // est tenue au cas où il y en aurait davantage.
+    // Avec les neuf capsules d'attaque du contenu, tous les soins et les
+    // capsules d'habileté, la limite est tout juste atteinte ; elle est tenue
+    // au cas où il y en aurait davantage, aux dépens des dernières capsules
+    // d'attaque.
     options.truncate(OPTIONS_PAR_MENU);
     options
 }

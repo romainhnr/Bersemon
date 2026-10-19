@@ -753,3 +753,86 @@ fn toute_l_equipe_se_prepare_d_un_bouton_s_il_y_a_de_la_place_au_camp() {
     partie.prendre_monstre_rare(loup.clone());
     assert_eq!(preparation(&explorer(&partie)), None);
 }
+
+#[test]
+fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
+    use bersemon_core::ame::MarchandId;
+    use bersemon_core::catalogue::Catalogue;
+    use bersemon_core::heros::Heros;
+    use bersemon_core::niveau::Niveau;
+    use bersemon_core::nom::Nom;
+    use bersemon_core::partie::Partie;
+    use bersemon_core::stats::ValeursInternes;
+
+    let contenu = ContenuV1::new();
+    let creer = |id: &str| {
+        Monstre::creer(
+            contenu.espece(&EspeceId::new(id)).unwrap(),
+            Niveau::new(10).unwrap(),
+            ValeursInternes::default(),
+            false,
+        )
+        .unwrap()
+    };
+    let marchand = |id: &str| contenu.marchand_mort(&MarchandId::new(id)).unwrap();
+    let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Mage);
+    let mut partie = Partie::nouvelle(heros, creer("salamandre"));
+    for id in ["loup", "corbeau", "vipere"] {
+        partie.prendre_monstre_rare(creer(id));
+    }
+    // Tous les soins, toutes les capsules d'attaque, de l'argent et des
+    // capsules d'habileté dans le coffre comme dans le sac.
+    let plein = || {
+        let mut inventaire =
+            Inventaire::new(1_000, 9, contenu.capsules().to_vec()).avec_capsules_d_habilete(3);
+        for soin in [Soin::Remede, Soin::GrandePotion, Soin::Elixir] {
+            inventaire = inventaire.avec_soins(soin, 7);
+        }
+        inventaire
+    };
+    let etat = |donnees: Vec<&str>, portees: Vec<&str>| EtatPartie {
+        heros: partie.heros().clone(),
+        collection: partie.collection().clone(),
+        sac: Inventaire::default().avec_capsules_d_habilete(1),
+        coffre_du_camp: plein(),
+        marchand_au_camp: true,
+        ames_donnees: donnees.into_iter().map(marchand).collect(),
+        ames_portees: portees.into_iter().map(marchand).collect(),
+        ames_a_retrouver: Vec::new(),
+        codex: partie.codex().clone(),
+        zones_explorees: vec![ZoneId::new("lisiere")],
+        indices_trouves: 1,
+        apotres_vaincus: Vec::new(),
+        humains_vaincus: Vec::new(),
+        conseils_vus: Vec::new(),
+        expeditions_automatiques: Vec::new(),
+        attaques_a_choisir: Vec::new(),
+    };
+    let afficher = |partie: &Partie, vue: Vue| {
+        let question =
+            crate::ecran_camp::question(partie, vue, &contenu, Horodatage::depuis_secondes(0));
+        let affiche = Message {
+            texte: question.texte,
+            rangees: question.rangees,
+            version: 1,
+        };
+        verifier_les_limites(&affiche);
+        boutons(&affiche).into_iter().cloned().collect::<Vec<Cle>>()
+    };
+    // Tous les soins en vente, ou une âme encore à donner.
+    for (donnees, portees) in [
+        (vec!["bertrand", "grete", "ulrich"], vec![]),
+        (vec!["bertrand", "grete"], vec!["ulrich"]),
+    ] {
+        let partie = Partie::restaurer(etat(donnees, portees)).unwrap();
+        let cles = afficher(&partie, Vue::Marchand);
+        assert!(cles.contains(&Cle::AcheterCapsuleDHabilete));
+        afficher(&partie, Vue::Coffre);
+        // Un monstre de l'équipe, qui peut monter et descendre, et un du
+        // camp, qui peut s'échanger.
+        for emplacement in [Emplacement::Equipe(1), Emplacement::Camp(0)] {
+            let cles = afficher(&partie, Vue::Gestion(Some(emplacement)));
+            assert!(cles.contains(&Cle::ChangerDHabilete(emplacement)));
+        }
+    }
+}

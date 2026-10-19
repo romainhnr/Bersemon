@@ -16,12 +16,14 @@ use crate::expedition_automatique::{
     BilanExpeditionAutomatique, ErreurExpeditionAutomatique, Estimation, ExpeditionAutomatique,
     MONSTRES_MAX, MONSTRES_MIN,
 };
-use crate::habilete::{BONUS_DU_PILLARD, CHANCES_DU_FOUINEUR, Habilete};
+use crate::habilete::{
+    BONUS_DU_PILLARD, CHANCES_DU_FOUINEUR, ErreurChangementDHabilete, Habilete, autre_habilete,
+};
 use crate::heros::Heros;
 use crate::horodatage::Horodatage;
 use crate::humain::{Humain, HumainId, IaHumain};
 use crate::inventaire::{ErreurObjet, Inventaire, Objet};
-use crate::marchand::{ErreurMarchand, prix_de_revente, prix_du_soin};
+use crate::marchand::{ErreurMarchand, PRIX_CAPSULE_D_HABILETE, prix_de_revente, prix_du_soin};
 use crate::monstre::{Monstre, tirer_shiny, tirer_valeurs_internes};
 use crate::niveau::Niveau;
 use crate::soin::{EffetDuSoin, ErreurSoin, Soin};
@@ -379,6 +381,66 @@ impl Partie {
         self.payer(capsule.prix())?;
         self.coffre_du_camp.ajouter_capsule(capsule.clone());
         Ok(capsule.prix())
+    }
+
+    /// Au camp, sans confirmation ; les capsules vont dans le coffre
+    /// (sections 5.9 et 13.3). Rend le prix payé.
+    pub fn acheter_capsules_d_habilete(&mut self, nombre: u32) -> Result<u32, ErreurMarchand> {
+        self.verifier_marchand()?;
+        if nombre == 0 {
+            return Err(ErreurMarchand::QuantiteNulle);
+        }
+        let prix = nombre.saturating_mul(PRIX_CAPSULE_D_HABILETE);
+        self.payer(prix)?;
+        self.coffre_du_camp.ajouter_capsules_d_habilete(nombre);
+        Ok(prix)
+    }
+
+    /// Celles du sac et du coffre : au camp, elles servent toutes.
+    pub fn capsules_d_habilete(&self) -> u32 {
+        self.sac
+            .capsules_d_habilete()
+            .saturating_add(self.coffre_du_camp.capsules_d_habilete())
+    }
+
+    /// Le monstre et l'habileté que lui donnerait une capsule d'habileté,
+    /// sans rien changer : de quoi demander confirmation. Refuse ce que
+    /// refuserait `changer_d_habilete`.
+    pub fn estimer_changement_d_habilete(
+        &self,
+        emplacement: Emplacement,
+    ) -> Result<(Monstre, Habilete), ErreurChangementDHabilete> {
+        let monstre =
+            self.collection
+                .monstre(emplacement)
+                .ok_or(ErreurChangementDHabilete::Collection(
+                    ErreurCollection::EmplacementInexistant(emplacement),
+                ))?;
+        let nouvelle =
+            autre_habilete(monstre).ok_or(ErreurChangementDHabilete::AucuneAutreHabilete)?;
+        if self.capsules_d_habilete() == 0 {
+            return Err(ErreurChangementDHabilete::AucuneCapsule);
+        }
+        Ok((monstre.clone(), nouvelle))
+    }
+
+    /// Au camp, après confirmation : le monstre passe à l'autre habileté de
+    /// son espèce, et une capsule d'habileté est consommée, du sac d'abord,
+    /// puis du coffre (section 5.9). Rend l'ancienne habileté et la
+    /// nouvelle.
+    pub fn changer_d_habilete(
+        &mut self,
+        emplacement: Emplacement,
+    ) -> Result<(Option<Habilete>, Habilete), ErreurChangementDHabilete> {
+        let (monstre, nouvelle) = self.estimer_changement_d_habilete(emplacement)?;
+        if !self.sac.utiliser_capsule_d_habilete() {
+            self.coffre_du_camp.utiliser_capsule_d_habilete();
+        }
+        self.collection
+            .monstre_a_modifier(emplacement)
+            .expect("emplacement vérifié")
+            .changer_d_habilete(nouvelle);
+        Ok((monstre.habilete(), nouvelle))
     }
 
     /// Ce que ce monstre peut apprendre au camp, gratuitement (section
@@ -740,6 +802,12 @@ impl Partie {
         argent_du_pillard
     }
 
+    /// Une capsule d'habileté trouvée dans un coffre va dans le sac (section
+    /// 5.9).
+    pub fn trouver_capsule_d_habilete(&mut self) {
+        self.sac.ajouter_capsules_d_habilete(1);
+    }
+
     /// Après un combat gagné, un Fouineur de l'équipe qui n'est pas KO trouve
     /// une potion 1 fois sur 4 ; deux Fouineurs n'en valent qu'un (section
     /// 5.9). La potion va dans le sac. Rend le Fouineur qui l'a trouvée.
@@ -993,6 +1061,51 @@ mod tests {
     }
 
     #[test]
+    fn une_capsule_d_habilete_donne_l_autre_habilete_de_l_espece() {
+        let mut partie = partie();
+        let espece = espece("loup").avec_habiletes(vec![Habilete::Pillard, Habilete::Fouineur]);
+        let loup = Monstre::creer(
+            espece,
+            Niveau::new(5).unwrap(),
+            ValeursInternes::default(),
+            false,
+        )
+        .unwrap();
+        partie.prendre_monstre_rare(loup);
+        let loup = Emplacement::Equipe(1);
+        assert_eq!(
+            partie.changer_d_habilete(loup),
+            Err(ErreurChangementDHabilete::AucuneCapsule)
+        );
+        // Le monstre de départ n'a qu'une habileté possible, ou aucune.
+        assert_eq!(
+            partie.estimer_changement_d_habilete(Emplacement::Equipe(0)),
+            Err(ErreurChangementDHabilete::AucuneAutreHabilete)
+        );
+        assert_eq!(
+            partie.acheter_capsules_d_habilete(1),
+            Err(ErreurMarchand::AucunMarchand)
+        );
+        partie.accueillir_malvoise();
+        partie.coffre_du_camp.ajouter_argent(450);
+        assert_eq!(partie.acheter_capsules_d_habilete(2), Ok(400));
+        partie.trouver_capsule_d_habilete();
+        assert_eq!(partie.capsules_d_habilete(), 3);
+        // Le sac d'abord, puis le coffre.
+        assert_eq!(
+            partie.changer_d_habilete(loup),
+            Ok((Some(Habilete::Pillard), Habilete::Fouineur))
+        );
+        assert_eq!(partie.sac().capsules_d_habilete(), 0);
+        assert_eq!(
+            partie.changer_d_habilete(loup),
+            Ok((Some(Habilete::Fouineur), Habilete::Pillard))
+        );
+        assert_eq!(partie.coffre_du_camp().capsules_d_habilete(), 1);
+        assert!(partie.collection().equipe()[1].a_l_habilete(Habilete::Pillard));
+    }
+
+    #[test]
     fn un_pillard_debout_ajoute_50_pour_cent_a_l_argent_d_un_coffre() {
         let mut partie = partie();
         partie.prendre_monstre_rare(creer("loup", 5).avec_habilete(Habilete::Pillard));
@@ -1089,7 +1202,7 @@ mod tests {
         let mut expedition = partie.partir_en_expedition(zone, piste).unwrap();
         for _ in 0..4 {
             assert!(matches!(
-                expedition.etape_suivante(&mut AleatoireScripte::new([81, 1])),
+                expedition.etape_suivante(&mut AleatoireScripte::new([81, 1, 100])),
                 Some(EvenementExpedition::Coffre { .. })
             ));
         }
@@ -1248,7 +1361,7 @@ mod tests {
         // L'étape de l'âme, tirée parmi celles qui précèdent la dernière (1 à
         // 3 sur 4), puis la première étape, un coffre : sa nature et ses
         // potions.
-        let mut aleatoire = AleatoireScripte::new([2, 81, 1]);
+        let mut aleatoire = AleatoireScripte::new([2, 81, 1, 100]);
         assert!(matches!(
             expedition.etape_suivante(&mut aleatoire),
             Some(EvenementExpedition::Coffre { .. })
@@ -1449,7 +1562,7 @@ mod tests {
         let Some(EvenementExpedition::Coffre {
             capsule: Some(trouvee),
             ..
-        }) = expedition.etape_suivante(&mut AleatoireScripte::new([81, 1, 20]))
+        }) = expedition.etape_suivante(&mut AleatoireScripte::new([81, 1, 20, 100]))
         else {
             panic!("un coffre avec une capsule était attendu");
         };
@@ -1461,7 +1574,7 @@ mod tests {
         let (zones, piste) = carte();
         let mut partie = partie();
         let mut expedition = partie.partir_en_expedition(&zones[0], &piste).unwrap();
-        expedition.etape_suivante(&mut AleatoireScripte::new([81, 1]));
+        expedition.etape_suivante(&mut AleatoireScripte::new([81, 1, 100]));
         assert_eq!(partie.rentrer_au_camp(&expedition, &piste), None);
         assert!(!partie.est_exploree(&ZoneId::new("bois")));
         assert_eq!(partie.indices_trouves(), 0);
@@ -1474,7 +1587,7 @@ mod tests {
         partie.indices_trouves = 3;
         let mut expedition = partie.partir_en_expedition(&zones[1], &piste).unwrap();
         for _ in 0..3 {
-            expedition.etape_suivante(&mut AleatoireScripte::new([81, 1]));
+            expedition.etape_suivante(&mut AleatoireScripte::new([81, 1, 100]));
         }
         let Some(EvenementExpedition::Apotre(apotre)) =
             expedition.etape_suivante(&mut AleatoireScripte::new([2]))

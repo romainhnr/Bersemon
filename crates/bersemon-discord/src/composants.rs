@@ -187,6 +187,10 @@ pub enum Cle {
     Vendre(u8),
     /// Le monstre choisi dans la gestion.
     VendreCeMonstre(Emplacement),
+    /// Une capsule d'habileté sur le monstre choisi (section 5.9).
+    ChangerDHabilete(Emplacement),
+    /// Une capsule d'habileté, chez Malvoise.
+    AcheterCapsuleDHabilete,
     /// Menu des attaques à apprendre par ce monstre, en oubliant celle en
     /// position `oubliee` s'il en connaît déjà 4.
     Apprendre {
@@ -286,6 +290,8 @@ impl Cle {
             Cle::DonnerAme => jouer(Choix::DonnerAme(MarchandId::new(valeur?))),
             Cle::Vendre(_) => jouer(Choix::Vendre(lire_emplacement(valeur?)?)),
             Cle::VendreCeMonstre(emplacement) => jouer(Choix::Vendre(*emplacement)),
+            Cle::ChangerDHabilete(emplacement) => jouer(Choix::ChangerDHabilete(*emplacement)),
+            Cle::AcheterCapsuleDHabilete => jouer(Choix::AcheterCapsulesDHabilete(1)),
             Cle::Apprendre {
                 emplacement,
                 oubliee,
@@ -384,6 +390,10 @@ impl Cle {
             Cle::AcheterCapsule => "acheter-capsule".to_string(),
             Cle::DonnerAme => "donner-ame".to_string(),
             Cle::Vendre(numero) => format!("vendre:{numero}"),
+            Cle::ChangerDHabilete(emplacement) => {
+                format!("changer-habilete:{}", emplacement_en_texte(*emplacement))
+            }
+            Cle::AcheterCapsuleDHabilete => "acheter-capsule-d-habilete".to_string(),
             Cle::VendreCeMonstre(emplacement) => {
                 format!("vendre-monstre:{}", emplacement_en_texte(*emplacement))
             }
@@ -437,6 +447,7 @@ impl Cle {
             "vue:options" => Cle::Afficher(Vue::Options),
             "se-suicider" => Cle::SeSuicider,
             "acheter-capsule" => Cle::AcheterCapsule,
+            "acheter-capsule-d-habilete" => Cle::AcheterCapsuleDHabilete,
             "donner-ame" => Cle::DonnerAme,
             "fiche" => Cle::Fiche,
             "continuer" => Cle::Continuer,
@@ -502,6 +513,7 @@ impl Cle {
                     }
                     "vendre" => Cle::Vendre(numero()?),
                     "vendre-monstre" => Cle::VendreCeMonstre(emplacement()?),
+                    "changer-habilete" => Cle::ChangerDHabilete(emplacement()?),
                     "apprendre" => {
                         let (emplacement, oubliee) = parametre.split_once(':')?;
                         let oubliee = match oubliee {
@@ -579,13 +591,14 @@ fn lire_soin_et_position(texte: &str) -> Option<(Soin, usize)> {
 }
 
 /// Valeur d'option des menus du coffre : `soins:` suivi du soin et de la
-/// quantité, `argent:` suivi de la quantité, ou `capsule:` suivi de
-/// l'attaque.
+/// quantité, `argent:` suivi de la quantité, `capsule:` suivi de
+/// l'attaque, ou `capsules-d-habilete:` suivi de la quantité.
 pub fn objet_en_texte(objet: &Objet) -> String {
     match objet {
         Objet::Soins(soin, nombre) => format!("soins:{}:{nombre}", soin_en_texte(*soin)),
         Objet::Argent(montant) => format!("argent:{montant}"),
         Objet::Capsule(attaque) => format!("capsule:{}", attaque.as_str()),
+        Objet::CapsulesDHabilete(nombre) => format!("capsules-d-habilete:{nombre}"),
     }
 }
 
@@ -598,6 +611,7 @@ fn lire_objet(texte: &str) -> Option<Objet> {
         }
         "argent" => Some(Objet::Argent(parametre.parse().ok()?)),
         "capsule" => Some(Objet::Capsule(AttaqueId::new(parametre))),
+        "capsules-d-habilete" => Some(Objet::CapsulesDHabilete(parametre.parse().ok()?)),
         _ => None,
     }
 }
@@ -706,6 +720,8 @@ mod tests {
             Cle::DonnerAme,
             Cle::Vendre(2),
             Cle::VendreCeMonstre(Emplacement::Equipe(2)),
+            Cle::ChangerDHabilete(Emplacement::Camp(7)),
+            Cle::AcheterCapsuleDHabilete,
             Cle::Apprendre {
                 emplacement: Emplacement::Camp(29),
                 oubliee: None,
@@ -890,6 +906,7 @@ mod tests {
             Objet::Soins(Soin::GrandePotion, 2),
             Objet::Argent(120),
             Objet::Capsule(AttaqueId::new("brasier")),
+            Objet::CapsulesDHabilete(3),
         ] {
             let valeur = objet_en_texte(&objet);
             assert_eq!(

@@ -242,6 +242,7 @@ Capsule d'habileté, décidée le 19/10/2026 pour l'étape 35 :
 - Une capsule d'habileté, unique pour toutes les espèces, fait passer un monstre à l'autre habileté de son espèce. Elle se consomme, contrairement aux capsules d'attaque (section 13.10).
 - Elle s'achète chez Malvoise, 200 pièces d'argent, et se trouve dans un coffre sur 10 (section 9.2). Elle se range dans le sac ou le coffre, se déplace par lots comme les potions et se perd avec le sac (section 9.3). Prix et taux sont des hypothèses, à confirmer (Q81).
 - Elle s'utilise au camp, depuis la gestion des monstres, après confirmation, qui annonce l'ancienne et la nouvelle habileté. Elle se prend dans le sac d'abord, puis dans le coffre, comme l'argent (section 13.3). Elle est refusée pour un monstre dont l'espèce n'a pas deux habiletés différentes, ou pour un monstre parti en expédition automatique.
+- Écrans, à l'étape 35 : dans la console, la gestion des monstres propose "Changer l'habileté d'un monstre", avec le nombre de capsules, l'étal de Malvoise "Acheter des capsules d'habileté" au nombre choisi, et le coffre les déplace au nombre choisi. Sur Discord, la fiche d'un monstre montre un bouton "Passer à" suivi de l'autre habileté quand le joueur a une capsule, l'étal un bouton d'achat à l'unité, et les menus du coffre un lot d'une capsule et le tout. Le coffre trouvé et le camp disent les capsules d'habileté du sac et du coffre.
 
 ## 6. Histoire et démarrage
 

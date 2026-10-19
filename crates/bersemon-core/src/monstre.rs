@@ -98,6 +98,11 @@ impl Monstre {
         self
     }
 
+    /// Avec une capsule d'habileté, au camp (section 5.9).
+    pub(crate) fn changer_d_habilete(&mut self, habilete: Habilete) {
+        self.habilete = Some(habilete);
+    }
+
     pub fn avec_habilete(mut self, habilete: Habilete) -> Self {
         self.habilete = Some(habilete);
         self

@@ -307,7 +307,8 @@ mod tests {
             coffre_du_camp: Inventaire::new(135, 0, vec![capsule("grand-coup", Type::Normal)])
                 .avec_soins(Soin::Remede, 2)
                 .avec_soins(Soin::GrandePotion, 1)
-                .avec_soins(Soin::Elixir, 3),
+                .avec_soins(Soin::Elixir, 3)
+                .avec_capsules_d_habilete(2),
             marchand_au_camp: true,
             ames_donnees: vec![bertrand()],
             ames_portees: vec![grete()],

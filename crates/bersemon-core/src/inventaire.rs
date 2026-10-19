@@ -1,6 +1,6 @@
 //! Objets du joueur, rangés dans le sac, qu'il emporte en expédition
 //! manuelle, ou dans le coffre du camp, où ils sont à l'abri (sections 13.3
-//! et 14.4) : argent, soins et capsules d'attaque.
+//! et 14.4) : argent, soins, capsules d'attaque et capsules d'habileté.
 
 use std::fmt;
 
@@ -18,6 +18,9 @@ pub struct Inventaire {
     soins: Soins,
     /// Sans doublon : une capsule sert sans s'user (section 13.10).
     capsules: Vec<Capsule>,
+    /// Elles se consomment, contrairement aux capsules d'attaque (section
+    /// 5.9).
+    capsules_d_habilete: u32,
 }
 
 /// Ce que le joueur déplace entre le sac et le coffre du camp.
@@ -26,6 +29,7 @@ pub enum Objet {
     Argent(u32),
     Soins(Soin, u32),
     Capsule(AttaqueId),
+    CapsulesDHabilete(u32),
 }
 
 impl Inventaire {
@@ -37,6 +41,7 @@ impl Inventaire {
             argent,
             soins: Soins::default(),
             capsules: Vec::new(),
+            capsules_d_habilete: 0,
         };
         inventaire.soins.ajouter(Soin::Potion, potions);
         for capsule in capsules {
@@ -48,6 +53,28 @@ impl Inventaire {
     pub fn avec_soins(mut self, soin: Soin, nombre: u32) -> Self {
         self.soins.ajouter(soin, nombre);
         self
+    }
+
+    pub fn avec_capsules_d_habilete(mut self, nombre: u32) -> Self {
+        self.ajouter_capsules_d_habilete(nombre);
+        self
+    }
+
+    pub fn capsules_d_habilete(&self) -> u32 {
+        self.capsules_d_habilete
+    }
+
+    pub fn ajouter_capsules_d_habilete(&mut self, nombre: u32) {
+        self.capsules_d_habilete = self.capsules_d_habilete.saturating_add(nombre);
+    }
+
+    /// Rend `false` sans rien changer s'il n'y en a pas.
+    pub(crate) fn utiliser_capsule_d_habilete(&mut self) -> bool {
+        if self.capsules_d_habilete == 0 {
+            return false;
+        }
+        self.capsules_d_habilete -= 1;
+        true
     }
 
     /// En pièces d'argent (section 14.1).
@@ -68,7 +95,10 @@ impl Inventaire {
     }
 
     pub fn est_vide(&self) -> bool {
-        self.argent == 0 && self.soins.est_vide() && self.capsules.is_empty()
+        self.argent == 0
+            && self.soins.est_vide()
+            && self.capsules.is_empty()
+            && self.capsules_d_habilete == 0
     }
 
     pub fn contient_capsule(&self, id: &AttaqueId) -> bool {
@@ -103,6 +133,7 @@ impl Inventaire {
         for capsule in autre.capsules {
             self.ajouter_capsule(capsule);
         }
+        self.ajouter_capsules_d_habilete(autre.capsules_d_habilete);
     }
 
     /// Retire l'objet et le rend, seul dans un inventaire, sans rien changer
@@ -110,7 +141,9 @@ impl Inventaire {
     pub(crate) fn retirer(&mut self, objet: &Objet) -> Result<Inventaire, ErreurObjet> {
         let mut retire = Inventaire::default();
         match objet {
-            Objet::Argent(0) | Objet::Soins(_, 0) => return Err(ErreurObjet::QuantiteNulle),
+            Objet::Argent(0) | Objet::Soins(_, 0) | Objet::CapsulesDHabilete(0) => {
+                return Err(ErreurObjet::QuantiteNulle);
+            }
             Objet::Argent(montant) => {
                 if *montant > self.argent {
                     return Err(ErreurObjet::Insuffisant);
@@ -131,6 +164,13 @@ impl Inventaire {
                     .position(|capsule| capsule.id() == id)
                     .ok_or(ErreurObjet::CapsuleAbsente)?;
                 retire.capsules.push(self.capsules.remove(position));
+            }
+            Objet::CapsulesDHabilete(nombre) => {
+                if *nombre > self.capsules_d_habilete {
+                    return Err(ErreurObjet::Insuffisant);
+                }
+                self.capsules_d_habilete -= nombre;
+                retire.capsules_d_habilete = *nombre;
             }
         }
         Ok(retire)

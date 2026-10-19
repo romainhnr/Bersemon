@@ -4,6 +4,7 @@ use bersemon_core::capsule::ErreurApprentissage;
 use bersemon_core::collection::{Collection, ErreurCollection};
 use bersemon_core::combat::ErreurCombat;
 use bersemon_core::deroulement::{ActionDeGestion, Choix, ErreurChoix};
+use bersemon_core::habilete::ErreurChangementDHabilete;
 use bersemon_core::inventaire::ErreurObjet;
 use bersemon_core::marchand::ErreurMarchand;
 use bersemon_core::sauvegarde::ErreurSauvegarde;
@@ -37,6 +38,15 @@ pub fn erreur_de_choix(choix: &Choix, erreur: &ErreurChoix) -> String {
         }
         ErreurChoix::Objet(erreur) => erreur_objet(erreur),
         ErreurChoix::Apprentissage(erreur) => erreur_apprentissage(erreur),
+        ErreurChoix::Habilete(erreur) => match erreur {
+            ErreurChangementDHabilete::AucuneCapsule => {
+                "Il vous faut une capsule d'habileté, dans le sac ou le coffre.".to_string()
+            }
+            ErreurChangementDHabilete::AucuneAutreHabilete => {
+                "Son espèce n'a pas d'autre habileté.".to_string()
+            }
+            ErreurChangementDHabilete::Collection(erreur) => erreur_collection(erreur),
+        },
         autre => format!("Action impossible : {autre}."),
     }
 }

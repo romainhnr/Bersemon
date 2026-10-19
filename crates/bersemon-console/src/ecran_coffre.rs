@@ -23,9 +23,11 @@ pub fn choisir(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
         println!("  4. Ranger de l'argent");
         println!("  5. Prendre une capsule d'attaque");
         println!("  6. Ranger une capsule d'attaque");
-        println!("  7. Tout ranger dans le coffre");
+        println!("  7. Prendre des capsules d'habileté");
+        println!("  8. Ranger des capsules d'habileté");
+        println!("  9. Tout ranger dans le coffre");
         println!("  0. Retour au camp");
-        let choix = match entree.choix(0, 7)? {
+        let choix = match entree.choix(0, 9)? {
             0 => return Some(None),
             1 => soins(coffre, entree)?.map(Choix::SortirDuCoffre),
             2 => soins(sac, entree)?.map(Choix::RangerAuCoffre),
@@ -35,6 +37,10 @@ pub fn choisir(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
                 .map(|montant| Choix::RangerAuCoffre(Objet::Argent(montant))),
             5 => capsule(coffre, entree)?.map(Choix::SortirDuCoffre),
             6 => capsule(sac, entree)?.map(Choix::RangerAuCoffre),
+            7 => quantite(coffre.capsules_d_habilete(), "capsules d'habileté", entree)?
+                .map(|nombre| Choix::SortirDuCoffre(Objet::CapsulesDHabilete(nombre))),
+            8 => quantite(sac.capsules_d_habilete(), "capsules d'habileté", entree)?
+                .map(|nombre| Choix::RangerAuCoffre(Objet::CapsulesDHabilete(nombre))),
             _ => Some(Choix::ToutRangerAuCoffre),
         };
         if choix.is_some() {

@@ -24,6 +24,7 @@ use crate::expedition::{ErreurExpedition, EvenementExpedition, Expedition};
 use crate::expedition_automatique::{
     BilanExpeditionAutomatique, ErreurExpeditionAutomatique, ExpeditionAutomatique,
 };
+use crate::habilete::{ErreurChangementDHabilete, Habilete};
 use crate::heros::{Classe, Heros};
 use crate::horodatage::Horodatage;
 use crate::inventaire::{ErreurObjet, Inventaire, Objet};
@@ -85,6 +86,11 @@ pub enum Choix {
     /// Au camp, chez Malvoise, sans confirmation : une âme que le joueur
     /// porte (section 14.2).
     DonnerAme(MarchandId),
+    /// Au camp, chez Malvoise, sans confirmation (section 5.9).
+    AcheterCapsulesDHabilete(u32),
+    /// Au camp, après confirmation : une capsule d'habileté fait passer ce
+    /// monstre à l'autre habileté de son espèce (section 5.9).
+    ChangerDHabilete(Emplacement),
     /// Au camp : du sac vers le coffre (section 13.3).
     RangerAuCoffre(Objet),
     /// Au camp : du coffre vers le sac (section 13.3).
@@ -212,6 +218,11 @@ pub enum Confirmation {
     },
     /// La partie de ce héros serait effacée pour de bon (section 13.9).
     Suicide(Heros),
+    /// Une capsule d'habileté serait consommée (section 5.9).
+    ChangerDHabilete {
+        monstre: Monstre,
+        nouvelle: Habilete,
+    },
 }
 
 /// Ce qui s'est passé, dans l'ordre. Les monstres et les combats sont des
@@ -238,6 +249,8 @@ pub enum Evenement {
         argent: u32,
         argent_du_pillard: u32,
         capsule: Option<Capsule>,
+        /// Elle va dans le sac (section 5.9).
+        capsule_d_habilete: bool,
     },
     MonstreRarePacifique(Monstre),
     MonstreRareHostile(Monstre),
@@ -331,6 +344,15 @@ pub enum Evenement {
     MalvoiseRencontre {
         avec_une_ame: bool,
     },
+    CapsulesDHabileteAchetees {
+        nombre: u32,
+        prix: u32,
+    },
+    /// Le monstre après le changement.
+    HabileteChangee {
+        monstre: Monstre,
+        ancienne: Option<Habilete>,
+    },
     /// Nom du marchand dont l'âme est donnée, et le soin que Malvoise vend
     /// désormais.
     AmeDonnee {
@@ -383,6 +405,7 @@ pub enum ErreurChoix {
     /// Le marchand ne vend pas cette capsule.
     CapsuleInconnue(AttaqueId),
     Apprentissage(ErreurApprentissage),
+    Habilete(ErreurChangementDHabilete),
 }
 
 impl fmt::Display for ErreurChoix {
@@ -404,6 +427,7 @@ impl fmt::Display for ErreurChoix {
                 write!(f, "capsule inconnue : {}", capsule.as_str())
             }
             ErreurChoix::Apprentissage(erreur) => write!(f, "{erreur}"),
+            ErreurChoix::Habilete(erreur) => write!(f, "{erreur}"),
         }
     }
 }
@@ -802,6 +826,45 @@ impl EnJeu {
                     capsule: capsule.clone(),
                     prix,
                 });
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::AcheterCapsulesDHabilete(nombre) => {
+                let prix = self
+                    .partie
+                    .acheter_capsules_d_habilete(*nombre)
+                    .map_err(ErreurChoix::Marchand)?;
+                evenements.push(Evenement::CapsulesDHabileteAchetees {
+                    nombre: *nombre,
+                    prix,
+                });
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::ChangerDHabilete(emplacement) => {
+                if !confirme {
+                    // Un changement impossible est refusé sans demander de
+                    // confirmation.
+                    let (monstre, nouvelle) = self
+                        .partie
+                        .estimer_changement_d_habilete(*emplacement)
+                        .map_err(ErreurChoix::Habilete)?;
+                    return Ok(Reponse::a_confirmer(Confirmation::ChangerDHabilete {
+                        monstre,
+                        nouvelle,
+                    }));
+                }
+                let (ancienne, _) = self
+                    .partie
+                    .changer_d_habilete(*emplacement)
+                    .map_err(ErreurChoix::Habilete)?;
+                let monstre = self
+                    .partie
+                    .collection()
+                    .monstre(*emplacement)
+                    .cloned()
+                    .expect("le monstre vient de changer d'habileté");
+                evenements.push(Evenement::HabileteChangee { monstre, ancienne });
                 sauvegarder(&self.partie, contexte.depot, evenements);
                 Ok(Reponse::Faite)
             }
@@ -1522,13 +1585,18 @@ impl EnExpedition {
                 potions,
                 argent,
                 capsule,
+                capsule_d_habilete,
             } => {
                 let argent_du_pillard = partie.ouvrir_coffre(potions, argent, capsule.clone());
+                if capsule_d_habilete {
+                    partie.trouver_capsule_d_habilete();
+                }
                 evenements.push(Evenement::Coffre {
                     potions,
                     argent: argent + argent_du_pillard,
                     argent_du_pillard,
                     capsule,
+                    capsule_d_habilete,
                 });
                 self.apres_l_etape(partie, evenements)
             }
@@ -1939,7 +2007,7 @@ mod tests {
         );
 
         // Un coffre d'une potion et de 12 pièces d'argent, sans capsule.
-        let mut aleatoire = AleatoireScripte::new([81, 1, 12, 21]);
+        let mut aleatoire = AleatoireScripte::new([81, 1, 12, 21, 100]);
         let mut contexte = Contexte {
             contenu: &contenu,
             aleatoire: &mut aleatoire,
@@ -1964,7 +2032,8 @@ mod tests {
                     potions: 1,
                     argent: 12,
                     argent_du_pillard: 0,
-                    capsule: None
+                    capsule: None,
+                    capsule_d_habilete: false
                 },
                 Evenement::Conseil(Conseil::PremierArretEntreDeuxEtapes),
             ]
@@ -2033,7 +2102,7 @@ mod tests {
         // Le brigand déjà vaincu et l'âme de Bertrand portée, la Lisière ne
         // finit que par des coffres : une potion et 10 pièces d'argent
         // chacun, sans capsule.
-        let coffre = vec![81, 1, 10, 100];
+        let coffre = vec![81, 1, 10, 100, 100];
         let mut etat = etat_de(deroulement.partie().unwrap());
         etat.humains_vaincus = vec![HumainId::new("brigand")];
         etat.ames_portees = vec![bertrand(&contenu)];
@@ -2170,7 +2239,7 @@ mod tests {
         let depot = DepotMemoire::default();
         let mut deroulement = au_camp(partie_pour_les_expeditions(&contenu), &contenu, &depot);
         // Trois coffres d'une potion et de 10 pièces d'argent, sans capsule.
-        let coffre = vec![81, 1, 10, 100];
+        let coffre = vec![81, 1, 10, 100, 100];
         let lisiere = Choix::PartirEnExpedition(ZoneId::new("lisiere"));
         repondre_a(
             &mut deroulement,
@@ -2258,6 +2327,41 @@ mod tests {
         assert_eq!(
             repondre_sans_tirage(&mut deroulement, donner(), &contenu, &depot),
             Err(ErreurChoix::Marchand(ErreurMarchand::AmeNonPortee))
+        );
+    }
+
+    #[test]
+    fn changer_d_habilete_apres_confirmation() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut etat = etat_de(&partie_pour_les_expeditions(&contenu));
+        etat.coffre_du_camp = Inventaire::default().avec_capsules_d_habilete(1);
+        let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
+        let avant = deroulement.partie().unwrap().collection().equipe()[0].habilete();
+        let changer = Choix::ChangerDHabilete(Emplacement::Equipe(0));
+        repondre_sans_tirage(&mut deroulement, changer.clone(), &contenu, &depot).unwrap();
+        let Attente::Confirmation(Confirmation::ChangerDHabilete { nouvelle, .. }) =
+            deroulement.attente()
+        else {
+            panic!("confirmation attendue");
+        };
+        let nouvelle = *nouvelle;
+        assert_ne!(Some(nouvelle), avant);
+        let evenements =
+            repondre_sans_tirage(&mut deroulement, Choix::Oui, &contenu, &depot).unwrap();
+        assert!(matches!(
+            &evenements[..],
+            [Evenement::HabileteChangee { monstre, ancienne }]
+                if *ancienne == avant && monstre.habilete() == Some(nouvelle)
+        ));
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert_eq!(sauvegarde.capsules_d_habilete(), 0);
+        // Sans capsule, le refus vient sans confirmation.
+        assert_eq!(
+            repondre_sans_tirage(&mut deroulement, changer, &contenu, &depot),
+            Err(ErreurChoix::Habilete(
+                ErreurChangementDHabilete::AucuneCapsule
+            ))
         );
     }
 
@@ -2407,7 +2511,7 @@ mod tests {
         repondre_sans_tirage(&mut deroulement, Choix::ReprendreLaPartie, &contenu, &depot).unwrap();
         // Un coffre : une potion, 12 pièces d'argent et la première des trois
         // capsules de la Lisière, Brasier.
-        let mut aleatoire = AleatoireScripte::new([81, 1, 12, 20, 0]);
+        let mut aleatoire = AleatoireScripte::new([81, 1, 12, 20, 0, 100]);
         let mut contexte = Contexte {
             contenu: &contenu,
             aleatoire: &mut aleatoire,

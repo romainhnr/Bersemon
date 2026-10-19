@@ -5,8 +5,12 @@
 //! elle s'exerce : stats et XP au combat, dégâts, capture, coffres,
 //! expéditions automatiques.
 
+use std::fmt;
+
 use crate::aleatoire::Aleatoire;
+use crate::collection::ErreurCollection;
 use crate::espece::Espece;
+use crate::monstre::Monstre;
 use crate::stats::{BonusDeStats, Stats};
 use crate::zone::tirer_entre;
 
@@ -120,6 +124,42 @@ pub(crate) fn tirer_habilete(espece: &Espece, aleatoire: &mut dyn Aleatoire) -> 
     let position = tirer_entre(0, (possibles.len() - 1) as u32, aleatoire) as usize;
     Some(possibles[position])
 }
+
+/// L'habileté que donnerait une capsule d'habileté : l'autre de l'espèce
+/// (section 5.9). `None` si l'espèce n'en a pas deux différentes.
+pub fn autre_habilete(monstre: &Monstre) -> Option<Habilete> {
+    monstre
+        .espece()
+        .habiletes()
+        .iter()
+        .copied()
+        .find(|habilete| Some(*habilete) != monstre.habilete())
+}
+
+/// Pourquoi une capsule d'habileté ne peut pas servir.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ErreurChangementDHabilete {
+    AucuneCapsule,
+    /// L'espèce n'a pas deux habiletés différentes.
+    AucuneAutreHabilete,
+    Collection(ErreurCollection),
+}
+
+impl fmt::Display for ErreurChangementDHabilete {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ErreurChangementDHabilete::AucuneCapsule => {
+                write!(f, "aucune capsule d'habileté")
+            }
+            ErreurChangementDHabilete::AucuneAutreHabilete => {
+                write!(f, "l'espèce n'a pas d'autre habileté")
+            }
+            ErreurChangementDHabilete::Collection(erreur) => write!(f, "{erreur}"),
+        }
+    }
+}
+
+impl std::error::Error for ErreurChangementDHabilete {}
 
 /// `valeur` augmentée de `pourcentage`, arrondie à l'entier inférieur.
 pub(crate) fn majorer(valeur: u32, pourcentage: u32) -> u32 {

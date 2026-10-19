@@ -19,6 +19,8 @@ const POTIONS_MIN: u32 = 1;
 const POTIONS_MAX: u32 = 2;
 /// Un coffre sur 5 contient une capsule d'attaque (Q69).
 const CHANCE_DE_CAPSULE: u32 = 20;
+/// Un coffre sur 10 contient une capsule d'habileté (section 5.9, Q81).
+const CHANCE_DE_CAPSULE_D_HABILETE: u32 = 10;
 
 /// Contenu des coffres propre à chaque zone (section 14.5).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -57,6 +59,7 @@ pub enum EvenementExpedition {
         potions: u32,
         argent: u32,
         capsule: Option<Capsule>,
+        capsule_d_habilete: bool,
     },
     MonstreRare(MonstreRare),
     /// Combat, sans fuite, contre l'Apôtre (section 9.4).
@@ -206,7 +209,8 @@ impl Expedition {
     /// nature de l'événement (combat 80 %, coffre 15 %, monstre rare 5 %,
     /// Q38 ; tant que l'âme du marchand de la zone peut être tirée, combat
     /// 70 % et âme 10 %, section 14.2), puis ceux de son contenu : pour un
-    /// coffre, ses potions, son argent puis sa capsule ; pour une âme, ceux
+    /// coffre, ses potions, son argent, sa capsule d'attaque puis sa capsule
+    /// d'habileté ; pour une âme, ceux
     /// de son adversaire. L'âme attendue à cette étape remplace l'événement,
     /// sans tirage de sa nature.
     /// Une zone sans monstre rare donne un combat à la place. L'Apôtre
@@ -277,10 +281,12 @@ impl Expedition {
         if let Some(capsule) = &capsule {
             self.capsules_trouvees.push(capsule.clone());
         }
+        let capsule_d_habilete = aleatoire.tirer(1..=100) <= CHANCE_DE_CAPSULE_D_HABILETE;
         EvenementExpedition::Coffre {
             potions,
             argent,
             capsule,
+            capsule_d_habilete,
         }
     }
 
@@ -358,11 +364,12 @@ mod tests {
             Some(EvenementExpedition::Combat(groupe)) if groupe.len() == 1
         ));
         assert_eq!(
-            expedition.etape_suivante(&mut AleatoireScripte::new([81, 2])),
+            expedition.etape_suivante(&mut AleatoireScripte::new([81, 2, 11])),
             Some(EvenementExpedition::Coffre {
                 potions: 2,
                 argent: 10,
-                capsule: None
+                capsule: None,
+                capsule_d_habilete: false
             })
         );
         let mut rare = vec![96];
@@ -390,7 +397,7 @@ mod tests {
         let mut expedition = Expedition::partir(zone(false));
         for _ in 0..4 {
             assert!(!expedition.est_terminee());
-            expedition.etape_suivante(&mut AleatoireScripte::new([81, 1]));
+            expedition.etape_suivante(&mut AleatoireScripte::new([81, 1, 100]));
         }
         assert!(expedition.est_terminee());
         assert!(expedition.est_reussie());
@@ -406,7 +413,7 @@ mod tests {
         let mut expedition = Expedition::partir(zone(false)).vers_l_antre(apotre);
         for _ in 0..3 {
             assert!(matches!(
-                expedition.etape_suivante(&mut AleatoireScripte::new([81, 1])),
+                expedition.etape_suivante(&mut AleatoireScripte::new([81, 1, 100])),
                 Some(EvenementExpedition::Coffre { .. })
             ));
         }
@@ -433,7 +440,7 @@ mod tests {
         let mut expedition = Expedition::partir(zone(false)).contre_l_humain(brigand);
         for _ in 0..3 {
             assert!(matches!(
-                expedition.etape_suivante(&mut AleatoireScripte::new([81, 1])),
+                expedition.etape_suivante(&mut AleatoireScripte::new([81, 1, 100])),
                 Some(EvenementExpedition::Coffre { .. })
             ));
         }
@@ -449,7 +456,7 @@ mod tests {
     fn une_defaite_termine_l_expedition_sans_la_reussir() {
         let mut expedition = Expedition::partir(zone(false));
         for _ in 0..4 {
-            expedition.etape_suivante(&mut AleatoireScripte::new([81, 1]));
+            expedition.etape_suivante(&mut AleatoireScripte::new([81, 1, 100]));
         }
         expedition.noter_defaite();
         assert!(expedition.est_terminee());
@@ -473,11 +480,12 @@ mod tests {
         .unwrap();
         let mut expedition = Expedition::partir(zone);
         assert_eq!(
-            expedition.etape_suivante(&mut AleatoireScripte::new([90, 1, 25])),
+            expedition.etape_suivante(&mut AleatoireScripte::new([90, 1, 25, 10])),
             Some(EvenementExpedition::Coffre {
                 potions: 1,
                 argent: 25,
-                capsule: None
+                capsule: None,
+                capsule_d_habilete: true
             })
         );
     }
@@ -615,24 +623,28 @@ mod tests {
             .avec_capsules_possedees(vec![AttaqueId::new("a")]);
         // Au-delà de 20, pas de capsule.
         assert_eq!(
-            capsule_du_coffre(expedition.etape_suivante(&mut AleatoireScripte::new([90, 1, 21]))),
+            capsule_du_coffre(
+                expedition.etape_suivante(&mut AleatoireScripte::new([90, 1, 21, 100]))
+            ),
             None
         );
         // Parmi b et c, la seconde.
         assert_eq!(
             capsule_du_coffre(
-                expedition.etape_suivante(&mut AleatoireScripte::new([90, 1, 20, 1]))
+                expedition.etape_suivante(&mut AleatoireScripte::new([90, 1, 20, 1, 100]))
             ),
             Some("c".to_string())
         );
         // Seule b reste : aucun tirage de position.
         assert_eq!(
-            capsule_du_coffre(expedition.etape_suivante(&mut AleatoireScripte::new([90, 1, 1]))),
+            capsule_du_coffre(
+                expedition.etape_suivante(&mut AleatoireScripte::new([90, 1, 1, 100]))
+            ),
             Some("b".to_string())
         );
         // Plus rien de nouveau : ni chance ni position tirées.
         assert_eq!(
-            capsule_du_coffre(expedition.etape_suivante(&mut AleatoireScripte::new([90, 1]))),
+            capsule_du_coffre(expedition.etape_suivante(&mut AleatoireScripte::new([90, 1, 100]))),
             None
         );
     }
