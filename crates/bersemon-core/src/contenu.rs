@@ -59,9 +59,7 @@ pub fn fin_de_l_introduction(classe: Classe) -> &'static str {
 // Chaque indice s'affiche après son numéro, d'où la minuscule initiale.
 const INDICE_1: &str = "au bout de la Lisière, des cordes neuves pendent encore à un chêne mort. Les traces d'une procession s'enfoncent vers le sud, là où la forêt se noie : le Marais des Pendus. Quelque chose y règne.";
 
-const INDICE_2: &str = "des noyés flottent entre les roseaux, tous tournés vers le même point de la brume, comme s'ils écoutaient un appel.";
-
-const INDICE_3: &str = "un gibet se dresse sur une île de vase, plus haut que les arbres. À son pied, la terre est retournée par des pas trop lourds pour un homme. L'antre de l'Apôtre est là.";
+const INDICE_2: &str = "le bourreau vaincu a parlé : son maître, le Baron pendu, s'est retiré au fond de la Vallée des Brumes, au-delà du Marais, là où les morts ne dorment pas.";
 
 /// Le marchand se réfugie aussitôt au camp, même si l'expédition finit mal
 /// (section 14.2).
@@ -72,9 +70,13 @@ const AVANT_LE_BRIGAND: &str = "Au sortir de la Lisière, un brigand vous barre 
 const APRES_LE_BRIGAND: &str =
     "Le brigand détale dans les fourrés, abandonnant ses bêtes et sa bourse.";
 
-const AVANT_LE_BARON: &str = "Sous le gibet, une silhouette se déplie lentement, la corde encore au cou. Le Baron pendu, Apôtre du Démiurge, vous a senti venir. Il n'y aura pas de fuite.";
+const AVANT_LE_BOURREAU: &str = "Au cœur du Marais, sous un gibet chargé de cordes, un bourreau encagoulé aiguise sa hache. Trois bêtes attendent ses ordres. Il sert le Baron pendu, et il ne vous laissera pas passer.";
 
-const EPILOGUE: &str = "Le Baron pendu s'effondre dans la vase. Sur sa poitrine, un sceau gravé d'une main ouverte : le signe du Démiurge. D'autres Apôtres portent ce sceau, au-delà des terres connues. Votre traque ne fait que commencer.";
+const APRES_LE_BOURREAU: &str = "Le bourreau s'effondre dans la vase, sa hache brisée.";
+
+const AVANT_LE_BARON: &str = "Au fond de la Vallée, la brume se déchire sur un gibet dressé contre le ciel. Le Baron pendu, Apôtre du Démiurge, s'y balance encore, puis ouvre les yeux. Il n'y aura pas de fuite.";
+
+const EPILOGUE: &str = "Le Baron pendu s'effondre au pied de son gibet. Sur sa poitrine, un sceau gravé d'une main ouverte : le signe du Démiurge. D'autres Apôtres portent ce sceau, au-delà des terres connues. Votre traque ne fait que commencer.";
 
 pub fn texte_du_conseil(conseil: Conseil) -> &'static str {
     match conseil {
@@ -144,6 +146,20 @@ impl ContenuV1 {
             APRES_LE_BRIGAND,
         )
         .expect("brigand conforme aux règles");
+        // Au service du Baron pendu, il garde le Marais (section 10.7).
+        let bourreau = Humain::new(
+            HumainId::new("bourreau"),
+            "Bourreau",
+            vec![
+                (trouver("armure-hantee"), niveau(14)),
+                (trouver("feu-follet"), niveau(14)),
+                (trouver("basilic"), niveau(15)),
+            ],
+            150,
+            AVANT_LE_BOURREAU,
+            APRES_LE_BOURREAU,
+        )
+        .expect("Bourreau conforme aux règles");
         let lisiere = Zone::new(
             ZoneId::new("lisiere"),
             "Lisière du Bois-Sombre",
@@ -181,25 +197,50 @@ impl ContenuV1 {
             coffre(25..=50, capsules_de("marais")),
         )
         .and_then(|zone| zone.avec_monstre_cache(schnoz()))
+        .map(|zone| zone.avec_humain(bourreau))
         .expect("Marais conforme aux règles");
-        let baron = Apotre::new(trouver("baron-pendu"), &marais, AVANT_LE_BARON, EPILOGUE)
+        let vallee = Zone::new(
+            ZoneId::new("vallee"),
+            "Vallée des Brumes",
+            (niveau(14), niveau(20)),
+            5,
+            3,
+            vec![
+                trouver("fee-noire"),
+                trouver("squelette"),
+                trouver("armure-hantee"),
+            ],
+            vec![
+                EspeceRare {
+                    espece: trouver("elfe"),
+                    pacifique: true,
+                },
+                EspeceRare {
+                    espece: trouver("vouivre"),
+                    pacifique: false,
+                },
+            ],
+            expedition_automatique(3, 90..=220, 700..=1300, 1..=3, 80..=150),
+            coffre(50..=90, capsules_de("vallee")),
+        )
+        .and_then(|zone| zone.avec_monstre_cache(schnoz()))
+        .expect("Vallée conforme aux règles");
+        // Le Baron pendu attend au fond de la Vallée, que le second indice,
+        // donné par le Bourreau, ouvre (section 9.4).
+        let baron = Apotre::new(trouver("baron-pendu"), &vallee, AVANT_LE_BARON, EPILOGUE)
             .expect("Baron pendu conforme aux règles");
         let indice = |zone: &Zone, texte: &str| Indice {
             zone: zone.id().clone(),
             texte: texte.to_string(),
         };
         let piste = Piste::new(
-            vec![
-                indice(&lisiere, INDICE_1),
-                indice(&marais, INDICE_2),
-                indice(&marais, INDICE_3),
-            ],
+            vec![indice(&lisiere, INDICE_1), indice(&marais, INDICE_2)],
             baron,
         )
         .expect("piste conforme aux règles");
         Self {
             especes,
-            zones: vec![lisiere, marais],
+            zones: vec![lisiere, marais, vallee],
             piste,
             capsules,
         }
@@ -308,7 +349,7 @@ const fn avec_effet(fiche: FicheAttaque, statut: Statut, chance: u8) -> FicheAtt
 }
 
 /// Section 1 de docs/contenu-v1.md, dans le même ordre.
-const ATTAQUES: [FicheAttaque; 46] = [
+const ATTAQUES: [FicheAttaque; 54] = [
     fiche(
         "souffle-chaud",
         "Souffle chaud",
@@ -624,6 +665,62 @@ const ATTAQUES: [FicheAttaque; 46] = [
         75,
         100,
     ),
+    // Attaques des monstres de la Vallée des Brumes.
+    fiche(
+        "bourdonnement",
+        "Bourdonnement",
+        Type::Insecte,
+        Speciale,
+        40,
+        100,
+    ),
+    fiche("malefice", "Maléfice", Type::Tenebres, Speciale, 65, 100),
+    fiche(
+        "poussiere-d-elfe",
+        "Poussière d'elfe",
+        Type::Feerique,
+        Speciale,
+        40,
+        100,
+    ),
+    fiche("bourrasque", "Bourrasque", Type::Vol, Speciale, 55, 100),
+    fiche(
+        "frappe-d-os",
+        "Frappe d'os",
+        Type::Combat,
+        Physique,
+        40,
+        100,
+    ),
+    fiche(
+        "furie-draconique",
+        "Furie draconique",
+        Type::Dragon,
+        Physique,
+        85,
+        90,
+    ),
+    // Attaques Obscur du Baron pendu.
+    fiche(
+        "etreinte-obscure",
+        "Étreinte obscure",
+        Type::Obscur,
+        Physique,
+        80,
+        95,
+    ),
+    avec_effet(
+        fiche(
+            "hurlement-des-abysses",
+            "Hurlement des abysses",
+            Type::Obscur,
+            Speciale,
+            80,
+            100,
+        ),
+        Paralysie,
+        10,
+    ),
 ];
 
 struct FicheCapsule {
@@ -634,7 +731,7 @@ struct FicheCapsule {
 }
 
 /// Section 6 de docs/contenu-v1.md, dans le même ordre.
-const CAPSULES: [FicheCapsule; 6] = [
+const CAPSULES: [FicheCapsule; 9] = [
     FicheCapsule {
         attaque: "brasier",
         prix: 150,
@@ -665,6 +762,21 @@ const CAPSULES: [FicheCapsule; 6] = [
         prix: 300,
         zone: "marais",
     },
+    FicheCapsule {
+        attaque: "malefice",
+        prix: 300,
+        zone: "vallee",
+    },
+    FicheCapsule {
+        attaque: "bourrasque",
+        prix: 300,
+        zone: "vallee",
+    },
+    FicheCapsule {
+        attaque: "furie-draconique",
+        prix: 400,
+        zone: "vallee",
+    },
 ];
 
 struct FicheEspece {
@@ -685,7 +797,7 @@ struct FicheEspece {
 
 /// Section 2 de docs/contenu-v1.md, dans l'ordre du codex : les monstres de
 /// départ, les communs, les rares, l'Apôtre, puis le monstre caché.
-const ESPECES: [FicheEspece; 13] = [
+const ESPECES: [FicheEspece; 17] = [
     FicheEspece {
         id: "salamandre",
         nom: "Salamandre",
@@ -823,6 +935,32 @@ const ESPECES: [FicheEspece; 13] = [
         ],
     },
     FicheEspece {
+        id: "fee-noire",
+        nom: "Fée noire",
+        types: &[Type::Insecte, Type::Tenebres],
+        role: Role::Offensif,
+        stats_de_base: [40, 35, 40, 65, 50, 75],
+        rendement_experience: 72,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Sorcellerie, Habilete::Celerite],
+        apprentissage: &[(1, "bourdonnement"), (4, "regard-funeste"), (8, "malefice")],
+    },
+    FicheEspece {
+        id: "squelette",
+        nom: "Squelette",
+        types: &[Type::Spectre, Type::Combat],
+        role: Role::Offensif,
+        stats_de_base: [50, 80, 60, 30, 45, 55],
+        rendement_experience: 92,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Ferocite, Habilete::Carapace],
+        apprentissage: &[
+            (1, "frappe-d-os"),
+            (8, "lame-rouillee"),
+            (11, "charge-spectrale"),
+        ],
+    },
+    FicheEspece {
         id: "cerf-blanc",
         nom: "Cerf blanc",
         types: &[Type::Normal, Type::Feerique],
@@ -850,9 +988,39 @@ const ESPECES: [FicheEspece; 13] = [
         ],
     },
     FicheEspece {
+        id: "elfe",
+        nom: "Elfe",
+        types: &[Type::Feerique, Type::Vol],
+        role: Role::Soutien,
+        stats_de_base: [55, 40, 50, 85, 80, 90],
+        rendement_experience: 150,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Volonte, Habilete::Instinct],
+        apprentissage: &[
+            (1, "poussiere-d-elfe"),
+            (5, "bourrasque"),
+            (9, "lumiere-d-aube"),
+        ],
+    },
+    FicheEspece {
+        id: "vouivre",
+        nom: "Vouivre",
+        types: &[Type::Dragon, Type::Vol],
+        role: Role::Offensif,
+        stats_de_base: [70, 80, 60, 80, 55, 55],
+        rendement_experience: 170,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Affinite, Habilete::Ferocite],
+        apprentissage: &[
+            (1, "souffle-draconique"),
+            (8, "pique"),
+            (12, "furie-draconique"),
+        ],
+    },
+    FicheEspece {
         id: "baron-pendu",
         nom: "Baron pendu",
-        types: &[Type::Tenebres, Type::Spectre],
+        types: &[Type::Obscur],
         role: Role::Offensif,
         stats_de_base: [85, 85, 75, 90, 80, 65],
         rendement_experience: 250,
@@ -863,6 +1031,8 @@ const ESPECES: [FicheEspece; 13] = [
             (5, "lamentation"),
             (10, "sentence"),
             (15, "trappe-du-gibet"),
+            (18, "etreinte-obscure"),
+            (21, "hurlement-des-abysses"),
         ],
     },
     FicheEspece {
@@ -1063,7 +1233,7 @@ mod tests {
     #[test]
     fn chaque_capsule_sert_a_une_espece_qui_ne_l_apprend_pas() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.capsules().len(), 6);
+        assert_eq!(contenu.capsules().len(), 9);
         for capsule in contenu.capsules() {
             let utile = contenu.especes().iter().any(|espece| {
                 capsule.convient_a(espece) && espece.attaque_apprise(capsule.id()).is_none()
@@ -1091,14 +1261,18 @@ mod tests {
             ids(&contenu.zones()[1]),
             vec!["croc-de-venin", "frisson-d-outre-tombe", "sentence"]
         );
+        assert_eq!(
+            ids(&contenu.zones()[2]),
+            vec!["malefice", "bourrasque", "furie-draconique"]
+        );
     }
 
     #[test]
     fn contenu_conforme_aux_regles() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.especes().len(), 13);
-        assert_eq!(contenu.zones().len(), 2);
-        assert_eq!(contenu.piste().indices().len(), 3);
+        assert_eq!(contenu.especes().len(), 17);
+        assert_eq!(contenu.zones().len(), 3);
+        assert_eq!(contenu.piste().indices().len(), 2);
         // Toute espèce rencontrée en zone se retrouve au chargement d'une
         // sauvegarde.
         for zone in contenu.zones() {
@@ -1172,7 +1346,7 @@ mod tests {
     }
 
     #[test]
-    fn le_brigand_attend_au_bout_de_la_lisiere_avec_un_loup_et_un_corbeau() {
+    fn le_brigand_et_le_bourreau_attendent_au_bout_de_la_lisiere_et_du_marais() {
         let contenu = ContenuV1::new();
         let brigand = contenu.zones()[0].humain().unwrap();
         assert_eq!(brigand.id().as_str(), "brigand");
@@ -1191,7 +1365,18 @@ mod tests {
             equipe,
             vec![("loup".to_string(), 7), ("corbeau".to_string(), 8)]
         );
-        assert!(contenu.zones()[1].humain().is_none());
+        let bourreau = contenu.zones()[1].humain().unwrap();
+        assert_eq!(
+            (bourreau.id().as_str(), bourreau.argent()),
+            ("bourreau", 150)
+        );
+        let niveaux: Vec<u8> = bourreau
+            .generer_equipe()
+            .iter()
+            .map(|monstre| monstre.niveau().valeur())
+            .collect();
+        assert_eq!(niveaux, vec![14, 14, 15]);
+        assert!(contenu.zones()[2].humain().is_none());
     }
 
     #[test]
@@ -1232,13 +1417,29 @@ mod tests {
     }
 
     #[test]
-    fn le_baron_pendu_connait_ses_quatre_attaques_au_niveau_15() {
+    fn le_baron_pendu_obscur_attend_au_bout_de_la_vallee_au_niveau_22() {
         let contenu = ContenuV1::new();
         let apotre = contenu.piste().apotre();
-        assert_eq!(apotre.niveau(), niveau(15));
-        assert_eq!(apotre.zone().as_str(), "marais");
-        let baron = creer(&contenu, "baron-pendu", 15);
-        assert_eq!(baron.attaques().liste().len(), 4);
+        assert_eq!(apotre.niveau(), niveau(22));
+        assert_eq!(apotre.zone().as_str(), "vallee");
+        assert_eq!(apotre.espece().types().liste(), &[Type::Obscur]);
+        // Les quatre dernières de sa liste, dont ses deux attaques Obscur.
+        let baron = creer(&contenu, "baron-pendu", 22);
+        let ids: Vec<&str> = baron
+            .attaques()
+            .liste()
+            .iter()
+            .map(|attaque| attaque.id().as_str())
+            .collect();
+        assert_eq!(
+            ids,
+            vec![
+                "sentence",
+                "trappe-du-gibet",
+                "etreinte-obscure",
+                "hurlement-des-abysses"
+            ]
+        );
     }
 
     #[test]
@@ -1250,6 +1451,6 @@ mod tests {
             .iter()
             .map(|indice| indice.zone.as_str())
             .collect();
-        assert_eq!(zones, vec!["lisiere", "marais", "marais"]);
+        assert_eq!(zones, vec!["lisiere", "marais"]);
     }
 }

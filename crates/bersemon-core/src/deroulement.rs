@@ -2253,7 +2253,7 @@ mod tests {
 
     /// Joueur simple : la meilleure attaque, une potion sous la moitié des
     /// PV, retour au camp en mauvaise posture, le Marais à partir du niveau
-    /// 12, toutes les captures possibles.
+    /// 12, la Vallée à partir du niveau 24, toutes les captures possibles.
     fn jouer_un_coup(deroulement: &Deroulement, contenu: &ContenuV1) -> Choix {
         let partie = deroulement.partie();
         match deroulement.attente() {
@@ -2265,7 +2265,9 @@ mod tests {
                 let partie = partie.unwrap();
                 let zones = partie.zones_accessibles(contenu.zones(), contenu.piste());
                 let niveau = partie.collection().equipe()[0].niveau().valeur();
-                let zone = if zones.len() > 1 && niveau >= 12 {
+                let zone = if zones.len() > 2 && niveau >= 24 {
+                    zones[2]
+                } else if zones.len() > 1 && niveau >= 12 {
                     zones[1]
                 } else {
                     zones[0]
@@ -2388,7 +2390,7 @@ mod tests {
             .iter()
             .filter(|evenement| matches!(evenement, Evenement::Indice { .. }))
             .count();
-        assert_eq!(indices, 3);
+        assert_eq!(indices, 2);
         assert!(
             vus.iter()
                 .any(|evenement| matches!(evenement, Evenement::Epilogue(_)))
@@ -2408,13 +2410,17 @@ mod tests {
         // retour au camp et de la sauvegarde.
         assert_eq!(deroulement.attente(), Attente::Camp);
         let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
-        assert_eq!(sauvegarde.indices_trouves(), 3);
+        assert_eq!(sauvegarde.indices_trouves(), 2);
         assert_eq!(
             sauvegarde.apotres_vaincus(),
             &[EspeceId::new("baron-pendu")]
         );
-        // Le brigand a barré la Lisière jusqu'à sa défaite (section 10.7).
-        assert_eq!(sauvegarde.humains_vaincus(), &[HumainId::new("brigand")]);
+        // Le brigand et le Bourreau ont barré la Lisière et le Marais jusqu'à
+        // leur défaite (section 10.7).
+        assert_eq!(
+            sauvegarde.humains_vaincus(),
+            &[HumainId::new("brigand"), HumainId::new("bourreau")]
+        );
         // Sans expédition automatique ni marchand, l'argent du joueur est
         // celui des coffres et du brigand, moins celui des sacs perdus
         // (section 9.3).

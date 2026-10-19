@@ -297,9 +297,11 @@ fn jouer_un_coup(
             }
             let partie = session.deroulement.partie().unwrap();
             let niveau = partie.collection().equipe()[0].niveau().valeur();
+            let vallee = choisir_dans(message, |cle| *cle == Cle::Partir, "vallee");
             let marais = choisir_dans(message, |cle| *cle == Cle::Partir, "marais");
-            match marais {
-                Some(clic) if niveau >= 12 => clic,
+            match (vallee, marais) {
+                (Some(clic), _) if niveau >= 24 => clic,
+                (_, Some(clic)) if niveau >= 12 => clic,
                 _ => choisir_dans(message, |cle| *cle == Cle::Partir, "lisiere").expect("lisière"),
             }
         }
@@ -608,13 +610,13 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
         vus.iter()
             .any(|evenement| matches!(evenement, Evenement::Epilogue(_)))
     );
-    // Le brigand barre la Lisière jusqu'à sa défaite, une seule (section
-    // 10.7).
-    let brigands_vaincus = vus
+    // Le brigand et le Bourreau barrent la Lisière et le Marais jusqu'à leur
+    // défaite, une seule chacun (section 10.7).
+    let humains_vaincus = vus
         .iter()
         .filter(|evenement| matches!(evenement, Evenement::HumainVaincu { .. }))
         .count();
-    assert_eq!(brigands_vaincus, 1);
+    assert_eq!(humains_vaincus, 2);
     assert!(
         automatique_faite,
         "expédition automatique jamais accueillie"
@@ -628,7 +630,7 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
     let session = joueurs.session(JOUEUR, &contenu);
     assert_eq!(session.deroulement.attente(), Attente::Camp);
     let partie = session.deroulement.partie().unwrap();
-    assert_eq!(partie.indices_trouves(), 3);
+    assert_eq!(partie.indices_trouves(), 2);
     assert_eq!(partie.apotres_vaincus(), &[EspeceId::new("baron-pendu")]);
     assert_eq!(partie.collection().equipe()[0].nom(), "Braise");
     assert!(dossier.join(format!("{JOUEUR}.json")).exists());

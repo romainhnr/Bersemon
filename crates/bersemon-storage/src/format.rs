@@ -1,4 +1,4 @@
-//! Format JSON de la sauvegarde, version 9, et sa conversion vers les types
+//! Format JSON de la sauvegarde, version 10, et sa conversion vers les types
 //! du noyau. Les énumérations sont écrites avec des noms fixés ici, et non
 //! avec les noms Rust, pour qu'un renommage dans le code ne casse pas les
 //! sauvegardes existantes.
@@ -30,20 +30,25 @@ use bersemon_core::zone::ZoneId;
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 9;
+pub(crate) const VERSION: u64 = 10;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
+
+/// La version de la sauvegarde qui suit la piste à deux indices (section
+/// 9.4).
+const VERSION_DE_LA_PISTE_A_DEUX_INDICES: u64 = 10;
 
 /// La version 2 ajoute la traque de l'Apôtre et le tutoriel, la version 3
 /// les expéditions automatiques et les attaques à choisir à leur retour, la
 /// version 4 l'argent, la version 5 le marchand, la version 6 les capsules
 /// d'attaque, la version 7 le sac et le coffre du camp, la version 8
-/// l'habileté de chaque monstre, la version 9 les humains vaincus. Une
-/// sauvegarde d'une version précédente se lit avec cette structure : les
-/// champs ajoutés y prennent leur valeur de début de partie.
+/// l'habileté de chaque monstre, la version 9 les humains vaincus ; la
+/// version 10 suit la piste à deux indices. Une sauvegarde d'une version
+/// précédente se lit avec cette structure : les champs ajoutés y prennent
+/// leur valeur de début de partie.
 #[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct SauvegardeV9 {
+pub(crate) struct SauvegardeV10 {
     pub(crate) version: u64,
     heros: HerosV1,
     equipe: Vec<MonstreV1>,
@@ -145,9 +150,9 @@ struct CodexV1 {
     capturees: Vec<String>,
 }
 
-pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV9 {
+pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV10 {
     let collection = partie.collection();
-    SauvegardeV9 {
+    SauvegardeV10 {
         version: VERSION,
         heros: HerosV1 {
             nom: partie.heros().nom().as_str().to_string(),
@@ -236,7 +241,7 @@ fn vers_inventaire(
 }
 
 pub(crate) fn vers_partie(
-    sauvegarde: SauvegardeV9,
+    sauvegarde: SauvegardeV10,
     catalogue: &dyn Catalogue,
 ) -> Result<Partie, ErreurSauvegarde> {
     let heros = Heros::new(
@@ -293,6 +298,14 @@ pub(crate) fn vers_partie(
             None => Err(ErreurSauvegarde::EspeceInconnue(id)),
         })
         .collect::<Result<Vec<_>, _>>()?;
+    // L'ancienne piste comptait trois indices : une partie qui en a trouvé
+    // reprend au premier, qui ouvre le Marais ; il faut vaincre le Bourreau
+    // pour ouvrir la Vallée (section 9.4).
+    let indices_trouves = if sauvegarde.version < VERSION_DE_LA_PISTE_A_DEUX_INDICES {
+        sauvegarde.indices_trouves.min(1)
+    } else {
+        sauvegarde.indices_trouves
+    };
     // Un humain disparu du jeu ne gêne pas : il ne sert qu'à ne plus faire
     // revenir celui qui a été vaincu (section 10.7).
     let humains_vaincus = sauvegarde
@@ -314,7 +327,7 @@ pub(crate) fn vers_partie(
         marchand_au_camp: sauvegarde.marchand_au_camp,
         codex,
         zones_explorees,
-        indices_trouves: sauvegarde.indices_trouves,
+        indices_trouves,
         apotres_vaincus,
         humains_vaincus,
         conseils_vus,

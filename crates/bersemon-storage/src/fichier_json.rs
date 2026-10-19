@@ -8,7 +8,7 @@ use bersemon_core::catalogue::Catalogue;
 use bersemon_core::partie::Partie;
 use bersemon_core::sauvegarde::{ErreurSauvegarde, SauvegardeRepository};
 
-use crate::format::{self, SauvegardeV9, VERSION};
+use crate::format::{self, SauvegardeV10, VERSION};
 
 pub struct FichierJson {
     chemin: PathBuf,
@@ -38,7 +38,7 @@ impl FichierJson {
         if !(1..=VERSION).contains(&version) {
             return Err(ErreurSauvegarde::VersionInconnue(version));
         }
-        let sauvegarde: SauvegardeV9 = serde_json::from_value(valeur)
+        let sauvegarde: SauvegardeV10 = serde_json::from_value(valeur)
             .map_err(|erreur| ErreurSauvegarde::Illisible(erreur.to_string()))?;
         format::vers_partie(sauvegarde, catalogue)
     }
@@ -435,6 +435,21 @@ mod tests {
     }
 
     #[test]
+    fn une_sauvegarde_de_l_ancienne_piste_reprend_au_premier_indice() {
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        let objet = valeur.as_object_mut().unwrap();
+        assert_eq!(objet["indices_trouves"], 3);
+        objet.insert("version".to_string(), 9.into());
+        let rechargee = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        assert_eq!(rechargee.indices_trouves(), 1);
+        // L'Apôtre vaincu le reste.
+        assert_eq!(rechargee.apotres_vaincus(), &[EspeceId::new("loup")]);
+        // En version 10, les indices se relisent tels quels.
+        let rechargee = charger_texte(&texte_de_partie()).unwrap().unwrap();
+        assert_eq!(rechargee.indices_trouves(), 3);
+    }
+
+    #[test]
     fn fichier_illisible() {
         assert!(matches!(
             charger_texte("pas du json"),
@@ -448,10 +463,10 @@ mod tests {
 
     #[test]
     fn version_inconnue() {
-        let texte = texte_de_partie().replacen("\"version\":9", "\"version\":10", 1);
+        let texte = texte_de_partie().replacen("\"version\":10", "\"version\":11", 1);
         assert_eq!(
             charger_texte(&texte),
-            Err(ErreurSauvegarde::VersionInconnue(10))
+            Err(ErreurSauvegarde::VersionInconnue(11))
         );
     }
 
@@ -530,7 +545,8 @@ mod tests {
         assert!(partie.expeditions_automatiques().is_empty());
         assert!(partie.attaques_a_choisir().is_empty());
         assert_eq!(partie.collection().places_reservees(), 0);
-        assert_eq!(partie.indices_trouves(), 3);
+        // L'ancienne piste reprend au premier indice (section 9.4).
+        assert_eq!(partie.indices_trouves(), 1);
     }
 
     #[test]
