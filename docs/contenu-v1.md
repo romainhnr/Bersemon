@@ -278,9 +278,57 @@ Après la victoire :
 
 > Le bourreau s'effondre dans la vase, sa hache brisée.
 
+### Arrivée de Malvoise et âmes des marchands
+
+Ajoutées à l'étape 31, le 19/10/2026 (gamedesign.md, sections 14.2 et 14.4).
+
+Arrivée de Malvoise, au retour de la première expédition menée au bout dans la Lisière, après l'indice :
+
+> Au camp, un homme en robe noire vous attend près du feu, un crâne posé sur les genoux. Malvoise, nécromancien, a vu mourir bien des marchands sur ces routes. Rapportez-lui leur âme, et il vous vendra ce qu'ils vendaient de leur vivant.
+
+| Marchand | Zone | Rencontre | Objet ajouté à l'étal |
+|---|---|---|---|
+| Bertrand, colporteur | Lisière du Bois-Sombre | un monstre de la zone le tue et attaque | Remède, 25 |
+| Grete, herboriste | Marais des Pendus | elle s'est relevée en marchand zombie, qui attaque | Grande potion, 60 |
+| Ulrich, alchimiste | Vallée des Brumes | il pend au gibet, gardé par un monstre de la zone | Élixir, 150 |
+
+Le monstre qui tue Bertrand ou garde Ulrich est tiré parmi les espèces communes de la zone, au niveau maximal de la zone.
+
+Bertrand, avant le combat (avec le nom du monstre) :
+
+> Un cri déchire la Lisière : un Loup se jette sur un colporteur et l'abat sous vos yeux. La bête se tourne vers vous.
+
+Après la victoire :
+
+> L'âme de Bertrand, colporteur, flotte au-dessus de son corps. Vous la recueillez pour Malvoise.
+
+Grete, avant le combat :
+
+> Une marchande titube vers vous entre les roseaux, la peau verdie, sa carriole renversée derrière elle. Elle n'est plus tout à fait morte.
+
+Après la victoire :
+
+> Le corps de Grete s'effondre enfin. Son âme flotte au-dessus de la vase : vous la recueillez pour Malvoise.
+
+Ulrich, avant le combat (avec le nom du monstre) :
+
+> Au pied d'un gibet, un alchimiste pend au bout d'une corde, ses fioles brisées dans l'herbe. Un Squelette garde le corps et se jette sur vous.
+
+Après la victoire :
+
+> L'âme d'Ulrich, alchimiste, s'échappe enfin de la corde. Vous la recueillez pour Malvoise.
+
+Marchand zombie (hors du codex, ni filet ni capture) :
+
+| Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP | Niveau |
+|---|---|---|---|---|---|---|
+| marchand-zombie | Marchand zombie | Spectre, Poison | offensif | 60 / 70 / 60 / 40 / 55 / 35 (320) | 95 | 13 |
+
+Attaques : Coup de garde (niv. 1), Morsure venimeuse (niv. 1), Charge spectrale (niv. 1). Valeurs internes à 15, jamais shiny.
+
 ### Rencontre du marchand
 
-Ajoutée après la V1, le 18/10/2026 : affichée à l'étape où le marchand est rencontré, avant qu'il se réfugie au camp (gamedesign.md, section 14.2).
+Ajoutée après la V1, le 18/10/2026 : affichée à l'étape où le marchand est rencontré, avant qu'il se réfugie au camp (gamedesign.md, section 14.2). Retirée à l'étape 31 : Malvoise remplace le marchand.
 
 > Un marchand ambulant surgit de la brume, sa carriole chargée de fioles. Les routes ne sont plus sûres pour lui : il part se réfugier au camp, où vous le retrouverez.
 
@@ -334,7 +382,7 @@ Revente d'un monstre au marchand, depuis l'étape 26 : son niveau multiplié par
 | rare | Cerf blanc, Basilic, Elfe, Vouivre, Schnoz | 2 | Cerf blanc de niveau 5 (400) : 80 ; Schnoz de niveau 10 (450) : 180 |
 | Apôtre | Baron pendu | 4 | Baron pendu de niveau 15 (480) : 576 ; au niveau 22 : 844 |
 
-Prix du marchand : une potion coûte 20. Il vend toutes les capsules d'attaque.
+Prix du marchand : une potion coûte 20. Il vend toutes les capsules d'attaque. Depuis l'étape 31, c'est Malvoise qui tient l'étal ; il vend aussi le remède (25), la grande potion (60) et l'élixir (150), chacun une fois l'âme de son marchand recueillie.
 
 Capsules d'attaque : chacune enseigne son attaque à tout monstre qui a le type de cette attaque. Un coffre en contient une fois sur 5, tirée parmi les capsules de sa zone que le joueur n'a pas encore.
 

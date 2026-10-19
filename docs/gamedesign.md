@@ -580,7 +580,7 @@ Le joueur peut construire des machines pour automatiser certaines tâches, par e
 - On ne sauvegarde qu'au camp : quitter le jeu en pleine expédition ramène à la dernière sauvegarde.
 - Une sauvegarde illisible, ou qui cite une espèce ou une attaque disparue du jeu, est refusée : le jeu l'explique et propose une nouvelle partie, sans rien effacer sans l'accord du joueur.
 - La sauvegarde garde l'identifiant des espèces, des attaques et des zones, pas leurs données : un rééquilibrage s'applique aux monstres déjà capturés.
-- Elle garde aussi l'avancée de la traque (indices trouvés, Apôtres vaincus) et les conseils du tutoriel déjà montrés. Depuis l'étape 29, aussi les humains vaincus (section 10.7). Depuis l'étape 30, en version 10 : une sauvegarde antérieure qui a trouvé des indices de l'ancienne piste reprend à 1 indice (section 9.4).
+- Elle garde aussi l'avancée de la traque (indices trouvés, Apôtres vaincus) et les conseils du tutoriel déjà montrés. Depuis l'étape 31, en version 11, aussi les âmes recueillies et les nouveaux soins du sac et du coffre (section 14.4). Depuis l'étape 29, aussi les humains vaincus (section 10.7). Depuis l'étape 30, en version 10 : une sauvegarde antérieure qui a trouvé des indices de l'ancienne piste reprend à 1 indice (section 9.4).
 - Après la V1, elle garde les expéditions automatiques en cours : zone, monstres envoyés, heures de départ et de retour (section 12). Elle garde aussi les attaques qui restent à choisir après l'accueil d'une expédition (section 12.7). Le départ, le rappel et l'accueil d'une expédition automatique sont des actions au camp, suivies d'une sauvegarde.
 - Avec l'économie, elle garde aussi l'argent du joueur, la présence du marchand au camp et les capsules d'attaque obtenues (section 14). Les achats et les ventes sont des actions au camp, suivies d'une sauvegarde.
 - Depuis l'étape 28, elle garde aussi l'habileté de chaque monstre (section 5.9).
@@ -623,6 +623,13 @@ Premier marchand, après la V1 :
 - Les attaques d'un monstre se gèrent depuis la gestion des monstres : ses attaques connues, puis celles qu'il peut apprendre au camp ; s'il en connaît déjà 4, le joueur choisit aussi celle à oublier (section 13.10).
 - Tuer un monstre pour en tirer des ressources est envisagé, mais reporté tant qu'aucune ressource n'a d'usage (Q71).
 - Décidé le 19/10/2026, pour l'étape 31, à la place d'un marchand par zone : un nécromancien, unique, s'installe au camp. Sa rencontre est scriptée, juste après la première expédition menée au bout dans la première zone, et ne se reproduit plus. En expédition, le joueur trouve des marchands tués, par exemple sous ses yeux par un monstre, ou un cadavre de marchand qui l'attaque ; il rapporte leur âme au nécromancien, dont l'étal s'enrichit des articles de chaque marchand. Chaque marchand a son nom. Ce que vend chacun, la façon de trouver les âmes et le sort du marchand actuel restent à définir (Q77).
+- Précisé le 19/10/2026, pour l'étape 31 (Q77), et remplace le premier marchand décrit plus haut :
+  - le nécromancien s'appelle Malvoise. Il arrive au camp au retour de la première expédition menée au bout dans la Lisière, après l'indice, avec un court texte, et y reste ;
+  - il remplace le marchand ambulant, qui ne se rencontre plus en expédition : Malvoise vend les potions et les capsules d'attaque et rachète les monstres, aux mêmes prix et selon les mêmes règles. Une sauvegarde où le marchand est au camp a Malvoise à sa place ; une sauvegarde qui a déjà mené la Lisière au bout l'a au camp dès la reprise (hypothèse retenue, à confirmer) ;
+  - chaque zone a son marchand mort : Bertrand, colporteur, dans la Lisière ; Grete, herboriste, dans le Marais ; Ulrich, alchimiste, dans la Vallée des Brumes. Tant que l'âme du marchand d'une zone n'est pas recueillie, la rencontre de son âme prend 10 % des étapes de cette zone, à la place d'un combat, une fois par expédition au plus, comme le marchand d'avant (section 9.2) ;
+  - dans la Lisière, un monstre de la zone, au niveau maximal de la zone, tue Bertrand sous les yeux du joueur et l'attaque : un combat ordinaire contre un monstre sauvage, fuite et filet compris. Dans le Marais, Grete s'est relevée en marchand zombie, qui attaque : fuite possible, mais ni filet ni capture, et il n'entre pas au codex. Dans la Vallée, Ulrich pend au gibet du Baron, et un monstre de la Vallée garde son corps et attaque, comme dans la Lisière ;
+  - une victoire recueille l'âme, acquise dès ce moment même si l'expédition finit en défaite (hypothèse retenue, comme la rencontre du marchand d'avant). Une fuite ou une défaite laisse l'âme à trouver ;
+  - chaque âme recueillie ajoute à l'étal de Malvoise l'objet de son marchand (section 14.4) : le remède pour Bertrand, la grande potion pour Grete, l'élixir pour Ulrich.
 - Plus tard, d'autres personnages pourront être rencontrés de la même façon et enrichir le camp, comme un pêcheur qui apprend à pêcher (section 13.8).
 
 ### 14.3 Objets et ressources cités dans ce document
@@ -644,6 +651,11 @@ Premier marchand, après la V1 :
 - Seul objet de la V1. Une potion rend à un monstre de l'équipe un pourcentage de ses PV max tiré de 40 % à 60 %, arrondi à l'entier inférieur, sans dépasser ses PV max. Elle ne relève pas un monstre KO et ne guérit pas les statuts. Sur un monstre qui a tous ses PV, le jeu demande confirmation : la potion serait consommée sans effet.
 - Elle s'utilise en combat, comme action du tour (l'adversaire agit ensuite), ou entre deux étapes d'une expédition.
 - Dans la V1, les potions se trouvent dans les coffres ; après la V1, les expéditions automatiques réussies en rapportent aussi (section 12.6), et le marchand en vend au camp, à 20 pièces d'argent (sections 14.2 et 14.5). Il n'y a ni limite de sac ni coffre de stockage au camp : le joueur porte toutes ses potions et les perd toutes en cas de défaite (section 9.3). Avec le coffre du camp (étape 26, section 13.3), seules les potions emportées dans le sac se perdent.
+- Depuis l'étape 31 (19/10/2026, Q77), trois soins s'ajoutent à la potion, vendus par Malvoise une fois l'âme de leur marchand recueillie (section 14.2) :
+  - le remède, 25 pièces d'argent : il guérit le poison ou la paralysie d'un monstre qui n'est pas KO ;
+  - la grande potion, 60 pièces d'argent : comme une potion, mais elle rend de 80 % à 100 % des PV max ;
+  - l'élixir, 150 pièces d'argent : il relève un monstre KO avec la moitié de ses PV max, au moins 1.
+- Ces soins s'utilisent comme la potion : en combat, comme action du tour, ou entre deux étapes. Ils se rangent dans le sac et le coffre, se perdent avec le sac et ne se trouvent pas dans les coffres. Comme une potion sur un monstre qui a tous ses PV, un soin sans effet (un remède sur un monstre sans statut, un élixir sur un monstre qui n'est pas KO) demande confirmation et serait consommé pour rien. Une potion, une grande potion ou un remède ne relève pas un monstre KO.
 
 ### 14.5 Montants (après la V1)
 
@@ -657,9 +669,10 @@ Premier marchand, après la V1 :
 | Expédition automatique réussie | Lisière 15 à 30, Marais 40 à 80 (section 12.8) |
 | Revente d'un monstre | niveau x total des stats de base / 50, en division entière, puis x 1 pour une espèce commune, x 2 pour une rare, x 4 pour un Apôtre, et x 2 pour un shiny (depuis l'étape 26 ; avant : niveau x 5, 15 ou 40 selon la rareté) |
 | Potion | 20 |
+| Remède, grande potion, élixir (étape 31) | 25, 60 et 150 (section 14.4) |
 | Capsule d'attaque | 150 pour celles de la Lisière, 200 à 300 pour celles du Marais, 300 à 400 pour celles de la Vallée (docs/contenu-v1.md, section 6) |
 | Victoire contre un humain (étapes 29 et 30) | brigand 60, Bourreau 150 (section 10.7) |
-| Rencontre du marchand | 10 % des étapes d'une expédition manuelle, tant qu'il n'est pas au camp |
+| Rencontre du marchand | 10 % des étapes d'une expédition manuelle, tant qu'il n'est pas au camp ; remplacée à l'étape 31 par l'âme du marchand de la zone, tant qu'elle n'est pas recueillie (section 14.2) |
 
 Repères : un Loup de niveau 5 se revend 28 pièces d'argent, un Feu follet de niveau 10 64, un Cerf blanc de niveau 5 80, un Schnoz de niveau 10 180, le Baron pendu au niveau 15 576. Une expédition dans la Lisière rapporte de l'ordre de 40 à 60 pièces d'argent avec une ou deux captures revendues, une expédition dans le Marais de 100 à 130. Ces estimations datent des expéditions de 4 à 6 étapes ; depuis l'étape 26, elles en comptent 3 dans la Lisière et 4 dans le Marais. Une expédition croise le marchand 27 fois sur 100 dans la Lisière, 34 dans le Marais. À vérifier en jouant.
 
@@ -696,7 +709,6 @@ Les questions Q67 et suivantes ont été relevées le 18/10/2026 après les prem
 Les questions Q72 et suivantes ont été relevées le 18/10/2026 après les essais de l'économie, découpés en étapes : 25 interface, 26 règles (coffre et sac, équipe vide, revente, étapes fixes), 27 classe Assassin et nouveaux monstres, 28 combats contre des humains, 29 troisième zone, Baron et Apôtre de type Obscur, 30 marchands par zone. Découpage révisé le 19/10/2026 : 28 shiny et habiletés, 29 combats contre des humains, 30 troisième zone, Baron et Apôtre de type Obscur, 31 nécromancien et âmes de marchands.
 
 - Q76. (À vérifier en jouant) Équilibrage du combat contre le Baron pendu, Apôtre Obscur : seuls les types Féérique (Cerf blanc, Elfe), Psychique (aucun monstre ne l'a encore) et Stellaire (Schnoz) lui sont très efficaces. Autres relations du type Stellaire, neutre envers les types autres que l'Obscur (voir Q5). Le Chat noir, de type Ténèbres, n'a plus d'avantage contre lui : à vérifier.
-- Q77. (Étape 31) Nécromancien et âmes de marchands : nom et texte de la rencontre du nécromancien, noms et articles de chaque marchand, façon de trouver leur âme (marchand tué sous les yeux du joueur, cadavre qui attaque), sort du marchand actuel et conversion des sauvegardes où il est déjà au camp.
 - Q78. (Plus tard) Chaque Apôtre est unique : un événement quand le joueur les a tous réunis.
 - Q79. (Plus tard) Le Schnoz, surnom donné par les fans au chimimoryo, créature astrale croisée près du Qliphoth dans l'épisode 215 du manga (page https://berserk.fandom.com/wiki/Chimimoryo transmise par l'utilisateur), est une créature de l'œuvre, protégée : sans souci pour un jeu privé, mais si le bot devient public, mieux vaudra une créature qui s'en inspire, avec son propre nom et sa propre apparence (voir aussi Q64). Repris de Q73, tranchée.
 
@@ -977,3 +989,13 @@ Les questions Q72 et suivantes ont été relevées le 18/10/2026 après les essa
 - Q76 en partie : une attaque Obscur est très efficace contre un monstre Obscur. Le Baron pendu devient Obscur, au niveau 22, avec deux attaques Obscur ; son équilibrage se fera en jouant.
 - Valeurs de la Vallée : expédition automatique de 3 h, 90 à 220 dégâts, 700 à 1300 XP, 1 à 3 potions, 80 à 150 pièces d'argent ; coffres de 50 à 90 pièces ; capsules Maléfice (300), Bourrasque (300) et Furie draconique (400).
 - Les annonces décidées le 18/10/2026 arrivent : bouton "Combattre" avant un humain de fin de zone ou un Apôtre, "Lire l'indice" avant un indice.
+
+19/10/2026 (étape 31) :
+
+- Q77 : le nécromancien Malvoise remplace le marchand ambulant ; il arrive au camp au retour de la première expédition menée au bout dans la Lisière, vend les potions et les capsules et rachète les monstres.
+- Q77 : trois marchands morts, un par zone : Bertrand, colporteur (Lisière), tué sous les yeux du joueur par un monstre de la zone qui l'attaque ; Grete, herboriste (Marais), relevée en marchand zombie, qui attaque ; Ulrich, alchimiste (Vallée), pendu au gibet et gardé par un monstre de la zone. Leur âme se rencontre à 10 % des étapes de leur zone tant qu'elle n'est pas recueillie.
+- Q77 : chaque âme ajoute un soin à l'étal : remède (25), grande potion (60), élixir (150). Ils s'utilisent comme la potion.
+- Le marchand zombie : Spectre et Poison, niveau 13, ni filet ni capture, hors du codex.
+- Hypothèses retenues, à confirmer : une âme est acquise dès la victoire, même si l'expédition finit en défaite ; une sauvegarde qui a mené la Lisière au bout a Malvoise au camp dès la reprise.
+- Le texte du marchand zombie est accordé au féminin, puisque c'est Grete.
+- Sauvegarde en version 11.
