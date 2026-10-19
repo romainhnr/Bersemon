@@ -50,6 +50,6 @@ Jeu RPG textuel au tour par tour, écrit en Rust, qui mêle un univers dark fant
 - N'ajoute pas de dépendance (crate) sans l'indiquer et la justifier, et attends mon accord.
 - Respecte le style des fichiers existants : indentation, encodage, fins de ligne et conventions en place.
 - En session locale, ne fais pas de commit git sans que je le demande.
-- En session cloud, travaille sur une branche dédiée, jamais sur main : fais des commits réguliers et pousse la branche, pour que le travail ne soit pas perdu si la session s'arrête. Ne fusionne jamais toi-même dans main.
+- En session cloud, travaille sur une branche dédiée, jamais directement sur master : fais des commits réguliers et pousse la branche, pour que le travail ne soit pas perdu si la session s'arrête. Après chaque push, fusionne toi-même la branche dans master, en avance rapide, si `cargo fmt`, `cargo clippy` et `cargo test` sont au vert ; sinon, attends qu'ils le soient. L'utilisateur est seul sur le dépôt et te laisse le gérer.
 - En session cloud, je ne suis souvent pas là pour répondre : quand une règle du game design manque ou qu'un choix me revient, ne l'invente pas. Note la question dans la section des questions ouvertes de `docs/gamedesign.md`, avance sur le reste de la tâche et signale la question dans ton compte rendu final.
 - À la fin d'une tâche, liste les fichiers créés, modifiés, supprimés ou renommés, et précise ce qui a été compilé et testé.
