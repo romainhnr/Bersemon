@@ -153,6 +153,7 @@ Chaque monstre possède :
   - Le type Stellaire, opposé de l'Obscur, est très rare : un seul monstre l'aura. Le type Féérique, autre opposé de l'Obscur, reste rare.
   - Depuis l'étape 27 (19/10/2026), ce monstre est le Schnoz (section 5.3). En attendant l'Obscur, le type Stellaire est neutre : ses attaques sont neutres contre tous les types, et il n'a ni faiblesse, ni résistance, ni immunité. Ses relations avec l'Obscur, décidées ci-dessus, seront codées à l'étape 30 ; ses autres relations restent ouvertes (Q76).
   - Restent à définir : Obscur contre Obscur, les autres relations du Stellaire, et l'équilibrage du combat contre un Apôtre (Q76). L'Apôtre combat seul contre les 3 monstres du joueur : on l'équilibrera en jouant, s'il le faut.
+  - Décidé le 19/10/2026, pour les étapes 44 à 47 : l'Ange déchu, rare et pacifique de l'Abbaye des Cendres, est le premier monstre de type Psychique ; il est très efficace contre les Apôtres (docs/contenu-v1.md, section 10).
   - Précisé le 19/10/2026, pour l'étape 30 : une attaque Obscur est très efficace contre un monstre Obscur ; les Apôtres se déchirent entre eux. Le Stellaire garde ses relations avec l'Obscur et reste neutre envers les autres types. Le Baron pendu devient le premier Apôtre de type Obscur (section 9.4).
 
 ### 5.3 Bestiaire
@@ -196,6 +197,7 @@ Décidé le 19/10/2026, pour les étapes 37 à 40 :
 - Lieu (étape 40) : l'Armure hantée évolue en Chevalier noir si elle gagne un niveau dans la Vallée des Brumes, à partir du niveau 18, en expédition manuelle.
 - Événement (étape 40) : le Squelette évolue en Chevalier squelette s'il gagne un niveau, ou au camp, une fois le Baron pendu vaincu, à partir du niveau 20 : les morts de la Vallée s'éveillent à sa chute.
 - L'Elfe, le Baron pendu, le Schnoz et le marchand zombie n'évoluent pas. La Vouivre évoluera une fois, au niveau 45, plus tard.
+- Décidé le 19/10/2026, pour les étapes 44 à 47 : la Fée-sorcière évolue en Reine des ronces au niveau 25, deuxième évolution atteignable dans l'Abbaye des Cendres (docs/contenu-v1.md, section 8).
 - Précisé à l'étape 40, en codant : le Baron pendu compte comme vaincu une fois le bilan de son combat lu ; un Squelette qui gagne un niveau pendant ce combat ne se voit donc pas proposer l'évolution tout de suite, mais peut évoluer au camp, à la demande. Une Armure hantée de niveau 18 qui ne gagne pas de niveau dans la Vallée n'évolue pas, et ne peut pas évoluer au camp. La fiche du codex dit, par exemple, "Évolution : Chevalier noir dès le niveau 18, en gagnant un niveau dans la zone Vallée des Brumes".
 - Écrans, à l'étape 38 : après un combat, la question "Salamandre peut évoluer en Lézard de braise. Faire évoluer Salamandre ?", par oui ou non dans la console, par les boutons "Évoluer" et "Pas maintenant" sur Discord. Au camp, dans la console, la gestion des monstres propose "Faire évoluer un monstre", qui liste les monstres qui le peuvent et leur évolution, et "Vendre un monstre à Malvoise" passe au numéro 12 ; sur Discord, la fiche d'un monstre qui le peut montre le bouton "Évoluer en" suivi de l'espèce. La confirmation dit que l'évolution est définitive. Le récit annonce l'évolution, l'attaque apprise, et rappelle que d'autres attaques s'apprennent au camp. La fiche du codex dit l'évolution et sa condition ; sur Discord, le menu des fiches se coupe en menus de 25 espèces.
 
@@ -310,6 +312,7 @@ Le jeu alterne entre deux phases :
 - Chaque zone a sa propre difficulté, visible sur la carte.
 - La V1 compte 2 zones : une zone facile, accessible dès le départ, et une zone difficile, qui apparaît sur la carte avec le premier indice sur l'Apôtre, trouvé au bout d'une première expédition menée jusqu'à sa dernière étape dans la zone facile (section 9.4).
 - Après la V1, chaque zone s'ouvrira avec la défaite de l'Apôtre de la zone précédente.
+- Décidé le 19/10/2026, pour les étapes 44 à 47, après les améliorations du camp : une quatrième zone, l'Abbaye des Cendres (niveaux 21 à 27), s'ouvre avec la défaite du Baron pendu (section 9.4).
 
 ### 9.2 Événements
 
@@ -368,6 +371,12 @@ Si tous les monstres du joueur sont KO pendant une expédition manuelle :
   - l'antre est alors localisé : chaque expédition dans la Vallée s'achève par le combat contre le Baron pendu, à sa dernière étape, tant qu'il n'est pas vaincu ;
   - le Baron pendu devient de type Obscur seul, au niveau 22 (le maximum de la Vallée plus 2). Ses stats ne changent pas ; il apprend deux attaques Obscur. Un Baron pendu déjà capturé suit ce changement (section 13.9) ;
   - les sauvegardes de l'ancienne piste, qui ont trouvé de 1 à 3 indices, reprennent à 1 indice : le Marais reste ouvert, et il faut vaincre le Bourreau pour ouvrir la Vallée. Un Apôtre déjà vaincu le reste et n'attend plus au bout de la Vallée.
+- Décidé le 19/10/2026, pour les étapes 44 à 47 (contenu validé par l'utilisateur, docs/contenu-v1.md, section 10) :
+  - la traque compte plusieurs Apôtres, chacun avec sa piste ; les indices se numérotent à la suite. Les indices de la piste d'un Apôtre ne se trouvent qu'une fois l'Apôtre précédent vaincu ;
+  - l'indice 3 se trouve au bout de l'expédition de la Vallée qui abat le Baron pendu, et ouvre l'Abbaye des Cendres (niveaux 21 à 27). Une sauvegarde où le Baron est déjà vaincu le trouve au bout de sa prochaine expédition menée au bout dans la Vallée (hypothèse retenue, Q86) ;
+  - l'Inquisiteur, humain au service du deuxième Apôtre, attend au bout de l'Abbaye ; la première expédition menée au bout donne l'indice 4, qui localise l'antre ;
+  - ensuite, chaque expédition dans l'Abbaye s'achève par l'Abbesse écorchée, Apôtre de type Obscur, au niveau 29, tant qu'elle n'est pas vaincue ;
+  - l'Abbaye n'a pas de marchand mort pour l'instant (hypothèse retenue, Q86).
 
 ## 10. Combat
 
@@ -462,7 +471,7 @@ Décidé le 19/10/2026, pour l'étape 30 (Q75) :
   - monstre KO : capture garantie ;
   - monstre non KO : chances inversement proportionnelles au nombre de PV restants du monstre (moins il a de PV, plus la capture est probable) ;
   - plus le monstre est faible par rapport au joueur, plus la capture est facilitée ;
-  - chaque niveau d'amélioration du filet augmente les chances de capture (section 13.5).
+  - chaque niveau d'amélioration du filet augmente les chances de capture (section 13.5). Depuis l'étape 41, Gunther améliore les filets : x1,1, x1,2 puis x1,3 (section 13.4).
 - Calcul pour un monstre non KO : chance = PV perdus / PV max x facteur, bornée à 100 %. Depuis l'étape 28, elle est multipliée par 1,25 quand le monstre actif du joueur a l'habileté Traqueur, toujours bornée à 100 % (section 5.9). Le facteur vaut le niveau du monstre actif du joueur divisé par celui du monstre sauvage, borné entre x0,5 et x2. Un monstre à PV pleins ne peut donc pas être capturé. Exemple : à niveau égal, un monstre à 2 PV sur 20 est capturé 9 fois sur 10.
 - Lancer un filet sur le monstre adverse actif est l'action du tour : si la capture échoue, l'adversaire agit. Un monstre sauvage mis KO peut être capturé à la fin du combat, si le joueur l'emporte.
 - Plusieurs monstres peuvent être capturés au cours d'un même combat : chaque monstre d'un groupe sauvage peut l'être, au filet pendant le combat ou, s'il est KO, à la fin d'un combat gagné. Un Apôtre ne se capture que KO, à la fin du combat (section 9.4).
@@ -562,7 +571,7 @@ Repères, avec des valeurs internes de 15 : dans la Lisière, une Salamandre de 
 ### 13.2 Gestion des monstres
 
 - Le joueur peut laisser certains monstres en sécurité au camp et en emmener d'autres avec lui.
-- Limites de départ : 3 monstres avec le joueur et 30 monstres au camp. Ces limites peuvent être augmentées (section 13.4). Les monstres partis en expédition automatique comptent dans la limite du camp (section 12.1).
+- Limites de départ : 3 monstres avec le joueur et 30 monstres au camp. Ces limites peuvent être augmentées (section 13.4) : depuis l'étape 41, l'enclos porte le camp à 40, 50 puis 60 places ; à l'étape 43, l'équipe passe à 4 monstres. Les monstres partis en expédition automatique comptent dans la limite du camp (section 12.1).
 - Le joueur part en expédition avec 1 à 3 monstres. L'équipe garde toujours au moins un monstre, même au camp.
 - Remplacé le 18/10/2026, pour l'étape 26 : au camp, l'équipe peut être vide, après le départ de toute l'équipe en expédition automatique ou quand le joueur la vide lui-même ; il ne peut alors pas partir en expédition manuelle. Il ne peut ni relâcher ni vendre son dernier monstre, en comptant l'équipe, le camp et les monstres partis en expédition automatique.
 - Au camp, le joueur peut :
@@ -595,6 +604,17 @@ Avec des ressources trouvées en expédition (bois, métal, tissu, minerai rare,
 - le nombre de monstres pouvant l'accompagner ;
 - le nombre de monstres pouvant rester au camp ;
 - etc.
+
+Décidé le 19/10/2026, pour les étapes 41 à 43 :
+
+- Les améliorations sont construites par un artisan, Gunther, forgeron, prisonnier du Bourreau. La victoire sur le Bourreau, au bout du Marais, le libère : il suit le joueur jusqu'au camp et y installe sa forge, définitivement. Une sauvegarde où le Bourreau est déjà vaincu a Gunther au camp dès la reprise (hypothèse retenue, Q85).
+- Trois améliorations, chacune par niveaux, dont chacun demande le précédent :
+  - l'enclos agrandit le camp : 40, 50 puis 60 places, au lieu de 30 (section 13.2) ;
+  - les filets multiplient la chance de capture par 1,1, 1,2 puis 1,3, toujours bornée à 100 % ; le bonus se multiplie avec celui de l'habileté Traqueur (section 11.2) ;
+  - l'équipe passe de 3 à 4 monstres, en un seul niveau (étape 43). Les expéditions automatiques restent de 1 à 3 monstres (section 12.1).
+- Elles se paient en ressources seules, sans argent (section 14.3) : celles du sac d'abord, puis celles du coffre, prises au lancement. Coûts et durées dans docs/contenu-v1.md, section 9.
+- Chaque niveau demande une durée de construction, de 1 h à 8 h. Gunther ne construit qu'un niveau à la fois ; une construction lancée ne s'annule pas (hypothèse retenue, Q85). Comme une expédition automatique, la construction se compte sur l'horloge réelle, et le joueur constate lui-même le travail fini, au camp : l'effet ne s'applique qu'à ce moment. Sur Discord, le bot prévient par message privé qu'une construction est finie, comme le retour d'une expédition automatique (section 12.7, hypothèse retenue, Q85).
+- Les niveaux atteints et la construction en cours sont sauvegardés (section 13.9).
 
 ### 13.5 Fabrication
 
@@ -629,6 +649,7 @@ Le joueur peut construire des machines pour automatiser certaines tâches, par e
 - Après la V1, elle garde les expéditions automatiques en cours : zone, monstres envoyés, heures de départ et de retour (section 12). Elle garde aussi les attaques qui restent à choisir après l'accueil d'une expédition (section 12.7). Le départ, le rappel et l'accueil d'une expédition automatique sont des actions au camp, suivies d'une sauvegarde.
 - Avec l'économie, elle garde aussi l'argent du joueur, la présence du marchand au camp et les capsules d'attaque obtenues (section 14). Les achats et les ventes sont des actions au camp, suivies d'une sauvegarde.
 - Depuis l'étape 28, elle garde aussi l'habileté de chaque monstre (section 5.9).
+- Depuis l'étape 41, en version 14 : Gunther au camp, les niveaux des améliorations et la construction en cours (section 13.4).
 - Depuis l'étape 39, en version 13 : les pierres d'évolution du sac et du coffre (section 5.4). Une sauvegarde antérieure n'en a pas.
 - Depuis l'étape 32, en version 12 : les attaques à choisir au retour d'une expédition automatique désignent un monstre de l'équipe ou du camp ; celles des versions antérieures désignent un monstre du camp. Les étapes 33 à 36 y ajoutent, toujours en version 12, les âmes à retrouver, les âmes portées, les capsules d'habileté et les ressources du sac et du coffre. Les âmes recueillies des versions antérieures comptent comme données à Malvoise : leur soin reste en vente.
 - Après la V1 (19/10/2026), un sous-menu « Options » du camp permet au joueur de se suicider, après confirmation, pour recommencer sans attendre la reprise au lancement. La sauvegarde est effacée dès la confirmation, avec le héros, les monstres, le sac, le coffre, le codex et les expéditions automatiques en cours ; un court texte suit, puis la création d'un nouveau héros. Ce n'est possible qu'au camp. Le texte est dans docs/contenu-v1.md, section 4.
@@ -691,7 +712,7 @@ Premier marchand, après la V1 :
   - Malvoise est rencontré au bout de la première expédition menée au bout, après le brigand, et rentre au camp avec le joueur, où il s'installe. S'il porte l'âme de Bertrand, il lui dit l'avoir vu la recueillir et qu'elle l'intéresse ; sinon, il lui demande de rapporter les âmes des marchands morts. Il vient dans les deux cas, puisqu'il tient l'étal ;
   - au camp, chez Malvoise, le joueur lui donne l'âme qu'il veut, quand il veut, sans confirmation (hypothèse retenue, à confirmer) ; il peut aussi la garder sans limite de temps. Chaque âme donnée ajoute à l'étal l'objet de son marchand. Il en va de même pour les âmes de Grete et d'Ulrich ;
   - après une fuite ou une défaite face au gardien d'une âme, celui-ci revient à coup sûr à la prochaine expédition dans sa zone, à une étape tirée parmi celles qui précèdent la dernière (section 9.2) ; quitter l'expédition avant cette étape la repousse à la suivante. Cela vaut pour Grete, le marchand zombie, et pour Ulrich ; Bertrand, lui, revient toujours à l'étape 4.
-- Plus tard, d'autres personnages pourront être rencontrés de la même façon et enrichir le camp, comme un pêcheur qui apprend à pêcher (section 13.8).
+- Plus tard, d'autres personnages pourront être rencontrés de la même façon et enrichir le camp, comme un pêcheur qui apprend à pêcher (section 13.8). Depuis l'étape 41, Gunther, forgeron, libéré du Bourreau, construit les améliorations du camp (section 13.4).
 
 ### 14.3 Objets et ressources cités dans ce document
 
@@ -784,6 +805,11 @@ Les questions Q81 et suivantes ont été relevées le 19/10/2026 lors de la conc
 Les questions Q84 et suivantes ont été relevées le 19/10/2026 lors de la conception des étapes 37 règles de l'évolution et premières évolutions par niveau, 38 écrans de l'évolution, 39 pierres d'évolution et sauvegarde en version 13, 40 évolutions par lieu et par événement.
 
 - Q84. (Étapes 37 à 40) Hypothèses retenues, à confirmer : les formes évoluées ont les mêmes habiletés que leur forme de base ; au retour d'une expédition automatique, aucune évolution n'est proposée, le monstre évolue au camp à la demande ; une condition de lieu ne se remplit qu'en expédition manuelle ; les pierres d'évolution valent 300 et se trouvent dans un coffre sur 10 ; le rendement d'XP d'une forme évoluée vaut 1,4 fois celui de sa forme de base ; la fiche du codex nomme l'évolution, même pas encore rencontrée. Restent à définir : les stades 3 et 4, à coder avec des zones au-delà du niveau 20, et des formes évoluées sauvages dans ces zones.
+
+Les questions Q85 et suivantes ont été relevées le 19/10/2026 lors de la conception des étapes 41 améliorations du camp et sauvegarde en version 14, 42 écrans de la forge, 43 équipe de 4 monstres, puis 44 à 47 traque à plusieurs Apôtres, Abbaye des Cendres, Inquisiteur et Abbesse écorchée, Reine des ronces.
+
+- Q85. (Étapes 41 à 43) Hypothèses retenues, à confirmer : une sauvegarde où le Bourreau est déjà vaincu a Gunther au camp dès la reprise ; une construction lancée ne s'annule pas ; le bot prévient par message privé qu'une construction est finie. Coûts et durées sont à ajuster en jouant ; l'équipe de 4 facilite les combats contre les Apôtres, à vérifier en jouant.
+- Q86. (Étapes 44 à 47) Hypothèses retenues, à confirmer : une sauvegarde où le Baron est déjà vaincu trouve l'indice 3 au bout de sa prochaine expédition menée au bout dans la Vallée ; l'Abbaye n'a pas de marchand mort ; les nouvelles espèces de l'Abbaye n'évoluent pas pour l'instant.
 
 - Q83. (Étapes 33 et 34) Hypothèses retenues, à confirmer : le gardien d'une âme à retrouver attaque à une étape tirée parmi celles qui précèdent la dernière ; le don d'une âme à Malvoise se fait sans confirmation ; une partie antérieure qui n'a pas recueilli l'âme de Bertrand le rencontre à l'étape 4 de sa prochaine expédition dans la Lisière, même avec Malvoise déjà au camp ; le texte du brigand de l'étape 5 ne change pas, même s'il a perdu son Loup à l'étape 4.
 
@@ -1108,3 +1134,11 @@ Les questions Q84 et suivantes ont été relevées le 19/10/2026 lors de la conc
 - Valeurs internes, shiny, surnom, niveau et attaques connues ne changent pas ; l'habileté garde sa position ; une attaque d'évolution est apprise, avec choix de l'attaque à oublier.
 - Contenu validé par l'utilisateur : 13 premières évolutions, dont 9 par niveau, 2 par pierre (Pierre de braise, Pierre de lune), 1 par lieu (Armure hantée dans la Vallée) et 1 par événement (Squelette après la chute du Baron pendu), et 13 attaques d'évolution (docs/contenu-v1.md, section 8).
 - Hypothèses retenues, à confirmer : Q84.
+
+19/10/2026 (conception des étapes 41 à 47) :
+
+- Choix de l'utilisateur : les améliorations du camp passent avant la quatrième zone.
+- Améliorations : enclos (40, 50 puis 60 places au camp), filets (x1,1, x1,2 puis x1,3 sur la chance de capture) et équipe de 4 monstres, payées en ressources seules, avec une durée de construction, à constater au camp (section 13.4). Coûts et durées validés par l'utilisateur.
+- Gunther, forgeron prisonnier du Bourreau, libéré à sa défaite, construit les améliorations (sections 13.4 et 14.2). Sauvegarde en version 14.
+- Quatrième zone, validée par l'utilisateur pour les étapes 44 à 47 : l'Abbaye des Cendres, l'Inquisiteur, l'Abbesse écorchée, l'Ange déchu (premier monstre Psychique) et la Reine des ronces (sections 5.2, 5.4 et 9.4).
+- Hypothèses retenues, à confirmer : Q85 et Q86.

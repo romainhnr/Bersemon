@@ -509,6 +509,14 @@ Chaque forme évoluée garde le rôle, la rareté et les habiletés de sa forme 
 
 Attaques apprises : celles de la forme de base, aux mêmes niveaux, puis l'attaque d'évolution et l'autre attaque au niveau de la condition ; au niveau 1 pour une évolution par pierre. Exemple, Lézard de braise : Souffle chaud (niv. 1), Crachat de braises (niv. 3), Souffle draconique (niv. 7), Flamme vive (niv. 10), Fournaise (niv. 14), Jet de lave (niv. 16), Souffle putride (niv. 16).
 
+Deuxième évolution décidée le 19/10/2026, pour les étapes 44 à 47 (gamedesign.md, section 5.4), contenu validé par l'utilisateur :
+
+| Forme | Identifiant | Évolution | Condition | Types | Stats de base (total) | Rendement d'XP | Attaque d'évolution | Autre attaque, au même niveau |
+|---|---|---|---|---|---|---|---|---|
+| Fée-sorcière | reine-des-ronces | Reine des ronces | niveau 25 (type Insecte) | Insecte, Plante | 70 / 55 / 65 / 110 / 85 / 95 (480) | 140 | Ronces maudites | Lianes étrangleuses (hypothèse) |
+
+Ronces maudites : Plante, spéciale, puissance 85, précision 90, poison 20 %. La Reine des ronces garde les habiletés de la Fée-sorcière (Sorcellerie, Célérité).
+
 Stades suivants, nommés seulement, à coder avec des zones au-delà du niveau 20 (gamedesign.md, Q84) :
 
 | Lignée | Deuxième évolution | Troisième évolution |
@@ -539,3 +547,89 @@ Après l'évolution, suivi de l'attaque apprise, comme à la montée de niveau, 
 Refus après un combat :
 
 > Salamandre n'évolue pas pour l'instant.
+
+## 9. Améliorations du camp
+
+Décidées le 19/10/2026, pour les étapes 41 à 43 (gamedesign.md, section 13.4), coûts et durées validés par l'utilisateur, à ajuster en jouant.
+
+Libération de Gunther, après le texte de la victoire sur le Bourreau :
+
+> Derrière le gibet, un homme enchaîné relève la tête : Gunther, forgeron, que le bourreau gardait pour forger ses chaînes. Libéré, il vous suit jusqu'au camp et y installe sa forge.
+
+| Amélioration | Identifiant | Niveau | Effet | Coût | Durée |
+|---|---|---|---|---|---|
+| Enclos | enclos | 1 | camp de 30 à 40 places | 5 Croc de loup, 5 Plume de corbeau, 5 Écaille de vipère | 1 h |
+| | | 2 | de 40 à 50 places | 6 Cendre de feu follet, 6 Fragment d'armure | 2 h |
+| | | 3 | de 50 à 60 places | 6 Aile de fée noire, 6 Os de squelette | 4 h |
+| Filets | filets | 1 | chance de capture x1,1 | 4 Croc de loup, 4 Écaille de vipère | 1 h |
+| | | 2 | x1,2 | 5 Cendre de feu follet, 5 Fragment d'armure | 3 h |
+| | | 3 | x1,3 | 5 Aile de fée noire, 5 Os de squelette | 6 h |
+| Équipe | equipe | 1 | équipe de 3 à 4 monstres (étape 43) | 1 Croc de basilic, 1 Écaille de vouivre, 8 Os de squelette, 8 Aile de fée noire | 8 h |
+
+Les ressources rares sont lentes à réunir : une expédition dans le Marais rapporte un Croc de basilic environ une fois sur 12. Elles ne sont demandées qu'à la dernière amélioration.
+
+## 10. Abbaye des Cendres et deuxième Apôtre
+
+Décidés le 19/10/2026, pour les étapes 44 à 47 (gamedesign.md, sections 5.2, 9.1 et 9.4), contenu validé par l'utilisateur. À coder après les améliorations du camp.
+
+Zone :
+
+| Identifiant | Nom | Niveaux | Taille des groupes | Espèces | Monstres rares | Humain | Apôtre |
+|---|---|---|---|---|---|---|---|
+| abbaye | Abbaye des Cendres | 21 à 27 | 1 à 3 | Squelette, Gargouille, Goule, Chauve-souris de crypte | Chimère (hostile), Ange déchu (pacifique) | Inquisiteur | Abbesse écorchée |
+
+Expédition automatique : durée de base 4 h, dégâts 150 à 320, XP 1300 à 2200, potions 1 à 3, argent 120 à 220. Coffres : 1 à 2 potions et 90 à 150 pièces d'argent ; capsules Bûcher (450), Festin macabre (400) et Ultrason (400).
+
+Espèces (stats dans l'ordre PV / Attaque / Défense / Attaque spéciale / Défense spéciale / Vitesse) :
+
+| Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP | Rareté | Habiletés | Attaques apprises |
+|---|---|---|---|---|---|---|---|---|
+| gargouille | Gargouille | Roche, Vol | soutien | 60 / 80 / 90 / 30 / 50 / 40 (350) | 105 | commune | Carapace, Férocité | Griffe de pierre (1), Piqué (10), Chute de pierres (22) |
+| goule | Goule | Poison, Ténèbres | offensif | 65 / 78 / 55 / 40 / 45 / 57 (340) | 102 | commune | Instinct, Férocité | Morsure (1), Morsure venimeuse (1), Croc de venin (18), Festin macabre (24) |
+| chauve-souris-de-crypte | Chauve-souris de crypte | Vol, Poison | offensif | 50 / 55 / 45 / 55 / 45 / 90 (340) | 100 | commune | Célérité, Éclaireur | Coup de bec (1), Cri strident (1), Morsure venimeuse (8), Ultrason (22) |
+| chimere | Chimère | Feu, Dragon | offensif | 75 / 80 / 65 / 85 / 60 / 55 (420) | 185 | rare, hostile | Affinité, Férocité | Crachat de braises (1), Souffle draconique (1), Flamme vive (15), Furie draconique (25) |
+| ange-dechu | Ange déchu | Psychique, Vol | soutien | 70 / 50 / 60 / 95 / 90 / 55 (420) | 180 | rare, pacifique | Volonté, Instinct | Onde psychique (1), Bourrasque (12), Jugement (24) |
+| abbesse-ecorchee | Abbesse écorchée | Obscur | offensif | 90 / 75 / 80 / 100 / 90 / 75 (510) | 280 | Apôtre, niveau 29 | Sorcellerie, Volonté | Lamentation (1), Maléfice (8), Hurlement des abysses (15), Bûcher (20), Flagellation (25), Psaume impie (28) |
+
+Les rôles de la Gargouille et de l'Ange déchu, non précisés dans la proposition, sont des hypothèses (soutien), comme la répartition des habiletés.
+
+Attaques nouvelles :
+
+| Identifiant | Nom | Type | Cat. | Puissance | Précision | Effet |
+|---|---|---|---|---|---|---|
+| griffe-de-pierre | Griffe de pierre | Roche | P | 50 | 100 | |
+| chute-de-pierres | Chute de pierres | Roche | P | 75 | 90 | |
+| festin-macabre | Festin macabre | Ténèbres | P | 80 | 90 | |
+| ultrason | Ultrason | Normal | S | 70 | 100 | paralysie 10 % |
+| onde-psychique | Onde psychique | Psychique | S | 65 | 100 | |
+| jugement | Jugement | Psychique | S | 90 | 90 | |
+| bucher | Bûcher | Feu | S | 90 | 85 | |
+| flagellation | Flagellation | Obscur | P | 85 | 95 | |
+| psaume-impie | Psaume impie | Obscur | S | 90 | 95 | paralysie 20 % |
+| ronces-maudites | Ronces maudites | Plante | S | 85 | 90 | poison 20 % |
+
+Ressources : Éclat de gargouille, Dent de goule et Aile de chauve-souris (5 pièces d'argent chacune), Crin de chimère (15).
+
+L'Inquisiteur attend au bout de l'Abbaye avec une Gargouille de niveau 27, une Goule de niveau 27 et une Chimère de niveau 28 (valeurs internes à 15, première habileté de leur espèce). Victoire : 300 pièces d'argent, puis l'indice 4 au retour.
+
+Textes :
+
+> Indice 3 : parmi les reliques du Baron, une lettre scellée du même sceau, signée de l'Abbesse : à l'est, l'Abbaye des Cendres brûle sans jamais s'éteindre. Une autre Apôtre y attend.
+
+> Indice 4 : l'inquisiteur vaincu a parlé : l'Abbesse écorchée se terre sous le chœur, dans la crypte où elle a livré ses sœurs au bûcher.
+
+Inquisiteur, avant le combat :
+
+> Sur le parvis de l'abbaye, un inquisiteur en robe rouge vous attend, entouré de trois bêtes. Il brûle au nom de l'Abbesse, et il compte bien vous brûler aussi.
+
+Après la victoire :
+
+> L'inquisiteur s'effondre sur les dalles, son livre de prières en cendres.
+
+Abbesse écorchée, avant le combat :
+
+> Au fond de la crypte, une silhouette sans peau prie devant un autel de chair. L'Abbesse écorchée, Apôtre du Démiurge, se retourne lentement. Il n'y aura pas de fuite.
+
+Épilogue :
+
+> L'Abbesse écorchée s'effondre sur l'autel. Le même sceau, une main ouverte, est gravé dans sa chair. Deux Apôtres sont tombés ; le Démiurge, lui, attend toujours. Votre traque continue.
