@@ -293,6 +293,7 @@ Déroulement dans la V1 :
 - Chaque étape tire un événement : combat contre un groupe sauvage (80 %), coffre (15 %) ou monstre rare (5 %). Le marchand est hors V1.
 - Depuis l'étape 27 (19/10/2026), quand une étape tire un monstre rare, c'est le Schnoz, monstre caché, une fois sur 20, dans toute zone ; sinon, c'est un monstre rare de la zone, comme avant. Il se rencontre donc environ une étape sur 400. Pacifique, il se laisse prendre ; son niveau est tiré parmi ceux de la zone, et il peut se rencontrer de nouveau. Au codex, il reste inconnu tant qu'il n'est pas rencontré, comme toute espèce.
 - Après la V1, tant qu'aucun marchand n'est au camp, la rencontre d'un marchand prend 10 % sur les combats : combat 70 %, marchand 10 %, coffre 15 %, monstre rare 5 % (section 14.2). Une fois le marchand au camp, les combats retrouvent leurs 80 %.
+- Depuis l'étape 31, le marchand ne se rencontre plus : c'est l'âme du marchand mort de la zone qui prend ces 10 %, tant qu'elle n'est pas recueillie et une fois Malvoise au camp (section 14.2, Q80).
 - Un groupe sauvage compte de 1 à 2 monstres dans la zone facile, de 1 à 3 dans la zone difficile ; la taille est tirée à chaque combat.
 - Un coffre contient 1 à 2 potions (section 14.4). Après la V1, il contient aussi de l'argent, selon la zone, et, une fois sur 5, une capsule d'attaque de la zone que le joueur n'a pas encore (sections 13.10 et 14.5). Depuis l'étape 28, l'habileté Pillard augmente cet argent de 50 %, et l'habileté Fouineur peut trouver une potion après un combat gagné (section 5.9).
 - Entre deux étapes, le joueur continue, rentre au camp en gardant ses gains, utilise des potions ou change l'ordre de son équipe ; les échanges avec le camp restent impossibles. Les PV et les statuts sont conservés d'une étape à l'autre.
@@ -631,6 +632,12 @@ Premier marchand, après la V1 :
   - dans la Lisière, un monstre de la zone, au niveau maximal de la zone, tue Bertrand sous les yeux du joueur et l'attaque : un combat ordinaire contre un monstre sauvage, fuite et filet compris. Dans le Marais, Grete s'est relevée en marchand zombie, qui attaque : fuite possible, mais ni filet ni capture, et il n'entre pas au codex. Dans la Vallée, Ulrich pend au gibet du Baron, et un monstre de la Vallée garde son corps et attaque, comme dans la Lisière ;
   - une victoire recueille l'âme, acquise dès ce moment même si l'expédition finit en défaite (hypothèse retenue, comme la rencontre du marchand d'avant). Une fuite ou une défaite laisse l'âme à trouver ;
   - chaque âme recueillie ajoute à l'étal de Malvoise l'objet de son marchand (section 14.4) : le remède pour Bertrand, la grande potion pour Grete, l'élixir pour Ulrich.
+- Précisé à l'étape 31, en codant :
+  - Malvoise arrive au retour de la première expédition menée au bout, qui ne peut être que dans la Lisière, seule zone ouverte avant ;
+  - l'âme d'un marchand ne se trouve qu'une fois Malvoise au camp, pour que le texte "Vous la recueillez pour Malvoise" ait un sens (hypothèse retenue, Q80) ;
+  - le combat pour une âme suit tout de suite son texte, sans bouton d'annonce : ce n'est pas un combat de fin de zone ;
+  - le monstre qui tue Bertrand ou garde Ulrich n'est pas nommé dans leur texte : le combat le présente aussitôt, et son nom ne dit pas son genre ("un Loup", mais "une Vipère") ;
+  - le marchand zombie n'est pas dit sauvage en combat ; une âme dont le marchand disparaîtrait du jeu serait oubliée par la sauvegarde.
 - Plus tard, d'autres personnages pourront être rencontrés de la même façon et enrichir le camp, comme un pêcheur qui apprend à pêcher (section 13.8).
 
 ### 14.3 Objets et ressources cités dans ce document
@@ -712,6 +719,7 @@ Les questions Q72 et suivantes ont été relevées le 18/10/2026 après les essa
 - Q76. (À vérifier en jouant) Équilibrage du combat contre le Baron pendu, Apôtre Obscur : seuls les types Féérique (Cerf blanc, Elfe), Psychique (aucun monstre ne l'a encore) et Stellaire (Schnoz) lui sont très efficaces. Autres relations du type Stellaire, neutre envers les types autres que l'Obscur (voir Q5). Le Chat noir, de type Ténèbres, n'a plus d'avantage contre lui : à vérifier.
 - Q78. (Plus tard) Chaque Apôtre est unique : un événement quand le joueur les a tous réunis.
 - Q79. (Plus tard) Le Schnoz, surnom donné par les fans au chimimoryo, créature astrale croisée près du Qliphoth dans l'épisode 215 du manga (page https://berserk.fandom.com/wiki/Chimimoryo transmise par l'utilisateur), est une créature de l'œuvre, protégée : sans souci pour un jeu privé, mais si le bot devient public, mieux vaudra une créature qui s'en inspire, avec son propre nom et sa propre apparence (voir aussi Q64). Repris de Q73, tranchée.
+- Q80. (Étape 31) Les âmes des marchands ne se rencontrent qu'une fois Malvoise au camp (hypothèse retenue, section 14.2). Autre choix possible : dès la première expédition, en adaptant les textes, qui citent Malvoise.
 
 ## 17. Journal des décisions
 
@@ -1000,3 +1008,9 @@ Les questions Q72 et suivantes ont été relevées le 18/10/2026 après les essa
 - Hypothèses retenues, à confirmer : une âme est acquise dès la victoire, même si l'expédition finit en défaite ; une sauvegarde qui a mené la Lisière au bout a Malvoise au camp dès la reprise.
 - Le texte du marchand zombie est accordé au féminin, puisque c'est Grete.
 - Sauvegarde en version 11.
+
+19/10/2026 (étape 31, en codant) :
+
+- Q80 : hypothèse retenue, les âmes ne se rencontrent qu'une fois Malvoise au camp ; Malvoise arrive au retour de la première expédition menée au bout, forcément dans la Lisière.
+- Les textes de Bertrand et d'Ulrich ne nomment plus le monstre, pour éviter l'accord en genre ; le combat le présente aussitôt.
+- Écrans des soins : choix du soin puis du monstre dans la console ; un menu unique sur Discord, qui propose chaque soin du sac avec chaque monstre à qui il peut servir.

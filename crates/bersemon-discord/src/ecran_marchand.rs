@@ -1,4 +1,4 @@
-//! Le marchand sur Discord (section 14.2) : son étal, où l'on achète
+//! Malvoise sur Discord (section 14.2) : son étal, où l'on achète
 //! soins et capsules d'attaque, et la vente des monstres. Les achats se
 //! font sans confirmation ; la vente est confirmée par le déroulement.
 
@@ -79,14 +79,14 @@ pub fn vente(partie: &Partie) -> Question {
     lignes.extend(rangees(vec![
         bouton(
             Cle::Afficher(Vue::Marchand),
-            "Retour au marchand",
+            "Retour à Malvoise",
             SECONDAIRE,
         ),
         retour(),
     ]));
     Question {
         texte: format!(
-            "Le marchand rachète vos monstres : choisissez celui à vendre, son prix est indiqué dans le menu. Vous avez {}.",
+            "Malvoise rachète vos monstres : choisissez celui à vendre, son prix est indiqué dans le menu. Vous avez {}.",
             argent(partie.argent())
         ),
         rangees: lignes,
@@ -96,7 +96,7 @@ pub fn vente(partie: &Partie) -> Question {
 /// Une vue restée d'avant le marchand, ou ouverte par un message dépassé.
 fn sans_marchand() -> Question {
     Question {
-        texte: "Aucun marchand ne s'est encore installé au camp.".to_string(),
+        texte: "Malvoise ne s'est pas encore installé au camp.".to_string(),
         rangees: rangees(vec![retour()]),
     }
 }

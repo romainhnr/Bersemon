@@ -6,6 +6,7 @@
 //! comme au futur bot Discord, et reste testable de façon déterministe.
 
 pub mod aleatoire;
+pub mod ame;
 pub mod attaque;
 pub mod capsule;
 pub mod capture;

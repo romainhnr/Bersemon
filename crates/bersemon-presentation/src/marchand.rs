@@ -1,5 +1,6 @@
-//! Le marchand réfugié au camp (section 14.2) : son étal, les capsules
-//! d'attaque qu'il vend et le prix auquel il rachète les monstres.
+//! Malvoise, le nécromancien du camp (section 14.2) : son étal, les soins et
+//! les capsules d'attaque qu'il vend et le prix auquel il rachète les
+//! monstres.
 
 use bersemon_core::capsule::Capsule;
 use bersemon_core::collection::Collection;
@@ -21,7 +22,7 @@ pub fn etal(partie: &Partie) -> String {
         .map(|soin| format!("  {}", offre_de_soin(soin)))
         .collect();
     format!(
-        "Le marchand vous attend près du feu. Vous avez {}, entre votre sac et le coffre ; vos achats iront dans le coffre.\nSoins en vente :\n{}\n{}",
+        "Malvoise vous attend près du feu. Vous avez {}, entre votre sac et le coffre ; vos achats iront dans le coffre.\nSoins en vente :\n{}\n{}",
         argent(partie.argent()),
         soins.join("\n"),
         capsules_obtenues(partie)

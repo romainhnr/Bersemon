@@ -4,6 +4,7 @@
 use std::fmt;
 
 use crate::aleatoire::Aleatoire;
+use crate::ame::{MarchandId, MarchandMort};
 use crate::attaque::{Attaque, AttaqueId, ErreurAttaquesMonstre};
 use crate::capsule::{Capsule, ErreurApprentissage, attaques_a_apprendre};
 use crate::codex::Codex;
@@ -55,8 +56,11 @@ pub struct Partie {
     sac: Inventaire,
     /// À l'abri : ce qui est gagné au camp y va (section 13.3).
     coffre_du_camp: Inventaire,
-    /// Une fois rencontré, le marchand reste au camp (section 14.2).
+    /// Malvoise, le nécromancien, tient l'étal du camp une fois arrivé
+    /// (section 14.2).
     marchand_au_camp: bool,
+    /// Chaque âme ajoute à son étal l'objet de son marchand.
+    ames_recueillies: Vec<MarchandMort>,
     codex: Codex,
     zones_explorees: Vec<ZoneId>,
     /// Indices trouvés sur la piste de l'Apôtre (section 9.4).
@@ -90,6 +94,7 @@ pub struct EtatPartie {
     pub sac: Inventaire,
     pub coffre_du_camp: Inventaire,
     pub marchand_au_camp: bool,
+    pub ames_recueillies: Vec<MarchandMort>,
     pub codex: Codex,
     pub zones_explorees: Vec<ZoneId>,
     pub indices_trouves: usize,
@@ -155,6 +160,7 @@ impl Partie {
             sac: Inventaire::default(),
             coffre_du_camp: Inventaire::default(),
             marchand_au_camp: false,
+            ames_recueillies: Vec::new(),
             codex,
             zones_explorees: Vec::new(),
             indices_trouves: 0,
@@ -233,17 +239,43 @@ impl Partie {
         self.marchand_au_camp
     }
 
-    /// Le marchand rencontré se réfugie au camp pour de bon, même si
-    /// l'expédition finit en défaite (section 14.2).
-    pub(crate) fn accueillir_marchand(&mut self) {
+    /// Malvoise arrive au camp au retour de la première expédition menée
+    /// au bout, et y reste (section 14.2).
+    pub(crate) fn accueillir_malvoise(&mut self) {
         self.marchand_au_camp = true;
     }
 
-    /// Ce que vend le marchand du camp, dans l'ordre de `Soin::TOUS` : la
-    /// potion, puis l'objet de chaque marchand dont l'âme est recueillie
+    pub fn ames_recueillies(&self) -> &[MarchandMort] {
+        &self.ames_recueillies
+    }
+
+    pub fn a_recueilli_l_ame(&self, marchand: &MarchandId) -> bool {
+        self.ames_recueillies
+            .iter()
+            .any(|recueillie| recueillie.id() == marchand)
+    }
+
+    /// Acquise dès la victoire, même si l'expédition finit en défaite
     /// (section 14.2).
+    pub(crate) fn recueillir_ame(&mut self, marchand: MarchandMort) {
+        if !self.a_recueilli_l_ame(marchand.id()) {
+            self.ames_recueillies.push(marchand);
+        }
+    }
+
+    /// Ce que vend Malvoise, dans l'ordre de `Soin::TOUS` : la potion, puis
+    /// l'objet de chaque marchand dont l'âme est recueillie (section 14.2).
     pub fn soins_en_vente(&self) -> Vec<Soin> {
-        vec![Soin::Potion]
+        Soin::TOUS
+            .into_iter()
+            .filter(|soin| {
+                *soin == Soin::Potion
+                    || self
+                        .ames_recueillies
+                        .iter()
+                        .any(|marchand| marchand.soin() == *soin)
+            })
+            .collect()
     }
 
     /// Au camp, sans confirmation ; les soins vont dans le coffre (sections
@@ -460,6 +492,7 @@ impl Partie {
             sac: etat.sac,
             coffre_du_camp: etat.coffre_du_camp,
             marchand_au_camp: etat.marchand_au_camp,
+            ames_recueillies: etat.ames_recueillies,
             codex: etat.codex,
             zones_explorees: etat.zones_explorees,
             indices_trouves: etat.indices_trouves,
@@ -482,8 +515,9 @@ impl Partie {
 
     /// Une fois tous les indices trouvés, une expédition dans la zone de
     /// l'Apôtre s'achève par le combat contre lui, tant qu'il n'est pas
-    /// vaincu (section 9.4). Tant que le marchand n'est pas au camp, elle
-    /// peut le rencontrer (section 9.2). Ses coffres ne contiennent que des
+    /// vaincu (section 9.4). Une fois Malvoise au camp, elle peut trouver
+    /// l'âme du marchand mort de la zone, tant qu'elle n'est pas recueillie
+    /// (section 14.2). Ses coffres ne contiennent que des
     /// capsules que le joueur n'a pas encore (section 13.10). Une équipe vide
     /// ne part pas (section 13.2).
     pub fn partir_en_expedition(
@@ -502,8 +536,11 @@ impl Partie {
             .map(|capsule| capsule.id().clone())
             .collect();
         let mut expedition = Expedition::partir(zone.clone()).avec_capsules_possedees(possedees);
-        if !self.marchand_au_camp {
-            expedition = expedition.avec_marchand_possible();
+        if let Some(marchand) = zone
+            .marchand_mort()
+            .filter(|marchand| self.marchand_au_camp && !self.a_recueilli_l_ame(marchand.id()))
+        {
+            expedition = expedition.avec_ame_possible(marchand.clone());
         }
         let apotre = piste.apotre();
         if piste.antre_localise(self.indices_trouves)
@@ -545,6 +582,18 @@ impl Partie {
     ) -> Result<Combat, ErreurCombat> {
         self.preparer_combat(vec![apotre])
             .map(Combat::contre_un_apotre)
+    }
+
+    /// Contre un marchand relevé d'entre les morts : fuite possible, mais ni
+    /// filet ni capture, et il n'entre pas au codex (section 14.2).
+    pub fn preparer_combat_sans_capture(
+        &mut self,
+        groupe: Vec<Monstre>,
+    ) -> Result<Combat, ErreurCombat> {
+        Ok(Combat::new(self.collection.equipe().to_vec(), groupe)?
+            .avec_bonus_du_joueur(self.heros.classe().bonus())
+            .avec_soins(*self.sac.soins())
+            .sans_capture())
     }
 
     /// Ni fuite ni filet contre un humain (section 10.7). Ses monstres entrent
@@ -857,6 +906,7 @@ impl Partie {
 mod tests {
     use super::*;
     use crate::aleatoire::AleatoireScripte;
+    use crate::ame::Gardien;
     use crate::attaque::Categorie;
     use crate::codex::EtatCodex;
     use crate::combat::Action;
@@ -1070,28 +1120,50 @@ mod tests {
     }
 
     #[test]
-    fn le_marchand_ne_se_rencontre_que_s_il_n_est_pas_au_camp() {
-        let (zones, piste) = carte();
+    fn l_ame_ne_se_trouve_qu_avec_malvoise_et_tant_qu_elle_n_est_pas_recueillie() {
+        let (mut zones, piste) = carte();
+        let bertrand = MarchandMort::new(
+            MarchandId::new("bertrand"),
+            "Bertrand",
+            Soin::Remede,
+            Gardien::MonstreDeLaZone,
+            "",
+            "",
+        )
+        .unwrap();
+        zones[0] = zones[0].clone().avec_marchand_mort(bertrand.clone());
+        // Le monstre du groupe, ou celui qui tue Bertrand, tire son shiny et
+        // ses valeurs internes.
+        let tirages = [71, 2, 0, 0, 0, 0, 0, 0];
+        let etape = |partie: &Partie| {
+            let mut expedition = partie.partir_en_expedition(&zones[0], &piste).unwrap();
+            expedition.etape_suivante(&mut AleatoireScripte::new(tirages))
+        };
         let mut partie = partie();
-        let mut expedition = partie.partir_en_expedition(&zones[0], &piste).unwrap();
-        assert_eq!(
-            expedition.etape_suivante(&mut AleatoireScripte::new([71])),
-            Some(EvenementExpedition::Marchand)
-        );
-        partie.accueillir_marchand();
-        let mut expedition = partie.partir_en_expedition(&zones[0], &piste).unwrap();
-        // Le monstre du groupe tire son shiny et ses valeurs internes.
         assert!(matches!(
-            expedition.etape_suivante(&mut AleatoireScripte::new([71, 2, 0, 0, 0, 0, 0, 0])),
+            etape(&partie),
             Some(EvenementExpedition::Combat(_))
         ));
+        partie.accueillir_malvoise();
+        assert!(matches!(
+            etape(&partie),
+            Some(EvenementExpedition::Ame { .. })
+        ));
+        partie.recueillir_ame(bertrand.clone());
+        partie.recueillir_ame(bertrand);
+        assert_eq!(partie.ames_recueillies().len(), 1);
+        assert!(matches!(
+            etape(&partie),
+            Some(EvenementExpedition::Combat(_))
+        ));
+        assert_eq!(partie.soins_en_vente(), vec![Soin::Potion, Soin::Remede]);
     }
 
     /// Le marchand au camp et 50 pièces d'argent dans le coffre.
     fn partie_chez_le_marchand() -> Partie {
         let mut partie = partie();
         partie.collection_mut().accueillir_capture(creer("loup", 3));
-        partie.accueillir_marchand();
+        partie.accueillir_malvoise();
         partie.coffre_du_camp.ajouter_argent(50);
         partie
     }
@@ -1583,6 +1655,7 @@ mod tests {
             sac: partie.sac().clone(),
             coffre_du_camp: partie.coffre_du_camp().clone(),
             marchand_au_camp: partie.marchand_au_camp(),
+            ames_recueillies: partie.ames_recueillies().to_vec(),
             codex: partie.codex().clone(),
             zones_explorees: partie.zones_explorees().to_vec(),
             indices_trouves: partie.indices_trouves(),

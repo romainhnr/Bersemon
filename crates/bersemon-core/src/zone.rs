@@ -8,6 +8,7 @@
 use std::fmt;
 
 use crate::aleatoire::Aleatoire;
+use crate::ame::MarchandMort;
 use crate::espece::{Espece, EspeceId};
 use crate::expedition::ParametresCoffre;
 use crate::expedition_automatique::ParametresExpeditionAutomatique;
@@ -102,6 +103,9 @@ pub struct Zone {
     /// 10.7). En boîte, pour que la zone reste légère : elle est copiée dans
     /// chaque expédition.
     humain: Option<Box<Humain>>,
+    /// Le marchand mort de la zone, dont l'âme attend d'être recueillie
+    /// (section 14.2). En boîte, comme l'humain.
+    marchand_mort: Option<Box<MarchandMort>>,
     expedition_automatique: ParametresExpeditionAutomatique,
     coffre: ParametresCoffre,
 }
@@ -154,6 +158,7 @@ impl Zone {
             rares,
             cache: None,
             humain: None,
+            marchand_mort: None,
             expedition_automatique,
             coffre,
         })
@@ -211,6 +216,15 @@ impl Zone {
         self.humain.as_deref()
     }
 
+    pub fn avec_marchand_mort(mut self, marchand: MarchandMort) -> Self {
+        self.marchand_mort = Some(Box::new(marchand));
+        self
+    }
+
+    pub fn marchand_mort(&self) -> Option<&MarchandMort> {
+        self.marchand_mort.as_deref()
+    }
+
     /// Durée, dégâts et récompenses d'une expédition automatique (section
     /// 12.8).
     pub fn expedition_automatique(&self) -> &ParametresExpeditionAutomatique {
@@ -250,6 +264,14 @@ impl Zone {
         })
     }
 
+    /// Le monstre qui tue le marchand de la zone ou garde son corps : une
+    /// espèce commune, au niveau maximal de la zone (section 14.2).
+    /// Tirages : l'espèce, puis ceux de `generer_monstre`, sauf le niveau.
+    pub(crate) fn generer_gardien(&self, aleatoire: &mut dyn Aleatoire) -> Monstre {
+        let espece = &self.especes[tirer_position(self.especes.len(), aleatoire)];
+        creer_monstre_sauvage(espece, self.niveau_max, aleatoire)
+    }
+
     /// Tirages : niveau, shiny, valeurs internes s'il n'est pas shiny, puis
     /// habileté.
     fn generer_monstre(&self, espece: &Espece, aleatoire: &mut dyn Aleatoire) -> Monstre {
@@ -260,12 +282,22 @@ impl Zone {
         );
         // Le tirage reste entre deux niveaux valides de la zone.
         let niveau = Niveau::new(valeur as u8).expect("niveau compris dans la zone");
-        let shiny = tirer_shiny(aleatoire);
-        let valeurs_internes = tirer_valeurs_internes(shiny, aleatoire);
-        Monstre::creer(espece.clone(), niveau, valeurs_internes, shiny)
-            .expect("espèce vérifiée à chaque niveau par Zone::new")
-            .tirer_son_habilete(aleatoire)
+        creer_monstre_sauvage(espece, niveau, aleatoire)
     }
+}
+
+/// À un niveau de la zone de l'espèce. Tirages : shiny, valeurs internes
+/// s'il n'est pas shiny, puis habileté.
+fn creer_monstre_sauvage(
+    espece: &Espece,
+    niveau: Niveau,
+    aleatoire: &mut dyn Aleatoire,
+) -> Monstre {
+    let shiny = tirer_shiny(aleatoire);
+    let valeurs_internes = tirer_valeurs_internes(shiny, aleatoire);
+    Monstre::creer(espece.clone(), niveau, valeurs_internes, shiny)
+        .expect("espèce vérifiée à chaque niveau par Zone::new")
+        .tirer_son_habilete(aleatoire)
 }
 
 /// L'espèce doit apprendre au moins une attaque, et aucune en double, jusqu'à

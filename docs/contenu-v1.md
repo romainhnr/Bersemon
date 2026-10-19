@@ -294,11 +294,11 @@ Arrivée de Malvoise, au retour de la première expédition menée au bout dans 
 
 Le monstre qui tue Bertrand ou garde Ulrich est tiré parmi les espèces communes de la zone, au niveau maximal de la zone.
 
-Bertrand, avant le combat (avec le nom du monstre) :
+Bertrand, avant le combat (le monstre n'est pas nommé : le combat le présente aussitôt, et son nom ne dit pas son genre) :
 
-> Un cri déchire la Lisière : un Loup se jette sur un colporteur et l'abat sous vos yeux. La bête se tourne vers vous.
+> Un cri déchire la Lisière : un monstre se jette sur un colporteur et l'abat sous vos yeux. La bête se tourne vers vous.
 
-Après la victoire :
+Après la victoire, suivi de "Malvoise vendra désormais le remède." (la grande potion pour Grete, l'élixir pour Ulrich) :
 
 > L'âme de Bertrand, colporteur, flotte au-dessus de son corps. Vous la recueillez pour Malvoise.
 
@@ -310,9 +310,9 @@ Après la victoire :
 
 > Le corps de Grete s'effondre enfin. Son âme flotte au-dessus de la vase : vous la recueillez pour Malvoise.
 
-Ulrich, avant le combat (avec le nom du monstre) :
+Ulrich, avant le combat (le monstre n'est pas nommé, comme pour Bertrand) :
 
-> Au pied d'un gibet, un alchimiste pend au bout d'une corde, ses fioles brisées dans l'herbe. Un Squelette garde le corps et se jette sur vous.
+> Au pied d'un gibet, un alchimiste pend au bout d'une corde, ses fioles brisées dans l'herbe. Un monstre garde le corps et se jette sur vous.
 
 Après la victoire :
 

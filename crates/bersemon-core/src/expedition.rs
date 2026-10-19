@@ -5,6 +5,7 @@ use std::fmt;
 use std::ops::RangeInclusive;
 
 use crate::aleatoire::Aleatoire;
+use crate::ame::MarchandMort;
 use crate::attaque::AttaqueId;
 use crate::capsule::Capsule;
 use crate::expedition_automatique::ErreurParametres;
@@ -66,8 +67,13 @@ pub enum EvenementExpedition {
         humain: Humain,
         equipe: Vec<Monstre>,
     },
-    /// Le marchand rencontré se réfugie aussitôt au camp (section 14.2).
-    Marchand,
+    /// Combat contre ce qui tue le marchand mort de la zone, ou garde son
+    /// corps : la victoire recueille son âme (section 14.2). En boîte, pour
+    /// que l'événement reste léger.
+    Ame {
+        marchand: Box<MarchandMort>,
+        adversaire: Monstre,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -101,9 +107,9 @@ pub struct Expedition {
     /// L'humain qui attend à la dernière étape tant qu'il n'est pas vaincu
     /// (section 10.7).
     humain: Option<Humain>,
-    /// Tant qu'aucun marchand n'est au camp, une étape peut tirer sa
-    /// rencontre, une fois au plus (section 9.2).
-    marchand_possible: bool,
+    /// Le marchand mort de la zone, tant que son âme peut être trouvée : une
+    /// étape peut la tirer, une fois au plus (section 14.2).
+    ame_possible: Option<MarchandMort>,
     /// Un coffre ne contient qu'une capsule que le joueur n'a pas encore.
     capsules_possedees: Vec<AttaqueId>,
     /// Pour qu'un autre coffre de la même expédition ne la contienne pas.
@@ -122,7 +128,7 @@ impl Expedition {
             defaite: false,
             apotre: None,
             humain: None,
-            marchand_possible: false,
+            ame_possible: None,
             capsules_possedees: Vec::new(),
             capsules_trouvees: Vec::new(),
         }
@@ -143,8 +149,8 @@ impl Expedition {
         self.humain.as_ref()
     }
 
-    pub(crate) fn avec_marchand_possible(mut self) -> Self {
-        self.marchand_possible = true;
+    pub(crate) fn avec_ame_possible(mut self, marchand: MarchandMort) -> Self {
+        self.ame_possible = Some(marchand);
         self
     }
 
@@ -184,9 +190,10 @@ impl Expedition {
 
     /// Passe à l'étape suivante et tire son événement ; `None` si
     /// l'expédition est terminée. Tirages : nature de l'événement (combat
-    /// 80 %, coffre 15 %, monstre rare 5 %, Q38 ; tant que le marchand peut
-    /// être rencontré, combat 70 % et marchand 10 %, Q70), puis ceux de son
-    /// contenu : pour un coffre, ses potions, son argent puis sa capsule.
+    /// 80 %, coffre 15 %, monstre rare 5 %, Q38 ; tant que l'âme du marchand
+    /// de la zone peut être trouvée, combat 70 % et âme 10 %, section 14.2),
+    /// puis ceux de son contenu : pour un coffre, ses potions, son argent
+    /// puis sa capsule ; pour une âme, ceux de son adversaire.
     /// Une zone sans monstre rare donne un combat à la place. L'Apôtre
     /// remplace l'événement de la dernière étape, sans tirage de sa nature
     /// (Q57), comme l'humain de la zone, sans aucun tirage (section 10.7).
@@ -206,9 +213,13 @@ impl Expedition {
             });
         }
         let evenement = match aleatoire.tirer(1..=100) {
-            71..=80 if self.marchand_possible => {
-                self.marchand_possible = false;
-                EvenementExpedition::Marchand
+            71..=80 if self.ame_possible.is_some() => {
+                let marchand = self.ame_possible.take().expect("âme possible");
+                let adversaire = marchand.generer_adversaire(&self.zone, aleatoire);
+                EvenementExpedition::Ame {
+                    marchand: Box::new(marchand),
+                    adversaire,
+                }
             }
             1..=80 => EvenementExpedition::Combat(self.zone.generer_groupe(aleatoire)),
             81..=95 => self.tirer_un_coffre(aleatoire),
@@ -264,8 +275,10 @@ impl Expedition {
 mod tests {
     use super::*;
     use crate::aleatoire::AleatoireScripte;
+    use crate::ame::{Gardien, MarchandId};
     use crate::donnees_de_test::{espece, parametres_coffre, parametres_expedition_automatique};
     use crate::niveau::Niveau;
+    use crate::soin::Soin;
     use crate::traque::Apotre;
     use crate::zone::{EspeceRare, ZoneId};
 
@@ -439,18 +452,30 @@ mod tests {
     }
 
     #[test]
-    fn le_marchand_se_rencontre_une_fois_a_la_place_d_un_combat() {
-        let mut expedition = Expedition::partir(zone(false)).avec_marchand_possible();
+    fn l_ame_se_trouve_une_fois_a_la_place_d_un_combat() {
+        let bertrand = MarchandMort::new(
+            MarchandId::new("bertrand"),
+            "Bertrand",
+            Soin::Remede,
+            Gardien::MonstreDeLaZone,
+            "",
+            "",
+        )
+        .unwrap();
+        let mut expedition = Expedition::partir(zone(false)).avec_ame_possible(bertrand);
         let mut combat = vec![70];
         combat.extend(MONSTRE);
         assert!(matches!(
             expedition.etape_suivante(&mut AleatoireScripte::new(combat)),
             Some(EvenementExpedition::Combat(_))
         ));
-        assert_eq!(
-            expedition.etape_suivante(&mut AleatoireScripte::new([71])),
-            Some(EvenementExpedition::Marchand)
-        );
+        // Le loup qui tue Bertrand est au niveau 5, le seul de la zone.
+        let mut ame = vec![71];
+        ame.extend(MONSTRE);
+        assert!(matches!(
+            expedition.etape_suivante(&mut AleatoireScripte::new(ame)),
+            Some(EvenementExpedition::Ame { marchand, .. }) if marchand.nom() == "Bertrand"
+        ));
         // Il ne se rencontre qu'une fois.
         let mut combat = vec![80];
         combat.extend(MONSTRE);
@@ -461,7 +486,7 @@ mod tests {
     }
 
     #[test]
-    fn sans_marchand_possible_le_tirage_donne_un_combat() {
+    fn sans_ame_possible_le_tirage_donne_un_combat() {
         let mut expedition = Expedition::partir(zone(false));
         let mut combat = vec![75];
         combat.extend(MONSTRE);

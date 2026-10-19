@@ -2,6 +2,7 @@
 //! sauvegarde, qui ne garde que les identifiants (section 13.9). Le contenu
 //! lui-même vit hors des règles : le noyau ne fait que le consulter.
 
+use crate::ame::{MarchandId, MarchandMort};
 use crate::attaque::AttaqueId;
 use crate::capsule::Capsule;
 use crate::espece::{Espece, EspeceId};
@@ -16,4 +17,7 @@ pub trait Catalogue {
     /// Pour les capsules obtenues et les attaques qu'elles ont enseignées
     /// (section 13.10). Une capsule se désigne par son attaque.
     fn capsule(&self, id: &AttaqueId) -> Option<Capsule>;
+
+    /// Pour les âmes recueillies (section 14.2).
+    fn marchand_mort(&self, id: &MarchandId) -> Option<MarchandMort>;
 }

@@ -236,6 +236,9 @@ pub struct Combat {
     /// Face à un humain, ni fuite ni filet, et une seule capture après la
     /// victoire (section 10.7).
     contre_un_humain: bool,
+    /// Face à un marchand relevé d'entre les morts, ni filet ni capture
+    /// (section 14.2).
+    sans_capture: bool,
     ia: Ia,
     phase: Phase,
 }
@@ -266,6 +269,7 @@ impl Combat {
             soins: Soins::default(),
             contre_un_apotre: false,
             contre_un_humain: false,
+            sans_capture: false,
             ia: Ia::Hasard,
             phase: Phase::ChoixAction,
         };
@@ -312,12 +316,23 @@ impl Combat {
         self.contre_un_humain
     }
 
+    /// Combat contre un marchand relevé d'entre les morts : fuite possible,
+    /// mais ni filet ni capture (section 14.2).
+    pub fn sans_capture(mut self) -> Self {
+        self.sans_capture = true;
+        self
+    }
+
+    pub fn est_sans_capture(&self) -> bool {
+        self.sans_capture
+    }
+
     pub fn fuite_possible(&self) -> bool {
         !self.contre_un_apotre && !self.contre_un_humain
     }
 
     pub fn filet_possible(&self) -> bool {
-        !self.contre_un_apotre && !self.contre_un_humain
+        !self.contre_un_apotre && !self.contre_un_humain && !self.sans_capture
     }
 
     /// Bonus appliqué aux stats des monstres du joueur pendant tout le combat,
@@ -504,9 +519,10 @@ impl Combat {
 
     /// Monstres adverses KO, pas encore capturés, qu'il est possible de
     /// capturer après une victoire (Q29) ; un seul pour un humain (section
-    /// 10.7).
+    /// 10.7), aucun dans un combat sans capture (section 14.2).
     pub fn adversaires_capturables(&self) -> Vec<usize> {
         if self.phase != Phase::Termine(Issue::Victoire)
+            || self.sans_capture
             || (self.contre_un_humain && !self.captures.is_empty())
         {
             return Vec::new();
@@ -1665,6 +1681,19 @@ mod tests {
             combat.capturer_ko(0),
             Err(ErreurCombat::CaptureImpossible(0))
         );
+    }
+
+    #[test]
+    fn sans_capture_la_fuite_reste_possible_mais_ni_filet_ni_capture() {
+        let mut combat = combat(vec![rapide()], vec![affaibli(lent(), 1)]).sans_capture();
+        assert!(combat.fuite_possible());
+        assert_eq!(
+            combat.jouer_tour(Action::LancerFilet, &mut AleatoireScripte::new([])),
+            Err(ErreurCombat::FiletImpossible)
+        );
+        tour(&mut combat, Action::Attaquer(0), &[2, 100]);
+        assert_eq!(combat.phase(), Phase::Termine(Issue::Victoire));
+        assert!(combat.adversaires_capturables().is_empty());
     }
 
     #[test]

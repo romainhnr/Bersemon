@@ -104,7 +104,7 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
     ];
     // Le marchand n'apparaît qu'une fois réfugié au camp (section 14.2).
     if partie.marchand_au_camp() {
-        boutons.push(bouton(Cle::Afficher(Vue::Marchand), "Marchand", SECONDAIRE));
+        boutons.push(bouton(Cle::Afficher(Vue::Marchand), "Malvoise", SECONDAIRE));
     }
     boutons.push(bouton(Cle::Afficher(Vue::Options), "Options", SECONDAIRE));
     lignes.extend(rangees(boutons));

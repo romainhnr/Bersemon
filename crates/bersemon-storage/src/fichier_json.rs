@@ -84,6 +84,7 @@ fn acces(erreur: io::Error) -> ErreurSauvegarde {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bersemon_core::ame::{Gardien, MarchandId, MarchandMort};
     use bersemon_core::attaque::{Attaque, AttaqueId, Categorie, EffetSecondaire};
     use bersemon_core::capsule::Capsule;
     use bersemon_core::collection::Emplacement;
@@ -112,6 +113,7 @@ mod tests {
         especes: Vec<Espece>,
         zones: Vec<Zone>,
         capsules: Vec<Capsule>,
+        marchands: Vec<MarchandMort>,
     }
 
     impl Catalogue for CatalogueDeTest {
@@ -132,6 +134,25 @@ mod tests {
                 .find(|capsule| capsule.id() == id)
                 .cloned()
         }
+
+        fn marchand_mort(&self, id: &MarchandId) -> Option<MarchandMort> {
+            self.marchands
+                .iter()
+                .find(|marchand| marchand.id() == id)
+                .cloned()
+        }
+    }
+
+    fn bertrand() -> MarchandMort {
+        MarchandMort::new(
+            MarchandId::new("bertrand"),
+            "Bertrand",
+            Soin::Remede,
+            Gardien::MonstreDeLaZone,
+            "",
+            "",
+        )
+        .unwrap()
     }
 
     fn capsule(id: &str, type_attaque: Type) -> Capsule {
@@ -218,6 +239,7 @@ mod tests {
                 capsule("grand-coup", Type::Normal),
                 capsule("vague", Type::Eau),
             ],
+            marchands: vec![bertrand()],
         }
     }
 
@@ -260,6 +282,7 @@ mod tests {
                 .avec_soins(Soin::GrandePotion, 1)
                 .avec_soins(Soin::Elixir, 3),
             marchand_au_camp: true,
+            ames_recueillies: vec![bertrand()],
             codex: partie.codex().clone(),
             zones_explorees: vec![ZoneId::new("lisiere")],
             indices_trouves: 3,
@@ -514,9 +537,42 @@ mod tests {
         let objet = valeur.as_object_mut().unwrap();
         objet.remove("marchand_au_camp");
         objet.remove("capsules");
+        // Sans zone explorée, ni Malvoise, ni expédition automatique.
+        objet.insert("zones_explorees".to_string(), serde_json::json!([]));
+        objet.insert(
+            "expeditions_automatiques".to_string(),
+            serde_json::json!([]),
+        );
         let rechargee = charger_texte(&valeur.to_string()).unwrap().unwrap();
         assert!(!rechargee.marchand_au_camp());
         assert_eq!(rechargee.argent(), partie.argent());
+    }
+
+    #[test]
+    fn avant_la_version_11_une_zone_exploree_amene_malvoise() {
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        let objet = valeur.as_object_mut().unwrap();
+        assert_eq!(objet["ames_recueillies"], serde_json::json!(["bertrand"]));
+        objet.insert("marchand_au_camp".to_string(), false.into());
+        objet.remove("ames_recueillies");
+        let en_version_11 = valeur.to_string();
+        valeur
+            .as_object_mut()
+            .unwrap()
+            .insert("version".to_string(), 10.into());
+        let rechargee = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        assert!(rechargee.marchand_au_camp());
+        assert!(rechargee.ames_recueillies().is_empty());
+        // Depuis la version 11, Malvoise n'est au camp que s'il y est arrivé.
+        let rechargee = charger_texte(&en_version_11).unwrap().unwrap();
+        assert!(!rechargee.marchand_au_camp());
+    }
+
+    #[test]
+    fn une_ame_dont_le_marchand_a_disparu_est_oubliee() {
+        let texte = texte_de_partie().replacen("\"bertrand\"", "\"inconnu\"", 1);
+        let rechargee = charger_texte(&texte).unwrap().unwrap();
+        assert!(rechargee.ames_recueillies().is_empty());
     }
 
     #[test]

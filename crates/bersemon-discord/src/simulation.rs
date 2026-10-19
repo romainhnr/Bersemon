@@ -398,6 +398,7 @@ fn l_equipe_et_le_camp_pleins_tiennent_dans_les_limites() {
         sac: Inventaire::new(45, 3, capsules[..1].to_vec()),
         coffre_du_camp: Inventaire::new(1_000, 12, capsules[1..].to_vec()),
         marchand_au_camp: true,
+        ames_recueillies: Vec::new(),
         codex: partie.codex().clone(),
         zones_explorees: vec![ZoneId::new("lisiere"), ZoneId::new("marais")],
         indices_trouves: 3,
@@ -481,6 +482,7 @@ fn les_attaques_au_camp_se_choisissent_par_menu() {
         sac: partie.sac().clone(),
         coffre_du_camp: Inventaire::new(0, 0, contenu.capsules()[..1].to_vec()),
         marchand_au_camp: false,
+        ames_recueillies: Vec::new(),
         codex: partie.codex().clone(),
         zones_explorees: Vec::new(),
         indices_trouves: 0,
@@ -623,7 +625,15 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
         automatique_faite,
         "expédition automatique jamais accueillie"
     );
-    assert_eq!(visite, Visite::Faite, "visite au marchand jamais faite");
+    assert_eq!(visite, Visite::Faite, "visite à Malvoise jamais faite");
+    // Malvoise arrive une fois ; les âmes recueillies passent par l'écran du
+    // combat et le récit (section 14.2).
+    let compter = |cherche: fn(&Evenement) -> bool| vus.iter().filter(|e| cherche(e)).count();
+    assert_eq!(
+        compter(|evenement| *evenement == Evenement::MalvoiseArrive),
+        1
+    );
+    assert!(compter(|evenement| matches!(evenement, Evenement::AmeRecueillie { .. })) > 0);
     assert!(
         vus.iter()
             .any(|evenement| matches!(evenement, Evenement::RangeAuCoffre(_))),
@@ -663,6 +673,7 @@ fn toute_l_equipe_se_prepare_d_un_bouton_s_il_y_a_de_la_place_au_camp() {
             sac: partie.sac().clone(),
             coffre_du_camp: partie.coffre_du_camp().clone(),
             marchand_au_camp: partie.marchand_au_camp(),
+            ames_recueillies: partie.ames_recueillies().to_vec(),
             codex: partie.codex().clone(),
             zones_explorees: vec![ZoneId::new("lisiere")],
             indices_trouves: 1,

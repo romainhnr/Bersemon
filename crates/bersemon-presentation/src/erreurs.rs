@@ -31,7 +31,7 @@ pub fn erreur_de_choix(choix: &Choix, erreur: &ErreurChoix) -> String {
         }
         ErreurChoix::ExpeditionAutomatique(erreur) => erreur_expedition_automatique(erreur),
         ErreurChoix::Marchand(erreur) => erreur_marchand(erreur),
-        ErreurChoix::CapsuleInconnue(_) => "Le marchand ne vend pas cette capsule.".to_string(),
+        ErreurChoix::CapsuleInconnue(_) => "Malvoise ne vend pas cette capsule.".to_string(),
         ErreurChoix::EquipeVide => {
             "Votre équipe est vide : faites venir des monstres du camp avant de partir.".to_string()
         }
@@ -44,7 +44,7 @@ pub fn erreur_de_choix(choix: &Choix, erreur: &ErreurChoix) -> String {
 pub fn erreur_marchand(erreur: &ErreurMarchand) -> String {
     match erreur {
         ErreurMarchand::AucunMarchand => {
-            "Aucun marchand ne s'est encore installé au camp.".to_string()
+            "Malvoise ne s'est pas encore installé au camp.".to_string()
         }
         ErreurMarchand::ArgentInsuffisant {
             prix,

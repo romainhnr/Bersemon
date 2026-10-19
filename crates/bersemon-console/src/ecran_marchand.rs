@@ -1,4 +1,4 @@
-//! Le marchand réfugié au camp (section 14.2) : soins, capsules d'attaque
+//! Malvoise, le nécromancien du camp (section 14.2) : soins, capsules d'attaque
 //! et rachat des monstres. Les achats se font sans confirmation ; la vente
 //! est confirmée par le déroulement.
 
@@ -63,7 +63,7 @@ fn acheter_capsule(
 ) -> Option<Option<Choix>> {
     let en_vente = capsules_en_vente(partie, contenu.capsules());
     if en_vente.is_empty() {
-        println!("Vous avez déjà toutes les capsules du marchand.");
+        println!("Vous avez déjà toutes les capsules de Malvoise.");
         return Some(None);
     }
     println!("Capsules d'attaque en vente :");

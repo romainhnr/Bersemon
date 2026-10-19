@@ -14,6 +14,7 @@ use std::collections::VecDeque;
 use std::fmt;
 
 use crate::aleatoire::Aleatoire;
+use crate::ame::{Gardien, MarchandMort};
 use crate::attaque::{Attaque, AttaqueId, ErreurAttaquesMonstre};
 use crate::capsule::{Capsule, ErreurApprentissage};
 use crate::collection::{Emplacement, ErreurCollection, Placement, TriDuCamp};
@@ -246,6 +247,13 @@ pub enum Evenement {
         texte: String,
         argent: u32,
     },
+    /// Le texte du marchand mort trouvé, avant le combat (section 14.2).
+    AmeRencontree(String),
+    /// Son texte après la victoire, et le soin que Malvoise vend désormais.
+    AmeRecueillie {
+        texte: String,
+        soin: Soin,
+    },
     Rencontre(Combat),
     /// Événements d'un tour, avec le combat qui permet de les mettre en texte.
     Combat {
@@ -314,8 +322,8 @@ pub enum Evenement {
         zone: String,
         bilan: BilanExpeditionAutomatique,
     },
-    /// Il se réfugie aussitôt au camp (section 14.2).
-    MarchandRencontre,
+    /// Au retour de la première expédition menée au bout (section 14.2).
+    MalvoiseArrive,
     /// Prix payé, en pièces d'argent.
     SoinsAchetes {
         soin: Soin,
@@ -629,6 +637,7 @@ impl EnJeu {
                 let mut en_cours = EnExpedition {
                     expedition,
                     moment: Moment::EntreDeuxEtapes,
+                    ame: None,
                 };
                 let reponse = en_cours.etape_suivante(&mut self.partie, contexte, evenements);
                 let reponse =
@@ -911,6 +920,12 @@ impl EnJeu {
         if let Some(nouvelle) = self.partie.zones_accessibles(zones, piste).get(avant) {
             evenements.push(Evenement::NouvelleZone(nouvelle.nom().to_string()));
         }
+        // La première expédition menée au bout ne peut être que dans la
+        // Lisière, seule zone ouverte avant elle (section 14.2).
+        if en_cours.expedition.est_reussie() && !self.partie.marchand_au_camp() {
+            self.partie.accueillir_malvoise();
+            evenements.push(Evenement::MalvoiseArrive);
+        }
         montrer_conseil(&mut self.partie, Conseil::PremierRetourAuCamp, evenements);
         sauvegarder(&self.partie, contexte.depot, evenements);
     }
@@ -968,6 +983,8 @@ fn gerer(
 struct EnExpedition {
     expedition: Expedition,
     moment: Moment,
+    /// Le marchand mort dont le combat en cours peut recueillir l'âme.
+    ame: Option<MarchandMort>,
 }
 
 enum Moment {
@@ -1395,8 +1412,9 @@ impl EnExpedition {
     }
 
     /// L'Apôtre vaincu ne réapparaît plus et l'épilogue suit ; un humain
-    /// vaincu non plus, et son argent va dans le sac ; une défaite met fin à
-    /// l'expédition (sections 9.3, 9.4 et 10.7).
+    /// vaincu non plus, et son argent va dans le sac ; une victoire recueille
+    /// l'âme du marchand mort ; une défaite met fin à l'expédition (sections
+    /// 9.3, 9.4, 10.7 et 14.2).
     fn conclure(
         &mut self,
         partie: &mut Partie,
@@ -1419,6 +1437,17 @@ impl EnExpedition {
                     texte: humain.apres_victoire().to_string(),
                     argent,
                 });
+            }
+            if let Some(marchand) = self
+                .ame
+                .take()
+                .filter(|_| fin.issue == Some(Issue::Victoire))
+            {
+                evenements.push(Evenement::AmeRecueillie {
+                    texte: marchand.apres_victoire().to_string(),
+                    soin: marchand.soin(),
+                });
+                partie.recueillir_ame(marchand);
             }
             if fin.issue == Some(Issue::Defaite) {
                 self.expedition.noter_defaite();
@@ -1472,10 +1501,23 @@ impl EnExpedition {
                 });
                 self.apres_l_etape(partie, evenements)
             }
-            EvenementExpedition::Marchand => {
-                partie.accueillir_marchand();
-                evenements.push(Evenement::MarchandRencontre);
-                self.apres_l_etape(partie, evenements)
+            EvenementExpedition::Ame {
+                marchand,
+                adversaire,
+            } => {
+                evenements.push(Evenement::AmeRencontree(
+                    marchand.avant_combat().to_string(),
+                ));
+                let combat = match marchand.gardien() {
+                    Gardien::MonstreDeLaZone => partie.preparer_combat(vec![adversaire]),
+                    Gardien::MortVivant { .. } => {
+                        partie.preparer_combat_sans_capture(vec![adversaire])
+                    }
+                }
+                .expect(EQUIPE_APTE);
+                evenements.push(Evenement::Rencontre(combat.clone()));
+                self.ame = Some(*marchand);
+                self.engager(partie, combat, evenements)
             }
             EvenementExpedition::MonstreRare(rare) => {
                 partie.noter_rencontre(&rare.monstre);
@@ -1574,6 +1616,7 @@ fn annoncer_placement(
 mod tests {
     use super::*;
     use crate::aleatoire::{AleatoireScripte, GenerateurAleatoire};
+    use crate::ame::MarchandId;
     use crate::catalogue::Catalogue;
     use crate::codex::EtatCodex;
     use crate::espece::EspeceId;
@@ -1656,6 +1699,7 @@ mod tests {
             sac: partie.sac().clone(),
             coffre_du_camp: partie.coffre_du_camp().clone(),
             marchand_au_camp: partie.marchand_au_camp(),
+            ames_recueillies: partie.ames_recueillies().to_vec(),
             codex: partie.codex().clone(),
             zones_explorees: partie.zones_explorees().to_vec(),
             indices_trouves: partie.indices_trouves(),
@@ -1938,7 +1982,7 @@ mod tests {
     }
 
     #[test]
-    fn le_marchand_rencontre_attend_au_camp_pour_acheter_et_vendre() {
+    fn malvoise_arrive_au_bout_de_la_lisiere_pour_acheter_et_vendre() {
         let contenu = ContenuV1::new();
         let depot = DepotMemoire::default();
         let mut deroulement = Deroulement::demarrer(Ok(Some(partie(&contenu))));
@@ -1953,28 +1997,42 @@ mod tests {
             Err(ErreurChoix::Marchand(ErreurMarchand::AucunMarchand))
         );
 
-        // Le marchand, dès la première étape.
-        let mut aleatoire = AleatoireScripte::new([71]);
-        let mut contexte = Contexte {
-            contenu: &contenu,
-            aleatoire: &mut aleatoire,
-            depot: &depot,
-            maintenant: Horodatage::depuis_secondes(0),
-        };
-        let evenements = deroulement
-            .repondre(
-                Choix::PartirEnExpedition(ZoneId::new("lisiere")),
-                &mut contexte,
+        // Le brigand déjà vaincu, la Lisière ne finit que par des coffres :
+        // une potion et 10 pièces d'argent chacun, sans capsule.
+        let coffre = vec![81, 1, 10, 100];
+        let mut etat = etat_de(deroulement.partie().unwrap());
+        etat.humains_vaincus = vec![HumainId::new("brigand")];
+        let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
+        let lisiere = Choix::PartirEnExpedition(ZoneId::new("lisiere"));
+        repondre_a(
+            &mut deroulement,
+            lisiere,
+            &contenu,
+            &depot,
+            0,
+            coffre.clone(),
+        )
+        .unwrap();
+        for _ in 0..2 {
+            let continuer = Choix::ContinuerLExpedition;
+            repondre_a(
+                &mut deroulement,
+                continuer,
+                &contenu,
+                &depot,
+                0,
+                coffre.clone(),
             )
             .unwrap();
-        assert_eq!(
-            evenements[2..],
-            [
-                Evenement::MarchandRencontre,
-                Evenement::Conseil(Conseil::PremierArretEntreDeuxEtapes),
-            ]
-        );
-        repondre_sans_tirage(&mut deroulement, Choix::RentrerAuCamp, &contenu, &depot).unwrap();
+        }
+        assert_eq!(deroulement.attente(), Attente::Annonce(Annonce::Indice));
+        let evenements =
+            repondre_sans_tirage(&mut deroulement, Choix::Poursuivre, &contenu, &depot).unwrap();
+        // Malvoise arrive après l'indice (section 14.2).
+        let position = |cherche: fn(&Evenement) -> bool| evenements.iter().position(cherche);
+        let indice = position(|evenement| matches!(evenement, Evenement::Indice { .. }));
+        let malvoise = position(|evenement| *evenement == Evenement::MalvoiseArrive);
+        assert!(indice.unwrap() < malvoise.unwrap());
         let partie = deroulement.partie().unwrap();
         assert!(partie.marchand_au_camp());
         assert!(
@@ -1985,16 +2043,22 @@ mod tests {
                 .unwrap()
                 .marchand_au_camp()
         );
+        // 30 pièces d'argent trouvées : une potion, et pas de quoi en payer
+        // une seconde.
+        let acheter = || Choix::AcheterSoins(Soin::Potion, 1);
         assert_eq!(
-            repondre_sans_tirage(
-                &mut deroulement,
-                Choix::AcheterSoins(Soin::Potion, 1),
-                &contenu,
-                &depot
-            ),
+            repondre_sans_tirage(&mut deroulement, acheter(), &contenu, &depot),
+            Ok(vec![Evenement::SoinsAchetes {
+                soin: Soin::Potion,
+                nombre: 1,
+                prix: 20
+            }])
+        );
+        assert_eq!(
+            repondre_sans_tirage(&mut deroulement, acheter(), &contenu, &depot),
             Err(ErreurChoix::Marchand(ErreurMarchand::ArgentInsuffisant {
                 prix: 20,
-                argent: 0
+                argent: 10
             }))
         );
 
@@ -2025,6 +2089,111 @@ mod tests {
             )))
         );
         assert_eq!(deroulement.attente(), Attente::Camp);
+    }
+
+    /// Joue avec le joueur simple jusqu'à ce que le combat en cours soit
+    /// fini, et rend ce qui s'est passé.
+    fn jouer_le_combat(
+        deroulement: &mut Deroulement,
+        contenu: &ContenuV1,
+        depot: &DepotMemoire,
+    ) -> Vec<Evenement> {
+        let mut aleatoire = GenerateurAleatoire::new(31);
+        let mut vus = Vec::new();
+        while matches!(
+            deroulement.attente(),
+            Attente::ActionDeCombat(_)
+                | Attente::Remplacement(_)
+                | Attente::CaptureDesKo(_)
+                | Attente::OubliAttaque { .. }
+                | Attente::PlaceManquante(_)
+        ) {
+            let choix = jouer_un_coup(deroulement, contenu);
+            let mut contexte = Contexte {
+                contenu,
+                aleatoire: &mut aleatoire,
+                depot,
+                maintenant: Horodatage::depuis_secondes(0),
+            };
+            vus.extend(deroulement.repondre(choix, &mut contexte).unwrap());
+        }
+        vus
+    }
+
+    #[test]
+    fn l_ame_de_bertrand_ajoute_le_remede_a_l_etal_de_malvoise() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut etat = etat_de(&partie_pour_les_expeditions(&contenu));
+        etat.marchand_au_camp = true;
+        let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
+        // Dès la première étape : un Loup, première espèce de la Lisière, au
+        // niveau 7, le plus haut de la zone, non shiny, valeurs internes
+        // nulles, première habileté.
+        let tirages = vec![71, 0, 2, 0, 0, 0, 0, 0, 0, 0];
+        let lisiere = Choix::PartirEnExpedition(ZoneId::new("lisiere"));
+        let evenements =
+            repondre_a(&mut deroulement, lisiere, &contenu, &depot, 0, tirages).unwrap();
+        assert!(matches!(
+            &evenements[2],
+            Evenement::AmeRencontree(texte) if texte.contains("colporteur")
+        ));
+        let Attente::ActionDeCombat(combat) = deroulement.attente() else {
+            panic!("combat attendu");
+        };
+        // Un combat ordinaire contre un monstre sauvage (section 14.2).
+        assert!(combat.filet_possible() && combat.fuite_possible());
+        assert_eq!(combat.adversaires()[0].niveau().valeur(), 7);
+        let vus = jouer_le_combat(&mut deroulement, &contenu, &depot);
+        assert!(vus.iter().any(|evenement| matches!(
+            evenement,
+            Evenement::AmeRecueillie { texte, soin: Soin::Remede } if texte.contains("Bertrand")
+        )));
+        let partie = deroulement.partie().unwrap();
+        assert!(partie.a_recueilli_l_ame(&MarchandId::new("bertrand")));
+        assert_eq!(partie.soins_en_vente(), vec![Soin::Potion, Soin::Remede]);
+    }
+
+    #[test]
+    fn grete_relevee_attaque_sans_filet_ni_codex() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut etat = etat_de(&partie_pour_les_expeditions(&contenu));
+        etat.marchand_au_camp = true;
+        let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
+        // Le marchand zombie, fixe, ne tire rien.
+        let marais = Choix::PartirEnExpedition(ZoneId::new("marais"));
+        repondre_a(&mut deroulement, marais, &contenu, &depot, 0, vec![71]).unwrap();
+        let Attente::ActionDeCombat(combat) = deroulement.attente() else {
+            panic!("combat attendu");
+        };
+        assert!(combat.fuite_possible() && !combat.filet_possible());
+        let zombie = &combat.adversaires()[0];
+        assert_eq!(zombie.espece().id().as_str(), "marchand-zombie");
+        assert_eq!(zombie.niveau().valeur(), 13);
+        let partie = deroulement.partie().unwrap();
+        assert_eq!(
+            partie.codex().etat(&EspeceId::new("marchand-zombie")),
+            EtatCodex::Inconnue
+        );
+        // Une fuite laisse l'âme à trouver ; le zombie frappe une dernière
+        // fois, au hasard.
+        let mut aleatoire = GenerateurAleatoire::new(13);
+        let mut contexte = Contexte {
+            contenu: &contenu,
+            aleatoire: &mut aleatoire,
+            depot: &depot,
+            maintenant: Horodatage::depuis_secondes(0),
+        };
+        let evenements = deroulement
+            .repondre(Choix::Combat(Action::Fuir), &mut contexte)
+            .unwrap();
+        assert!(
+            !evenements
+                .iter()
+                .any(|evenement| matches!(evenement, Evenement::AmeRecueillie { .. }))
+        );
+        assert!(deroulement.partie().unwrap().ames_recueillies().is_empty());
     }
 
     #[test]
@@ -2577,14 +2746,20 @@ mod tests {
         assert!(trouve > 0);
         assert_eq!(sauvegarde.sac().argent(), trouve - perdu);
         assert!(sauvegarde.coffre_du_camp().est_vide());
-        // Le marchand rencontré reste au camp : il ne se croise qu'une fois
-        // (section 14.2).
-        let marchands = vus
+        // Malvoise arrive une fois et reste au camp ; chaque âme recueillie
+        // l'est une fois, et seulement après sa rencontre (section 14.2).
+        let malvoise = vus
             .iter()
-            .filter(|evenement| **evenement == Evenement::MarchandRencontre)
+            .filter(|evenement| **evenement == Evenement::MalvoiseArrive)
             .count();
-        assert_eq!(marchands, 1);
+        assert_eq!(malvoise, 1);
         assert!(sauvegarde.marchand_au_camp());
+        let compter = |cherche: fn(&Evenement) -> bool| vus.iter().filter(|e| cherche(e)).count();
+        let rencontrees = compter(|evenement| matches!(evenement, Evenement::AmeRencontree(_)));
+        let recueillies = compter(|evenement| matches!(evenement, Evenement::AmeRecueillie { .. }));
+        assert!(rencontrees >= recueillies);
+        assert_eq!(sauvegarde.ames_recueillies().len(), recueillies);
+        assert!(recueillies > 0);
         // Les capsules du joueur sont celles des coffres, moins celles des sacs
         // perdus.
         let trouvees = vus
@@ -2652,6 +2827,7 @@ mod tests {
             sac: partie.sac().clone(),
             coffre_du_camp: partie.coffre_du_camp().clone(),
             marchand_au_camp: partie.marchand_au_camp(),
+            ames_recueillies: Vec::new(),
             codex: partie.codex().clone(),
             zones_explorees: vec![ZoneId::new("lisiere"), ZoneId::new("marais")],
             indices_trouves: 3,

@@ -259,6 +259,26 @@ mod tests {
     }
 
     #[test]
+    fn un_combat_sans_capture_ne_dit_pas_l_adversaire_sauvage() {
+        let contenu = ContenuV1::new();
+        let combat = || {
+            Combat::new(
+                vec![creer(&contenu, "salamandre", 5)],
+                vec![creer(&contenu, "loup", 5)],
+            )
+            .unwrap()
+        };
+        assert_eq!(
+            rencontre(&combat()),
+            "Des monstres surgissent : **Loup sauvage**."
+        );
+        assert_eq!(
+            rencontre(&combat().sans_capture()),
+            "Des monstres surgissent : **Loup**."
+        );
+    }
+
+    #[test]
     fn une_attaque_dit_ses_degats_sa_precision_et_sa_categorie() {
         let contenu = ContenuV1::new();
         let combat = Combat::new(

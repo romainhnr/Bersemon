@@ -295,7 +295,7 @@ pub fn question_de_confirmation(confirmation: &Confirmation) -> String {
         }
         Confirmation::RappelerLExpedition(expedition) => question_de_rappel(expedition),
         Confirmation::Vendre { monstre, prix } => format!(
-            "Vendre définitivement {} au marchand pour {} ?",
+            "Vendre définitivement {} à Malvoise pour {} ?",
             monstre.nom(),
             argent(*prix)
         ),

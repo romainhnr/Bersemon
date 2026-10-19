@@ -32,7 +32,7 @@ pub fn soins(soin: Soin, nombre: u32) -> String {
 }
 
 /// En début de phrase.
-fn le_soin(soin: Soin) -> &'static str {
+pub fn le_soin(soin: Soin) -> &'static str {
     match soin {
         Soin::Potion => "La potion",
         Soin::Remede => "Le remède",

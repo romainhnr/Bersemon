@@ -10,6 +10,7 @@
 use std::ops::RangeInclusive;
 use std::time::Duration;
 
+use crate::ame::{Gardien, MarchandId, MarchandMort};
 use crate::attaque::{Attaque, AttaqueId, Categorie, EffetSecondaire};
 use crate::capsule::Capsule;
 use crate::catalogue::Catalogue;
@@ -20,6 +21,7 @@ use crate::habilete::Habilete;
 use crate::heros::Classe;
 use crate::humain::{Humain, HumainId, IaHumain};
 use crate::niveau::Niveau;
+use crate::soin::Soin;
 use crate::stats::Stats;
 use crate::statut::Statut;
 use crate::traque::{Apotre, Indice, Piste};
@@ -61,9 +63,24 @@ const INDICE_1: &str = "au bout de la Lisière, des cordes neuves pendent encore
 
 const INDICE_2: &str = "le bourreau vaincu a parlé : son maître, le Baron pendu, s'est retiré au fond de la Vallée des Brumes, au-delà du Marais, là où les morts ne dorment pas.";
 
-/// Le marchand se réfugie aussitôt au camp, même si l'expédition finit mal
+/// Au retour de la première expédition menée au bout, après l'indice
 /// (section 14.2).
-pub const RENCONTRE_DU_MARCHAND: &str = "Un marchand ambulant surgit de la brume, sa carriole chargée de fioles. Les routes ne sont plus sûres pour lui : il part se réfugier au camp, où vous le retrouverez.";
+pub const ARRIVEE_DE_MALVOISE: &str = "Au camp, un homme en robe noire vous attend près du feu, un crâne posé sur les genoux. Malvoise, nécromancien, a vu mourir bien des marchands sur ces routes. Rapportez-lui leur âme, et il vous vendra ce qu'ils vendaient de leur vivant.";
+
+// Le monstre qui tue Bertrand ou garde Ulrich n'est pas nommé : le combat
+// le présente aussitôt, et son nom ne dit pas son genre.
+const AVANT_BERTRAND: &str = "Un cri déchire la Lisière : un monstre se jette sur un colporteur et l'abat sous vos yeux. La bête se tourne vers vous.";
+
+const APRES_BERTRAND: &str = "L'âme de Bertrand, colporteur, flotte au-dessus de son corps. Vous la recueillez pour Malvoise.";
+
+const AVANT_GRETE: &str = "Une marchande titube vers vous entre les roseaux, la peau verdie, sa carriole renversée derrière elle. Elle n'est plus tout à fait morte.";
+
+const APRES_GRETE: &str = "Le corps de Grete s'effondre enfin. Son âme flotte au-dessus de la vase : vous la recueillez pour Malvoise.";
+
+const AVANT_ULRICH: &str = "Au pied d'un gibet, un alchimiste pend au bout d'une corde, ses fioles brisées dans l'herbe. Un monstre garde le corps et se jette sur vous.";
+
+const APRES_ULRICH: &str =
+    "L'âme d'Ulrich, alchimiste, s'échappe enfin de la corde. Vous la recueillez pour Malvoise.";
 
 const AVANT_LE_BRIGAND: &str = "Au sortir de la Lisière, un brigand vous barre la route, un loup et un corbeau à ses côtés. Ses bêtes ont faim, et lui aussi.";
 
@@ -161,6 +178,39 @@ impl ContenuV1 {
         )
         .expect("Bourreau conforme aux règles")
         .avec_ia(IaHumain::Relevee);
+        // Un marchand mort par zone, dont l'âme rejoint Malvoise (section
+        // 14.2).
+        let marchand = |id: &str, nom: &str, soin, gardien, avant: &str, apres: &str| {
+            MarchandMort::new(MarchandId::new(id), nom, soin, gardien, avant, apres)
+                .unwrap_or_else(|_| panic!("{nom} conforme aux règles"))
+        };
+        let bertrand = marchand(
+            "bertrand",
+            "Bertrand",
+            Soin::Remede,
+            Gardien::MonstreDeLaZone,
+            AVANT_BERTRAND,
+            APRES_BERTRAND,
+        );
+        let grete = marchand(
+            "grete",
+            "Grete",
+            Soin::GrandePotion,
+            Gardien::MortVivant {
+                espece: creer_espece(&MARCHAND_ZOMBIE),
+                niveau: niveau(13),
+            },
+            AVANT_GRETE,
+            APRES_GRETE,
+        );
+        let ulrich = marchand(
+            "ulrich",
+            "Ulrich",
+            Soin::Elixir,
+            Gardien::MonstreDeLaZone,
+            AVANT_ULRICH,
+            APRES_ULRICH,
+        );
         let lisiere = Zone::new(
             ZoneId::new("lisiere"),
             "Lisière du Bois-Sombre",
@@ -176,7 +226,7 @@ impl ContenuV1 {
             coffre(10..=25, capsules_de("lisiere")),
         )
         .and_then(|zone| zone.avec_monstre_cache(schnoz()))
-        .map(|zone| zone.avec_humain(brigand))
+        .map(|zone| zone.avec_humain(brigand).avec_marchand_mort(bertrand))
         .expect("Lisière conforme aux règles");
         let marais = Zone::new(
             ZoneId::new("marais"),
@@ -198,7 +248,7 @@ impl ContenuV1 {
             coffre(25..=50, capsules_de("marais")),
         )
         .and_then(|zone| zone.avec_monstre_cache(schnoz()))
-        .map(|zone| zone.avec_humain(bourreau))
+        .map(|zone| zone.avec_humain(bourreau).avec_marchand_mort(grete))
         .expect("Marais conforme aux règles");
         let vallee = Zone::new(
             ZoneId::new("vallee"),
@@ -225,6 +275,7 @@ impl ContenuV1 {
             coffre(50..=90, capsules_de("vallee")),
         )
         .and_then(|zone| zone.avec_monstre_cache(schnoz()))
+        .map(|zone| zone.avec_marchand_mort(ulrich))
         .expect("Vallée conforme aux règles");
         // Le Baron pendu attend au fond de la Vallée, que le second indice,
         // donné par le Bourreau, ouvre (section 9.4).
@@ -309,6 +360,14 @@ impl Catalogue for ContenuV1 {
         self.capsules
             .iter()
             .find(|capsule| capsule.id() == id)
+            .cloned()
+    }
+
+    fn marchand_mort(&self, id: &MarchandId) -> Option<MarchandMort> {
+        self.zones
+            .iter()
+            .filter_map(Zone::marchand_mort)
+            .find(|marchand| marchand.id() == id)
             .cloned()
     }
 }
@@ -795,6 +854,24 @@ struct FicheEspece {
     /// Niveau d'apprentissage et identifiant de l'attaque.
     apprentissage: &'static [(u8, &'static str)],
 }
+
+/// Grete relevée d'entre les morts : hors du codex, elle n'est pas parmi
+/// les espèces (docs/contenu-v1.md, section 4).
+const MARCHAND_ZOMBIE: FicheEspece = FicheEspece {
+    id: "marchand-zombie",
+    nom: "Marchand zombie",
+    types: &[Type::Spectre, Type::Poison],
+    role: Role::Offensif,
+    stats_de_base: [60, 70, 60, 40, 55, 35],
+    rendement_experience: 95,
+    rarete: Rarete::Commune,
+    habiletes: &[],
+    apprentissage: &[
+        (1, "coup-de-garde"),
+        (1, "morsure-venimeuse"),
+        (1, "charge-spectrale"),
+    ],
+};
 
 /// Section 2 de docs/contenu-v1.md, dans l'ordre du codex : les monstres de
 /// départ, les communs, les rares, l'Apôtre, puis le monstre caché.

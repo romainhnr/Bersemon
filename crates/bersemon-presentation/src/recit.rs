@@ -2,7 +2,7 @@
 
 use bersemon_core::combat::Cote;
 use bersemon_core::contenu::{
-    INTRODUCTION, RENCONTRE_DU_MARCHAND, fin_de_l_introduction, texte_du_conseil,
+    ARRIVEE_DE_MALVOISE, INTRODUCTION, fin_de_l_introduction, texte_du_conseil,
 };
 use bersemon_core::deroulement::Evenement;
 
@@ -14,7 +14,7 @@ use crate::monstres::{nom_en_valeur, nom_sauvage};
 use crate::partie::{
     argent, argent_et_part_du_pillard, capsule as nom_de_capsule, contenu, enumerer, potions,
 };
-use crate::soins::{soin_utilise, soins};
+use crate::soins::{le_soin, soin_utilise, soins};
 
 /// Une ou plusieurs lignes de récit.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -81,9 +81,16 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             false,
         ),
         Evenement::MonstreRareLaisse => ("Vous le laissez partir.".to_string(), false),
-        Evenement::RecitDeLApotre(recit) | Evenement::HumainRencontre(recit) => {
-            (recit.clone(), false)
-        }
+        Evenement::RecitDeLApotre(recit)
+        | Evenement::HumainRencontre(recit)
+        | Evenement::AmeRencontree(recit) => (recit.clone(), false),
+        Evenement::AmeRecueillie { texte, soin } => (
+            format!(
+                "{texte} Malvoise vendra désormais {}.",
+                le_soin(*soin).to_lowercase()
+            ),
+            true,
+        ),
         Evenement::HumainVaincu {
             texte,
             argent: montant,
@@ -213,14 +220,14 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
         Evenement::ExpeditionAutomatiqueRentree { zone, bilan } => {
             (expeditions_automatiques::retour(zone, bilan), true)
         }
-        Evenement::MarchandRencontre => (RENCONTRE_DU_MARCHAND.to_string(), false),
+        Evenement::MalvoiseArrive => (ARRIVEE_DE_MALVOISE.to_string(), true),
         Evenement::SoinsAchetes { soin, nombre, prix } => (
             format!("Vous achetez {} pour {}.", soins(*soin, *nombre), argent(*prix)),
             false,
         ),
         Evenement::MonstreVendu { monstre, prix } => (
             format!(
-                "Vous vendez {} au marchand pour {}.",
+                "Vous vendez {} à Malvoise pour {}.",
                 nom_en_valeur(monstre, Cote::Joueur),
                 argent(*prix)
             ),
@@ -375,6 +382,18 @@ mod tests {
         assert_eq!(
             raconter(&[vide])[0].texte,
             "**Toute votre équipe est KO : vous rentrez au camp, le sac vide.**"
+        );
+    }
+
+    #[test]
+    fn une_ame_recueillie_dit_ce_que_malvoise_vendra() {
+        let recit = &raconter(&[Evenement::AmeRecueillie {
+            texte: "L'âme d'Ulrich s'échappe.".to_string(),
+            soin: bersemon_core::soin::Soin::Elixir,
+        }])[0];
+        assert_eq!(
+            recit.texte,
+            "L'âme d'Ulrich s'échappe. Malvoise vendra désormais l'élixir."
         );
     }
 

@@ -71,7 +71,7 @@ pub fn choisir(
         // Le marchand n'apparaît qu'une fois réfugié au camp (section 14.2).
         let marchand = partie.marchand_au_camp();
         if marchand {
-            println!("  6. Voir le marchand");
+            println!("  6. Voir Malvoise");
         }
         let options = if marchand { 7 } else { 6 };
         println!("  {options}. Options");
@@ -144,7 +144,7 @@ fn gerer(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
         println!("  8. Gérer les attaques d'un monstre");
         println!("  9. Trier le camp");
         if marchand {
-            println!("  10. Vendre un monstre au marchand");
+            println!("  10. Vendre un monstre à Malvoise");
         }
         println!("  0. Retour");
         let dernier = if marchand { 10 } else { 9 };
@@ -307,7 +307,7 @@ fn relacher(collection: &Collection, entree: &mut Entree) -> Option<Option<Actio
 pub fn vendre(collection: &Collection, entree: &mut Entree) -> Option<Option<Choix>> {
     println!();
     println!("{}", liste_de_rachat(collection));
-    let emplacement = designer(collection, entree, "Quel monstre vendre au marchand ?")?;
+    let emplacement = designer(collection, entree, "Quel monstre vendre à Malvoise ?")?;
     Some(emplacement.map(Choix::Vendre))
 }
 

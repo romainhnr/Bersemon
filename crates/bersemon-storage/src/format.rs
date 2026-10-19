@@ -7,6 +7,7 @@
 
 use serde::{Deserialize, Serialize};
 
+use bersemon_core::ame::MarchandId;
 use bersemon_core::attaque::{AttaqueId, AttaquesMonstre};
 use bersemon_core::catalogue::Catalogue;
 use bersemon_core::codex::Codex;
@@ -40,13 +41,18 @@ const VERSION_DU_COFFRE: u64 = 7;
 /// 9.4).
 const VERSION_DE_LA_PISTE_A_DEUX_INDICES: u64 = 10;
 
+/// La version de la sauvegarde où Malvoise remplace le marchand (section
+/// 14.2).
+const VERSION_DE_MALVOISE: u64 = 11;
+
 /// La version 2 ajoute la traque de l'Apôtre et le tutoriel, la version 3
 /// les expéditions automatiques et les attaques à choisir à leur retour, la
 /// version 4 l'argent, la version 5 le marchand, la version 6 les capsules
 /// d'attaque, la version 7 le sac et le coffre du camp, la version 8
 /// l'habileté de chaque monstre, la version 9 les humains vaincus ; la
 /// version 10 suit la piste à deux indices ; la version 11 ajoute le
-/// remède, la grande potion et l'élixir. Une sauvegarde d'une version
+/// remède, la grande potion, l'élixir et les âmes recueillies, et Malvoise
+/// remplace le marchand. Une sauvegarde d'une version
 /// précédente se lit avec cette structure : les champs ajoutés y prennent
 /// leur valeur de début de partie.
 #[derive(Debug, Serialize, Deserialize)]
@@ -67,8 +73,12 @@ pub(crate) struct SauvegardeV11 {
     sac: InventaireV7,
     #[serde(default)]
     coffre_du_camp: InventaireV7,
+    /// Depuis la version 11 : Malvoise au camp.
     #[serde(default)]
     marchand_au_camp: bool,
+    /// Identifiants des marchands morts.
+    #[serde(default)]
+    ames_recueillies: Vec<String>,
     codex: CodexV1,
     zones_explorees: Vec<String>,
     #[serde(default)]
@@ -175,6 +185,11 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV11 {
         sac: depuis_inventaire(partie.sac()),
         coffre_du_camp: depuis_inventaire(partie.coffre_du_camp()),
         marchand_au_camp: partie.marchand_au_camp(),
+        ames_recueillies: partie
+            .ames_recueillies()
+            .iter()
+            .map(|marchand| marchand.id().as_str().to_string())
+            .collect(),
         codex: CodexV1 {
             rencontrees: ids(partie.codex().rencontrees()),
             capturees: ids(partie.codex().capturees()),
@@ -298,7 +313,7 @@ pub(crate) fn vers_partie(
     for espece in &sauvegarde.codex.capturees {
         codex.noter_capture(&EspeceId::new(espece.as_str()));
     }
-    let zones_explorees = sauvegarde
+    let zones_explorees: Vec<ZoneId> = sauvegarde
         .zones_explorees
         .into_iter()
         .map(ZoneId::new)
@@ -327,6 +342,21 @@ pub(crate) fn vers_partie(
         .into_iter()
         .map(HumainId::new)
         .collect();
+    // Malvoise remplace le marchand, et arrive au bout de la première
+    // expédition menée à son terme : une partie qui en a mené une l'a au
+    // camp (section 14.2).
+    let marchand_au_camp = if sauvegarde.version < VERSION_DE_MALVOISE {
+        sauvegarde.marchand_au_camp || !zones_explorees.is_empty()
+    } else {
+        sauvegarde.marchand_au_camp
+    };
+    // Une âme dont le marchand a disparu du jeu ne vend plus rien : elle est
+    // oubliée, comme un humain disparu.
+    let ames_recueillies = sauvegarde
+        .ames_recueillies
+        .iter()
+        .filter_map(|id| catalogue.marchand_mort(&MarchandId::new(id.as_str())))
+        .collect();
     let conseils_vus = sauvegarde
         .conseils_vus
         .iter()
@@ -338,7 +368,8 @@ pub(crate) fn vers_partie(
         collection,
         sac,
         coffre_du_camp,
-        marchand_au_camp: sauvegarde.marchand_au_camp,
+        marchand_au_camp,
+        ames_recueillies,
         codex,
         zones_explorees,
         indices_trouves,

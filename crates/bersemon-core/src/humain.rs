@@ -93,12 +93,12 @@ impl Humain {
             return Err(ErreurHumain::EquipeVide);
         }
         for (espece, niveau) in &equipe {
-            Monstre::creer(espece.clone(), *niveau, valeurs_internes(), false).map_err(|_| {
-                ErreurHumain::EspeceInvalide {
+            Monstre::creer(espece.clone(), *niveau, valeurs_internes_fixes(), false).map_err(
+                |_| ErreurHumain::EspeceInvalide {
                     espece: espece.id().clone(),
                     niveau: *niveau,
-                }
-            })?;
+                },
+            )?;
         }
         Ok(Self {
             id,
@@ -146,14 +146,15 @@ impl Humain {
         self.equipe
             .iter()
             .map(|(espece, niveau)| {
-                Monstre::creer(espece.clone(), *niveau, valeurs_internes(), false)
+                Monstre::creer(espece.clone(), *niveau, valeurs_internes_fixes(), false)
                     .expect("équipe vérifiée par Humain::new")
             })
             .collect()
     }
 }
 
-fn valeurs_internes() -> ValeursInternes {
+/// Aussi celles d'un marchand relevé d'entre les morts (section 14.2).
+pub(crate) fn valeurs_internes_fixes() -> ValeursInternes {
     let valeur = VALEUR_INTERNE;
     ValeursInternes::new(Stats {
         pv: valeur,
