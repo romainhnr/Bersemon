@@ -182,6 +182,7 @@ Le joueur peut :
 - renommer son monstre : un surnom de 1 à 20 caractères, affiché à la place du nom de l'espèce ;
 - ajuster ses attaques, au camp : réapprendre une attaque de son espèce ou en apprendre une nouvelle grâce à une capsule d'attaque (section 13.10) ;
 - ajuster ses statistiques à l'aide d'objets ;
+- depuis l'étape 35, changer son habileté pour l'autre de son espèce, au camp, avec une capsule d'habileté (section 5.9) ;
 - consulter le codex, par exemple pour savoir quand il évolue.
 
 ### 5.6 Codex
@@ -235,6 +236,12 @@ Décidé le 19/10/2026, pour l'étape 28 :
 | Fouineur | après un combat gagné, s'il est dans l'équipe sans être KO, 1 chance sur 4 de trouver une potion, qui va dans le sac |
 
 - Affichage : la fiche d'un monstre, dans sa gestion et l'écran de ses attaques, montre son habileté et son effet ; la fiche d'une espèce capturée au codex montre ses 2 habiletés possibles. Le bilan d'un coffre ou d'une expédition automatique signale l'argent dû au Pillard, et la potion du Fouineur est annoncée après le combat.
+
+Capsule d'habileté, décidée le 19/10/2026 pour l'étape 35 :
+
+- Une capsule d'habileté, unique pour toutes les espèces, fait passer un monstre à l'autre habileté de son espèce. Elle se consomme, contrairement aux capsules d'attaque (section 13.10).
+- Elle s'achète chez Malvoise, 200 pièces d'argent, et se trouve dans un coffre sur 10 (section 9.2). Elle se range dans le sac ou le coffre, se déplace par lots comme les potions et se perd avec le sac (section 9.3). Prix et taux sont des hypothèses, à confirmer (Q81).
+- Elle s'utilise au camp, depuis la gestion des monstres, après confirmation, qui annonce l'ancienne et la nouvelle habileté. Elle se prend dans le sac d'abord, puis dans le coffre, comme l'argent (section 13.3). Elle est refusée pour un monstre dont l'espèce n'a pas deux habiletés différentes, ou pour un monstre parti en expédition automatique.
 
 ## 6. Histoire et démarrage
 
@@ -294,8 +301,11 @@ Déroulement dans la V1 :
 - Depuis l'étape 27 (19/10/2026), quand une étape tire un monstre rare, c'est le Schnoz, monstre caché, une fois sur 20, dans toute zone ; sinon, c'est un monstre rare de la zone, comme avant. Il se rencontre donc environ une étape sur 400. Pacifique, il se laisse prendre ; son niveau est tiré parmi ceux de la zone, et il peut se rencontrer de nouveau. Au codex, il reste inconnu tant qu'il n'est pas rencontré, comme toute espèce.
 - Après la V1, tant qu'aucun marchand n'est au camp, la rencontre d'un marchand prend 10 % sur les combats : combat 70 %, marchand 10 %, coffre 15 %, monstre rare 5 % (section 14.2). Une fois le marchand au camp, les combats retrouvent leurs 80 %.
 - Depuis l'étape 31, le marchand ne se rencontre plus : c'est l'âme du marchand mort de la zone qui prend ces 10 %, tant qu'elle n'est pas recueillie et une fois Malvoise au camp (section 14.2, Q80).
+- Remplacé le 19/10/2026, pour les étapes 33 et 34 (section 14.2) : l'âme d'un marchand se rencontre même sans Malvoise au camp. Celle de Bertrand est garantie à l'étape 2 de chaque expédition dans la Lisière, tant qu'il n'a pas été rencontré. Celles de Grete et d'Ulrich gardent leurs 10 % tant qu'elles n'ont pas été rencontrées. Après une fuite ou une défaite face à son gardien, une âme est à retrouver : la prochaine expédition dans sa zone la rencontre à coup sûr, à une étape tirée au départ parmi celles qui précèdent la dernière, sans tirage des 10 %.
 - Un groupe sauvage compte de 1 à 2 monstres dans la zone facile, de 1 à 3 dans la zone difficile ; la taille est tirée à chaque combat.
 - Un coffre contient 1 à 2 potions (section 14.4). Après la V1, il contient aussi de l'argent, selon la zone, et, une fois sur 5, une capsule d'attaque de la zone que le joueur n'a pas encore (sections 13.10 et 14.5). Depuis l'étape 28, l'habileté Pillard augmente cet argent de 50 %, et l'habileté Fouineur peut trouver une potion après un combat gagné (section 5.9).
+- Depuis l'étape 35 (19/10/2026), un coffre contient aussi, une fois sur 10, une capsule d'habileté (section 5.9), tirée après la capsule d'attaque.
+- Depuis l'étape 36 (19/10/2026), après un combat gagné, chaque monstre sauvage mis KO et non capturé lâche sa ressource 1 fois sur 3 ; elle va dans le sac (section 14.3).
 - Entre deux étapes, le joueur continue, rentre au camp en gardant ses gains, utilise des potions ou change l'ordre de son équipe ; les échanges avec le camp restent impossibles. Les PV et les statuts sont conservés d'une étape à l'autre.
 - Après la V1, l'écran entre deux étapes rappelle l'argent et les capsules trouvés pendant l'expédition, qu'une défaite ferait perdre (section 9.3). Avec le coffre du camp, il montre le contenu du sac (section 13.3).
 - Décidé le 18/10/2026, pour l'étape 30 : un événement important (un indice, un humain à vaincre en fin de zone, un Apôtre) est d'abord présenté par un texte et un bouton (« Combattre », « Lire l'indice ») avant de se produire, pour que le joueur ne le rate pas en enchaînant les actions.
@@ -312,6 +322,7 @@ Si tous les monstres du joueur sont KO pendant une expédition manuelle :
 - avec le coffre du camp (étape 26, section 13.3), il perd tout ce que contient son sac : potions, argent et capsules, qu'il les ait emportés ou trouvés en chemin. Ce qui est rangé dans le coffre est à l'abri. Il garde ses captures et l'XP gagnée ;
 - ses monstres restent KO et sont soignés au camp (section 5.7) ;
 - c'est aussi une défaite si son dernier monstre et le dernier monstre sauvage tombent KO au même tour ;
+- depuis l'étape 34, il garde les âmes des marchands qu'il porte : elles ne sont pas dans le sac (section 14.2). Les capsules d'habileté et les ressources du sac se perdent avec lui (étapes 35 et 36) ;
 - l'expédition ne compte pas comme menée jusqu'au bout.
 
 ### 9.4 Traque d'un Apôtre
@@ -445,6 +456,7 @@ Décidé le 19/10/2026, pour l'étape 30 (Q75) :
 - Chaque monstre pris dans l'équipe a besoin d'une place libre au camp, où il reviendra ; le monstre du camp qui rejoint l'équipe en libère une. Avec un camp plein, seuls des monstres du camp peuvent donc partir, puisqu'ils gardent leur propre place. Le refus l'explique au joueur.
 - Remplacé le 18/10/2026, pour l'étape 26 : l'équipe peut partir tout entière et reste alors vide ; aucun monstre du camp ne la rejoint. Tant qu'elle est vide, aucune expédition manuelle n'est possible. Un seul monstre suffit donc pour une expédition automatique. Chaque monstre pris dans l'équipe a toujours besoin d'une place au camp, où il reviendra. Le bouton « Toute l'équipe » reste proposé quand ce départ est possible.
 - Pendant l'expédition, les monstres envoyés sont inutilisables : on ne peut ni les relâcher, ni les renommer, ni les échanger. Ils gardent leur place au camp, dont la limite de 30 monstres les compte, et y reviennent.
+- Depuis l'étape 32 (19/10/2026), ils reviennent d'abord dans l'équipe, s'il y a de la place, et sinon au camp (section 12.7).
 - Le joueur peut partir en expédition manuelle avec ses autres monstres, y compris dans une zone où une expédition automatique est en cours.
 - Le nombre d'expéditions automatiques simultanées n'est pas limité, mais une seule expédition automatique est possible par zone.
 - Une expédition automatique n'a aucun effet sur la traque : elle ne donne ni indice ni combat contre un Apôtre, et ne rend pas une zone explorée. Elle ne rencontre ni ne capture aucun monstre : le codex ne change pas.
@@ -497,6 +509,7 @@ Décidé le 19/10/2026, pour l'étape 30 (Q75) :
 - À l'accueil, le joueur voit le bilan : dégâts subis, monstres KO, XP, potions et argent. Un monstre qui monte de niveau et doit apprendre une attaque alors qu'il en connaît déjà 4 choisit comme après un combat (section 7). Les monstres reviennent au camp, soignés.
 - La partie est sauvegardée dès l'accueil, pour que quitter le jeu ne permette pas de tirer de nouveau le résultat. Si le jeu s'arrête avant que le joueur ait choisi les attaques à oublier, ces choix lui sont reproposés à la reprise.
 - Au camp, le joueur peut rappeler une expédition avant son terme, après confirmation : les monstres rentrent aussitôt, sans dégâts ni récompense. Une expédition déjà rentrée ne se rappelle plus, elle s'accueille.
+- Décidé le 19/10/2026, pour l'étape 32 : à l'accueil comme au rappel, les monstres rentrés rejoignent d'abord l'équipe, à la suite de ceux qui y sont, tant qu'elle compte moins de 3 monstres, dans l'ordre où ils sont partis ; les autres reprennent leur place à la fin du camp. Une équipe vide retrouve ainsi les 3 monstres d'une expédition. Le bilan dit où va chaque monstre. Une attaque à choisir au retour désigne le monstre là où il est allé, dans l'équipe ou au camp.
 - Sur Discord, le bot envoie un message privé au joueur à l'heure du retour, s'il est en ligne ; s'il était éteint, il prévient à son démarrage des expéditions rentrées entre-temps. Chaque retour n'est annoncé qu'une fois, même si le bot redémarre avant que le joueur l'accueille (Q65). Le joueur accueille ensuite l'expédition par /bersemon. La console affiche les expéditions rentrées au camp.
 
 ### 12.8 Valeurs par zone
@@ -542,6 +555,7 @@ Repères, avec des valeurs internes de 15 : dans la Lisière, une Salamandre de 
   - Une défaite en expédition manuelle fait perdre tout le sac (section 9.3). Une expédition automatique échouée ne rapporte rien, comme avant (section 12.3).
   - À la reprise d'une sauvegarde antérieure, l'argent, les potions et les capsules déjà possédés sont rangés dans le coffre.
   - Au camp, l'écran du coffre montre le sac et le coffre ; on y prend ou range des potions, de l'argent et des capsules, ou l'on range tout le sac d'un coup. Le camp rappelle le contenu des deux.
+  - Depuis les étapes 35 et 36, le sac et le coffre gardent aussi les capsules d'habileté et les ressources, qui se déplacent par lots comme les potions. Les âmes des marchands n'y sont pas : elles restent avec le joueur, que rien ne lui fait perdre (section 14.2).
 
 ### 13.4 Améliorations
 
@@ -585,6 +599,7 @@ Le joueur peut construire des machines pour automatiser certaines tâches, par e
 - Après la V1, elle garde les expéditions automatiques en cours : zone, monstres envoyés, heures de départ et de retour (section 12). Elle garde aussi les attaques qui restent à choisir après l'accueil d'une expédition (section 12.7). Le départ, le rappel et l'accueil d'une expédition automatique sont des actions au camp, suivies d'une sauvegarde.
 - Avec l'économie, elle garde aussi l'argent du joueur, la présence du marchand au camp et les capsules d'attaque obtenues (section 14). Les achats et les ventes sont des actions au camp, suivies d'une sauvegarde.
 - Depuis l'étape 28, elle garde aussi l'habileté de chaque monstre (section 5.9).
+- Depuis l'étape 32, en version 12 : les attaques à choisir au retour d'une expédition automatique désignent un monstre de l'équipe ou du camp ; celles des versions antérieures désignent un monstre du camp. Les étapes 33 à 36 y ajoutent, toujours en version 12, les âmes à retrouver, les âmes portées, les capsules d'habileté et les ressources du sac et du coffre. Les âmes recueillies des versions antérieures comptent comme données à Malvoise : leur soin reste en vente.
 - Après la V1 (19/10/2026), un sous-menu « Options » du camp permet au joueur de se suicider, après confirmation, pour recommencer sans attendre la reprise au lancement. La sauvegarde est effacée dès la confirmation, avec le héros, les monstres, le sac, le coffre, le codex et les expéditions automatiques en cours ; un court texte suit, puis la création d'un nouveau héros. Ce n'est possible qu'au camp. Le texte est dans docs/contenu-v1.md, section 4.
 
 ### 13.10 Attaques des monstres
@@ -624,6 +639,7 @@ Premier marchand, après la V1 :
 - Depuis l'étape 31, l'étal montre aussi les soins en vente, avec leur effet et leur prix, et les vend comme les potions : au nombre choisi dans la console, par 1 ou 5 sur Discord. En combat et entre deux étapes, le joueur choisit le soin puis le monstre : dans la console, par deux menus ; sur Discord, par un seul menu qui propose chaque soin du sac avec chaque monstre à qui il peut servir (l'élixir aux monstres KO, les autres soins aux monstres debout). Le coffre du camp déplace chaque soin par lots, comme les potions.
 - Les attaques d'un monstre se gèrent depuis la gestion des monstres : ses attaques connues, puis celles qu'il peut apprendre au camp ; s'il en connaît déjà 4, le joueur choisit aussi celle à oublier (section 13.10).
 - Tuer un monstre pour en tirer des ressources est envisagé, mais reporté tant qu'aucune ressource n'a d'usage (Q71).
+- Décidé le 19/10/2026, pour l'étape 36 (Q71) : les monstres sauvages battus lâchent des ressources, que Malvoise rachète (section 14.3). C'est leur seul usage en attendant la fabrication et les améliorations (sections 13.4 et 13.5).
 - Décidé le 19/10/2026, pour l'étape 31, à la place d'un marchand par zone : un nécromancien, unique, s'installe au camp. Sa rencontre est scriptée, juste après la première expédition menée au bout dans la première zone, et ne se reproduit plus. En expédition, le joueur trouve des marchands tués, par exemple sous ses yeux par un monstre, ou un cadavre de marchand qui l'attaque ; il rapporte leur âme au nécromancien, dont l'étal s'enrichit des articles de chaque marchand. Chaque marchand a son nom. Ce que vend chacun, la façon de trouver les âmes et le sort du marchand actuel restent à définir (Q77).
 - Précisé le 19/10/2026, pour l'étape 31 (Q77), et remplace le premier marchand décrit plus haut :
   - le nécromancien s'appelle Malvoise. Il arrive au camp au retour de la première expédition menée au bout dans la Lisière, après l'indice, avec un court texte, et y reste ;
@@ -638,6 +654,12 @@ Premier marchand, après la V1 :
   - le combat pour une âme suit tout de suite son texte, sans bouton d'annonce : ce n'est pas un combat de fin de zone ;
   - le monstre qui tue Bertrand ou garde Ulrich n'est pas nommé dans leur texte : le combat le présente aussitôt, et son nom ne dit pas son genre ("un Loup", mais "une Vipère") ;
   - le marchand zombie n'est pas dit sauvage en combat ; une âme dont le marchand disparaîtrait du jeu serait oubliée par la sauvegarde.
+- Décidé le 19/10/2026, pour les étapes 33 et 34, et remplace l'hypothèse de Q80 et le recueil de l'âme pour Malvoise :
+  - une âme est un objet rare et indestructible : la victoire sur son gardien la donne au joueur, qui la porte dans un inventaire à part, ni sac ni coffre. Une défaite ne la lui fait pas perdre (section 9.3) ;
+  - l'âme de Bertrand se trouve dès la première expédition dans la Lisière, sans Malvoise au camp : son gardien attaque à l'étape 2, garantie tant que Bertrand n'a pas été rencontré. Le joueur la recueille sans savoir ce que c'est ;
+  - Malvoise est rencontré au bout de la première expédition menée au bout, après le brigand, et rentre au camp avec le joueur, où il s'installe. S'il porte l'âme de Bertrand, il lui dit l'avoir vu la recueillir et qu'elle l'intéresse ; sinon, il lui demande de rapporter les âmes des marchands morts. Il vient dans les deux cas, puisqu'il tient l'étal ;
+  - au camp, chez Malvoise, le joueur lui donne l'âme qu'il veut, quand il veut, sans confirmation (hypothèse retenue, à confirmer) ; il peut aussi la garder sans limite de temps. Chaque âme donnée ajoute à l'étal l'objet de son marchand. Il en va de même pour les âmes de Grete et d'Ulrich ;
+  - après une fuite ou une défaite face au gardien d'une âme, celui-ci revient à coup sûr à la prochaine expédition dans sa zone, à une étape tirée parmi celles qui précèdent la dernière (section 9.2) ; quitter l'expédition avant cette étape la repousse à la suivante. Cela vaut pour les trois marchands, le marchand zombie compris.
 - Plus tard, d'autres personnages pourront être rencontrés de la même façon et enrichir le camp, comme un pêcheur qui apprend à pêcher (section 13.8).
 
 ### 14.3 Objets et ressources cités dans ce document
@@ -647,6 +669,8 @@ Premier marchand, après la V1 :
 - Objets permettant d'ajuster les statistiques d'un monstre.
 - Filets de capture : achetables, fabricables, améliorables.
 - Équipement du héros : armes, armures, talismans.
+- Depuis l'étape 36 (19/10/2026, Q71), une ressource par espèce sauvage qui peut être combattue, lâchée par un monstre sauvage mis KO et non capturé, après un combat gagné, 1 fois sur 3. Les monstres d'un humain, les Apôtres et le marchand zombie n'en lâchent pas, et les espèces pacifiques ne se combattent pas. Elle va dans le sac, se range au coffre, se perd avec le sac et se revend à Malvoise, à un prix fixe selon la rareté de l'espèce : 5 pièces d'argent pour une espèce commune, 15 pour une rare. Au camp, Malvoise rachète toutes les ressources d'une sorte d'un coup, celles du sac puis celles du coffre, sans confirmation. Liste dans docs/contenu-v1.md, section 6. Noms, taux et prix sont des hypothèses, à confirmer (Q82).
+- Capsule d'habileté, depuis l'étape 35 (section 5.9).
 - Argent (monnaie).
 - Objets d'évolution.
 - Objets de protection pour les expéditions automatiques.
@@ -681,6 +705,8 @@ Premier marchand, après la V1 :
 | Capsule d'attaque | 150 pour celles de la Lisière, 200 à 300 pour celles du Marais, 300 à 400 pour celles de la Vallée (docs/contenu-v1.md, section 6) |
 | Victoire contre un humain (étapes 29 et 30) | brigand 60, Bourreau 150 (section 10.7) |
 | Rencontre du marchand | 10 % des étapes d'une expédition manuelle, tant qu'il n'est pas au camp ; remplacée à l'étape 31 par l'âme du marchand de la zone, tant qu'elle n'est pas recueillie (section 14.2) |
+| Capsule d'habileté (étape 35) | 200 ; un coffre sur 10 (section 5.9) |
+| Ressource rachetée par Malvoise (étape 36) | 5 pour une espèce commune, 15 pour une rare ; lâchée 1 fois sur 3 (section 14.3) |
 
 Repères : un Loup de niveau 5 se revend 28 pièces d'argent, un Feu follet de niveau 10 64, un Cerf blanc de niveau 5 80, un Schnoz de niveau 10 180, le Baron pendu au niveau 15 576. Une expédition dans la Lisière rapporte de l'ordre de 40 à 60 pièces d'argent avec une ou deux captures revendues, une expédition dans le Marais de 100 à 130. Ces estimations datent des expéditions de 4 à 6 étapes ; depuis l'étape 26, elles en comptent 3 dans la Lisière et 4 dans le Marais. Une expédition croise le marchand 27 fois sur 100 dans la Lisière, 34 dans le Marais. À vérifier en jouant.
 
@@ -712,14 +738,17 @@ Les questions Q65 et suivantes ont été relevées le 18/10/2026 lors de la conc
 
 Les questions Q67 et suivantes ont été relevées le 18/10/2026 après les premiers tests sur Discord, découpés en étapes : 18 corrections (types au codex, mise en valeur, messages publics pour les tests), 19 Templier et monstre de départ attitré, 20 toute l'équipe en expédition automatique, puis l'économie : 21 argent et sauvegarde en version 4, 22 marchand, rencontre et revente (version 5), 23 attaques au camp et capsules (version 6), 24 écrans de la console et du bot.
 
-- Q71. (Après l'économie) Tuer un monstre pour des ressources : reporté tant qu'aucune ressource n'a d'usage (fabrication, améliorations).
-
 Les questions Q72 et suivantes ont été relevées le 18/10/2026 après les essais de l'économie, découpés en étapes : 25 interface, 26 règles (coffre et sac, équipe vide, revente, étapes fixes), 27 classe Assassin et nouveaux monstres, 28 combats contre des humains, 29 troisième zone, Baron et Apôtre de type Obscur, 30 marchands par zone. Découpage révisé le 19/10/2026 : 28 shiny et habiletés, 29 combats contre des humains, 30 troisième zone, Baron et Apôtre de type Obscur, 31 nécromancien et âmes de marchands.
 
 - Q76. (À vérifier en jouant) Équilibrage du combat contre le Baron pendu, Apôtre Obscur : seuls les types Féérique (Cerf blanc, Elfe), Psychique (aucun monstre ne l'a encore) et Stellaire (Schnoz) lui sont très efficaces. Autres relations du type Stellaire, neutre envers les types autres que l'Obscur (voir Q5). Le Chat noir, de type Ténèbres, n'a plus d'avantage contre lui : à vérifier.
 - Q78. (Plus tard) Chaque Apôtre est unique : un événement quand le joueur les a tous réunis.
 - Q79. (Plus tard) Le Schnoz, surnom donné par les fans au chimimoryo, créature astrale croisée près du Qliphoth dans l'épisode 215 du manga (page https://berserk.fandom.com/wiki/Chimimoryo transmise par l'utilisateur), est une créature de l'œuvre, protégée : sans souci pour un jeu privé, mais si le bot devient public, mieux vaudra une créature qui s'en inspire, avec son propre nom et sa propre apparence (voir aussi Q64). Repris de Q73, tranchée.
-- Q80. (Étape 31) Les âmes des marchands ne se rencontrent qu'une fois Malvoise au camp (hypothèse retenue, section 14.2). Autre choix possible : dès la première expédition, en adaptant les textes, qui citent Malvoise.
+
+Les questions Q81 et suivantes ont été relevées le 19/10/2026 lors de la conception des étapes 32 retour des expéditions automatiques dans l'équipe, 33 retour du gardien d'une âme, 34 âmes devenues objets et rencontre de Malvoise, 35 capsules d'habileté, 36 ressources.
+
+- Q81. (Étape 35) Capsule d'habileté : prix de 200 pièces d'argent et un coffre sur 10, hypothèses retenues, à confirmer en jouant.
+- Q82. (Étape 36) Ressources : leurs noms, la chance de 1 sur 3, les prix de 5 et 15 et le rachat de toute une sorte d'un coup sont des hypothèses retenues. Leurs usages futurs (fabrication, améliorations, sections 13.4 et 13.5) restent à définir.
+- Q83. (Étapes 33 et 34) Hypothèses retenues, à confirmer : le gardien d'une âme à retrouver attaque à une étape tirée parmi celles qui précèdent la dernière ; le don d'une âme à Malvoise se fait sans confirmation ; une partie antérieure qui n'a pas recueilli l'âme de Bertrand le rencontre à l'étape 2 de sa prochaine expédition dans la Lisière, même avec Malvoise déjà au camp.
 
 ## 17. Journal des décisions
 
@@ -1014,3 +1043,11 @@ Les questions Q72 et suivantes ont été relevées le 18/10/2026 après les essa
 - Q80 : hypothèse retenue, les âmes ne se rencontrent qu'une fois Malvoise au camp ; Malvoise arrive au retour de la première expédition menée au bout, forcément dans la Lisière.
 - Les textes de Bertrand et d'Ulrich ne nomment plus le monstre, pour éviter l'accord en genre ; le combat le présente aussitôt.
 - Écrans des soins : choix du soin puis du monstre dans la console ; un menu unique sur Discord, qui propose chaque soin du sac avec chaque monstre à qui il peut servir.
+
+19/10/2026 (conception des étapes 32 à 36) :
+
+- Retour des expéditions automatiques : à l'accueil comme au rappel, les monstres rejoignent d'abord l'équipe, dans l'ordre de départ, jusqu'à 3 ; les autres vont à la fin du camp (section 12.7). Sauvegarde en version 12.
+- Gardien d'une âme : après une fuite ou une défaite, il revient à coup sûr à la prochaine expédition dans sa zone, à une étape tirée, pour les trois marchands (sections 9.2 et 14.2).
+- Âmes : objets rares et indestructibles, portés à part du sac. L'âme de Bertrand est garantie à l'étape 2 de la première expédition dans la Lisière. Malvoise est rencontré au bout de la première expédition menée au bout et rentre au camp avec le joueur, qui lui donne les âmes quand il veut ; chaque âme donnée ajoute son soin à l'étal. Remplace Q80, qui est retirée (section 14.2).
+- Capsule d'habileté : vendue par Malvoise et trouvée dans les coffres, consommée à l'usage ; elle fait passer un monstre à l'autre habileté de son espèce (section 5.9). Prix et taux en hypothèse (Q81).
+- Ressources : lâchées par les monstres sauvages battus, revendues à Malvoise (section 14.3). Q71 est retirée ; détails en hypothèse (Q82).

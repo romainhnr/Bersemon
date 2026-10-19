@@ -282,7 +282,7 @@ Après la victoire :
 
 Ajoutées à l'étape 31, le 19/10/2026 (gamedesign.md, sections 14.2 et 14.4).
 
-Arrivée de Malvoise, au retour de la première expédition menée au bout dans la Lisière, après l'indice :
+Arrivée de Malvoise, au retour de la première expédition menée au bout dans la Lisière, après l'indice (remplacée à l'étape 34 par la rencontre de Malvoise, plus bas) :
 
 > Au camp, un homme en robe noire vous attend près du feu, un crâne posé sur les genoux. Malvoise, nécromancien, a vu mourir bien des marchands sur ces routes. Rapportez-lui leur âme, et il vous vendra ce qu'ils vendaient de leur vivant.
 
@@ -301,6 +301,12 @@ Bertrand, avant le combat (le monstre n'est pas nommé : le combat le présente 
 Après la victoire, suivi de "Malvoise vendra désormais le remède." (la grande potion pour Grete, l'élixir pour Ulrich) :
 
 > L'âme de Bertrand, colporteur, flotte au-dessus de son corps. Vous la recueillez pour Malvoise.
+
+Remplacé le 19/10/2026, pour l'étape 34 : l'âme de Bertrand se recueille avant que le joueur connaisse Malvoise, et le soin ne s'ajoute à l'étal qu'au don de l'âme. Le texte de Bertrand devient :
+
+> L'âme de Bertrand, colporteur, flotte au-dessus de son corps. Vous la recueillez, sans trop savoir ce que c'est.
+
+Ceux de Grete et d'Ulrich ne changent pas, puisque Malvoise est déjà au camp quand leur zone s'ouvre. La phrase "Malvoise vendra désormais ..." ne suit plus la victoire, mais le don de l'âme.
 
 Grete, avant le combat :
 
@@ -325,6 +331,22 @@ Marchand zombie (hors du codex, ni filet ni capture) :
 | marchand-zombie | Marchand zombie | Spectre, Poison | offensif | 60 / 70 / 60 / 40 / 55 / 35 (320) | 95 | 13 |
 
 Attaques : Coup de garde (niv. 1), Morsure venimeuse (niv. 1), Charge spectrale (niv. 1). Valeurs internes à 15, jamais shiny.
+
+### Rencontre de Malvoise et don des âmes
+
+Ajoutés à l'étape 34, le 19/10/2026 (gamedesign.md, section 14.2) : Malvoise est rencontré au bout de la première expédition menée au bout, avant le retour au camp, et remplace le texte de son arrivée au camp.
+
+Si le joueur porte l'âme de Bertrand :
+
+> Au sortir de la Lisière, un homme en robe noire vous attend, un crâne posé au creux du bras. "Je t'ai vu recueillir cette âme. Elle m'intéresse, si tu ne sais pas quoi en faire. Je suis Malvoise, et les marchands morts sur ces routes ont encore des choses à vendre." Il vous suit jusqu'au camp et s'y installe.
+
+Sinon :
+
+> Au sortir de la Lisière, un homme en robe noire vous attend, un crâne posé au creux du bras. "Je suis Malvoise. Les marchands meurent vite sur ces routes : rapporte-moi leur âme, et je te vendrai ce qu'ils vendaient de leur vivant." Il vous suit jusqu'au camp et s'y installe.
+
+Don d'une âme, au camp, chez Malvoise (le remède pour Bertrand, la grande potion pour Grete, l'élixir pour Ulrich) :
+
+> Vous remettez l'âme de Bertrand à Malvoise, qui l'enferme dans le crâne. Malvoise vendra désormais le remède.
 
 ### Rencontre du marchand
 
@@ -383,6 +405,22 @@ Revente d'un monstre au marchand, depuis l'étape 26 : son niveau multiplié par
 | Apôtre | Baron pendu | 4 | Baron pendu de niveau 15 (480) : 576 ; au niveau 22 : 844 |
 
 Prix du marchand : une potion coûte 20. Il vend toutes les capsules d'attaque. Depuis l'étape 31, c'est Malvoise qui tient l'étal ; il vend aussi le remède (25), la grande potion (60) et l'élixir (150), chacun une fois l'âme de son marchand recueillie.
+
+Capsule d'habileté, ajoutée à l'étape 35 le 19/10/2026 (gamedesign.md, section 5.9) : 200, vendue par Malvoise, et trouvée dans un coffre sur 10. Elle fait passer un monstre à l'autre habileté de son espèce et se consomme.
+
+Ressources, ajoutées à l'étape 36 le 19/10/2026 (gamedesign.md, section 14.3) : une par espèce sauvage qui peut être combattue, lâchée 1 fois sur 3 par un monstre sauvage mis KO et non capturé, après un combat gagné. Malvoise les rachète 5 pour une espèce commune, 15 pour une rare. Noms, taux et prix sont des hypothèses (Q82).
+
+| Identifiant | Ressource | Espèce | Prix |
+|---|---|---|---|
+| croc-de-loup | Croc de loup | Loup | 5 |
+| plume-de-corbeau | Plume de corbeau | Corbeau | 5 |
+| ecaille-de-vipere | Écaille de vipère | Vipère | 5 |
+| cendre-de-feu-follet | Cendre de feu follet | Feu follet | 5 |
+| fragment-d-armure | Fragment d'armure | Armure hantée | 5 |
+| aile-de-fee-noire | Aile de fée noire | Fée noire | 5 |
+| os-de-squelette | Os de squelette | Squelette | 5 |
+| croc-de-basilic | Croc de basilic | Basilic | 15 |
+| ecaille-de-vouivre | Écaille de vouivre | Vouivre | 15 |
 
 Capsules d'attaque : chacune enseigne son attaque à tout monstre qui a le type de cette attaque. Un coffre en contient une fois sur 5, tirée parmi les capsules de sa zone que le joueur n'a pas encore.
 
