@@ -437,21 +437,19 @@ fn l_equipe_et_le_camp_pleins_tiennent_dans_les_limites() {
     // le marchand au camp, la capsule Brasier dans le sac et les autres
     // dans le coffre.
     let capsules = contenu.capsules();
-    // L'enclos au niveau 3 accueille 60 monstres au camp (section 13.4).
+    // L'enclos au niveau 3 accueille 60 monstres au camp, et l'équipe
+    // améliorée en compte 4 (section 13.4).
     let mut grand_camp = partie.collection().camp().to_vec();
     while grand_camp.len() < 60 {
         grand_camp.push(loup.clone());
     }
-    let agrandi = Ameliorations::new(3, 0).unwrap();
+    let mut grande_equipe = partie.collection().equipe().to_vec();
+    grande_equipe.push(loup.clone());
+    let agrandi = Ameliorations::new(3, 0, 1).unwrap();
     let configurations = [
         (partie.collection().clone(), Forge::default()),
         (
-            Collection::restaurer(
-                partie.collection().equipe().to_vec(),
-                grand_camp,
-                agrandi.tailles(),
-            )
-            .unwrap(),
+            Collection::restaurer(grande_equipe, grand_camp, agrandi.tailles()).unwrap(),
             Forge::restaurer(true, agrandi, None).unwrap(),
         ),
     ];
@@ -510,6 +508,14 @@ fn l_equipe_et_le_camp_pleins_tiennent_dans_les_limites() {
         questions.push(crate::ecran_expedition::place_manquante(
             &loup,
             partie.collection(),
+        ));
+        // Le combat, avec une équipe de 3 ou de 4.
+        let mut en_combat = partie.clone();
+        let combat = en_combat.preparer_combat(vec![loup.clone()]).unwrap();
+        questions.push(crate::ecran_combat::action(&combat, &en_combat));
+        questions.push(crate::ecran_combat::remplacement(
+            &combat,
+            en_combat.codex(),
         ));
         for question in questions {
             let affiche = Message {
@@ -1021,7 +1027,7 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         // Gunther a fini un chantier, qui attend d'être constaté.
         forge: bersemon_core::amelioration::Forge::restaurer(
             true,
-            bersemon_core::amelioration::Ameliorations::new(2, 1).unwrap(),
+            bersemon_core::amelioration::Ameliorations::new(2, 1, 0).unwrap(),
             Some(bersemon_core::amelioration::Chantier {
                 amelioration: bersemon_core::amelioration::Amelioration::Filets,
                 niveau: 2,

@@ -626,6 +626,7 @@ fn amelioration_en_texte(amelioration: Amelioration) -> &'static str {
     match amelioration {
         Amelioration::Enclos => "enclos",
         Amelioration::Filets => "filets",
+        Amelioration::Equipe => "equipe",
     }
 }
 
@@ -851,6 +852,7 @@ mod tests {
             Cle::Afficher(Vue::Forge),
             Cle::Ameliorer(Amelioration::Enclos),
             Cle::Ameliorer(Amelioration::Filets),
+            Cle::Ameliorer(Amelioration::Equipe),
             Cle::Constater,
         ]
     }

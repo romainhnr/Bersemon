@@ -1677,7 +1677,7 @@ fn creer_evolution(fiche: &FicheEvolution) -> Evolution {
 /// ressources et durée en heures.
 type FichePlan = (Amelioration, u8, &'static [(&'static str, u32)], u64);
 
-const PLANS_D_AMELIORATION: [FichePlan; 6] = [
+const PLANS_D_AMELIORATION: [FichePlan; 7] = [
     (
         Amelioration::Enclos,
         1,
@@ -1717,6 +1717,17 @@ const PLANS_D_AMELIORATION: [FichePlan; 6] = [
         3,
         &[("aile-de-fee-noire", 5), ("os-de-squelette", 5)],
         6,
+    ),
+    (
+        Amelioration::Equipe,
+        1,
+        &[
+            ("croc-de-basilic", 1),
+            ("ecaille-de-vouivre", 1),
+            ("os-de-squelette", 8),
+            ("aile-de-fee-noire", 8),
+        ],
+        8,
     ),
 ];
 
@@ -2002,7 +2013,7 @@ mod tests {
                 }
             }
         }
-        assert_eq!(contenu.plans_d_amelioration().len(), 6);
+        assert_eq!(contenu.plans_d_amelioration().len(), 7);
     }
 
     #[test]

@@ -1,4 +1,4 @@
-//! Format JSON de la sauvegarde, version 14, et sa conversion vers les types
+//! Format JSON de la sauvegarde, version 15, et sa conversion vers les types
 //! du noyau. Les énumérations sont écrites avec des noms fixés ici, et non
 //! avec les noms Rust, pour qu'un renommage dans le code ne casse pas les
 //! sauvegardes existantes.
@@ -35,7 +35,7 @@ use bersemon_core::zone::ZoneId;
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 14;
+pub(crate) const VERSION: u64 = 15;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -67,7 +67,7 @@ const GEOLIER_DE_GUNTHER: &str = "bourreau";
 /// désigner un monstre de l'équipe, et s'ajoutent les âmes portées et à
 /// retrouver, les capsules d'habileté et les ressources ; la version 13
 /// ajoute les pierres d'évolution, la version 14 Gunther et les
-/// améliorations du camp. Une sauvegarde d'une version
+/// améliorations du camp, la version 15 l'amélioration de l'équipe. Une sauvegarde d'une version
 /// précédente se lit avec cette structure : les champs ajoutés y prennent
 /// leur valeur de début de partie.
 #[derive(Debug, Serialize, Deserialize)]
@@ -132,6 +132,9 @@ struct AmeliorationsV14 {
     enclos: u8,
     #[serde(default)]
     filets: u8,
+    /// Depuis la version 15.
+    #[serde(default)]
+    equipe: u8,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -146,6 +149,7 @@ fn amelioration_en_texte(amelioration: Amelioration) -> &'static str {
     match amelioration {
         Amelioration::Enclos => "enclos",
         Amelioration::Filets => "filets",
+        Amelioration::Equipe => "equipe",
     }
 }
 
@@ -347,6 +351,7 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV14 {
         ameliorations: AmeliorationsV14 {
             enclos: partie.forge().ameliorations().niveau(Amelioration::Enclos),
             filets: partie.forge().ameliorations().niveau(Amelioration::Filets),
+            equipe: partie.forge().ameliorations().niveau(Amelioration::Equipe),
         },
         chantier: partie.forge().chantier().map(|chantier| ChantierV14 {
             amelioration: amelioration_en_texte(chantier.amelioration).to_string(),
@@ -453,6 +458,7 @@ pub(crate) fn vers_partie(
     let ameliorations = Ameliorations::new(
         sauvegarde.ameliorations.enclos,
         sauvegarde.ameliorations.filets,
+        sauvegarde.ameliorations.equipe,
     )
     .ok_or_else(|| {
         ErreurSauvegarde::Incoherente("niveau d'amélioration hors limites".to_string())

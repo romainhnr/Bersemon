@@ -1,6 +1,7 @@
 //! Améliorations du camp (section 13.4) : Gunther, le forgeron, agrandit
-//! l'enclos et améliore les filets contre des ressources, un niveau à la
-//! fois, chacun avec sa durée de construction.
+//! l'enclos, améliore les filets et fait une place de plus dans l'équipe,
+//! contre des ressources, un niveau à la fois, chacun avec sa durée de
+//! construction.
 //!
 //! Les effets de chaque niveau sont des règles, fixées ici ; les coûts et
 //! les durées sont du contenu (`PlanDAmelioration`).
@@ -22,23 +23,30 @@ const DIXIEMES_PAR_NIVEAU_DE_FILETS: u64 = 1;
 pub enum Amelioration {
     Enclos,
     Filets,
+    Equipe,
 }
 
 impl Amelioration {
     /// Dans l'ordre de docs/contenu-v1.md, section 9, qui est aussi celui
     /// des affichages.
-    pub const TOUTES: [Amelioration; 2] = [Amelioration::Enclos, Amelioration::Filets];
+    pub const TOUTES: [Amelioration; 3] = [
+        Amelioration::Enclos,
+        Amelioration::Filets,
+        Amelioration::Equipe,
+    ];
 
     pub fn nom(self) -> &'static str {
         match self {
             Amelioration::Enclos => "Enclos",
             Amelioration::Filets => "Filets",
+            Amelioration::Equipe => "Équipe",
         }
     }
 
     pub fn niveau_max(self) -> u8 {
         match self {
             Amelioration::Enclos | Amelioration::Filets => 3,
+            Amelioration::Equipe => 1,
         }
     }
 
@@ -49,8 +57,15 @@ impl Amelioration {
             Amelioration::Filets => EffetDAmelioration::ChanceDeCaptureEnPlus(
                 u32::from(niveau) * DIXIEMES_PAR_NIVEAU_DE_FILETS as u32 * 10,
             ),
+            Amelioration::Equipe => {
+                EffetDAmelioration::PlacesDansLEquipe(places_dans_l_equipe(niveau))
+            }
         }
     }
+}
+
+fn places_dans_l_equipe(niveau_d_equipe: u8) -> usize {
+    Tailles::DE_DEPART.equipe + usize::from(niveau_d_equipe)
 }
 
 fn places_au_camp(niveau_d_enclos: u8) -> usize {
@@ -60,6 +75,7 @@ fn places_au_camp(niveau_d_enclos: u8) -> usize {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EffetDAmelioration {
     PlacesAuCamp(usize),
+    PlacesDansLEquipe(usize),
     /// En pourcentage de la chance de capture.
     ChanceDeCaptureEnPlus(u32),
 }
@@ -69,12 +85,17 @@ pub enum EffetDAmelioration {
 pub struct Ameliorations {
     enclos: u8,
     filets: u8,
+    equipe: u8,
 }
 
 impl Ameliorations {
     /// Reprise d'une sauvegarde : `None` pour un niveau au-delà du maximum.
-    pub fn new(enclos: u8, filets: u8) -> Option<Self> {
-        let ameliorations = Self { enclos, filets };
+    pub fn new(enclos: u8, filets: u8, equipe: u8) -> Option<Self> {
+        let ameliorations = Self {
+            enclos,
+            filets,
+            equipe,
+        };
         Amelioration::TOUTES
             .iter()
             .all(|amelioration| ameliorations.niveau(*amelioration) <= amelioration.niveau_max())
@@ -85,6 +106,7 @@ impl Ameliorations {
         match amelioration {
             Amelioration::Enclos => self.enclos,
             Amelioration::Filets => self.filets,
+            Amelioration::Equipe => self.equipe,
         }
     }
 
@@ -92,15 +114,18 @@ impl Ameliorations {
         let niveau = match amelioration {
             Amelioration::Enclos => &mut self.enclos,
             Amelioration::Filets => &mut self.filets,
+            Amelioration::Equipe => &mut self.equipe,
         };
         *niveau = (*niveau + 1).min(amelioration.niveau_max());
     }
 
-    /// 30 places au camp, et 10 de plus par niveau d'enclos (section 13.2).
+    /// 30 places au camp, et 10 de plus par niveau d'enclos ; 3 dans
+    /// l'équipe, et une de plus avec l'amélioration de l'équipe (section
+    /// 13.2).
     pub fn tailles(&self) -> Tailles {
         Tailles {
+            equipe: places_dans_l_equipe(self.equipe),
             camp: places_au_camp(self.enclos),
-            ..Tailles::DE_DEPART
         }
     }
 
@@ -351,18 +376,32 @@ mod tests {
     }
 
     #[test]
+    fn l_equipe_passe_a_4_monstres() {
+        let mut ameliorations = Ameliorations::default();
+        Chantier {
+            amelioration: Amelioration::Equipe,
+            niveau: 1,
+            fin: Horodatage::depuis_secondes(0),
+        }
+        .appliquer(&mut ameliorations);
+        assert_eq!(ameliorations.tailles().equipe, 4);
+        assert_eq!(ameliorations.tailles().camp, Tailles::DE_DEPART.camp);
+        assert_eq!(Ameliorations::new(0, 0, 2), None);
+    }
+
+    #[test]
     fn les_filets_multiplient_la_chance_de_capture() {
         assert_eq!(Ameliorations::default().facteur_des_filets(), (10, 10));
         assert_eq!(
-            Ameliorations::new(0, 3).unwrap().facteur_des_filets(),
+            Ameliorations::new(0, 3, 0).unwrap().facteur_des_filets(),
             (13, 10)
         );
     }
 
     #[test]
     fn un_niveau_au_dela_du_maximum_est_refuse() {
-        assert_eq!(Ameliorations::new(4, 0), None);
-        assert!(Ameliorations::new(3, 3).is_some());
+        assert_eq!(Ameliorations::new(4, 0, 0), None);
+        assert!(Ameliorations::new(3, 3, 1).is_some());
         let plan = |niveau| {
             PlanDAmelioration::new(
                 Amelioration::Filets,

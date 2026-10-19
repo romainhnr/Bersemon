@@ -346,7 +346,7 @@ mod tests {
             attaques_a_choisir,
             forge: Forge::restaurer(
                 true,
-                Ameliorations::new(1, 2).unwrap(),
+                Ameliorations::new(1, 2, 1).unwrap(),
                 Some(Chantier {
                     amelioration: Amelioration::Enclos,
                     niveau: 2,
@@ -563,10 +563,10 @@ mod tests {
 
     #[test]
     fn version_inconnue() {
-        let texte = texte_de_partie().replacen("\"version\":14", "\"version\":15", 1);
+        let texte = texte_de_partie().replacen("\"version\":15", "\"version\":16", 1);
         assert_eq!(
             charger_texte(&texte),
-            Err(ErreurSauvegarde::VersionInconnue(15))
+            Err(ErreurSauvegarde::VersionInconnue(16))
         );
     }
 
@@ -782,6 +782,23 @@ mod tests {
             assert_eq!(partie.forge().ameliorations(), &Ameliorations::default());
             assert_eq!(partie.forge().chantier(), None);
         }
+    }
+
+    #[test]
+    fn en_version_14_l_equipe_n_est_pas_amelioree() {
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        let objet = valeur.as_object_mut().unwrap();
+        objet.insert("version".to_string(), 14.into());
+        objet["ameliorations"]
+            .as_object_mut()
+            .unwrap()
+            .remove("equipe");
+        let partie = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        assert_eq!(
+            partie.forge().ameliorations(),
+            &Ameliorations::new(1, 2, 0).unwrap()
+        );
+        assert_eq!(partie.collection().tailles().equipe, 3);
     }
 
     #[test]

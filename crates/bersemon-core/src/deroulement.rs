@@ -3384,7 +3384,7 @@ mod tests {
             .chance_de_capture();
         etat.forge = Forge::restaurer(
             true,
-            crate::amelioration::Ameliorations::new(0, 3).unwrap(),
+            crate::amelioration::Ameliorations::new(0, 3, 0).unwrap(),
             None,
         )
         .unwrap();

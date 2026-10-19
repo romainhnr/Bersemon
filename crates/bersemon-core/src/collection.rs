@@ -707,6 +707,24 @@ mod tests {
     }
 
     #[test]
+    fn une_equipe_agrandie_accueille_une_quatrieme_capture() {
+        let trois = vec![monstre_nomme("a"), monstre_nomme("b"), monstre_nomme("c")];
+        let quatre_places = Tailles {
+            equipe: 4,
+            ..Tailles::DE_DEPART
+        };
+        let mut collection = Collection::restaurer(trois, vec![], quatre_places).unwrap();
+        assert_eq!(
+            collection.accueillir_capture(monstre_nomme("d")),
+            Placement::Equipe(3)
+        );
+        assert_eq!(
+            collection.accueillir_capture(monstre_nomme("e")),
+            Placement::Camp(0)
+        );
+    }
+
+    #[test]
     fn restaurer_reverifie_les_tailles() {
         let trois = || vec![monstre_nomme("a"), monstre_nomme("b"), monstre_nomme("c")];
         assert!(Collection::restaurer(trois(), trois(), Tailles::DE_DEPART).is_ok());
