@@ -153,6 +153,7 @@ Chaque monstre possède :
   - Le type Stellaire, opposé de l'Obscur, est très rare : un seul monstre l'aura. Le type Féérique, autre opposé de l'Obscur, reste rare.
   - Depuis l'étape 27 (19/10/2026), ce monstre est le Schnoz (section 5.3). En attendant l'Obscur, le type Stellaire est neutre : ses attaques sont neutres contre tous les types, et il n'a ni faiblesse, ni résistance, ni immunité. Ses relations avec l'Obscur, décidées ci-dessus, seront codées à l'étape 30 ; ses autres relations restent ouvertes (Q76).
   - Restent à définir : Obscur contre Obscur, les autres relations du Stellaire, et l'équilibrage du combat contre un Apôtre (Q76). L'Apôtre combat seul contre les 3 monstres du joueur : on l'équilibrera en jouant, s'il le faut.
+  - Précisé le 19/10/2026, pour l'étape 30 : une attaque Obscur est très efficace contre un monstre Obscur ; les Apôtres se déchirent entre eux. Le Stellaire garde ses relations avec l'Obscur et reste neutre envers les autres types. Le Baron pendu devient le premier Apôtre de type Obscur (section 9.4).
 
 ### 5.3 Bestiaire
 
@@ -163,6 +164,7 @@ Chaque monstre possède :
 - Après la V1, chaque espèce a une rareté : commune (monstres de départ compris), rare ou Apôtre. Avec le total de ses stats de base, elle fixe son prix de revente (section 14.5).
 - Décidé le 18/10/2026, pour l'étape 27 : de nouveaux monstres plus proches de l'univers de Berserk, parmi lesquels des fées, des elfes, des squelettes et des dragons (Q73).
 - Précisé le 19/10/2026 : ces monstres peupleront la troisième zone, à l'étape 30, et non les deux zones actuelles (Q73).
+- Décidé le 19/10/2026, pour l'étape 30 : la Vallée des Brumes accueille la Fée noire et le Squelette, communs, l'Elfe, rare et pacifique, et la Vouivre, rare et hostile. Le type Féérique y reste réservé à une espèce rare (section 5.2). Fiches dans docs/contenu-v1.md.
 - Monstre caché, depuis l'étape 27 (19/10/2026) : le Schnoz, seul monstre de type Stellaire, d'espèce rare. Il se rencontre très rarement, dans toute zone (section 9.2). Fiche dans docs/contenu-v1.md.
 
 ### 5.4 Évolution
@@ -297,6 +299,7 @@ Déroulement dans la V1 :
 - Après la V1, l'écran entre deux étapes rappelle l'argent et les capsules trouvés pendant l'expédition, qu'une défaite ferait perdre (section 9.3). Avec le coffre du camp, il montre le contenu du sac (section 13.3).
 - Décidé le 18/10/2026, pour l'étape 30 : un événement important (un indice, un humain à vaincre en fin de zone, un Apôtre) est d'abord présenté par un texte et un bouton (« Combattre », « Lire l'indice ») avant de se produire, pour que le joueur ne le rate pas en enchaînant les actions.
 - Après la dernière étape, le joueur rentre au camp et la zone compte comme explorée.
+- Annonces, depuis l'étape 30 : le combat contre un humain de fin de zone ou contre un Apôtre est d'abord présenté par son texte et un bouton "Combattre" ; un indice, au retour au camp, par un bouton "Lire l'indice". Dans la console, ce bouton est l'unique choix d'un menu.
 
 ### 9.3 Défaite
 
@@ -319,6 +322,11 @@ Si tous les monstres du joueur sont KO pendant une expédition manuelle :
 - Une défaite contre l'Apôtre est une défaite ordinaire (section 9.3) ; les indices restent acquis et l'on peut retenter.
 - Après la victoire, l'Apôtre, mis KO, peut être capturé, à coup sûr, comme tout monstre KO à la fin d'un combat gagné (section 11.2) : c'est la seule façon de le capturer. Capturé ou non, il ne réapparaît plus.
 - Décidé le 18/10/2026, pour l'étape 30 : un indice par zone, trouvé à la première expédition menée au bout dans cette zone. La première zone s'achève par un combat contre un humain et ses monstres (étape 29). La deuxième s'achève par un humain plus fort, au service de l'Apôtre, qui donne l'indice de la troisième zone ; l'Apôtre attend à la fin de la troisième. Les détails sont dans Q75.
+- Précisé le 19/10/2026, pour l'étape 30 (Q75), et remplace la piste de la V1 décrite plus haut :
+  - la piste du Baron pendu compte deux indices. L'indice 1 vient de la première expédition menée au bout dans la Lisière, où attend le brigand (section 10.7) ; il ouvre le Marais. L'indice 2 vient de la première expédition menée au bout dans le Marais, où attend le Bourreau, au service du Baron pendu ; il ouvre la Vallée des Brumes (niveaux 14 à 20) ;
+  - l'antre est alors localisé : chaque expédition dans la Vallée s'achève par le combat contre le Baron pendu, à sa dernière étape, tant qu'il n'est pas vaincu ;
+  - le Baron pendu devient de type Obscur seul, au niveau 22 (le maximum de la Vallée plus 2). Ses stats ne changent pas ; il apprend deux attaques Obscur. Un Baron pendu déjà capturé suit ce changement (section 13.9) ;
+  - les sauvegardes de l'ancienne piste, qui ont trouvé de 1 à 3 indices, reprennent à 1 indice : le Marais reste ouvert, et il faut vaincre le Bourreau pour ouvrir la Vallée. Un Apôtre déjà vaincu le reste et n'attend plus au bout de la Vallée.
 
 ## 10. Combat
 
@@ -327,7 +335,7 @@ Si tous les monstres du joueur sont KO pendant une expédition manuelle :
 - Combat au tour par tour.
 - Adversaires possibles : un ou plusieurs monstres, ou un humain (seul ou avec ses monstres, selon la difficulté).
 - L'adversaire est contrôlé par une IA (l'ordinateur, et non un vrai joueur). Dans la V1, l'IA d'un monstre sauvage choisit son attaque au hasard.
-- Décidé le 18/10/2026, pour les étapes 29 et 30 : les humains combattent avec leurs monstres et une IA qui n'agit pas au hasard. Un humain ordinaire a une IA simple ; l'humain qui termine la deuxième zone, une IA plus relevée ; l'Apôtre, une IA avancée et stratégique (Q74 et Q75).
+- Décidé le 18/10/2026, pour les étapes 29 et 30 : les humains combattent avec leurs monstres et une IA qui n'agit pas au hasard. Un humain ordinaire a une IA simple ; l'humain qui termine la deuxième zone, une IA plus relevée ; l'Apôtre, une IA avancée et stratégique (Q74 et Q75). Les règles de ces IA sont dans la section 10.7.
 
 ### 10.2 Format
 
@@ -387,6 +395,12 @@ Décidé le 19/10/2026, pour l'étape 29 (Q74) :
 - Victoire : 60 pièces d'argent dans le sac, en plus de l'XP habituelle de chaque monstre vaincu (section 7). Une défaite est une défaite ordinaire (section 9.3).
 - IA simple d'un humain : son monstre actif choisit l'attaque qui inflige les dégâts estimés les plus hauts au monstre actif du joueur (le haut de la fourchette de la section 10.6, efficacité et bonus de type compris) ; à égalité, la première de sa liste. Il ne change pas de monstre et n'utilise pas de potion. Aucun tirage pour ce choix.
 - En combat, ses monstres ne sont pas dits sauvages. Les textes sont dans docs/contenu-v1.md, section 4.
+
+Décidé le 19/10/2026, pour l'étape 30 (Q75) :
+
+- Le Bourreau attend au bout du Marais, de la même façon, avec une Armure hantée de niveau 14, un Feu follet de niveau 14 et un Basilic de niveau 15 (mêmes valeurs internes fixes). Victoire : 150 pièces d'argent ; le vaincre achève l'expédition et donne l'indice 2 la première fois (section 9.4).
+- IA plus relevée du Bourreau : celle du brigand, mais si son monstre actif n'a que des attaques peu efficaces ou sans effet contre le monstre actif du joueur et qu'un autre de ses monstres, pas KO, a une attaque aux dégâts estimés plus hauts, il change pour celui qui a la meilleure : c'est l'action de son tour, qui passe avant les attaques, comme pour le joueur (section 10.2).
+- IA avancée de l'Apôtre : s'il peut mettre KO le monstre actif du joueur, même avec le bas de la fourchette de dégâts, il prend la plus précise des attaques qui le font, la plus forte à précision égale. Sinon, il prend l'attaque aux dégâts moyens attendus les plus hauts (milieu de la fourchette x précision). Une attaque à effet de statut lui est préférée si elle vaut au moins 80 % de cette meilleure attaque et que la cible peut subir son statut. Aucun tirage pour ce choix.
 
 ## 11. Obtention des monstres
 
@@ -490,6 +504,7 @@ Décidé le 19/10/2026, pour l'étape 29 (Q74) :
 |---|---|---|---|---|---|
 | Lisière du Bois-Sombre | 1 h | 15 à 60 | 100 à 200 | 0 à 1 | 15 à 30 |
 | Marais des Pendus | 2 h | 40 à 120 | 300 à 600 | 1 à 2 | 40 à 80 |
+| Vallée des Brumes (étape 30) | 3 h | 90 à 220 | 700 à 1300 | 1 à 3 | 80 à 150 |
 
 Repères, avec des valeurs internes de 15 : dans la Lisière, une Salamandre de niveau 8 seule réussit 23 fois sur 100, 71 fois avec un Loup de niveau 6, à coup sûr avec en plus une Vipère de niveau 5. Dans le Marais, une Salamandre de niveau 12 seule échoue toujours ; elle réussit 34 fois sur 100 avec un Crapaud de niveau 11, et 77 fois avec en plus une Mandragore de niveau 10. À vérifier en jouant.
 
@@ -565,7 +580,7 @@ Le joueur peut construire des machines pour automatiser certaines tâches, par e
 - On ne sauvegarde qu'au camp : quitter le jeu en pleine expédition ramène à la dernière sauvegarde.
 - Une sauvegarde illisible, ou qui cite une espèce ou une attaque disparue du jeu, est refusée : le jeu l'explique et propose une nouvelle partie, sans rien effacer sans l'accord du joueur.
 - La sauvegarde garde l'identifiant des espèces, des attaques et des zones, pas leurs données : un rééquilibrage s'applique aux monstres déjà capturés.
-- Elle garde aussi l'avancée de la traque (indices trouvés, Apôtres vaincus) et les conseils du tutoriel déjà montrés. Depuis l'étape 29, aussi les humains vaincus (section 10.7).
+- Elle garde aussi l'avancée de la traque (indices trouvés, Apôtres vaincus) et les conseils du tutoriel déjà montrés. Depuis l'étape 29, aussi les humains vaincus (section 10.7). Depuis l'étape 30, en version 10 : une sauvegarde antérieure qui a trouvé des indices de l'ancienne piste reprend à 1 indice (section 9.4).
 - Après la V1, elle garde les expéditions automatiques en cours : zone, monstres envoyés, heures de départ et de retour (section 12). Elle garde aussi les attaques qui restent à choisir après l'accueil d'une expédition (section 12.7). Le départ, le rappel et l'accueil d'une expédition automatique sont des actions au camp, suivies d'une sauvegarde.
 - Avec l'économie, elle garde aussi l'argent du joueur, la présence du marchand au camp et les capsules d'attaque obtenues (section 14). Les achats et les ventes sont des actions au camp, suivies d'une sauvegarde.
 - Depuis l'étape 28, elle garde aussi l'habileté de chaque monstre (section 5.9).
@@ -637,11 +652,13 @@ Premier marchand, après la V1 :
 | Argent au départ | 0 |
 | Coffre, Lisière du Bois-Sombre | 10 à 25 pièces d'argent, en plus de 1 à 2 potions |
 | Coffre, Marais des Pendus | 25 à 50, en plus de 1 à 2 potions |
+| Coffre, Vallée des Brumes (étape 30) | 50 à 90, en plus de 1 à 2 potions |
 | Capsule dans un coffre | un coffre sur 5, parmi les capsules de la zone que le joueur n'a pas encore |
 | Expédition automatique réussie | Lisière 15 à 30, Marais 40 à 80 (section 12.8) |
 | Revente d'un monstre | niveau x total des stats de base / 50, en division entière, puis x 1 pour une espèce commune, x 2 pour une rare, x 4 pour un Apôtre, et x 2 pour un shiny (depuis l'étape 26 ; avant : niveau x 5, 15 ou 40 selon la rareté) |
 | Potion | 20 |
-| Capsule d'attaque | 150 pour celles de la Lisière, 200 à 300 pour celles du Marais (docs/contenu-v1.md, section 6) |
+| Capsule d'attaque | 150 pour celles de la Lisière, 200 à 300 pour celles du Marais, 300 à 400 pour celles de la Vallée (docs/contenu-v1.md, section 6) |
+| Victoire contre un humain (étapes 29 et 30) | brigand 60, Bourreau 150 (section 10.7) |
 | Rencontre du marchand | 10 % des étapes d'une expédition manuelle, tant qu'il n'est pas au camp |
 
 Repères : un Loup de niveau 5 se revend 28 pièces d'argent, un Feu follet de niveau 10 64, un Cerf blanc de niveau 5 80, un Schnoz de niveau 10 180, le Baron pendu au niveau 15 576. Une expédition dans la Lisière rapporte de l'ordre de 40 à 60 pièces d'argent avec une ou deux captures revendues, une expédition dans le Marais de 100 à 130. Ces estimations datent des expéditions de 4 à 6 étapes ; depuis l'étape 26, elles en comptent 3 dans la Lisière et 4 dans le Marais. Une expédition croise le marchand 27 fois sur 100 dans la Lisière, 34 dans le Marais. À vérifier en jouant.
@@ -678,11 +695,10 @@ Les questions Q67 et suivantes ont été relevées le 18/10/2026 après les prem
 
 Les questions Q72 et suivantes ont été relevées le 18/10/2026 après les essais de l'économie, découpés en étapes : 25 interface, 26 règles (coffre et sac, équipe vide, revente, étapes fixes), 27 classe Assassin et nouveaux monstres, 28 combats contre des humains, 29 troisième zone, Baron et Apôtre de type Obscur, 30 marchands par zone. Découpage révisé le 19/10/2026 : 28 shiny et habiletés, 29 combats contre des humains, 30 troisième zone, Baron et Apôtre de type Obscur, 31 nécromancien et âmes de marchands.
 
-- Q73. (Étape 30) Nouveaux monstres inspirés de Berserk (fées, elfes, squelettes, dragons), pour la troisième zone : liste, fiches et place dans la zone. Premier jet proposé le 19/10/2026, à confirmer : Fée noire (commune, Insecte et Ténèbres), Elfe (rare et pacifique, Féérique et Vol), Squelette (commun, Spectre et Combat), Vouivre (rare et hostile, Dragon et Vol) ; le type Féérique y reste réservé à une espèce rare (section 5.2). Le Schnoz, surnom donné par les fans au chimimoryo, créature astrale croisée près du Qliphoth dans l'épisode 215 du manga (page https://berserk.fandom.com/wiki/Chimimoryo transmise par l'utilisateur), est le monstre caché de l'étape 27. C'est une créature de l'œuvre, protégée : sans souci pour un jeu privé, mais si le bot devient public, mieux vaudra une créature qui s'en inspire, avec son propre nom et sa propre apparence (voir aussi Q64).
-- Q75. (Étape 30) Troisième zone et nouvelle traque : un indice par zone à sa première expédition menée au bout ; à la fin de la deuxième zone, un humain plus fort, au service de l'Apôtre, donne l'indice de la troisième, où attend l'Apôtre. Restent à définir la zone (nom, niveaux, espèces), les noms (l'Apôtre actuel s'appelle déjà Baron pendu : l'un des deux sera renommé), l'IA du Baron et celle de l'Apôtre, et la conversion des sauvegardes qui ont déjà trouvé 3 indices. L'utilisateur accepte ces conséquences.
-- Q76. (Étape 30) Type Obscur : Obscur contre Obscur, attaques des Apôtres, équilibrage ; autres relations du type Stellaire, neutre envers tous les types depuis l'étape 27 (voir Q5). À vérifier aussi : le Chat noir, de type Ténèbres, résiste à toutes les attaques du Baron pendu (Spectre et Ténèbres) ; l'équilibre de son départ contre le nouvel Apôtre.
+- Q76. (À vérifier en jouant) Équilibrage du combat contre le Baron pendu, Apôtre Obscur : seuls les types Féérique (Cerf blanc, Elfe), Psychique (aucun monstre ne l'a encore) et Stellaire (Schnoz) lui sont très efficaces. Autres relations du type Stellaire, neutre envers les types autres que l'Obscur (voir Q5). Le Chat noir, de type Ténèbres, n'a plus d'avantage contre lui : à vérifier.
 - Q77. (Étape 31) Nécromancien et âmes de marchands : nom et texte de la rencontre du nécromancien, noms et articles de chaque marchand, façon de trouver leur âme (marchand tué sous les yeux du joueur, cadavre qui attaque), sort du marchand actuel et conversion des sauvegardes où il est déjà au camp.
 - Q78. (Plus tard) Chaque Apôtre est unique : un événement quand le joueur les a tous réunis.
+- Q79. (Plus tard) Le Schnoz, surnom donné par les fans au chimimoryo, créature astrale croisée près du Qliphoth dans l'épisode 215 du manga (page https://berserk.fandom.com/wiki/Chimimoryo transmise par l'utilisateur), est une créature de l'œuvre, protégée : sans souci pour un jeu privé, mais si le bot devient public, mieux vaudra une créature qui s'en inspire, avec son propre nom et sa propre apparence (voir aussi Q64). Repris de Q73, tranchée.
 
 ## 17. Journal des décisions
 
@@ -950,3 +966,14 @@ Les questions Q72 et suivantes ont été relevées le 18/10/2026 après les essa
 - Ni fuite ni filet contre un humain ; après la victoire, un seul de ses monstres au choix, à coup sûr, ou aucun.
 - IA simple : l'attaque aux dégâts estimés les plus hauts contre le monstre actif du joueur, la première à égalité ; ni changement de monstre ni potion.
 - Sauvegarde en version 9, avec les humains vaincus.
+
+19/10/2026 (étape 30) :
+
+- Q75 : l'humain au bout du Marais est le Bourreau, au service du Baron pendu, qui garde son nom et son identifiant. Équipe : Armure hantée 14, Feu follet 14, Basilic 15 ; victoire : 150 pièces d'argent et l'indice 2.
+- Q75 : la piste compte deux indices, Lisière puis Marais ; la Vallée des Brumes (niveaux 14 à 20, 5 étapes) s'ouvre avec l'indice 2, et le Baron pendu attend au bout de chaque expédition dans la Vallée jusqu'à sa défaite.
+- Q75 : les sauvegardes de l'ancienne piste reprennent à 1 indice ; un Apôtre vaincu le reste. Sauvegarde en version 10.
+- Q75 : IA du Bourreau (la plus forte attaque, et un changement de monstre quand le sien ne peut que peu ou pas blesser) et IA de l'Apôtre (achever d'abord, sinon les dégâts moyens attendus, avec une préférence pour une attaque à statut presque aussi bonne).
+- Q73 : Fée noire, Squelette, Elfe et Vouivre, d'après le premier jet, dans la Vallée des Brumes ; l'Armure hantée y vit aussi. La note sur le Schnoz devient Q79.
+- Q76 en partie : une attaque Obscur est très efficace contre un monstre Obscur. Le Baron pendu devient Obscur, au niveau 22, avec deux attaques Obscur ; son équilibrage se fera en jouant.
+- Valeurs de la Vallée : expédition automatique de 3 h, 90 à 220 dégâts, 700 à 1300 XP, 1 à 3 potions, 80 à 150 pièces d'argent ; coffres de 50 à 90 pièces ; capsules Maléfice (300), Bourrasque (300) et Furie draconique (400).
+- Les annonces décidées le 18/10/2026 arrivent : bouton "Combattre" avant un humain de fin de zone ou un Apôtre, "Lire l'indice" avant un indice.

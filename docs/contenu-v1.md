@@ -62,10 +62,20 @@ Catégorie : P pour physique, S pour spéciale. L'effet est la chance d'infliger
 | coup-de-grace | Coup de grâce | Ténèbres | P | 85 | 90 | |
 | eclat-astral | Éclat astral | Stellaire | S | 40 | 100 | |
 | rayon-astral | Rayon astral | Stellaire | S | 75 | 100 | |
+| bourdonnement | Bourdonnement | Insecte | S | 40 | 100 | |
+| malefice | Maléfice | Ténèbres | S | 65 | 100 | |
+| poussiere-d-elfe | Poussière d'elfe | Féérique | S | 40 | 100 | |
+| bourrasque | Bourrasque | Vol | S | 55 | 100 | |
+| frappe-d-os | Frappe d'os | Combat | P | 40 | 100 | |
+| furie-draconique | Furie draconique | Dragon | P | 85 | 90 | |
+| etreinte-obscure | Étreinte obscure | Obscur | P | 80 | 95 | |
+| hurlement-des-abysses | Hurlement des abysses | Obscur | S | 80 | 100 | paralysie 10 % |
 
 Brasier, Déferlante et Lianes étrangleuses sont ajoutées après la V1, le 18/10/2026, pour les capsules d'attaque (section 6) : aucune espèce ne les apprend.
 
-Les cinq dernières attaques sont ajoutées à l'étape 27, le 19/10/2026 : les trois premières pour le Chat noir, les deux autres pour le Schnoz. Le type Stellaire est neutre envers tous les types en attendant le type Obscur (gamedesign.md, section 5.2).
+Coup sournois, Feulement, Coup de grâce, Éclat astral et Rayon astral sont ajoutées à l'étape 27, le 19/10/2026 : les trois premières pour le Chat noir, les deux autres pour le Schnoz. Le type Stellaire est neutre envers tous les types en attendant le type Obscur (gamedesign.md, section 5.2).
+
+Les huit dernières attaques sont ajoutées à l'étape 30, le 19/10/2026 : six pour les monstres de la Vallée des Brumes, deux, de type Obscur, pour le Baron pendu. Maléfice, Bourrasque et Furie draconique sont aussi les capsules de la Vallée (section 6).
 
 ## 2. Espèces
 
@@ -103,6 +113,13 @@ Au niveau 5, chaque monstre de départ connaît 2 attaques : une de type Normal 
 | feu-follet | Feu follet | Feu, Spectre | offensif | 45 / 30 / 40 / 70 / 60 / 75 (320) | 85 |
 | armure-hantee | Armure hantée | Acier, Spectre | offensif | 60 / 75 / 85 / 30 / 50 / 30 (330) | 95 |
 
+Ajoutés à l'étape 30, le 19/10/2026, pour la Vallée des Brumes :
+
+| Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP |
+|---|---|---|---|---|---|
+| fee-noire | Fée noire | Insecte, Ténèbres | offensif | 40 / 35 / 40 / 65 / 50 / 75 (305) | 72 |
+| squelette | Squelette | Spectre, Combat | offensif | 50 / 80 / 60 / 30 / 45 / 55 (320) | 92 |
+
 Attaques apprises :
 
 - Loup : Griffure (niv. 1), Morsure (niv. 4), Curée (niv. 9).
@@ -110,6 +127,8 @@ Attaques apprises :
 - Vipère : Morsure venimeuse (niv. 1), Regard pétrifiant (niv. 3), Étreinte (niv. 9).
 - Feu follet : Lueur trompeuse (niv. 1), Crachat de braises (niv. 1), Flamme vive (niv. 10), Frisson d'outre-tombe (niv. 12).
 - Armure hantée : Coup de garde (niv. 1), Lame rouillée (niv. 8), Charge spectrale (niv. 11).
+- Fée noire : Bourdonnement (niv. 1), Regard funeste (niv. 4), Maléfice (niv. 8).
+- Squelette : Frappe d'os (niv. 1), Lame rouillée (niv. 8), Charge spectrale (niv. 11).
 
 ### Monstres rares
 
@@ -117,21 +136,25 @@ Attaques apprises :
 |---|---|---|---|---|---|---|
 | cerf-blanc | Cerf blanc | Normal, Féérique | soutien | 70 / 60 / 60 / 65 / 70 / 75 (400) | 150 | pacifique : se laisse prendre |
 | basilic | Basilic | Poison, Dragon | offensif | 75 / 70 / 65 / 75 / 60 / 55 (400) | 170 | hostile : attaque |
+| elfe | Elfe | Féérique, Vol | soutien | 55 / 40 / 50 / 85 / 80 / 90 (400) | 150 | pacifique : se laisse prendre |
+| vouivre | Vouivre | Dragon, Vol | offensif | 70 / 80 / 60 / 80 / 55 / 55 (400) | 170 | hostile : attaque |
 
 Attaques apprises :
 
 - Cerf blanc : Coup de bois (niv. 1), Ruade (niv. 5), Lumière d'aube (niv. 8).
 - Basilic : Morsure venimeuse (niv. 1), Regard pétrifiant (niv. 8), Souffle putride (niv. 10), Croc de venin (niv. 13).
+- Elfe, ajouté à l'étape 30 : Poussière d'elfe (niv. 1), Bourrasque (niv. 5), Lumière d'aube (niv. 9).
+- Vouivre, ajoutée à l'étape 30 : Souffle draconique (niv. 1), Piqué (niv. 8), Furie draconique (niv. 12).
 
 ### Apôtre
 
 | Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP | Niveau |
 |---|---|---|---|---|---|---|
-| baron-pendu | Baron pendu | Ténèbres, Spectre | offensif | 85 / 85 / 75 / 90 / 80 / 65 (480) | 250 | 15, soit 2 de plus que le maximum du Marais |
+| baron-pendu | Baron pendu | Obscur | offensif | 85 / 85 / 75 / 90 / 80 / 65 (480) | 250 | 22, soit 2 de plus que le maximum de la Vallée des Brumes |
 
-Attaques apprises : Corde du gibet (niv. 1), Lamentation (niv. 5), Sentence (niv. 10), Trappe du gibet (niv. 15). Au niveau 15, il les connaît toutes les quatre. Ses valeurs internes sont fixes, à 31 pour chaque stat (section 9.4).
+Attaques apprises : Corde du gibet (niv. 1), Lamentation (niv. 5), Sentence (niv. 10), Trappe du gibet (niv. 15), Étreinte obscure (niv. 18), Hurlement des abysses (niv. 21). Au niveau 22, il connaît les quatre dernières. Ses valeurs internes sont fixes, à 31 pour chaque stat (section 9.4).
 
-Autrefois seigneur des terres du Marais, il a livré son propre fief au gibet pour devenir un Apôtre. Ses types le rendent insensible aux attaques Normal et Combat ; seul le type Féérique lui est très efficace.
+Autrefois seigneur des terres du Marais, il a livré son propre fief au gibet pour devenir un Apôtre ; il s'est retiré au fond de la Vallée des Brumes. Depuis l'étape 30, il est de type Obscur seul : il résiste à la plupart des types, et seuls Féérique, Psychique, Stellaire et Obscur lui sont très efficaces. Jusqu'à l'étape 29, il était Ténèbres et Spectre, au niveau 15, au bout du Marais, et ne connaissait que ses quatre premières attaques.
 
 ### Monstre caché
 
@@ -150,13 +173,14 @@ Seul monstre de type Stellaire. Dans toute zone, quand une étape tire un monstr
 | Identifiant | Nom | Niveaux | Taille des groupes | Espèces | Monstre rare | Apôtre |
 |---|---|---|---|---|---|---|
 | lisiere | Lisière du Bois-Sombre | 3 à 7 | 1 à 2 | Loup, Corbeau, Vipère | Cerf blanc (pacifique) | aucun |
-| marais | Marais des Pendus | 8 à 13 | 1 à 3 | Feu follet, Armure hantée, Vipère, Corbeau | Basilic (hostile) | Baron pendu |
+| marais | Marais des Pendus | 8 à 13 | 1 à 3 | Feu follet, Armure hantée, Vipère, Corbeau | Basilic (hostile) | aucun depuis l'étape 30 |
+| vallee | Vallée des Brumes | 14 à 20 | 1 à 3 | Fée noire, Squelette, Armure hantée | Elfe (pacifique), Vouivre (hostile) | Baron pendu |
 
-Le Schnoz, monstre caché, se rencontre dans les deux zones, à la place d'un monstre rare sur 20 (section 2).
+Le Schnoz, monstre caché, se rencontre dans toutes les zones, à la place d'un monstre rare sur 20 (section 2).
 
-La Lisière est accessible dès le départ. Le Marais s'ouvre avec le premier indice, au bout de la première expédition complète dans la Lisière ; deux expéditions complètes dans le Marais donnent les indices 2 et 3 ; l'expédition suivante dans le Marais s'achève par le Baron pendu (section 9.4).
+La Lisière est accessible dès le départ. Depuis l'étape 30 (gamedesign.md, section 9.4) : le brigand attend au bout de la Lisière, et la première expédition menée au bout donne l'indice 1, qui ouvre le Marais ; le Bourreau attend au bout du Marais, et la première expédition menée au bout donne l'indice 2, qui ouvre la Vallée des Brumes ; chaque expédition dans la Vallée s'achève par le Baron pendu tant qu'il n'est pas vaincu. Jusqu'à l'étape 29, deux expéditions complètes dans le Marais donnaient les indices 2 et 3, et le Baron pendu attendait au bout du Marais.
 
-Nombre d'étapes d'une expédition manuelle, fixe depuis l'étape 26 (décidé le 18/10/2026, gamedesign.md, section 9.2) : 3 dans la Lisière, 4 dans le Marais. Dans la V1, il était tiré entre 4 et 6.
+Nombre d'étapes d'une expédition manuelle, fixe depuis l'étape 26 (décidé le 18/10/2026, gamedesign.md, section 9.2) : 3 dans la Lisière, 4 dans le Marais, 5 dans la Vallée. Dans la V1, il était tiré entre 4 et 6.
 
 Expéditions automatiques, ajoutées après la V1 le 18/10/2026 (section 12) :
 
@@ -164,6 +188,7 @@ Expéditions automatiques, ajoutées après la V1 le 18/10/2026 (section 12) :
 |---|---|---|---|---|---|
 | lisiere | 1 h | 15 à 60 | 100 à 200 | 0 à 1 | 15 à 30 |
 | marais | 2 h | 40 à 120 | 300 à 600 | 1 à 2 | 40 à 80 |
+| vallee | 3 h | 90 à 220 | 700 à 1300 | 1 à 3 | 80 à 150 |
 
 L'argent est ajouté le 18/10/2026, avec l'économie (section 6).
 
@@ -173,6 +198,7 @@ Coffres des expéditions manuelles, après la V1 (section 6) :
 |---|---|---|---|
 | lisiere | 1 à 2 | 10 à 25 | Brasier, Déferlante, Lianes étrangleuses |
 | marais | 1 à 2 | 25 à 50 | Croc de venin, Frisson d'outre-tombe, Sentence |
+| vallee | 1 à 2 | 50 à 90 | Maléfice, Bourrasque, Furie draconique |
 
 ## 4. Textes
 
@@ -204,9 +230,13 @@ Pour l'Assassin, depuis l'étape 27 :
 
 ### Indices sur l'Apôtre
 
-Le premier indice s'affiche au retour de la première expédition menée au bout dans la Lisière, les deux suivants au retour des expéditions menées au bout dans le Marais :
+Depuis l'étape 30, le premier indice s'affiche au retour de la première expédition menée au bout dans la Lisière, le second au retour de la première expédition menée au bout dans le Marais, après le Bourreau :
 
 > Indice 1 : au bout de la Lisière, des cordes neuves pendent encore à un chêne mort. Les traces d'une procession s'enfoncent vers le sud, là où la forêt se noie : le Marais des Pendus. Quelque chose y règne.
+
+> Indice 2 : le bourreau vaincu a parlé : son maître, le Baron pendu, s'est retiré au fond de la Vallée des Brumes, au-delà du Marais, là où les morts ne dorment pas.
+
+Jusqu'à l'étape 29, la piste comptait trois indices, les deux derniers trouvés dans le Marais :
 
 > Indice 2 : des noyés flottent entre les roseaux, tous tournés vers le même point de la brume, comme s'ils écoutaient un appel.
 
@@ -214,13 +244,15 @@ Le premier indice s'affiche au retour de la première expédition menée au bout
 
 ### Combat contre l'Apôtre
 
-Avant le combat :
+Depuis l'étape 30, au bout de la Vallée des Brumes. Avant le combat :
 
-> Sous le gibet, une silhouette se déplie lentement, la corde encore au cou. Le Baron pendu, Apôtre du Démiurge, vous a senti venir. Il n'y aura pas de fuite.
+> Au fond de la Vallée, la brume se déchire sur un gibet dressé contre le ciel. Le Baron pendu, Apôtre du Démiurge, s'y balance encore, puis ouvre les yeux. Il n'y aura pas de fuite.
 
 Épilogue, après la victoire :
 
-> Le Baron pendu s'effondre dans la vase. Sur sa poitrine, un sceau gravé d'une main ouverte : le signe du Démiurge. D'autres Apôtres portent ce sceau, au-delà des terres connues. Votre traque ne fait que commencer.
+> Le Baron pendu s'effondre au pied de son gibet. Sur sa poitrine, un sceau gravé d'une main ouverte : le signe du Démiurge. D'autres Apôtres portent ce sceau, au-delà des terres connues. Votre traque ne fait que commencer.
+
+Jusqu'à l'étape 29, au bout du Marais, le texte avant le combat était : "Sous le gibet, une silhouette se déplie lentement, la corde encore au cou. Le Baron pendu, Apôtre du Démiurge, vous a senti venir. Il n'y aura pas de fuite." L'épilogue commençait par "Le Baron pendu s'effondre dans la vase."
 
 ### Combat contre le brigand
 
@@ -233,6 +265,18 @@ Avant le combat :
 Après la victoire :
 
 > Le brigand détale dans les fourrés, abandonnant ses bêtes et sa bourse.
+
+### Combat contre le Bourreau
+
+Ajouté à l'étape 30, le 19/10/2026 (gamedesign.md, section 10.7). Le Bourreau attend au bout du Marais, avec une Armure hantée de niveau 14, un Feu follet de niveau 14 et un Basilic de niveau 15 (valeurs internes à 15, première habileté de leur espèce). Victoire : 150 pièces d'argent, puis l'indice 2 au retour.
+
+Avant le combat :
+
+> Au cœur du Marais, sous un gibet chargé de cordes, un bourreau encagoulé aiguise sa hache. Trois bêtes attendent ses ordres. Il sert le Baron pendu, et il ne vous laissera pas passer.
+
+Après la victoire :
+
+> Le bourreau s'effondre dans la vase, sa hache brisée.
 
 ### Rencontre du marchand
 
@@ -271,11 +315,12 @@ Après la confirmation, avant la création d'un nouveau héros :
 - La Mandragore est le départ le plus exigeant, ce qui est assumé : dans la Lisière, le Corbeau (Vol) et la Vipère (Poison) sont très efficaces contre elle, et la Vipère résiste à ses attaques Plante ; dans le Marais, l'Armure hantée (Acier) résiste aussi au type Plante. Son profil défensif et ses 320 de stats de base, 5 de plus que les deux autres, l'aident à tenir.
 - Le type Spectre du Feu follet, de l'Armure hantée et du Baron pendu annule les attaques de type Normal : dans le Marais, chaque monstre de départ doit compter sur l'attaque de son type, apprise au niveau 3.
 - Le Basilic, rare et hostile dans le Marais, est nettement plus fort que les monstres communs (400 de stats de base) : c'est un combat redoutable, qui rapporte beaucoup d'XP.
-- Le Baron pendu est le combat le plus dur de la V1. Seul le type Féérique lui est très efficace : la Lumière d'aube du Cerf blanc, monstre rare pacifique de la Lisière, en fait une prise précieuse pour l'affronter.
+- Le Baron pendu est le combat le plus dur de la V1. Seul le type Féérique lui est très efficace : la Lumière d'aube du Cerf blanc, monstre rare pacifique de la Lisière, en fait une prise précieuse pour l'affronter. Depuis l'étape 30, Obscur au niveau 22, il est bien plus dur encore : le Cerf blanc, l'Elfe (Lumière d'aube et Poussière d'elfe) et le Schnoz sont les seuls à lui être très efficaces, aucun monstre n'étant Psychique. À équilibrer en jouant (gamedesign.md, Q76).
 - Rythme estimé : une expédition dans la Lisière rapporte de l'ordre de 200 à 400 XP par participant, soit le passage du niveau 5 au niveau 8 environ en trois expéditions. Le Marais devient abordable vers le niveau 9, le Baron pendu vers le niveau 13 ou 14. À vérifier en jouant.
-- Le Chat noir, de type Ténèbres, résiste aux attaques Spectre et Ténèbres : contre les Spectre du Marais et le Baron pendu, l'Assassin a le départ le plus facile, ce qui est accepté jusqu'à l'Apôtre de l'étape 30 (gamedesign.md, Q76). En contrepartie, il a le moins de PV et de défenses des monstres de départ.
+- Le Chat noir, de type Ténèbres, résiste aux attaques Spectre et Ténèbres : contre les Spectre du Marais, l'Assassin a le départ le plus facile. Depuis l'étape 30, le Baron pendu est Obscur : le Chat noir n'a plus d'avantage contre lui (gamedesign.md, Q76). En contrepartie, il a le moins de PV et de défenses des monstres de départ.
 - Le Schnoz, très rare, est un cadeau : 450 de stats de base, sans faiblesse ni résistance tant que le type Stellaire est neutre.
-- Place du combat contre l'Apôtre (Q57) : à la dernière étape de l'expédition qui suit le 3e indice, à la place de l'événement tiré ; rentrer avant cette étape le repousse à l'expédition suivante.
+- Place du combat contre l'Apôtre (Q57) : à la dernière étape de l'expédition qui suit le 3e indice, à la place de l'événement tiré ; rentrer avant cette étape le repousse à l'expédition suivante. Depuis l'étape 30, à la dernière étape de chaque expédition dans la Vallée des Brumes, tant qu'il n'est pas vaincu.
+- La Vallée des Brumes (niveaux 14 à 20) compte deux espèces rares : l'Elfe, pacifique, et la Vouivre, hostile, chacune à une étape sur 40 environ. L'Armure hantée y revient, plus forte qu'au Marais.
 
 ## 6. Économie
 
@@ -286,8 +331,8 @@ Revente d'un monstre au marchand, depuis l'étape 26 : son niveau multiplié par
 | Rareté | Espèces | Coefficient | Exemple |
 |---|---|---|---|
 | commune | monstres de départ et monstres communs | 1 | Loup de niveau 5 (285 de stats de base) : 28 |
-| rare | Cerf blanc, Basilic, Schnoz | 2 | Cerf blanc de niveau 5 (400) : 80 ; Schnoz de niveau 10 (450) : 180 |
-| Apôtre | Baron pendu | 4 | Baron pendu de niveau 15 (480) : 576 |
+| rare | Cerf blanc, Basilic, Elfe, Vouivre, Schnoz | 2 | Cerf blanc de niveau 5 (400) : 80 ; Schnoz de niveau 10 (450) : 180 |
+| Apôtre | Baron pendu | 4 | Baron pendu de niveau 15 (480) : 576 ; au niveau 22 : 844 |
 
 Prix du marchand : une potion coûte 20. Il vend toutes les capsules d'attaque.
 
@@ -299,10 +344,13 @@ Capsules d'attaque : chacune enseigne son attaque à tout monstre qui a le type 
 | Déferlante | Eau | Crapaud | lisiere | 150 |
 | Lianes étrangleuses | Plante | Mandragore | lisiere | 150 |
 | Croc de venin | Poison | Vipère | marais | 200 |
-| Frisson d'outre-tombe | Spectre | Armure hantée, Baron pendu | marais | 200 |
-| Sentence | Ténèbres | Corbeau, Chat noir | marais | 300 |
+| Frisson d'outre-tombe | Spectre | Armure hantée, Squelette | marais | 200 |
+| Sentence | Ténèbres | Corbeau, Chat noir, Fée noire | marais | 300 |
+| Maléfice | Ténèbres | Corbeau, Chat noir | vallee | 300 |
+| Bourrasque | Vol | Corbeau, Vouivre | vallee | 300 |
+| Furie draconique | Dragon | Basilic | vallee | 400 |
 
-Les capsules de la Lisière servent aux monstres de départ, dont l'espèce apprend déjà toutes les attaques de leur type qui existaient dans la V1 ; celles du Marais donnent aux monstres communs une attaque d'une autre espèce de leur type.
+Les capsules de la Lisière servent aux monstres de départ, dont l'espèce apprend déjà toutes les attaques de leur type qui existaient dans la V1 ; celles du Marais donnent aux monstres communs une attaque d'une autre espèce de leur type, comme celles de la Vallée, ajoutées à l'étape 30. Depuis que le Baron pendu est Obscur, Frisson d'outre-tombe et Sentence ne lui servent plus.
 
 ## 7. Habiletés
 
@@ -323,5 +371,9 @@ Ajoutées à l'étape 28, le 19/10/2026 (gamedesign.md, section 5.9). Chaque esp
 | Basilic | Affinité, Férocité |
 | Baron pendu | Sorcellerie, Volonté |
 | Schnoz | Pillard, Fouineur |
+| Fée noire | Sorcellerie, Célérité |
+| Squelette | Férocité, Carapace |
+| Elfe | Volonté, Instinct |
+| Vouivre | Affinité, Férocité |
 
 Valeurs : +10 % pour les habiletés de stats (Férocité, Carapace, Sorcellerie, Volonté, Célérité), +20 % de dégâts pour Affinité, +20 % d'XP pour Instinct, -20 % de durée pour Éclaireur, capture x1,25 pour Traqueur, +50 % d'argent pour Pillard, une potion 1 fois sur 4 pour Fouineur.
