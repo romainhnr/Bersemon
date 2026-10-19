@@ -5,6 +5,7 @@ use std::fmt;
 
 use crate::aleatoire::Aleatoire;
 use crate::ame::{MarchandId, MarchandMort};
+use crate::amelioration::{Chantier, ErreurAmelioration, Forge, PlanDAmelioration};
 use crate::attaque::{Attaque, AttaqueId, ErreurAttaquesMonstre};
 use crate::capsule::{Capsule, ErreurApprentissage, attaques_a_apprendre};
 use crate::catalogue::Catalogue;
@@ -95,6 +96,8 @@ pub struct Partie {
     /// déroulement n'accepte aucune autre action au camp : les positions
     /// qu'elles désignent ne bougent donc pas.
     attaques_a_choisir: Vec<AttaqueAChoisir>,
+    /// Gunther et les améliorations du camp (section 13.4).
+    forge: Forge,
 }
 
 /// Attaque qu'un monstre rentré d'expédition automatique veut apprendre en
@@ -126,6 +129,7 @@ pub struct EtatPartie {
     pub conseils_vus: Vec<Conseil>,
     pub expeditions_automatiques: Vec<ExpeditionAutomatique>,
     pub attaques_a_choisir: Vec<AttaqueAChoisir>,
+    pub forge: Forge,
 }
 
 /// Sauvegarde lisible mais contraire aux règles des expéditions
@@ -191,6 +195,7 @@ impl Partie {
             indices_trouves: 0,
             apotres_vaincus: Vec::new(),
             humains_vaincus: Vec::new(),
+            forge: Forge::default(),
             conseils_vus: Vec::new(),
             expeditions_automatiques: Vec::new(),
             attaques_a_choisir: Vec::new(),
@@ -268,6 +273,80 @@ impl Partie {
     /// rentre au camp avec le joueur et y reste (section 14.2).
     pub(crate) fn accueillir_malvoise(&mut self) {
         self.marchand_au_camp = true;
+    }
+
+    pub fn forge(&self) -> &Forge {
+        &self.forge
+    }
+
+    /// Libéré à la défaite du Bourreau, Gunther rentre au camp avec le
+    /// joueur et y reste (section 13.4).
+    pub(crate) fn accueillir_gunther(&mut self) {
+        self.forge.accueillir_gunther();
+    }
+
+    /// Ce qu'il manque, du sac et du coffre réunis, pour payer ce coût.
+    pub fn ressources_manquantes(&self, cout: &[(Ressource, u32)]) -> Vec<(Ressource, u32)> {
+        cout.iter()
+            .filter_map(|(ressource, nombre)| {
+                let presentes = self
+                    .sac
+                    .nombre_de_ressources(ressource.id())
+                    .saturating_add(self.coffre_du_camp.nombre_de_ressources(ressource.id()));
+                (presentes < *nombre).then(|| (ressource.clone(), nombre - presentes))
+            })
+            .collect()
+    }
+
+    /// Au camp, après confirmation : les ressources sont prises au
+    /// lancement, du sac d'abord, puis du coffre, et Gunther se met au
+    /// travail (section 13.4).
+    pub fn lancer_amelioration(
+        &mut self,
+        plan: &PlanDAmelioration,
+        maintenant: Horodatage,
+    ) -> Result<Chantier, ErreurAmelioration> {
+        self.verifier_amelioration(plan)?;
+        for (ressource, nombre) in plan.cout() {
+            let du_sac = (*nombre).min(self.sac.nombre_de_ressources(ressource.id()));
+            for (inventaire, quantite) in [
+                (&mut self.sac, du_sac),
+                (&mut self.coffre_du_camp, nombre - du_sac),
+            ] {
+                if quantite > 0 {
+                    inventaire
+                        .retirer(&Objet::Ressources(ressource.id().clone(), quantite))
+                        .expect("ressources vérifiées");
+                }
+            }
+        }
+        Ok(self.forge.lancer(plan, maintenant))
+    }
+
+    /// Refuse ce que refuserait `lancer_amelioration`, sans rien changer.
+    pub fn verifier_amelioration(
+        &self,
+        plan: &PlanDAmelioration,
+    ) -> Result<(), ErreurAmelioration> {
+        self.forge.verifier_lancement(plan)?;
+        let manquantes = self.ressources_manquantes(plan.cout());
+        if !manquantes.is_empty() {
+            return Err(ErreurAmelioration::RessourcesManquantes(manquantes));
+        }
+        Ok(())
+    }
+
+    /// Au camp, le joueur constate le travail fini : le niveau compte, et un
+    /// enclos agrandi accueille aussitôt plus de monstres (section 13.4).
+    pub fn constater_amelioration(
+        &mut self,
+        maintenant: Horodatage,
+    ) -> Result<Chantier, ErreurAmelioration> {
+        let chantier = self.forge.achever(maintenant)?;
+        self.collection
+            .definir_tailles(self.forge.ameliorations().tailles())
+            .expect("une amélioration ne réduit aucune place");
+        Ok(chantier)
     }
 
     pub fn ames_donnees(&self) -> &[MarchandMort] {
@@ -701,6 +780,9 @@ impl Partie {
             ));
         }
         let mut collection = etat.collection;
+        collection
+            .definir_tailles(etat.forge.ameliorations().tailles())
+            .map_err(ErreurRestaurationPartie::Collection)?;
         let partis = etat
             .expeditions_automatiques
             .iter()
@@ -746,6 +828,7 @@ impl Partie {
             conseils_vus: etat.conseils_vus,
             expeditions_automatiques: etat.expeditions_automatiques,
             attaques_a_choisir: etat.attaques_a_choisir,
+            forge: etat.forge,
         })
     }
 
@@ -821,6 +904,7 @@ impl Partie {
             .collect();
         let combat = Combat::new(self.collection.equipe().to_vec(), groupe)?
             .avec_bonus_du_joueur(self.heros.classe().bonus())
+            .avec_filets(self.forge.ameliorations().facteur_des_filets())
             .avec_soins(*self.sac.soins());
         for espece in &especes {
             self.codex.noter_rencontre(espece);
@@ -1214,6 +1298,7 @@ mod tests {
     use crate::ame::Gardien;
     use crate::attaque::Categorie;
     use crate::codex::EtatCodex;
+    use crate::collection::Tailles;
     use crate::combat::Action;
     use crate::donnees_de_test::{attaque, espece, zone};
     use crate::espece::EspeceId;
@@ -2104,6 +2189,7 @@ mod tests {
             conseils_vus: partie.conseils_vus().to_vec(),
             expeditions_automatiques: partie.expeditions_automatiques().to_vec(),
             attaques_a_choisir: partie.attaques_a_choisir().to_vec(),
+            forge: *partie.forge(),
         }
     }
 
@@ -2151,10 +2237,10 @@ mod tests {
         // Le monstre parti a besoin de sa place dans un camp déjà plein.
         let mut camp_plein = etat(&partie);
         let equipe = camp_plein.collection.equipe().to_vec();
-        let camp = (0..Collection::TAILLE_CAMP)
+        let camp = (0..Tailles::DE_DEPART.camp)
             .map(|_| creer("loup", 5))
             .collect();
-        camp_plein.collection = Collection::restaurer(equipe, camp).unwrap();
+        camp_plein.collection = Collection::restaurer(equipe, camp, Tailles::DE_DEPART).unwrap();
         assert_eq!(
             Partie::restaurer(camp_plein),
             Err(ErreurRestaurationPartie::Collection(

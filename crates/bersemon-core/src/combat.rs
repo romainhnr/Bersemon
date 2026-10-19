@@ -233,6 +233,9 @@ pub struct Combat {
     /// Bonus de la classe du héros, appliqué aux stats des monstres du joueur
     /// (section 4.2).
     bonus_joueur: BonusDeStats,
+    /// Multiplie la chance de capture, en fraction : les filets améliorés
+    /// par Gunther (section 13.4).
+    facteur_des_filets: (u64, u64),
     /// Soins que le joueur porte (section 14.4).
     soins: Soins,
     /// Face à un Apôtre, ni fuite ni filet (section 9.4).
@@ -270,6 +273,7 @@ impl Combat {
             actif_adversaire: 0,
             captures: Vec::new(),
             bonus_joueur: BonusDeStats::default(),
+            facteur_des_filets: (1, 1),
             soins: Soins::default(),
             contre_un_apotre: false,
             contre_un_humain: false,
@@ -346,6 +350,11 @@ impl Combat {
         self
     }
 
+    pub fn avec_filets(mut self, facteur: (u64, u64)) -> Self {
+        self.facteur_des_filets = facteur;
+        self
+    }
+
     /// Stats utilisées en combat : celles du monstre, plus le bonus de son
     /// habileté, de chaque côté, et le bonus du joueur pour ses monstres
     /// (section 5.9).
@@ -395,6 +404,7 @@ impl Combat {
         calculer_chance_capture(
             self.monstre(self.actif(Cote::Joueur)),
             self.monstre(self.actif(Cote::Adversaire)),
+            self.facteur_des_filets,
         )
     }
 

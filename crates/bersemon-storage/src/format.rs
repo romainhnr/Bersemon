@@ -1,4 +1,4 @@
-//! Format JSON de la sauvegarde, version 13, et sa conversion vers les types
+//! Format JSON de la sauvegarde, version 14, et sa conversion vers les types
 //! du noyau. Les énumérations sont écrites avec des noms fixés ici, et non
 //! avec les noms Rust, pour qu'un renommage dans le code ne casse pas les
 //! sauvegardes existantes.
@@ -8,6 +8,7 @@
 use serde::{Deserialize, Serialize};
 
 use bersemon_core::ame::{MarchandId, MarchandMort};
+use bersemon_core::amelioration::{Amelioration, Ameliorations, Chantier, Forge};
 use bersemon_core::attaque::{AttaqueId, AttaquesMonstre};
 use bersemon_core::catalogue::Catalogue;
 use bersemon_core::codex::Codex;
@@ -34,7 +35,7 @@ use bersemon_core::zone::ZoneId;
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 13;
+pub(crate) const VERSION: u64 = 14;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -47,6 +48,14 @@ const VERSION_DE_LA_PISTE_A_DEUX_INDICES: u64 = 10;
 /// 14.2).
 const VERSION_DE_MALVOISE: u64 = 11;
 
+/// La version de la sauvegarde où Gunther, le forgeron, rejoint le camp
+/// (section 13.4).
+const VERSION_DE_GUNTHER: u64 = 14;
+
+/// Gunther est le prisonnier de cet humain : avant la version 14, une partie
+/// qui l'a vaincu a Gunther au camp (section 13.4, Q85).
+const GEOLIER_DE_GUNTHER: &str = "bourreau";
+
 /// La version 2 ajoute la traque de l'Apôtre et le tutoriel, la version 3
 /// les expéditions automatiques et les attaques à choisir à leur retour, la
 /// version 4 l'argent, la version 5 le marchand, la version 6 les capsules
@@ -57,11 +66,12 @@ const VERSION_DE_MALVOISE: u64 = 11;
 /// remplace le marchand ; avec la version 12, une attaque à choisir peut
 /// désigner un monstre de l'équipe, et s'ajoutent les âmes portées et à
 /// retrouver, les capsules d'habileté et les ressources ; la version 13
-/// ajoute les pierres d'évolution. Une sauvegarde d'une version
+/// ajoute les pierres d'évolution, la version 14 Gunther et les
+/// améliorations du camp. Une sauvegarde d'une version
 /// précédente se lit avec cette structure : les champs ajoutés y prennent
 /// leur valeur de début de partie.
 #[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct SauvegardeV13 {
+pub(crate) struct SauvegardeV14 {
     pub(crate) version: u64,
     heros: HerosV1,
     equipe: Vec<MonstreV1>,
@@ -107,6 +117,43 @@ pub(crate) struct SauvegardeV13 {
     expeditions_automatiques: Vec<ExpeditionAutomatiqueV3>,
     #[serde(default)]
     attaques_a_choisir: Vec<AttaqueAChoisirV3>,
+    /// Depuis la version 14 (section 13.4).
+    #[serde(default)]
+    gunther_au_camp: bool,
+    #[serde(default)]
+    ameliorations: AmeliorationsV14,
+    #[serde(default)]
+    chantier: Option<ChantierV14>,
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+struct AmeliorationsV14 {
+    #[serde(default)]
+    enclos: u8,
+    #[serde(default)]
+    filets: u8,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct ChantierV14 {
+    amelioration: String,
+    niveau: u8,
+    /// Secondes depuis le 1er janvier 1970 (UTC).
+    fin: u64,
+}
+
+fn amelioration_en_texte(amelioration: Amelioration) -> &'static str {
+    match amelioration {
+        Amelioration::Enclos => "enclos",
+        Amelioration::Filets => "filets",
+    }
+}
+
+fn lire_amelioration(texte: &str) -> Result<Amelioration, ErreurSauvegarde> {
+    Amelioration::TOUTES
+        .into_iter()
+        .find(|amelioration| amelioration_en_texte(*amelioration) == texte)
+        .ok_or_else(|| ErreurSauvegarde::Incoherente(format!("amélioration inconnue : {texte}")))
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -227,9 +274,9 @@ struct CodexV1 {
     capturees: Vec<String>,
 }
 
-pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV13 {
+pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV14 {
     let collection = partie.collection();
-    SauvegardeV13 {
+    SauvegardeV14 {
         version: VERSION,
         heros: HerosV1 {
             nom: partie.heros().nom().as_str().to_string(),
@@ -296,6 +343,16 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV13 {
                 }
             })
             .collect(),
+        gunther_au_camp: partie.forge().est_au_camp(),
+        ameliorations: AmeliorationsV14 {
+            enclos: partie.forge().ameliorations().niveau(Amelioration::Enclos),
+            filets: partie.forge().ameliorations().niveau(Amelioration::Filets),
+        },
+        chantier: partie.forge().chantier().map(|chantier| ChantierV14 {
+            amelioration: amelioration_en_texte(chantier.amelioration).to_string(),
+            niveau: chantier.niveau,
+            fin: chantier.fin.secondes(),
+        }),
     }
 }
 
@@ -363,7 +420,7 @@ fn vers_inventaire(
 }
 
 pub(crate) fn vers_partie(
-    sauvegarde: SauvegardeV13,
+    mut sauvegarde: SauvegardeV14,
     catalogue: &dyn Catalogue,
 ) -> Result<Partie, ErreurSauvegarde> {
     let heros = Heros::new(
@@ -382,7 +439,38 @@ pub(crate) fn vers_partie(
         .into_iter()
         .map(|expedition| vers_expedition_automatique(expedition, catalogue))
         .collect::<Result<Vec<_>, _>>()?;
-    let collection = Collection::restaurer(equipe, camp)
+    // Avant la version 14, ni amélioration ni chantier : seul Gunther peut
+    // être au camp, s'il est déjà libéré.
+    if sauvegarde.version < VERSION_DE_GUNTHER {
+        sauvegarde.gunther_au_camp = sauvegarde
+            .humains_vaincus
+            .iter()
+            .any(|humain| humain == GEOLIER_DE_GUNTHER);
+        sauvegarde.ameliorations = AmeliorationsV14::default();
+        sauvegarde.chantier = None;
+    }
+    let gunther_au_camp = sauvegarde.gunther_au_camp;
+    let ameliorations = Ameliorations::new(
+        sauvegarde.ameliorations.enclos,
+        sauvegarde.ameliorations.filets,
+    )
+    .ok_or_else(|| {
+        ErreurSauvegarde::Incoherente("niveau d'amélioration hors limites".to_string())
+    })?;
+    let chantier = sauvegarde
+        .chantier
+        .map(|chantier| {
+            Ok::<_, ErreurSauvegarde>(Chantier {
+                amelioration: lire_amelioration(&chantier.amelioration)?,
+                niveau: chantier.niveau,
+                fin: Horodatage::depuis_secondes(chantier.fin),
+            })
+        })
+        .transpose()?;
+    let forge = Forge::restaurer(gunther_au_camp, ameliorations, chantier).ok_or_else(|| {
+        ErreurSauvegarde::Incoherente("améliorations sans Gunther au camp".to_string())
+    })?;
+    let collection = Collection::restaurer(equipe, camp, ameliorations.tailles())
         .map_err(|erreur| ErreurSauvegarde::Incoherente(erreur.to_string()))?;
     // Avant la version 7, tout ce que possédait le joueur est rangé dans le
     // coffre du camp, à l'abri (section 13.3).
@@ -475,6 +563,7 @@ pub(crate) fn vers_partie(
         conseils_vus,
         expeditions_automatiques,
         attaques_a_choisir,
+        forge,
     })
     .map_err(incoherente)
 }

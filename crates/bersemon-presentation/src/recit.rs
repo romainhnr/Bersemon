@@ -10,6 +10,7 @@ use bersemon_core::ressource::Ressource;
 use crate::combat::{rapport_experience, remplacement, renoncement};
 use crate::erreurs::erreur_sauvegarde;
 use crate::expeditions_automatiques;
+use crate::forge::{constat, lancement};
 use crate::mise_en_valeur::important;
 use crate::monstres::{effet_d_habilete, nom_en_valeur, nom_sauvage};
 use crate::partie::{
@@ -341,6 +342,9 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             ),
             false,
         ),
+        Evenement::GuntherLibere(texte) => (texte.clone(), true),
+        Evenement::AmeliorationLancee(plan) => (lancement(plan), false),
+        Evenement::AmeliorationConstatee(chantier) => (constat(chantier), true),
         Evenement::PierresAchetees {
             pierre,
             nombre,

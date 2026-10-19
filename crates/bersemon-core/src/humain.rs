@@ -75,6 +75,9 @@ pub struct Humain {
     avant_combat: String,
     apres_victoire: String,
     ia: IaHumain,
+    /// Le texte de la libération de Gunther, que sa défaite libère (section
+    /// 13.4).
+    liberation_de_gunther: Option<String>,
 }
 
 impl Humain {
@@ -108,7 +111,18 @@ impl Humain {
             avant_combat: avant_combat.into(),
             apres_victoire: apres_victoire.into(),
             ia: IaHumain::Simple,
+            liberation_de_gunther: None,
         })
+    }
+
+    /// Sa défaite libère Gunther, son prisonnier (section 13.4).
+    pub fn liberant_gunther(mut self, texte: impl Into<String>) -> Self {
+        self.liberation_de_gunther = Some(texte.into());
+        self
+    }
+
+    pub fn liberation_de_gunther(&self) -> Option<&str> {
+        self.liberation_de_gunther.as_deref()
     }
 
     pub fn avec_ia(mut self, ia: IaHumain) -> Self {

@@ -4,10 +4,15 @@ use crate::habilete::{FACTEUR_DU_TRAQUEUR, Habilete};
 use crate::monstre::Monstre;
 use crate::niveau::Niveau;
 
-/// Pourcentage de 0 à 100 : PV perdus / PV max x facteur de niveau (Q28), et
-/// x1,25 si le monstre actif est Traqueur (section 5.9). Un monstre KO est
-/// capturé à coup sûr ; un monstre à PV pleins, jamais.
-pub fn calculer_chance_capture(monstre_actif: &Monstre, sauvage: &Monstre) -> u32 {
+/// Pourcentage de 0 à 100 : PV perdus / PV max x facteur de niveau (Q28),
+/// x1,25 si le monstre actif est Traqueur (section 5.9), et x le facteur des
+/// filets, en fraction (section 13.4). Un monstre KO est capturé à coup sûr ;
+/// un monstre à PV pleins, jamais.
+pub fn calculer_chance_capture(
+    monstre_actif: &Monstre,
+    sauvage: &Monstre,
+    facteur_des_filets: (u64, u64),
+) -> u32 {
     if sauvage.est_ko() {
         return 100;
     }
@@ -19,6 +24,8 @@ pub fn calculer_chance_capture(monstre_actif: &Monstre, sauvage: &Monstre) -> u3
         numerateur *= FACTEUR_DU_TRAQUEUR.0;
         denominateur *= FACTEUR_DU_TRAQUEUR.1;
     }
+    numerateur *= facteur_des_filets.0;
+    denominateur *= facteur_des_filets.1;
     let chance = pv_perdus * 100 * numerateur / (pv_max * denominateur);
     // Au plus 100, donc tient dans un u32.
     chance.min(100) as u32
@@ -45,6 +52,8 @@ mod tests {
     use crate::donnees_de_test::{attaque, monstre, stats_uniformes};
     use crate::stats::Stats;
     use crate::types::Type;
+
+    const SANS_FILETS: (u64, u64) = (1, 1);
 
     /// Base 50 et valeurs internes nulles : 20 PV au niveau 5. Au niveau 10,
     /// une base de PV nulle donne aussi 20 PV.
@@ -79,7 +88,7 @@ mod tests {
             let actif = monstre_a_20_pv(niveau_actif, 20);
             let sauvage = monstre_a_20_pv(niveau_sauvage, pv_restants);
             assert_eq!(
-                calculer_chance_capture(&actif, &sauvage),
+                calculer_chance_capture(&actif, &sauvage, SANS_FILETS),
                 chance,
                 "actif niv. {niveau_actif}, sauvage niv. {niveau_sauvage} à {pv_restants} PV"
             );
@@ -90,16 +99,35 @@ mod tests {
     fn le_traqueur_multiplie_la_chance_par_1_25_sans_depasser_100() {
         let traqueur = monstre_a_20_pv(5, 20).avec_habilete(Habilete::Traqueur);
         assert_eq!(
-            calculer_chance_capture(&traqueur, &monstre_a_20_pv(5, 10)),
+            calculer_chance_capture(&traqueur, &monstre_a_20_pv(5, 10), SANS_FILETS),
             62
         );
         assert_eq!(
-            calculer_chance_capture(&traqueur, &monstre_a_20_pv(5, 2)),
+            calculer_chance_capture(&traqueur, &monstre_a_20_pv(5, 2), SANS_FILETS),
             100
         );
         assert_eq!(
-            calculer_chance_capture(&traqueur, &monstre_a_20_pv(5, 20)),
+            calculer_chance_capture(&traqueur, &monstre_a_20_pv(5, 20), SANS_FILETS),
             0
+        );
+    }
+
+    #[test]
+    fn les_filets_ameliores_multiplient_la_chance_sans_depasser_100() {
+        let actif = monstre_a_20_pv(5, 20);
+        assert_eq!(
+            calculer_chance_capture(&actif, &monstre_a_20_pv(5, 10), (13, 10)),
+            65
+        );
+        let traqueur = monstre_a_20_pv(5, 20).avec_habilete(Habilete::Traqueur);
+        // 50 x 1,25 x 1,3 = 81,25.
+        assert_eq!(
+            calculer_chance_capture(&traqueur, &monstre_a_20_pv(5, 10), (13, 10)),
+            81
+        );
+        assert_eq!(
+            calculer_chance_capture(&actif, &monstre_a_20_pv(5, 2), (13, 10)),
+            100
         );
     }
 
@@ -107,6 +135,6 @@ mod tests {
     fn monstre_ko_capture_a_coup_sur() {
         let actif = monstre_a_20_pv(5, 20);
         let sauvage = monstre_a_20_pv(5, 0);
-        assert_eq!(calculer_chance_capture(&actif, &sauvage), 100);
+        assert_eq!(calculer_chance_capture(&actif, &sauvage, SANS_FILETS), 100);
     }
 }

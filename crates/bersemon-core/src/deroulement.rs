@@ -15,6 +15,7 @@ use std::fmt;
 
 use crate::aleatoire::Aleatoire;
 use crate::ame::{Gardien, MarchandId, MarchandMort};
+use crate::amelioration::{Amelioration, Chantier, ErreurAmelioration, PlanDAmelioration};
 use crate::attaque::{Attaque, AttaqueId, ErreurAttaquesMonstre};
 use crate::capsule::{Capsule, ErreurApprentissage};
 use crate::collection::{Emplacement, ErreurCollection, Placement, TriDuCamp};
@@ -103,6 +104,11 @@ pub enum Choix {
     /// Au camp, après confirmation, pour un monstre qui remplit la condition
     /// de son évolution (section 5.4).
     FaireEvoluer(Emplacement),
+    /// Au camp, après confirmation : Gunther construit le niveau suivant de
+    /// cette amélioration (section 13.4).
+    LancerAmelioration(Amelioration),
+    /// Au camp : le joueur constate le travail fini de Gunther.
+    ConstaterAmelioration,
     /// Au camp : du sac vers le coffre (section 13.3).
     RangerAuCoffre(Objet),
     /// Au camp : du coffre vers le sac (section 13.3).
@@ -244,6 +250,9 @@ pub enum Confirmation {
         monstre: Monstre,
         nouvelle: Habilete,
     },
+    /// Les ressources du plan seront prises (section 13.4). En boîte, pour
+    /// que la confirmation reste légère.
+    LancerAmelioration(Box<PlanDAmelioration>),
     /// L'évolution est définitive, et consomme la pierre éventuelle (section
     /// 5.4).
     Evoluer {
@@ -293,6 +302,9 @@ pub enum Evenement {
         texte: String,
         argent: u32,
     },
+    /// Le texte de sa libération : Gunther rentre au camp avec le joueur
+    /// (section 13.4).
+    GuntherLibere(String),
     /// Le texte du marchand mort trouvé, avant le combat (section 14.2).
     AmeRencontree(String),
     /// Son texte après la victoire : le joueur porte désormais l'âme.
@@ -401,6 +413,11 @@ pub enum Evenement {
         nombre: u32,
         prix: u32,
     },
+    /// Gunther se met au travail, sur ce plan (section 13.4). En boîte,
+    /// comme la confirmation.
+    AmeliorationLancee(Box<PlanDAmelioration>),
+    /// Le niveau construit compte désormais.
+    AmeliorationConstatee(Chantier),
     /// Le monstre après le changement.
     HabileteChangee {
         monstre: Monstre,
@@ -460,6 +477,9 @@ pub enum ErreurChoix {
     Apprentissage(ErreurApprentissage),
     Habilete(ErreurChangementDHabilete),
     Evolution(ErreurEvolution),
+    Amelioration(ErreurAmelioration),
+    /// Le contenu n'a pas de plan pour ce niveau.
+    PlanInconnu,
 }
 
 impl fmt::Display for ErreurChoix {
@@ -483,6 +503,8 @@ impl fmt::Display for ErreurChoix {
             ErreurChoix::Apprentissage(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Habilete(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Evolution(erreur) => write!(f, "{erreur}"),
+            ErreurChoix::Amelioration(erreur) => write!(f, "{erreur}"),
+            ErreurChoix::PlanInconnu => write!(f, "aucun plan pour ce niveau"),
         }
     }
 }
@@ -961,6 +983,46 @@ impl EnJeu {
                     .cloned()
                     .expect("le monstre vient de changer d'habileté");
                 evenements.push(Evenement::HabileteChangee { monstre, ancienne });
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::LancerAmelioration(amelioration) => {
+                let niveau = self
+                    .partie
+                    .forge()
+                    .ameliorations()
+                    .niveau(*amelioration)
+                    .saturating_add(1);
+                if niveau > amelioration.niveau_max() {
+                    return Err(ErreurChoix::Amelioration(ErreurAmelioration::NiveauMaximal));
+                }
+                let plan = contexte
+                    .contenu
+                    .plan_d_amelioration(*amelioration, niveau)
+                    .ok_or(ErreurChoix::PlanInconnu)?;
+                if !confirme {
+                    // Un lancement impossible est refusé sans demander de
+                    // confirmation.
+                    self.partie
+                        .verifier_amelioration(plan)
+                        .map_err(ErreurChoix::Amelioration)?;
+                    return Ok(Reponse::a_confirmer(Confirmation::LancerAmelioration(
+                        Box::new(plan.clone()),
+                    )));
+                }
+                self.partie
+                    .lancer_amelioration(plan, contexte.maintenant)
+                    .map_err(ErreurChoix::Amelioration)?;
+                evenements.push(Evenement::AmeliorationLancee(Box::new(plan.clone())));
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::ConstaterAmelioration => {
+                let chantier = self
+                    .partie
+                    .constater_amelioration(contexte.maintenant)
+                    .map_err(ErreurChoix::Amelioration)?;
+                evenements.push(Evenement::AmeliorationConstatee(chantier));
                 sauvegarder(&self.partie, contexte.depot, evenements);
                 Ok(Reponse::Faite)
             }
@@ -1767,6 +1829,10 @@ impl EnExpedition {
                     texte: humain.apres_victoire().to_string(),
                     argent,
                 });
+                if let Some(texte) = humain.liberation_de_gunther() {
+                    partie.accueillir_gunther();
+                    evenements.push(Evenement::GuntherLibere(texte.to_string()));
+                }
             }
             // Une fuite ou une défaite laisse l'âme à retrouver.
             if let Some(marchand) = self.ame.take() {
@@ -1959,6 +2025,7 @@ mod tests {
     use super::*;
     use crate::aleatoire::{AleatoireScripte, GenerateurAleatoire};
     use crate::ame::MarchandId;
+    use crate::amelioration::Forge;
     use crate::catalogue::Catalogue;
     use crate::codex::EtatCodex;
     use crate::espece::EspeceId;
@@ -2052,6 +2119,7 @@ mod tests {
             conseils_vus: partie.conseils_vus().to_vec(),
             expeditions_automatiques: partie.expeditions_automatiques().to_vec(),
             attaques_a_choisir: partie.attaques_a_choisir().to_vec(),
+            forge: *partie.forge(),
         }
     }
 
@@ -3152,6 +3220,179 @@ mod tests {
         );
     }
 
+    fn a(secondes: u64) -> Horodatage {
+        Horodatage::depuis_secondes(secondes)
+    }
+
+    fn repondre_a_l_heure(
+        deroulement: &mut Deroulement,
+        choix: Choix,
+        contenu: &ContenuV1,
+        depot: &DepotMemoire,
+        maintenant: Horodatage,
+    ) -> Result<Vec<Evenement>, ErreurChoix> {
+        let mut aleatoire = AleatoireScripte::new([]);
+        let mut contexte = Contexte {
+            contenu,
+            aleatoire: &mut aleatoire,
+            depot,
+            maintenant,
+        };
+        deroulement.repondre(choix, &mut contexte)
+    }
+
+    /// Gunther au camp, et des ressources : 3 crocs dans le sac, 2 dans le
+    /// coffre, et 5 de chaque autre ressource du premier enclos au coffre.
+    fn partie_avec_gunther(contenu: &ContenuV1) -> Partie {
+        let ressource = |id: &str| contenu.ressource(&RessourceId::new(id)).unwrap();
+        let mut etat = etat_de(&partie(contenu));
+        etat.forge = Forge::restaurer(true, Default::default(), None).unwrap();
+        etat.sac = Inventaire::default().avec_ressources(ressource("croc-de-loup"), 3);
+        etat.coffre_du_camp = Inventaire::default()
+            .avec_ressources(ressource("croc-de-loup"), 2)
+            .avec_ressources(ressource("plume-de-corbeau"), 5)
+            .avec_ressources(ressource("ecaille-de-vipere"), 5);
+        Partie::restaurer(etat).unwrap()
+    }
+
+    #[test]
+    fn sans_gunther_pas_d_amelioration() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut deroulement = au_camp(partie(&contenu), &contenu, &depot);
+        let lancer = Choix::LancerAmelioration(Amelioration::Enclos);
+        assert_eq!(
+            repondre_sans_tirage(&mut deroulement, lancer, &contenu, &depot),
+            Err(ErreurChoix::Amelioration(ErreurAmelioration::AucunArtisan))
+        );
+    }
+
+    #[test]
+    fn gunther_agrandit_l_enclos_une_fois_le_travail_constate() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut deroulement = au_camp(partie_avec_gunther(&contenu), &contenu, &depot);
+        let lancer = Choix::LancerAmelioration(Amelioration::Enclos);
+        repondre_a_l_heure(&mut deroulement, lancer.clone(), &contenu, &depot, a(1_000)).unwrap();
+        assert!(matches!(
+            deroulement.attente(),
+            Attente::Confirmation(Confirmation::LancerAmelioration(plan))
+                if plan.amelioration() == Amelioration::Enclos && plan.niveau() == 1
+        ));
+        let evenements =
+            repondre_a_l_heure(&mut deroulement, Choix::Oui, &contenu, &depot, a(1_000)).unwrap();
+        assert!(matches!(
+            &evenements[..],
+            [Evenement::AmeliorationLancee(plan)] if plan.niveau() == 1
+        ));
+        // Les crocs du sac d'abord, puis ceux du coffre.
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert!(sauvegarde.sac().ressources().is_empty());
+        assert!(sauvegarde.coffre_du_camp().ressources().is_empty());
+        let chantier = *sauvegarde.forge().chantier().unwrap();
+        assert_eq!(chantier.fin, a(1_000 + 3_600));
+        // Un seul chantier à la fois, et rien avant la fin.
+        assert_eq!(
+            repondre_a_l_heure(&mut deroulement, lancer, &contenu, &depot, a(2_000)),
+            Err(ErreurChoix::Amelioration(
+                ErreurAmelioration::ChantierEnCours
+            ))
+        );
+        assert_eq!(
+            repondre_a_l_heure(
+                &mut deroulement,
+                Choix::ConstaterAmelioration,
+                &contenu,
+                &depot,
+                a(4_599)
+            ),
+            Err(ErreurChoix::Amelioration(
+                ErreurAmelioration::PasEncoreFini(a(4_600))
+            ))
+        );
+        let evenements = repondre_a_l_heure(
+            &mut deroulement,
+            Choix::ConstaterAmelioration,
+            &contenu,
+            &depot,
+            a(4_600),
+        )
+        .unwrap();
+        assert_eq!(evenements, vec![Evenement::AmeliorationConstatee(chantier)]);
+        let partie = deroulement.partie().unwrap();
+        assert_eq!(
+            partie.forge().ameliorations().niveau(Amelioration::Enclos),
+            1
+        );
+        assert_eq!(partie.collection().tailles().camp, 40);
+        assert_eq!(partie.forge().chantier(), None);
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert_eq!(sauvegarde.collection().tailles().camp, 40);
+    }
+
+    #[test]
+    fn sans_les_ressources_gunther_dit_ce_qui_manque() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut etat = etat_de(&partie_avec_gunther(&contenu));
+        etat.coffre_du_camp = Inventaire::default();
+        etat.sac = Inventaire::default();
+        let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
+        // Refusé sans demander de confirmation.
+        let lancer = Choix::LancerAmelioration(Amelioration::Filets);
+        let Err(ErreurChoix::Amelioration(ErreurAmelioration::RessourcesManquantes(manquantes))) =
+            repondre_sans_tirage(&mut deroulement, lancer, &contenu, &depot)
+        else {
+            panic!("ressources manquantes attendues");
+        };
+        let manquantes: Vec<(&str, u32)> = manquantes
+            .iter()
+            .map(|(ressource, nombre)| (ressource.id().as_str(), *nombre))
+            .collect();
+        assert_eq!(
+            manquantes,
+            vec![("croc-de-loup", 4), ("ecaille-de-vipere", 4)]
+        );
+        assert_eq!(deroulement.attente(), Attente::Camp);
+    }
+
+    #[test]
+    fn les_filets_ameliores_augmentent_la_chance_de_capture() {
+        let contenu = ContenuV1::new();
+        let mut etat = etat_de(&partie(&contenu));
+        let mut sauvage = Monstre::creer(
+            contenu.espece(&EspeceId::new("loup")).unwrap(),
+            Niveau::new(5).unwrap(),
+            ValeursInternes::default(),
+            false,
+        )
+        .unwrap();
+        let pv_max = sauvage.stats().pv;
+        let perdus = pv_max / 2;
+        sauvage.subir_degats(perdus);
+        let sans_filets = Partie::restaurer(etat.clone())
+            .unwrap()
+            .preparer_combat(vec![sauvage.clone()])
+            .unwrap()
+            .chance_de_capture();
+        etat.forge = Forge::restaurer(
+            true,
+            crate::amelioration::Ameliorations::new(0, 3).unwrap(),
+            None,
+        )
+        .unwrap();
+        let avec_filets = Partie::restaurer(etat)
+            .unwrap()
+            .preparer_combat(vec![sauvage])
+            .unwrap()
+            .chance_de_capture();
+        // À niveau égal : PV perdus / PV max, puis x1,3 avec les filets du
+        // niveau 3.
+        assert_eq!(sans_filets, perdus * 100 / pv_max);
+        assert_eq!(avec_filets, perdus * 100 * 13 / (pv_max * 10));
+        assert!(avec_filets > sans_filets);
+    }
+
     #[test]
     fn une_pierre_fait_evoluer_au_camp_et_se_consomme() {
         let contenu = ContenuV1::new();
@@ -3395,6 +3636,13 @@ mod tests {
             sauvegarde.humains_vaincus(),
             &[HumainId::new("brigand"), HumainId::new("bourreau")]
         );
+        // La défaite du Bourreau a libéré Gunther, une fois (section 13.4).
+        let liberations = vus
+            .iter()
+            .filter(|evenement| matches!(evenement, Evenement::GuntherLibere(_)))
+            .count();
+        assert_eq!(liberations, 1);
+        assert!(sauvegarde.forge().est_au_camp());
         // Sans expédition automatique ni marchand, l'argent du joueur est
         // celui des coffres et du brigand, moins celui des sacs perdus
         // (section 9.3).
@@ -3510,6 +3758,7 @@ mod tests {
             conseils_vus: Vec::new(),
             expeditions_automatiques: Vec::new(),
             attaques_a_choisir: Vec::new(),
+            forge: Default::default(),
         })
         .unwrap()
     }

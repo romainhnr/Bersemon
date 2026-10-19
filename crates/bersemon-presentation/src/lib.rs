@@ -9,6 +9,7 @@
 pub mod combat;
 pub mod erreurs;
 pub mod expeditions_automatiques;
+pub mod forge;
 pub mod marchand;
 pub mod mise_en_valeur;
 pub mod monstres;

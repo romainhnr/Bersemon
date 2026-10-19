@@ -8,7 +8,7 @@ use bersemon_core::catalogue::Catalogue;
 use bersemon_core::partie::Partie;
 use bersemon_core::sauvegarde::{ErreurSauvegarde, SauvegardeRepository};
 
-use crate::format::{self, SauvegardeV13, VERSION};
+use crate::format::{self, SauvegardeV14, VERSION};
 
 pub struct FichierJson {
     chemin: PathBuf,
@@ -38,7 +38,7 @@ impl FichierJson {
         if !(1..=VERSION).contains(&version) {
             return Err(ErreurSauvegarde::VersionInconnue(version));
         }
-        let sauvegarde: SauvegardeV13 = serde_json::from_value(valeur)
+        let sauvegarde: SauvegardeV14 = serde_json::from_value(valeur)
             .map_err(|erreur| ErreurSauvegarde::Illisible(erreur.to_string()))?;
         format::vers_partie(sauvegarde, catalogue)
     }
@@ -85,6 +85,7 @@ fn acces(erreur: io::Error) -> ErreurSauvegarde {
 mod tests {
     use super::*;
     use bersemon_core::ame::{Gardien, MarchandId, MarchandMort};
+    use bersemon_core::amelioration::{Amelioration, Ameliorations, Chantier, Forge};
     use bersemon_core::attaque::{Attaque, AttaqueId, Categorie, EffetSecondaire};
     use bersemon_core::capsule::Capsule;
     use bersemon_core::collection::Emplacement;
@@ -343,6 +344,16 @@ mod tests {
             conseils_vus: partie.conseils_vus().to_vec(),
             expeditions_automatiques: partie.expeditions_automatiques().to_vec(),
             attaques_a_choisir,
+            forge: Forge::restaurer(
+                true,
+                Ameliorations::new(1, 2).unwrap(),
+                Some(Chantier {
+                    amelioration: Amelioration::Enclos,
+                    niveau: 2,
+                    fin: Horodatage::depuis_secondes(9_000),
+                }),
+            )
+            .unwrap(),
         };
         let mut partie = Partie::restaurer(etat(&partie, Vec::new())).unwrap();
         // Croc apprend l'attaque de la capsule, hors de la liste de son
@@ -455,6 +466,16 @@ mod tests {
         resultat
     }
 
+    /// Avant la version 14, l'enclos n'est pas agrandi : seuls les monstres
+    /// se comparent.
+    fn assert_memes_monstres(
+        relue: &bersemon_core::collection::Collection,
+        attendue: &bersemon_core::collection::Collection,
+    ) {
+        assert_eq!(relue.equipe(), attendue.equipe());
+        assert_eq!(relue.camp(), attendue.camp());
+    }
+
     fn texte_de_partie() -> String {
         serde_json::to_string(&format::depuis_partie(&partie_complete())).unwrap()
     }
@@ -542,10 +563,10 @@ mod tests {
 
     #[test]
     fn version_inconnue() {
-        let texte = texte_de_partie().replacen("\"version\":13", "\"version\":14", 1);
+        let texte = texte_de_partie().replacen("\"version\":14", "\"version\":15", 1);
         assert_eq!(
             charger_texte(&texte),
-            Err(ErreurSauvegarde::VersionInconnue(14))
+            Err(ErreurSauvegarde::VersionInconnue(15))
         );
     }
 
@@ -559,7 +580,7 @@ mod tests {
         assert_eq!(rechargee.capsules().count(), 0);
         // L'attaque déjà apprise reste : la capsule existe toujours dans le
         // jeu.
-        assert_eq!(rechargee.collection(), partie.collection());
+        assert_memes_monstres(rechargee.collection(), partie.collection());
     }
 
     #[test]
@@ -638,7 +659,7 @@ mod tests {
         objet.remove("capsules");
         let rechargee = charger_texte(&valeur.to_string()).unwrap().unwrap();
         assert_eq!(rechargee.argent(), 0);
-        assert_eq!(rechargee.collection(), partie.collection());
+        assert_memes_monstres(rechargee.collection(), partie.collection());
         assert_eq!(
             rechargee.expeditions_automatiques(),
             partie.expeditions_automatiques()
@@ -726,7 +747,7 @@ mod tests {
         assert!(partie.apotres_vaincus().is_empty());
         assert!(partie.humains_vaincus().is_empty());
         assert!(partie.conseils_vus().is_empty());
-        assert_eq!(partie.collection(), partie_complete().collection());
+        assert_memes_monstres(partie.collection(), partie_complete().collection());
     }
 
     #[test]
@@ -741,6 +762,36 @@ mod tests {
         assert!(partie.coffre_du_camp().pierres().is_empty());
         assert!(partie.sac().pierres().is_empty());
         assert_eq!(partie.coffre_du_camp().capsules_d_habilete(), 2);
+    }
+
+    #[test]
+    fn avant_la_version_14_gunther_est_au_camp_si_le_bourreau_est_vaincu() {
+        for (humains, attendu) in [
+            (vec!["brigand"], false),
+            (vec!["brigand", "bourreau"], true),
+        ] {
+            let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+            let objet = valeur.as_object_mut().unwrap();
+            objet.insert("version".to_string(), 13.into());
+            for champ in ["gunther_au_camp", "ameliorations", "chantier"] {
+                objet.remove(champ);
+            }
+            objet.insert("humains_vaincus".to_string(), humains.into());
+            let partie = charger_texte(&valeur.to_string()).unwrap().unwrap();
+            assert_eq!(partie.forge().est_au_camp(), attendu);
+            assert_eq!(partie.forge().ameliorations(), &Ameliorations::default());
+            assert_eq!(partie.forge().chantier(), None);
+        }
+    }
+
+    #[test]
+    fn des_ameliorations_sans_gunther_sont_refusees() {
+        let texte =
+            texte_de_partie().replace("\"gunther_au_camp\":true", "\"gunther_au_camp\":false");
+        assert!(matches!(
+            charger_texte(&texte),
+            Err(ErreurSauvegarde::Incoherente(_))
+        ));
     }
 
     #[test]

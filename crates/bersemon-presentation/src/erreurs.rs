@@ -1,7 +1,7 @@
 //! Choix refusés et sauvegardes impossibles, expliqués au joueur.
 
 use bersemon_core::capsule::ErreurApprentissage;
-use bersemon_core::collection::{Collection, ErreurCollection};
+use bersemon_core::collection::ErreurCollection;
 use bersemon_core::combat::ErreurCombat;
 use bersemon_core::deroulement::{ActionDeGestion, Choix, ErreurChoix};
 use bersemon_core::habilete::ErreurChangementDHabilete;
@@ -11,6 +11,7 @@ use bersemon_core::sauvegarde::ErreurSauvegarde;
 use bersemon_core::soin::ErreurSoin;
 
 use crate::expeditions_automatiques::erreur_expedition_automatique;
+use crate::forge::erreur_amelioration;
 use crate::partie::argent;
 use crate::soins::plus_aucun;
 
@@ -47,6 +48,7 @@ pub fn erreur_de_choix(choix: &Choix, erreur: &ErreurChoix) -> String {
             }
             ErreurChangementDHabilete::Collection(erreur) => erreur_collection(erreur),
         },
+        ErreurChoix::Amelioration(erreur) => erreur_amelioration(erreur),
         autre => format!("Action impossible : {autre}."),
     }
 }
@@ -127,13 +129,8 @@ pub fn erreur_de_combat(erreur: &ErreurCombat) -> String {
 pub fn erreur_collection(erreur: &ErreurCollection) -> String {
     match erreur {
         ErreurCollection::EmplacementInexistant(_) => "Ce monstre n'existe pas.".to_string(),
-        ErreurCollection::EquipePleine => format!(
-            "L'équipe compte déjà {} monstres.",
-            Collection::TAILLE_EQUIPE
-        ),
-        ErreurCollection::CampPlein => {
-            format!("Le camp est plein ({} monstres).", Collection::TAILLE_CAMP)
-        }
+        ErreurCollection::EquipePleine => "L'équipe est pleine.".to_string(),
+        ErreurCollection::CampPlein => "Le camp est plein.".to_string(),
         ErreurCollection::DernierMonstre => "Vous devez garder au moins un monstre.".to_string(),
         ErreurCollection::EmplacementEnDouble(_) => "Ce monstre est déjà choisi.".to_string(),
         autre => format!("Action impossible : {autre}."),

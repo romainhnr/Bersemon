@@ -452,6 +452,7 @@ fn l_equipe_et_le_camp_pleins_tiennent_dans_les_limites() {
         conseils_vus: Vec::new(),
         expeditions_automatiques: Vec::new(),
         attaques_a_choisir: Vec::new(),
+        forge: Default::default(),
     })
     .unwrap();
     let maintenant = Horodatage::depuis_secondes(0);
@@ -538,6 +539,7 @@ fn les_attaques_au_camp_se_choisissent_par_menu() {
         conseils_vus: Vec::new(),
         expeditions_automatiques: Vec::new(),
         attaques_a_choisir: Vec::new(),
+        forge: Default::default(),
     })
     .unwrap();
     let menus = |emplacement: Emplacement| -> Vec<(Cle, Vec<String>)> {
@@ -739,6 +741,7 @@ fn toute_l_equipe_se_prepare_d_un_bouton_s_il_y_a_de_la_place_au_camp() {
             conseils_vus: Vec::new(),
             expeditions_automatiques: Vec::new(),
             attaques_a_choisir: Vec::new(),
+            forge: Default::default(),
         })
         .unwrap()
     };
@@ -871,6 +874,7 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         conseils_vus: Vec::new(),
         expeditions_automatiques: Vec::new(),
         attaques_a_choisir: Vec::new(),
+        forge: Default::default(),
     };
     let afficher = |partie: &Partie, vue: Vue| {
         let question =

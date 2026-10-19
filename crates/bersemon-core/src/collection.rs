@@ -47,18 +47,8 @@ impl fmt::Display for ErreurCollection {
             ErreurCollection::EmplacementInexistant(emplacement) => {
                 write!(f, "aucun monstre à l'emplacement {emplacement:?}")
             }
-            ErreurCollection::EquipePleine => write!(
-                f,
-                "l'équipe compte déjà {} monstres",
-                Collection::TAILLE_EQUIPE
-            ),
-            ErreurCollection::CampPlein => {
-                write!(
-                    f,
-                    "le camp compte déjà {} monstres",
-                    Collection::TAILLE_CAMP
-                )
-            }
+            ErreurCollection::EquipePleine => write!(f, "l'équipe est pleine"),
+            ErreurCollection::CampPlein => write!(f, "le camp est plein"),
             ErreurCollection::DernierMonstre => {
                 write!(f, "le joueur doit garder au moins un monstre")
             }
@@ -86,8 +76,23 @@ pub enum TriDuCamp {
     Type,
 }
 
-/// L'équipe compte au plus 3 monstres et le camp au plus 30 (section 13.2).
-/// Au camp, l'équipe peut être vide, par exemple quand elle est partie tout
+/// Nombre de places de l'équipe et du camp (section 13.2), que les
+/// améliorations du camp augmentent (section 13.4).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Tailles {
+    pub equipe: usize,
+    pub camp: usize,
+}
+
+impl Tailles {
+    pub const DE_DEPART: Tailles = Tailles {
+        equipe: 3,
+        camp: 30,
+    };
+}
+
+/// L'équipe compte au départ au plus 3 monstres et le camp au plus 30
+/// (section 13.2). Au camp, l'équipe peut être vide, par exemple quand elle est partie tout
 /// entière en expédition automatique ; le joueur ne relâche jamais son
 /// dernier monstre, en comptant ceux qui sont partis.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -97,35 +102,53 @@ pub struct Collection {
     /// Une par monstre parti en expédition automatique : il garde sa place
     /// au camp, où il reviendra (section 12.1).
     places_reservees: usize,
+    tailles: Tailles,
 }
 
 impl Collection {
-    pub const TAILLE_EQUIPE: usize = 3;
-    pub const TAILLE_CAMP: usize = 30;
-
     /// Le monstre de départ forme seul la première équipe.
     pub fn new(premier: Monstre) -> Self {
         Self {
             equipe: vec![premier],
             camp: Vec::new(),
             places_reservees: 0,
+            tailles: Tailles::DE_DEPART,
         }
     }
 
     /// Reconstitue la collection depuis une sauvegarde, en revérifiant les
     /// tailles de l'équipe et du camp.
-    pub fn restaurer(equipe: Vec<Monstre>, camp: Vec<Monstre>) -> Result<Self, ErreurCollection> {
-        if equipe.len() > Self::TAILLE_EQUIPE {
-            return Err(ErreurCollection::EquipePleine);
-        }
-        if camp.len() > Self::TAILLE_CAMP {
-            return Err(ErreurCollection::CampPlein);
-        }
-        Ok(Self {
+    pub fn restaurer(
+        equipe: Vec<Monstre>,
+        camp: Vec<Monstre>,
+        tailles: Tailles,
+    ) -> Result<Self, ErreurCollection> {
+        let mut collection = Self {
             equipe,
             camp,
             places_reservees: 0,
-        })
+            tailles: Tailles::DE_DEPART,
+        };
+        collection.definir_tailles(tailles)?;
+        Ok(collection)
+    }
+
+    pub fn tailles(&self) -> Tailles {
+        self.tailles
+    }
+
+    /// Après une amélioration du camp, ou à la reprise d'une sauvegarde :
+    /// refusé si les monstres présents, places réservées comprises, ne
+    /// tiennent pas.
+    pub(crate) fn definir_tailles(&mut self, tailles: Tailles) -> Result<(), ErreurCollection> {
+        if self.equipe.len() > tailles.equipe {
+            return Err(ErreurCollection::EquipePleine);
+        }
+        if self.camp.len() + self.places_reservees > tailles.camp {
+            return Err(ErreurCollection::CampPlein);
+        }
+        self.tailles = tailles;
+        Ok(())
     }
 
     pub fn equipe(&self) -> &[Monstre] {
@@ -167,7 +190,7 @@ impl Collection {
     /// Le monstre rejoint la fin de l'équipe.
     pub fn faire_venir(&mut self, index_camp: usize) -> Result<(), ErreurCollection> {
         self.verifier(Emplacement::Camp(index_camp))?;
-        if self.equipe.len() >= Self::TAILLE_EQUIPE {
+        if self.equipe.len() >= self.tailles.equipe {
             return Err(ErreurCollection::EquipePleine);
         }
         let monstre = self.camp.remove(index_camp);
@@ -252,7 +275,7 @@ impl Collection {
     /// Le monstre capturé rejoint l'équipe s'il y a de la place, sinon le
     /// camp (Q12).
     pub fn accueillir_capture(&mut self, capture: Monstre) -> Placement {
-        if self.equipe.len() < Self::TAILLE_EQUIPE {
+        if self.equipe.len() < self.tailles.equipe {
             self.equipe.push(capture);
             Placement::Equipe(self.equipe.len() - 1)
         } else if self.places_libres_au_camp() > 0 {
@@ -343,7 +366,9 @@ impl Collection {
     /// automatique : d'abord à la suite de l'équipe, tant qu'elle n'est pas
     /// pleine, puis à la fin du camp (section 12.7).
     pub(crate) fn places_du_retour(&self, nombre: usize) -> Vec<Emplacement> {
-        let dans_l_equipe = Self::TAILLE_EQUIPE
+        let dans_l_equipe = self
+            .tailles
+            .equipe
             .saturating_sub(self.equipe.len())
             .min(nombre);
         let equipe = (0..dans_l_equipe).map(|rang| Emplacement::Equipe(self.equipe.len() + rang));
@@ -374,7 +399,7 @@ impl Collection {
         &mut self,
         nombre: usize,
     ) -> Result<(), ErreurCollection> {
-        if self.camp.len() + nombre > Self::TAILLE_CAMP {
+        if self.camp.len() + nombre > self.tailles.camp {
             return Err(ErreurCollection::CampPlein);
         }
         self.places_reservees = nombre;
@@ -382,7 +407,9 @@ impl Collection {
     }
 
     fn places_libres_au_camp(&self) -> usize {
-        Self::TAILLE_CAMP.saturating_sub(self.camp.len() + self.places_reservees)
+        self.tailles
+            .camp
+            .saturating_sub(self.camp.len() + self.places_reservees)
     }
 
     /// Pour les soins hors combat, comme une potion entre deux étapes.
@@ -474,8 +501,12 @@ mod tests {
             creer("Éclair", &[Type::Feu], 9),
             creer("brume", &[Type::Normal], 5),
         ];
-        let mut collection =
-            Collection::restaurer(vec![creer("Chef", &[Type::Normal], 5)], camp).unwrap();
+        let mut collection = Collection::restaurer(
+            vec![creer("Chef", &[Type::Normal], 5)],
+            camp,
+            Tailles::DE_DEPART,
+        )
+        .unwrap();
         let noms = |collection: &Collection| -> Vec<String> {
             collection
                 .camp()
@@ -678,21 +709,31 @@ mod tests {
     #[test]
     fn restaurer_reverifie_les_tailles() {
         let trois = || vec![monstre_nomme("a"), monstre_nomme("b"), monstre_nomme("c")];
-        assert!(Collection::restaurer(trois(), trois()).is_ok());
-        assert!(Collection::restaurer(vec![], trois()).is_ok());
+        assert!(Collection::restaurer(trois(), trois(), Tailles::DE_DEPART).is_ok());
+        assert!(Collection::restaurer(vec![], trois(), Tailles::DE_DEPART).is_ok());
         let mut quatre = trois();
         quatre.push(monstre_nomme("d"));
         assert_eq!(
-            Collection::restaurer(quatre, vec![]),
+            Collection::restaurer(quatre, vec![], Tailles::DE_DEPART),
             Err(ErreurCollection::EquipePleine)
         );
         let trente_et_un = (0..31)
             .map(|numero| monstre_nomme(&format!("c{numero}")))
             .collect();
         assert_eq!(
-            Collection::restaurer(trois(), trente_et_un),
+            Collection::restaurer(trois(), trente_et_un, Tailles::DE_DEPART),
             Err(ErreurCollection::CampPlein)
         );
+        // L'enclos agrandi les accueille (section 13.4).
+        let agrandi = Tailles {
+            camp: 40,
+            ..Tailles::DE_DEPART
+        };
+        let trente_et_un: Vec<Monstre> = (0..31)
+            .map(|numero| monstre_nomme(&format!("c{numero}")))
+            .collect();
+        let collection = Collection::restaurer(trois(), trente_et_un, agrandi).unwrap();
+        assert_eq!(collection.tailles().camp, 40);
     }
 
     #[test]
@@ -816,7 +857,9 @@ mod tests {
         let camp_plein = (1..=30)
             .map(|numero| monstre_nomme(&format!("c{numero}")))
             .collect();
-        let mut collection = Collection::restaurer(vec![monstre_nomme("a")], camp_plein).unwrap();
+        let mut collection =
+            Collection::restaurer(vec![monstre_nomme("a")], camp_plein, Tailles::DE_DEPART)
+                .unwrap();
         assert_eq!(
             collection.retirer_pour_expedition(&[Emplacement::Equipe(0)]),
             Err(ErreurCollection::CampPlein)

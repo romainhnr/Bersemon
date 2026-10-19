@@ -7,6 +7,7 @@
 
 pub mod aleatoire;
 pub mod ame;
+pub mod amelioration;
 pub mod attaque;
 pub mod capsule;
 pub mod capture;

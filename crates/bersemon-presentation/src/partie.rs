@@ -20,6 +20,7 @@ use bersemon_core::ressource::Ressource;
 use bersemon_core::zone::Zone;
 
 use crate::expeditions_automatiques::question_de_rappel;
+use crate::forge::question_de_lancement;
 use crate::monstres::{decrire_stats, effet_d_habilete, ligne_monstre, nom, types_de};
 use crate::soins::{liste_de_soins, question_du_soin_perdu};
 
@@ -31,7 +32,7 @@ pub fn collection(collection: &Collection) -> String {
     let mut lignes = vec![format!(
         "Équipe ({}/{}) :",
         equipe.len(),
-        Collection::TAILLE_EQUIPE
+        collection.tailles().equipe
     )];
     // Au camp, l'équipe peut être vide (section 13.2).
     if equipe.is_empty() {
@@ -47,7 +48,7 @@ pub fn collection(collection: &Collection) -> String {
     lignes.push(format!(
         "Camp ({}/{}) :",
         camp.len(),
-        Collection::TAILLE_CAMP
+        collection.tailles().camp
     ));
     if camp.is_empty() {
         lignes.push("  aucun monstre".to_string());
@@ -226,9 +227,9 @@ pub fn places_pour_une_capture(collection: &Collection) -> String {
     format!(
         "Place pour vos captures : équipe {}/{}, camp {}/{}.",
         collection.equipe().len(),
-        Collection::TAILLE_EQUIPE,
+        collection.tailles().equipe,
         collection.camp().len() + collection.places_reservees(),
-        Collection::TAILLE_CAMP
+        collection.tailles().camp
     )
 }
 
@@ -418,6 +419,7 @@ pub fn question_de_confirmation(confirmation: &Confirmation) -> String {
             nouvelle.nom(),
             effet_d_habilete(*nouvelle)
         ),
+        Confirmation::LancerAmelioration(plan) => question_de_lancement(plan),
         Confirmation::Evoluer {
             monstre,
             vers,

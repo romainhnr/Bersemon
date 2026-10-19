@@ -11,6 +11,7 @@ use std::ops::RangeInclusive;
 use std::time::Duration;
 
 use crate::ame::{Gardien, MarchandId, MarchandMort};
+use crate::amelioration::{Amelioration, PlanDAmelioration};
 use crate::attaque::{Attaque, AttaqueId, Categorie, EffetSecondaire};
 use crate::capsule::Capsule;
 use crate::catalogue::Catalogue;
@@ -102,6 +103,9 @@ const AVANT_LE_BOURREAU: &str = "Au cœur du Marais, sous un gibet chargé de co
 
 const APRES_LE_BOURREAU: &str = "Le bourreau s'effondre dans la vase, sa hache brisée.";
 
+// Après la victoire sur le Bourreau (section 13.4).
+const LIBERATION_DE_GUNTHER: &str = "Derrière le gibet, un homme enchaîné relève la tête : Gunther, forgeron, que le bourreau gardait pour forger ses chaînes. Libéré, il vous suit jusqu'au camp et y installe sa forge.";
+
 const AVANT_LE_BARON: &str = "Au fond de la Vallée, la brume se déchire sur un gibet dressé contre le ciel. Le Baron pendu, Apôtre du Démiurge, s'y balance encore, puis ouvre les yeux. Il n'y aura pas de fuite.";
 
 const EPILOGUE: &str = "Le Baron pendu s'effondre au pied de son gibet. Sur sa poitrine, un sceau gravé d'une main ouverte : le signe du Démiurge. D'autres Apôtres portent ce sceau, au-delà des terres connues. Votre traque ne fait que commencer.";
@@ -129,6 +133,7 @@ pub struct ContenuV1 {
     zones: Vec<Zone>,
     piste: Piste,
     capsules: Vec<Capsule>,
+    plans_d_amelioration: Vec<PlanDAmelioration>,
 }
 
 impl ContenuV1 {
@@ -188,7 +193,8 @@ impl ContenuV1 {
             APRES_LE_BOURREAU,
         )
         .expect("Bourreau conforme aux règles")
-        .avec_ia(IaHumain::Relevee);
+        .avec_ia(IaHumain::Relevee)
+        .liberant_gunther(LIBERATION_DE_GUNTHER);
         // Un marchand mort par zone, dont le joueur donne l'âme à Malvoise
         // (section 14.2).
         let marchand = |id: &str, nom: &str, soin, gardien, avant: &str, apres: &str| {
@@ -305,11 +311,36 @@ impl ContenuV1 {
             baron,
         )
         .expect("piste conforme aux règles");
+        let ressource = |id: &str| {
+            especes
+                .iter()
+                .filter_map(Espece::ressource)
+                .find(|ressource| ressource.id().as_str() == id)
+                .cloned()
+                .unwrap_or_else(|| panic!("ressource {id} absente du contenu"))
+        };
+        let plans_d_amelioration = PLANS_D_AMELIORATION
+            .iter()
+            .map(|(amelioration, niveau, cout, heures)| {
+                let cout = cout
+                    .iter()
+                    .map(|(id, nombre)| (ressource(id), *nombre))
+                    .collect();
+                PlanDAmelioration::new(
+                    *amelioration,
+                    *niveau,
+                    cout,
+                    Duration::from_secs(heures * 3_600),
+                )
+                .expect("plan d'amélioration conforme aux règles")
+            })
+            .collect();
         Self {
             especes,
             zones: vec![lisiere, marais, vallee],
             piste,
             capsules,
+            plans_d_amelioration,
         }
     }
 
@@ -344,6 +375,22 @@ impl ContenuV1 {
 
     pub fn piste(&self) -> &Piste {
         &self.piste
+    }
+
+    /// Ce que coûte chaque niveau d'amélioration du camp (section 13.4), dans
+    /// l'ordre de docs/contenu-v1.md, section 9.
+    pub fn plans_d_amelioration(&self) -> &[PlanDAmelioration] {
+        &self.plans_d_amelioration
+    }
+
+    pub fn plan_d_amelioration(
+        &self,
+        amelioration: Amelioration,
+        niveau: u8,
+    ) -> Option<&PlanDAmelioration> {
+        self.plans_d_amelioration
+            .iter()
+            .find(|plan| plan.amelioration() == amelioration && plan.niveau() == niveau)
     }
 
     /// Toutes les capsules d'attaque, que le marchand vend (section 14.2),
@@ -1626,6 +1673,53 @@ fn creer_evolution(fiche: &FicheEvolution) -> Evolution {
     )
 }
 
+/// Section 9 de docs/contenu-v1.md : amélioration, niveau atteint,
+/// ressources et durée en heures.
+type FichePlan = (Amelioration, u8, &'static [(&'static str, u32)], u64);
+
+const PLANS_D_AMELIORATION: [FichePlan; 6] = [
+    (
+        Amelioration::Enclos,
+        1,
+        &[
+            ("croc-de-loup", 5),
+            ("plume-de-corbeau", 5),
+            ("ecaille-de-vipere", 5),
+        ],
+        1,
+    ),
+    (
+        Amelioration::Enclos,
+        2,
+        &[("cendre-de-feu-follet", 6), ("fragment-d-armure", 6)],
+        2,
+    ),
+    (
+        Amelioration::Enclos,
+        3,
+        &[("aile-de-fee-noire", 6), ("os-de-squelette", 6)],
+        4,
+    ),
+    (
+        Amelioration::Filets,
+        1,
+        &[("croc-de-loup", 4), ("ecaille-de-vipere", 4)],
+        1,
+    ),
+    (
+        Amelioration::Filets,
+        2,
+        &[("cendre-de-feu-follet", 5), ("fragment-d-armure", 5)],
+        3,
+    ),
+    (
+        Amelioration::Filets,
+        3,
+        &[("aile-de-fee-noire", 5), ("os-de-squelette", 5)],
+        6,
+    ),
+];
+
 /// Ce que Malvoise donne d'une ressource, selon la rareté de son espèce
 /// (section 14.3, Q82).
 const PRIX_D_UNE_RESSOURCE_COMMUNE: u32 = 5;
@@ -1891,6 +1985,24 @@ mod tests {
             };
             assert_eq!(espece.rarete(), attendue, "{}", espece.id().as_str());
         }
+    }
+
+    #[test]
+    fn chaque_niveau_d_amelioration_a_son_plan() {
+        let contenu = ContenuV1::new();
+        for amelioration in Amelioration::TOUTES {
+            for niveau in 1..=amelioration.niveau_max() {
+                let plan = contenu
+                    .plan_d_amelioration(amelioration, niveau)
+                    .unwrap_or_else(|| panic!("{} {niveau} sans plan", amelioration.nom()));
+                // Seules des ressources de monstres sauvages, que Malvoise
+                // rachète, se dépensent (section 13.4).
+                for (ressource, _) in plan.cout() {
+                    assert_eq!(contenu.ressource(ressource.id()).as_ref(), Some(ressource));
+                }
+            }
+        }
+        assert_eq!(contenu.plans_d_amelioration().len(), 6);
     }
 
     #[test]

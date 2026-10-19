@@ -293,6 +293,7 @@ mod tests {
             conseils_vus: Vec::new(),
             expeditions_automatiques: Vec::new(),
             attaques_a_choisir: Vec::new(),
+            forge: Default::default(),
         })
         .unwrap();
         partie
