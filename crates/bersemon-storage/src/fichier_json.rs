@@ -67,6 +67,14 @@ impl SauvegardeRepository for FichierJson {
         fs::write(&temporaire, texte).map_err(acces)?;
         fs::rename(&temporaire, &self.chemin).map_err(acces)
     }
+
+    fn supprimer(&self) -> Result<(), ErreurSauvegarde> {
+        match fs::remove_file(&self.chemin) {
+            Ok(()) => Ok(()),
+            Err(erreur) if erreur.kind() == io::ErrorKind::NotFound => Ok(()),
+            Err(erreur) => Err(acces(erreur)),
+        }
+    }
 }
 
 fn acces(erreur: io::Error) -> ErreurSauvegarde {
@@ -321,6 +329,21 @@ mod tests {
     fn aucune_sauvegarde() {
         let chemin = chemin_de_test("absente");
         assert_eq!(FichierJson::new(&chemin).charger(&catalogue()), Ok(None));
+    }
+
+    #[test]
+    fn une_sauvegarde_supprimee_n_existe_plus() {
+        let chemin = chemin_de_test("suppression");
+        let fichier = FichierJson::new(&chemin);
+        fichier.enregistrer(&partie_complete()).unwrap();
+        let supprimee = fichier.supprimer();
+        let rechargee = fichier.charger(&catalogue());
+        // Supprimer une sauvegarde absente ne fait rien.
+        let encore = fichier.supprimer();
+        nettoyer(&chemin);
+        assert_eq!(supprimee, Ok(()));
+        assert_eq!(rechargee, Ok(None));
+        assert_eq!(encore, Ok(()));
     }
 
     #[test]

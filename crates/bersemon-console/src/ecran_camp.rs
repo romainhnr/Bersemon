@@ -1,7 +1,8 @@
 //! Camp de base : départ en expédition par la carte, expéditions
 //! automatiques, gestion des monstres (section 13.2), coffre du camp (section
-//! 13.3), codex et marchand. Les monstres sont désignés par leur numéro dans
-//! la liste de la collection : l'équipe d'abord, le camp ensuite.
+//! 13.3), codex, marchand et options (section 13.9). Les monstres sont
+//! désignés par leur numéro dans la liste de la collection : l'équipe
+//! d'abord, le camp ensuite.
 
 use bersemon_core::collection::{Collection, Emplacement, TriDuCamp};
 use bersemon_core::contenu::ContenuV1;
@@ -72,7 +73,9 @@ pub fn choisir(
         if marchand {
             println!("  6. Voir le marchand");
         }
-        let quitter = if marchand { 7 } else { 6 };
+        let options = if marchand { 7 } else { 6 };
+        println!("  {options}. Options");
+        let quitter = options + 1;
         println!("  {quitter}. Quitter");
         let choix = match entree.choix(1, quitter)? {
             1 => carte(partie, contenu, entree)?,
@@ -93,12 +96,24 @@ pub fn choisir(
                 menu.ouvert = SousMenu::Marchand;
                 None
             }
+            numero if numero == options => choisir_une_option(entree)?,
             _ => return None,
         };
         if choix.is_some() {
             return choix;
         }
     }
+}
+
+/// `Some(None)` au retour vers le menu du camp. Le déroulement demande
+/// ensuite confirmation du suicide (section 13.9).
+fn choisir_une_option(entree: &mut Entree) -> Option<Option<Choix>> {
+    println!();
+    println!("Options :");
+    println!("  1. Se suicider (la partie est effacée)");
+    println!("  0. Retour au camp");
+    let choix = entree.choix(0, 1)?;
+    Some((choix == 1).then_some(Choix::SeSuicider))
 }
 
 /// `Some(None)` si le joueur reste au camp.

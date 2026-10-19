@@ -126,7 +126,7 @@ impl Annonces {
                 Evenement::ExpeditionAutomatiqueRentree { bilan, .. } => {
                     self.oublier(joueur, Some(&bilan.zone));
                 }
-                Evenement::PartieCommencee(_) => self.oublier(joueur, None),
+                Evenement::PartieCommencee(_) | Evenement::Suicide => self.oublier(joueur, None),
                 _ => {}
             }
         }

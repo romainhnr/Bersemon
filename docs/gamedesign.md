@@ -216,6 +216,7 @@ Le joueur peut :
 - Les monstres gagnent de l'expérience et montent de niveau, du niveau 1 au niveau 100.
 - Le monstre de départ est au niveau 5.
 - Courbe d'expérience, la même pour toutes les espèces : il faut n x n x n XP au total pour atteindre le niveau n (125 au niveau 5, 216 au niveau 6, 1 000 000 au niveau 100). Un monstre créé au niveau n commence avec n x n x n XP. Au niveau 100, il ne gagne plus d'XP.
+- Après la V1 (19/10/2026), la fiche d'un monstre et chaque gain d'XP montrent son XP totale et celle qu'il faut au total pour le niveau suivant : un Loup de niveau 5 qui a 130 XP affiche « XP : 130/216 », et un gain s'écrit « Loup gagne 45 XP (175/216). ». Au niveau 100, « niveau maximum » remplace l'XP du niveau suivant.
 - À chaque niveau gagné, les stats sont recalculées et les PV actuels augmentent d'autant que les PV max.
 - XP rapportée par un monstre sauvage vaincu, c'est-à-dire mis KO ou capturé : rendement de son espèce x son niveau / 7, multiplié par un pourcentage tiré de 90 % à 110 %, en divisions entières. Exemple : un monstre de niveau 5 et de rendement 64 rapporte de 40 à 49 XP.
 - Chaque monstre de l'équipe qui a été actif face au monstre vaincu et qui n'est pas KO à la fin du combat reçoit cette XP en entier.
@@ -519,6 +520,7 @@ Le joueur peut construire des machines pour automatiser certaines tâches, par e
 - Elle garde aussi l'avancée de la traque (indices trouvés, Apôtres vaincus) et les conseils du tutoriel déjà montrés.
 - Après la V1, elle garde les expéditions automatiques en cours : zone, monstres envoyés, heures de départ et de retour (section 12). Elle garde aussi les attaques qui restent à choisir après l'accueil d'une expédition (section 12.7). Le départ, le rappel et l'accueil d'une expédition automatique sont des actions au camp, suivies d'une sauvegarde.
 - Avec l'économie, elle garde aussi l'argent du joueur, la présence du marchand au camp et les capsules d'attaque obtenues (section 14). Les achats et les ventes sont des actions au camp, suivies d'une sauvegarde.
+- Après la V1 (19/10/2026), un sous-menu « Options » du camp permet au joueur de se suicider, après confirmation, pour recommencer sans attendre la reprise au lancement. La sauvegarde est effacée dès la confirmation, avec le héros, les monstres, le sac, le coffre, le codex et les expéditions automatiques en cours ; un court texte suit, puis la création d'un nouveau héros. Ce n'est possible qu'au camp. Le texte est dans docs/contenu-v1.md, section 4.
 
 ### 13.10 Attaques des monstres
 
@@ -872,3 +874,8 @@ Les questions Q72 et suivantes ont été relevées le 18/10/2026 après les essa
 - Le compteur « [Étape : 2/3] » est en haut de chaque écran d'expédition, combats compris ; l'annonce d'une étape devient « Étape 2/3. ». Entre deux étapes, l'écran montre le contenu du sac, qu'une défaite ferait perdre.
 - Le conseil du premier arrêt entre deux étapes parle du sac et du coffre, à la place des potions perdues.
 - Sauvegarde en version 7, avec le sac et le coffre ; les versions 1 à 6 se lisent, tout rangé au coffre.
+
+19/10/2026 (XP et suicide, à la suite de l'étape 26, sur la même branche) :
+
+- XP : la fiche d'un monstre (gestion, attaques) et chaque gain d'XP, en combat comme au retour d'une expédition automatique, montrent l'XP totale et celle du niveau suivant, « XP : 130/216 » (section 7). Les listes de monstres restent sans XP.
+- Suicide : sous-menu « Options » au camp, dans la console et sur Discord, avec « Se suicider » et une confirmation ; la sauvegarde est effacée dès la confirmation, puis un nouveau héros est créé (section 13.9). Le bot n'annonce plus les retours des expéditions de la partie effacée.

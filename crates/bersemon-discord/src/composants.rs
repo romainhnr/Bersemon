@@ -42,6 +42,8 @@ pub enum Vue {
     Attaques(Emplacement),
     /// Le sac et le coffre du camp (section 13.3).
     Coffre,
+    /// Le suicide du héros, pour recommencer (section 13.9).
+    Options,
 }
 
 /// Monstres choisis pour une expédition automatique, dans l'ordre du choix
@@ -191,6 +193,7 @@ pub enum Cle {
     /// Menu de ce que contient le sac.
     RangerAuCoffre,
     ToutRanger,
+    SeSuicider,
 }
 
 impl Cle {
@@ -281,6 +284,7 @@ impl Cle {
             Cle::SortirDuCoffre => jouer(Choix::SortirDuCoffre(lire_objet(valeur?)?)),
             Cle::RangerAuCoffre => jouer(Choix::RangerAuCoffre(lire_objet(valeur?)?)),
             Cle::ToutRanger => jouer(Choix::ToutRangerAuCoffre),
+            Cle::SeSuicider => jouer(Choix::SeSuicider),
         }
     }
 
@@ -313,6 +317,7 @@ impl Cle {
                 format!("vue:attaques:{}", emplacement_en_texte(*emplacement))
             }
             Cle::Afficher(Vue::Coffre) => "vue:coffre".to_string(),
+            Cle::Afficher(Vue::Options) => "vue:options".to_string(),
             Cle::Fiche => "fiche".to_string(),
             Cle::Choisir(numero) => format!("choisir:{numero}"),
             Cle::Monter(index) => format!("monter:{index}"),
@@ -377,6 +382,7 @@ impl Cle {
             Cle::SortirDuCoffre => "sortir-du-coffre".to_string(),
             Cle::RangerAuCoffre => "ranger-au-coffre".to_string(),
             Cle::ToutRanger => "tout-ranger".to_string(),
+            Cle::SeSuicider => "se-suicider".to_string(),
         }
     }
 
@@ -408,6 +414,8 @@ impl Cle {
             "sortir-du-coffre" => Cle::SortirDuCoffre,
             "ranger-au-coffre" => Cle::RangerAuCoffre,
             "tout-ranger" => Cle::ToutRanger,
+            "vue:options" => Cle::Afficher(Vue::Options),
+            "se-suicider" => Cle::SeSuicider,
             "acheter-capsule" => Cle::AcheterCapsule,
             "fiche" => Cle::Fiche,
             "continuer" => Cle::Continuer,
@@ -653,6 +661,8 @@ mod tests {
             Cle::SortirDuCoffre,
             Cle::RangerAuCoffre,
             Cle::ToutRanger,
+            Cle::Afficher(Vue::Options),
+            Cle::SeSuicider,
         ]
     }
 

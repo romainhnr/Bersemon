@@ -166,6 +166,17 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             format!("Sauvegarde impossible : {}.", erreur_sauvegarde(erreur)),
             false,
         ),
+        Evenement::Suicide => (
+            "Vous retournez votre lame contre vous. Le feu du camp s'éteint, vos monstres se dispersent dans la nuit, et votre nom s'efface des routes. Ailleurs, une autre âme se relève parmi les cendres.".to_string(),
+            true,
+        ),
+        Evenement::EffacementImpossible(erreur) => (
+            format!(
+                "La sauvegarde n'a pas pu être effacée : {}. Elle sera remplacée à la création de votre nouveau héros.",
+                erreur_sauvegarde(erreur)
+            ),
+            true,
+        ),
         Evenement::ExpeditionAutomatiquePartie(expedition) => {
             (expeditions_automatiques::depart(expedition), true)
         }

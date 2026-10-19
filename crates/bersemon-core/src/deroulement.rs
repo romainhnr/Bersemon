@@ -84,6 +84,9 @@ pub enum Choix {
     SortirDuCoffre(Objet),
     /// Au camp : tout le sac rejoint le coffre.
     ToutRangerAuCoffre,
+    /// Au camp, après confirmation : la sauvegarde est effacée et une
+    /// nouvelle partie commence (section 13.9).
+    SeSuicider,
     /// Au camp, gratuitement : une attaque de `Partie::attaques_a_apprendre`.
     /// S'il en connaît déjà 4, le monstre oublie celle en position
     /// `oubliee`, que l'interface a fait choisir au joueur (section 13.10).
@@ -180,6 +183,8 @@ pub enum Confirmation {
         monstre: Monstre,
         prix: u32,
     },
+    /// La partie de ce héros serait effacée pour de bon (section 13.9).
+    Suicide(Heros),
 }
 
 /// Ce qui s'est passé, dans l'ordre. Les monstres et les combats sont des
@@ -292,6 +297,11 @@ pub enum Evenement {
     SortiDuCoffre(Inventaire),
     /// La partie continue : la sauvegarde sera retentée plus tard.
     SauvegardeImpossible(ErreurSauvegarde),
+    /// La partie est effacée ; un nouveau héros est à créer (section 13.9).
+    Suicide,
+    /// L'ancienne sauvegarde reste jusqu'à la création du nouveau héros, qui
+    /// la remplacera.
+    EffacementImpossible(ErreurSauvegarde),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -363,6 +373,8 @@ enum Reponse {
     AConfirmer(Box<Confirmation>),
     /// L'expédition est finie : il reste à rentrer au camp.
     RetourAuCamp,
+    /// Après le suicide du héros : un nouveau héros est à créer.
+    NouvellePartie,
 }
 
 impl Reponse {
@@ -437,8 +449,10 @@ impl Deroulement {
             Etat::EnJeu(jeu) => jeu.appliquer(&choix, confirme, contexte, &mut evenements)?,
             _ => self.accueillir(&choix, confirme, contexte, &mut evenements)?,
         };
-        if let Reponse::AConfirmer(confirmation) = reponse {
-            self.a_confirmer = Some((choix, *confirmation));
+        match reponse {
+            Reponse::AConfirmer(confirmation) => self.a_confirmer = Some((choix, *confirmation)),
+            Reponse::NouvellePartie => self.etat = Etat::NomDuHeros,
+            Reponse::Faite | Reponse::RetourAuCamp => {}
         }
         Ok(evenements)
     }
@@ -761,6 +775,17 @@ impl EnJeu {
                 });
                 sauvegarder(&self.partie, contexte.depot, evenements);
                 Ok(Reponse::Faite)
+            }
+            Choix::SeSuicider => {
+                if !confirme {
+                    let heros = self.partie.heros().clone();
+                    return Ok(Reponse::a_confirmer(Confirmation::Suicide(heros)));
+                }
+                if let Err(erreur) = contexte.depot.supprimer() {
+                    evenements.push(Evenement::EffacementImpossible(erreur));
+                }
+                evenements.push(Evenement::Suicide);
+                Ok(Reponse::NouvellePartie)
             }
             _ => Err(ErreurChoix::HorsDePropos),
         }
@@ -1457,6 +1482,14 @@ mod tests {
             self.sauvegardes.borrow_mut().push(partie.clone());
             Ok(())
         }
+
+        fn supprimer(&self) -> Result<(), ErreurSauvegarde> {
+            if self.en_panne {
+                return Err(ErreurSauvegarde::Acces("panne".to_string()));
+            }
+            self.sauvegardes.borrow_mut().clear();
+            Ok(())
+        }
     }
 
     /// Réponses données sans tirage aléatoire.
@@ -1575,6 +1608,53 @@ mod tests {
 
         repondre_sans_tirage(&mut deroulement, Choix::NouvellePartie, &contenu, &depot).unwrap();
         repondre_sans_tirage(&mut deroulement, Choix::Oui, &contenu, &depot).unwrap();
+        assert_eq!(deroulement.attente(), Attente::NomDuHeros);
+    }
+
+    #[test]
+    fn le_suicide_efface_la_sauvegarde_apres_confirmation() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let partie = partie(&contenu);
+        depot.enregistrer(&partie).unwrap();
+        let mut deroulement = au_camp(partie.clone(), &contenu, &depot);
+
+        repondre_sans_tirage(&mut deroulement, Choix::SeSuicider, &contenu, &depot).unwrap();
+        assert_eq!(
+            deroulement.attente(),
+            Attente::Confirmation(&Confirmation::Suicide(partie.heros().clone()))
+        );
+        repondre_sans_tirage(&mut deroulement, Choix::Non, &contenu, &depot).unwrap();
+        assert_eq!(deroulement.attente(), Attente::Camp);
+        assert_eq!(depot.charger(&contenu), Ok(Some(partie)));
+
+        repondre_sans_tirage(&mut deroulement, Choix::SeSuicider, &contenu, &depot).unwrap();
+        let evenements =
+            repondre_sans_tirage(&mut deroulement, Choix::Oui, &contenu, &depot).unwrap();
+        assert_eq!(evenements, vec![Evenement::Suicide]);
+        assert_eq!(deroulement.attente(), Attente::NomDuHeros);
+        assert!(deroulement.partie().is_none());
+        assert_eq!(depot.charger(&contenu), Ok(None));
+    }
+
+    #[test]
+    fn un_effacement_impossible_n_empeche_pas_de_recommencer() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire {
+            en_panne: true,
+            ..DepotMemoire::default()
+        };
+        let mut deroulement = au_camp(partie(&contenu), &contenu, &depot);
+        repondre_sans_tirage(&mut deroulement, Choix::SeSuicider, &contenu, &depot).unwrap();
+        let evenements =
+            repondre_sans_tirage(&mut deroulement, Choix::Oui, &contenu, &depot).unwrap();
+        assert_eq!(
+            evenements,
+            vec![
+                Evenement::EffacementImpossible(ErreurSauvegarde::Acces("panne".to_string())),
+                Evenement::Suicide,
+            ]
+        );
         assert_eq!(deroulement.attente(), Attente::NomDuHeros);
     }
 

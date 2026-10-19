@@ -157,14 +157,15 @@ impl Joueurs {
     }
 }
 
-/// Le camp s'ouvre sur sa vue principale au retour d'expédition. La gestion
+/// Le camp s'ouvre sur sa vue principale au retour d'expédition et au début
+/// d'une partie, même après un suicide décidé depuis les options. La gestion
 /// des monstres reste ouverte d'une action à l'autre, comme dans la console,
 /// mais le monstre choisi est oublié : sa place a pu changer. Après le départ
 /// ou l'accueil d'une expédition automatique, le joueur retrouve la liste des
 /// expéditions.
 fn vue_apres(vue: Vue, choix: &Choix) -> Vue {
     match (vue, choix) {
-        (_, Choix::PartirEnExpedition(_)) => Vue::Camp,
+        (_, Choix::PartirEnExpedition(_)) | (_, Choix::Classe(_)) => Vue::Camp,
         (_, Choix::EnvoyerEnExpeditionAutomatique { .. })
         | (_, Choix::AccueillirExpeditionAutomatique(_)) => Vue::Expeditions,
         (Vue::Gestion(Some(_)), _) => Vue::Gestion(None),
@@ -340,6 +341,43 @@ mod tests {
         let partir = Choix::PartirEnExpedition(ZoneId::new("lisiere"));
         repondre(&mut joueurs, 1, partir, &contenu).unwrap();
         assert_eq!(joueurs.session(1, &contenu).vue, Vue::Camp);
+        let _ = fs::remove_dir_all(dossier);
+    }
+
+    #[test]
+    fn le_suicide_efface_la_sauvegarde_et_la_partie_suivante_s_ouvre_au_camp() {
+        let contenu = ContenuV1::new();
+        let dossier = dossier_de_test();
+        let mut joueurs = Joueurs::new(dossier.clone(), 1);
+        for choix in [
+            Choix::NomDuHeros("Aldric".to_string()),
+            Choix::Classe(Classe::Mage),
+        ] {
+            repondre(&mut joueurs, 1, choix, &contenu).unwrap();
+        }
+        let sauvegarde = dossier.join("1.json");
+        assert!(sauvegarde.exists());
+        let version = joueurs.session(1, &contenu).version;
+        joueurs
+            .afficher(1, version, Vue::Options, &contenu)
+            .unwrap();
+        repondre(&mut joueurs, 1, Choix::SeSuicider, &contenu).unwrap();
+        let evenements = repondre(&mut joueurs, 1, Choix::Oui, &contenu).unwrap();
+        assert_eq!(evenements, vec![Evenement::Suicide]);
+        assert!(!sauvegarde.exists());
+        assert_eq!(
+            joueurs.session(1, &contenu).deroulement.attente(),
+            Attente::NomDuHeros
+        );
+
+        for choix in [
+            Choix::NomDuHeros("Ysolde".to_string()),
+            Choix::Classe(Classe::Templier),
+        ] {
+            repondre(&mut joueurs, 1, choix, &contenu).unwrap();
+        }
+        assert_eq!(joueurs.session(1, &contenu).vue, Vue::Camp);
+        assert!(sauvegarde.exists());
         let _ = fs::remove_dir_all(dossier);
     }
 }

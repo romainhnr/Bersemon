@@ -9,7 +9,9 @@ use bersemon_core::statut::Statut;
 use bersemon_core::types::Efficacite;
 
 use crate::mise_en_valeur::important;
-use crate::monstres::{decrire_attaque, ligne_monstre, nom, nom_en_combat, nom_en_valeur};
+use crate::monstres::{
+    decrire_attaque, ligne_monstre, nom, nom_en_combat, nom_en_valeur, progression_d_experience,
+};
 use crate::partie::types_connus;
 
 pub fn rencontre(combat: &Combat) -> String {
@@ -197,9 +199,15 @@ pub fn soin_de_potion(nom: &str, pv_rendus: u32) -> String {
     }
 }
 
+/// `monstre` est pris après le gain : sa progression vise le niveau qui suit
+/// celui qu'il vient d'atteindre.
 pub fn rapport_experience(monstre: &Monstre, rapport: &RapportExperience) -> String {
     let nom = nom_en_valeur(monstre, Cote::Joueur);
-    let mut lignes = vec![format!("{nom} gagne {} XP.", rapport.experience_gagnee)];
+    let mut lignes = vec![format!(
+        "{nom} gagne {} XP ({}).",
+        rapport.experience_gagnee,
+        progression_d_experience(monstre)
+    )];
     if rapport.niveau_apres > rapport.niveau_avant {
         lignes.push(format!(
             "{nom} passe au niveau {}.",
@@ -289,5 +297,26 @@ mod tests {
         assert!(etat(&combat, &codex).contains("En face : Loup sauvage (?, niv. 5)"));
         codex.noter_capture(&EspeceId::new("loup"));
         assert!(etat(&combat, &codex).contains("En face : Loup sauvage (Normal, niv. 5)"));
+    }
+
+    #[test]
+    fn un_gain_d_xp_montre_l_xp_du_niveau_suivant() {
+        let contenu = ContenuV1::new();
+        let mut loup = creer(&contenu, "loup", 5);
+        let rapport = loup.gagner_experience(5);
+        assert!(rapport_experience(&loup, &rapport).contains("gagne 5 XP (130/216)."));
+        // Au niveau 6, la progression vise le niveau 7 : 7 x 7 x 7 = 343.
+        let rapport = loup.gagner_experience(100);
+        let texte = rapport_experience(&loup, &rapport);
+        assert!(texte.contains("gagne 100 XP (230/343)."), "{texte}");
+        assert!(texte.contains("passe au niveau 6."), "{texte}");
+        assert!(crate::monstres::fiche_du_monstre(&loup).contains("\nXP : 230/343\n"));
+    }
+
+    #[test]
+    fn au_niveau_100_l_xp_n_a_plus_de_suite() {
+        let contenu = ContenuV1::new();
+        let loup = creer(&contenu, "loup", 100);
+        assert_eq!(progression_d_experience(&loup), "1000000, niveau maximum");
     }
 }

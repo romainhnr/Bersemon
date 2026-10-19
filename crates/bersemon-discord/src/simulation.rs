@@ -426,6 +426,7 @@ fn l_equipe_et_le_camp_pleins_tiennent_dans_les_limites() {
         Vue::Attaques(Emplacement::Equipe(0)),
         Vue::Attaques(Emplacement::Camp(29)),
         Vue::Coffre,
+        Vue::Options,
     ];
     let mut questions: Vec<_> = vues
         .into_iter()

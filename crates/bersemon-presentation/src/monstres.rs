@@ -5,7 +5,9 @@ use std::fmt::Display;
 use bersemon_core::attaque::{Attaque, Categorie};
 use bersemon_core::combat::{Combat, Combattant, Cote};
 use bersemon_core::espece::Espece;
+use bersemon_core::experience::experience_requise;
 use bersemon_core::monstre::Monstre;
+use bersemon_core::niveau::Niveau;
 use bersemon_core::stats::Stats;
 use bersemon_core::statut::Statut;
 
@@ -99,6 +101,7 @@ pub fn decrire_attaque(attaque: &Attaque) -> String {
 pub fn fiche_du_monstre(monstre: &Monstre) -> String {
     [
         ligne_monstre(monstre, Cote::Joueur),
+        format!("XP : {}", progression_d_experience(monstre)),
         format!("Types : {}", types_de(monstre.espece())),
         format!("Stats : {}", decrire_stats(&monstre.stats())),
         format!(
@@ -107,6 +110,15 @@ pub fn fiche_du_monstre(monstre: &Monstre) -> String {
         ),
     ]
     .join("\n")
+}
+
+/// L'XP totale du monstre et celle qu'il lui faut au total pour le niveau
+/// suivant, « 130/216 » (section 7).
+pub fn progression_d_experience(monstre: &Monstre) -> String {
+    match Niveau::new(monstre.niveau().valeur() + 1) {
+        Ok(suivant) => format!("{}/{}", monstre.experience(), experience_requise(suivant)),
+        Err(_) => format!("{}, niveau maximum", monstre.experience()),
+    }
 }
 
 /// Les six stats dans l'ordre du jeu.

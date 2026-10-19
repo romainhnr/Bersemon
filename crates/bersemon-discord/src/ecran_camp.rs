@@ -1,8 +1,8 @@
 //! Camp de base sur Discord : départ en expédition par la carte, expéditions
 //! automatiques, codex, gestion des monstres et de leurs attaques (sections
-//! 13.2 et 13.10), coffre du camp (section 13.3), marchand. Les vues ne
-//! changent rien à la partie ; seules les actions la modifient, et la
-//! sauvegardent.
+//! 13.2 et 13.10), coffre du camp (section 13.3), marchand, options (section
+//! 13.9). Les vues ne changent rien à la partie ; seules les actions la
+//! modifient, et la sauvegardent.
 
 use bersemon_core::codex::EtatCodex;
 use bersemon_core::collection::{Collection, Emplacement, TriDuCamp};
@@ -45,6 +45,7 @@ pub fn question(
         Vue::Vente => ecran_marchand::vente(partie),
         Vue::Attaques(emplacement) => attaques(partie, emplacement),
         Vue::Coffre => ecran_coffre::coffre(partie),
+        Vue::Options => options(),
     }
 }
 
@@ -105,6 +106,7 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
     if partie.marchand_au_camp() {
         boutons.push(bouton(Cle::Afficher(Vue::Marchand), "Marchand", SECONDAIRE));
     }
+    boutons.push(bouton(Cle::Afficher(Vue::Options), "Options", SECONDAIRE));
     lignes.extend(rangees(boutons));
     let mut en_tete = vec![en_tete_du_camp(partie)];
     en_tete.extend(expeditions_rentrees(partie, maintenant));
@@ -115,6 +117,17 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
             equipe.join("\n")
         ),
         rangees: lignes,
+    }
+}
+
+/// Le déroulement demande ensuite confirmation du suicide (section 13.9).
+fn options() -> Question {
+    Question {
+        texte: "Options de la partie.".to_string(),
+        rangees: rangees(vec![
+            bouton(Cle::SeSuicider, "Se suicider", DANGER),
+            retour(),
+        ]),
     }
 }
 

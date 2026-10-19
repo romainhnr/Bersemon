@@ -13,6 +13,10 @@ pub trait SauvegardeRepository {
     fn charger(&self, catalogue: &dyn Catalogue) -> Result<Option<Partie>, ErreurSauvegarde>;
 
     fn enregistrer(&self, partie: &Partie) -> Result<(), ErreurSauvegarde>;
+
+    /// Après le suicide du héros (section 13.9). Sans sauvegarde, il n'y a
+    /// rien à faire.
+    fn supprimer(&self) -> Result<(), ErreurSauvegarde>;
 }
 
 /// Le détail technique reste en texte, pour que le contrat ne dépende pas de

@@ -270,6 +270,10 @@ pub fn question_de_confirmation(confirmation: &Confirmation) -> String {
             monstre.nom(),
             argent(*prix)
         ),
+        Confirmation::Suicide(heros) => format!(
+            "Vous suicider ? Votre partie sera effacée pour de bon : {}, vos monstres, votre sac, votre coffre, votre codex et vos expéditions automatiques en cours.",
+            heros.nom().as_str()
+        ),
     }
 }
 
