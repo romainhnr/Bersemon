@@ -73,6 +73,10 @@ const INDICE_3: &str = "parmi les reliques du Baron, une lettre scellée du mêm
 
 const INDICE_4: &str = "l'inquisiteur vaincu a parlé : l'Abbesse écorchée se terre sous le chœur, dans la crypte où elle a livré ses sœurs au bûcher.";
 
+const INDICE_5: &str = "sous l'autel de l'Abbesse, une plaque de fer gravée du même sceau : au nord, le Col du Givre-Noir, où un margrave a mené son armée mourir dans la neige. Un troisième Apôtre y règne.";
+
+const INDICE_6: &str = "le porte-étendard vaincu a parlé : le Margrave attend au sommet, dans la forteresse où ses soldats ont gelé à sa place.";
+
 /// Au bout de la première expédition menée au bout, quand le joueur porte
 /// l'âme de Bertrand (section 14.2).
 pub const MALVOISE_ET_L_AME: &str = "Sur le chemin du camp, un homme en robe noire vous attend, un crâne posé au creux du bras. \"Je t'ai vu recueillir cette âme. Elle m'intéresse, si tu ne sais pas quoi en faire. Je suis Malvoise, et les marchands morts sur ces routes ont encore des choses à vendre.\" Il vous suit jusqu'au camp et s'y installe.";
@@ -124,6 +128,15 @@ const AVANT_L_INQUISITEUR: &str = "Sur le parvis de l'abbaye, un inquisiteur en 
 const APRES_L_INQUISITEUR: &str =
     "L'inquisiteur s'effondre sur les dalles, son livre de prières en cendres.";
 
+const AVANT_LE_PORTE_ETENDARD: &str = "Au milieu du col, un soldat couvert de givre tient encore l'étendard d'une armée morte. Trois bêtes sortent de la tempête à son signal.";
+
+const APRES_LE_PORTE_ETENDARD: &str =
+    "Le porte-étendard tombe à genoux ; l'étendard gelé se brise dans la neige.";
+
+const AVANT_LE_MARGRAVE: &str = "Au sommet, sur un trône de glace entouré de soldats figés, le Margrave de givre se lève. Apôtre du Démiurge, il a offert son armée au froid. Il n'y aura pas de fuite.";
+
+const EPILOGUE_DU_MARGRAVE: &str = "Le Margrave de givre se brise sur son trône. Le même sceau, une main ouverte, est gravé dans la glace. Trois Apôtres sont tombés ; le Démiurge, lui, attend toujours. Votre traque continue.";
+
 const AVANT_L_ABBESSE: &str = "Au fond de la crypte, une silhouette sans peau prie devant un autel de chair. L'Abbesse écorchée, Apôtre du Démiurge, se retourne lentement. Il n'y aura pas de fuite.";
 
 const EPILOGUE_DE_L_ABBESSE: &str = "L'Abbesse écorchée s'effondre sur l'autel. Le même sceau, une main ouverte, est gravé dans sa chair. Deux Apôtres sont tombés ; le Démiurge, lui, attend toujours. Votre traque continue.";
@@ -135,6 +148,9 @@ const AME_DU_BARON: &str =
 
 const AME_DE_L_ABBESSE: &str =
     "L'âme de l'Abbesse écorchée s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.";
+
+const AME_DU_MARGRAVE: &str =
+    "L'âme du Margrave de givre s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.";
 
 const AVANT_LE_BARON: &str = "Au fond de la Vallée, la brume se déchire sur un gibet dressé contre le ciel. Le Baron pendu, Apôtre du Démiurge, s'y balance encore, puis ouvre les yeux. Il n'y aura pas de fuite.";
 
@@ -389,6 +405,53 @@ impl ContenuV1 {
         .and_then(|zone| zone.avec_monstre_cache(schnoz()))
         .map(|zone| zone.avec_humain(inquisiteur))
         .expect("Abbaye conforme aux règles");
+        // Au service du Margrave, il garde le Col (section 9.4).
+        let porte_etendard = Humain::new(
+            HumainId::new("porte-etendard"),
+            "Porte-étendard",
+            vec![
+                (trouver("wendigo"), niveau(36)),
+                (trouver("troll-des-cavernes"), niveau(36)),
+                (trouver("wyrm-de-givre"), niveau(37)),
+            ],
+            400,
+            AVANT_LE_PORTE_ETENDARD,
+            APRES_LE_PORTE_ETENDARD,
+        )
+        .expect("Porte-étendard conforme aux règles")
+        .avec_ia(IaHumain::Relevee);
+        // Ouvert par l'indice que laisse l'Abbesse ; ses neuf niveaux mènent
+        // aux stades 3 du niveau 36 (sections 5.4 et 9.4).
+        let col = Zone::new(
+            ZoneId::new("col-du-givre-noir"),
+            "Col du Givre-Noir",
+            (niveau(28), niveau(36)),
+            5,
+            3,
+            vec![
+                trouver("wendigo"),
+                trouver("troll-des-cavernes"),
+                trouver("harpie-des-orages"),
+                trouver("gargouille"),
+                trouver("warg"),
+                trouver("chevalier-noir"),
+            ],
+            vec![
+                EspeceRare {
+                    espece: trouver("wyrm-de-givre"),
+                    pacifique: false,
+                },
+                EspeceRare {
+                    espece: trouver("sylphe-des-neiges"),
+                    pacifique: true,
+                },
+            ],
+            expedition_automatique(5, 220..=450, 2200..=3400, 1..=3, 180..=320),
+            coffre(140..=220, capsules_de("col-du-givre-noir")),
+        )
+        .and_then(|zone| zone.avec_monstre_cache(schnoz()))
+        .map(|zone| zone.avec_humain(porte_etendard))
+        .expect("Col conforme aux règles");
         // Le Baron pendu attend au fond de la Vallée, que le second indice,
         // donné par le Bourreau, ouvre (section 9.4).
         let baron = Apotre::new(trouver("baron-pendu"), &vallee, AVANT_LE_BARON, EPILOGUE)
@@ -418,8 +481,27 @@ impl ContenuV1 {
             abbesse,
         )
         .expect("chapitre de l'Abbesse conforme aux règles");
-        let piste = Piste::new(vec![chapitre_du_baron, chapitre_de_l_abbesse])
-            .expect("piste conforme aux règles");
+        // Le cinquième indice se trouve au bout de l'expédition qui abat
+        // l'Abbesse, dans l'Abbaye, et ouvre le Col (section 9.4).
+        let margrave = Apotre::new(
+            trouver("margrave-de-givre"),
+            &col,
+            AVANT_LE_MARGRAVE,
+            EPILOGUE_DU_MARGRAVE,
+        )
+        .expect("Margrave de givre conforme aux règles")
+        .avec_recit_de_l_ame(AME_DU_MARGRAVE);
+        let chapitre_du_margrave = Chapitre::new(
+            vec![indice(&abbaye, INDICE_5), indice(&col, INDICE_6)],
+            margrave,
+        )
+        .expect("chapitre du Margrave conforme aux règles");
+        let piste = Piste::new(vec![
+            chapitre_du_baron,
+            chapitre_de_l_abbesse,
+            chapitre_du_margrave,
+        ])
+        .expect("piste conforme aux règles");
         let ressource = |id: &str| {
             especes
                 .iter()
@@ -460,7 +542,7 @@ impl ContenuV1 {
                 .expect("plan de fabrication conforme aux règles")
             })
             .collect();
-        let zones = vec![lisiere, marais, vallee, abbaye];
+        let zones = vec![lisiere, marais, vallee, abbaye, col];
         let peche = ParametresPeche::new(
             Duration::from_secs(HEURES_DE_PECHE * 3_600),
             ESPECES_PECHEES.iter().map(|id| trouver(id)).collect(),
@@ -650,7 +732,7 @@ const fn avec_effet(fiche: FicheAttaque, statut: Statut, chance: u8) -> FicheAtt
 }
 
 /// Section 1 de docs/contenu-v1.md, dans le même ordre.
-const ATTAQUES: [FicheAttaque; 77] = [
+const ATTAQUES: [FicheAttaque; 93] = [
     fiche(
         "souffle-chaud",
         "Souffle chaud",
@@ -1167,6 +1249,126 @@ const ATTAQUES: [FicheAttaque; 77] = [
         Poison,
         20,
     ),
+    // Attaques du Col du Givre-Noir et du Margrave de givre (étape 79).
+    avec_effet(
+        fiche(
+            "croc-de-givre",
+            "Croc de givre",
+            Type::Glace,
+            Physique,
+            60,
+            100,
+        ),
+        Paralysie,
+        10,
+    ),
+    fiche("avalanche", "Avalanche", Type::Glace, Physique, 85, 90),
+    fiche(
+        "souffle-glacial",
+        "Souffle glacial",
+        Type::Glace,
+        Speciale,
+        70,
+        100,
+    ),
+    avec_effet(
+        fiche("blizzard", "Blizzard", Type::Glace, Speciale, 90, 85),
+        Paralysie,
+        10,
+    ),
+    fiche("secousse", "Secousse", Type::Sol, Physique, 60, 100),
+    fiche("seisme", "Séisme", Type::Sol, Physique, 90, 90),
+    fiche("eboulement", "Éboulement", Type::Roche, Physique, 90, 85),
+    avec_effet(
+        fiche(
+            "etincelle",
+            "Étincelle",
+            Type::Electrique,
+            Speciale,
+            45,
+            100,
+        ),
+        Paralysie,
+        10,
+    ),
+    avec_effet(
+        fiche("foudre", "Foudre", Type::Electrique, Speciale, 90, 85),
+        Paralysie,
+        10,
+    ),
+    avec_effet(
+        fiche(
+            "onde-de-choc",
+            "Onde de choc",
+            Type::Electrique,
+            Speciale,
+            75,
+            100,
+        ),
+        Paralysie,
+        20,
+    ),
+    avec_effet(
+        fiche(
+            "linceul-de-givre",
+            "Linceul de givre",
+            Type::Obscur,
+            Speciale,
+            95,
+            90,
+        ),
+        Paralysie,
+        20,
+    ),
+    // Attaques d'évolution des stades 3 (étape 81).
+    fiche(
+        "souffle-de-cendre",
+        "Souffle de cendre",
+        Type::Feu,
+        Speciale,
+        95,
+        90,
+    ),
+    avec_effet(
+        fiche(
+            "deluge-toxique",
+            "Déluge toxique",
+            Type::Poison,
+            Physique,
+            90,
+            90,
+        ),
+        Poison,
+        30,
+    ),
+    avec_effet(
+        fiche(
+            "racines-du-gibet",
+            "Racines du gibet",
+            Type::Spectre,
+            Physique,
+            85,
+            95,
+        ),
+        Paralysie,
+        20,
+    ),
+    fiche(
+        "griffes-spectrales",
+        "Griffes spectrales",
+        Type::Spectre,
+        Physique,
+        85,
+        95,
+    ),
+    fiche(
+        "dechiquetage",
+        "Déchiquetage",
+        Type::Combat,
+        Physique,
+        90,
+        90,
+    ),
 ];
 
 struct FicheCapsule {
@@ -1177,7 +1379,7 @@ struct FicheCapsule {
 }
 
 /// Section 6 de docs/contenu-v1.md, dans le même ordre.
-const CAPSULES: [FicheCapsule; 12] = [
+const CAPSULES: [FicheCapsule; 15] = [
     FicheCapsule {
         attaque: "brasier",
         prix: 150,
@@ -1237,6 +1439,21 @@ const CAPSULES: [FicheCapsule; 12] = [
         attaque: "ultrason",
         prix: 400,
         zone: "abbaye",
+    },
+    FicheCapsule {
+        attaque: "blizzard",
+        prix: 500,
+        zone: "col-du-givre-noir",
+    },
+    FicheCapsule {
+        attaque: "seisme",
+        prix: 450,
+        zone: "col-du-givre-noir",
+    },
+    FicheCapsule {
+        attaque: "onde-de-choc",
+        prix: 450,
+        zone: "col-du-givre-noir",
     },
 ];
 
@@ -1332,7 +1549,7 @@ const MARCHAND_ZOMBIE: FicheEspece = FicheEspece {
 /// Section 2 de docs/contenu-v1.md, dans l'ordre du codex : les monstres de
 /// départ, les communs, les rares, l'Apôtre, le monstre caché, puis les
 /// formes évoluées de la section 8.
-const ESPECES: [FicheEspece; 41] = [
+const ESPECES: [FicheEspece; 52] = [
     FicheEspece {
         id: "salamandre",
         nom: "Salamandre",
@@ -1633,7 +1850,7 @@ const ESPECES: [FicheEspece; 41] = [
             (16, "jet-de-lave"),
             (16, "souffle-putride"),
         ],
-        evolution: None,
+        evolution: par_niveau("wyverne-de-cendre", 36, "souffle-de-cendre"),
     },
     FicheEspece {
         id: "crapaud-geant",
@@ -1653,7 +1870,7 @@ const ESPECES: [FicheEspece; 41] = [
             (16, "trombe"),
             (16, "deferlante"),
         ],
-        evolution: None,
+        evolution: par_niveau("crapaud-roi", 36, "deluge-toxique"),
     },
     FicheEspece {
         id: "mandragore-ancienne",
@@ -1673,7 +1890,7 @@ const ESPECES: [FicheEspece; 41] = [
             (16, "hurlement-de-mandragore"),
             (16, "lianes-etrangleuses"),
         ],
-        evolution: None,
+        evolution: par_niveau("arbre-pendu", 36, "racines-du-gibet"),
     },
     FicheEspece {
         id: "chat-des-ombres",
@@ -1693,7 +1910,7 @@ const ESPECES: [FicheEspece; 41] = [
             (16, "griffe-d-ombre"),
             (16, "malefice"),
         ],
-        evolution: None,
+        evolution: par_niveau("cait-sith", 36, "griffes-spectrales"),
     },
     FicheEspece {
         id: "warg",
@@ -1711,7 +1928,7 @@ const ESPECES: [FicheEspece; 41] = [
             (16, "croc-noir"),
             (16, "coup-sournois"),
         ],
-        evolution: None,
+        evolution: par_niveau("loup-garou", 36, "dechiquetage"),
     },
     FicheEspece {
         id: "corbeau-des-gibets",
@@ -2048,6 +2265,221 @@ const ESPECES: [FicheEspece; 41] = [
             (1, "ruade"),
             (15, "lame-de-fond"),
             (25, "trombe"),
+        ],
+        evolution: None,
+    },
+    // Col du Givre-Noir et troisième Apôtre, section 21 de docs/contenu-v1.md
+    // (étape 79).
+    FicheEspece {
+        id: "wendigo",
+        nom: "Wendigo",
+        types: &[Type::Glace, Type::Spectre],
+        role: Role::Offensif,
+        stats_de_base: [60, 85, 50, 45, 50, 70],
+        rendement_experience: 110,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Ferocite, Habilete::Traqueur],
+        apprentissage: &[
+            (1, "croc-de-givre"),
+            (1, "charge-spectrale"),
+            (20, "frisson-d-outre-tombe"),
+            (30, "avalanche"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "troll-des-cavernes",
+        nom: "Troll des cavernes",
+        types: &[Type::Sol, Type::Roche],
+        role: Role::Soutien,
+        stats_de_base: [90, 85, 80, 30, 50, 30],
+        rendement_experience: 112,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Carapace, Habilete::Volonte],
+        apprentissage: &[
+            (1, "griffe-de-pierre"),
+            (1, "secousse"),
+            (22, "chute-de-pierres"),
+            (32, "eboulement"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "harpie-des-orages",
+        nom: "Harpie des orages",
+        types: &[Type::Vol, Type::Electrique],
+        role: Role::Offensif,
+        stats_de_base: [55, 50, 45, 80, 50, 80],
+        rendement_experience: 108,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Celerite, Habilete::Eclaireur],
+        apprentissage: &[
+            (1, "coup-de-bec"),
+            (1, "etincelle"),
+            (20, "bourrasque"),
+            (30, "foudre"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "wyrm-de-givre",
+        nom: "Wyrm de givre",
+        types: &[Type::Dragon, Type::Glace],
+        role: Role::Offensif,
+        stats_de_base: [80, 85, 70, 85, 65, 60],
+        rendement_experience: 195,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Affinite, Habilete::Ferocite],
+        apprentissage: &[
+            (1, "souffle-draconique"),
+            (1, "croc-de-givre"),
+            (20, "souffle-glacial"),
+            (30, "furie-draconique"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "sylphe-des-neiges",
+        nom: "Sylphe des neiges",
+        types: &[Type::Glace, Type::Feerique],
+        role: Role::Soutien,
+        stats_de_base: [65, 45, 60, 95, 90, 90],
+        rendement_experience: 190,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Volonte, Habilete::Instinct],
+        apprentissage: &[
+            (1, "poussiere-d-elfe"),
+            (1, "souffle-glacial"),
+            (15, "lumiere-d-aube"),
+            (30, "rayon-de-lune"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "margrave-de-givre",
+        nom: "Margrave de givre",
+        types: &[Type::Obscur],
+        role: Role::Offensif,
+        stats_de_base: [95, 100, 90, 95, 85, 65],
+        rendement_experience: 300,
+        rarete: Rarete::Apotre,
+        habiletes: &[Habilete::Ferocite, Habilete::Carapace],
+        apprentissage: &[
+            (1, "charge-spectrale"),
+            (10, "taille-d-acier"),
+            (18, "etreinte-obscure"),
+            (25, "blizzard"),
+            (30, "hurlement-des-abysses"),
+            (36, "linceul-de-givre"),
+        ],
+        evolution: None,
+    },
+    // Stades 3, au niveau 36 (étape 81).
+    FicheEspece {
+        id: "wyverne-de-cendre",
+        nom: "Wyverne de cendre",
+        types: &[Type::Feu, Type::Dragon],
+        role: Role::Offensif,
+        stats_de_base: [75, 68, 68, 110, 80, 90],
+        rendement_experience: 120,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Affinite, Habilete::Sorcellerie],
+        apprentissage: &[
+            (1, "souffle-chaud"),
+            (3, "crachat-de-braises"),
+            (7, "souffle-draconique"),
+            (10, "flamme-vive"),
+            (14, "fournaise"),
+            (16, "jet-de-lave"),
+            (16, "souffle-putride"),
+            (36, "souffle-de-cendre"),
+            (36, "furie-draconique"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "crapaud-roi",
+        nom: "Crapaud-roi",
+        types: &[Type::Eau, Type::Poison],
+        role: Role::Offensif,
+        stats_de_base: [90, 105, 85, 55, 70, 75],
+        rendement_experience: 123,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Ferocite, Habilete::Carapace],
+        apprentissage: &[
+            (1, "charge-gluante"),
+            (3, "plongeon"),
+            (7, "coup-de-langue"),
+            (10, "langue-venimeuse"),
+            (14, "lame-de-fond"),
+            (16, "trombe"),
+            (16, "deferlante"),
+            (36, "deluge-toxique"),
+            (36, "croc-de-venin"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "arbre-pendu",
+        nom: "Arbre-pendu",
+        types: &[Type::Plante, Type::Spectre],
+        role: Role::Soutien,
+        stats_de_base: [110, 70, 110, 70, 100, 30],
+        rendement_experience: 124,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Carapace, Habilete::Volonte],
+        apprentissage: &[
+            (1, "coup-de-racine"),
+            (3, "feuille-tranchante"),
+            (7, "cri-strident"),
+            (10, "ronces"),
+            (14, "spores-putrides"),
+            (16, "hurlement-de-mandragore"),
+            (16, "lianes-etrangleuses"),
+            (36, "racines-du-gibet"),
+            (36, "frisson-d-outre-tombe"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "cait-sith",
+        nom: "Cait sith",
+        types: &[Type::Tenebres, Type::Spectre],
+        role: Role::Offensif,
+        stats_de_base: [65, 112, 55, 65, 58, 135],
+        rendement_experience: 120,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Celerite, Habilete::Traqueur],
+        apprentissage: &[
+            (1, "griffure"),
+            (3, "coup-sournois"),
+            (7, "feulement"),
+            (10, "morsure"),
+            (14, "coup-de-grace"),
+            (16, "griffe-d-ombre"),
+            (16, "malefice"),
+            (36, "griffes-spectrales"),
+            (36, "charge-spectrale"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "loup-garou",
+        nom: "Loup-garou",
+        types: &[Type::Combat, Type::Tenebres],
+        role: Role::Offensif,
+        stats_de_base: [85, 110, 75, 45, 65, 100],
+        rendement_experience: 137,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Traqueur, Habilete::Fouineur],
+        apprentissage: &[
+            (1, "griffure"),
+            (4, "morsure"),
+            (9, "curee"),
+            (16, "croc-noir"),
+            (16, "coup-sournois"),
+            (36, "dechiquetage"),
+            (36, "griffe-d-ombre"),
         ],
         evolution: None,
     },
@@ -2414,7 +2846,7 @@ const PRIX_D_UNE_RESSOURCE_RARE: u32 = 15;
 
 /// Espèce, identifiant et nom de chaque ressource : seules les espèces
 /// sauvages qui se combattent en ont une (section 14.3).
-const RESSOURCES: [(&str, &str, &str); 13] = [
+const RESSOURCES: [(&str, &str, &str); 19] = [
     ("loup", "croc-de-loup", "Croc de loup"),
     ("corbeau", "plume-de-corbeau", "Plume de corbeau"),
     ("vipere", "ecaille-de-vipere", "Écaille de vipère"),
@@ -2432,6 +2864,14 @@ const RESSOURCES: [(&str, &str, &str); 13] = [
         "Aile de chauve-souris",
     ),
     ("chimere", "crin-de-chimere", "Crin de chimère"),
+    ("wendigo", "poil-de-wendigo", "Poil de wendigo"),
+    ("troll-des-cavernes", "pierre-de-troll", "Pierre de troll"),
+    ("harpie-des-orages", "plume-de-harpie", "Plume de harpie"),
+    ("wyrm-de-givre", "ecaille-de-wyrm", "Écaille de wyrm"),
+    // Formes évoluées sauvages du Col : la ressource de leur forme de base
+    // (section 5.4).
+    ("warg", "croc-de-loup", "Croc de loup"),
+    ("chevalier-noir", "fragment-d-armure", "Fragment d'armure"),
 ];
 
 fn creer_attaque(id: &str) -> Attaque {
@@ -2602,7 +3042,7 @@ mod tests {
     #[test]
     fn chaque_capsule_sert_a_une_espece_qui_ne_l_apprend_pas() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.capsules().len(), 12);
+        assert_eq!(contenu.capsules().len(), 15);
         for capsule in contenu.capsules() {
             let utile = contenu.especes().iter().any(|espece| {
                 capsule.convient_a(espece) && espece.attaque_apprise(capsule.id()).is_none()
@@ -2638,14 +3078,18 @@ mod tests {
             ids(&contenu.zones()[3]),
             vec!["bucher", "festin-macabre", "ultrason"]
         );
+        assert_eq!(
+            ids(&contenu.zones()[4]),
+            vec!["blizzard", "seisme", "onde-de-choc"]
+        );
     }
 
     #[test]
     fn contenu_conforme_aux_regles() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.especes().len(), 41);
-        assert_eq!(contenu.zones().len(), 4);
-        assert_eq!(contenu.piste().indices().count(), 4);
+        assert_eq!(contenu.especes().len(), 52);
+        assert_eq!(contenu.zones().len(), 5);
+        assert_eq!(contenu.piste().indices().count(), 6);
         // Toute espèce rencontrée en zone se retrouve au chargement d'une
         // sauvegarde.
         for zone in contenu.zones() {
@@ -2757,6 +3201,7 @@ mod tests {
     fn chaque_evolution_mene_a_une_forme_conforme() {
         let contenu = ContenuV1::new();
         let mut evoluees = 0;
+        let mut sauvages = Vec::new();
         for base in contenu.especes() {
             let Some(evolution) = base.evolution() else {
                 continue;
@@ -2779,7 +3224,23 @@ mod tests {
             }
             assert_eq!(vers.habiletes(), base.habiletes(), "{nom}");
             assert_eq!(vers.role(), base.role(), "{nom}");
-            assert_eq!(vers.ressource(), None, "{nom}");
+            // Seules les formes évoluées sauvages du Col lâchent une
+            // ressource, celle de leur forme de base (section 5.4).
+            let sauvage =
+                |zone: &Zone| zone.especes().iter().any(|espece| espece.id() == vers.id());
+            let zones_sauvages: Vec<&str> = contenu
+                .zones()
+                .iter()
+                .filter(|zone| sauvage(zone))
+                .map(|zone| zone.id().as_str())
+                .collect();
+            if zones_sauvages.is_empty() {
+                assert_eq!(vers.ressource(), None, "{nom}");
+            } else {
+                assert_eq!(zones_sauvages, vec!["col-du-givre-noir"], "{nom}");
+                assert_eq!(vers.ressource(), base.ressource(), "{nom}");
+                sauvages.push(nom.to_string());
+            }
             assert_eq!(
                 vers.rendement_experience(),
                 base.rendement_experience() * 14 / 10,
@@ -2789,12 +3250,9 @@ mod tests {
                 vers.total_des_stats_de_base() > base.total_des_stats_de_base(),
                 "{nom}"
             );
-            // Aucune forme évoluée n'est sauvage (section 5.4).
-            for zone in contenu.zones() {
-                assert!(zone.especes().iter().all(|espece| espece.id() != vers.id()));
-            }
         }
-        assert_eq!(evoluees, 14);
+        assert_eq!(evoluees, 19);
+        assert_eq!(sauvages, vec!["warg", "chevalier-noir"]);
     }
 
     #[test]
@@ -2805,9 +3263,10 @@ mod tests {
             .apotres()
             .map(Apotre::recit_de_l_ame)
             .collect();
-        assert_eq!(recits.len(), 2);
+        assert_eq!(recits.len(), 3);
         assert!(recits[0].starts_with("L'âme du Baron pendu"));
         assert!(recits[1].starts_with("L'âme de l'Abbesse écorchée"));
+        assert!(recits[2].starts_with("L'âme du Margrave de givre"));
     }
 
     #[test]
@@ -2821,7 +3280,7 @@ mod tests {
             .iter()
             .map(|zone| zone.pecheur().map(Pecheur::etape))
             .collect();
-        assert_eq!(etapes, vec![None, Some(2), None, None]);
+        assert_eq!(etapes, vec![None, Some(2), None, None, None]);
         let ids: Vec<&str> = peche
             .especes()
             .iter()
@@ -3017,6 +3476,47 @@ mod tests {
     }
 
     #[test]
+    fn le_margrave_obscur_attend_au_bout_du_col_au_niveau_38() {
+        let contenu = ContenuV1::new();
+        let margrave = contenu.piste().apotres().nth(2).unwrap();
+        assert_eq!(margrave.niveau(), niveau(38));
+        assert_eq!(margrave.zone().as_str(), "col-du-givre-noir");
+        assert_eq!(margrave.espece().types().liste(), &[Type::Obscur]);
+        assert_eq!(margrave.espece().rarete(), Rarete::Apotre);
+        let monstre = creer(&contenu, "margrave-de-givre", 38);
+        let ids: Vec<&str> = monstre
+            .attaques()
+            .liste()
+            .iter()
+            .map(|attaque| attaque.id().as_str())
+            .collect();
+        assert_eq!(
+            ids,
+            vec![
+                "etreinte-obscure",
+                "blizzard",
+                "hurlement-des-abysses",
+                "linceul-de-givre"
+            ]
+        );
+        let col = &contenu.zones()[4];
+        assert_eq!(col.niveaux().1, niveau(36));
+        let porte_etendard = col.humain().unwrap();
+        assert_eq!(porte_etendard.id().as_str(), "porte-etendard");
+        assert_eq!(porte_etendard.argent(), 400);
+        // Les stades 3 du niveau 36 s'atteignent dans le Col (section 5.4).
+        let wyverne = contenu
+            .espece(&EspeceId::new("lezard-de-braise"))
+            .and_then(|espece| espece.evolution().cloned())
+            .unwrap();
+        assert_eq!(wyverne.vers().as_str(), "wyverne-de-cendre");
+        assert_eq!(
+            wyverne.condition(),
+            &ConditionEvolution::Niveau(col.niveaux().1)
+        );
+    }
+
+    #[test]
     fn la_piste_commence_dans_la_lisiere() {
         let contenu = ContenuV1::new();
         let zones: Vec<&str> = contenu
@@ -3024,6 +3524,16 @@ mod tests {
             .indices()
             .map(|indice| indice.zone.as_str())
             .collect();
-        assert_eq!(zones, vec!["lisiere", "marais", "vallee", "abbaye"]);
+        assert_eq!(
+            zones,
+            vec![
+                "lisiere",
+                "marais",
+                "vallee",
+                "abbaye",
+                "abbaye",
+                "col-du-givre-noir"
+            ]
+        );
     }
 }

@@ -3942,7 +3942,9 @@ mod tests {
                 let partie = partie.unwrap();
                 let zones = partie.zones_accessibles(contenu.zones(), contenu.piste());
                 let niveau = partie.collection().equipe()[0].niveau().valeur();
-                let zone = if zones.len() > 3 && niveau >= 34 {
+                let zone = if zones.len() > 4 && niveau >= 44 {
+                    zones[4]
+                } else if zones.len() > 3 && niveau >= 34 {
                     zones[3]
                 } else if zones.len() > 2 && niveau >= 24 {
                     zones[2]
@@ -4560,7 +4562,7 @@ mod tests {
         let mut deroulement = Deroulement::demarrer(depot.charger(&contenu));
         let mut vus = Vec::new();
         let mut annonces = Vec::new();
-        for _ in 0..50_000 {
+        for _ in 0..200_000 {
             if let Attente::Annonce(annonce) = deroulement.attente() {
                 annonces.push(annonce);
             }
@@ -4575,12 +4577,12 @@ mod tests {
                 .repondre(choix.clone(), &mut contexte)
                 .unwrap_or_else(|erreur| panic!("{choix:?} refusé : {erreur}"));
             vus.extend(evenements);
-            // Jusqu'à la chute du deuxième Apôtre, puis le retour au camp.
+            // Jusqu'à la chute du troisième Apôtre, puis le retour au camp.
             let epilogues = vus
                 .iter()
                 .filter(|evenement| matches!(evenement, Evenement::Epilogue(_)))
                 .count();
-            if epilogues == 2 && deroulement.attente() == Attente::Camp {
+            if epilogues == 3 && deroulement.attente() == Attente::Camp {
                 break;
             }
         }
@@ -4588,7 +4590,7 @@ mod tests {
             .iter()
             .filter(|evenement| matches!(evenement, Evenement::Indice { .. }))
             .count();
-        assert_eq!(indices, 4);
+        assert_eq!(indices, 6);
         // Chaque indice et chaque combat de fin de zone sont d'abord annoncés
         // par un bouton (section 9.2).
         let annonces_d_indice = annonces
@@ -4609,7 +4611,7 @@ mod tests {
             .iter()
             .filter(|annonce| **annonce == Annonce::Combat)
             .count();
-        assert!(fins_de_zone >= 5);
+        assert!(fins_de_zone >= 7);
         assert_eq!(annonces_de_combat, fins_de_zone);
         assert!(
             vus.iter()
@@ -4628,15 +4630,17 @@ mod tests {
         }
         // Chaque Apôtre attendait à la dernière étape : l'épilogue est suivi
         // du retour au camp et de la sauvegarde. Le Baron laisse l'indice 3,
-        // qui ouvre l'Abbaye (section 9.4).
+        // qui ouvre l'Abbaye, l'Abbesse l'indice 5, qui ouvre le Col (section
+        // 9.4).
         assert_eq!(deroulement.attente(), Attente::Camp);
         let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
-        assert_eq!(sauvegarde.indices_trouves(), 4);
+        assert_eq!(sauvegarde.indices_trouves(), 6);
         assert_eq!(
             sauvegarde.apotres_vaincus(),
             &[
                 EspeceId::new("baron-pendu"),
-                EspeceId::new("abbesse-ecorchee")
+                EspeceId::new("abbesse-ecorchee"),
+                EspeceId::new("margrave-de-givre")
             ]
         );
         // Les Apôtres ne se capturent pas : chacun laisse son âme, et sa
@@ -4645,7 +4649,7 @@ mod tests {
             .iter()
             .filter(|evenement| matches!(evenement, Evenement::AmeDApotreRecueillie(_)))
             .collect();
-        assert_eq!(ames.len(), 2);
+        assert_eq!(ames.len(), 3);
         assert!(matches!(
             ames[0],
             Evenement::AmeDApotreRecueillie(texte) if texte.contains("Baron pendu")
@@ -4662,6 +4666,7 @@ mod tests {
             apres_les_ames,
             vec![
                 &Evenement::EclatDAstreRamasse,
+                &Evenement::EclatDAstreRamasse,
                 &Evenement::EclatDAstreRamasse
             ]
         );
@@ -4676,14 +4681,16 @@ mod tests {
         for apotre in sauvegarde.apotres_vaincus() {
             assert_eq!(sauvegarde.codex().etat(apotre), EtatCodex::Capturee);
         }
-        // Le brigand, le Bourreau et l'Inquisiteur ont barré leur zone
+        // Le brigand, le Bourreau, l'Inquisiteur et le Porte-étendard ont
+        // barré leur zone
         // jusqu'à leur défaite (section 10.7).
         assert_eq!(
             sauvegarde.humains_vaincus(),
             &[
                 HumainId::new("brigand"),
                 HumainId::new("bourreau"),
-                HumainId::new("inquisiteur")
+                HumainId::new("inquisiteur"),
+                HumainId::new("porte-etendard")
             ]
         );
         // La défaite du Bourreau a libéré Gunther, une fois (section 13.4).
