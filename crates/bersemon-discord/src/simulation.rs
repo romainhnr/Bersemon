@@ -13,6 +13,7 @@ use bersemon_core::collection::Emplacement;
 use bersemon_core::combat::{Combat, Cote};
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::{Attente, Evenement};
+use bersemon_core::equipement::PlaceDEquipement;
 use bersemon_core::espece::EspeceId;
 use bersemon_core::heros::Classe;
 use bersemon_core::horodatage::Horodatage;
@@ -25,7 +26,7 @@ use bersemon_core::types::{Efficacite, efficacite};
 use bersemon_core::zone::ZoneId;
 use bersemon_presentation::marchand::ressources_a_vendre;
 
-use crate::composants::{Choisis, Cle, Commande, Composant, Vue};
+use crate::composants::{Choisis, Cle, Commande, Composant, RETIRER, Vue};
 use crate::joueurs::{IdJoueur, Joueurs, Session};
 use crate::message::{
     BOUTONS_PAR_RANGEE, LONGUEUR_MAX, Message, OPTIONS_PAR_MENU, RANGEES_MAX, Rangee, message,
@@ -781,7 +782,7 @@ fn gunther_agrandit_l_enclos_a_travers_les_ecrans_du_bot() {
     let ressource = |id: &str| contenu.ressource(&RessourceId::new(id)).unwrap();
     let coffre = Inventaire::default()
         .avec_ressources(ressource("croc-de-loup"), 5)
-        .avec_ressources(ressource("plume-de-corbeau"), 5)
+        .avec_ressources(ressource("plume-de-corbeau"), 13)
         .avec_ressources(ressource("ecaille-de-vipere"), 5);
     let partie = Partie::restaurer(EtatPartie {
         heros: partie.heros().clone(),
@@ -860,7 +861,136 @@ fn gunther_agrandit_l_enclos_a_travers_les_ecrans_du_bot() {
     let partie = session.deroulement.partie().unwrap();
     assert_eq!(partie.collection().tailles().camp, 40);
     assert!(joueurs.retours_echus(fin).is_empty());
+    // Gunther forge ensuite un talisman, que le héros porte (section 13.5).
+    let choisir_a = |joueurs: &mut Joueurs, voulu: Cle, valeur: &str, secondes: u64| {
+        let affiche = afficher_a(joueurs, secondes);
+        let clic = choisir_dans(&affiche, |cle| *cle == voulu, valeur)
+            .unwrap_or_else(|| panic!("{valeur} absent : {}", affiche.texte));
+        let version = joueurs.session(JOUEUR, &contenu).version;
+        let Some(Commande::Jouer(choix)) = clic.cle.commande(clic.valeur.as_deref(), None) else {
+            panic!("choix attendu");
+        };
+        joueurs
+            .jouer(
+                JOUEUR,
+                version,
+                choix,
+                &contenu,
+                Horodatage::depuis_secondes(secondes),
+            )
+            .unwrap()
+    };
+    let talisman = "plume-de-corbeau-sertie";
+    choisir_a(&mut joueurs, Cle::Fabriquer, talisman, 4_600);
+    let lancee = cliquer_a(&mut joueurs, Cle::Oui, 4_600);
+    assert!(matches!(&lancee[..], [Evenement::FabricationLancee { .. }]));
+    let fin = Horodatage::depuis_secondes(8_200);
+    assert_eq!(joueurs.retours_echus(fin).len(), 1);
+    cliquer_a(&mut joueurs, Cle::Constater, 8_200);
+    let affiche = afficher_a(&mut joueurs, 8_200);
+    assert!(
+        choisir_dans(&affiche, |cle| *cle == Cle::Fabriquer, talisman).is_none(),
+        "un objet possédé ne se forge plus"
+    );
+    cliquer_a(&mut joueurs, Cle::Afficher(Vue::Camp), 8_200);
+    cliquer_a(&mut joueurs, Cle::Afficher(Vue::Equipement), 8_200);
+    let place = PlaceDEquipement::PremierTalisman;
+    let portee = choisir_a(&mut joueurs, Cle::Equiper(place), talisman, 8_200);
+    assert!(matches!(&portee[..], [Evenement::ObjetEquipe { .. }]));
+    // Porté à la première place, il n'est plus proposé à la seconde ; il
+    // se retire.
+    let affiche = afficher_a(&mut joueurs, 8_200);
+    assert!(
+        choisir_dans(
+            &affiche,
+            |cle| *cle == Cle::Equiper(PlaceDEquipement::SecondTalisman),
+            talisman
+        )
+        .is_none()
+    );
+    let retire = choisir_a(&mut joueurs, Cle::Equiper(place), RETIRER, 8_200);
+    assert!(matches!(&retire[..], [Evenement::ObjetRetire { .. }]));
     let _ = fs::remove_dir_all(dossier);
+}
+
+/// Les options de la forge et de l'équipement tiennent dans les limites de
+/// Discord, même avec tous les objets possédés et portés.
+#[test]
+fn la_forge_et_l_equipement_tiennent_dans_les_limites() {
+    use crate::ecran_camp::question;
+    use crate::message::Question;
+    use bersemon_core::amelioration::Forge;
+    use bersemon_core::catalogue::Catalogue;
+    use bersemon_core::equipement::Equipement;
+    use bersemon_core::heros::Heros;
+    use bersemon_core::nom::Nom;
+    use bersemon_core::partie::Partie;
+
+    let contenu = ContenuV1::new();
+    let verifier = |question: &Question| {
+        for rangee in &question.rangees {
+            if let Rangee::Menu(menu) = rangee {
+                for option in &menu.options {
+                    assert!(option.libelle.chars().count() <= 100, "{}", option.libelle);
+                    let description = option.description.clone().unwrap_or_default();
+                    assert!(description.chars().count() <= 100, "{description}");
+                }
+            }
+        }
+        assert!(question.texte.chars().count() <= LONGUEUR_MAX);
+        assert!(question.rangees.len() <= RANGEES_MAX);
+    };
+    let loup = Monstre::creer(
+        contenu.espece(&EspeceId::new("loup")).unwrap(),
+        bersemon_core::niveau::Niveau::new(5).unwrap(),
+        bersemon_core::stats::ValeursInternes::default(),
+        false,
+    )
+    .unwrap();
+    let possedes: Vec<_> = contenu
+        .plans_de_fabrication()
+        .iter()
+        .map(|plan| plan.objet().clone())
+        .collect();
+    let id = |nom: &str| bersemon_core::equipement::ObjetDEquipementId::new(nom);
+    let portes = [
+        (PlaceDEquipement::Arme, id("espadon-des-cendres")),
+        (PlaceDEquipement::Armure, id("plates-de-gargouille")),
+        (PlaceDEquipement::PremierTalisman, id("croc-tresse")),
+        (
+            PlaceDEquipement::SecondTalisman,
+            id("plume-de-corbeau-sertie"),
+        ),
+    ];
+    for (possedes, portes) in [(Vec::new(), &portes[..0]), (possedes, &portes[..])] {
+        let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Guerrier)
+            .avec_equipement(Equipement::restaurer(possedes, portes).unwrap());
+        let partie = Partie::nouvelle(heros, loup.clone());
+        let partie = Partie::restaurer(EtatPartie {
+            heros: partie.heros().clone(),
+            collection: partie.collection().clone(),
+            sac: Inventaire::default(),
+            coffre_du_camp: Inventaire::default(),
+            marchand_au_camp: true,
+            ames_donnees: Vec::new(),
+            ames_portees: Vec::new(),
+            ames_a_retrouver: Vec::new(),
+            codex: partie.codex().clone(),
+            zones_explorees: Vec::new(),
+            indices_trouves: 0,
+            apotres_vaincus: Vec::new(),
+            humains_vaincus: Vec::new(),
+            conseils_vus: Vec::new(),
+            expeditions_automatiques: Vec::new(),
+            attaques_a_choisir: Vec::new(),
+            forge: Forge::restaurer(true, Default::default(), None).unwrap(),
+        })
+        .unwrap();
+        let maintenant = Horodatage::depuis_secondes(0);
+        for vue in [Vue::Camp, Vue::Forge, Vue::Equipement] {
+            verifier(&question(&partie, vue, &contenu, maintenant));
+        }
+    }
 }
 
 #[test]

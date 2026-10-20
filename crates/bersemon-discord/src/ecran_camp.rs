@@ -1,7 +1,8 @@
 //! Camp de base sur Discord : départ en expédition par la carte, expéditions
 //! automatiques, codex, gestion des monstres et de leurs attaques (sections
 //! 13.2 et 13.10), coffre du camp (section 13.3), marchand, options (section
-//! 13.9). Les vues ne changent rien à la partie ; seules les actions la
+//! 13.9), forge de Gunther et équipement du héros (sections 4.3, 13.4 et
+//! 13.5). Les vues ne changent rien à la partie ; seules les actions la
 //! modifient, et la sauvegardent.
 
 use bersemon_core::amelioration::Amelioration;
@@ -9,13 +10,18 @@ use bersemon_core::codex::EtatCodex;
 use bersemon_core::collection::{Collection, Emplacement, TriDuCamp};
 use bersemon_core::combat::Cote;
 use bersemon_core::contenu::ContenuV1;
+use bersemon_core::equipement::PlaceDEquipement;
 use bersemon_core::habilete::autre_habilete;
 use bersemon_core::horodatage::Horodatage;
 use bersemon_core::marchand::prix_de_revente;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
+use bersemon_presentation::equipement::{
+    decrire_bonus, etat_de_l_equipement, nom_de_place, objet_et_bonus,
+};
+use bersemon_presentation::expeditions_automatiques::duree;
 use bersemon_presentation::expeditions_automatiques::expeditions_rentrees;
-use bersemon_presentation::forge::{etat_de_la_forge, travail_fini};
+use bersemon_presentation::forge::{cout, etat_de_la_forge, travail_fini};
 use bersemon_presentation::monstres::{
     attaques_connues, decrire_attaque, fiche_du_monstre, ligne_monstre, nom,
 };
@@ -23,7 +29,7 @@ use bersemon_presentation::partie::{
     argent, collection as liste_complete, en_tete_du_camp, fiche_d_espece, ligne_du_codex,
 };
 
-use crate::composants::{Cle, Vue, emplacement_en_texte};
+use crate::composants::{Cle, RETIRER, Vue, emplacement_en_texte};
 use crate::message::{
     Bouton, DANGER, OPTIONS_PAR_MENU, OptionDeMenu, PRINCIPAL, Question, Rangee, SECONDAIRE,
     SUCCES, bouton, menu, rangees,
@@ -50,6 +56,7 @@ pub fn question(
         Vue::Coffre => ecran_coffre::coffre(partie),
         Vue::Options => options(),
         Vue::Forge => forge(partie, contenu, maintenant),
+        Vue::Equipement => equipement(partie),
     }
 }
 
@@ -107,7 +114,8 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
         bouton(Cle::Afficher(Vue::Codex(None)), "Codex", SECONDAIRE),
     ];
     // Malvoise et Gunther n'apparaissent qu'une fois au camp (sections 13.4
-    // et 14.2) : au plus 7 boutons, sur deux rangées.
+    // et 14.2), et l'équipement avec la forge (section 13.5) : au plus 8
+    // boutons, sur deux rangées.
     if partie.marchand_au_camp() {
         boutons.push(bouton(Cle::Afficher(Vue::Marchand), "Malvoise", SECONDAIRE));
     }
@@ -115,6 +123,13 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
         boutons.push(bouton(
             Cle::Afficher(Vue::Forge),
             "Forge de Gunther",
+            SECONDAIRE,
+        ));
+    }
+    if partie.forge().est_au_camp() || !partie.heros().equipement().possedes().is_empty() {
+        boutons.push(bouton(
+            Cle::Afficher(Vue::Equipement),
+            "Équipement",
             SECONDAIRE,
         ));
     }
@@ -133,9 +148,10 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
     }
 }
 
-/// Un bouton par amélioration qui n'est pas au niveau maximal, même faute
-/// de ressources : le refus dit ce qui manque. Le déroulement fait
-/// confirmer le lancement (section 13.4).
+/// Un bouton par amélioration qui n'est pas au niveau maximal, et un menu
+/// des objets que le héros ne possède pas, même faute de ressources : le
+/// refus dit ce qui manque. Le déroulement fait confirmer le lancement
+/// (sections 13.4 et 13.5).
 fn forge(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Question {
     if !partie.forge().est_au_camp() {
         return Question {
@@ -158,9 +174,56 @@ fn forge(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Questi
         }
     }
     boutons.push(retour());
+    let objets: Vec<OptionDeMenu> = contenu
+        .plans_de_fabrication()
+        .iter()
+        .filter(|plan| !partie.heros().equipement().possede(plan.objet().id()))
+        .map(|plan| OptionDeMenu {
+            libelle: objet_et_bonus(plan.objet()),
+            valeur: plan.objet().id().as_str().to_string(),
+            description: Some(format!("{}, {}", cout(plan.cout()), duree(plan.duree()))),
+        })
+        .collect();
+    let mut lignes: Vec<Rangee> = menu(Cle::Fabriquer, "Fabriquer un objet", objets)
+        .into_iter()
+        .collect();
+    lignes.extend(rangees(boutons));
     Question {
         texte: etat_de_la_forge(partie, contenu, maintenant),
-        rangees: rangees(boutons),
+        rangees: lignes,
+    }
+}
+
+/// Un menu par place : les objets de sa sorte portés nulle part, et de quoi
+/// retirer celui qui y est. Sans confirmation (section 4.3).
+fn equipement(partie: &Partie) -> Question {
+    let equipement = partie.heros().equipement();
+    let mut lignes: Vec<Rangee> = PlaceDEquipement::TOUTES
+        .iter()
+        .filter_map(|place| {
+            let mut options: Vec<OptionDeMenu> = equipement
+                .disponibles(*place)
+                .into_iter()
+                .map(|objet| OptionDeMenu {
+                    libelle: format!("Porter : {}", objet.nom()),
+                    valeur: objet.id().as_str().to_string(),
+                    description: Some(decrire_bonus(&objet.bonus())),
+                })
+                .collect();
+            if let Some(porte) = equipement.porte(*place) {
+                options.push(OptionDeMenu {
+                    libelle: format!("Retirer : {}", porte.nom()),
+                    valeur: RETIRER.to_string(),
+                    description: Some(objet_et_bonus(porte)),
+                });
+            }
+            menu(Cle::Equiper(*place), nom_de_place(*place), options)
+        })
+        .collect();
+    lignes.extend(rangees(vec![retour()]));
+    Question {
+        texte: etat_de_l_equipement(equipement),
+        rangees: lignes,
     }
 }
 

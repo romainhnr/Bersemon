@@ -137,6 +137,7 @@ Décidé le 20/10/2026, pour les étapes 48 à 51 (choix de l'utilisateur) :
 - Il les porte, les change ou les retire au camp seulement, sans confirmation. Un objet fabriqué n'est pas porté d'office.
 - Liste, bonus, coûts et durées dans docs/contenu-v1.md, section 11 : 14 objets en trois paliers, liés aux ressources des zones.
 - Écrans, à l'étape 50 (console) : une fois Gunther au camp, ou dès que le héros possède un objet, le camp propose "Équipement du héros". L'écran montre l'objet porté à chaque place (arme, armure, premier et second talisman), le bonus total des objets portés et les objets non portés ; le joueur choisit une place, puis l'objet à y porter, parmi ceux de sa sorte qui ne sont portés nulle part, ou de retirer l'objet porté. La forge propose "Fabriquer un objet" : la liste de tous les objets, avec leur coût et leur durée, ou "possédé", puis ceux qui ne sont pas encore possédés, même faute de ressources ou si Gunther est occupé (le refus dit pourquoi). Le lancement est confirmé, comme pour une amélioration.
+- Écrans, à l'étape 51 (Discord) : un bouton "Équipement" s'ajoute au camp dans les mêmes cas (au plus 8 boutons, sur deux rangées). L'écran d'équipement a un menu par place, qui propose les objets à y porter, avec leur bonus, et "Retirer" pour l'objet porté ; une place sans objet à porter ni à retirer n'a pas de menu. La forge a un menu "Fabriquer un objet" : chaque objet non possédé, avec son bonus, son coût et sa durée. Le bot prévient par message privé de la fin d'une fabrication, comme d'une construction.
 
 ## 5. Les monstres
 

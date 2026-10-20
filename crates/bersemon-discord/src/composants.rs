@@ -12,6 +12,7 @@ use bersemon_core::attaque::AttaqueId;
 use bersemon_core::collection::{Emplacement, TriDuCamp};
 use bersemon_core::combat::Action;
 use bersemon_core::deroulement::{ActionDeGestion, Choix};
+use bersemon_core::equipement::{ObjetDEquipementId, PlaceDEquipement};
 use bersemon_core::expedition_automatique::MONSTRES_MAX;
 use bersemon_core::heros::Classe;
 use bersemon_core::inventaire::Objet;
@@ -51,6 +52,8 @@ pub enum Vue {
     Options,
     /// La forge de Gunther, une fois libéré (section 13.4).
     Forge,
+    /// Ce que porte le héros (section 4.3).
+    Equipement,
 }
 
 /// Monstres choisis pour une expédition automatique, dans l'ordre du choix
@@ -227,7 +230,16 @@ pub enum Cle {
     Ameliorer(Amelioration),
     /// Le joueur constate le travail fini de Gunther.
     Constater,
+    /// Menu des objets que Gunther peut forger (section 13.5).
+    Fabriquer,
+    /// Menu des objets à porter à cette place, avec de quoi retirer celui
+    /// qui y est (section 4.3).
+    Equiper(PlaceDEquipement),
 }
+
+/// Valeur de l'option qui retire l'objet porté, dans le menu d'une place :
+/// un identifiant d'objet n'a jamais de tiret seul.
+pub const RETIRER: &str = "-";
 
 impl Cle {
     /// `valeur` est l'option choisie dans un menu, `texte` le texte saisi
@@ -337,6 +349,14 @@ impl Cle {
             Cle::SeSuicider => jouer(Choix::SeSuicider),
             Cle::Ameliorer(amelioration) => jouer(Choix::LancerAmelioration(*amelioration)),
             Cle::Constater => jouer(Choix::ConstaterTravail),
+            Cle::Fabriquer => jouer(Choix::LancerFabrication(ObjetDEquipementId::new(valeur?))),
+            Cle::Equiper(place) => match valeur? {
+                RETIRER => jouer(Choix::RetirerEquipement(*place)),
+                objet => jouer(Choix::Equiper {
+                    place: *place,
+                    objet: ObjetDEquipementId::new(objet),
+                }),
+            },
         }
     }
 
@@ -372,6 +392,7 @@ impl Cle {
             Cle::Afficher(Vue::Coffre) => "vue:coffre".to_string(),
             Cle::Afficher(Vue::Options) => "vue:options".to_string(),
             Cle::Afficher(Vue::Forge) => "vue:forge".to_string(),
+            Cle::Afficher(Vue::Equipement) => "vue:equipement".to_string(),
             Cle::Fiche(numero) => format!("fiche:{numero}"),
             Cle::Choisir(numero) => format!("choisir:{numero}"),
             Cle::Monter(index) => format!("monter:{index}"),
@@ -458,6 +479,8 @@ impl Cle {
                 format!("ameliorer:{}", amelioration_en_texte(*amelioration))
             }
             Cle::Constater => "constater".to_string(),
+            Cle::Fabriquer => "fabriquer".to_string(),
+            Cle::Equiper(place) => format!("equiper:{}", place_en_texte(*place)),
         }
     }
 
@@ -496,6 +519,8 @@ impl Cle {
             "vue:options" => Cle::Afficher(Vue::Options),
             "vue:forge" => Cle::Afficher(Vue::Forge),
             "constater" => Cle::Constater,
+            "vue:equipement" => Cle::Afficher(Vue::Equipement),
+            "fabriquer" => Cle::Fabriquer,
             "se-suicider" => Cle::SeSuicider,
             "acheter-capsule" => Cle::AcheterCapsule,
             "acheter-capsule-d-habilete" => Cle::AcheterCapsuleDHabilete,
@@ -571,6 +596,7 @@ impl Cle {
                     "faire-evoluer" => Cle::FaireEvoluer(emplacement()?),
                     "acheter-pierre" => Cle::AcheterPierre(lire_pierre(parametre)?),
                     "ameliorer" => Cle::Ameliorer(lire_amelioration(parametre)?),
+                    "equiper" => Cle::Equiper(lire_place(parametre)?),
                     "fiche" => Cle::Fiche(numero()?),
                     "apprendre" => {
                         let (emplacement, oubliee) = parametre.split_once(':')?;
@@ -634,6 +660,21 @@ fn lire_amelioration(texte: &str) -> Option<Amelioration> {
     Amelioration::TOUTES
         .into_iter()
         .find(|amelioration| amelioration_en_texte(*amelioration) == texte)
+}
+
+fn place_en_texte(place: PlaceDEquipement) -> &'static str {
+    match place {
+        PlaceDEquipement::Arme => "arme",
+        PlaceDEquipement::Armure => "armure",
+        PlaceDEquipement::PremierTalisman => "talisman-1",
+        PlaceDEquipement::SecondTalisman => "talisman-2",
+    }
+}
+
+fn lire_place(texte: &str) -> Option<PlaceDEquipement> {
+    PlaceDEquipement::TOUTES
+        .into_iter()
+        .find(|place| place_en_texte(*place) == texte)
 }
 
 /// Nom fixé ici, et non le nom Rust, comme dans la sauvegarde.
@@ -854,6 +895,12 @@ mod tests {
             Cle::Ameliorer(Amelioration::Filets),
             Cle::Ameliorer(Amelioration::Equipe),
             Cle::Constater,
+            Cle::Fabriquer,
+            Cle::Afficher(Vue::Equipement),
+            Cle::Equiper(PlaceDEquipement::Arme),
+            Cle::Equiper(PlaceDEquipement::Armure),
+            Cle::Equiper(PlaceDEquipement::PremierTalisman),
+            Cle::Equiper(PlaceDEquipement::SecondTalisman),
         ]
     }
 
