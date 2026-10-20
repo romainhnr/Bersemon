@@ -701,3 +701,52 @@ Décidé le 20/10/2026, pour les étapes 59 à 61 (gamedesign.md, section 15.3),
 | Fin du duel, défaite | Défaite : {héros} remporte le duel. |
 
 Boutons : Défier en duel, Accepter le défi, Refuser le défi, Retirer le défi, Abandonner, Actualiser, Réclamer la victoire. Au camp, le bouton "Échanges" devient "Autres joueurs".
+
+## 15. Pêche
+
+Décidé le 20/10/2026, pour les étapes 62 à 65 (gamedesign.md, sections 5.3, 9.2 et 13.8), contenu validé par l'utilisateur, à ajuster en jouant.
+
+Ansgar, vieux pêcheur, se rencontre à l'étape 2 de chaque expédition dans le Marais des Pendus tant qu'il n'est pas au camp. Il est attaqué par un Noyé de niveau 13. Avant le combat :
+
+> Au bord d'une mare noire, un vieil homme s'arc-boute sur sa canne. Ce qu'il vient de ferrer surgit de l'eau et se jette sur vous.
+
+Après la victoire :
+
+> Le vieil homme reprend son souffle : Ansgar, pêcheur, chassé de sa cabane par ce qui remonte des eaux du Marais. Il vous suit jusqu'au camp et y tend ses lignes.
+
+La ligne est prête 2 h après avoir été lancée. Prises, sur un tirage :
+
+| Prise | Chance | Détail |
+|---|---|---|
+| Monstre aquatique commun | 55 % | Noyé, Anguille des tourbières ou Sangsue géante, au hasard |
+| Kelpie | 5 % | rare |
+| Potion | 20 % | 1 potion, au coffre |
+| Bourse noyée | 10 % | l'argent d'un coffre de la zone ouverte la plus avancée, au coffre |
+| Pierre d'évolution | 5 % | Pierre de braise ou Pierre de lune, pour moitié, au coffre |
+| Capsule d'habileté | 5 % | au coffre |
+
+Un monstre pêché a un niveau tiré parmi ceux de la zone ouverte la plus avancée. Le joueur le garde ou le relâche.
+
+Espèces, qui ne vivent qu'à la pêche, sans ressource ni évolution (hypothèses, gamedesign.md, Q91). Stats dans l'ordre PV / Attaque / Défense / Attaque spéciale / Défense spéciale / Vitesse. Aucune attaque nouvelle.
+
+| Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP | Rareté | Habiletés | Attaques apprises |
+|---|---|---|---|---|---|---|---|---|
+| noye | Noyé | Eau, Spectre | offensif | 60 / 55 / 55 / 70 / 60 / 40 (340) | 95 | commune | Carapace, Sorcellerie | Plongeon (1), Lueur trompeuse (1), Déferlante (12), Frisson d'outre-tombe (18) |
+| anguille-des-tourbieres | Anguille des tourbières | Eau, Ténèbres | offensif | 50 / 70 / 45 / 55 / 45 / 85 (350) | 95 | commune | Célérité, Traqueur | Plongeon (1), Morsure (1), Étreinte (8), Lame de fond (16) |
+| sangsue-geante | Sangsue géante | Eau, Poison | soutien | 75 / 55 / 70 / 40 / 65 / 35 (340) | 92 | commune | Carapace, Instinct | Charge gluante (1), Morsure venimeuse (1), Croc de venin (15), Déferlante (20) |
+| kelpie | Kelpie | Eau, Féérique | offensif | 75 / 85 / 65 / 65 / 60 / 70 (420) | 180 | rare | Férocité, Affinité | Plongeon (1), Ruade (1), Lame de fond (15), Trombe (25) |
+
+Textes proposés sans validation (gamedesign.md, Q91). {durée} est le temps restant, {monstre} le nom du monstre suivi de "sauvage", {objet} l'objet remonté.
+
+| Moment | Texte |
+|---|---|
+| Ligne lancée | Vous lancez la ligne. Elle sera prête à relever dans {durée}. |
+| Monstre pêché | Au bout de la ligne : {monstre}, de niveau {niveau} ! |
+| Question | Garder {monstre} ? Sinon, il retourne à l'eau. |
+| Monstre relâché | {monstre} retourne à l'eau. |
+| Objet pêché | Vous remontez {objet}. Vous la rangez dans le coffre. ("une potion", "une bourse noyée, qui contient 30 pièces d'argent", "une Pierre de lune", "une capsule d'habileté") |
+| État de la ligne | Aucune ligne à l'eau. / La ligne est à l'eau : prête dans {durée}. / La ligne est prête à relever. |
+| Au camp, et message privé sur Discord | La ligne d'Ansgar est prête à relever. |
+| Refus, équipe et camp pleins | Votre équipe et votre camp sont pleins : faites de la place avant de relever la ligne. |
+
+Libellés : "Pêche d'Ansgar" (console), "Pêche" (Discord), "Lancer la ligne", "Relever la ligne", "Garder", "Relâcher".

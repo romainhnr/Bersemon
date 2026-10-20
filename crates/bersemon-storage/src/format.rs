@@ -27,6 +27,7 @@ use bersemon_core::monstre::{EtatMonstre, Monstre};
 use bersemon_core::niveau::Niveau;
 use bersemon_core::nom::Nom;
 use bersemon_core::partie::{AttaqueAChoisir, EtatPartie, Partie};
+use bersemon_core::peche::Peche;
 use bersemon_core::pierre::PierreDEvolution;
 use bersemon_core::ressource::RessourceId;
 use bersemon_core::sauvegarde::ErreurSauvegarde;
@@ -38,7 +39,7 @@ use bersemon_core::zone::ZoneId;
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 17;
+pub(crate) const VERSION: u64 = 18;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -72,7 +73,8 @@ const GEOLIER_DE_GUNTHER: &str = "bourreau";
 /// ajoute les pierres d'évolution, la version 14 Gunther et les
 /// améliorations du camp, la version 15 l'amélioration de l'équipe, la
 /// version 16 l'équipement du héros et sa fabrication, la version 17 la
-/// marque des monstres reçus d'un autre joueur. Une sauvegarde d'une version
+/// marque des monstres reçus d'un autre joueur, la version 18 la pêche
+/// d'Ansgar. Une sauvegarde d'une version
 /// précédente se lit avec cette structure : les champs ajoutés y prennent
 /// leur valeur de début de partie.
 #[derive(Debug, Serialize, Deserialize)]
@@ -129,6 +131,16 @@ pub(crate) struct SauvegardeV14 {
     ameliorations: AmeliorationsV14,
     #[serde(default)]
     chantier: Option<ChantierV14>,
+    /// Depuis la version 18 (section 13.8).
+    #[serde(default)]
+    ansgar_au_camp: bool,
+    /// Secondes depuis le 1er janvier 1970 (UTC) : l'heure où la ligne sera
+    /// prête.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    ligne: Option<u64>,
+    /// Le monstre pêché que le joueur n'a encore ni gardé ni relâché.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    prise: Option<MonstreV1>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -457,6 +469,9 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV14 {
                     fin: chantier.fin.secondes(),
                 },
             }),
+        ansgar_au_camp: partie.peche().pecheur_au_camp(),
+        ligne: partie.peche().ligne().map(Horodatage::secondes),
+        prise: partie.peche().prise().map(depuis_monstre),
     }
 }
 
@@ -591,6 +606,16 @@ pub(crate) fn vers_partie(
     let forge = Forge::restaurer(gunther_au_camp, ameliorations, chantier).ok_or_else(|| {
         ErreurSauvegarde::Incoherente("améliorations sans Gunther au camp".to_string())
     })?;
+    let prise = sauvegarde
+        .prise
+        .map(|prise| vers_monstre(prise, catalogue))
+        .transpose()?;
+    let peche = Peche::restaurer(
+        sauvegarde.ansgar_au_camp,
+        sauvegarde.ligne.map(Horodatage::depuis_secondes),
+        prise,
+    )
+    .ok_or_else(|| ErreurSauvegarde::Incoherente("pêche sans Ansgar au camp".to_string()))?;
     let collection = Collection::restaurer(equipe, camp, ameliorations.tailles())
         .map_err(|erreur| ErreurSauvegarde::Incoherente(erreur.to_string()))?;
     // Avant la version 7, tout ce que possédait le joueur est rangé dans le
@@ -685,6 +710,7 @@ pub(crate) fn vers_partie(
         expeditions_automatiques,
         attaques_a_choisir,
         forge,
+        peche,
     })
     .map_err(incoherente)
 }

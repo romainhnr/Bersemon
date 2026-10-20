@@ -14,6 +14,7 @@ use crate::equipement::erreur_equipement;
 use crate::expeditions_automatiques::erreur_expedition_automatique;
 use crate::forge::erreur_amelioration;
 use crate::partie::argent;
+use crate::peche::erreur_peche;
 use crate::soins::plus_aucun;
 
 /// Le choix refusé dit de quel nom il s'agissait : celui du héros ou un
@@ -51,6 +52,7 @@ pub fn erreur_de_choix(choix: &Choix, erreur: &ErreurChoix) -> String {
         },
         ErreurChoix::Amelioration(erreur) => erreur_amelioration(erreur),
         ErreurChoix::Equipement(erreur) => erreur_equipement(erreur),
+        ErreurChoix::Peche(erreur) => erreur_peche(erreur),
         autre => format!("Action impossible : {autre}."),
     }
 }

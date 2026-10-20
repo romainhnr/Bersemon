@@ -24,6 +24,7 @@ use crate::habilete::Habilete;
 use crate::heros::Classe;
 use crate::humain::{Humain, HumainId, IaHumain};
 use crate::niveau::Niveau;
+use crate::peche::ParametresPeche;
 use crate::pierre::PierreDEvolution;
 use crate::ressource::{Ressource, RessourceId};
 use crate::soin::Soin;
@@ -149,6 +150,7 @@ pub struct ContenuV1 {
     capsules: Vec<Capsule>,
     plans_d_amelioration: Vec<PlanDAmelioration>,
     plans_de_fabrication: Vec<PlanDeFabrication>,
+    peche: ParametresPeche,
 }
 
 impl ContenuV1 {
@@ -426,13 +428,22 @@ impl ContenuV1 {
                 .expect("plan de fabrication conforme aux règles")
             })
             .collect();
+        let zones = vec![lisiere, marais, vallee, abbaye];
+        let peche = ParametresPeche::new(
+            Duration::from_secs(HEURES_DE_PECHE * 3_600),
+            ESPECES_PECHEES.iter().map(|id| trouver(id)).collect(),
+            trouver(ESPECE_PECHEE_RARE),
+            &zones,
+        )
+        .expect("pêche conforme aux règles");
         Self {
             especes,
-            zones: vec![lisiere, marais, vallee, abbaye],
+            zones,
             piste,
             capsules,
             plans_d_amelioration,
             plans_de_fabrication,
+            peche,
         }
     }
 
@@ -499,6 +510,11 @@ impl ContenuV1 {
 
     /// Toutes les capsules d'attaque, que le marchand vend (section 14.2),
     /// dans l'ordre de docs/contenu-v1.md.
+    /// Ce que remonte la ligne d'Ansgar (section 13.8).
+    pub fn peche(&self) -> &ParametresPeche {
+        &self.peche
+    }
+
     pub fn capsules(&self) -> &[Capsule] {
         &self.capsules
     }
@@ -1270,7 +1286,7 @@ const MARCHAND_ZOMBIE: FicheEspece = FicheEspece {
 /// Section 2 de docs/contenu-v1.md, dans l'ordre du codex : les monstres de
 /// départ, les communs, les rares, l'Apôtre, le monstre caché, puis les
 /// formes évoluées de la section 8.
-const ESPECES: [FicheEspece; 37] = [
+const ESPECES: [FicheEspece; 41] = [
     FicheEspece {
         id: "salamandre",
         nom: "Salamandre",
@@ -1919,7 +1935,83 @@ const ESPECES: [FicheEspece; 37] = [
         ],
         evolution: None,
     },
+    // Monstres aquatiques, qui ne se trouvent qu'à la pêche, section 15 de
+    // docs/contenu-v1.md (étape 62).
+    FicheEspece {
+        id: "noye",
+        nom: "Noyé",
+        types: &[Type::Eau, Type::Spectre],
+        role: Role::Offensif,
+        stats_de_base: [60, 55, 55, 70, 60, 40],
+        rendement_experience: 95,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Carapace, Habilete::Sorcellerie],
+        apprentissage: &[
+            (1, "plongeon"),
+            (1, "lueur-trompeuse"),
+            (12, "deferlante"),
+            (18, "frisson-d-outre-tombe"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "anguille-des-tourbieres",
+        nom: "Anguille des tourbières",
+        types: &[Type::Eau, Type::Tenebres],
+        role: Role::Offensif,
+        stats_de_base: [50, 70, 45, 55, 45, 85],
+        rendement_experience: 95,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Celerite, Habilete::Traqueur],
+        apprentissage: &[
+            (1, "plongeon"),
+            (1, "morsure"),
+            (8, "etreinte"),
+            (16, "lame-de-fond"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "sangsue-geante",
+        nom: "Sangsue géante",
+        types: &[Type::Eau, Type::Poison],
+        role: Role::Soutien,
+        stats_de_base: [75, 55, 70, 40, 65, 35],
+        rendement_experience: 92,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Carapace, Habilete::Instinct],
+        apprentissage: &[
+            (1, "charge-gluante"),
+            (1, "morsure-venimeuse"),
+            (15, "croc-de-venin"),
+            (20, "deferlante"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "kelpie",
+        nom: "Kelpie",
+        types: &[Type::Eau, Type::Feerique],
+        role: Role::Offensif,
+        stats_de_base: [75, 85, 65, 65, 60, 70],
+        rendement_experience: 180,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Ferocite, Habilete::Affinite],
+        apprentissage: &[
+            (1, "plongeon"),
+            (1, "ruade"),
+            (15, "lame-de-fond"),
+            (25, "trombe"),
+        ],
+        evolution: None,
+    },
 ];
+
+/// Section 15 de docs/contenu-v1.md : la ligne est prête 2 h après avoir
+/// été lancée.
+const HEURES_DE_PECHE: u64 = 2;
+const ESPECES_PECHEES: [&str; 3] = ["noye", "anguille-des-tourbieres", "sangsue-geante"];
+const ESPECE_PECHEE_RARE: &str = "kelpie";
 
 fn creer_espece(fiche: &FicheEspece) -> Espece {
     let [
@@ -2457,7 +2549,7 @@ mod tests {
     #[test]
     fn contenu_conforme_aux_regles() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.especes().len(), 37);
+        assert_eq!(contenu.especes().len(), 41);
         assert_eq!(contenu.zones().len(), 4);
         assert_eq!(contenu.piste().indices().count(), 4);
         // Toute espèce rencontrée en zone se retrouve au chargement d'une
@@ -2477,11 +2569,13 @@ mod tests {
     #[test]
     fn la_rarete_suit_la_place_de_l_espece_dans_le_jeu() {
         let contenu = ContenuV1::new();
+        // Le Kelpie est le monstre rare de la pêche (section 13.8).
         let rares: Vec<&EspeceId> = contenu
             .zones()
             .iter()
             .flat_map(|zone| zone.rares().iter().chain(zone.monstre_cache()))
             .map(|rare| rare.espece.id())
+            .chain([contenu.peche().rare().id()])
             .collect();
         let apotres: Vec<&EspeceId> = contenu
             .piste()
@@ -2607,6 +2701,41 @@ mod tests {
             }
         }
         assert_eq!(evoluees, 14);
+    }
+
+    #[test]
+    fn la_peche_remonte_des_monstres_aquatiques_qui_ne_vivent_nulle_part_ailleurs() {
+        let contenu = ContenuV1::new();
+        let peche = contenu.peche();
+        assert_eq!(peche.duree(), Duration::from_secs(7_200));
+        let ids: Vec<&str> = peche
+            .especes()
+            .iter()
+            .chain([peche.rare()])
+            .map(|espece| espece.id().as_str())
+            .collect();
+        assert_eq!(
+            ids,
+            vec![
+                "noye",
+                "anguille-des-tourbieres",
+                "sangsue-geante",
+                "kelpie"
+            ]
+        );
+        for espece in peche.especes().iter().chain([peche.rare()]) {
+            assert!(espece.types().liste().contains(&Type::Eau));
+            assert!(espece.ressource().is_none());
+            assert!(espece.evolution().is_none());
+            assert_eq!(contenu.espece(espece.id()).as_ref(), Some(espece));
+            for zone in contenu.zones() {
+                let ailleurs = zone
+                    .especes()
+                    .iter()
+                    .chain(zone.rares().iter().map(|rare| &rare.espece));
+                assert!(ailleurs.into_iter().all(|autre| autre.id() != espece.id()));
+            }
+        }
     }
 
     #[test]

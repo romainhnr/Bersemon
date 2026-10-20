@@ -488,6 +488,7 @@ fn l_equipe_et_le_camp_pleins_tiennent_dans_les_limites() {
             conseils_vus: Vec::new(),
             expeditions_automatiques: Vec::new(),
             attaques_a_choisir: Vec::new(),
+            peche: Default::default(),
             forge,
         })
         .unwrap();
@@ -585,6 +586,7 @@ fn les_attaques_au_camp_se_choisissent_par_menu() {
         conseils_vus: Vec::new(),
         expeditions_automatiques: Vec::new(),
         attaques_a_choisir: Vec::new(),
+        peche: Default::default(),
         forge: Default::default(),
     })
     .unwrap();
@@ -822,6 +824,7 @@ fn gunther_agrandit_l_enclos_a_travers_les_ecrans_du_bot() {
         conseils_vus: Vec::new(),
         expeditions_automatiques: Vec::new(),
         attaques_a_choisir: Vec::new(),
+        peche: Default::default(),
         forge: Forge::restaurer(true, Default::default(), None).unwrap(),
     })
     .unwrap();
@@ -1007,6 +1010,7 @@ fn la_forge_et_l_equipement_tiennent_dans_les_limites() {
             conseils_vus: Vec::new(),
             expeditions_automatiques: Vec::new(),
             attaques_a_choisir: Vec::new(),
+            peche: Default::default(),
             forge: Forge::restaurer(true, Default::default(), None).unwrap(),
         })
         .unwrap();
@@ -1052,6 +1056,7 @@ fn toute_l_equipe_se_prepare_d_un_bouton_s_il_y_a_de_la_place_au_camp() {
             conseils_vus: Vec::new(),
             expeditions_automatiques: Vec::new(),
             attaques_a_choisir: Vec::new(),
+            peche: Default::default(),
             forge: Default::default(),
         })
         .unwrap()
@@ -1186,6 +1191,7 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         expeditions_automatiques: Vec::new(),
         attaques_a_choisir: Vec::new(),
         // Gunther a fini un chantier, qui attend d'être constaté.
+        peche: Default::default(),
         forge: bersemon_core::amelioration::Forge::restaurer(
             true,
             bersemon_core::amelioration::Ameliorations::new(2, 1, 0).unwrap(),

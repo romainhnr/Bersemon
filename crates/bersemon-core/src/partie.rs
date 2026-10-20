@@ -38,6 +38,7 @@ use crate::monstre::{Monstre, tirer_shiny, tirer_valeurs_internes};
 use crate::niveau::Niveau;
 use crate::nom::Nom;
 use crate::obeissance::limite_d_obeissance;
+use crate::peche::{ErreurPeche, ParametresPeche, Peche, Prise};
 use crate::pierre::PierreDEvolution;
 use crate::ressource::{Ressource, RessourceId};
 use crate::soin::{EffetDuSoin, ErreurSoin, Soin};
@@ -103,6 +104,8 @@ pub struct Partie {
     attaques_a_choisir: Vec<AttaqueAChoisir>,
     /// Gunther et les améliorations du camp (section 13.4).
     forge: Forge,
+    /// Ansgar et sa ligne (section 13.8).
+    peche: Peche,
 }
 
 /// Attaque qu'un monstre rentré d'expédition automatique veut apprendre en
@@ -135,6 +138,7 @@ pub struct EtatPartie {
     pub expeditions_automatiques: Vec<ExpeditionAutomatique>,
     pub attaques_a_choisir: Vec<AttaqueAChoisir>,
     pub forge: Forge,
+    pub peche: Peche,
 }
 
 /// Sauvegarde lisible mais contraire aux règles des expéditions
@@ -151,6 +155,9 @@ pub enum ErreurRestaurationPartie {
     CapsuleEnDouble(AttaqueId),
     /// Ni monstre au camp, ni monstre en expédition automatique.
     AucunMonstre,
+    /// Un monstre pêché attend que le joueur le garde ou le relâche, mais
+    /// l'équipe et le camp sont pleins.
+    PriseSansPlace,
 }
 
 impl fmt::Display for ErreurRestaurationPartie {
@@ -175,6 +182,9 @@ impl fmt::Display for ErreurRestaurationPartie {
                 write!(f, "capsule obtenue deux fois : {}", capsule.as_str())
             }
             ErreurRestaurationPartie::AucunMonstre => write!(f, "aucun monstre"),
+            ErreurRestaurationPartie::PriseSansPlace => {
+                write!(f, "monstre pêché sans place dans l'équipe ni au camp")
+            }
         }
     }
 }
@@ -201,6 +211,7 @@ impl Partie {
             apotres_vaincus: Vec::new(),
             humains_vaincus: Vec::new(),
             forge: Forge::default(),
+            peche: Peche::default(),
             conseils_vus: Vec::new(),
             expeditions_automatiques: Vec::new(),
             attaques_a_choisir: Vec::new(),
@@ -288,6 +299,80 @@ impl Partie {
     /// joueur et y reste (section 13.4).
     pub(crate) fn accueillir_gunther(&mut self) {
         self.forge.accueillir_gunther();
+    }
+
+    pub fn peche(&self) -> &Peche {
+        &self.peche
+    }
+
+    /// Sauvé dans le Marais, Ansgar rentre au camp avec le joueur et y reste
+    /// (section 13.8).
+    pub(crate) fn accueillir_ansgar(&mut self) {
+        self.peche.accueillir_ansgar();
+    }
+
+    /// Gratuite et sans confirmation, une ligne à la fois. Rend l'heure où
+    /// elle sera prête (section 13.8).
+    pub fn lancer_la_ligne(
+        &mut self,
+        parametres: &ParametresPeche,
+        maintenant: Horodatage,
+    ) -> Result<Horodatage, ErreurPeche> {
+        self.peche.lancer(parametres.duree(), maintenant)
+    }
+
+    /// Relève la ligne prête, si un monstre pêché trouverait sa place dans
+    /// l'équipe ou au camp, et rend la prise : un monstre, rencontré au
+    /// codex, attend que le joueur le garde ou le relâche ; un objet va dans
+    /// le coffre (section 13.8). `zone` est la plus avancée que le joueur a
+    /// ouverte. Tirages : ceux de `ParametresPeche::tirer_prise`, seulement
+    /// si la ligne se relève.
+    pub fn relever_la_ligne(
+        &mut self,
+        parametres: &ParametresPeche,
+        zone: &Zone,
+        maintenant: Horodatage,
+        aleatoire: &mut dyn Aleatoire,
+    ) -> Result<Prise, ErreurPeche> {
+        self.peche.verifier_releve(maintenant)?;
+        if !self.collection.a_de_la_place() {
+            return Err(ErreurPeche::PlaceManquante);
+        }
+        let prise = parametres.tirer_prise(zone, aleatoire);
+        self.peche.relever();
+        match &prise {
+            Prise::Monstre(monstre) => {
+                self.codex.noter_rencontre(monstre.espece().id());
+                self.peche.garder_en_attente(Monstre::clone(monstre));
+            }
+            Prise::Potion => self.coffre_du_camp.ajouter_potions(1),
+            Prise::Argent(argent) => self.coffre_du_camp.ajouter_argent(*argent),
+            Prise::Pierre(pierre) => self.coffre_du_camp.ajouter_pierres(*pierre, 1),
+            Prise::CapsuleDHabilete => self.coffre_du_camp.ajouter_capsules_d_habilete(1),
+        }
+        Ok(prise)
+    }
+
+    /// Le monstre pêché compte comme capturé et rejoint l'équipe s'il y a de
+    /// la place, sinon le camp ; la place a été vérifiée en relevant la
+    /// ligne. `None` sans monstre pêché.
+    pub fn garder_la_prise(&mut self) -> Option<Placement> {
+        let prise = self.peche.prendre_la_prise()?;
+        self.codex.noter_capture(prise.espece().id());
+        Some(self.collection.accueillir_capture(prise))
+    }
+
+    /// `None` sans monstre pêché.
+    pub fn relacher_la_prise(&mut self) -> Option<Monstre> {
+        self.peche.prendre_la_prise()
+    }
+
+    /// La zone ouverte de plus haut niveau, où la pêche prend ses monstres
+    /// et son argent (section 13.8).
+    pub fn zone_la_plus_avancee<'a>(&self, zones: &'a [Zone], piste: &Piste) -> Option<&'a Zone> {
+        self.zones_accessibles(zones, piste)
+            .into_iter()
+            .max_by_key(|zone| zone.niveaux().1)
     }
 
     /// Ce qu'il manque, du sac et du coffre réunis, pour payer ce coût.
@@ -861,6 +946,9 @@ impl Partie {
                 return Err(ErreurRestaurationPartie::ExpeditionEnDouble(zone.clone()));
             }
         }
+        if etat.peche.prise().is_some() && !collection.a_de_la_place() {
+            return Err(ErreurRestaurationPartie::PriseSansPlace);
+        }
         for a_choisir in &etat.attaques_a_choisir {
             if collection.monstre(a_choisir.emplacement).is_none() {
                 return Err(ErreurRestaurationPartie::AttaqueAChoisirSansMonstre(
@@ -886,6 +974,7 @@ impl Partie {
             expeditions_automatiques: etat.expeditions_automatiques,
             attaques_a_choisir: etat.attaques_a_choisir,
             forge: etat.forge,
+            peche: etat.peche,
         })
     }
 
@@ -2262,6 +2351,7 @@ mod tests {
             conseils_vus: partie.conseils_vus().to_vec(),
             expeditions_automatiques: partie.expeditions_automatiques().to_vec(),
             attaques_a_choisir: partie.attaques_a_choisir().to_vec(),
+            peche: partie.peche().clone(),
             forge: partie.forge().clone(),
         }
     }

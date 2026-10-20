@@ -18,6 +18,7 @@ use crate::partie::{
     argent, argent_et_part_du_pillard, capsule as nom_de_capsule, capsules_d_habilete, contenu,
     enumerer, pierres, potions, ressources,
 };
+use crate::peche;
 use crate::soins::{le_soin, soin_utilise, soins};
 
 /// La forme évoluée apprend d'autres attaques que son attaque d'évolution
@@ -368,6 +369,9 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
         Evenement::GuntherLibere(texte) => (texte.clone(), true),
         Evenement::AmeliorationLancee { plan, .. } => (lancement(plan), false),
         Evenement::TravailConstate(chantier) => (constat(chantier), true),
+        Evenement::LigneLancee(delai) => (peche::lancement(*delai), false),
+        Evenement::PrisePechee(prise) => (peche::prise(prise), true),
+        Evenement::PriseRelachee(monstre) => (peche::prise_relachee(monstre), false),
         Evenement::FabricationLancee { plan, .. } => (lancement_de_fabrication(plan), false),
         Evenement::ObjetEquipe {
             place,

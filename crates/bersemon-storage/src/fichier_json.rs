@@ -104,6 +104,7 @@ mod tests {
     use bersemon_core::niveau::Niveau;
     use bersemon_core::nom::Nom;
     use bersemon_core::partie::{AttaqueAChoisir, EtatPartie};
+    use bersemon_core::peche::Peche;
     use bersemon_core::pierre::PierreDEvolution;
     use bersemon_core::ressource::{Ressource, RessourceId};
     use bersemon_core::soin::Soin;
@@ -383,6 +384,12 @@ mod tests {
             conseils_vus: partie.conseils_vus().to_vec(),
             expeditions_automatiques: partie.expeditions_automatiques().to_vec(),
             attaques_a_choisir,
+            peche: Peche::restaurer(
+                true,
+                Some(Horodatage::depuis_secondes(8_000)),
+                Some(creer("loup", 6)),
+            )
+            .unwrap(),
             forge: Forge::restaurer(
                 true,
                 Ameliorations::new(1, 2, 1).unwrap(),
@@ -604,11 +611,33 @@ mod tests {
 
     #[test]
     fn version_inconnue() {
-        let texte = texte_de_partie().replacen("\"version\":17", "\"version\":18", 1);
+        let texte = texte_de_partie().replacen("\"version\":18", "\"version\":19", 1);
         assert_eq!(
             charger_texte(&texte),
-            Err(ErreurSauvegarde::VersionInconnue(18))
+            Err(ErreurSauvegarde::VersionInconnue(19))
         );
+    }
+
+    #[test]
+    fn une_sauvegarde_en_version_17_n_a_pas_de_peche() {
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        let objet = valeur.as_object_mut().unwrap();
+        objet.insert("version".to_string(), 17.into());
+        for champ in ["ansgar_au_camp", "ligne", "prise"] {
+            assert!(objet.remove(champ).is_some(), "{champ}");
+        }
+        let partie = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        assert_eq!(partie.peche(), &Peche::default());
+    }
+
+    #[test]
+    fn une_peche_sans_ansgar_est_refusee() {
+        let texte =
+            texte_de_partie().replace("\"ansgar_au_camp\":true", "\"ansgar_au_camp\":false");
+        assert!(matches!(
+            charger_texte(&texte),
+            Err(ErreurSauvegarde::Incoherente(_))
+        ));
     }
 
     #[test]

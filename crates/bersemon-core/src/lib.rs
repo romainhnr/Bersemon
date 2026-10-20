@@ -37,6 +37,7 @@ pub mod niveau;
 pub mod nom;
 pub mod obeissance;
 pub mod partie;
+pub mod peche;
 pub mod pierre;
 pub mod ressource;
 pub mod sauvegarde;

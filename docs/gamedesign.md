@@ -189,6 +189,7 @@ Chaque monstre possède :
 - Précisé le 19/10/2026 : ces monstres peupleront la troisième zone, à l'étape 30, et non les deux zones actuelles (Q73).
 - Décidé le 19/10/2026, pour l'étape 30 : la Vallée des Brumes accueille la Fée noire et le Squelette, communs, l'Elfe, rare et pacifique, et la Vouivre, rare et hostile. Le type Féérique y reste réservé à une espèce rare (section 5.2). Fiches dans docs/contenu-v1.md.
 - Monstre caché, depuis l'étape 27 (19/10/2026) : le Schnoz, seul monstre de type Stellaire, d'espèce rare. Il se rencontre très rarement, dans toute zone (section 9.2). Fiche dans docs/contenu-v1.md.
+- Décidé le 20/10/2026, pour les étapes 62 à 65 : quatre monstres aquatiques, qui ne se trouvent qu'à la pêche (section 13.8) : le Noyé, l'Anguille des tourbières et la Sangsue géante, communs, et le Kelpie, rare, de type Eau et Féérique. Au codex, ils viennent après la Reine des ronces. Fiches dans docs/contenu-v1.md, section 15.
 
 ### 5.4 Évolution
 
@@ -363,6 +364,7 @@ Déroulement dans la V1 :
 - Après la V1, l'écran entre deux étapes rappelle l'argent et les capsules trouvés pendant l'expédition, qu'une défaite ferait perdre (section 9.3). Avec le coffre du camp, il montre le contenu du sac (section 13.3).
 - Décidé le 18/10/2026, pour l'étape 30 : un événement important (un indice, un humain à vaincre en fin de zone, un Apôtre) est d'abord présenté par un texte et un bouton (« Combattre », « Lire l'indice ») avant de se produire, pour que le joueur ne le rate pas en enchaînant les actions.
 - Après la dernière étape, le joueur rentre au camp et la zone compte comme explorée.
+- Décidé le 20/10/2026, pour l'étape 63 (choix de l'utilisateur) : tant qu'Ansgar, le pêcheur, n'est pas au camp, il se rencontre à coup sûr à l'étape 2 de chaque expédition dans le Marais des Pendus, à la place de l'événement tiré. Ce qu'il vient de ferrer, un Noyé de niveau 13 (le niveau maximal du Marais, comme le Loup de Bertrand), l'attaque : un combat ordinaire contre un monstre sauvage, fuite et filet compris, présenté par son texte comme celui d'une âme, sans bouton d'annonce. Une victoire l'installe au camp, acquis dès ce moment même si l'expédition finit en défaite, comme une âme recueillie ; une fuite ou une défaite le laisse à sauver à l'expédition suivante. Le Noyé ne lâche pas de ressource. L'âme de Grete garde ses 10 % sur les autres étapes ; à retrouver, son étape est tirée parmi les étapes 1, 3 et 4 (hypothèse retenue, Q91). Une sauvegarde qui a déjà passé le Marais rencontre Ansgar à sa prochaine expédition dans le Marais. Textes dans docs/contenu-v1.md, section 15.
 - Annonces, depuis l'étape 30 : le combat contre un humain de fin de zone ou contre un Apôtre est d'abord présenté par son texte et un bouton "Combattre" ; un indice, au retour au camp, par un bouton "Lire l'indice". Dans la console, ce bouton est l'unique choix d'un menu.
 
 ### 9.3 Défaite
@@ -671,6 +673,18 @@ Le joueur peut construire des machines pour automatiser certaines tâches, par e
 
 - Le joueur peut pêcher pour trouver des monstres aquatiques ou des objets plus ou moins rares.
 
+Décidé le 20/10/2026, pour les étapes 62 à 65 (choix de l'utilisateur) :
+
+- La pêche se fait au camp, avec Ansgar, vieux pêcheur sauvé dans le Marais des Pendus (section 9.2). Tant qu'il n'est pas au camp, le camp ne propose pas la pêche.
+- Une seule ligne à la fois. Le joueur la lance au camp, gratuitement et sans confirmation ; elle est prête 2 h plus tard, sur l'horloge réelle, comme une expédition automatique, et une ligne lancée ne se retire pas (hypothèse retenue, Q91). Le joueur la relève lui-même, au camp, une fois prête.
+- La prise est tirée au moment de relever la ligne, une fois par ligne, et la partie est sauvegardée aussitôt, pour que quitter le jeu ne permette pas de la tirer de nouveau. Si l'équipe et le camp sont pleins, la ligne ne se relève pas, avant tout tirage : le refus dit de faire de la place (hypothèse retenue, Q91).
+- Prises : monstre aquatique commun 55 %, Kelpie (rare) 5 %, potion 20 %, bourse noyée 10 %, pierre d'évolution 5 % (Pierre de braise ou de lune, pour moitié), capsule d'habileté 5 %. Un objet va dans le coffre, comme tout ce qui est gagné au camp (section 13.3). La bourse contient l'argent d'un coffre de la zone ouverte la plus avancée (section 14.5).
+- Un monstre pêché est un monstre sauvage : son niveau est tiré parmi ceux de la zone ouverte la plus avancée, avec ses valeurs internes, son shiny (1 sur 512) et son habileté. Il entre au codex comme rencontré dès la prise. Choix de l'utilisateur : le joueur le garde ou le relâche ; gardé, il compte comme capturé et rejoint l'équipe s'il y a de la place, sinon le camp ; relâché, il retourne à l'eau, sans confirmation (hypothèse retenue, Q91). Tant qu'il n'a pas répondu, le camp n'accepte aucune autre action, comme pour une attaque à choisir (section 12.7), et la question revient à la reprise de la partie.
+- Les espèces aquatiques ne vivent qu'à la pêche (le Noyé attaque aussi Ansgar, section 9.2). Elles n'ont ni ressource ni évolution (hypothèses retenues, Q91). Fiches dans docs/contenu-v1.md, section 15.
+- La pêche ne joue pas sur les expéditions et ne touche pas au multijoueur.
+- Écrans, à l'étape 64 (console) : une fois Ansgar au camp, le camp propose "Pêche d'Ansgar", et signale une ligne prête à relever. L'écran de la pêche montre l'état de la ligne et propose de la lancer, ou de la relever une fois prête. Le monstre pêché est présenté avec sa fiche, puis la question "Garder" ou "Relâcher".
+- Écrans, à l'étape 65 (Discord) : un bouton "Pêche" s'ajoute au camp, le 10e et dernier possible sur ses deux rangées. Le bot prévient par message privé quand la ligne est prête, comme d'une construction finie.
+
 ### 13.9 Sauvegarde (V1)
 
 - Un seul emplacement : une seule partie en cours, reprise au lancement du jeu. Commencer une nouvelle partie remplace l'ancienne, après confirmation.
@@ -685,6 +699,7 @@ Le joueur peut construire des machines pour automatiser certaines tâches, par e
 - Depuis l'étape 41, en version 14 : Gunther au camp, les niveaux des améliorations et la construction en cours (section 13.4). Depuis l'étape 43, en version 15, aussi le niveau de l'amélioration de l'équipe.
 - Depuis l'étape 49, en version 16 : l'équipement du héros, objets possédés et portés, et l'objet en fabrication (sections 4.3 et 13.5). Une sauvegarde antérieure n'a aucun objet. Une sauvegarde qui cite un objet disparu du jeu est refusée, comme une espèce disparue.
 - Depuis l'étape 39, en version 13 : les pierres d'évolution du sac et du coffre (section 5.4). Une sauvegarde antérieure n'en a pas.
+- Depuis l'étape 62, en version 18 : Ansgar au camp, l'heure où la ligne sera prête et le monstre pêché qui attend la réponse du joueur (section 13.8). Une sauvegarde antérieure n'a pas Ansgar au camp.
 - Depuis l'étape 32, en version 12 : les attaques à choisir au retour d'une expédition automatique désignent un monstre de l'équipe ou du camp ; celles des versions antérieures désignent un monstre du camp. Les étapes 33 à 36 y ajoutent, toujours en version 12, les âmes à retrouver, les âmes portées, les capsules d'habileté et les ressources du sac et du coffre. Les âmes recueillies des versions antérieures comptent comme données à Malvoise : leur soin reste en vente.
 - Après la V1 (19/10/2026), un sous-menu « Options » du camp permet au joueur de se suicider, après confirmation, pour recommencer sans attendre la reprise au lancement. La sauvegarde est effacée dès la confirmation, avec le héros, les monstres, le sac, le coffre, le codex et les expéditions automatiques en cours ; un court texte suit, puis la création d'un nouveau héros. Ce n'est possible qu'au camp. Le texte est dans docs/contenu-v1.md, section 4.
 
@@ -746,7 +761,7 @@ Premier marchand, après la V1 :
   - Malvoise est rencontré au bout de la première expédition menée au bout, après le brigand, et rentre au camp avec le joueur, où il s'installe. S'il porte l'âme de Bertrand, il lui dit l'avoir vu la recueillir et qu'elle l'intéresse ; sinon, il lui demande de rapporter les âmes des marchands morts. Il vient dans les deux cas, puisqu'il tient l'étal ;
   - au camp, chez Malvoise, le joueur lui donne l'âme qu'il veut, quand il veut, sans confirmation (hypothèse retenue, à confirmer) ; il peut aussi la garder sans limite de temps. Chaque âme donnée ajoute à l'étal l'objet de son marchand. Il en va de même pour les âmes de Grete et d'Ulrich ;
   - après une fuite ou une défaite face au gardien d'une âme, celui-ci revient à coup sûr à la prochaine expédition dans sa zone, à une étape tirée parmi celles qui précèdent la dernière (section 9.2) ; quitter l'expédition avant cette étape la repousse à la suivante. Cela vaut pour Grete, le marchand zombie, et pour Ulrich ; Bertrand, lui, revient toujours à l'étape 4.
-- Plus tard, d'autres personnages pourront être rencontrés de la même façon et enrichir le camp, comme un pêcheur qui apprend à pêcher (section 13.8). Depuis l'étape 41, Gunther, forgeron, libéré du Bourreau, construit les améliorations du camp (section 13.4).
+- Plus tard, d'autres personnages pourront être rencontrés de la même façon et enrichir le camp, comme un pêcheur qui apprend à pêcher (section 13.8). Depuis l'étape 41, Gunther, forgeron, libéré du Bourreau, construit les améliorations du camp (section 13.4). Depuis l'étape 63, Ansgar, pêcheur, sauvé dans le Marais, tend sa ligne au camp (section 13.8).
 
 ### 14.3 Objets et ressources cités dans ce document
 
@@ -894,6 +909,10 @@ Les questions Q89 et suivantes ont été relevées le 20/10/2026 lors de la conc
 Les questions Q90 et suivantes ont été relevées le 20/10/2026 lors de la conception des étapes 59 combat symétrique et duel dans le noyau, 60 défis sur le bot Discord et écran "Autres joueurs", 61 écran du duel.
 
 - Q90. (Étapes 59 à 61) Hypothèses retenues, à confirmer : le délai du forfait court aussi pendant le remplacement d'un monstre KO ; l'ordre du héros se donne à tout moment avant de choisir son action, et l'autre le voit en actualisant ; un joueur en duel ne peut ni lancer ni recevoir de défi, mais les offres de don et d'échange restent possibles ; le joueur qui a lancé le défi est le premier côté du combat. Textes proposés sans validation : l'en-tête "Duel contre {héros}.", "{héros} vous défie en duel." et "Vous avez défié {héros} en duel. En attente de sa réponse." sur l'écran des autres joueurs, son en-tête "Autres joueurs : offres de monstres et duels.", et les refus des défis et du duel. Restent à faire : expéditions en groupe, système d'amis (section 15).
+
+Les questions Q91 et suivantes ont été relevées le 20/10/2026 lors de la conception des étapes 62 règles de la pêche et sauvegarde en version 18, 63 rencontre d'Ansgar dans le Marais, 64 écran de la console, 65 bot Discord.
+
+- Q91. (Étapes 62 à 65) Hypothèses retenues, à confirmer : une ligne lancée ne se retire pas ; si l'équipe et le camp sont pleins, la ligne ne se relève pas, avant tout tirage ; un monstre pêché se relâche sans confirmation ; les espèces aquatiques n'ont ni ressource ni évolution et ne vivent qu'à la pêche ; l'âme de Grete à retrouver ne tombe jamais à l'étape 2 du Marais, réservée à Ansgar ; la durée de 2 h, les chances des prises et le Kelpie, deuxième monstre Féérique accessible et très efficace contre les Apôtres, sont à vérifier en jouant. Textes proposés sans validation : le lancement ("Vous lancez la ligne. Elle sera prête à relever dans {durée}."), la prise ("Au bout de la ligne : {monstre}, de niveau {niveau} !", "Vous remontez {objet}. Vous la rangez dans le coffre."), la question ("Garder {monstre} ? Sinon, il retourne à l'eau."), le relâcher ("{monstre} retourne à l'eau."), l'état de la ligne, l'avis au camp et le message privé ("La ligne d'Ansgar est prête à relever."), les refus, et les libellés "Pêche d'Ansgar", "Pêche", "Lancer la ligne", "Relever la ligne", "Garder" et "Relâcher".
 
 - Q83. (Étapes 33 et 34) Hypothèses retenues, à confirmer : le gardien d'une âme à retrouver attaque à une étape tirée parmi celles qui précèdent la dernière ; le don d'une âme à Malvoise se fait sans confirmation ; une partie antérieure qui n'a pas recueilli l'âme de Bertrand le rencontre à l'étape 4 de sa prochaine expédition dans la Lisière, même avec Malvoise déjà au camp ; le texte du brigand de l'étape 5 ne change pas, même s'il a perdu son Loup à l'étape 4.
 
@@ -1255,3 +1274,13 @@ Les questions Q90 et suivantes ont été relevées le 20/10/2026 lors de la conc
 - Choix de l'utilisateur : le duel en temps réel passe avant le duel contre une copie menée par l'IA, les expéditions en groupe et le système d'amis.
 - Choix de l'utilisateur : duel amical sur des copies soignées, sans gain ni perte ; règles du combat contre un humain avec l'ordre du héros, sans soin ni filet ni fuite ; attente avec un bouton Actualiser et forfait après 5 minutes ; défis lancés depuis l'écran "Autres joueurs", qui remplace "Échanges" (section 15.3). Si les deux équipes tombent au même tour, la première tombée perd. Pas de palmarès. Textes validés (docs/contenu-v1.md, section 14).
 - Hypothèses retenues, à confirmer : Q90.
+
+20/10/2026 (conception des étapes 62 à 65, pêche) :
+
+- Choix de l'utilisateur : la pêche passe avant les autres services rares, le système d'amis et le palmarès des duels.
+- Choix de l'utilisateur : une ligne au camp, prête en 2 h sur l'horloge réelle, relevée par le joueur ; la prise est tirée à la relève (section 13.8).
+- Choix de l'utilisateur : Ansgar, pêcheur, se sauve à l'étape 2 du Marais, contre un Noyé de niveau 13, et s'installe au camp (section 9.2).
+- Contenu validé par l'utilisateur : quatre espèces aquatiques, la table des prises, le nom d'Ansgar et ses deux textes (docs/contenu-v1.md, section 15).
+- Choix de l'utilisateur : le joueur garde ou relâche le monstre pêché.
+- Sauvegarde en version 18.
+- Hypothèses retenues, à confirmer : Q91.

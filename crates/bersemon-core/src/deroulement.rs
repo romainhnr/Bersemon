@@ -12,6 +12,7 @@
 
 use std::collections::VecDeque;
 use std::fmt;
+use std::time::Duration;
 
 use crate::aleatoire::Aleatoire;
 use crate::ame::{Gardien, MarchandId, MarchandMort};
@@ -39,6 +40,7 @@ use crate::marchand::ErreurMarchand;
 use crate::monstre::{Monstre, RapportExperience};
 use crate::nom::{ErreurNom, Nom};
 use crate::partie::{Partie, creer_monstre_de_depart};
+use crate::peche::{ErreurPeche, Prise};
 use crate::pierre::PierreDEvolution;
 use crate::ressource::{Ressource, RessourceId};
 use crate::sauvegarde::{ErreurSauvegarde, SauvegardeRepository};
@@ -116,6 +118,14 @@ pub enum Choix {
     LancerFabrication(ObjetDEquipementId),
     /// Au camp : le joueur constate le travail fini de Gunther.
     ConstaterTravail,
+    /// Au camp, sans confirmation : Ansgar tend une ligne (section 13.8).
+    LancerLaLigne,
+    /// Au camp, une fois la ligne prête.
+    ReleverLaLigne,
+    /// Répond au monstre pêché : il rejoint l'équipe ou le camp.
+    GarderLaPrise,
+    /// Répond au monstre pêché, sans confirmation : il retourne à l'eau.
+    RelacherLaPrise,
     /// Au camp, sans confirmation : l'objet remplace celui de cette place
     /// (section 4.3).
     Equiper {
@@ -237,6 +247,9 @@ pub enum Attente<'a> {
     /// L'équipe et le camp sont pleins : le joueur relâche un de ses monstres
     /// pour garder la capture, ou relâche la capture (Q12).
     PlaceManquante(&'a Monstre),
+    /// Au camp, le monstre pêché, que le joueur garde ou relâche (section
+    /// 13.8).
+    Prise(&'a Monstre),
     /// Le joueur poursuit par `Choix::Poursuivre`.
     Annonce(Annonce),
     Confirmation(&'a Confirmation),
@@ -453,6 +466,13 @@ pub enum Evenement {
     /// Le niveau construit compte désormais, ou l'objet forgé rejoint
     /// l'équipement du héros.
     TravailConstate(Chantier),
+    /// La ligne d'Ansgar sera prête dans ce délai (section 13.8).
+    LigneLancee(Duration),
+    /// Ce qu'a remonté la ligne : un objet est déjà dans le coffre, un
+    /// monstre attend que le joueur le garde ou le relâche.
+    PrisePechee(Prise),
+    /// Le monstre pêché retourne à l'eau.
+    PriseRelachee(Monstre),
     /// L'objet porté à cette place, et celui qu'il remplace.
     ObjetEquipe {
         place: PlaceDEquipement,
@@ -537,6 +557,7 @@ pub enum ErreurChoix {
     /// Le contenu n'a pas de plan pour ce niveau ou cet objet.
     PlanInconnu,
     Equipement(ErreurEquipement),
+    Peche(ErreurPeche),
 }
 
 impl fmt::Display for ErreurChoix {
@@ -563,6 +584,7 @@ impl fmt::Display for ErreurChoix {
             ErreurChoix::Amelioration(erreur) => write!(f, "{erreur}"),
             ErreurChoix::PlanInconnu => write!(f, "aucun plan pour ce niveau ou cet objet"),
             ErreurChoix::Equipement(erreur) => write!(f, "{erreur}"),
+            ErreurChoix::Peche(erreur) => write!(f, "{erreur}"),
         }
     }
 }
@@ -845,7 +867,10 @@ impl EnJeu {
         match &self.expedition {
             None => match self.partie.attaque_a_choisir() {
                 Some((monstre, nouvelle)) => Attente::OubliAttaque { monstre, nouvelle },
-                None => Attente::Camp,
+                None => match self.partie.peche().prise() {
+                    Some(prise) => Attente::Prise(prise),
+                    None => Attente::Camp,
+                },
             },
             Some(en_cours) => en_cours.attente(),
         }
@@ -882,6 +907,11 @@ impl EnJeu {
         // avant toute autre action (section 12.7).
         if self.partie.attaque_a_choisir().is_some() {
             return self.choisir_attaque(choix, contexte, evenements);
+        }
+        // Le monstre pêché aussi, pour que sa place ne puisse pas être prise
+        // entre-temps (section 13.8).
+        if self.partie.peche().prise().is_some() {
+            return self.choisir_prise(choix, contexte, evenements);
         }
         match choix {
             Choix::PartirEnExpedition(id) => {
@@ -1228,6 +1258,38 @@ impl EnJeu {
                 sauvegarder(&self.partie, contexte.depot, evenements);
                 Ok(Reponse::Faite)
             }
+            Choix::LancerLaLigne => {
+                let fin = self
+                    .partie
+                    .lancer_la_ligne(contexte.contenu.peche(), contexte.maintenant)
+                    .map_err(ErreurChoix::Peche)?;
+                evenements.push(Evenement::LigneLancee(
+                    contexte.maintenant.duree_jusqu_a(fin),
+                ));
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::ReleverLaLigne => {
+                let contenu = contexte.contenu;
+                let zone = self
+                    .partie
+                    .zone_la_plus_avancee(contenu.zones(), contenu.piste())
+                    .expect("la première zone est ouverte dès le départ");
+                let prise = self
+                    .partie
+                    .relever_la_ligne(
+                        contenu.peche(),
+                        zone,
+                        contexte.maintenant,
+                        &mut *contexte.aleatoire,
+                    )
+                    .map_err(ErreurChoix::Peche)?;
+                evenements.push(Evenement::PrisePechee(prise));
+                // Tout de suite, pour que quitter le jeu ne permette pas de
+                // tirer de nouveau la prise.
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
             Choix::FaireEvoluer(emplacement) => {
                 if !confirme {
                     // Une évolution impossible est refusée sans demander de
@@ -1373,6 +1435,36 @@ impl EnJeu {
             _ => return Err(ErreurChoix::HorsDePropos),
         }
         self.partie.attaque_choisie();
+        sauvegarder(&self.partie, contexte.depot, evenements);
+        Ok(Reponse::Faite)
+    }
+
+    /// Le monstre pêché rejoint l'équipe ou le camp, ou retourne à l'eau ;
+    /// chaque choix est sauvegardé (section 13.8).
+    fn choisir_prise(
+        &mut self,
+        choix: &Choix,
+        contexte: &mut Contexte<'_>,
+        evenements: &mut Vec<Evenement>,
+    ) -> Result<Reponse, ErreurChoix> {
+        match choix {
+            Choix::GarderLaPrise => {
+                let placement = self
+                    .partie
+                    .garder_la_prise()
+                    .ok_or(ErreurChoix::HorsDePropos)?;
+                let sans_place = annoncer_placement(&self.partie, placement, evenements);
+                debug_assert!(sans_place.is_none(), "place vérifiée en relevant la ligne");
+            }
+            Choix::RelacherLaPrise => {
+                let prise = self
+                    .partie
+                    .relacher_la_prise()
+                    .ok_or(ErreurChoix::HorsDePropos)?;
+                evenements.push(Evenement::PriseRelachee(prise));
+            }
+            _ => return Err(ErreurChoix::HorsDePropos),
+        }
         sauvegarder(&self.partie, contexte.depot, evenements);
         Ok(Reponse::Faite)
     }
@@ -2265,6 +2357,7 @@ mod tests {
     use crate::humain::HumainId;
     use crate::niveau::Niveau;
     use crate::partie::EtatPartie;
+    use crate::peche::Peche;
     use crate::stats::ValeursInternes;
     use crate::types::{Efficacite, efficacite};
     use std::cell::RefCell;
@@ -2351,6 +2444,7 @@ mod tests {
             conseils_vus: partie.conseils_vus().to_vec(),
             expeditions_automatiques: partie.expeditions_automatiques().to_vec(),
             attaques_a_choisir: partie.attaques_a_choisir().to_vec(),
+            peche: partie.peche().clone(),
             forge: partie.forge().clone(),
         }
     }
@@ -3364,6 +3458,7 @@ mod tests {
                 }
             }
             Attente::MonstreRare(_) => Choix::PrendreLeMonstreRare,
+            Attente::Prise(_) => Choix::GarderLaPrise,
             Attente::ActionDeCombat(combat) => {
                 let attaquant = combat.monstre(combat.actif(combat::Cote::Joueur));
                 let defenseur = combat.monstre(combat.actif(combat::Cote::Adversaire));
@@ -4157,6 +4252,7 @@ mod tests {
             conseils_vus: Vec::new(),
             expeditions_automatiques: Vec::new(),
             attaques_a_choisir: Vec::new(),
+            peche: Default::default(),
             forge: Default::default(),
         })
         .unwrap()
@@ -4495,5 +4591,209 @@ mod tests {
             ),
             Err(ErreurChoix::EquipeVide)
         );
+    }
+
+    fn repondre_avec_tirages(
+        deroulement: &mut Deroulement,
+        choix: Choix,
+        contenu: &ContenuV1,
+        depot: &DepotMemoire,
+        maintenant: Horodatage,
+        tirages: Vec<u32>,
+    ) -> Result<Vec<Evenement>, ErreurChoix> {
+        let mut aleatoire = AleatoireScripte::new(tirages);
+        let mut contexte = Contexte {
+            contenu,
+            aleatoire: &mut aleatoire,
+            depot,
+            maintenant,
+        };
+        deroulement.repondre(choix, &mut contexte)
+    }
+
+    /// Ansgar au camp, avec la Salamandre et le Loup d'Aldric ; seule la
+    /// Lisière, de niveau 3 à 7, est ouverte.
+    fn partie_avec_ansgar(contenu: &ContenuV1) -> Partie {
+        let mut etat = etat_de(&partie(contenu));
+        etat.peche = Peche::restaurer(true, None, None).unwrap();
+        Partie::restaurer(etat).unwrap()
+    }
+
+    /// Prise d'un Noyé de niveau 6 : nature (1), espèce (0), niveau (6),
+    /// shiny (2 : non), six valeurs internes, puis habileté (0).
+    const NOYE_DE_NIVEAU_6: [u32; 11] = [1, 0, 6, 2, 0, 0, 0, 0, 0, 0, 0];
+
+    #[test]
+    fn sans_ansgar_pas_de_peche() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut deroulement = au_camp(partie(&contenu), &contenu, &depot);
+        assert_eq!(
+            repondre_sans_tirage(&mut deroulement, Choix::LancerLaLigne, &contenu, &depot),
+            Err(ErreurChoix::Peche(ErreurPeche::AucunPecheur))
+        );
+    }
+
+    #[test]
+    fn ansgar_peche_un_monstre_que_le_joueur_garde() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut deroulement = au_camp(partie_avec_ansgar(&contenu), &contenu, &depot);
+        let evenements = repondre_a_l_heure(
+            &mut deroulement,
+            Choix::LancerLaLigne,
+            &contenu,
+            &depot,
+            a(100),
+        )
+        .unwrap();
+        assert_eq!(
+            evenements,
+            vec![Evenement::LigneLancee(Duration::from_secs(7_200))]
+        );
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert_eq!(sauvegarde.peche().ligne(), Some(a(7_300)));
+        assert_eq!(
+            repondre_a_l_heure(
+                &mut deroulement,
+                Choix::LancerLaLigne,
+                &contenu,
+                &depot,
+                a(200)
+            ),
+            Err(ErreurChoix::Peche(ErreurPeche::LigneDejaALEau))
+        );
+        assert_eq!(
+            repondre_a_l_heure(
+                &mut deroulement,
+                Choix::ReleverLaLigne,
+                &contenu,
+                &depot,
+                a(7_299)
+            ),
+            Err(ErreurChoix::Peche(ErreurPeche::PasEncorePrete(a(7_300))))
+        );
+        let evenements = repondre_avec_tirages(
+            &mut deroulement,
+            Choix::ReleverLaLigne,
+            &contenu,
+            &depot,
+            a(7_300),
+            NOYE_DE_NIVEAU_6.to_vec(),
+        )
+        .unwrap();
+        let noye = match &evenements[..] {
+            [Evenement::PrisePechee(Prise::Monstre(monstre))] => Monstre::clone(monstre),
+            autres => panic!("prise attendue : {autres:?}"),
+        };
+        assert_eq!(noye.espece().id().as_str(), "noye");
+        assert_eq!(noye.niveau().valeur(), 6);
+        assert_eq!(deroulement.attente(), Attente::Prise(&noye));
+        // La prise est sauvegardée, rencontrée au codex, avant toute réponse.
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert_eq!(sauvegarde.peche().prise(), Some(&noye));
+        assert_eq!(sauvegarde.peche().ligne(), None);
+        assert_eq!(
+            sauvegarde.codex().etat(noye.espece().id()),
+            EtatCodex::Rencontree
+        );
+        // Rien d'autre au camp tant que le joueur n'a pas répondu.
+        assert_eq!(
+            repondre_a_l_heure(
+                &mut deroulement,
+                Choix::LancerLaLigne,
+                &contenu,
+                &depot,
+                a(7_300)
+            ),
+            Err(ErreurChoix::HorsDePropos)
+        );
+        let evenements =
+            repondre_sans_tirage(&mut deroulement, Choix::GarderLaPrise, &contenu, &depot).unwrap();
+        assert_eq!(evenements, vec![Evenement::RejointLEquipe(noye.clone())]);
+        assert_eq!(deroulement.attente(), Attente::Camp);
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert_eq!(sauvegarde.collection().equipe()[2], noye);
+        assert_eq!(sauvegarde.peche().prise(), None);
+        assert_eq!(
+            sauvegarde.codex().etat(noye.espece().id()),
+            EtatCodex::Capturee
+        );
+    }
+
+    #[test]
+    fn un_monstre_relache_retourne_a_l_eau_et_un_objet_va_au_coffre() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut deroulement = au_camp(partie_avec_ansgar(&contenu), &contenu, &depot);
+        let pecher = |deroulement: &mut Deroulement, tirages: Vec<u32>| {
+            repondre_a_l_heure(deroulement, Choix::LancerLaLigne, &contenu, &depot, a(0)).unwrap();
+            repondre_avec_tirages(
+                deroulement,
+                Choix::ReleverLaLigne,
+                &contenu,
+                &depot,
+                a(7_200),
+                tirages,
+            )
+            .unwrap()
+        };
+        let evenements = pecher(&mut deroulement, NOYE_DE_NIVEAU_6.to_vec());
+        let Evenement::PrisePechee(Prise::Monstre(noye)) = &evenements[0] else {
+            panic!("monstre attendu : {evenements:?}");
+        };
+        let noye = Monstre::clone(noye);
+        let evenements =
+            repondre_sans_tirage(&mut deroulement, Choix::RelacherLaPrise, &contenu, &depot)
+                .unwrap();
+        assert_eq!(evenements, vec![Evenement::PriseRelachee(noye.clone())]);
+        let partie = deroulement.partie().unwrap();
+        assert_eq!(partie.collection().nombre_de_monstres(), 2);
+        assert_eq!(
+            partie.codex().etat(noye.espece().id()),
+            EtatCodex::Rencontree
+        );
+        // Une potion, rangée dans le coffre, sans question.
+        let evenements = pecher(&mut deroulement, vec![61]);
+        assert_eq!(evenements, vec![Evenement::PrisePechee(Prise::Potion)]);
+        assert_eq!(deroulement.attente(), Attente::Camp);
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert_eq!(sauvegarde.coffre_du_camp().potions(), 1);
+        // Une bourse noyée de la Lisière, de 10 à 25 pièces d'argent.
+        let evenements = pecher(&mut deroulement, vec![90, 25]);
+        assert_eq!(evenements, vec![Evenement::PrisePechee(Prise::Argent(25))]);
+        assert_eq!(deroulement.partie().unwrap().coffre_du_camp().argent(), 25);
+    }
+
+    #[test]
+    fn sans_place_la_ligne_ne_se_releve_pas() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut partie = partie_avec_ansgar(&contenu);
+        let loup = partie.collection().equipe()[1].clone();
+        while partie.collection().a_de_la_place() {
+            partie.prendre_monstre_rare(loup.clone());
+        }
+        let mut deroulement = au_camp(partie, &contenu, &depot);
+        repondre_a_l_heure(
+            &mut deroulement,
+            Choix::LancerLaLigne,
+            &contenu,
+            &depot,
+            a(0),
+        )
+        .unwrap();
+        // Refusé avant tout tirage : la ligne reste à relever.
+        assert_eq!(
+            repondre_a_l_heure(
+                &mut deroulement,
+                Choix::ReleverLaLigne,
+                &contenu,
+                &depot,
+                a(7_200)
+            ),
+            Err(ErreurChoix::Peche(ErreurPeche::PlaceManquante))
+        );
+        assert!(deroulement.partie().unwrap().peche().est_prete(a(7_200)));
     }
 }

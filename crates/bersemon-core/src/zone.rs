@@ -274,7 +274,11 @@ impl Zone {
 
     /// Tirages : niveau, shiny, valeurs internes s'il n'est pas shiny, puis
     /// habileté.
-    fn generer_monstre(&self, espece: &Espece, aleatoire: &mut dyn Aleatoire) -> Monstre {
+    pub(crate) fn generer_monstre(
+        &self,
+        espece: &Espece,
+        aleatoire: &mut dyn Aleatoire,
+    ) -> Monstre {
         let valeur = tirer_entre(
             u32::from(self.niveau_min.valeur()),
             u32::from(self.niveau_max.valeur()),
