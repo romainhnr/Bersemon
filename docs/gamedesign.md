@@ -576,6 +576,8 @@ Décidé le 20/10/2026, pour les étapes 76 à 78 (choix de l'utilisateur, Q19 e
 - Exemple : un Loup protégé de 20 PV, une Mandragore de soutien de 30 PV et une Salamandre de 26 PV, sans charme : protection de 25 %. Avec un tirage de 60, chacun devait subir 20 : le Loup en subit 15, et les 5 autres se partagent entre la Mandragore et la Salamandre, 2 chacune, le reste étant perdu. La Mandragore subit 22 et la Salamandre 22.
 - Les chances de réussite affichées avant le départ tiennent compte de la protection (section 12.4).
 - L'objet de protection est le charme de garde, fabriqué par Gunther (section 13.5).
+- Écrans, à l'étape 77 (console) : une fois les monstres choisis, s'il y en a au moins deux, le jeu demande lequel protéger, ou aucun, puis, si le joueur a un charme de garde, s'il le lui donne. La durée, les chances de réussite et la protection s'affichent avant la confirmation. La forge propose "Fabriquer un charme de garde", avec son coût, sa durée et le nombre de charmes possédés ; le coffre déplace les charmes. Le bilan dit le monstre protégé et sa protection, et la part d'argent due aux monstres offensifs.
+- Précisé à l'étape 77, en jouant : la protection ne change presque pas les chances de réussite, puisque la part reportée reste à encaisser par les autres ; elle sert à garder debout un monstre précis, pour qu'il gagne son XP.
 
 ### 12.6 Récompenses
 

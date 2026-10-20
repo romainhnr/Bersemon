@@ -7,12 +7,13 @@ use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::Choix;
 use bersemon_core::expedition_automatique::MONSTRES_MAX;
 use bersemon_core::expedition_automatique::Protection;
+use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_core::zone::Zone;
 use bersemon_presentation::expeditions_automatiques::{
-    erreur_expedition_automatique, estimation, etat_de_la_zone,
+    erreur_expedition_automatique, estimation, etat_de_la_zone, ligne_de_protection,
 };
-use bersemon_presentation::partie::collection as liste_des_monstres;
+use bersemon_presentation::partie::{charmes_de_garde, collection as liste_des_monstres};
 
 use crate::ecran_camp::emplacement_du_numero;
 use crate::horloge::maintenant;
@@ -95,21 +96,65 @@ fn envoyer(partie: &Partie, zone: &Zone, entree: &mut Entree) -> Option<Option<C
     if monstres.is_empty() {
         return Some(None);
     }
-    match partie.estimer_expedition_automatique(zone, &monstres, Protection::default()) {
+    let protection = proteger(partie, &monstres, entree)?;
+    match partie.estimer_expedition_automatique(zone, &monstres, protection) {
         Err(erreur) => {
             println!("{}", erreur_expedition_automatique(&erreur));
             Some(None)
         }
         Ok(previsions) => {
             println!("{}", estimation(zone, &previsions));
+            if monstres.len() > 1 {
+                println!(
+                    "{}",
+                    ligne_de_protection(&envoyes(partie, &monstres), protection)
+                );
+            }
             let partir = entree.confirmation("Envoyer ces monstres ?")?;
             Some(partir.then(|| Choix::EnvoyerEnExpeditionAutomatique {
                 zone: zone.id().clone(),
                 monstres,
-                protection: Protection::default(),
+                protection,
             }))
         }
     }
+}
+
+fn envoyes(partie: &Partie, monstres: &[Emplacement]) -> Vec<Monstre> {
+    monstres
+        .iter()
+        .filter_map(|emplacement| partie.collection().monstre(*emplacement).cloned())
+        .collect()
+}
+
+/// Avec au moins deux monstres, le joueur peut en protéger un, et lui
+/// donner un charme de garde s'il en a (section 12.5).
+fn proteger(partie: &Partie, monstres: &[Emplacement], entree: &mut Entree) -> Option<Protection> {
+    if monstres.len() < 2 {
+        return Some(Protection::default());
+    }
+    let envoyes = envoyes(partie, monstres);
+    println!(
+        "Protéger un monstre ? Les monstres de soutien et un charme de garde reprennent une part de ses dégâts."
+    );
+    for (position, monstre) in envoyes.iter().enumerate() {
+        println!("  {}. {}", position + 1, monstre.nom());
+    }
+    println!("  0. Aucun");
+    let choix = entree.choix(0, envoyes.len())?;
+    if choix == 0 {
+        return Some(Protection::default());
+    }
+    let charmes = partie.charmes_de_garde();
+    let charme = charmes > 0
+        && entree.confirmation(&format!(
+            "Lui donner un charme de garde ({}) ?",
+            charmes_de_garde(charmes)
+        ))?;
+    Some(Protection {
+        protege: Some(choix - 1),
+        charme,
+    })
 }
 
 /// Aucun monstre si le joueur annule d'emblée.

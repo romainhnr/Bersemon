@@ -36,9 +36,11 @@ pub fn choisir(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
         println!("  14. Ranger des boosters");
         println!("  15. Prendre des Éclats d'astre");
         println!("  16. Ranger des Éclats d'astre");
-        println!("  17. Tout ranger dans le coffre");
+        println!("  17. Prendre des charmes de garde");
+        println!("  18. Ranger des charmes de garde");
+        println!("  19. Tout ranger dans le coffre");
         println!("  0. Retour au camp");
-        let choix = match entree.choix(0, 17)? {
+        let choix = match entree.choix(0, 19)? {
             0 => return Some(None),
             1 => soins(coffre, entree)?.map(Choix::SortirDuCoffre),
             2 => soins(sac, entree)?.map(Choix::RangerAuCoffre),
@@ -62,6 +64,10 @@ pub fn choisir(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
                 .map(|nombre| Choix::SortirDuCoffre(Objet::EclatsDAstre(nombre))),
             16 => quantite(sac.eclats_d_astre(), "Éclats d'astre", entree)?
                 .map(|nombre| Choix::RangerAuCoffre(Objet::EclatsDAstre(nombre))),
+            17 => quantite(coffre.charmes_de_garde(), "charmes de garde", entree)?
+                .map(|nombre| Choix::SortirDuCoffre(Objet::CharmesDeGarde(nombre))),
+            18 => quantite(sac.charmes_de_garde(), "charmes de garde", entree)?
+                .map(|nombre| Choix::RangerAuCoffre(Objet::CharmesDeGarde(nombre))),
             _ => Some(Choix::ToutRangerAuCoffre),
         };
         if choix.is_some() {

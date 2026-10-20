@@ -6,7 +6,7 @@ use std::time::Duration;
 use bersemon_core::collection::{Emplacement, ErreurCollection};
 use bersemon_core::expedition_automatique::{
     BilanExpeditionAutomatique, Chances, ErreurExpeditionAutomatique, Estimation,
-    ExpeditionAutomatique, MONSTRES_MAX, MONSTRES_MIN,
+    ExpeditionAutomatique, MONSTRES_MAX, MONSTRES_MIN, PROTECTION_DU_CHARME, Protection,
 };
 use bersemon_core::horodatage::Horodatage;
 use bersemon_core::monstre::Monstre;
@@ -62,6 +62,26 @@ pub fn estimation(zone: &Zone, estimation: &Estimation) -> String {
         duree(estimation.duree),
         chances(estimation.chances)
     )
+}
+
+/// Le monstre protégé et sa protection, avant le départ (section 12.5) ;
+/// `monstres` dans l'ordre de l'expédition.
+pub fn ligne_de_protection(monstres: &[Monstre], protection: Protection) -> String {
+    match protection.protege.and_then(|protege| monstres.get(protege)) {
+        Some(monstre) => {
+            let charme = if protection.charme {
+                ", avec un charme de garde"
+            } else {
+                ""
+            };
+            format!(
+                "Monstre protégé : {}, à {} %{charme} (25 % par autre monstre de soutien, {PROTECTION_DU_CHARME} % avec un charme).",
+                monstre.nom(),
+                protection.pourcentage(monstres)
+            )
+        }
+        None => "Aucun monstre protégé.".to_string(),
+    }
 }
 
 /// Arrondies à l'entier inférieur ; une réussite possible n'est jamais

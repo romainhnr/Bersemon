@@ -8,7 +8,8 @@ use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::Choix;
 use bersemon_core::partie::Partie;
 use bersemon_presentation::equipement::objet_et_bonus;
-use bersemon_presentation::forge::{etat_de_la_forge, etat_des_fabrications};
+use bersemon_presentation::expeditions_automatiques::duree;
+use bersemon_presentation::forge::{cout, etat_de_la_forge, etat_des_fabrications};
 
 use crate::ecran_machines;
 use crate::horloge::maintenant;
@@ -40,6 +41,17 @@ pub fn choisir(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Opt
             ));
         }
     }
+    // Aussi souvent que le joueur le veut (section 13.5).
+    let plan = contenu.plan_du_charme();
+    choix.push((
+        Choix::FabriquerCharme,
+        format!(
+            "Fabriquer un charme de garde ({}, {}) : vous en avez {}",
+            cout(plan.cout()),
+            duree(plan.duree()),
+            partie.charmes_de_garde()
+        ),
+    ));
     let fabriquer = choix.len() + 1;
     // Les machines se gèrent ici dès que l'une d'elles est construite.
     let ameliorations = partie.forge().ameliorations();
