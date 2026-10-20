@@ -4255,17 +4255,24 @@ mod tests {
                 .porte(PlaceDEquipement::Arme)
                 .is_some()
         );
-        // En combat, +5 % d'Attaque pour ses monstres, en plus de la classe.
+        // En combat, +5 % d'Attaque pour ses monstres, en plus de la classe
+        // et du rôle de la Salamandre, offensive (+10 % d'Attaque et
+        // d'Attaque spéciale, section 4.2).
         let mut partie = deroulement.partie().unwrap().clone();
         let monstre = partie.collection().equipe()[0].clone();
         let sauvage = salamandre(&contenu, 40);
         let combat = partie.preparer_combat(vec![sauvage]).unwrap();
         let stats = combat.stats_en_combat(combat.actif(crate::combat::Cote::Joueur));
-        assert_eq!(stats.attaque, monstre.stats().attaque * 105 / 100);
-        assert_ne!(stats.attaque, monstre.stats().attaque);
+        assert_eq!(stats.attaque, monstre.stats().attaque * 115 / 100);
         assert_eq!(
             stats.attaque_speciale,
-            monstre.stats().attaque_speciale * 110 / 100
+            monstre.stats().attaque_speciale * 120 / 100
+        );
+        // Le monstre sauvage n'a pas le bonus de son rôle.
+        let adversaire = combat.actif(crate::combat::Cote::Adversaire);
+        assert_eq!(
+            combat.stats_en_combat(adversaire).attaque,
+            combat.monstre(adversaire).stats().attaque
         );
         let evenements = repondre_a_l_heure(
             &mut deroulement,

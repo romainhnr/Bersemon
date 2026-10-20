@@ -4,7 +4,7 @@ use std::fmt::Display;
 
 use bersemon_core::attaque::{Attaque, Categorie};
 use bersemon_core::combat::{Combat, Combattant, Cote};
-use bersemon_core::espece::Espece;
+use bersemon_core::espece::{Espece, Role};
 use bersemon_core::experience::experience_requise;
 use bersemon_core::habilete::Habilete;
 use bersemon_core::monstre::Monstre;
@@ -111,6 +111,7 @@ pub fn fiche_du_monstre(monstre: &Monstre) -> String {
         ligne_monstre(monstre, Cote::Joueur),
         format!("XP : {}", progression_d_experience(monstre)),
         format!("Types : {}", types_de(monstre.espece())),
+        format!("Rôle : {}", decrire_role(monstre.espece().role())),
     ];
     if let Some(habilete) = monstre.habilete() {
         lignes.push(format!("Habileté : {}", decrire_habilete(habilete)));
@@ -132,6 +133,15 @@ pub fn provenance(monstre: &Monstre, limite_d_obeissance: u8) -> Option<String> 
             heros.as_str()
         )
     })
+}
+
+/// "soutien (+10 % de Défense et de Défense spéciale en combat)" (section
+/// 4.2).
+pub fn decrire_role(role: Role) -> String {
+    match role {
+        Role::Soutien => "soutien (+10 % de Défense et de Défense spéciale en combat)".to_string(),
+        Role::Offensif => "offensif (+10 % d'Attaque et d'Attaque spéciale en combat)".to_string(),
+    }
 }
 
 /// "Férocité (+10 % d'Attaque en combat)" (section 5.9).

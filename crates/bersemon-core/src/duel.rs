@@ -130,6 +130,7 @@ impl Duel {
         for (cote, partie) in [(Cote::Joueur, premier), (Cote::Adversaire, second)] {
             combat = combat
                 .avec_bonus_du_cote(cote, partie.heros().bonus_en_combat())
+                .avec_bonus_de_role_du_cote(cote)
                 .avec_ordre_du_cote(cote, partie.heros().classe().ordre())
                 .avec_limite_du_cote(cote, partie.limite_d_obeissance(zones, piste));
         }
@@ -577,11 +578,18 @@ mod tests {
             combat.ordre_disponible_pour(Cote::Adversaire),
             Some(Ordre::Incantation)
         );
-        // +10 % d'Attaque pour le Guerrier, d'Attaque spéciale pour le Mage.
+        // +10 % d'Attaque pour le Guerrier, d'Attaque spéciale pour le Mage,
+        // et le bonus du rôle de chaque côté : la Salamandre est offensive,
+        // la Mandragore de soutien, avec Carapace (section 4.2).
         let attaque = salamandre.stats().attaque;
         assert_eq!(
             combat.stats_en_combat(joueur(0)).attaque,
-            attaque * 110 / 100
+            attaque * 120 / 100
+        );
+        let defense = combat.adversaires()[0].stats().defense;
+        assert_eq!(
+            combat.stats_en_combat(adversaire(0)).defense,
+            defense * 120 / 100
         );
         let mandragore = &combat.adversaires()[0];
         assert_eq!(

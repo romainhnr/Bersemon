@@ -6,7 +6,7 @@ use crate::evolution::Evolution;
 use crate::habilete::Habilete;
 use crate::niveau::Niveau;
 use crate::ressource::Ressource;
-use crate::stats::StatsDeBase;
+use crate::stats::{BonusDeStats, Stats, StatsDeBase};
 use crate::types::TypesMonstre;
 
 /// Identifiant stable d'une espèce. C'est lui, et non les données de
@@ -25,13 +25,37 @@ impl EspeceId {
     }
 }
 
-/// Rôle d'une espèce, en plus de ses types. Il n'a pas d'effet dans la V1
-/// (Q19). Hypothèse du code : le rôle est porté par l'espèce, pas par chaque
-/// monstre.
+/// Rôle d'une espèce, en plus de ses types. Hypothèse du code : le rôle est
+/// porté par l'espèce, pas par chaque monstre. Il n'avait pas d'effet dans
+/// la V1 ; depuis l'étape 75, il renforce en combat les monstres d'un joueur
+/// (section 4.2, Q19).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Role {
     Soutien,
     Offensif,
+}
+
+/// Ce que le rôle ajoute, en pourcentage, aux stats d'un monstre du joueur
+/// en combat.
+const BONUS_DU_ROLE: u8 = 10;
+
+impl Role {
+    /// Un soutien encaisse mieux, un offensif frappe plus fort, d'une
+    /// attaque physique comme spéciale.
+    pub fn bonus_de_stats(self) -> BonusDeStats {
+        match self {
+            Role::Soutien => Stats {
+                defense: BONUS_DU_ROLE,
+                defense_speciale: BONUS_DU_ROLE,
+                ..Stats::default()
+            },
+            Role::Offensif => Stats {
+                attaque: BONUS_DU_ROLE,
+                attaque_speciale: BONUS_DU_ROLE,
+                ..Stats::default()
+            },
+        }
+    }
 }
 
 /// Rareté d'une espèce, qui fixe son prix de revente (section 14.5).

@@ -366,6 +366,9 @@ struct ReglesDuCote {
     /// Bonus de la classe et de l'équipement de son héros (sections 4.2 et
     /// 4.3).
     bonus: BonusDeStats,
+    /// Les monstres d'un joueur ont le bonus de leur rôle ; ni les monstres
+    /// sauvages, ni ceux des humains, ni les Apôtres (section 4.2).
+    bonus_de_role: bool,
     /// L'ordre que son héros peut donner (section 4.2).
     ordre: Option<Ordre>,
     /// Position, dans son équipe, du monstre qui a reçu l'ordre : un seul
@@ -432,6 +435,13 @@ impl Combat {
     /// Bonus de la classe et de l'équipement du héros de ce côté.
     pub fn avec_bonus_du_cote(mut self, cote: Cote, bonus: BonusDeStats) -> Self {
         self.regles[cote.position()].bonus = bonus;
+        self
+    }
+
+    /// Les monstres de ce côté sont ceux d'un joueur : ils ont le bonus de
+    /// leur rôle (section 4.2).
+    pub fn avec_bonus_de_role_du_cote(mut self, cote: Cote) -> Self {
+        self.regles[cote.position()].bonus_de_role = true;
         self
     }
 
@@ -599,9 +609,10 @@ impl Combat {
     }
 
     /// Stats utilisées en combat : celles du monstre, plus le bonus de son
-    /// habileté et le bonus de son côté (section 5.9), avec celui de l'ordre
-    /// pour le monstre qui l'a reçu (section 4.2). Hors duel, l'adversaire
-    /// n'a que celui de son habileté.
+    /// habileté et le bonus de son côté (section 5.9), celui de son rôle
+    /// pour un monstre de joueur, et celui de l'ordre pour le monstre qui
+    /// l'a reçu (section 4.2). Hors duel, l'adversaire n'a que celui de son
+    /// habileté.
     pub fn stats_en_combat(&self, combattant: Combattant) -> Stats<u32> {
         let monstre = self.monstre(combattant);
         let habilete = monstre
@@ -610,6 +621,11 @@ impl Combat {
             .unwrap_or_default();
         let regles = &self.regles[combattant.cote.position()];
         let bonus = cumuler_bonus(&habilete, &regles.bonus);
+        let bonus = if regles.bonus_de_role {
+            cumuler_bonus(&bonus, &monstre.espece().role().bonus_de_stats())
+        } else {
+            bonus
+        };
         let bonus = match regles
             .ordre
             .filter(|_| self.a_recu_l_ordre_pour(combattant))
@@ -2430,6 +2446,18 @@ mod tests {
         let combat = combat(vec![rapide()], vec![lent()]).avec_bonus_du_joueur(bonus_d_attaque());
         assert_eq!(combat.stats_en_combat(j(0)).attaque, 11);
         assert_eq!(combat.stats_en_combat(a(0)).attaque, 10);
+    }
+
+    #[test]
+    fn le_role_ne_renforce_que_les_monstres_du_joueur() {
+        let combat =
+            combat(vec![rapide()], vec![rapide()]).avec_bonus_de_role_du_cote(Cote::Joueur);
+        let bonus = rapide().espece().role().bonus_de_stats();
+        let joueur = combat.stats_en_combat(j(0));
+        let adversaire = combat.stats_en_combat(a(0));
+        assert_eq!(adversaire, rapide().stats());
+        assert_eq!(joueur, appliquer_bonus(&rapide().stats(), &bonus));
+        assert_ne!(joueur, adversaire);
     }
 
     #[test]

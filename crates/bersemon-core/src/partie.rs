@@ -14,7 +14,7 @@ use crate::capsule::{Capsule, ErreurApprentissage, attaques_a_apprendre};
 use crate::catalogue::Catalogue;
 use crate::codex::Codex;
 use crate::collection::{Collection, Emplacement, ErreurCollection, Placement};
-use crate::combat::{BilanCombat, Combat, ErreurCombat, Issue};
+use crate::combat::{BilanCombat, Combat, Cote, ErreurCombat, Issue};
 use crate::equipement::{ErreurEquipement, ObjetDEquipementId, PlaceDEquipement};
 use crate::espece::{Espece, EspeceId};
 use crate::evolution::{
@@ -1338,6 +1338,7 @@ impl Partie {
             .collect();
         let combat = Combat::new(self.collection.equipe().to_vec(), groupe)?
             .avec_bonus_du_joueur(self.heros.bonus_en_combat())
+            .avec_bonus_de_role_du_cote(Cote::Joueur)
             .avec_ordre(self.heros.classe().ordre())
             .avec_filets(self.forge.ameliorations().facteur_des_filets())
             .avec_soins(*self.sac.soins());
@@ -1364,6 +1365,7 @@ impl Partie {
     ) -> Result<Combat, ErreurCombat> {
         Ok(Combat::new(self.collection.equipe().to_vec(), groupe)?
             .avec_bonus_du_joueur(self.heros.bonus_en_combat())
+            .avec_bonus_de_role_du_cote(Cote::Joueur)
             .avec_ordre(self.heros.classe().ordre())
             .avec_soins(*self.sac.soins())
             .sans_capture())
