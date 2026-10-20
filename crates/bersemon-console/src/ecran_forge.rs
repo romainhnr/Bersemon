@@ -24,7 +24,7 @@ pub fn choisir(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Opt
         .is_some_and(|chantier| chantier.est_fini(maintenant))
     {
         choix.push((
-            Choix::ConstaterAmelioration,
+            Choix::ConstaterTravail,
             "Constater le travail de Gunther".to_string(),
         ));
     }

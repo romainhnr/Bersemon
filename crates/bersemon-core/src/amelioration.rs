@@ -1,15 +1,17 @@
 //! Améliorations du camp (section 13.4) : Gunther, le forgeron, agrandit
 //! l'enclos, améliore les filets et fait une place de plus dans l'équipe,
 //! contre des ressources, un niveau à la fois, chacun avec sa durée de
-//! construction.
+//! construction. Il fabrique aussi l'équipement du héros (section 13.5),
+//! dans le même atelier : un seul travail à la fois.
 //!
 //! Les effets de chaque niveau sont des règles, fixées ici ; les coûts et
-//! les durées sont du contenu (`PlanDAmelioration`).
+//! les durées sont du contenu (`PlanDAmelioration`, `PlanDeFabrication`).
 
 use std::fmt;
 use std::time::Duration;
 
 use crate::collection::Tailles;
+use crate::equipement::{Equipement, ObjetDEquipement};
 use crate::horodatage::Horodatage;
 use crate::ressource::Ressource;
 
@@ -140,8 +142,8 @@ impl Ameliorations {
 }
 
 /// La forge de Gunther : présente une fois Gunther libéré, avec les niveaux
-/// atteints et le niveau en construction (section 13.4).
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+/// atteints et le travail en cours (sections 13.4 et 13.5).
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Forge {
     au_camp: bool,
     ameliorations: Ameliorations,
@@ -179,17 +181,23 @@ impl Forge {
         self.au_camp = true;
     }
 
-    /// Ce qui empêche de lancer ce plan, sans compter les ressources.
-    pub(crate) fn verifier_lancement(
-        &self,
-        plan: &PlanDAmelioration,
-    ) -> Result<(), ErreurAmelioration> {
+    /// Gunther est au camp et libre.
+    fn verifier_atelier(&self) -> Result<(), ErreurAmelioration> {
         if !self.au_camp {
             return Err(ErreurAmelioration::AucunArtisan);
         }
         if self.chantier.is_some() {
             return Err(ErreurAmelioration::ChantierEnCours);
         }
+        Ok(())
+    }
+
+    /// Ce qui empêche de lancer ce plan, sans compter les ressources.
+    pub(crate) fn verifier_lancement(
+        &self,
+        plan: &PlanDAmelioration,
+    ) -> Result<(), ErreurAmelioration> {
+        self.verifier_atelier()?;
         let actuel = self.ameliorations.niveau(plan.amelioration());
         if actuel >= plan.amelioration().niveau_max() || plan.niveau() != actuel + 1 {
             return Err(ErreurAmelioration::NiveauMaximal);
@@ -197,29 +205,66 @@ impl Forge {
         Ok(())
     }
 
+    /// Ce qui empêche de fabriquer cet objet, sans compter les ressources :
+    /// un objet ne se fabrique qu'une fois (section 13.5).
+    pub(crate) fn verifier_fabrication(
+        &self,
+        plan: &PlanDeFabrication,
+        equipement: &Equipement,
+    ) -> Result<(), ErreurAmelioration> {
+        self.verifier_atelier()?;
+        if equipement.possede(plan.objet().id()) {
+            return Err(ErreurAmelioration::DejaPossede);
+        }
+        Ok(())
+    }
+
     pub(crate) fn lancer(&mut self, plan: &PlanDAmelioration, maintenant: Horodatage) -> Chantier {
-        let chantier = Chantier {
+        let ouvrage = Ouvrage::Amelioration {
             amelioration: plan.amelioration(),
             niveau: plan.niveau(),
-            fin: maintenant.plus(plan.duree()),
         };
-        self.chantier = Some(chantier);
+        self.commencer(ouvrage, plan.duree(), maintenant)
+    }
+
+    pub(crate) fn lancer_fabrication(
+        &mut self,
+        plan: &PlanDeFabrication,
+        maintenant: Horodatage,
+    ) -> Chantier {
+        let ouvrage = Ouvrage::Objet(plan.objet().clone());
+        self.commencer(ouvrage, plan.duree(), maintenant)
+    }
+
+    fn commencer(&mut self, ouvrage: Ouvrage, duree: Duration, maintenant: Horodatage) -> Chantier {
+        let chantier = Chantier {
+            ouvrage,
+            fin: maintenant.plus(duree),
+        };
+        self.chantier = Some(chantier.clone());
         chantier
     }
 
     /// Le niveau construit compte dès que le joueur constate le travail
-    /// fini. Rend le chantier achevé.
+    /// fini ; un objet fabriqué est remis au héros par l'appelant. Rend le
+    /// chantier achevé.
     pub(crate) fn achever(
         &mut self,
         maintenant: Horodatage,
     ) -> Result<Chantier, ErreurAmelioration> {
-        let chantier = self.chantier.ok_or(ErreurAmelioration::AucunChantier)?;
-        if !chantier.est_fini(maintenant) {
-            return Err(ErreurAmelioration::PasEncoreFini(chantier.fin));
+        let chantier = self
+            .chantier
+            .take_if(|chantier| chantier.est_fini(maintenant));
+        match chantier {
+            Some(chantier) => {
+                chantier.appliquer(&mut self.ameliorations);
+                Ok(chantier)
+            }
+            None => Err(match &self.chantier {
+                Some(en_cours) => ErreurAmelioration::PasEncoreFini(en_cours.fin),
+                None => ErreurAmelioration::AucunChantier,
+            }),
         }
-        chantier.appliquer(&mut self.ameliorations);
-        self.chantier = None;
-        Ok(chantier)
     }
 }
 
@@ -294,11 +339,57 @@ impl fmt::Display for ErreurPlan {
 
 impl std::error::Error for ErreurPlan {}
 
-/// Le niveau que Gunther construit, et l'heure où il aura fini.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Ce que coûte un objet d'équipement et le temps qu'il demande à Gunther
+/// (docs/contenu-v1.md, section 11).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PlanDeFabrication {
+    objet: ObjetDEquipement,
+    cout: Vec<(Ressource, u32)>,
+    duree: Duration,
+}
+
+impl PlanDeFabrication {
+    pub fn new(
+        objet: ObjetDEquipement,
+        cout: Vec<(Ressource, u32)>,
+        duree: Duration,
+    ) -> Result<Self, ErreurPlan> {
+        if cout.is_empty() || cout.iter().any(|(_, nombre)| *nombre == 0) {
+            return Err(ErreurPlan::CoutVide);
+        }
+        if duree.as_secs() == 0 {
+            return Err(ErreurPlan::DureeNulle);
+        }
+        Ok(Self { objet, cout, duree })
+    }
+
+    pub fn objet(&self) -> &ObjetDEquipement {
+        &self.objet
+    }
+
+    pub fn cout(&self) -> &[(Ressource, u32)] {
+        &self.cout
+    }
+
+    pub fn duree(&self) -> Duration {
+        self.duree
+    }
+}
+
+/// Ce que Gunther a sur l'enclume.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Ouvrage {
+    Amelioration {
+        amelioration: Amelioration,
+        niveau: u8,
+    },
+    Objet(ObjetDEquipement),
+}
+
+/// Le travail de Gunther, et l'heure où il aura fini.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Chantier {
-    pub amelioration: Amelioration,
-    pub niveau: u8,
+    pub ouvrage: Ouvrage,
     pub fin: Horodatage,
 }
 
@@ -310,8 +401,14 @@ impl Chantier {
     /// Le niveau construit compte une fois le travail constaté (section
     /// 13.4).
     pub(crate) fn appliquer(&self, ameliorations: &mut Ameliorations) {
-        if ameliorations.niveau(self.amelioration) < self.niveau {
-            ameliorations.monter(self.amelioration);
+        if let Ouvrage::Amelioration {
+            amelioration,
+            niveau,
+        } = self.ouvrage
+        {
+            if ameliorations.niveau(amelioration) < niveau {
+                ameliorations.monter(amelioration);
+            }
         }
     }
 }
@@ -323,6 +420,8 @@ pub enum ErreurAmelioration {
     /// Il ne construit qu'un niveau à la fois.
     ChantierEnCours,
     NiveauMaximal,
+    /// Un objet ne se fabrique qu'une fois (section 13.5).
+    DejaPossede,
     /// Il manque ces ressources, avec le nombre qui manque.
     RessourcesManquantes(Vec<(Ressource, u32)>),
     AucunChantier,
@@ -335,6 +434,7 @@ impl fmt::Display for ErreurAmelioration {
             ErreurAmelioration::AucunArtisan => write!(f, "aucun artisan au camp"),
             ErreurAmelioration::ChantierEnCours => write!(f, "une construction est en cours"),
             ErreurAmelioration::NiveauMaximal => write!(f, "niveau maximal déjà atteint"),
+            ErreurAmelioration::DejaPossede => write!(f, "objet déjà possédé"),
             ErreurAmelioration::RessourcesManquantes(manquantes) => {
                 let liste: Vec<String> = manquantes
                     .iter()
@@ -365,8 +465,10 @@ mod tests {
         assert_eq!(ameliorations.tailles(), Tailles::DE_DEPART);
         for (niveau, places) in [(1, 40), (2, 50), (3, 60)] {
             Chantier {
-                amelioration: Amelioration::Enclos,
-                niveau,
+                ouvrage: Ouvrage::Amelioration {
+                    amelioration: Amelioration::Enclos,
+                    niveau,
+                },
                 fin: Horodatage::depuis_secondes(0),
             }
             .appliquer(&mut ameliorations);
@@ -379,8 +481,10 @@ mod tests {
     fn l_equipe_passe_a_4_monstres() {
         let mut ameliorations = Ameliorations::default();
         Chantier {
-            amelioration: Amelioration::Equipe,
-            niveau: 1,
+            ouvrage: Ouvrage::Amelioration {
+                amelioration: Amelioration::Equipe,
+                niveau: 1,
+            },
             fin: Horodatage::depuis_secondes(0),
         }
         .appliquer(&mut ameliorations);
@@ -429,8 +533,10 @@ mod tests {
     fn un_chantier_ne_fait_monter_qu_une_fois() {
         let mut ameliorations = Ameliorations::default();
         let chantier = Chantier {
-            amelioration: Amelioration::Filets,
-            niveau: 1,
+            ouvrage: Ouvrage::Amelioration {
+                amelioration: Amelioration::Filets,
+                niveau: 1,
+            },
             fin: Horodatage::depuis_secondes(100),
         };
         assert!(!chantier.est_fini(Horodatage::depuis_secondes(99)));

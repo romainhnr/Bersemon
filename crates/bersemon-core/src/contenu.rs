@@ -11,10 +11,11 @@ use std::ops::RangeInclusive;
 use std::time::Duration;
 
 use crate::ame::{Gardien, MarchandId, MarchandMort};
-use crate::amelioration::{Amelioration, PlanDAmelioration};
+use crate::amelioration::{Amelioration, PlanDAmelioration, PlanDeFabrication};
 use crate::attaque::{Attaque, AttaqueId, Categorie, EffetSecondaire};
 use crate::capsule::Capsule;
 use crate::catalogue::Catalogue;
+use crate::equipement::{ObjetDEquipement, ObjetDEquipementId, SorteDObjet};
 use crate::espece::{AttaqueApprise, Espece, EspeceId, Rarete, Role};
 use crate::evolution::{ConditionEvolution, Evolution};
 use crate::expedition::ParametresCoffre;
@@ -147,6 +148,7 @@ pub struct ContenuV1 {
     piste: Piste,
     capsules: Vec<Capsule>,
     plans_d_amelioration: Vec<PlanDAmelioration>,
+    plans_de_fabrication: Vec<PlanDeFabrication>,
 }
 
 impl ContenuV1 {
@@ -408,12 +410,29 @@ impl ContenuV1 {
                 .expect("plan d'amélioration conforme aux règles")
             })
             .collect();
+        let plans_de_fabrication = PLANS_DE_FABRICATION
+            .iter()
+            .map(|fiche| {
+                let cout = fiche
+                    .cout
+                    .iter()
+                    .map(|(id, nombre)| (ressource(id), *nombre))
+                    .collect();
+                PlanDeFabrication::new(
+                    creer_objet(fiche),
+                    cout,
+                    Duration::from_secs(fiche.heures * 3_600),
+                )
+                .expect("plan de fabrication conforme aux règles")
+            })
+            .collect();
         Self {
             especes,
             zones: vec![lisiere, marais, vallee, abbaye],
             piste,
             capsules,
             plans_d_amelioration,
+            plans_de_fabrication,
         }
     }
 
@@ -466,6 +485,18 @@ impl ContenuV1 {
             .find(|plan| plan.amelioration() == amelioration && plan.niveau() == niveau)
     }
 
+    /// Les objets d'équipement que Gunther fabrique (section 13.5), dans
+    /// l'ordre de docs/contenu-v1.md, section 11.
+    pub fn plans_de_fabrication(&self) -> &[PlanDeFabrication] {
+        &self.plans_de_fabrication
+    }
+
+    pub fn plan_de_fabrication(&self, objet: &ObjetDEquipementId) -> Option<&PlanDeFabrication> {
+        self.plans_de_fabrication
+            .iter()
+            .find(|plan| plan.objet().id() == objet)
+    }
+
     /// Toutes les capsules d'attaque, que le marchand vend (section 14.2),
     /// dans l'ordre de docs/contenu-v1.md.
     pub fn capsules(&self) -> &[Capsule] {
@@ -504,6 +535,11 @@ impl Catalogue for ContenuV1 {
             .filter_map(Espece::ressource)
             .find(|ressource| ressource.id() == id)
             .cloned()
+    }
+
+    fn objet_d_equipement(&self, id: &ObjetDEquipementId) -> Option<ObjetDEquipement> {
+        self.plan_de_fabrication(id)
+            .map(|plan| plan.objet().clone())
     }
 
     fn marchand_mort(&self, id: &MarchandId) -> Option<MarchandMort> {
@@ -2014,6 +2050,180 @@ const PLANS_D_AMELIORATION: [FichePlan; 7] = [
     ),
 ];
 
+/// Section 11 de docs/contenu-v1.md. Les bonus sont en pourcentage, dans
+/// l'ordre Attaque, Défense, Attaque spéciale, Défense spéciale, Vitesse :
+/// l'équipement ne donne pas de PV, que le combat ne majore pas.
+struct FicheObjet {
+    id: &'static str,
+    nom: &'static str,
+    sorte: SorteDObjet,
+    bonus: [u8; 5],
+    cout: &'static [(&'static str, u32)],
+    heures: u64,
+}
+
+const PLANS_DE_FABRICATION: [FicheObjet; 14] = [
+    FicheObjet {
+        id: "couteau-de-chasse",
+        nom: "Couteau de chasse",
+        sorte: SorteDObjet::Arme,
+        bonus: [5, 0, 0, 0, 0],
+        cout: &[("croc-de-loup", 6), ("ecaille-de-vipere", 4)],
+        heures: 1,
+    },
+    FicheObjet {
+        id: "baton-d-if",
+        nom: "Bâton d'if",
+        sorte: SorteDObjet::Arme,
+        bonus: [0, 0, 5, 0, 0],
+        cout: &[("plume-de-corbeau", 6), ("ecaille-de-vipere", 4)],
+        heures: 1,
+    },
+    FicheObjet {
+        id: "epee-du-pendu",
+        nom: "Épée du pendu",
+        sorte: SorteDObjet::Arme,
+        bonus: [10, 0, 0, 0, 0],
+        cout: &[
+            ("fragment-d-armure", 6),
+            ("os-de-squelette", 6),
+            ("croc-de-basilic", 1),
+        ],
+        heures: 3,
+    },
+    FicheObjet {
+        id: "grimoire-des-brumes",
+        nom: "Grimoire des brumes",
+        sorte: SorteDObjet::Arme,
+        bonus: [0, 0, 10, 0, 0],
+        cout: &[
+            ("cendre-de-feu-follet", 6),
+            ("aile-de-fee-noire", 6),
+            ("croc-de-basilic", 1),
+        ],
+        heures: 3,
+    },
+    FicheObjet {
+        id: "espadon-des-cendres",
+        nom: "Espadon des cendres",
+        sorte: SorteDObjet::Arme,
+        bonus: [15, 0, 0, 0, 0],
+        cout: &[
+            ("eclat-de-gargouille", 8),
+            ("dent-de-goule", 6),
+            ("crin-de-chimere", 1),
+        ],
+        heures: 6,
+    },
+    FicheObjet {
+        id: "encensoir-maudit",
+        nom: "Encensoir maudit",
+        sorte: SorteDObjet::Arme,
+        bonus: [0, 0, 15, 0, 0],
+        cout: &[
+            ("aile-de-chauve-souris", 8),
+            ("dent-de-goule", 6),
+            ("crin-de-chimere", 1),
+        ],
+        heures: 6,
+    },
+    FicheObjet {
+        id: "brigandine-de-cuir",
+        nom: "Brigandine de cuir",
+        sorte: SorteDObjet::Armure,
+        bonus: [0, 5, 0, 5, 0],
+        cout: &[("croc-de-loup", 6), ("plume-de-corbeau", 6)],
+        heures: 2,
+    },
+    FicheObjet {
+        id: "cotte-de-mailles",
+        nom: "Cotte de mailles",
+        sorte: SorteDObjet::Armure,
+        bonus: [0, 10, 0, 10, 0],
+        cout: &[
+            ("fragment-d-armure", 8),
+            ("os-de-squelette", 4),
+            ("ecaille-de-vouivre", 1),
+        ],
+        heures: 4,
+    },
+    FicheObjet {
+        id: "plates-de-gargouille",
+        nom: "Plates de gargouille",
+        sorte: SorteDObjet::Armure,
+        bonus: [0, 15, 0, 15, 0],
+        cout: &[
+            ("eclat-de-gargouille", 10),
+            ("os-de-squelette", 6),
+            ("crin-de-chimere", 1),
+        ],
+        heures: 8,
+    },
+    FicheObjet {
+        id: "croc-tresse",
+        nom: "Croc tressé",
+        sorte: SorteDObjet::Talisman,
+        bonus: [5, 0, 0, 0, 0],
+        cout: &[("croc-de-loup", 8)],
+        heures: 1,
+    },
+    FicheObjet {
+        id: "plume-de-corbeau-sertie",
+        nom: "Plume de corbeau sertie",
+        sorte: SorteDObjet::Talisman,
+        bonus: [0, 0, 0, 0, 5],
+        cout: &[("plume-de-corbeau", 8)],
+        heures: 1,
+    },
+    FicheObjet {
+        id: "lanterne-de-feu-follet",
+        nom: "Lanterne de feu follet",
+        sorte: SorteDObjet::Talisman,
+        bonus: [0, 0, 5, 0, 0],
+        cout: &[("cendre-de-feu-follet", 8)],
+        heures: 2,
+    },
+    FicheObjet {
+        id: "os-grave",
+        nom: "Os gravé",
+        sorte: SorteDObjet::Talisman,
+        bonus: [0, 5, 0, 0, 0],
+        cout: &[("os-de-squelette", 8)],
+        heures: 2,
+    },
+    FicheObjet {
+        id: "aile-de-fee-sertie",
+        nom: "Aile de fée sertie",
+        sorte: SorteDObjet::Talisman,
+        bonus: [0, 0, 0, 5, 0],
+        cout: &[("aile-de-fee-noire", 8)],
+        heures: 2,
+    },
+];
+
+fn creer_objet(fiche: &FicheObjet) -> ObjetDEquipement {
+    let [
+        attaque,
+        defense,
+        attaque_speciale,
+        defense_speciale,
+        vitesse,
+    ] = fiche.bonus;
+    ObjetDEquipement::new(
+        ObjetDEquipementId::new(fiche.id),
+        fiche.nom,
+        fiche.sorte,
+        Stats {
+            pv: 0,
+            attaque,
+            defense,
+            attaque_speciale,
+            defense_speciale,
+            vitesse,
+        },
+    )
+}
+
 /// Ce que Malvoise donne d'une ressource, selon la rareté de son espèce
 /// (section 14.3, Q82).
 const PRIX_D_UNE_RESSOURCE_COMMUNE: u32 = 5;
@@ -2313,6 +2523,46 @@ mod tests {
             }
         }
         assert_eq!(contenu.plans_d_amelioration().len(), 7);
+    }
+
+    #[test]
+    fn les_objets_d_equipement_suivent_la_section_11() {
+        let contenu = ContenuV1::new();
+        let plans = contenu.plans_de_fabrication();
+        let par_sorte = |sorte| {
+            plans
+                .iter()
+                .filter(|plan| plan.objet().sorte() == sorte)
+                .count()
+        };
+        assert_eq!(
+            (
+                par_sorte(SorteDObjet::Arme),
+                par_sorte(SorteDObjet::Armure),
+                par_sorte(SorteDObjet::Talisman)
+            ),
+            (6, 3, 5)
+        );
+        let ids: std::collections::HashSet<_> =
+            plans.iter().map(|plan| plan.objet().id()).collect();
+        assert_eq!(ids.len(), plans.len());
+        for plan in plans {
+            let objet = plan.objet();
+            // Pas de PV : le combat ne majore pas les PV (section 4.3).
+            assert_eq!(objet.bonus().pv, 0, "{}", objet.nom());
+            assert_ne!(objet.bonus(), Stats::default(), "{}", objet.nom());
+            let heures = plan.duree().as_secs() / 3_600;
+            assert!((1..=8).contains(&heures), "{}", objet.nom());
+            for (ressource, _) in plan.cout() {
+                assert_eq!(contenu.ressource(ressource.id()).as_ref(), Some(ressource));
+            }
+            assert_eq!(contenu.objet_d_equipement(objet.id()).as_ref(), Some(objet));
+        }
+        let couteau = contenu
+            .plan_de_fabrication(&ObjetDEquipementId::new("couteau-de-chasse"))
+            .unwrap();
+        assert_eq!(couteau.objet().bonus().attaque, 5);
+        assert_eq!(couteau.cout().len(), 2);
     }
 
     #[test]

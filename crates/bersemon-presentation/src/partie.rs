@@ -20,7 +20,7 @@ use bersemon_core::ressource::Ressource;
 use bersemon_core::zone::Zone;
 
 use crate::expeditions_automatiques::question_de_rappel;
-use crate::forge::question_de_lancement;
+use crate::forge::{question_de_fabrication, question_de_lancement};
 use crate::monstres::{decrire_stats, effet_d_habilete, ligne_monstre, nom, types_de};
 use crate::soins::{liste_de_soins, question_du_soin_perdu};
 
@@ -420,6 +420,7 @@ pub fn question_de_confirmation(confirmation: &Confirmation) -> String {
             effet_d_habilete(*nouvelle)
         ),
         Confirmation::LancerAmelioration(plan) => question_de_lancement(plan),
+        Confirmation::LancerFabrication(plan) => question_de_fabrication(plan),
         Confirmation::Evoluer {
             monstre,
             vers,

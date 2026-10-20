@@ -15,12 +15,15 @@ use std::fmt;
 
 use crate::aleatoire::Aleatoire;
 use crate::ame::{Gardien, MarchandId, MarchandMort};
-use crate::amelioration::{Amelioration, Chantier, ErreurAmelioration, PlanDAmelioration};
+use crate::amelioration::{
+    Amelioration, Chantier, ErreurAmelioration, PlanDAmelioration, PlanDeFabrication,
+};
 use crate::attaque::{Attaque, AttaqueId, ErreurAttaquesMonstre};
 use crate::capsule::{Capsule, ErreurApprentissage};
 use crate::collection::{Emplacement, ErreurCollection, Placement, TriDuCamp};
 use crate::combat::{self, Action, BilanCombat, Combat, ErreurCombat, Issue, Phase};
 use crate::contenu::ContenuV1;
+use crate::equipement::{ErreurEquipement, ObjetDEquipement, ObjetDEquipementId, PlaceDEquipement};
 use crate::espece::Espece;
 use crate::evolution::{Circonstances, ErreurEvolution, evolution_possible, faire_evoluer};
 use crate::expedition::{ErreurExpedition, EvenementExpedition, Expedition};
@@ -107,8 +110,19 @@ pub enum Choix {
     /// Au camp, après confirmation : Gunther construit le niveau suivant de
     /// cette amélioration (section 13.4).
     LancerAmelioration(Amelioration),
+    /// Au camp, après confirmation : Gunther forge cet objet d'équipement
+    /// (section 13.5).
+    LancerFabrication(ObjetDEquipementId),
     /// Au camp : le joueur constate le travail fini de Gunther.
-    ConstaterAmelioration,
+    ConstaterTravail,
+    /// Au camp, sans confirmation : l'objet remplace celui de cette place
+    /// (section 4.3).
+    Equiper {
+        place: PlaceDEquipement,
+        objet: ObjetDEquipementId,
+    },
+    /// Au camp, sans confirmation.
+    RetirerEquipement(PlaceDEquipement),
     /// Au camp : du sac vers le coffre (section 13.3).
     RangerAuCoffre(Objet),
     /// Au camp : du coffre vers le sac (section 13.3).
@@ -253,6 +267,8 @@ pub enum Confirmation {
     /// Les ressources du plan seront prises (section 13.4). En boîte, pour
     /// que la confirmation reste légère.
     LancerAmelioration(Box<PlanDAmelioration>),
+    /// Les ressources du plan seront prises (section 13.5).
+    LancerFabrication(Box<PlanDeFabrication>),
     /// L'évolution est définitive, et consomme la pierre éventuelle (section
     /// 5.4).
     Evoluer {
@@ -419,8 +435,24 @@ pub enum Evenement {
         plan: Box<PlanDAmelioration>,
         chantier: Chantier,
     },
-    /// Le niveau construit compte désormais.
-    AmeliorationConstatee(Chantier),
+    /// Gunther se met à forger cet objet (section 13.5).
+    FabricationLancee {
+        plan: Box<PlanDeFabrication>,
+        chantier: Chantier,
+    },
+    /// Le niveau construit compte désormais, ou l'objet forgé rejoint
+    /// l'équipement du héros.
+    TravailConstate(Chantier),
+    /// L'objet porté à cette place, et celui qu'il remplace.
+    ObjetEquipe {
+        place: PlaceDEquipement,
+        objet: ObjetDEquipement,
+        remplace: Option<ObjetDEquipement>,
+    },
+    ObjetRetire {
+        place: PlaceDEquipement,
+        objet: ObjetDEquipement,
+    },
     /// Le monstre après le changement.
     HabileteChangee {
         monstre: Monstre,
@@ -481,8 +513,9 @@ pub enum ErreurChoix {
     Habilete(ErreurChangementDHabilete),
     Evolution(ErreurEvolution),
     Amelioration(ErreurAmelioration),
-    /// Le contenu n'a pas de plan pour ce niveau.
+    /// Le contenu n'a pas de plan pour ce niveau ou cet objet.
     PlanInconnu,
+    Equipement(ErreurEquipement),
 }
 
 impl fmt::Display for ErreurChoix {
@@ -507,7 +540,8 @@ impl fmt::Display for ErreurChoix {
             ErreurChoix::Habilete(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Evolution(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Amelioration(erreur) => write!(f, "{erreur}"),
-            ErreurChoix::PlanInconnu => write!(f, "aucun plan pour ce niveau"),
+            ErreurChoix::PlanInconnu => write!(f, "aucun plan pour ce niveau ou cet objet"),
+            ErreurChoix::Equipement(erreur) => write!(f, "{erreur}"),
         }
     }
 }
@@ -1024,12 +1058,79 @@ impl EnJeu {
                 sauvegarder(&self.partie, contexte.depot, evenements);
                 Ok(Reponse::Faite)
             }
-            Choix::ConstaterAmelioration => {
+            Choix::LancerFabrication(objet) => {
+                let plan = contexte
+                    .contenu
+                    .plan_de_fabrication(objet)
+                    .ok_or(ErreurChoix::PlanInconnu)?;
+                if !confirme {
+                    // Une fabrication impossible est refusée sans demander de
+                    // confirmation.
+                    self.partie
+                        .verifier_fabrication(plan)
+                        .map_err(ErreurChoix::Amelioration)?;
+                    return Ok(Reponse::a_confirmer(Confirmation::LancerFabrication(
+                        Box::new(plan.clone()),
+                    )));
+                }
                 let chantier = self
                     .partie
-                    .constater_amelioration(contexte.maintenant)
+                    .lancer_fabrication(plan, contexte.maintenant)
                     .map_err(ErreurChoix::Amelioration)?;
-                evenements.push(Evenement::AmeliorationConstatee(chantier));
+                evenements.push(Evenement::FabricationLancee {
+                    plan: Box::new(plan.clone()),
+                    chantier,
+                });
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::Equiper { place, objet } => {
+                let remplace = self.partie.heros().equipement().porte(*place).cloned();
+                self.partie
+                    .equiper(*place, objet)
+                    .map_err(ErreurChoix::Equipement)?;
+                let objet = self
+                    .partie
+                    .heros()
+                    .equipement()
+                    .porte(*place)
+                    .cloned()
+                    .expect("l'objet vient d'être porté");
+                // Remettre l'objet déjà porté ne change rien à annoncer.
+                if remplace.as_ref() != Some(&objet) {
+                    evenements.push(Evenement::ObjetEquipe {
+                        place: *place,
+                        objet,
+                        remplace,
+                    });
+                    sauvegarder(&self.partie, contexte.depot, evenements);
+                }
+                Ok(Reponse::Faite)
+            }
+            Choix::RetirerEquipement(place) => {
+                let objet = self
+                    .partie
+                    .heros()
+                    .equipement()
+                    .porte(*place)
+                    .cloned()
+                    .ok_or(ErreurChoix::Equipement(ErreurEquipement::PlaceVide(*place)))?;
+                self.partie
+                    .retirer_equipement(*place)
+                    .map_err(ErreurChoix::Equipement)?;
+                evenements.push(Evenement::ObjetRetire {
+                    place: *place,
+                    objet,
+                });
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::ConstaterTravail => {
+                let chantier = self
+                    .partie
+                    .constater_travail(contexte.maintenant)
+                    .map_err(ErreurChoix::Amelioration)?;
+                evenements.push(Evenement::TravailConstate(chantier));
                 sauvegarder(&self.partie, contexte.depot, evenements);
                 Ok(Reponse::Faite)
             }
@@ -2131,7 +2232,7 @@ mod tests {
             conseils_vus: partie.conseils_vus().to_vec(),
             expeditions_automatiques: partie.expeditions_automatiques().to_vec(),
             attaques_a_choisir: partie.attaques_a_choisir().to_vec(),
-            forge: *partie.forge(),
+            forge: partie.forge().clone(),
         }
     }
 
@@ -3304,7 +3405,7 @@ mod tests {
         let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
         assert!(sauvegarde.sac().ressources().is_empty());
         assert!(sauvegarde.coffre_du_camp().ressources().is_empty());
-        let chantier = *sauvegarde.forge().chantier().unwrap();
+        let chantier = sauvegarde.forge().chantier().unwrap().clone();
         assert_eq!(chantier.fin, a(1_000 + 3_600));
         // Un seul chantier à la fois, et rien avant la fin.
         assert_eq!(
@@ -3316,7 +3417,7 @@ mod tests {
         assert_eq!(
             repondre_a_l_heure(
                 &mut deroulement,
-                Choix::ConstaterAmelioration,
+                Choix::ConstaterTravail,
                 &contenu,
                 &depot,
                 a(4_599)
@@ -3327,13 +3428,13 @@ mod tests {
         );
         let evenements = repondre_a_l_heure(
             &mut deroulement,
-            Choix::ConstaterAmelioration,
+            Choix::ConstaterTravail,
             &contenu,
             &depot,
             a(4_600),
         )
         .unwrap();
-        assert_eq!(evenements, vec![Evenement::AmeliorationConstatee(chantier)]);
+        assert_eq!(evenements, vec![Evenement::TravailConstate(chantier)]);
         let partie = deroulement.partie().unwrap();
         assert_eq!(
             partie.forge().ameliorations().niveau(Amelioration::Enclos),
@@ -3343,6 +3444,143 @@ mod tests {
         assert_eq!(partie.forge().chantier(), None);
         let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
         assert_eq!(sauvegarde.collection().tailles().camp, 40);
+    }
+
+    #[test]
+    fn gunther_forge_un_objet_que_le_heros_porte_ensuite() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let ressource = |id: &str| contenu.ressource(&RessourceId::new(id)).unwrap();
+        let mut etat = etat_de(&partie_de(salamandre(&contenu, 40)));
+        etat.forge = Forge::restaurer(true, Default::default(), None).unwrap();
+        etat.coffre_du_camp = Inventaire::default()
+            .avec_ressources(ressource("croc-de-loup"), 7)
+            .avec_ressources(ressource("ecaille-de-vipere"), 4);
+        let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
+        let couteau = ObjetDEquipementId::new("couteau-de-chasse");
+        let equiper = Choix::Equiper {
+            place: PlaceDEquipement::Arme,
+            objet: couteau.clone(),
+        };
+        let lancer = Choix::LancerFabrication(couteau.clone());
+        repondre_a_l_heure(&mut deroulement, lancer.clone(), &contenu, &depot, a(1_000)).unwrap();
+        assert!(matches!(
+            deroulement.attente(),
+            Attente::Confirmation(Confirmation::LancerFabrication(plan))
+                if plan.objet().id() == &couteau
+        ));
+        let evenements =
+            repondre_a_l_heure(&mut deroulement, Choix::Oui, &contenu, &depot, a(1_000)).unwrap();
+        assert!(matches!(
+            &evenements[..],
+            [Evenement::FabricationLancee { chantier, .. }] if chantier.fin == a(4_600)
+        ));
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        let restants: Vec<(&str, u32)> = sauvegarde
+            .coffre_du_camp()
+            .ressources()
+            .iter()
+            .map(|(ressource, nombre)| (ressource.id().as_str(), *nombre))
+            .collect();
+        assert_eq!(restants, vec![("croc-de-loup", 1)]);
+        // Rien à porter avant le constat, et une amélioration attend la fin
+        // de la fabrication.
+        assert_eq!(
+            repondre_a_l_heure(
+                &mut deroulement,
+                equiper.clone(),
+                &contenu,
+                &depot,
+                a(2_000)
+            ),
+            Err(ErreurChoix::Equipement(ErreurEquipement::NonPossede(
+                couteau.clone()
+            )))
+        );
+        assert_eq!(
+            repondre_a_l_heure(
+                &mut deroulement,
+                Choix::LancerAmelioration(Amelioration::Enclos),
+                &contenu,
+                &depot,
+                a(2_000)
+            ),
+            Err(ErreurChoix::Amelioration(
+                ErreurAmelioration::ChantierEnCours
+            ))
+        );
+        let evenements = repondre_a_l_heure(
+            &mut deroulement,
+            Choix::ConstaterTravail,
+            &contenu,
+            &depot,
+            a(4_600),
+        )
+        .unwrap();
+        assert!(matches!(&evenements[..], [Evenement::TravailConstate(_)]));
+        assert!(
+            deroulement
+                .partie()
+                .unwrap()
+                .heros()
+                .equipement()
+                .possede(&couteau)
+        );
+        // Un objet ne se forge qu'une fois.
+        assert_eq!(
+            repondre_a_l_heure(&mut deroulement, lancer, &contenu, &depot, a(5_000)),
+            Err(ErreurChoix::Amelioration(ErreurAmelioration::DejaPossede))
+        );
+        let evenements = repondre_a_l_heure(
+            &mut deroulement,
+            equiper.clone(),
+            &contenu,
+            &depot,
+            a(5_000),
+        )
+        .unwrap();
+        assert!(matches!(
+            &evenements[..],
+            [Evenement::ObjetEquipe { place: PlaceDEquipement::Arme, objet, remplace: None }]
+                if objet.id() == &couteau
+        ));
+        // Remis à sa place, il ne change rien.
+        let evenements =
+            repondre_a_l_heure(&mut deroulement, equiper, &contenu, &depot, a(5_000)).unwrap();
+        assert!(evenements.is_empty());
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert!(
+            sauvegarde
+                .heros()
+                .equipement()
+                .porte(PlaceDEquipement::Arme)
+                .is_some()
+        );
+        // En combat, +5 % d'Attaque pour ses monstres, en plus de la classe.
+        let mut partie = deroulement.partie().unwrap().clone();
+        let monstre = partie.collection().equipe()[0].clone();
+        let sauvage = salamandre(&contenu, 40);
+        let combat = partie.preparer_combat(vec![sauvage]).unwrap();
+        let stats = combat.stats_en_combat(combat.actif(crate::combat::Cote::Joueur));
+        assert_eq!(stats.attaque, monstre.stats().attaque * 105 / 100);
+        assert_ne!(stats.attaque, monstre.stats().attaque);
+        assert_eq!(
+            stats.attaque_speciale,
+            monstre.stats().attaque_speciale * 110 / 100
+        );
+        let evenements = repondre_a_l_heure(
+            &mut deroulement,
+            Choix::RetirerEquipement(PlaceDEquipement::Arme),
+            &contenu,
+            &depot,
+            a(5_000),
+        )
+        .unwrap();
+        assert!(matches!(&evenements[..], [Evenement::ObjetRetire { .. }]));
+        assert_eq!(
+            deroulement.partie().unwrap().heros().bonus_en_combat(),
+            Classe::Mage.bonus()
+        );
     }
 
     #[test]

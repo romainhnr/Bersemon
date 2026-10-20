@@ -1,8 +1,9 @@
-//! Héros du joueur (section 4). Dans la V1, il se résume à un nom et une
-//! classe : il ne combat pas et n'a ni niveau, ni stats, ni équipement.
+//! Héros du joueur (section 4) : un nom, une classe et son équipement. Il
+//! ne combat pas et n'a ni niveau ni stats.
 
+use crate::equipement::Equipement;
 use crate::nom::Nom;
-use crate::stats::{BonusDeStats, Stats};
+use crate::stats::{BonusDeStats, Stats, cumuler_bonus};
 
 /// Guerrier et Mage dans la V1 (Q2), puis le Templier et l'Assassin
 /// (section 4.1).
@@ -60,11 +61,22 @@ impl Classe {
 pub struct Heros {
     nom: Nom,
     classe: Classe,
+    equipement: Equipement,
 }
 
 impl Heros {
     pub fn new(nom: Nom, classe: Classe) -> Self {
-        Self { nom, classe }
+        Self {
+            nom,
+            classe,
+            equipement: Equipement::default(),
+        }
+    }
+
+    /// Reprise d'une sauvegarde (section 13.9).
+    pub fn avec_equipement(mut self, equipement: Equipement) -> Self {
+        self.equipement = equipement;
+        self
     }
 
     pub fn nom(&self) -> &Nom {
@@ -73,6 +85,20 @@ impl Heros {
 
     pub fn classe(&self) -> Classe {
         self.classe
+    }
+
+    pub fn equipement(&self) -> &Equipement {
+        &self.equipement
+    }
+
+    pub(crate) fn equipement_mut(&mut self) -> &mut Equipement {
+        &mut self.equipement
+    }
+
+    /// Bonus des monstres du joueur en combat : celui de la classe, plus
+    /// celui des objets portés (sections 4.2 et 4.3).
+    pub fn bonus_en_combat(&self) -> BonusDeStats {
+        cumuler_bonus(&self.classe.bonus(), &self.equipement.bonus())
     }
 }
 

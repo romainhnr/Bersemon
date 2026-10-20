@@ -5,6 +5,7 @@
 use crate::ame::{MarchandId, MarchandMort};
 use crate::attaque::AttaqueId;
 use crate::capsule::Capsule;
+use crate::equipement::{ObjetDEquipement, ObjetDEquipementId};
 use crate::espece::{Espece, EspeceId};
 use crate::ressource::{Ressource, RessourceId};
 use crate::zone::{Zone, ZoneId};
@@ -24,4 +25,7 @@ pub trait Catalogue {
 
     /// Pour les ressources du sac et du coffre (section 14.3).
     fn ressource(&self, id: &RessourceId) -> Option<Ressource>;
+
+    /// Pour l'équipement du héros et l'objet en fabrication (section 4.3).
+    fn objet_d_equipement(&self, id: &ObjetDEquipementId) -> Option<ObjetDEquipement>;
 }

@@ -336,7 +336,7 @@ impl Cle {
             Cle::ToutRanger => jouer(Choix::ToutRangerAuCoffre),
             Cle::SeSuicider => jouer(Choix::SeSuicider),
             Cle::Ameliorer(amelioration) => jouer(Choix::LancerAmelioration(*amelioration)),
-            Cle::Constater => jouer(Choix::ConstaterAmelioration),
+            Cle::Constater => jouer(Choix::ConstaterTravail),
         }
     }
 

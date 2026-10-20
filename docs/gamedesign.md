@@ -4,7 +4,7 @@ Bersemon est le nom du projet et du jeu.
 
 Statut : document de référence du projet. Il décrit ce qui est décidé ; les points non tranchés sont regroupés dans la section 16 "Questions ouvertes et valeurs à définir", et l'historique des décisions dans la section 17.
 
-Dernière mise à jour : 19/10/2026
+Dernière mise à jour : 20/10/2026
 
 ## Sommaire
 
@@ -114,6 +114,7 @@ L'objectif du jeu est de proposer des boucles de gameplay intéressantes et stim
 - Dans la V1, le héros se résume à un nom, choisi librement par le joueur (de 1 à 20 caractères), et à une classe, Guerrier ou Mage. Il n'a ni niveau, ni stats, ni équipement.
 - Après la V1, le Templier rejoint les classes jouables : Guerrier, Mage ou Templier. Chaque classe a son monstre de départ attitré (section 6).
 - Depuis l'étape 27 (19/10/2026), l'Assassin aussi : Guerrier, Mage, Templier ou Assassin.
+- Depuis les étapes 48 à 51 (20/10/2026), le héros a un équipement : une arme, une armure et 2 talismans (Q6), fabriqués par Gunther (section 4.3). Il n'a toujours ni niveau ni stats propres (hypothèse retenue, Q87).
 
 ### 4.2 Rôle en combat
 
@@ -123,6 +124,18 @@ L'objectif du jeu est de proposer des boucles de gameplay intéressantes et stim
 - Décidé le 18/10/2026, pour l'étape 27 : l'Assassin devient jouable, avec un monstre attitré rapide, qui frappe fort mais encaisse mal. Précisé le 19/10/2026 (Q72) : ce monstre est le Chat noir, de type Ténèbres, offensif en attaque physique (section 6, fiche dans docs/contenu-v1.md).
 - Depuis l'étape 28, les habiletés de stats des monstres s'ajoutent à ce bonus (section 5.9).
 - À terme, option hybride envisagée : le héros combat lui-même uniquement lorsque tous ses monstres sont KO.
+
+### 4.3 Équipement
+
+Décidé le 20/10/2026, pour les étapes 48 à 51 (choix de l'utilisateur) :
+
+- Le héros porte une arme, une armure et 2 talismans, différents l'un de l'autre (Q6).
+- Chaque objet porté ajoute des pourcentages aux stats des monstres du joueur en combat, comme le bonus de classe, auquel ils s'additionnent, avec celui des habiletés (sections 4.2 et 5.9). Les arrondis se font à l'entier inférieur. Un Guerrier qui porte une arme à +15 % d'Attaque et un talisman à +5 % d'Attaque, dont le monstre a Férocité, donne +40 % d'Attaque à ce monstre (à vérifier en jouant, Q87).
+- Les armes renforcent l'Attaque ou l'Attaque spéciale, les armures la Défense et la Défense spéciale ensemble, et chaque talisman une stat. Aucun objet ne renforce les PV : les PV ne sont pas majorés en combat.
+- Comme le bonus de classe, l'équipement ne joue qu'en combat, pas sur les expéditions automatiques (hypothèse retenue, Q87). Aucun objet n'est réservé à une classe (hypothèse retenue, Q87).
+- Les objets se fabriquent chez Gunther (section 13.5), chacun une seule fois. Le héros garde tous les objets qu'il possède : ils ne vont ni dans le sac ni dans le coffre, et rien ne les lui fait perdre, pas même une défaite.
+- Il les porte, les change ou les retire au camp seulement, sans confirmation. Un objet fabriqué n'est pas porté d'office.
+- Liste, bonus, coûts et durées dans docs/contenu-v1.md, section 11 : 14 objets en trois paliers, liés aux ressources des zones.
 
 ## 5. Les monstres
 
@@ -626,6 +639,12 @@ Décidé le 19/10/2026, pour les étapes 41 à 43 :
 - Avec les ressources obtenues, le joueur peut fabriquer des objets : filets de capture, armes, armures, talismans.
 - Il peut aussi améliorer ses filets de capture : chaque niveau d'amélioration augmente les chances de capture.
 
+Décidé le 20/10/2026, pour les étapes 48 à 51 (choix de l'utilisateur) :
+
+- Gunther forge l'équipement du héros (section 4.3) dans le même atelier que les améliorations : un seul travail à la fois, amélioration ou objet. Comme une amélioration (section 13.4), un objet se paie en ressources seules, prises au lancement, du sac d'abord puis du coffre ; il demande une durée, de 1 h à 8 h, sur l'horloge réelle ; un travail lancé ne s'annule pas ; le joueur constate lui-même le travail fini, au camp, et l'objet rejoint alors son équipement. Sur Discord, le bot prévient par message privé de la fin d'une fabrication.
+- Chaque objet ne se fabrique qu'une fois : un objet possédé n'est plus proposé.
+- Les filets de capture restent une amélioration du camp (section 13.4) : ils ne se fabriquent pas à l'unité.
+
 ### 13.6 Automatisation
 
 Le joueur peut construire des machines pour automatiser certaines tâches, par exemple :
@@ -655,6 +674,7 @@ Le joueur peut construire des machines pour automatiser certaines tâches, par e
 - Avec l'économie, elle garde aussi l'argent du joueur, la présence du marchand au camp et les capsules d'attaque obtenues (section 14). Les achats et les ventes sont des actions au camp, suivies d'une sauvegarde.
 - Depuis l'étape 28, elle garde aussi l'habileté de chaque monstre (section 5.9).
 - Depuis l'étape 41, en version 14 : Gunther au camp, les niveaux des améliorations et la construction en cours (section 13.4). Depuis l'étape 43, en version 15, aussi le niveau de l'amélioration de l'équipe.
+- Depuis l'étape 49, en version 16 : l'équipement du héros, objets possédés et portés, et l'objet en fabrication (sections 4.3 et 13.5). Une sauvegarde antérieure n'a aucun objet. Une sauvegarde qui cite un objet disparu du jeu est refusée, comme une espèce disparue.
 - Depuis l'étape 39, en version 13 : les pierres d'évolution du sac et du coffre (section 5.4). Une sauvegarde antérieure n'en a pas.
 - Depuis l'étape 32, en version 12 : les attaques à choisir au retour d'une expédition automatique désignent un monstre de l'équipe ou du camp ; celles des versions antérieures désignent un monstre du camp. Les étapes 33 à 36 y ajoutent, toujours en version 12, les âmes à retrouver, les âmes portées, les capsules d'habileté et les ressources du sac et du coffre. Les âmes recueillies des versions antérieures comptent comme données à Malvoise : leur soin reste en vente.
 - Après la V1 (19/10/2026), un sous-menu « Options » du camp permet au joueur de se suicider, après confirmation, pour recommencer sans attendre la reprise au lancement. La sauvegarde est effacée dès la confirmation, avec le héros, les monstres, le sac, le coffre, le codex et les expéditions automatiques en cours ; un court texte suit, puis la création d'un nouveau héros. Ce n'est possible qu'au camp. Le texte est dans docs/contenu-v1.md, section 4.
@@ -725,7 +745,7 @@ Premier marchand, après la V1 :
 - Consommables : soins, boosters de stats.
 - Objets permettant d'ajuster les statistiques d'un monstre.
 - Filets de capture : achetables, fabricables, améliorables.
-- Équipement du héros : armes, armures, talismans.
+- Équipement du héros : armes, armures, talismans. Depuis les étapes 48 à 51, fabriqués par Gunther et gardés par le héros, hors du sac et du coffre (sections 4.3 et 13.5).
 - Depuis l'étape 36 (19/10/2026, Q71), une ressource par espèce sauvage qui peut être combattue, lâchée par un monstre sauvage mis KO et non capturé, après un combat gagné, 1 fois sur 3. Les monstres d'un humain, les Apôtres et le marchand zombie n'en lâchent pas, et les espèces pacifiques ne se combattent pas. Elle va dans le sac, se range au coffre, se perd avec le sac et se revend à Malvoise, à un prix fixe selon la rareté de l'espèce : 5 pièces d'argent pour une espèce commune, 15 pour une rare. Au camp, Malvoise rachète toutes les ressources d'une sorte d'un coup, celles du sac puis celles du coffre, sans confirmation. Liste dans docs/contenu-v1.md, section 6. Noms, taux et prix sont des hypothèses, à confirmer (Q82).
 - Écrans, à l'étape 36 : les ressources s'écrivent avec leur nombre entre parenthèses, "Croc de loup (3)". Après une victoire, le récit dit celles que le joueur ramasse. Dans la console, l'étal de Malvoise propose "Vendre des ressources", par sorte, et le coffre les déplace au nombre choisi. Sur Discord, la vente des monstres devient "Vendre monstres et ressources", avec un menu des ressources, et le coffre a deux menus à part pour elles, une ou toutes de chaque sorte.
 - Capsule d'habileté, depuis l'étape 35 (section 5.9).
@@ -781,7 +801,6 @@ Repères : un Loup de niveau 5 se revend 28 pièces d'argent, un Feu follet de n
 Les numéros des questions résolues ne sont pas réattribués, pour que les références restent stables.
 
 - Q5. Types Stellaire, Obscur, Lumière et Son (après la V1) : relations d'efficacité, et différence entre les types Ténèbres et Obscur.
-- Q6. Nombre de talismans équipables.
 
 Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découpage de la V1 en étapes. Chacune indique l'étape de développement qui en a besoin : 1 fondations (types, stats, monstres), 2 combat 1 contre 1, 3 combat complet (changement, statuts, fuite, capture), 4 progression, 5 héros, équipe et camp, 6 expédition manuelle, 7 sauvegarde, 8 contenu et boucle de jeu complète.
 
@@ -815,6 +834,10 @@ Les questions Q85 et suivantes ont été relevées le 19/10/2026 lors de la conc
 
 - Q85. (Étapes 41 à 43) Hypothèses retenues, à confirmer : une sauvegarde où le Bourreau est déjà vaincu a Gunther au camp dès la reprise ; une construction lancée ne s'annule pas ; le bot prévient par message privé qu'une construction est finie. Coûts et durées sont à ajuster en jouant ; l'équipe de 4 facilite les combats contre les Apôtres, à vérifier en jouant.
 - Q86. (Étapes 44 à 47) Hypothèses retenues, à confirmer : la Reine des ronces apprend Lianes étrangleuses au niveau 25, en plus de Ronces maudites ; l'Inquisiteur a l'IA relevée du Bourreau ; une sauvegarde où le Baron est déjà vaincu trouve l'indice 3 au bout de sa prochaine expédition menée au bout dans la Vallée ; l'Abbaye n'a pas de marchand mort ; les nouvelles espèces de l'Abbaye n'évoluent pas pour l'instant.
+
+Les questions Q87 et suivantes ont été relevées le 20/10/2026 lors de la conception des étapes 48 équipement du héros, 49 fabrication par Gunther et sauvegarde en version 16, 50 écrans de la console, 51 écrans du bot Discord.
+
+- Q87. (Étapes 48 à 51) Hypothèses retenues, à confirmer : le héros n'a ni niveau ni stats propres, et n'a pas encore d'actions de soutien (section 4.2) ; aucun objet n'est réservé à une classe ; l'équipement ne joue pas sur les expéditions automatiques ; un objet disparu du jeu rend la sauvegarde illisible. Le cumul des bonus (jusqu'à +40 % sur une stat) est à vérifier en jouant, comme les coûts et les durées.
 
 - Q83. (Étapes 33 et 34) Hypothèses retenues, à confirmer : le gardien d'une âme à retrouver attaque à une étape tirée parmi celles qui précèdent la dernière ; le don d'une âme à Malvoise se fait sans confirmation ; une partie antérieure qui n'a pas recueilli l'âme de Bertrand le rencontre à l'étape 4 de sa prochaine expédition dans la Lisière, même avec Malvoise déjà au camp ; le texte du brigand de l'étape 5 ne change pas, même s'il a perdu son Loup à l'étape 4.
 
@@ -1147,3 +1170,11 @@ Les questions Q85 et suivantes ont été relevées le 19/10/2026 lors de la conc
 - Gunther, forgeron prisonnier du Bourreau, libéré à sa défaite, construit les améliorations (sections 13.4 et 14.2). Sauvegarde en version 14.
 - Quatrième zone, validée par l'utilisateur pour les étapes 44 à 47 : l'Abbaye des Cendres, l'Inquisiteur, l'Abbesse écorchée, l'Ange déchu (premier monstre Psychique) et la Reine des ronces (sections 5.2, 5.4 et 9.4).
 - Hypothèses retenues, à confirmer : Q85 et Q86.
+
+20/10/2026 (conception des étapes 48 à 51, équipement du héros) :
+
+- Choix de l'utilisateur : l'équipement du héros passe avant les autres fonctionnalités en attente (fabrication seule, protections des expéditions automatiques, multijoueur, suite de la traque, services rares).
+- Q6 tranchée : 2 talismans, différents, en plus d'une arme et d'une armure (section 4.3).
+- Choix de l'utilisateur : l'équipement donne des bonus de stats en pourcentage aux monstres du joueur en combat, comme la classe ; il n'est jamais perdu ; Gunther le forge dans le même atelier que les améliorations, avec une durée (section 13.5).
+- Contenu validé par l'utilisateur : 14 objets, 6 armes, 3 armures et 5 talismans, en trois paliers (docs/contenu-v1.md, section 11). Sauvegarde en version 16.
+- Hypothèses retenues, à confirmer : Q87.

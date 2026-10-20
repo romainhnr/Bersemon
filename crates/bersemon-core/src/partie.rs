@@ -5,13 +5,16 @@ use std::fmt;
 
 use crate::aleatoire::Aleatoire;
 use crate::ame::{MarchandId, MarchandMort};
-use crate::amelioration::{Chantier, ErreurAmelioration, Forge, PlanDAmelioration};
+use crate::amelioration::{
+    Chantier, ErreurAmelioration, Forge, Ouvrage, PlanDAmelioration, PlanDeFabrication,
+};
 use crate::attaque::{Attaque, AttaqueId, ErreurAttaquesMonstre};
 use crate::capsule::{Capsule, ErreurApprentissage, attaques_a_apprendre};
 use crate::catalogue::Catalogue;
 use crate::codex::Codex;
 use crate::collection::{Collection, Emplacement, ErreurCollection, Placement};
 use crate::combat::{BilanCombat, Combat, ErreurCombat, Issue};
+use crate::equipement::{ErreurEquipement, ObjetDEquipementId, PlaceDEquipement};
 use crate::espece::{Espece, EspeceId};
 use crate::evolution::{
     Circonstances, ErreurEvolution, ResultatEvolution, evolution_possible, faire_evoluer,
@@ -307,7 +310,14 @@ impl Partie {
         maintenant: Horodatage,
     ) -> Result<Chantier, ErreurAmelioration> {
         self.verifier_amelioration(plan)?;
-        for (ressource, nombre) in plan.cout() {
+        self.payer_ressources(plan.cout());
+        Ok(self.forge.lancer(plan, maintenant))
+    }
+
+    /// Du sac d'abord, puis du coffre, comme l'argent (section 13.3). Le
+    /// coût est vérifié par l'appelant.
+    fn payer_ressources(&mut self, cout: &[(Ressource, u32)]) {
+        for (ressource, nombre) in cout {
             let du_sac = (*nombre).min(self.sac.nombre_de_ressources(ressource.id()));
             for (inventaire, quantite) in [
                 (&mut self.sac, du_sac),
@@ -320,7 +330,6 @@ impl Partie {
                 }
             }
         }
-        Ok(self.forge.lancer(plan, maintenant))
     }
 
     /// Refuse ce que refuserait `lancer_amelioration`, sans rien changer.
@@ -336,17 +345,63 @@ impl Partie {
         Ok(())
     }
 
+    /// Au camp, après confirmation, comme une amélioration : Gunther ne fait
+    /// qu'un travail à la fois (section 13.5).
+    pub fn lancer_fabrication(
+        &mut self,
+        plan: &PlanDeFabrication,
+        maintenant: Horodatage,
+    ) -> Result<Chantier, ErreurAmelioration> {
+        self.verifier_fabrication(plan)?;
+        self.payer_ressources(plan.cout());
+        Ok(self.forge.lancer_fabrication(plan, maintenant))
+    }
+
+    /// Refuse ce que refuserait `lancer_fabrication`, sans rien changer.
+    pub fn verifier_fabrication(&self, plan: &PlanDeFabrication) -> Result<(), ErreurAmelioration> {
+        self.forge
+            .verifier_fabrication(plan, self.heros.equipement())?;
+        let manquantes = self.ressources_manquantes(plan.cout());
+        if !manquantes.is_empty() {
+            return Err(ErreurAmelioration::RessourcesManquantes(manquantes));
+        }
+        Ok(())
+    }
+
     /// Au camp, le joueur constate le travail fini : le niveau compte, et un
-    /// enclos agrandi accueille aussitôt plus de monstres (section 13.4).
-    pub fn constater_amelioration(
+    /// enclos agrandi accueille aussitôt plus de monstres (section 13.4) ;
+    /// un objet fabriqué rejoint l'équipement du héros, sans être porté
+    /// (section 13.5).
+    pub fn constater_travail(
         &mut self,
         maintenant: Horodatage,
     ) -> Result<Chantier, ErreurAmelioration> {
         let chantier = self.forge.achever(maintenant)?;
-        self.collection
-            .definir_tailles(self.forge.ameliorations().tailles())
-            .expect("une amélioration ne réduit aucune place");
+        match &chantier.ouvrage {
+            Ouvrage::Amelioration { .. } => self
+                .collection
+                .definir_tailles(self.forge.ameliorations().tailles())
+                .expect("une amélioration ne réduit aucune place"),
+            // Un objet déjà possédé ne se fabrique pas : rien à ajouter.
+            Ouvrage::Objet(objet) => {
+                let _ = self.heros.equipement_mut().ajouter(objet.clone());
+            }
+        }
         Ok(chantier)
+    }
+
+    /// Au camp seulement : l'objet remplace celui de cette place (section
+    /// 4.3).
+    pub fn equiper(
+        &mut self,
+        place: PlaceDEquipement,
+        objet: &ObjetDEquipementId,
+    ) -> Result<(), ErreurEquipement> {
+        self.heros.equipement_mut().equiper(place, objet)
+    }
+
+    pub fn retirer_equipement(&mut self, place: PlaceDEquipement) -> Result<(), ErreurEquipement> {
+        self.heros.equipement_mut().retirer(place)
     }
 
     pub fn ames_donnees(&self) -> &[MarchandMort] {
@@ -901,7 +956,7 @@ impl Partie {
             .map(|monstre| monstre.espece().id().clone())
             .collect();
         let combat = Combat::new(self.collection.equipe().to_vec(), groupe)?
-            .avec_bonus_du_joueur(self.heros.classe().bonus())
+            .avec_bonus_du_joueur(self.heros.bonus_en_combat())
             .avec_filets(self.forge.ameliorations().facteur_des_filets())
             .avec_soins(*self.sac.soins());
         for espece in &especes {
@@ -926,7 +981,7 @@ impl Partie {
         groupe: Vec<Monstre>,
     ) -> Result<Combat, ErreurCombat> {
         Ok(Combat::new(self.collection.equipe().to_vec(), groupe)?
-            .avec_bonus_du_joueur(self.heros.classe().bonus())
+            .avec_bonus_du_joueur(self.heros.bonus_en_combat())
             .avec_soins(*self.sac.soins())
             .sans_capture())
     }
@@ -2189,7 +2244,7 @@ mod tests {
             conseils_vus: partie.conseils_vus().to_vec(),
             expeditions_automatiques: partie.expeditions_automatiques().to_vec(),
             attaques_a_choisir: partie.attaques_a_choisir().to_vec(),
-            forge: *partie.forge(),
+            forge: partie.forge().clone(),
         }
     }
 

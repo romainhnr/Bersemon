@@ -1,4 +1,4 @@
-//! Format JSON de la sauvegarde, version 15, et sa conversion vers les types
+//! Format JSON de la sauvegarde, version 16, et sa conversion vers les types
 //! du noyau. Les énumérations sont écrites avec des noms fixés ici, et non
 //! avec les noms Rust, pour qu'un renommage dans le code ne casse pas les
 //! sauvegardes existantes.
@@ -8,11 +8,14 @@
 use serde::{Deserialize, Serialize};
 
 use bersemon_core::ame::{MarchandId, MarchandMort};
-use bersemon_core::amelioration::{Amelioration, Ameliorations, Chantier, Forge};
+use bersemon_core::amelioration::{Amelioration, Ameliorations, Chantier, Forge, Ouvrage};
 use bersemon_core::attaque::{AttaqueId, AttaquesMonstre};
 use bersemon_core::catalogue::Catalogue;
 use bersemon_core::codex::Codex;
 use bersemon_core::collection::{Collection, Emplacement};
+use bersemon_core::equipement::{
+    Equipement, ObjetDEquipement, ObjetDEquipementId, PlaceDEquipement,
+};
 use bersemon_core::espece::EspeceId;
 use bersemon_core::expedition_automatique::ExpeditionAutomatique;
 use bersemon_core::habilete::Habilete;
@@ -35,7 +38,7 @@ use bersemon_core::zone::ZoneId;
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 15;
+pub(crate) const VERSION: u64 = 16;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -67,7 +70,8 @@ const GEOLIER_DE_GUNTHER: &str = "bourreau";
 /// désigner un monstre de l'équipe, et s'ajoutent les âmes portées et à
 /// retrouver, les capsules d'habileté et les ressources ; la version 13
 /// ajoute les pierres d'évolution, la version 14 Gunther et les
-/// améliorations du camp, la version 15 l'amélioration de l'équipe. Une sauvegarde d'une version
+/// améliorations du camp, la version 15 l'amélioration de l'équipe, la
+/// version 16 l'équipement du héros et sa fabrication. Une sauvegarde d'une version
 /// précédente se lit avec cette structure : les champs ajoutés y prennent
 /// leur valeur de début de partie.
 #[derive(Debug, Serialize, Deserialize)]
@@ -139,8 +143,14 @@ struct AmeliorationsV14 {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct ChantierV14 {
-    amelioration: String,
+    /// Depuis la version 16, absente pour un objet en fabrication.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    amelioration: Option<String>,
+    #[serde(default)]
     niveau: u8,
+    /// Depuis la version 16 : l'objet que fabrique Gunther (section 13.5).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    objet: Option<String>,
     /// Secondes depuis le 1er janvier 1970 (UTC).
     fin: u64,
 }
@@ -243,6 +253,73 @@ struct AttaqueAChoisirV3 {
 struct HerosV1 {
     nom: String,
     classe: String,
+    /// Depuis la version 16 : les objets possédés, dans l'ordre où ils ont
+    /// été obtenus, et ceux qui sont portés (section 4.3).
+    #[serde(default)]
+    objets: Vec<String>,
+    #[serde(default)]
+    equipement_porte: EquipementPorteV16,
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+struct EquipementPorteV16 {
+    #[serde(default)]
+    arme: Option<String>,
+    #[serde(default)]
+    armure: Option<String>,
+    #[serde(default)]
+    premier_talisman: Option<String>,
+    #[serde(default)]
+    second_talisman: Option<String>,
+}
+
+fn depuis_equipement(equipement: &Equipement) -> (Vec<String>, EquipementPorteV16) {
+    let porte = |place| {
+        equipement
+            .porte(place)
+            .map(|objet: &ObjetDEquipement| objet.id().as_str().to_string())
+    };
+    let objets = equipement
+        .possedes()
+        .iter()
+        .map(|objet| objet.id().as_str().to_string())
+        .collect();
+    let portes = EquipementPorteV16 {
+        arme: porte(PlaceDEquipement::Arme),
+        armure: porte(PlaceDEquipement::Armure),
+        premier_talisman: porte(PlaceDEquipement::PremierTalisman),
+        second_talisman: porte(PlaceDEquipement::SecondTalisman),
+    };
+    (objets, portes)
+}
+
+fn vers_objet(id: &str, catalogue: &dyn Catalogue) -> Result<ObjetDEquipement, ErreurSauvegarde> {
+    catalogue
+        .objet_d_equipement(&ObjetDEquipementId::new(id))
+        .ok_or_else(|| ErreurSauvegarde::Incoherente(format!("objet d'équipement inconnu : {id}")))
+}
+
+/// Un objet disparu du jeu rend la sauvegarde illisible, comme une espèce
+/// disparue (section 13.9).
+fn vers_equipement(
+    objets: &[String],
+    portes: EquipementPorteV16,
+    catalogue: &dyn Catalogue,
+) -> Result<Equipement, ErreurSauvegarde> {
+    let possedes = objets
+        .iter()
+        .map(|id| vers_objet(id, catalogue))
+        .collect::<Result<Vec<_>, _>>()?;
+    let portes: Vec<_> = [
+        (PlaceDEquipement::Arme, portes.arme),
+        (PlaceDEquipement::Armure, portes.armure),
+        (PlaceDEquipement::PremierTalisman, portes.premier_talisman),
+        (PlaceDEquipement::SecondTalisman, portes.second_talisman),
+    ]
+    .into_iter()
+    .filter_map(|(place, id)| id.map(|id| (place, ObjetDEquipementId::new(id))))
+    .collect();
+    Equipement::restaurer(possedes, &portes).map_err(incoherente)
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -280,11 +357,14 @@ struct CodexV1 {
 
 pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV14 {
     let collection = partie.collection();
+    let (objets, equipement_porte) = depuis_equipement(partie.heros().equipement());
     SauvegardeV14 {
         version: VERSION,
         heros: HerosV1 {
             nom: partie.heros().nom().as_str().to_string(),
             classe: nom_de_classe(partie.heros().classe()).to_string(),
+            objets,
+            equipement_porte,
         },
         equipe: collection.equipe().iter().map(depuis_monstre).collect(),
         camp: collection.camp().iter().map(depuis_monstre).collect(),
@@ -353,11 +433,26 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV14 {
             filets: partie.forge().ameliorations().niveau(Amelioration::Filets),
             equipe: partie.forge().ameliorations().niveau(Amelioration::Equipe),
         },
-        chantier: partie.forge().chantier().map(|chantier| ChantierV14 {
-            amelioration: amelioration_en_texte(chantier.amelioration).to_string(),
-            niveau: chantier.niveau,
-            fin: chantier.fin.secondes(),
-        }),
+        chantier: partie
+            .forge()
+            .chantier()
+            .map(|chantier| match &chantier.ouvrage {
+                Ouvrage::Amelioration {
+                    amelioration,
+                    niveau,
+                } => ChantierV14 {
+                    amelioration: Some(amelioration_en_texte(*amelioration).to_string()),
+                    niveau: *niveau,
+                    objet: None,
+                    fin: chantier.fin.secondes(),
+                },
+                Ouvrage::Objet(objet) => ChantierV14 {
+                    amelioration: None,
+                    niveau: 0,
+                    objet: Some(objet.id().as_str().to_string()),
+                    fin: chantier.fin.secondes(),
+                },
+            }),
     }
 }
 
@@ -431,7 +526,12 @@ pub(crate) fn vers_partie(
     let heros = Heros::new(
         nom(&sauvegarde.heros.nom)?,
         classe(&sauvegarde.heros.classe)?,
-    );
+    )
+    .avec_equipement(vers_equipement(
+        &sauvegarde.heros.objets,
+        std::mem::take(&mut sauvegarde.heros.equipement_porte),
+        catalogue,
+    )?);
     let equipe = vers_monstres(sauvegarde.equipe, catalogue)?;
     let camp = vers_monstres(sauvegarde.camp, catalogue)?;
     let attaques_a_choisir = sauvegarde
@@ -466,9 +566,20 @@ pub(crate) fn vers_partie(
     let chantier = sauvegarde
         .chantier
         .map(|chantier| {
-            Ok::<_, ErreurSauvegarde>(Chantier {
-                amelioration: lire_amelioration(&chantier.amelioration)?,
-                niveau: chantier.niveau,
+            let ouvrage = match (chantier.amelioration, chantier.objet) {
+                (Some(amelioration), None) => Ouvrage::Amelioration {
+                    amelioration: lire_amelioration(&amelioration)?,
+                    niveau: chantier.niveau,
+                },
+                (None, Some(objet)) => Ouvrage::Objet(vers_objet(&objet, catalogue)?),
+                _ => {
+                    return Err(ErreurSauvegarde::Incoherente(
+                        "travail de Gunther sans ouvrage, ou double".to_string(),
+                    ));
+                }
+            };
+            Ok(Chantier {
+                ouvrage,
                 fin: Horodatage::depuis_secondes(chantier.fin),
             })
         })

@@ -85,10 +85,13 @@ fn acces(erreur: io::Error) -> ErreurSauvegarde {
 mod tests {
     use super::*;
     use bersemon_core::ame::{Gardien, MarchandId, MarchandMort};
-    use bersemon_core::amelioration::{Amelioration, Ameliorations, Chantier, Forge};
+    use bersemon_core::amelioration::{Amelioration, Ameliorations, Chantier, Forge, Ouvrage};
     use bersemon_core::attaque::{Attaque, AttaqueId, Categorie, EffetSecondaire};
     use bersemon_core::capsule::Capsule;
     use bersemon_core::collection::Emplacement;
+    use bersemon_core::equipement::{
+        Equipement, ObjetDEquipement, ObjetDEquipementId, PlaceDEquipement, SorteDObjet,
+    };
     use bersemon_core::espece::{AttaqueApprise, Espece, EspeceId, Role};
     use bersemon_core::expedition::ParametresCoffre;
     use bersemon_core::expedition_automatique::ParametresExpeditionAutomatique;
@@ -148,6 +151,36 @@ mod tests {
         fn ressource(&self, id: &RessourceId) -> Option<Ressource> {
             Some(croc()).filter(|croc| croc.id() == id)
         }
+
+        fn objet_d_equipement(&self, id: &ObjetDEquipementId) -> Option<ObjetDEquipement> {
+            [couteau(), talisman()]
+                .into_iter()
+                .find(|objet| objet.id() == id)
+        }
+    }
+
+    fn couteau() -> ObjetDEquipement {
+        ObjetDEquipement::new(
+            ObjetDEquipementId::new("couteau"),
+            "Couteau",
+            SorteDObjet::Arme,
+            Stats {
+                attaque: 5,
+                ..Stats::default()
+            },
+        )
+    }
+
+    fn talisman() -> ObjetDEquipement {
+        ObjetDEquipement::new(
+            ObjetDEquipementId::new("talisman"),
+            "Talisman",
+            SorteDObjet::Talisman,
+            Stats {
+                vitesse: 5,
+                ..Stats::default()
+            },
+        )
     }
 
     fn bertrand() -> MarchandMort {
@@ -305,7 +338,13 @@ mod tests {
 
     /// Une partie qui touche à tout ce que la sauvegarde doit garder.
     fn partie_complete() -> Partie {
-        let heros = Heros::new(Nom::new("Éléonore").unwrap(), Classe::Mage);
+        let equipement = Equipement::restaurer(
+            vec![couteau(), talisman()],
+            &[(PlaceDEquipement::SecondTalisman, talisman().id().clone())],
+        )
+        .unwrap();
+        let heros =
+            Heros::new(Nom::new("Éléonore").unwrap(), Classe::Mage).avec_equipement(equipement);
         let mut partie = Partie::nouvelle(heros, creer("salamandre", 5));
         let mut loup = creer("loup", 4).avec_habilete(Habilete::Fouineur);
         loup.renommer(Some(Nom::new("Croc").unwrap()));
@@ -348,8 +387,10 @@ mod tests {
                 true,
                 Ameliorations::new(1, 2, 1).unwrap(),
                 Some(Chantier {
-                    amelioration: Amelioration::Enclos,
-                    niveau: 2,
+                    ouvrage: Ouvrage::Amelioration {
+                        amelioration: Amelioration::Enclos,
+                        niveau: 2,
+                    },
                     fin: Horodatage::depuis_secondes(9_000),
                 }),
             )
@@ -563,10 +604,10 @@ mod tests {
 
     #[test]
     fn version_inconnue() {
-        let texte = texte_de_partie().replacen("\"version\":15", "\"version\":16", 1);
+        let texte = texte_de_partie().replacen("\"version\":16", "\"version\":17", 1);
         assert_eq!(
             charger_texte(&texte),
-            Err(ErreurSauvegarde::VersionInconnue(16))
+            Err(ErreurSauvegarde::VersionInconnue(17))
         );
     }
 
@@ -782,6 +823,64 @@ mod tests {
             assert_eq!(partie.forge().ameliorations(), &Ameliorations::default());
             assert_eq!(partie.forge().chantier(), None);
         }
+    }
+
+    #[test]
+    fn avant_la_version_16_le_heros_n_a_aucun_objet() {
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        let objet = valeur.as_object_mut().unwrap();
+        objet.insert("version".to_string(), 15.into());
+        let heros = objet["heros"].as_object_mut().unwrap();
+        heros.remove("objets");
+        heros.remove("equipement_porte");
+        let partie = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        assert_eq!(partie.heros().equipement(), &Equipement::default());
+        assert_eq!(partie.heros().nom().as_str(), "Éléonore");
+        assert!(partie.forge().chantier().is_some());
+    }
+
+    #[test]
+    fn l_equipement_et_l_objet_en_fabrication_se_relisent() {
+        let partie = partie_complete();
+        let equipement = partie.heros().equipement();
+        assert_eq!(equipement.possedes(), [couteau(), talisman()]);
+        assert_eq!(equipement.porte(PlaceDEquipement::Arme), None);
+        assert_eq!(
+            equipement.porte(PlaceDEquipement::SecondTalisman),
+            Some(&talisman())
+        );
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        let chantier = valeur["chantier"].as_object_mut().unwrap();
+        chantier.remove("amelioration");
+        chantier.remove("niveau");
+        chantier.insert("objet".to_string(), "couteau".into());
+        let relue = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        assert_eq!(
+            relue.forge().chantier().map(|chantier| &chantier.ouvrage),
+            Some(&Ouvrage::Objet(couteau()))
+        );
+        let ecrite = format::depuis_partie(&relue);
+        let texte = serde_json::to_string(&ecrite).unwrap();
+        assert!(texte.contains("\"objet\":\"couteau\""), "{texte}");
+        assert!(!texte.contains("\"amelioration\""), "{texte}");
+    }
+
+    #[test]
+    fn un_objet_disparu_du_jeu_est_refuse() {
+        let texte = texte_de_partie().replacen("\"couteau\"", "\"inconnu\"", 1);
+        assert!(matches!(
+            charger_texte(&texte),
+            Err(ErreurSauvegarde::Incoherente(_))
+        ));
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        valeur["chantier"]
+            .as_object_mut()
+            .unwrap()
+            .insert("objet".to_string(), "couteau".into());
+        assert!(matches!(
+            charger_texte(&valeur.to_string()),
+            Err(ErreurSauvegarde::Incoherente(_))
+        ));
     }
 
     #[test]

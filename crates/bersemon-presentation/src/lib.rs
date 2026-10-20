@@ -7,6 +7,7 @@
 //! permet pas de connaître.
 
 pub mod combat;
+pub mod equipement;
 pub mod erreurs;
 pub mod expeditions_automatiques;
 pub mod forge;

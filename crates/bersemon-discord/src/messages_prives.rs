@@ -18,7 +18,7 @@ use bersemon_core::expedition_automatique::ExpeditionAutomatique;
 use bersemon_core::horodatage::Horodatage;
 use bersemon_core::sauvegarde::SauvegardeRepository;
 use bersemon_core::zone::ZoneId;
-use bersemon_presentation::forge::niveau_d_amelioration;
+use bersemon_presentation::forge::ouvrage;
 use bersemon_storage::FichierJson;
 use poise::serenity_prelude as serenity;
 
@@ -76,7 +76,7 @@ impl Retour {
         Self {
             joueur,
             sujet: Sujet::Forge {
-                travail: niveau_d_amelioration(chantier.amelioration, chantier.niveau),
+                travail: ouvrage(&chantier.ouvrage),
             },
             heure: chantier.fin,
         }
@@ -164,7 +164,8 @@ impl Annonces {
     }
 
     /// Ce que vient de faire le joueur : un départ, un rappel, un accueil,
-    /// une construction lancée ou constatée, ou une nouvelle partie, qui
+    /// une construction ou une fabrication lancée ou constatée, ou une nouvelle
+    /// partie, qui
     /// remplace l'ancienne avec ses expéditions et sa forge.
     pub fn suivre(&mut self, joueur: IdJoueur, evenements: &[Evenement]) {
         for evenement in evenements {
@@ -178,10 +179,11 @@ impl Annonces {
                 Evenement::ExpeditionAutomatiqueRentree { bilan, .. } => {
                     self.oublier(joueur, Some(bilan.zone.as_str()));
                 }
-                Evenement::AmeliorationLancee { chantier, .. } => {
+                Evenement::AmeliorationLancee { chantier, .. }
+                | Evenement::FabricationLancee { chantier, .. } => {
                     self.a_annoncer.push(Retour::de_la_forge(joueur, chantier));
                 }
-                Evenement::AmeliorationConstatee(_) => {
+                Evenement::TravailConstate(_) => {
                     self.oublier(joueur, Some(CLE_DE_LA_FORGE));
                 }
                 Evenement::PartieCommencee(_) | Evenement::Suicide => self.oublier(joueur, None),
@@ -446,8 +448,10 @@ mod tests {
             .unwrap()
             .clone();
         let chantier = Chantier {
-            amelioration: Amelioration::Filets,
-            niveau: 1,
+            ouvrage: bersemon_core::amelioration::Ouvrage::Amelioration {
+                amelioration: Amelioration::Filets,
+                niveau: 1,
+            },
             fin: Horodatage::depuis_secondes(3_600),
         };
         let mut annonces = Annonces::new(&dossier);
@@ -455,7 +459,7 @@ mod tests {
             JOUEUR,
             &[Evenement::AmeliorationLancee {
                 plan: Box::new(plan),
-                chantier,
+                chantier: chantier.clone(),
             }],
         );
         assert!(
@@ -470,7 +474,7 @@ mod tests {
             "Gunther a fini : Filets, niveau 1 (chance de capture +10 %). Ouvrez /bersemon pour constater son travail."
         );
         // Constatée avant l'annonce : il n'y a plus rien à annoncer.
-        annonces.suivre(JOUEUR, &[Evenement::AmeliorationConstatee(chantier)]);
+        annonces.suivre(JOUEUR, &[Evenement::TravailConstate(chantier)]);
         let _ = fs::remove_dir_all(&dossier);
         assert!(
             annonces

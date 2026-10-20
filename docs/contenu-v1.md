@@ -633,3 +633,27 @@ Abbesse écorchée, avant le combat :
 Épilogue :
 
 > L'Abbesse écorchée s'effondre sur l'autel. Le même sceau, une main ouverte, est gravé dans sa chair. Deux Apôtres sont tombés ; le Démiurge, lui, attend toujours. Votre traque continue.
+
+## 11. Équipement du héros
+
+Décidé le 20/10/2026, pour les étapes 48 à 51 (gamedesign.md, sections 4.3 et 13.5), contenu validé par l'utilisateur, à ajuster en jouant. Chaque objet se fabrique une fois chez Gunther, contre des ressources seules, avec une durée. Les bonus s'ajoutent, en pourcentage, aux stats des monstres du joueur en combat. Aucun objet ne donne de PV.
+
+| Identifiant | Objet | Sorte | Bonus | Coût | Durée |
+|---|---|---|---|---|---|
+| couteau-de-chasse | Couteau de chasse | arme | +5 % d'Attaque | 6 Croc de loup, 4 Écaille de vipère | 1 h |
+| baton-d-if | Bâton d'if | arme | +5 % d'Attaque spéciale | 6 Plume de corbeau, 4 Écaille de vipère | 1 h |
+| epee-du-pendu | Épée du pendu | arme | +10 % d'Attaque | 6 Fragment d'armure, 6 Os de squelette, 1 Croc de basilic | 3 h |
+| grimoire-des-brumes | Grimoire des brumes | arme | +10 % d'Attaque spéciale | 6 Cendre de feu follet, 6 Aile de fée noire, 1 Croc de basilic | 3 h |
+| espadon-des-cendres | Espadon des cendres | arme | +15 % d'Attaque | 8 Éclat de gargouille, 6 Dent de goule, 1 Crin de chimère | 6 h |
+| encensoir-maudit | Encensoir maudit | arme | +15 % d'Attaque spéciale | 8 Aile de chauve-souris, 6 Dent de goule, 1 Crin de chimère | 6 h |
+| brigandine-de-cuir | Brigandine de cuir | armure | +5 % de Défense et de Défense spéciale | 6 Croc de loup, 6 Plume de corbeau | 2 h |
+| cotte-de-mailles | Cotte de mailles | armure | +10 % de Défense et de Défense spéciale | 8 Fragment d'armure, 4 Os de squelette, 1 Écaille de vouivre | 4 h |
+| plates-de-gargouille | Plates de gargouille | armure | +15 % de Défense et de Défense spéciale | 10 Éclat de gargouille, 6 Os de squelette, 1 Crin de chimère | 8 h |
+| croc-tresse | Croc tressé | talisman | +5 % d'Attaque | 8 Croc de loup | 1 h |
+| plume-de-corbeau-sertie | Plume de corbeau sertie | talisman | +5 % de Vitesse | 8 Plume de corbeau | 1 h |
+| lanterne-de-feu-follet | Lanterne de feu follet | talisman | +5 % d'Attaque spéciale | 8 Cendre de feu follet | 2 h |
+| os-grave | Os gravé | talisman | +5 % de Défense | 8 Os de squelette | 2 h |
+| aile-de-fee-sertie | Aile de fée sertie | talisman | +5 % de Défense spéciale | 8 Aile de fée noire | 2 h |
+
+Paliers : le premier se fabrique avec les ressources de la Lisière et du Marais, le deuxième avec celles du Marais et de la Vallée, plus une ressource rare, le troisième avec celles de l'Abbaye des Cendres et un Crin de chimère.
+

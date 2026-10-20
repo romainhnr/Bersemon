@@ -1,14 +1,16 @@
-//! La forge de Gunther (section 13.4) : améliorations du camp, leurs coûts,
-//! la construction en cours et son constat.
+//! La forge de Gunther (sections 13.4 et 13.5) : améliorations du camp,
+//! objets d'équipement, leurs coûts, le travail en cours et son constat.
 
 use bersemon_core::amelioration::{
-    Amelioration, Chantier, EffetDAmelioration, ErreurAmelioration, PlanDAmelioration,
+    Amelioration, Chantier, EffetDAmelioration, ErreurAmelioration, Ouvrage, PlanDAmelioration,
+    PlanDeFabrication,
 };
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::horodatage::Horodatage;
 use bersemon_core::partie::Partie;
 use bersemon_core::ressource::Ressource;
 
+use crate::equipement::objet_et_bonus;
 use crate::expeditions_automatiques::duree;
 use crate::partie::{enumerer, ressources};
 
@@ -29,6 +31,17 @@ pub fn niveau_d_amelioration(amelioration: Amelioration, niveau: u8) -> String {
         amelioration.nom(),
         effet(amelioration, niveau)
     )
+}
+
+/// Le niveau d'amélioration, ou l'objet et son bonus.
+pub fn ouvrage(ouvrage: &Ouvrage) -> String {
+    match ouvrage {
+        Ouvrage::Amelioration {
+            amelioration,
+            niveau,
+        } => niveau_d_amelioration(*amelioration, *niveau),
+        Ouvrage::Objet(objet) => objet_et_bonus(objet),
+    }
 }
 
 pub fn cout(cout: &[(Ressource, u32)]) -> String {
@@ -57,16 +70,39 @@ pub fn lancement(plan: &PlanDAmelioration) -> String {
     )
 }
 
-pub fn constat(chantier: &Chantier) -> String {
+pub fn question_de_fabrication(plan: &PlanDeFabrication) -> String {
     format!(
-        "Gunther a fini : {}.",
-        niveau_d_amelioration(chantier.amelioration, chantier.niveau)
+        "Faire forger {} ? Gunther prendra {}, et aura fini dans {}. Un travail lancé ne s'annule pas.",
+        objet_et_bonus(plan.objet()),
+        cout(plan.cout()),
+        duree(plan.duree())
     )
+}
+
+pub fn lancement_de_fabrication(plan: &PlanDeFabrication) -> String {
+    format!(
+        "Vous remettez à Gunther {}. Il se met à forger : {}. Il aura fini dans {}.",
+        cout(plan.cout()),
+        objet_et_bonus(plan.objet()),
+        duree(plan.duree())
+    )
+}
+
+pub fn constat(chantier: &Chantier) -> String {
+    match &chantier.ouvrage {
+        Ouvrage::Amelioration { .. } => {
+            format!("Gunther a fini : {}.", ouvrage(&chantier.ouvrage))
+        }
+        Ouvrage::Objet(objet) => format!(
+            "Gunther a fini : {}. Vous pouvez le porter depuis l'équipement du héros.",
+            objet_et_bonus(objet)
+        ),
+    }
 }
 
 /// Pour la construction en cours : son temps restant, ou qu'elle est finie.
 pub fn etat_du_chantier(chantier: &Chantier, maintenant: Horodatage) -> String {
-    let niveau = niveau_d_amelioration(chantier.amelioration, chantier.niveau);
+    let niveau = ouvrage(&chantier.ouvrage);
     if chantier.est_fini(maintenant) {
         format!("{niveau} : fini, à constater.")
     } else {
@@ -84,7 +120,7 @@ pub fn travail_fini(partie: &Partie, maintenant: Horodatage) -> Option<String> {
     chantier.est_fini(maintenant).then(|| {
         format!(
             "Gunther a fini : {}. Passez à sa forge pour constater son travail.",
-            niveau_d_amelioration(chantier.amelioration, chantier.niveau)
+            ouvrage(&chantier.ouvrage)
         )
     })
 }
@@ -117,13 +153,29 @@ pub fn etat_de_la_forge(partie: &Partie, contenu: &ContenuV1, maintenant: Horoda
         ));
     }
     let chantier = match forge.chantier() {
-        Some(chantier) => format!(
-            "En construction : {}",
-            etat_du_chantier(chantier, maintenant)
-        ),
-        None => "Aucune construction en cours.".to_string(),
+        Some(chantier) => format!("En cours : {}", etat_du_chantier(chantier, maintenant)),
+        None => "Aucun travail en cours.".to_string(),
     };
     lignes.push(chantier);
+    lignes.join("\n")
+}
+
+/// Chaque objet que Gunther sait forger, avec son coût et sa durée, ou
+/// qu'il est déjà possédé (section 13.5).
+pub fn etat_des_fabrications(partie: &Partie, contenu: &ContenuV1) -> String {
+    let mut lignes = vec!["Objets que Gunther sait forger :".to_string()];
+    for plan in contenu.plans_de_fabrication() {
+        let detail = if partie.heros().equipement().possede(plan.objet().id()) {
+            "possédé".to_string()
+        } else {
+            format!("{}, {}", cout(plan.cout()), duree(plan.duree()))
+        };
+        lignes.push(format!(
+            "  {} : {}, {detail}.",
+            plan.objet().sorte().nom(),
+            objet_et_bonus(plan.objet())
+        ));
+    }
     lignes.join("\n")
 }
 
@@ -138,6 +190,7 @@ pub fn erreur_amelioration(erreur: &ErreurAmelioration) -> String {
         ErreurAmelioration::NiveauMaximal => {
             "Cette amélioration est au niveau maximal.".to_string()
         }
+        ErreurAmelioration::DejaPossede => "Vous possédez déjà cet objet.".to_string(),
         ErreurAmelioration::RessourcesManquantes(manquantes) => {
             format!("Il vous manque {}.", cout(manquantes))
         }
@@ -172,8 +225,10 @@ mod tests {
     #[test]
     fn le_chantier_dit_son_temps_restant_puis_qu_il_est_fini() {
         let chantier = Chantier {
-            amelioration: Amelioration::Enclos,
-            niveau: 2,
+            ouvrage: Ouvrage::Amelioration {
+                amelioration: Amelioration::Enclos,
+                niveau: 2,
+            },
             fin: Horodatage::depuis_secondes(7_200),
         };
         assert_eq!(

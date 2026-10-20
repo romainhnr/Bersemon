@@ -8,9 +8,10 @@ use bersemon_core::deroulement::Evenement;
 use bersemon_core::ressource::Ressource;
 
 use crate::combat::{rapport_experience, remplacement, renoncement};
+use crate::equipement::{nom_de_place, objet_et_bonus};
 use crate::erreurs::erreur_sauvegarde;
 use crate::expeditions_automatiques;
-use crate::forge::{constat, lancement};
+use crate::forge::{constat, lancement, lancement_de_fabrication};
 use crate::mise_en_valeur::important;
 use crate::monstres::{effet_d_habilete, nom_en_valeur, nom_sauvage};
 use crate::partie::{
@@ -344,7 +345,34 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
         ),
         Evenement::GuntherLibere(texte) => (texte.clone(), true),
         Evenement::AmeliorationLancee { plan, .. } => (lancement(plan), false),
-        Evenement::AmeliorationConstatee(chantier) => (constat(chantier), true),
+        Evenement::TravailConstate(chantier) => (constat(chantier), true),
+        Evenement::FabricationLancee { plan, .. } => (lancement_de_fabrication(plan), false),
+        Evenement::ObjetEquipe {
+            place,
+            objet,
+            remplace,
+        } => {
+            let remplace = remplace
+                .as_ref()
+                .map(|ancien| format!(", à la place de {}", ancien.nom()))
+                .unwrap_or_default();
+            (
+                format!(
+                    "{} : vous portez {}{remplace}.",
+                    nom_de_place(*place),
+                    objet_et_bonus(objet)
+                ),
+                false,
+            )
+        }
+        Evenement::ObjetRetire { place, objet } => (
+            format!(
+                "{} : vous retirez {}.",
+                nom_de_place(*place),
+                objet.nom()
+            ),
+            false,
+        ),
         Evenement::PierresAchetees {
             pierre,
             nombre,

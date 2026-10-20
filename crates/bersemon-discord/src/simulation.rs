@@ -855,10 +855,7 @@ fn gunther_agrandit_l_enclos_a_travers_les_ecrans_du_bot() {
     );
     assert_eq!(joueurs.retours_echus(fin).len(), 1);
     let constatee = cliquer_a(&mut joueurs, Cle::Constater, 4_600);
-    assert!(matches!(
-        &constatee[..],
-        [Evenement::AmeliorationConstatee(_)]
-    ));
+    assert!(matches!(&constatee[..], [Evenement::TravailConstate(_)]));
     let session = joueurs.session(JOUEUR, &contenu);
     let partie = session.deroulement.partie().unwrap();
     assert_eq!(partie.collection().tailles().camp, 40);
@@ -1039,8 +1036,10 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
             true,
             bersemon_core::amelioration::Ameliorations::new(2, 1, 0).unwrap(),
             Some(bersemon_core::amelioration::Chantier {
-                amelioration: bersemon_core::amelioration::Amelioration::Filets,
-                niveau: 2,
+                ouvrage: bersemon_core::amelioration::Ouvrage::Amelioration {
+                    amelioration: bersemon_core::amelioration::Amelioration::Filets,
+                    niveau: 2,
+                },
                 fin: Horodatage::depuis_secondes(0),
             }),
         )
