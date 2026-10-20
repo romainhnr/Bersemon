@@ -57,6 +57,9 @@ pub struct Apotre {
     niveau: Niveau,
     avant_combat: String,
     epilogue: String,
+    /// Le récit de son âme, que le joueur recueille après la victoire
+    /// (section 9.4).
+    recit_de_l_ame: String,
 }
 
 impl Apotre {
@@ -82,7 +85,17 @@ impl Apotre {
             niveau,
             avant_combat: avant_combat.into(),
             epilogue: epilogue.into(),
+            recit_de_l_ame: String::new(),
         })
+    }
+
+    pub fn avec_recit_de_l_ame(mut self, recit: impl Into<String>) -> Self {
+        self.recit_de_l_ame = recit.into();
+        self
+    }
+
+    pub fn recit_de_l_ame(&self) -> &str {
+        &self.recit_de_l_ame
     }
 
     pub fn espece(&self) -> &Espece {

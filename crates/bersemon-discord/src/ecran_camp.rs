@@ -26,7 +26,8 @@ use bersemon_presentation::monstres::{
     attaques_connues, decrire_attaque, fiche_du_monstre, ligne_monstre, nom, provenance,
 };
 use bersemon_presentation::partie::{
-    argent, collection as liste_complete, en_tete_du_camp, fiche_d_espece, ligne_du_codex,
+    ames_d_apotres, argent, collection as liste_complete, en_tete_du_camp, fiche_d_espece,
+    ligne_du_codex,
 };
 use bersemon_presentation::peche::ligne_prete;
 
@@ -158,6 +159,7 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
     boutons.push(bouton(Cle::Afficher(Vue::Options), "Options", SECONDAIRE));
     lignes.extend(rangees(boutons));
     let mut en_tete = vec![en_tete_du_camp(partie)];
+    en_tete.extend(ames_d_apotres(partie, contenu));
     en_tete.extend(expeditions_rentrees(partie, maintenant));
     en_tete.extend(travail_fini(partie, maintenant));
     en_tete.extend(ligne_prete(partie, maintenant));

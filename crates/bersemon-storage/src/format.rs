@@ -16,7 +16,7 @@ use bersemon_core::collection::{Collection, Emplacement};
 use bersemon_core::equipement::{
     Equipement, ObjetDEquipement, ObjetDEquipementId, PlaceDEquipement,
 };
-use bersemon_core::espece::EspeceId;
+use bersemon_core::espece::{EspeceId, Rarete};
 use bersemon_core::expedition_automatique::ExpeditionAutomatique;
 use bersemon_core::habilete::Habilete;
 use bersemon_core::heros::{Classe, Heros};
@@ -35,11 +35,11 @@ use bersemon_core::soin::Soin;
 use bersemon_core::stats::{Stats, ValeursInternes};
 use bersemon_core::statut::Statut;
 use bersemon_core::tutoriel::Conseil;
-use bersemon_core::zone::ZoneId;
+use bersemon_core::zone::{Zone, ZoneId};
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 18;
+pub(crate) const VERSION: u64 = 19;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -55,6 +55,10 @@ const VERSION_DE_MALVOISE: u64 = 11;
 /// La version de la sauvegarde où Gunther, le forgeron, rejoint le camp
 /// (section 13.4).
 const VERSION_DE_GUNTHER: u64 = 14;
+
+/// La version de la sauvegarde où les Apôtres ne se capturent plus : vaincus,
+/// ils laissent leur âme (section 9.4).
+const VERSION_DES_AMES_D_APOTRES: u64 = 19;
 
 /// Gunther est le prisonnier de cet humain : avant la version 14, une partie
 /// qui l'a vaincu a Gunther au camp (section 13.4, Q85).
@@ -74,7 +78,8 @@ const GEOLIER_DE_GUNTHER: &str = "bourreau";
 /// améliorations du camp, la version 15 l'amélioration de l'équipe, la
 /// version 16 l'équipement du héros et sa fabrication, la version 17 la
 /// marque des monstres reçus d'un autre joueur, la version 18 la pêche
-/// d'Ansgar. Une sauvegarde d'une version
+/// d'Ansgar ; avec la version 19, les Apôtres capturés deviennent leur âme,
+/// sans changer la structure. Une sauvegarde d'une version
 /// précédente se lit avec cette structure : les champs ajoutés y prennent
 /// leur valeur de début de partie.
 #[derive(Debug, Serialize, Deserialize)]
@@ -551,17 +556,27 @@ pub(crate) fn vers_partie(
         std::mem::take(&mut sauvegarde.heros.equipement_porte),
         catalogue,
     )?);
-    let equipe = vers_monstres(sauvegarde.equipe, catalogue)?;
-    let camp = vers_monstres(sauvegarde.camp, catalogue)?;
-    let attaques_a_choisir = sauvegarde
+    let mut equipe = vers_monstres(sauvegarde.equipe, catalogue)?;
+    let mut camp = vers_monstres(sauvegarde.camp, catalogue)?;
+    let mut attaques_a_choisir = sauvegarde
         .attaques_a_choisir
         .into_iter()
         .map(|a_choisir| vers_attaque_a_choisir(a_choisir, &equipe, &camp))
         .collect::<Result<Vec<_>, _>>()?;
-    let expeditions_automatiques = sauvegarde
+    let mut partis = sauvegarde
         .expeditions_automatiques
         .into_iter()
-        .map(|expedition| vers_expedition_automatique(expedition, catalogue))
+        .map(|expedition| vers_monstres_partis(expedition, catalogue))
+        .collect::<Result<Vec<_>, _>>()?;
+    if sauvegarde.version < VERSION_DES_AMES_D_APOTRES {
+        changer_les_apotres_en_ames(&mut equipe, &mut camp, &mut attaques_a_choisir, &mut partis);
+    }
+    let expeditions_automatiques = partis
+        .into_iter()
+        .map(|parti| {
+            ExpeditionAutomatique::restaurer(parti.zone, parti.monstres, parti.depart, parti.retour)
+                .map_err(incoherente)
+        })
         .collect::<Result<Vec<_>, _>>()?;
     // Avant la version 14, ni amélioration ni chantier : seul Gunther peut
     // être au camp, s'il est déjà libéré.
@@ -640,6 +655,13 @@ pub(crate) fn vers_partie(
     }
     for espece in &sauvegarde.codex.capturees {
         codex.noter_capture(&EspeceId::new(espece.as_str()));
+    }
+    // La victoire sur un Apôtre ouvre désormais sa fiche, comme une capture
+    // (section 5.6).
+    if sauvegarde.version < VERSION_DES_AMES_D_APOTRES {
+        for apotre in &sauvegarde.apotres_vaincus {
+            codex.noter_capture(&EspeceId::new(apotre.as_str()));
+        }
     }
     let zones_explorees: Vec<ZoneId> = sauvegarde
         .zones_explorees
@@ -728,21 +750,87 @@ fn vers_marchands(ids: &[String], catalogue: &dyn Catalogue) -> Vec<MarchandMort
         .collect()
 }
 
-fn vers_expedition_automatique(
+/// Une expédition automatique lue, avant d'être vérifiée par le noyau.
+struct MonstresPartis {
+    zone: Zone,
+    monstres: Vec<Monstre>,
+    depart: Horodatage,
+    retour: Horodatage,
+}
+
+fn vers_monstres_partis(
     expedition: ExpeditionAutomatiqueV3,
     catalogue: &dyn Catalogue,
-) -> Result<ExpeditionAutomatique, ErreurSauvegarde> {
+) -> Result<MonstresPartis, ErreurSauvegarde> {
     let zone = catalogue
         .zone(&ZoneId::new(expedition.zone.as_str()))
         .ok_or(ErreurSauvegarde::ZoneInconnue(expedition.zone))?;
-    let monstres = vers_monstres(expedition.monstres, catalogue)?;
-    ExpeditionAutomatique::restaurer(
+    Ok(MonstresPartis {
         zone,
-        monstres,
-        Horodatage::depuis_secondes(expedition.depart),
-        Horodatage::depuis_secondes(expedition.retour),
-    )
-    .map_err(incoherente)
+        monstres: vers_monstres(expedition.monstres, catalogue)?,
+        depart: Horodatage::depuis_secondes(expedition.depart),
+        retour: Horodatage::depuis_secondes(expedition.retour),
+    })
+}
+
+/// Avant la version 19, un Apôtre vaincu pouvait être capturé. Il quitte
+/// l'équipe, le camp ou son expédition automatique, et le joueur garde son
+/// âme, qui suit les Apôtres vaincus (section 9.4). Une attaque qu'il
+/// attendait de choisir est oubliée, et les autres suivent la place de leur
+/// monstre ; une expédition dont il partait seul disparaît. Un joueur qui
+/// n'aurait plus aucun autre monstre garde ses Apôtres (hypothèse, Q92).
+fn changer_les_apotres_en_ames(
+    equipe: &mut Vec<Monstre>,
+    camp: &mut Vec<Monstre>,
+    attaques_a_choisir: &mut Vec<AttaqueAChoisir>,
+    partis: &mut Vec<MonstresPartis>,
+) {
+    let est_apotre = |monstre: &Monstre| monstre.espece().rarete() == Rarete::Apotre;
+    let autres = equipe
+        .iter()
+        .chain(camp.iter())
+        .chain(partis.iter().flat_map(|parti| parti.monstres.iter()))
+        .filter(|monstre| !est_apotre(monstre))
+        .count();
+    if autres == 0 {
+        return;
+    }
+    // La nouvelle place de chaque monstre gardé, dans l'équipe ou au camp.
+    let nouvelles_places = |monstres: &[Monstre]| -> Vec<Option<usize>> {
+        let mut suivante = 0;
+        monstres
+            .iter()
+            .map(|monstre| {
+                if est_apotre(monstre) {
+                    None
+                } else {
+                    suivante += 1;
+                    Some(suivante - 1)
+                }
+            })
+            .collect()
+    };
+    let dans_l_equipe = nouvelles_places(equipe);
+    let au_camp = nouvelles_places(camp);
+    attaques_a_choisir.retain_mut(|a_choisir| {
+        let nouvelle = match a_choisir.emplacement {
+            Emplacement::Equipe(position) => dans_l_equipe[position].map(Emplacement::Equipe),
+            Emplacement::Camp(position) => au_camp[position].map(Emplacement::Camp),
+        };
+        match nouvelle {
+            Some(emplacement) => {
+                a_choisir.emplacement = emplacement;
+                true
+            }
+            None => false,
+        }
+    });
+    equipe.retain(|monstre| !est_apotre(monstre));
+    camp.retain(|monstre| !est_apotre(monstre));
+    for parti in partis.iter_mut() {
+        parti.monstres.retain(|monstre| !est_apotre(monstre));
+    }
+    partis.retain(|parti| !parti.monstres.is_empty());
 }
 
 /// L'attaque se retrouve parmi celles que l'espèce du monstre apprend.

@@ -14,7 +14,7 @@ use bersemon_presentation::forge::travail_fini;
 use bersemon_presentation::marchand::liste_de_rachat;
 use bersemon_presentation::monstres::{attaques_connues, decrire_attaque, fiche_du_monstre};
 use bersemon_presentation::partie::{
-    capsules_d_habilete, collection as liste_des_monstres, en_tete_du_camp,
+    ames_d_apotres, capsules_d_habilete, collection as liste_des_monstres, en_tete_du_camp,
 };
 use bersemon_presentation::peche::ligne_prete;
 
@@ -86,6 +86,9 @@ pub fn choisir(
         }
         println!();
         println!("{}", en_tete_du_camp(partie));
+        if let Some(ames) = ames_d_apotres(partie, contenu) {
+            println!("{ames}");
+        }
         for avis in expeditions_rentrees(partie, maintenant()) {
             println!("{avis}");
         }

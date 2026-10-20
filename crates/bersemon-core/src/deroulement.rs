@@ -401,6 +401,9 @@ pub enum Evenement {
         capture: Monstre,
     },
     Epilogue(String),
+    /// Après l'épilogue : le récit de l'âme de l'Apôtre vaincu, que le
+    /// joueur garde (section 9.4).
+    AmeDApotreRecueillie(String),
     /// Toute l'équipe est KO : retour au camp, tout le sac perdu (section
     /// 9.3).
     Defaite {
@@ -2143,6 +2146,9 @@ impl EnExpedition {
                     .clone();
                 partie.noter_apotre_vaincu(&apotre);
                 evenements.push(Evenement::Epilogue(apotre.epilogue().to_string()));
+                evenements.push(Evenement::AmeDApotreRecueillie(
+                    apotre.recit_de_l_ame().to_string(),
+                ));
             }
             let humain = self.expedition.humain().cloned();
             if let Some(humain) =
@@ -4158,6 +4164,29 @@ mod tests {
                 EspeceId::new("abbesse-ecorchee")
             ]
         );
+        // Les Apôtres ne se capturent pas : chacun laisse son âme, et sa
+        // fiche s'ouvre au codex (section 9.4).
+        let ames: Vec<&Evenement> = vus
+            .iter()
+            .filter(|evenement| matches!(evenement, Evenement::AmeDApotreRecueillie(_)))
+            .collect();
+        assert_eq!(ames.len(), 2);
+        assert!(matches!(
+            ames[0],
+            Evenement::AmeDApotreRecueillie(texte) if texte.contains("Baron pendu")
+        ));
+        assert_eq!(sauvegarde.ames_d_apotres(), sauvegarde.apotres_vaincus());
+        let collection = sauvegarde.collection();
+        assert!(
+            collection
+                .equipe()
+                .iter()
+                .chain(collection.camp())
+                .all(|monstre| monstre.espece().rarete() != crate::espece::Rarete::Apotre)
+        );
+        for apotre in sauvegarde.apotres_vaincus() {
+            assert_eq!(sauvegarde.codex().etat(apotre), EtatCodex::Capturee);
+        }
         // Le brigand, le Bourreau et l'Inquisiteur ont barré leur zone
         // jusqu'à leur défaite (section 10.7).
         assert_eq!(

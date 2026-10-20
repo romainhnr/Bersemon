@@ -221,6 +221,7 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             false,
         ),
         Evenement::Epilogue(epilogue) => (epilogue.clone(), true),
+        Evenement::AmeDApotreRecueillie(recit) => (recit.clone(), false),
         Evenement::Defaite { sac_perdu } => {
             let texte = if sac_perdu.est_vide() {
                 "Toute votre équipe est KO : vous rentrez au camp, le sac vide.".to_string()

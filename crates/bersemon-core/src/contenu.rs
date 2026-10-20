@@ -128,6 +128,14 @@ const AVANT_L_ABBESSE: &str = "Au fond de la crypte, une silhouette sans peau pr
 
 const EPILOGUE_DE_L_ABBESSE: &str = "L'Abbesse écorchée s'effondre sur l'autel. Le même sceau, une main ouverte, est gravé dans sa chair. Deux Apôtres sont tombés ; le Démiurge, lui, attend toujours. Votre traque continue.";
 
+/// Après l'épilogue, le joueur recueille l'âme de l'Apôtre vaincu (section
+/// 9.4).
+const AME_DU_BARON: &str =
+    "L'âme du Baron pendu s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.";
+
+const AME_DE_L_ABBESSE: &str =
+    "L'âme de l'Abbesse écorchée s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.";
+
 const AVANT_LE_BARON: &str = "Au fond de la Vallée, la brume se déchire sur un gibet dressé contre le ciel. Le Baron pendu, Apôtre du Démiurge, s'y balance encore, puis ouvre les yeux. Il n'y aura pas de fuite.";
 
 const EPILOGUE: &str = "Le Baron pendu s'effondre au pied de son gibet. Sur sa poitrine, un sceau gravé d'une main ouverte : le signe du Démiurge. D'autres Apôtres portent ce sceau, au-delà des terres connues. Votre traque ne fait que commencer.";
@@ -383,7 +391,8 @@ impl ContenuV1 {
         // Le Baron pendu attend au fond de la Vallée, que le second indice,
         // donné par le Bourreau, ouvre (section 9.4).
         let baron = Apotre::new(trouver("baron-pendu"), &vallee, AVANT_LE_BARON, EPILOGUE)
-            .expect("Baron pendu conforme aux règles");
+            .expect("Baron pendu conforme aux règles")
+            .avec_recit_de_l_ame(AME_DU_BARON);
         let indice = |zone: &Zone, texte: &str| Indice {
             zone: zone.id().clone(),
             texte: texte.to_string(),
@@ -401,7 +410,8 @@ impl ContenuV1 {
             AVANT_L_ABBESSE,
             EPILOGUE_DE_L_ABBESSE,
         )
-        .expect("Abbesse écorchée conforme aux règles");
+        .expect("Abbesse écorchée conforme aux règles")
+        .avec_recit_de_l_ame(AME_DE_L_ABBESSE);
         let chapitre_de_l_abbesse = Chapitre::new(
             vec![indice(&vallee, INDICE_3), indice(&abbaye, INDICE_4)],
             abbesse,
@@ -2722,6 +2732,19 @@ mod tests {
             }
         }
         assert_eq!(evoluees, 14);
+    }
+
+    #[test]
+    fn chaque_apotre_laisse_son_ame() {
+        let contenu = ContenuV1::new();
+        let recits: Vec<&str> = contenu
+            .piste()
+            .apotres()
+            .map(Apotre::recit_de_l_ame)
+            .collect();
+        assert_eq!(recits.len(), 2);
+        assert!(recits[0].starts_with("L'âme du Baron pendu"));
+        assert!(recits[1].starts_with("L'âme de l'Abbesse écorchée"));
     }
 
     #[test]

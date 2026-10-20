@@ -892,6 +892,13 @@ impl Partie {
         &self.apotres_vaincus
     }
 
+    /// L'âme de chaque Apôtre vaincu, dans l'ordre des victoires : à part
+    /// du sac et du coffre, rien ne la fait perdre. Elles serviront à
+    /// affronter le Démiurge (section 9.4, Q92).
+    pub fn ames_d_apotres(&self) -> &[EspeceId] {
+        &self.apotres_vaincus
+    }
+
     pub fn est_vaincu(&self, apotre: &Apotre) -> bool {
         self.apotres_vaincus.contains(apotre.espece().id())
     }
@@ -1118,12 +1125,14 @@ impl Partie {
         humain.argent()
     }
 
-    /// Après la victoire, capturé ou non, l'Apôtre ne réapparaît plus
+    /// Après la victoire, l'Apôtre ne réapparaît plus ; il ne se capture
+    /// pas, mais sa fiche s'ouvre au codex et le joueur garde son âme
     /// (section 9.4).
     pub fn noter_apotre_vaincu(&mut self, apotre: &Apotre) {
         if !self.est_vaincu(apotre) {
             self.apotres_vaincus.push(apotre.espece().id().clone());
         }
+        self.codex.noter_capture(apotre.espece().id());
     }
 
     /// Rend `true` si le conseil n'avait encore jamais été montré : c'est le

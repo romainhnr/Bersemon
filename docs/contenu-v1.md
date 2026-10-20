@@ -751,3 +751,13 @@ Textes proposés sans validation (gamedesign.md, Q91). {durée} est le temps res
 | Refus, équipe et camp pleins | Votre équipe et votre camp sont pleins : faites de la place avant de relever la ligne. |
 
 Libellés : "Pêche d'Ansgar" (console), "Pêche" (Discord), "Lancer la ligne", "Relever la ligne", "Garder", "Relâcher".
+
+## 16. Âmes d'Apôtres
+
+Décidé le 20/10/2026, pour l'étape 66 (gamedesign.md, section 9.4), texte validé par l'utilisateur. Les Apôtres ne se capturent plus : vaincu, chacun laisse son âme, recueillie après l'épilogue.
+
+> L'âme du Baron pendu s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.
+
+> L'âme de l'Abbesse écorchée s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.
+
+Textes proposés sans validation (gamedesign.md, Q92) : au camp, "Âmes d'Apôtres : {noms}." (par exemple "Âmes d'Apôtres : Baron pendu et Abbesse écorchée."), et au codex, "{nom} ({types}) : Apôtre vaincu".

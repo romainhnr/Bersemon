@@ -456,8 +456,9 @@ impl Combat {
         &self.soins
     }
 
-    /// Combat contre un Apôtre : ni fuite ni filet ; il ne se capture que KO,
-    /// après la victoire (section 9.4). Son IA est avancée (section 10.7).
+    /// Combat contre un Apôtre : ni fuite ni filet, et il ne se capture pas,
+    /// même KO : vaincu, il laisse son âme (section 9.4). Son IA est avancée
+    /// (section 10.7).
     pub fn contre_un_apotre(mut self) -> Self {
         self.contre_un_apotre = true;
         self.ia = Ia::Avancee;
@@ -958,6 +959,7 @@ impl Combat {
     pub fn adversaires_capturables(&self) -> Vec<usize> {
         if self.phase != Phase::Termine(Issue::Victoire)
             || self.sans_capture
+            || self.contre_un_apotre
             || self.duel
             || (self.contre_un_humain && !self.captures.is_empty())
         {
@@ -2200,13 +2202,17 @@ mod tests {
     }
 
     #[test]
-    fn l_apotre_ko_se_capture_apres_la_victoire() {
+    fn l_apotre_ko_ne_se_capture_pas_apres_la_victoire() {
         let mut combat = combat(vec![rapide()], vec![affaibli(lent(), 3)]).contre_un_apotre();
         tour(&mut combat, Action::Attaquer(0), &[2, 100]);
-        assert_eq!(combat.adversaires_capturables(), vec![0]);
-        combat.capturer_ko(0).unwrap();
+        assert_eq!(combat.phase(), Phase::Termine(Issue::Victoire));
+        assert!(combat.adversaires_capturables().is_empty());
+        assert_eq!(
+            combat.capturer_ko(0),
+            Err(ErreurCombat::CaptureImpossible(0))
+        );
         let bilan = terminer(combat, &[100]);
-        assert_eq!(bilan.captures.len(), 1);
+        assert!(bilan.captures.is_empty());
     }
 
     #[test]

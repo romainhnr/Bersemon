@@ -782,6 +782,25 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
         ]
     );
     assert_eq!(partie.collection().equipe()[0].nom(), "Braise");
+    // Les Apôtres ne se capturent pas : le camp rappelle leurs âmes (section
+    // 9.4).
+    assert_eq!(
+        compter(|evenement| matches!(evenement, Evenement::AmeDApotreRecueillie(_))),
+        2
+    );
+    let camp = message(
+        session,
+        &[],
+        None,
+        &contenu,
+        Horodatage::depuis_secondes(heure),
+    );
+    assert!(
+        camp.texte
+            .contains("Âmes d'Apôtres : Baron pendu et Abbesse écorchée."),
+        "{}",
+        camp.texte
+    );
     assert!(dossier.join(format!("{JOUEUR}.json")).exists());
     let _ = fs::remove_dir_all(dossier);
 }

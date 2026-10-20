@@ -88,11 +88,12 @@ mod tests {
     use bersemon_core::amelioration::{Amelioration, Ameliorations, Chantier, Forge, Ouvrage};
     use bersemon_core::attaque::{Attaque, AttaqueId, Categorie, EffetSecondaire};
     use bersemon_core::capsule::Capsule;
+    use bersemon_core::codex::EtatCodex;
     use bersemon_core::collection::Emplacement;
     use bersemon_core::equipement::{
         Equipement, ObjetDEquipement, ObjetDEquipementId, PlaceDEquipement, SorteDObjet,
     };
-    use bersemon_core::espece::{AttaqueApprise, Espece, EspeceId, Role};
+    use bersemon_core::espece::{AttaqueApprise, Espece, EspeceId, Rarete, Role};
     use bersemon_core::expedition::ParametresCoffre;
     use bersemon_core::expedition_automatique::ParametresExpeditionAutomatique;
     use bersemon_core::habilete::Habilete;
@@ -314,7 +315,11 @@ mod tests {
     /// leur convient pas.
     fn catalogue() -> CatalogueDeTest {
         CatalogueDeTest {
-            especes: vec![espece("salamandre"), espece("loup")],
+            especes: vec![
+                espece("salamandre"),
+                espece("loup"),
+                espece("baron").avec_rarete(Rarete::Apotre),
+            ],
             zones: vec![lisiere()],
             capsules: vec![
                 capsule("grand-coup", Type::Normal),
@@ -611,11 +616,87 @@ mod tests {
 
     #[test]
     fn version_inconnue() {
-        let texte = texte_de_partie().replacen("\"version\":18", "\"version\":19", 1);
+        let texte = texte_de_partie().replacen("\"version\":19", "\"version\":20", 1);
         assert_eq!(
             charger_texte(&texte),
-            Err(ErreurSauvegarde::VersionInconnue(19))
+            Err(ErreurSauvegarde::VersionInconnue(20))
         );
+    }
+
+    /// La partie complète en version 18, avec un Baron capturé en tête du
+    /// camp, à la fin de l'équipe et dans l'expédition automatique.
+    fn avec_un_baron_capture() -> serde_json::Value {
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        let objet = valeur.as_object_mut().unwrap();
+        objet.insert("version".to_string(), 18.into());
+        objet.insert("apotres_vaincus".to_string(), serde_json::json!(["baron"]));
+        let mut baron = objet["camp"][0].clone();
+        baron["espece"] = "baron".into();
+        objet["camp"]
+            .as_array_mut()
+            .unwrap()
+            .insert(0, baron.clone());
+        objet["equipe"].as_array_mut().unwrap().push(baron.clone());
+        objet["expeditions_automatiques"][0]["monstres"]
+            .as_array_mut()
+            .unwrap()
+            .push(baron);
+        // L'attaque à choisir suit son Loup, décalé par le Baron.
+        objet["attaques_a_choisir"][0]["position"] = 1.into();
+        valeur
+    }
+
+    #[test]
+    fn en_version_18_un_apotre_capture_devient_son_ame() {
+        let partie = partie_complete();
+        let rechargee = charger_texte(&avec_un_baron_capture().to_string())
+            .unwrap()
+            .unwrap();
+        let baron = EspeceId::new("baron");
+        let collection = rechargee.collection();
+        let partis = rechargee
+            .expeditions_automatiques()
+            .iter()
+            .flat_map(|expedition| expedition.monstres());
+        assert!(
+            collection
+                .equipe()
+                .iter()
+                .chain(collection.camp())
+                .chain(partis)
+                .all(|monstre| monstre.espece().id() != &baron)
+        );
+        assert_memes_monstres(collection, partie.collection());
+        assert_eq!(
+            rechargee.expeditions_automatiques(),
+            partie.expeditions_automatiques()
+        );
+        assert_eq!(rechargee.attaques_a_choisir(), partie.attaques_a_choisir());
+        assert_eq!(rechargee.ames_d_apotres(), std::slice::from_ref(&baron));
+        assert_eq!(rechargee.codex().etat(&baron), EtatCodex::Capturee);
+        // En version 19, rien n'est converti.
+        let mut valeur = avec_un_baron_capture();
+        valeur["version"] = 19.into();
+        valeur["attaques_a_choisir"][0]["position"] = 1.into();
+        let gardee = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        assert_eq!(gardee.collection().camp()[0].espece().id(), &baron);
+    }
+
+    #[test]
+    fn un_apotre_seul_monstre_du_joueur_reste() {
+        let mut valeur = avec_un_baron_capture();
+        let objet = valeur.as_object_mut().unwrap();
+        let baron = objet["equipe"].as_array().unwrap().last().unwrap().clone();
+        objet.insert("equipe".to_string(), serde_json::json!([baron]));
+        objet.insert("camp".to_string(), serde_json::json!([]));
+        objet.insert(
+            "expeditions_automatiques".to_string(),
+            serde_json::json!([]),
+        );
+        objet.insert("attaques_a_choisir".to_string(), serde_json::json!([]));
+        objet.remove("prise");
+        let rechargee = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        assert_eq!(rechargee.collection().equipe().len(), 1);
     }
 
     #[test]

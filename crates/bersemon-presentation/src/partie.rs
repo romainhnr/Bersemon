@@ -7,7 +7,7 @@ use bersemon_core::collection::Collection;
 use bersemon_core::combat::Cote;
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::{Annonce, Confirmation};
-use bersemon_core::espece::Espece;
+use bersemon_core::espece::{Espece, Rarete};
 use bersemon_core::evolution::ConditionEvolution;
 use bersemon_core::expedition::Expedition;
 use bersemon_core::habilete::Habilete;
@@ -295,13 +295,29 @@ pub fn decrire_zone(partie: &Partie, zone: &Zone) -> String {
 }
 
 /// Une espèce inconnue reste masquée ; ses types n'apparaissent qu'à sa
-/// capture (section 5.6).
+/// capture (section 5.6). Un Apôtre ne se capture pas : sa victoire ouvre sa
+/// fiche, et le codex le dit vaincu (section 9.4).
 pub fn ligne_du_codex(codex: &Codex, espece: &Espece) -> String {
     match codex.etat(espece.id()) {
         EtatCodex::Inconnue => "???".to_string(),
         EtatCodex::Rencontree => format!("{} : rencontrée", espece.nom()),
+        EtatCodex::Capturee if espece.rarete() == Rarete::Apotre => {
+            format!("{} ({}) : Apôtre vaincu", espece.nom(), types_de(espece))
+        }
         EtatCodex::Capturee => format!("{} ({}) : capturée", espece.nom(), types_de(espece)),
     }
+}
+
+/// Les âmes des Apôtres vaincus, au camp : rien ne les fait perdre (section
+/// 9.4). `None` avant la première victoire sur un Apôtre.
+pub fn ames_d_apotres(partie: &Partie, catalogue: &dyn Catalogue) -> Option<String> {
+    let noms: Vec<String> = partie
+        .ames_d_apotres()
+        .iter()
+        .filter_map(|id| catalogue.espece(id))
+        .map(|espece| espece.nom().to_string())
+        .collect();
+    (!noms.is_empty()).then(|| format!("Âmes d'Apôtres : {}.", enumerer(&noms)))
 }
 
 /// Les types d'une espèce capturée, « ? » sinon (section 10.6).
@@ -458,4 +474,36 @@ pub fn place_manquante(capture: &Monstre) -> String {
         "Votre équipe et le camp sont pleins. Quel monstre relâcher pour garder {} ?",
         capture.nom()
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bersemon_core::espece::EspeceId;
+    use bersemon_core::heros::Heros;
+    use bersemon_core::niveau::Niveau;
+    use bersemon_core::nom::Nom;
+    use bersemon_core::stats::ValeursInternes;
+
+    #[test]
+    fn un_apotre_vaincu_est_dit_vaincu_et_laisse_son_ame() {
+        let contenu = ContenuV1::new();
+        let baron = contenu.espece(&EspeceId::new("baron-pendu")).unwrap();
+        let mut codex = Codex::default();
+        codex.noter_capture(baron.id());
+        assert_eq!(
+            ligne_du_codex(&codex, &baron),
+            "Baron pendu (Obscur) : Apôtre vaincu"
+        );
+        let salamandre = Monstre::creer(
+            contenu.espece(&EspeceId::new("salamandre")).unwrap(),
+            Niveau::new(5).unwrap(),
+            ValeursInternes::default(),
+            false,
+        )
+        .unwrap();
+        let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Mage);
+        let partie = Partie::nouvelle(heros, salamandre);
+        assert_eq!(ames_d_apotres(&partie, &contenu), None);
+    }
 }
