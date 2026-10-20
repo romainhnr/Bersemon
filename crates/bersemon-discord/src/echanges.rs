@@ -157,6 +157,9 @@ pub struct TableauDesEchanges {
     pub envoyee: Option<(AutreJoueur, Offre)>,
     /// Le joueur choisi pour une offre, avec ses monstres.
     pub choisi: Option<(AutreJoueur, Collection)>,
+    /// Les défis en duel en attente (section 15.3).
+    pub defi_recu: Option<AutreJoueur>,
+    pub defi_envoye: Option<AutreJoueur>,
 }
 
 /// Un message privé à envoyer dès que possible.

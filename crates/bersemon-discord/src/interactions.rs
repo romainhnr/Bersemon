@@ -112,6 +112,13 @@ fn executer(
             Ok(evenements) => (evenements, None),
             Err(refus) => (Vec::new(), Some(refus)),
         },
+        Commande::Duel(action) => {
+            match joueurs.agir_en_duel(joueur, version, action, contenu, maintenant()) {
+                Ok(evenements) => (evenements, None),
+                Err(refus) => (Vec::new(), Some(refus)),
+            }
+        }
+        Commande::Actualiser => (Vec::new(), None),
         Commande::Ouvrir(formulaire) => {
             if joueurs.est_a_jour(joueur, version, contenu) {
                 let partie = joueurs.session(joueur, contenu).deroulement.partie();

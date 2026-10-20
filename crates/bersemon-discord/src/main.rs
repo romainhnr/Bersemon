@@ -6,11 +6,13 @@
 mod commandes;
 mod composants;
 mod configuration;
+mod duels;
 mod echanges;
 mod ecran_accueil;
 mod ecran_camp;
 mod ecran_coffre;
 mod ecran_combat;
+mod ecran_duel;
 mod ecran_echanges;
 mod ecran_expedition;
 mod ecran_expeditions_automatiques;

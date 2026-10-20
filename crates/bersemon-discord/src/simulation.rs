@@ -681,6 +681,8 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
             }
             Commande::Ouvrir(formulaire) => panic!("formulaire {formulaire:?} non envoyé"),
             Commande::Echanger(action) => panic!("échange {action:?} sans autre joueur"),
+            Commande::Duel(action) => panic!("duel {action:?} sans autre joueur"),
+            Commande::Actualiser => Vec::new(),
         };
         for evenement in &evenements {
             match evenement {
@@ -855,6 +857,8 @@ fn gunther_agrandit_l_enclos_a_travers_les_ecrans_du_bot() {
             }
             Commande::Ouvrir(formulaire) => panic!("formulaire {formulaire:?}"),
             Commande::Echanger(action) => panic!("échange {action:?}"),
+            Commande::Duel(action) => panic!("duel {action:?}"),
+            Commande::Actualiser => Vec::new(),
         }
     };
     cliquer_a(&mut joueurs, Cle::ReprendreLaPartie, 1_000);
@@ -1263,8 +1267,18 @@ fn executer_le_clic(
     clic: Clic,
     contenu: &ContenuV1,
 ) -> Message {
+    executer_le_clic_a(joueurs, joueur, clic, contenu, 0)
+}
+
+fn executer_le_clic_a(
+    joueurs: &mut Joueurs,
+    joueur: IdJoueur,
+    clic: Clic,
+    contenu: &ContenuV1,
+    secondes: u64,
+) -> Message {
     let version = joueurs.session(joueur, contenu).version;
-    let maintenant = Horodatage::depuis_secondes(0);
+    let maintenant = Horodatage::depuis_secondes(secondes);
     let commande = clic
         .cle
         .commande(clic.valeur.as_deref(), clic.texte.as_deref())
@@ -1280,6 +1294,10 @@ fn executer_le_clic(
         Commande::Echanger(action) => joueurs
             .echanger(joueur, version, action, contenu)
             .unwrap_or_else(|refus| panic!("{action:?} refusé : {refus:?}")),
+        Commande::Duel(action) => joueurs
+            .agir_en_duel(joueur, version, action, contenu, maintenant)
+            .unwrap_or_else(|refus| panic!("{action:?} refusé : {refus:?}")),
+        Commande::Actualiser => Vec::new(),
         Commande::Ouvrir(formulaire) => panic!("formulaire {formulaire:?}"),
     };
     let affiche = message(
@@ -1445,6 +1463,234 @@ fn deux_joueurs_echangent_a_travers_les_ecrans_du_bot() {
         affiche
             .texte
             .contains("Reçu de Aldric. Obéit jusqu'au niveau 12."),
+        "{}",
+        affiche.texte
+    );
+    let _ = fs::remove_dir_all(dossier);
+}
+
+/// Le message que voit ce joueur à cette heure, vérifié contre les limites
+/// de Discord.
+fn afficher_a(
+    joueurs: &mut Joueurs,
+    joueur: IdJoueur,
+    contenu: &ContenuV1,
+    secondes: u64,
+) -> Message {
+    let affiche = message(
+        joueurs.session(joueur, contenu),
+        &[],
+        None,
+        contenu,
+        Horodatage::depuis_secondes(secondes),
+    );
+    verifier_les_limites(&affiche);
+    affiche
+}
+
+/// Aldric, Guerrier, et Ysolde, Mage, chacun avec trois monstres, au camp.
+fn deux_joueurs_au_camp(contenu: &ContenuV1, sous_dossier: &str) -> (Joueurs, PathBuf) {
+    use bersemon_core::catalogue::Catalogue;
+    use bersemon_core::heros::Heros;
+    use bersemon_core::niveau::Niveau;
+    use bersemon_core::nom::Nom;
+    use bersemon_core::partie::Partie;
+    use bersemon_core::sauvegarde::SauvegardeRepository;
+    use bersemon_core::stats::ValeursInternes;
+    use bersemon_storage::FichierJson;
+
+    let creer = |id: &str| {
+        Monstre::creer(
+            contenu.espece(&EspeceId::new(id)).unwrap(),
+            Niveau::new(8).unwrap(),
+            ValeursInternes::default(),
+            false,
+        )
+        .unwrap()
+    };
+    let dossier = dossier_de_test().join(sous_dossier);
+    fs::create_dir_all(&dossier).unwrap();
+    for (joueur, nom, classe, monstres) in [
+        (
+            JOUEUR,
+            "Aldric",
+            Classe::Guerrier,
+            ["salamandre", "loup", "corbeau"],
+        ),
+        (
+            YSOLDE,
+            "Ysolde",
+            Classe::Mage,
+            ["mandragore", "vipere", "loup"],
+        ),
+    ] {
+        let heros = Heros::new(Nom::new(nom).unwrap(), classe);
+        let mut partie = Partie::nouvelle(heros, creer(monstres[0]));
+        for id in &monstres[1..] {
+            partie.prendre_monstre_rare(creer(id));
+        }
+        FichierJson::new(dossier.join(format!("{joueur}.json")))
+            .enregistrer(&partie)
+            .unwrap();
+    }
+    let mut joueurs = Joueurs::new(dossier.clone(), 2026);
+    joueurs.noter_pseudo(YSOLDE, "ysolde_la_grise");
+    for joueur in [JOUEUR, YSOLDE] {
+        executer_le_clic(
+            &mut joueurs,
+            joueur,
+            bouton(Cle::ReprendreLaPartie),
+            contenu,
+        );
+    }
+    (joueurs, dossier)
+}
+
+const YSOLDE: IdJoueur = 8;
+
+/// Aldric défie Ysolde depuis l'écran des autres joueurs ; elle accepte.
+fn lancer_le_duel(joueurs: &mut Joueurs, contenu: &ContenuV1) {
+    let affiche = afficher_a(joueurs, JOUEUR, contenu, 0);
+    let autres = Cle::Afficher(Vue::Echanges {
+        avec: None,
+        cede: None,
+    });
+    let clic = cliquer(&affiche, |cle| *cle == autres);
+    let affiche = executer_le_clic(joueurs, JOUEUR, clic, contenu);
+    let clic = choisir_dans(&affiche, |cle| *cle == Cle::ChoisirJoueur, "8").unwrap();
+    let affiche = executer_le_clic(joueurs, JOUEUR, clic, contenu);
+    let clic = cliquer(&affiche, |cle| *cle == Cle::Defier(YSOLDE));
+    let affiche = executer_le_clic(joueurs, JOUEUR, clic, contenu);
+    assert!(
+        affiche
+            .texte
+            .contains("Vous avez défié Ysolde (ysolde_la_grise) en duel."),
+        "{}",
+        affiche.texte
+    );
+    let affiche = executer_le_clic(joueurs, YSOLDE, bouton(autres), contenu);
+    assert!(
+        affiche.texte.contains("Aldric vous défie en duel."),
+        "{}",
+        affiche.texte
+    );
+    let clic = cliquer(&affiche, |cle| *cle == Cle::AccepterDefi);
+    let affiche = executer_le_clic(joueurs, YSOLDE, clic, contenu);
+    assert!(
+        affiche.texte.starts_with("Duel contre Aldric."),
+        "{}",
+        affiche.texte
+    );
+    assert_eq!(joueurs.prendre_les_messages_prives().len(), 2);
+}
+
+/// Un duel joué jusqu'au bout à travers les écrans du bot : chacun donne
+/// l'ordre de son héros, attaque avec sa première attaque, remplace ses
+/// monstres KO, et actualise quand il attend l'autre (section 15.3).
+#[test]
+fn un_duel_complet_a_travers_les_ecrans_du_bot() {
+    let contenu = ContenuV1::new();
+    let (mut joueurs, dossier) = deux_joueurs_au_camp(&contenu, "duel");
+    lancer_le_duel(&mut joueurs, &contenu);
+    let mut revenus = Vec::new();
+    let mut attentes = 0;
+    for _ in 0..500 {
+        // Aldric regarde deux fois : la seconde, il attend Ysolde.
+        for joueur in [JOUEUR, JOUEUR, YSOLDE] {
+            if revenus.contains(&joueur) {
+                continue;
+            }
+            let affiche = afficher_a(&mut joueurs, joueur, &contenu, 0);
+            assert!(!affiche.texte.contains("sauvage"), "{}", affiche.texte);
+            let clic = if propose(&affiche, |cle| *cle == Cle::RevenirDuDuel) {
+                assert!(
+                    affiche
+                        .texte
+                        .contains("Victoire : vous remportez le duel contre")
+                        || affiche.texte.contains("remporte le duel."),
+                    "{}",
+                    affiche.texte
+                );
+                revenus.push(joueur);
+                bouton(Cle::RevenirDuDuel)
+            } else if propose(&affiche, |cle| *cle == Cle::Ordre) {
+                bouton(Cle::Ordre)
+            } else if propose(&affiche, |cle| matches!(cle, Cle::Remplacer(_))) {
+                cliquer(&affiche, |cle| matches!(cle, Cle::Remplacer(_)))
+            } else if propose(&affiche, |cle| *cle == Cle::Attaquer(0)) {
+                bouton(Cle::Attaquer(0))
+            } else {
+                assert!(
+                    affiche.texte.contains("En attente de l'action de"),
+                    "{}",
+                    affiche.texte
+                );
+                assert!(!propose(&affiche, |cle| *cle == Cle::ReclamerLaVictoire));
+                attentes += 1;
+                bouton(Cle::Actualiser)
+            };
+            executer_le_clic(&mut joueurs, joueur, clic, &contenu);
+        }
+        if revenus.len() == 2 {
+            break;
+        }
+    }
+    assert_eq!(revenus.len(), 2, "duel inachevé");
+    assert!(attentes > 0);
+    // Chacun retrouve son camp, et ses monstres tels qu'avant le duel.
+    for joueur in [JOUEUR, YSOLDE] {
+        let affiche = afficher_a(&mut joueurs, joueur, &contenu, 0);
+        assert!(propose(&affiche, |cle| *cle == Cle::Afficher(Vue::Options)));
+        let partie = joueurs
+            .session(joueur, &contenu)
+            .deroulement
+            .partie()
+            .unwrap();
+        assert!(
+            partie
+                .collection()
+                .equipe()
+                .iter()
+                .all(|monstre| monstre.pv_actuels() == monstre.stats().pv)
+        );
+    }
+    let _ = fs::remove_dir_all(dossier);
+}
+
+/// Aldric attaque, Ysolde ne joue pas : 5 minutes après, Aldric réclame la
+/// victoire par forfait.
+#[test]
+fn un_joueur_qui_ne_joue_pas_perd_par_forfait() {
+    let contenu = ContenuV1::new();
+    let (mut joueurs, dossier) = deux_joueurs_au_camp(&contenu, "forfait");
+    lancer_le_duel(&mut joueurs, &contenu);
+    executer_le_clic_a(
+        &mut joueurs,
+        JOUEUR,
+        bouton(Cle::Attaquer(0)),
+        &contenu,
+        1_000,
+    );
+    let affiche = afficher_a(&mut joueurs, JOUEUR, &contenu, 1_299);
+    assert!(
+        affiche.texte.contains("En attente de l'action de Ysolde."),
+        "{}",
+        affiche.texte
+    );
+    assert!(!propose(&affiche, |cle| *cle == Cle::ReclamerLaVictoire));
+    let affiche = afficher_a(&mut joueurs, JOUEUR, &contenu, 1_300);
+    let clic = cliquer(&affiche, |cle| *cle == Cle::ReclamerLaVictoire);
+    let affiche = executer_le_clic_a(&mut joueurs, JOUEUR, clic, &contenu, 1_300);
+    assert!(
+        affiche
+            .texte
+            .contains("Victoire : vous remportez le duel contre Ysolde."),
+        "{}",
+        affiche.texte
+    );
+    let affiche = afficher_a(&mut joueurs, YSOLDE, &contenu, 1_301);
+    assert!(
+        affiche.texte.contains("Défaite : Aldric remporte le duel."),
         "{}",
         affiche.texte
     );

@@ -21,6 +21,7 @@ use bersemon_core::ressource::RessourceId;
 use bersemon_core::soin::Soin;
 use bersemon_core::zone::ZoneId;
 
+use crate::duels::ActionDeDuel;
 use crate::echanges::ActionDEchange;
 use crate::joueurs::IdJoueur;
 
@@ -128,6 +129,10 @@ pub enum Commande {
     Afficher(Vue),
     Ouvrir(Formulaire),
     Echanger(ActionDEchange),
+    Duel(ActionDeDuel),
+    /// Remet le message à jour, sans rien changer : en duel, pour voir le
+    /// tour que l'autre joueur a fait jouer (section 15.3).
+    Actualiser,
 }
 
 /// Un composant tel qu'il figure dans un message. Les menus présents
@@ -268,6 +273,16 @@ pub enum Cle {
     AccepterOffre,
     RefuserOffre,
     RetirerOffre,
+    /// Défie ce joueur en duel (section 15.3).
+    Defier(IdJoueur),
+    AccepterDefi,
+    RefuserDefi,
+    RetirerDefi,
+    Abandonner,
+    ReclamerLaVictoire,
+    /// Après la fin du duel.
+    RevenirDuDuel,
+    Actualiser,
 }
 
 /// Valeur de l'option qui retire l'objet porté, dans le menu d'une place :
@@ -412,6 +427,14 @@ impl Cle {
             Cle::AccepterOffre => Some(Commande::Echanger(ActionDEchange::Accepter)),
             Cle::RefuserOffre => Some(Commande::Echanger(ActionDEchange::Refuser)),
             Cle::RetirerOffre => Some(Commande::Echanger(ActionDEchange::Retirer)),
+            Cle::Defier(a) => Some(Commande::Duel(ActionDeDuel::Defier(*a))),
+            Cle::AccepterDefi => Some(Commande::Duel(ActionDeDuel::AccepterDefi)),
+            Cle::RefuserDefi => Some(Commande::Duel(ActionDeDuel::RefuserDefi)),
+            Cle::RetirerDefi => Some(Commande::Duel(ActionDeDuel::RetirerDefi)),
+            Cle::Abandonner => Some(Commande::Duel(ActionDeDuel::Abandonner)),
+            Cle::ReclamerLaVictoire => Some(Commande::Duel(ActionDeDuel::ReclamerLaVictoire)),
+            Cle::RevenirDuDuel => Some(Commande::Duel(ActionDeDuel::RevenirAuCamp)),
+            Cle::Actualiser => Some(Commande::Actualiser),
         }
     }
 
@@ -555,6 +578,14 @@ impl Cle {
             Cle::AccepterOffre => "accepter-offre".to_string(),
             Cle::RefuserOffre => "refuser-offre".to_string(),
             Cle::RetirerOffre => "retirer-offre".to_string(),
+            Cle::Defier(a) => format!("defier:{a}"),
+            Cle::AccepterDefi => "accepter-defi".to_string(),
+            Cle::RefuserDefi => "refuser-defi".to_string(),
+            Cle::RetirerDefi => "retirer-defi".to_string(),
+            Cle::Abandonner => "abandonner".to_string(),
+            Cle::ReclamerLaVictoire => "reclamer-victoire".to_string(),
+            Cle::RevenirDuDuel => "revenir-du-duel".to_string(),
+            Cle::Actualiser => "actualiser".to_string(),
         }
     }
 
@@ -602,6 +633,13 @@ impl Cle {
             "accepter-offre" => Cle::AccepterOffre,
             "refuser-offre" => Cle::RefuserOffre,
             "retirer-offre" => Cle::RetirerOffre,
+            "accepter-defi" => Cle::AccepterDefi,
+            "refuser-defi" => Cle::RefuserDefi,
+            "retirer-defi" => Cle::RetirerDefi,
+            "abandonner" => Cle::Abandonner,
+            "reclamer-victoire" => Cle::ReclamerLaVictoire,
+            "revenir-du-duel" => Cle::RevenirDuDuel,
+            "actualiser" => Cle::Actualiser,
             "fabriquer" => Cle::Fabriquer,
             "se-suicider" => Cle::SeSuicider,
             "acheter-capsule" => Cle::AcheterCapsule,
@@ -685,6 +723,7 @@ impl Cle {
                             cede: lire_emplacement(morceaux.next()?)?,
                         }
                     }
+                    "defier" => Cle::Defier(parametre.parse().ok()?),
                     "donner" => {
                         let (avec, cede) = parametre.split_once(':')?;
                         Cle::Donner {
@@ -970,6 +1009,14 @@ mod tests {
             Cle::AccepterOffre,
             Cle::RefuserOffre,
             Cle::RetirerOffre,
+            Cle::Defier(123_456_789_012_345_678),
+            Cle::AccepterDefi,
+            Cle::RefuserDefi,
+            Cle::RetirerDefi,
+            Cle::Abandonner,
+            Cle::ReclamerLaVictoire,
+            Cle::RevenirDuDuel,
+            Cle::Actualiser,
             Cle::Filet,
             Cle::Fuir,
             Cle::Changer,

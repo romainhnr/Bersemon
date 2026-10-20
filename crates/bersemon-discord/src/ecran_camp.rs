@@ -120,8 +120,9 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
         bouton(Cle::Afficher(Vue::Codex(None)), "Codex", SECONDAIRE),
     ];
     // Malvoise et Gunther n'apparaissent qu'une fois au camp (sections 13.4
-    // et 14.2), et l'équipement avec la forge (section 13.5) ; les échanges
-    // sont toujours là (section 15.1) : au plus 9 boutons, sur deux rangées.
+    // et 14.2), et l'équipement avec la forge (section 13.5) ; les autres
+    // joueurs sont toujours là (sections 15.1 et 15.3) : au plus 9 boutons,
+    // sur deux rangées.
     if partie.marchand_au_camp() {
         boutons.push(bouton(Cle::Afficher(Vue::Marchand), "Malvoise", SECONDAIRE));
     }
@@ -144,7 +145,7 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
             avec: None,
             cede: None,
         }),
-        "Échanges",
+        "Autres joueurs",
         SECONDAIRE,
     ));
     boutons.push(bouton(Cle::Afficher(Vue::Options), "Options", SECONDAIRE));

@@ -1,7 +1,8 @@
-//! Écran des échanges (section 15.1) : l'offre reçue, à accepter ou à
-//! refuser, l'offre envoyée, à retirer, puis, sans offre envoyée, une offre à
-//! faire en trois temps : le joueur, le monstre à lui céder, et celui qu'on
-//! lui demande, ou aucun pour un don.
+//! Écran des autres joueurs (sections 15.1 et 15.3) : l'offre et le défi
+//! reçus, à accepter ou à refuser, l'offre et le défi envoyés, à retirer,
+//! puis, sans offre envoyée, une offre à faire en trois temps : le joueur,
+//! le monstre à lui céder, et celui qu'on lui demande, ou aucun pour un
+//! don. Une fois le joueur choisi, il peut aussi être défié en duel.
 
 use bersemon_core::collection::{Collection, Emplacement};
 use bersemon_core::espece::Rarete;
@@ -40,6 +41,20 @@ pub fn echanges(
     let mut paragraphes = Vec::new();
     let mut lignes: Vec<Rangee> = Vec::new();
     let mut boutons = Vec::new();
+    if let Some(autre) = &tableau.defi_recu {
+        paragraphes.push(format!("{} vous défie en duel.", qui(autre)));
+        boutons.push(bouton(Cle::AccepterDefi, "Accepter le défi", SUCCES));
+        boutons.push(bouton(Cle::RefuserDefi, "Refuser le défi", DANGER));
+    }
+    if let Some(autre) = &tableau.defi_envoye {
+        paragraphes.push(format!(
+            "Vous avez défié {} en duel. En attente de sa réponse.",
+            qui(autre)
+        ));
+        boutons.push(bouton(Cle::RetirerDefi, "Retirer le défi", SECONDAIRE));
+    }
+    // Un défi à la fois par joueur, envoyé ou reçu (section 15.3).
+    let peut_defier = tableau.defi_recu.is_none() && tableau.defi_envoye.is_none();
     if let Some((autre, offre)) = &tableau.recue {
         paragraphes.push(decrire_offre_recue(&qui(autre), offre));
         boutons.push(bouton(Cle::AccepterOffre, "Accepter l'offre", SUCCES));
@@ -68,7 +83,7 @@ pub fn echanges(
                 paragraphes.push("Aucun autre joueur n'a de partie sur le bot.".to_string());
             } else {
                 paragraphes.push(
-                    "Choisissez un joueur pour lui donner un monstre ou lui en proposer un échange."
+                    "Choisissez un joueur pour lui donner un monstre, lui en proposer un échange ou le défier en duel."
                         .to_string(),
                 );
             }
@@ -77,6 +92,9 @@ pub fn echanges(
         (None, Some((autre, collection))) => {
             let id = autre.id;
             let a_moi = partie.collection();
+            if peut_defier {
+                boutons.push(bouton(Cle::Defier(id), "Défier en duel", PRINCIPAL));
+            }
             match cede.and_then(|cede| a_moi.monstre(cede).map(|monstre| (cede, monstre))) {
                 None => {
                     paragraphes.push(format!(
@@ -127,7 +145,7 @@ pub fn echanges(
     lignes.extend(rangees(boutons));
     Question {
         texte: format!(
-            "Échanges avec les autres joueurs.\n\n{}",
+            "Autres joueurs : offres de monstres et duels.\n\n{}",
             paragraphes.join("\n\n")
         ),
         rangees: lignes,

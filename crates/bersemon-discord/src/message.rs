@@ -14,9 +14,12 @@ use bersemon_presentation::recit::raconter;
 use poise::serenity_prelude as serenity;
 
 use crate::composants::{Cle, Composant, Vue};
+use crate::duels::erreur_de_defi;
 use crate::echanges::erreur_d_offre;
 use crate::joueurs::{Refus, Session};
-use crate::{ecran_accueil, ecran_camp, ecran_combat, ecran_echanges, ecran_expedition};
+use crate::{
+    ecran_accueil, ecran_camp, ecran_combat, ecran_duel, ecran_echanges, ecran_expedition,
+};
 
 pub const LONGUEUR_MAX: usize = 2000;
 pub const RANGEES_MAX: usize = 5;
@@ -195,6 +198,7 @@ fn expliquer(refus: &Refus) -> String {
         }
         Refus::Choix { choix, erreur } => erreur_de_choix(choix, erreur),
         Refus::Echange(erreur) => erreur_d_offre(erreur),
+        Refus::Duel(erreur) => erreur_de_defi(erreur),
     }
 }
 
@@ -202,6 +206,10 @@ fn expliquer(refus: &Refus) -> String {
 const PARTIE_EN_JEU: &str = "une partie est en jeu";
 
 fn question(session: &Session, contenu: &ContenuV1, maintenant: Horodatage) -> Question {
+    // Le duel remplace le camp à l'écran (section 15.3).
+    if let (Some(duel), Some(partie)) = (&session.duel, session.deroulement.partie()) {
+        return ecran_duel::question(duel, partie, maintenant);
+    }
     let partie = || session.deroulement.partie().expect(PARTIE_EN_JEU);
     match session.deroulement.attente() {
         Attente::Reprise(partie) => ecran_accueil::reprise(partie),

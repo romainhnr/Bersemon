@@ -8,16 +8,20 @@ use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
 use bersemon_core::aleatoire::{Aleatoire, GenerateurAleatoire};
+use bersemon_core::combat::Cote;
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::{Attente, Choix, Contexte, Deroulement, ErreurChoix, Evenement};
+use bersemon_core::duel::Duel;
 use bersemon_core::echange::{ErreurEchange, Offre};
 use bersemon_core::horodatage::Horodatage;
 use bersemon_core::partie::Partie;
 use bersemon_core::sauvegarde::SauvegardeRepository;
+use bersemon_presentation::duels::{defi_accepte, defi_recu, defi_refuse};
 use bersemon_presentation::echanges::{offre_acceptee, offre_recue, offre_refusee};
 use bersemon_storage::FichierJson;
 
 use crate::composants::Vue;
+use crate::duels::{ActionDeDuel, Defi, DuelEnCours, DuelVu, ErreurDeDefi};
 use crate::echanges::{
     ActionDEchange, AutreJoueur, Bourse, ErreurDOffre, MessagePrive, OffreEnAttente, Pseudos,
     TableauDesEchanges,
@@ -38,6 +42,9 @@ pub struct Session {
     /// Préparé à chaque lecture de la session quand la vue est celle des
     /// échanges (section 15.1).
     pub echanges: TableauDesEchanges,
+    /// Le duel du joueur, préparé à chaque lecture de la session : il
+    /// remplace le camp à l'écran (section 15.3).
+    pub duel: Option<DuelVu>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -50,6 +57,7 @@ pub enum Refus {
         erreur: ErreurChoix,
     },
     Echange(ErreurDOffre),
+    Duel(ErreurDeDefi),
 }
 
 pub struct Joueurs {
@@ -62,8 +70,11 @@ pub struct Joueurs {
     annonces: Annonces,
     bourse: Bourse,
     pseudos: Pseudos,
-    /// Offres reçues, acceptées ou refusées, à annoncer par message privé.
+    /// Offres et défis reçus, acceptés ou refusés, à annoncer par message
+    /// privé.
     messages_prives: Vec<MessagePrive>,
+    defis: Vec<Defi>,
+    duels: Vec<DuelEnCours>,
 }
 
 /// Un incident pendant le traitement d'un choix ne doit pas bloquer tous les
@@ -82,6 +93,8 @@ impl Joueurs {
             aleatoire: GenerateurAleatoire::new(graine),
             bourse: Bourse::default(),
             messages_prives: Vec::new(),
+            defis: Vec::new(),
+            duels: Vec::new(),
         }
     }
 
@@ -110,6 +123,7 @@ impl Joueurs {
             version: aleatoire.tirer(0..=u32::MAX),
             vue: Vue::Camp,
             echanges: TableauDesEchanges::default(),
+            duel: None,
         })
     }
 
@@ -119,7 +133,30 @@ impl Joueurs {
             let tableau = self.tableau_des_echanges(joueur, avec, contenu);
             self.charger(joueur, contenu).echanges = tableau;
         }
-        self.charger(joueur, contenu)
+        let duel = self.duel_vu(joueur, contenu);
+        let session = self.charger(joueur, contenu);
+        session.duel = duel;
+        session
+    }
+
+    fn duel_de(&self, joueur: IdJoueur) -> Option<(usize, Cote)> {
+        self.duels
+            .iter()
+            .enumerate()
+            .find_map(|(position, duel)| Some((position, duel.cote_de(joueur)?)))
+    }
+
+    fn duel_vu(&mut self, joueur: IdJoueur, contenu: &ContenuV1) -> Option<DuelVu> {
+        let (position, cote) = self.duel_de(joueur)?;
+        let autre = self.duels[position].autre(cote);
+        let heros = self.autre_joueur(joueur, contenu)?.heros;
+        let adversaire = self.autre_joueur(autre, contenu)?.heros;
+        Some(DuelVu {
+            duel: self.duels[position].duel.clone(),
+            cote,
+            heros,
+            adversaire,
+        })
     }
 
     /// Noté à chaque interaction du joueur.
@@ -171,12 +208,220 @@ impl Joueurs {
             let partie = partie_lisible(&self.sessions.get(&autre)?.deroulement)?;
             Some((qui, partie.collection().clone()))
         });
+        let defi_recu = self.defis.iter().find(|defi| defi.a == joueur).copied();
+        let defi_recu = defi_recu.and_then(|defi| self.autre_joueur(defi.de, contenu));
+        let defi_envoye = self.defis.iter().find(|defi| defi.de == joueur).copied();
+        let defi_envoye = defi_envoye.and_then(|defi| self.autre_joueur(defi.a, contenu));
         TableauDesEchanges {
             joueurs,
             recue,
             envoyee,
             choisi,
+            defi_recu,
+            defi_envoye,
         }
+    }
+
+    /// Défie, retire ou répond à un défi, ou agit dans le duel en cours,
+    /// si le message affichait la version en cours de la partie. Chaque
+    /// changement d'un duel rend dépassés les messages des deux joueurs.
+    pub fn agir_en_duel(
+        &mut self,
+        joueur: IdJoueur,
+        version: u32,
+        action: ActionDeDuel,
+        contenu: &ContenuV1,
+        maintenant: Horodatage,
+    ) -> Result<Vec<Evenement>, Refus> {
+        if !self.est_a_jour(joueur, version, contenu) {
+            return Err(Refus::MessagePerime);
+        }
+        let concernes = match action {
+            ActionDeDuel::Defier(a) => self.defier(joueur, a, contenu).map(|()| vec![joueur]),
+            ActionDeDuel::RetirerDefi => self.retirer_defi(joueur).map(|()| vec![joueur]),
+            ActionDeDuel::RefuserDefi => self.refuser_defi(joueur, contenu),
+            ActionDeDuel::AccepterDefi => self.accepter_defi(joueur, contenu),
+            ActionDeDuel::Abandonner => {
+                self.dans_le_duel(joueur, |duel, cote| duel.abandonner(cote))
+            }
+            ActionDeDuel::ReclamerLaVictoire => self.dans_le_duel(joueur, |duel, cote| {
+                duel.reclamer_la_victoire(cote, maintenant)
+            }),
+            ActionDeDuel::RevenirAuCamp => self.revenir_du_duel(joueur),
+        }
+        .map_err(Refus::Duel)?;
+        for concerne in concernes {
+            let session = self.charger(concerne, contenu);
+            session.version = session.version.wrapping_add(1);
+        }
+        // Le duel fini, le joueur retrouve le camp sur sa vue principale.
+        if action == ActionDeDuel::RevenirAuCamp {
+            self.charger(joueur, contenu).vue = Vue::Camp;
+        }
+        Ok(Vec::new())
+    }
+
+    fn defier(
+        &mut self,
+        joueur: IdJoueur,
+        a: IdJoueur,
+        contenu: &ContenuV1,
+    ) -> Result<(), ErreurDeDefi> {
+        if a == joueur {
+            return Err(ErreurDeDefi::AvecSoiMeme);
+        }
+        if self.duel_de(joueur).is_some() || self.duel_de(a).is_some() {
+            return Err(ErreurDeDefi::DejaEnDuel);
+        }
+        let concerne = |defi: &Defi, qui: IdJoueur| defi.de == qui || defi.a == qui;
+        if self.defis.iter().any(|defi| concerne(defi, joueur)) {
+            return Err(ErreurDeDefi::DefiDejaEnCours);
+        }
+        if self.defis.iter().any(|defi| concerne(defi, a)) {
+            return Err(ErreurDeDefi::AutreDejaDefie);
+        }
+        self.autre_joueur(a, contenu)
+            .ok_or(ErreurDeDefi::JoueurSansPartie)?;
+        let moi = self
+            .autre_joueur(joueur, contenu)
+            .ok_or(ErreurDeDefi::JoueurSansPartie)?;
+        self.defis.push(Defi { de: joueur, a });
+        self.messages_prives.push(MessagePrive {
+            joueur: a,
+            texte: defi_recu(&moi.heros, moi.pseudo.as_deref()),
+        });
+        Ok(())
+    }
+
+    fn retirer_defi(&mut self, joueur: IdJoueur) -> Result<(), ErreurDeDefi> {
+        let position = self
+            .defis
+            .iter()
+            .position(|defi| defi.de == joueur)
+            .ok_or(ErreurDeDefi::AucunDefi)?;
+        self.defis.remove(position);
+        Ok(())
+    }
+
+    fn refuser_defi(
+        &mut self,
+        joueur: IdJoueur,
+        contenu: &ContenuV1,
+    ) -> Result<Vec<IdJoueur>, ErreurDeDefi> {
+        let position = self
+            .defis
+            .iter()
+            .position(|defi| defi.a == joueur)
+            .ok_or(ErreurDeDefi::AucunDefi)?;
+        let defi = self.defis.remove(position);
+        if let Some(moi) = self.autre_joueur(joueur, contenu) {
+            self.messages_prives.push(MessagePrive {
+                joueur: defi.de,
+                texte: defi_refuse(&moi.heros),
+            });
+        }
+        Ok(vec![joueur])
+    }
+
+    /// Le duel commence si les deux joueurs sont au camp, chacun avec au
+    /// moins un monstre dans son équipe ; sinon le défi reste en attente.
+    fn accepter_defi(
+        &mut self,
+        joueur: IdJoueur,
+        contenu: &ContenuV1,
+    ) -> Result<Vec<IdJoueur>, ErreurDeDefi> {
+        let defi = *self
+            .defis
+            .iter()
+            .find(|defi| defi.a == joueur)
+            .ok_or(ErreurDeDefi::AucunDefi)?;
+        self.charger(defi.de, contenu);
+        let au_camp = |qui: IdJoueur| {
+            self.sessions
+                .get(&qui)
+                .and_then(|session| session.deroulement.partie_au_camp())
+        };
+        let (Some(premier), Some(second)) = (au_camp(defi.de), au_camp(joueur)) else {
+            return Err(ErreurDeDefi::PasAuCamp);
+        };
+        let duel = Duel::entre(premier, second, contenu.zones(), contenu.piste())
+            .map_err(|_| ErreurDeDefi::EquipeVide)?;
+        self.defis.retain(|autre| *autre != defi);
+        self.duels.push(DuelEnCours {
+            joueurs: [defi.de, joueur],
+            duel,
+            revenus: [false; 2],
+        });
+        if let Some(moi) = self.autre_joueur(joueur, contenu) {
+            self.messages_prives.push(MessagePrive {
+                joueur: defi.de,
+                texte: defi_accepte(&moi.heros),
+            });
+        }
+        Ok(vec![defi.de, joueur])
+    }
+
+    /// Applique au duel du joueur ce qu'il y fait ; rend les deux joueurs
+    /// du duel.
+    fn dans_le_duel(
+        &mut self,
+        joueur: IdJoueur,
+        agir: impl FnOnce(&mut Duel, Cote) -> Result<(), bersemon_core::duel::ErreurDuel>,
+    ) -> Result<Vec<IdJoueur>, ErreurDeDefi> {
+        let (position, cote) = self.duel_de(joueur).ok_or(ErreurDeDefi::PasEnDuel)?;
+        let en_cours = &mut self.duels[position];
+        agir(&mut en_cours.duel, cote).map_err(ErreurDeDefi::Duel)?;
+        Ok(en_cours.joueurs.to_vec())
+    }
+
+    fn revenir_du_duel(&mut self, joueur: IdJoueur) -> Result<Vec<IdJoueur>, ErreurDeDefi> {
+        let (position, cote) = self.duel_de(joueur).ok_or(ErreurDeDefi::PasEnDuel)?;
+        let en_cours = &mut self.duels[position];
+        if !en_cours.duel.est_fini() {
+            return Err(ErreurDeDefi::DuelPasFini);
+        }
+        en_cours.revenus[match cote {
+            Cote::Joueur => 0,
+            Cote::Adversaire => 1,
+        }] = true;
+        if en_cours.revenus == [true; 2] {
+            self.duels.remove(position);
+        }
+        Ok(vec![joueur])
+    }
+
+    /// Les choix du combat d'un joueur en duel vont au duel : action du tour,
+    /// remplacement et ordre du héros.
+    fn jouer_en_duel(
+        &mut self,
+        joueur: IdJoueur,
+        choix: Choix,
+        maintenant: Horodatage,
+    ) -> Result<Vec<IdJoueur>, Refus> {
+        let aleatoire = &mut self.aleatoire;
+        let (position, cote) = match self
+            .duels
+            .iter()
+            .enumerate()
+            .find_map(|(position, duel)| Some((position, duel.cote_de(joueur)?)))
+        {
+            Some(trouve) => trouve,
+            None => return Err(Refus::Duel(ErreurDeDefi::PasEnDuel)),
+        };
+        let en_cours = &mut self.duels[position];
+        let resultat = match &choix {
+            Choix::Combat(action) => en_cours.duel.choisir(cote, *action, maintenant, aleatoire),
+            Choix::Remplacer(index) => en_cours.duel.remplacer(cote, *index, maintenant),
+            Choix::DonnerOrdre => en_cours.duel.donner_ordre(cote),
+            _ => {
+                return Err(Refus::Choix {
+                    choix,
+                    erreur: ErreurChoix::HorsDePropos,
+                });
+            }
+        };
+        resultat.map_err(|erreur| Refus::Duel(ErreurDeDefi::Duel(erreur)))?;
+        Ok(en_cours.joueurs.to_vec())
     }
 
     /// Fait, retire, accepte ou refuse une offre, si le message affichait la
@@ -342,6 +587,13 @@ impl Joueurs {
     ) -> Result<Vec<Evenement>, Refus> {
         if !self.est_a_jour(joueur, version, contenu) {
             return Err(Refus::MessagePerime);
+        }
+        if self.duel_de(joueur).is_some() {
+            for concerne in self.jouer_en_duel(joueur, choix, maintenant)? {
+                let session = self.charger(concerne, contenu);
+                session.version = session.version.wrapping_add(1);
+            }
+            return Ok(Vec::new());
         }
         let depot = depot(&self.dossier, joueur);
         let session = self
@@ -738,6 +990,112 @@ mod tests {
         assert!(joueurs_au_camp.bourse.recue(2).is_none());
         let _ = fs::remove_dir_all(dossier);
         let _ = fs::remove_dir_all(autre_dossier);
+    }
+
+    fn en_duel(
+        joueurs: &mut Joueurs,
+        joueur: IdJoueur,
+        action: ActionDeDuel,
+        contenu: &ContenuV1,
+    ) -> Result<Vec<Evenement>, Refus> {
+        let version = joueurs.session(joueur, contenu).version;
+        joueurs.agir_en_duel(
+            joueur,
+            version,
+            action,
+            contenu,
+            Horodatage::depuis_secondes(0),
+        )
+    }
+
+    #[test]
+    fn un_defi_se_refuse_se_retire_ou_s_accepte() {
+        let contenu = ContenuV1::new();
+        let (mut joueurs, dossier) = deux_joueurs(&contenu);
+        assert_eq!(
+            en_duel(&mut joueurs, 1, ActionDeDuel::Defier(1), &contenu),
+            Err(Refus::Duel(ErreurDeDefi::AvecSoiMeme))
+        );
+        en_duel(&mut joueurs, 1, ActionDeDuel::Defier(2), &contenu).unwrap();
+        let messages = joueurs.prendre_les_messages_prives();
+        assert_eq!(messages[0].joueur, 2);
+        assert!(messages[0].texte.starts_with("Aldric vous défie en duel."));
+        // Un défi à la fois, envoyé ou reçu.
+        assert_eq!(
+            en_duel(&mut joueurs, 2, ActionDeDuel::Defier(1), &contenu),
+            Err(Refus::Duel(ErreurDeDefi::DefiDejaEnCours))
+        );
+        en_duel(&mut joueurs, 2, ActionDeDuel::RefuserDefi, &contenu).unwrap();
+        assert_eq!(
+            joueurs.prendre_les_messages_prives()[0].texte,
+            "Ysolde a refusé votre défi."
+        );
+        en_duel(&mut joueurs, 1, ActionDeDuel::Defier(2), &contenu).unwrap();
+        en_duel(&mut joueurs, 1, ActionDeDuel::RetirerDefi, &contenu).unwrap();
+        assert_eq!(
+            en_duel(&mut joueurs, 2, ActionDeDuel::AccepterDefi, &contenu),
+            Err(Refus::Duel(ErreurDeDefi::AucunDefi))
+        );
+
+        // Aldric part en expédition : le défi attend son retour au camp.
+        en_duel(&mut joueurs, 1, ActionDeDuel::Defier(2), &contenu).unwrap();
+        let partir = Choix::PartirEnExpedition(ZoneId::new("lisiere"));
+        repondre(&mut joueurs, 1, partir, &contenu).unwrap();
+        assert_eq!(
+            en_duel(&mut joueurs, 2, ActionDeDuel::AccepterDefi, &contenu),
+            Err(Refus::Duel(ErreurDeDefi::PasAuCamp))
+        );
+        let _ = fs::remove_dir_all(dossier);
+    }
+
+    #[test]
+    fn le_duel_remplace_le_camp_puis_chacun_y_revient() {
+        let contenu = ContenuV1::new();
+        let (mut joueurs, dossier) = deux_joueurs(&contenu);
+        en_duel(&mut joueurs, 1, ActionDeDuel::Defier(2), &contenu).unwrap();
+        joueurs.prendre_les_messages_prives();
+        let version_d_aldric = joueurs.session(1, &contenu).version;
+        en_duel(&mut joueurs, 2, ActionDeDuel::AccepterDefi, &contenu).unwrap();
+        assert_ne!(joueurs.session(1, &contenu).version, version_d_aldric);
+        assert_eq!(
+            joueurs.prendre_les_messages_prives()[0].texte,
+            "Ysolde a accepté votre défi : le duel commence. Ouvrez /bersemon."
+        );
+        let vu = joueurs.session(2, &contenu).duel.clone().unwrap();
+        assert_eq!(
+            (vu.heros.as_str(), vu.adversaire.as_str()),
+            ("Ysolde", "Aldric")
+        );
+        assert_eq!(vu.cote, Cote::Adversaire);
+        // En duel, les choix du camp sont refusés et ceux du combat vont au
+        // duel.
+        let partir = Choix::PartirEnExpedition(ZoneId::new("lisiere"));
+        assert!(matches!(
+            repondre(&mut joueurs, 1, partir, &contenu),
+            Err(Refus::Choix { .. })
+        ));
+        repondre(&mut joueurs, 1, Choix::DonnerOrdre, &contenu).unwrap();
+        let vu = joueurs.session(2, &contenu).duel.clone().unwrap();
+        assert_eq!(vu.duel.recit(Cote::Adversaire).len(), 1);
+        assert_eq!(
+            en_duel(&mut joueurs, 1, ActionDeDuel::RevenirAuCamp, &contenu),
+            Err(Refus::Duel(ErreurDeDefi::DuelPasFini))
+        );
+        en_duel(&mut joueurs, 2, ActionDeDuel::Abandonner, &contenu).unwrap();
+        let vu = joueurs.session(1, &contenu).duel.clone().unwrap();
+        assert_eq!(vu.duel.vainqueur(), Some(Cote::Joueur));
+        en_duel(&mut joueurs, 1, ActionDeDuel::RevenirAuCamp, &contenu).unwrap();
+        assert!(joueurs.session(1, &contenu).duel.is_none());
+        assert!(joueurs.session(2, &contenu).duel.is_some());
+        en_duel(&mut joueurs, 2, ActionDeDuel::RevenirAuCamp, &contenu).unwrap();
+        assert!(joueurs.session(2, &contenu).duel.is_none());
+        assert!(joueurs.duels.is_empty());
+        // La partie n'a pas changé : le duel se jouait sur des copies.
+        assert_eq!(
+            joueurs.session(1, &contenu).deroulement.attente(),
+            Attente::Camp
+        );
+        let _ = fs::remove_dir_all(dossier);
     }
 
     #[test]
