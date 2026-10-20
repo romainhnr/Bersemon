@@ -486,6 +486,10 @@ pub fn question_de_confirmation(confirmation: &Confirmation) -> String {
             )
         }
         Confirmation::RendreShiny(monstre) => question_shiny(monstre),
+        Confirmation::RendreLeMonstreLoue(monstre) => format!(
+            "Rendre {} à Malvoise ? La location n'est pas remboursée.",
+            monstre.nom()
+        ),
         Confirmation::FabriquerCharme(plan) => question_du_charme(plan),
         Confirmation::Suicide(heros) => format!(
             "Vous suicider ? Votre partie sera effacée pour de bon : {}, vos monstres, votre sac, votre coffre, votre codex et vos expéditions automatiques en cours.",

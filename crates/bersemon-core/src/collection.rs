@@ -39,6 +39,8 @@ pub enum ErreurCollection {
     },
     /// Le même monstre est choisi deux fois.
     EmplacementEnDouble(Emplacement),
+    /// Un monstre loué ne fait que combattre (section 14.2).
+    MonstreLoue,
 }
 
 impl fmt::Display for ErreurCollection {
@@ -58,6 +60,7 @@ impl fmt::Display for ErreurCollection {
             ErreurCollection::EmplacementEnDouble(emplacement) => {
                 write!(f, "le monstre {emplacement:?} est choisi deux fois")
             }
+            ErreurCollection::MonstreLoue => write!(f, "un monstre loué ne peut pas faire cela"),
         }
     }
 }
@@ -169,6 +172,37 @@ impl Collection {
         self.equipe.len() + self.camp.len() + self.places_reservees
     }
 
+    /// Sans le monstre loué, qui repartira : le joueur garde toujours un
+    /// monstre à lui (section 14.2, Q98).
+    pub fn nombre_de_monstres_a_soi(&self) -> usize {
+        self.nombre_de_monstres() - usize::from(self.monstre_loue().is_some())
+    }
+
+    /// Le monstre loué à Malvoise, un seul à la fois (section 14.2).
+    pub fn monstre_loue(&self) -> Option<(Emplacement, &Monstre)> {
+        let equipe = self
+            .equipe
+            .iter()
+            .enumerate()
+            .map(|(index, monstre)| (Emplacement::Equipe(index), monstre));
+        let camp = self
+            .camp
+            .iter()
+            .enumerate()
+            .map(|(index, monstre)| (Emplacement::Camp(index), monstre));
+        equipe.chain(camp).find(|(_, monstre)| monstre.est_loue())
+    }
+
+    /// Le monstre de cet emplacement, s'il est au joueur : un monstre loué ne
+    /// fait que combattre (section 14.2).
+    pub fn monstre_a_soi(&self, emplacement: Emplacement) -> Result<&Monstre, ErreurCollection> {
+        match self.monstre(emplacement) {
+            Some(monstre) if monstre.est_loue() => Err(ErreurCollection::MonstreLoue),
+            Some(monstre) => Ok(monstre),
+            None => Err(ErreurCollection::EmplacementInexistant(emplacement)),
+        }
+    }
+
     pub fn monstre(&self, emplacement: Emplacement) -> Option<&Monstre> {
         match emplacement {
             Emplacement::Equipe(index) => self.equipe.get(index),
@@ -224,10 +258,11 @@ impl Collection {
         Ok(())
     }
 
-    /// Définitif. La confirmation revient à l'interface.
+    /// Définitif. La confirmation revient à l'interface. Un monstre loué se
+    /// rend à Malvoise (`rendre_le_monstre_loue`).
     pub fn relacher(&mut self, emplacement: Emplacement) -> Result<Monstre, ErreurCollection> {
-        self.verifier(emplacement)?;
-        if self.nombre_de_monstres() == 1 {
+        self.monstre_a_soi(emplacement)?;
+        if self.nombre_de_monstres_a_soi() == 1 {
             return Err(ErreurCollection::DernierMonstre);
         }
         match emplacement {
@@ -242,7 +277,7 @@ impl Collection {
         emplacement: Emplacement,
         surnom: Option<Nom>,
     ) -> Result<(), ErreurCollection> {
-        self.verifier(emplacement)?;
+        self.monstre_a_soi(emplacement)?;
         self.monstre_mut(emplacement).renommer(surnom);
         Ok(())
     }
@@ -298,8 +333,35 @@ impl Collection {
         emplacement: Emplacement,
         capture: Monstre,
     ) -> Result<Monstre, ErreurCollection> {
-        self.verifier(emplacement)?;
+        self.monstre_a_soi(emplacement)?;
         Ok(std::mem::replace(self.monstre_mut(emplacement), capture))
+    }
+
+    /// Le monstre loué quitte l'équipe ou le camp. Rend sa place et le
+    /// monstre.
+    pub(crate) fn rendre_le_monstre_loue(&mut self) -> Option<(Emplacement, Monstre)> {
+        let (emplacement, _) = self.monstre_loue()?;
+        let monstre = match emplacement {
+            Emplacement::Equipe(index) => self.equipe.remove(index),
+            Emplacement::Camp(index) => self.camp.remove(index),
+        };
+        Some((emplacement, monstre))
+    }
+
+    /// Une expédition manuelle de plus pour le monstre loué ; à la fin de sa
+    /// location, il quitte l'équipe ou le camp (section 14.2). Rend alors sa
+    /// place et le monstre.
+    pub(crate) fn decompter_location(&mut self) -> Option<(Emplacement, Monstre)> {
+        let (emplacement, _) = self.monstre_loue()?;
+        if self.monstre_mut(emplacement).decompter_location() {
+            let monstre = match emplacement {
+                Emplacement::Equipe(index) => self.equipe.remove(index),
+                Emplacement::Camp(index) => self.camp.remove(index),
+            };
+            Some((emplacement, monstre))
+        } else {
+            None
+        }
     }
 
     /// Remplace l'équipe par son état à la fin d'un combat : PV, statuts, XP
@@ -323,7 +385,7 @@ impl Collection {
         emplacements: &[Emplacement],
     ) -> Result<(), ErreurCollection> {
         for (position, emplacement) in emplacements.iter().enumerate() {
-            self.verifier(*emplacement)?;
+            self.monstre_a_soi(*emplacement)?;
             if emplacements[..position].contains(emplacement) {
                 return Err(ErreurCollection::EmplacementEnDouble(*emplacement));
             }

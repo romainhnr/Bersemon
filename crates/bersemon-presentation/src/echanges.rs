@@ -84,6 +84,7 @@ pub fn erreur_echange(erreur: &ErreurEchange) -> String {
         ErreurEchange::Apotre => {
             "Un Apôtre ne se donne ni ne s'échange : il reste à celui qui l'a vaincu.".to_string()
         }
+        ErreurEchange::MonstreLoue => "Un monstre loué ne peut pas faire cela.".to_string(),
         ErreurEchange::DernierMonstre => "Vous ne pouvez pas donner votre dernier monstre.".to_string(),
         ErreurEchange::PlusDePlace => {
             "L'équipe et le camp de celui qui reçoit le don sont pleins.".to_string()

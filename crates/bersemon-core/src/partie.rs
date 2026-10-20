@@ -17,7 +17,7 @@ use crate::codex::Codex;
 use crate::collection::{Collection, Emplacement, ErreurCollection, Placement};
 use crate::combat::{BilanCombat, Combat, Cote, ErreurCombat, Issue};
 use crate::equipement::{ErreurEquipement, ObjetDEquipementId, PlaceDEquipement};
-use crate::espece::{Espece, EspeceId};
+use crate::espece::{Espece, EspeceId, Rarete};
 use crate::evolution::{
     Circonstances, ErreurEvolution, ResultatEvolution, evolution_possible, faire_evoluer,
 };
@@ -35,7 +35,8 @@ use crate::humain::{Humain, HumainId, IaHumain};
 use crate::inventaire::{ErreurObjet, Inventaire, Objet};
 use crate::machines::{ErreurMachine, Machines, reste_avant_le_plafond};
 use crate::marchand::{
-    ErreurMarchand, PRIX_CAPSULE_D_HABILETE, PRIX_PIERRE_D_EVOLUTION, prix_de_revente, prix_du_soin,
+    EXPEDITIONS_DE_LOCATION, ErreurMarchand, OffreDeMonstre, PRIX_CAPSULE_D_HABILETE,
+    PRIX_PIERRE_D_EVOLUTION, prix_de_revente, prix_du_soin,
 };
 use crate::monstre::{Monstre, RapportExperience, tirer_shiny, tirer_valeurs_internes};
 use crate::niveau::Niveau;
@@ -182,6 +183,9 @@ pub enum ErreurRestaurationPartie {
     /// Des pièges posés sans être construits ou dans une zone inexplorée,
     /// ou plus de monstres à l'entraînement que de places dans la cour.
     MachinesIncoherentes,
+    /// Plus d'un monstre loué, ou un monstre loué pour seul monstre (section
+    /// 14.2).
+    LocationIncoherente,
 }
 
 impl fmt::Display for ErreurRestaurationPartie {
@@ -211,6 +215,9 @@ impl fmt::Display for ErreurRestaurationPartie {
             }
             ErreurRestaurationPartie::MachinesIncoherentes => {
                 write!(f, "machines du camp incohérentes")
+            }
+            ErreurRestaurationPartie::LocationIncoherente => {
+                write!(f, "location de monstre incohérente")
             }
         }
     }
@@ -846,12 +853,10 @@ impl Partie {
         &self,
         emplacement: Emplacement,
     ) -> Result<(Monstre, Habilete), ErreurChangementDHabilete> {
-        let monstre =
-            self.collection
-                .monstre(emplacement)
-                .ok_or(ErreurChangementDHabilete::Collection(
-                    ErreurCollection::EmplacementInexistant(emplacement),
-                ))?;
+        let monstre = self
+            .collection
+            .monstre_a_soi(emplacement)
+            .map_err(ErreurChangementDHabilete::Collection)?;
         let nouvelle =
             autre_habilete(monstre).ok_or(ErreurChangementDHabilete::AucuneAutreHabilete)?;
         if self.capsules_d_habilete() == 0 {
@@ -889,6 +894,10 @@ impl Partie {
             .collection
             .monstre(emplacement)
             .ok_or(ErreurCollection::EmplacementInexistant(emplacement))?;
+        // Un monstre loué n'apprend rien d'une capsule (section 14.2).
+        if monstre.est_loue() {
+            return Ok(attaques_a_apprendre(monstre, std::iter::empty()));
+        }
         Ok(attaques_a_apprendre(monstre, self.capsules()))
     }
 
@@ -941,10 +950,8 @@ impl Partie {
     ) -> Result<(Monstre, Espece, Option<PierreDEvolution>), ErreurEvolution> {
         let monstre = self
             .collection
-            .monstre(emplacement)
-            .ok_or(ErreurEvolution::Collection(
-                ErreurCollection::EmplacementInexistant(emplacement),
-            ))?;
+            .monstre_a_soi(emplacement)
+            .map_err(ErreurEvolution::Collection)?;
         let evolution = monstre.espece().evolution();
         let pierre = evolution.and_then(|evolution| evolution.pierre());
         let vers = match pierre {
@@ -1018,10 +1025,8 @@ impl Partie {
     ) -> Result<Monstre, ErreurBooster> {
         let monstre = self
             .collection
-            .monstre(emplacement)
-            .ok_or(ErreurBooster::Collection(
-                ErreurCollection::EmplacementInexistant(emplacement),
-            ))?
+            .monstre_a_soi(emplacement)
+            .map_err(ErreurBooster::Collection)?
             .clone();
         if *monstre.valeurs_internes().valeurs().de(booster.stat()) >= ValeursInternes::MAX {
             return Err(ErreurBooster::ValeurMaximale(booster));
@@ -1049,10 +1054,8 @@ impl Partie {
         self.verifier_marchand()?;
         let monstre = self
             .collection
-            .monstre(emplacement)
-            .ok_or(ErreurMarchand::Collection(
-                ErreurCollection::EmplacementInexistant(emplacement),
-            ))?;
+            .monstre_a_soi(emplacement)
+            .map_err(ErreurMarchand::Collection)?;
         if monstre.est_shiny() {
             return Err(ErreurMarchand::DejaShiny);
         }
@@ -1130,6 +1133,146 @@ impl Partie {
                 Some((emplacement, vers))
             })
             .collect()
+    }
+
+    /// Les espèces communes sauvages, à leur forme de base, des zones menées
+    /// au bout, au niveau minimal de la première zone où chacune se
+    /// rencontre, dans l'ordre des zones (section 14.2, Q98). `especes`
+    /// sert à reconnaître les formes évoluées sauvages.
+    pub fn offres_d_achat(&self, zones: &[Zone], especes: &[Espece]) -> Vec<OffreDeMonstre> {
+        let est_evoluee = |id: &EspeceId| {
+            especes.iter().any(|espece| {
+                espece
+                    .evolution()
+                    .is_some_and(|evolution| evolution.vers() == id)
+            })
+        };
+        let mut offres: Vec<OffreDeMonstre> = Vec::new();
+        for zone in zones.iter().filter(|zone| self.est_exploree(zone.id())) {
+            for espece in zone.especes() {
+                let deja = offres.iter().any(|offre| offre.espece.id() == espece.id());
+                if !deja && espece.rarete() == Rarete::Commune && !est_evoluee(espece.id()) {
+                    offres.push(OffreDeMonstre::a_l_achat(espece.clone(), zone.niveaux().0));
+                }
+            }
+        }
+        offres
+    }
+
+    /// Les espèces rares des zones menées au bout, monstre caché excepté, au
+    /// niveau maximal de la zone ouverte la plus avancée (section 14.2).
+    pub fn offres_de_location(&self, zones: &[Zone], piste: &Piste) -> Vec<OffreDeMonstre> {
+        let Some(niveau) = self
+            .zone_la_plus_avancee(zones, piste)
+            .map(|zone| zone.niveaux().1)
+        else {
+            return Vec::new();
+        };
+        let mut offres: Vec<OffreDeMonstre> = Vec::new();
+        for zone in zones.iter().filter(|zone| self.est_exploree(zone.id())) {
+            for rare in zone.rares() {
+                if !offres
+                    .iter()
+                    .any(|offre| offre.espece.id() == rare.espece.id())
+                {
+                    offres.push(OffreDeMonstre::a_la_location(rare.espece.clone(), niveau));
+                }
+            }
+        }
+        offres
+    }
+
+    /// Au camp, chez Malvoise, sans confirmation (section 14.2) : le monstre
+    /// est tiré comme un monstre sauvage, puis rejoint l'équipe s'il y reste
+    /// une place, sinon le camp ; son espèce passe capturée au codex. Rend le
+    /// monstre, sa place et le prix payé.
+    pub fn acheter_monstre(
+        &mut self,
+        espece: &EspeceId,
+        zones: &[Zone],
+        especes: &[Espece],
+        aleatoire: &mut dyn Aleatoire,
+    ) -> Result<(Monstre, Placement, u32), ErreurMarchand> {
+        self.verifier_marchand()?;
+        let offre = self
+            .offres_d_achat(zones, especes)
+            .into_iter()
+            .find(|offre| offre.espece.id() == espece)
+            .ok_or(ErreurMarchand::MonstreIndisponible)?;
+        if !self.collection.a_de_la_place() {
+            return Err(ErreurMarchand::PlusDePlace);
+        }
+        self.payer(offre.prix)?;
+        let monstre = monstre_de_malvoise(&offre, aleatoire);
+        self.codex.noter_capture(monstre.espece().id());
+        let placement = self.collection.accueillir_capture(monstre.clone());
+        Ok((monstre, placement, offre.prix))
+    }
+
+    /// Au camp, chez Malvoise, sans confirmation (section 14.2) : comme un
+    /// achat, mais un seul à la fois, pour 3 expéditions manuelles, et son
+    /// espèce passe seulement rencontrée au codex (Q98).
+    pub fn louer_monstre(
+        &mut self,
+        espece: &EspeceId,
+        zones: &[Zone],
+        piste: &Piste,
+        aleatoire: &mut dyn Aleatoire,
+    ) -> Result<(Monstre, Placement, u32), ErreurMarchand> {
+        self.verifier_marchand()?;
+        if self.collection.monstre_loue().is_some() {
+            return Err(ErreurMarchand::DejaUnMonstreLoue);
+        }
+        let offre = self
+            .offres_de_location(zones, piste)
+            .into_iter()
+            .find(|offre| offre.espece.id() == espece)
+            .ok_or(ErreurMarchand::MonstreIndisponible)?;
+        if !self.collection.a_de_la_place() {
+            return Err(ErreurMarchand::PlusDePlace);
+        }
+        self.payer(offre.prix)?;
+        let monstre = monstre_de_malvoise(&offre, aleatoire).louer(EXPEDITIONS_DE_LOCATION);
+        self.codex.noter_rencontre(monstre.espece().id());
+        let placement = self.collection.accueillir_capture(monstre.clone());
+        Ok((monstre, placement, offre.prix))
+    }
+
+    /// Au camp, après confirmation, sans remboursement (section 14.2).
+    pub fn rendre_le_monstre_loue(&mut self) -> Result<Monstre, ErreurMarchand> {
+        let (emplacement, monstre) = self
+            .collection
+            .rendre_le_monstre_loue()
+            .ok_or(ErreurMarchand::AucunMonstreLoue)?;
+        self.oublier_les_attaques_a_choisir(emplacement);
+        Ok(monstre)
+    }
+
+    /// Au retour au camp d'une expédition manuelle, quelle qu'en soit
+    /// l'issue : une expédition de plus pour la location ; à la dernière, le
+    /// monstre loué repart chez Malvoise, rendu ici (section 14.2).
+    pub(crate) fn decompter_location(&mut self) -> Option<Monstre> {
+        let (emplacement, monstre) = self.collection.decompter_location()?;
+        self.oublier_les_attaques_a_choisir(emplacement);
+        Some(monstre)
+    }
+
+    /// Le monstre de cet emplacement est parti : ses attaques à choisir sont
+    /// oubliées, et celles des monstres qui le suivaient suivent leur place.
+    fn oublier_les_attaques_a_choisir(&mut self, parti: Emplacement) {
+        self.attaques_a_choisir
+            .retain(|a_choisir| a_choisir.emplacement != parti);
+        for a_choisir in &mut self.attaques_a_choisir {
+            a_choisir.emplacement = match (a_choisir.emplacement, parti) {
+                (Emplacement::Equipe(index), Emplacement::Equipe(depart)) if index > depart => {
+                    Emplacement::Equipe(index - 1)
+                }
+                (Emplacement::Camp(index), Emplacement::Camp(depart)) if index > depart => {
+                    Emplacement::Camp(index - 1)
+                }
+                (emplacement, _) => emplacement,
+            };
+        }
     }
 
     /// Une évolution après un combat, sur l'équipe du bilan.
@@ -1237,6 +1380,15 @@ impl Partie {
             .map_err(ErreurRestaurationPartie::Collection)?;
         if collection.nombre_de_monstres() == 0 {
             return Err(ErreurRestaurationPartie::AucunMonstre);
+        }
+        let loues = collection
+            .equipe()
+            .iter()
+            .chain(collection.camp())
+            .filter(|monstre| monstre.est_loue())
+            .count();
+        if loues > 1 || (loues == 1 && collection.nombre_de_monstres_a_soi() == 0) {
+            return Err(ErreurRestaurationPartie::LocationIncoherente);
         }
         for (position, expedition) in etat.expeditions_automatiques.iter().enumerate() {
             let zone = expedition.zone().id();
@@ -1801,6 +1953,18 @@ impl Partie {
         self.indices_trouves += 1;
         Some(indice)
     }
+}
+
+/// Tiré comme un monstre sauvage : shiny, valeurs internes, puis habileté
+/// (section 14.2).
+fn monstre_de_malvoise(offre: &OffreDeMonstre, aleatoire: &mut dyn Aleatoire) -> Monstre {
+    let shiny = tirer_shiny(aleatoire);
+    let valeurs_internes = tirer_valeurs_internes(shiny, aleatoire);
+    // Malvoise propose des espèces de zones, qui s'y créent dès leur
+    // niveau minimal : elles connaissent une attaque à tout niveau au-delà.
+    Monstre::creer(offre.espece.clone(), offre.niveau, valeurs_internes, shiny)
+        .expect("espèce d'une zone, créée au-delà de son niveau minimal")
+        .tirer_son_habilete(aleatoire)
 }
 
 #[cfg(test)]
@@ -2961,6 +3125,203 @@ mod tests {
             Err(ErreurRestaurationPartie::CapsuleEnDouble(AttaqueId::new(
                 "a"
             )))
+        );
+    }
+
+    /// Malvoise au camp, la Lisière et le Marais menés au bout et la Vallée
+    /// ouverte (niveaux 14 à 20), de quoi payer (section 14.2).
+    fn chez_malvoise() -> (Partie, crate::contenu::ContenuV1) {
+        let contenu = crate::contenu::ContenuV1::new();
+        let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Guerrier);
+        let depart = Monstre::creer(
+            contenu.espece(&EspeceId::new("crapaud")).unwrap(),
+            Niveau::new(12).unwrap(),
+            ValeursInternes::default(),
+            false,
+        )
+        .unwrap();
+        let mut partie = Partie::nouvelle(heros, depart);
+        partie.marchand_au_camp = true;
+        partie.zones_explorees = vec![ZoneId::new("lisiere"), ZoneId::new("marais")];
+        partie.indices_trouves = 2;
+        partie.coffre_du_camp.ajouter_argent(5_000);
+        (partie, contenu)
+    }
+
+    /// Ni shiny, des valeurs internes de 1 à 6, la première habileté.
+    const TIRAGES_D_UN_MONSTRE: [u32; 8] = [2, 1, 2, 3, 4, 5, 6, 0];
+
+    #[test]
+    fn malvoise_vend_les_communes_et_loue_les_rares_des_zones_explorees() {
+        let (partie, contenu) = chez_malvoise();
+        let offres = partie.offres_d_achat(contenu.zones(), contenu.especes());
+        let achats: Vec<(&str, u8, u32)> = offres
+            .iter()
+            .map(|offre| {
+                (
+                    offre.espece.id().as_str(),
+                    offre.niveau.valeur(),
+                    offre.prix,
+                )
+            })
+            .collect();
+        // 4 fois la revente : niveau x total des stats / 50 x rareté.
+        assert_eq!(
+            achats,
+            vec![
+                ("loup", 3, 68),
+                ("corbeau", 3, 68),
+                ("vipere", 3, 68),
+                ("feu-follet", 8, 204),
+                ("armure-hantee", 8, 208),
+            ]
+        );
+        let offres = partie.offres_de_location(contenu.zones(), contenu.piste());
+        let locations: Vec<(&str, u8, u32)> = offres
+            .iter()
+            .map(|offre| {
+                (
+                    offre.espece.id().as_str(),
+                    offre.niveau.valeur(),
+                    offre.prix,
+                )
+            })
+            .collect();
+        assert_eq!(
+            locations,
+            vec![("cerf-blanc", 20, 320), ("basilic", 20, 320)]
+        );
+    }
+
+    #[test]
+    fn les_formes_evoluees_sauvages_du_col_ne_se_vendent_pas() {
+        let (mut partie, contenu) = chez_malvoise();
+        partie.zones_explorees = vec![ZoneId::new("col-du-givre-noir")];
+        let offres = partie.offres_d_achat(contenu.zones(), contenu.especes());
+        let achats: Vec<&str> = offres
+            .iter()
+            .map(|offre| offre.espece.id().as_str())
+            .collect();
+        assert_eq!(
+            achats,
+            vec![
+                "wendigo",
+                "troll-des-cavernes",
+                "harpie-des-orages",
+                "gargouille"
+            ]
+        );
+    }
+
+    #[test]
+    fn un_monstre_achete_est_au_joueur() {
+        let (mut partie, contenu) = chez_malvoise();
+        let mut aleatoire = AleatoireScripte::new(TIRAGES_D_UN_MONSTRE);
+        let (monstre, placement, prix) = partie
+            .acheter_monstre(
+                &EspeceId::new("loup"),
+                contenu.zones(),
+                contenu.especes(),
+                &mut aleatoire,
+            )
+            .unwrap();
+        assert_eq!(prix, 68);
+        assert_eq!(partie.argent(), 5_000 - 68);
+        assert_eq!(placement, Placement::Equipe(1));
+        assert_eq!(monstre.niveau().valeur(), 3);
+        assert!(!monstre.est_shiny() && !monstre.est_loue());
+        assert_eq!(monstre.valeurs_internes().valeurs().vitesse, 6);
+        assert_eq!(
+            partie.codex().etat(&EspeceId::new("loup")),
+            crate::codex::EtatCodex::Capturee
+        );
+        assert_eq!(
+            partie.acheter_monstre(
+                &EspeceId::new("cerf-blanc"),
+                contenu.zones(),
+                contenu.especes(),
+                &mut AleatoireScripte::new([]),
+            ),
+            Err(ErreurMarchand::MonstreIndisponible)
+        );
+    }
+
+    #[test]
+    fn un_monstre_loue_ne_fait_que_combattre_puis_repart() {
+        let (mut partie, contenu) = chez_malvoise();
+        let louer = |partie: &mut Partie| {
+            partie.louer_monstre(
+                &EspeceId::new("cerf-blanc"),
+                contenu.zones(),
+                contenu.piste(),
+                &mut AleatoireScripte::new(TIRAGES_D_UN_MONSTRE),
+            )
+        };
+        let (monstre, placement, prix) = louer(&mut partie).unwrap();
+        assert_eq!((placement, prix), (Placement::Equipe(1), 320));
+        assert_eq!(monstre.expeditions_de_location(), Some(3));
+        assert_eq!(
+            partie.codex().etat(&EspeceId::new("cerf-blanc")),
+            crate::codex::EtatCodex::Rencontree
+        );
+        assert_eq!(
+            partie.louer_monstre(
+                &EspeceId::new("basilic"),
+                contenu.zones(),
+                contenu.piste(),
+                &mut AleatoireScripte::new([]),
+            ),
+            Err(ErreurMarchand::DejaUnMonstreLoue)
+        );
+        let loue = Emplacement::Equipe(1);
+        let refus = ErreurCollection::MonstreLoue;
+        assert_eq!(
+            partie.vendre(loue),
+            Err(ErreurMarchand::Collection(refus.clone()))
+        );
+        assert_eq!(
+            partie.collection_mut().renommer(loue, None),
+            Err(refus.clone())
+        );
+        assert_eq!(
+            partie.estimer_shiny(loue),
+            Err(ErreurMarchand::Collection(refus.clone()))
+        );
+        assert_eq!(
+            partie.donner_booster(loue, Booster::FioleDeSang),
+            Err(ErreurBooster::Collection(refus.clone()))
+        );
+        assert_eq!(
+            partie.estimer_evolution(loue, &contenu),
+            Err(ErreurEvolution::Collection(refus.clone()))
+        );
+        // Le monstre loué ne compte pas : le Crapaud reste le dernier.
+        assert_eq!(
+            partie.vendre(Emplacement::Equipe(0)),
+            Err(ErreurMarchand::Collection(ErreurCollection::DernierMonstre))
+        );
+        // Trois retours d'expédition manuelle, puis il repart.
+        assert_eq!(partie.decompter_location(), None);
+        assert_eq!(partie.decompter_location(), None);
+        let parti = partie.decompter_location().unwrap();
+        assert_eq!(parti.espece().id().as_str(), "cerf-blanc");
+        assert_eq!(partie.collection().equipe().len(), 1);
+        assert_eq!(partie.decompter_location(), None);
+        // Une nouvelle location, rendue plus tôt, sans remboursement.
+        louer(&mut partie).unwrap();
+        assert_eq!(
+            partie
+                .rendre_le_monstre_loue()
+                .unwrap()
+                .espece()
+                .id()
+                .as_str(),
+            "cerf-blanc"
+        );
+        assert_eq!(partie.argent(), 5_000 - 2 * 320);
+        assert_eq!(
+            partie.rendre_le_monstre_loue(),
+            Err(ErreurMarchand::AucunMonstreLoue)
         );
     }
 }

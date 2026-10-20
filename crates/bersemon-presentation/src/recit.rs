@@ -5,6 +5,7 @@ use bersemon_core::contenu::{
     INTRODUCTION, MALVOISE_ET_L_AME, MALVOISE_SANS_AME, fin_de_l_introduction, texte_du_conseil,
 };
 use bersemon_core::deroulement::Evenement;
+use bersemon_core::marchand::EXPEDITIONS_DE_LOCATION;
 use bersemon_core::ressource::Ressource;
 
 use crate::boosters::{ECLAT_RAMASSE, booster_donne, boosters, monstre_rendu_shiny};
@@ -327,6 +328,47 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             ),
             false,
         ),
+        Evenement::MonstreAchete {
+            monstre,
+            prix,
+            dans_l_equipe,
+        } => (
+            format!(
+                "Malvoise ouvre une cage contre {} : {} {}.",
+                argent(*prix),
+                nom_en_valeur(monstre, Cote::Joueur),
+                rejoint(*dans_l_equipe)
+            ),
+            false,
+        ),
+        Evenement::MonstreLoue {
+            monstre,
+            prix,
+            dans_l_equipe,
+        } => (
+            format!(
+                "Malvoise vous confie {} pour {EXPEDITIONS_DE_LOCATION} expéditions, contre {}. {} {}.",
+                nom_en_valeur(monstre, Cote::Joueur),
+                argent(*prix),
+                monstre.nom(),
+                rejoint(*dans_l_equipe)
+            ),
+            false,
+        ),
+        Evenement::MonstreLoueRendu(monstre) => (
+            format!(
+                "{} retourne chez Malvoise.",
+                nom_en_valeur(monstre, Cote::Joueur)
+            ),
+            false,
+        ),
+        Evenement::LocationFinie(monstre) => (
+            format!(
+                "{} retourne chez Malvoise : sa location est finie.",
+                nom_en_valeur(monstre, Cote::Joueur)
+            ),
+            false,
+        ),
         Evenement::MonstreCede { heros, monstre } => (
             format!(
                 "Vous cédez {} à {heros}.",
@@ -473,6 +515,15 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
     Recit {
         texte,
         nouveau_paragraphe,
+    }
+}
+
+/// Un monstre acheté ou loué prend une place libre (section 14.2).
+fn rejoint(dans_l_equipe: bool) -> &'static str {
+    if dans_l_equipe {
+        "rejoint l'équipe"
+    } else {
+        "rejoint le camp"
     }
 }
 

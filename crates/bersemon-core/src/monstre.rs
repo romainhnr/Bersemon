@@ -60,6 +60,9 @@ pub struct Monstre {
     /// Le héros qui l'a cédé, pour un monstre reçu d'un autre joueur : lui
     /// seul peut désobéir (section 15.2).
     recu_de: Option<Nom>,
+    /// Pour un monstre loué à Malvoise : les expéditions manuelles qu'il
+    /// reste à sa location, au moins une (section 14.2).
+    location: Option<u8>,
 }
 
 impl Monstre {
@@ -88,6 +91,7 @@ impl Monstre {
             statut: None,
             habilete: None,
             recu_de: None,
+            location: None,
         };
         monstre.habilete = monstre.espece.habiletes().first().copied();
         monstre.soigner_completement();
@@ -149,6 +153,37 @@ impl Monstre {
     /// `None` efface le surnom.
     pub fn renommer(&mut self, surnom: Option<Nom>) {
         self.surnom = surnom;
+    }
+
+    /// Un monstre loué ne fait que combattre (section 14.2).
+    pub fn est_loue(&self) -> bool {
+        self.location.is_some()
+    }
+
+    /// Les expéditions manuelles qu'il reste à sa location.
+    pub fn expeditions_de_location(&self) -> Option<u8> {
+        self.location
+    }
+
+    /// Confié par Malvoise pour ce nombre d'expéditions, au moins une.
+    pub(crate) fn louer(mut self, expeditions: u8) -> Self {
+        self.location = Some(expeditions.max(1));
+        self
+    }
+
+    /// Une expédition manuelle de plus : vrai quand la location est finie.
+    pub(crate) fn decompter_location(&mut self) -> bool {
+        match self.location {
+            Some(restantes) if restantes > 1 => {
+                self.location = Some(restantes - 1);
+                false
+            }
+            Some(_) => {
+                self.location = None;
+                true
+            }
+            None => false,
+        }
     }
 
     pub fn recu_de(&self) -> Option<&Nom> {
@@ -407,6 +442,7 @@ impl Monstre {
             statut: etat.statut,
             habilete: etat.habilete,
             recu_de: etat.recu_de,
+            location: etat.location.filter(|&restantes| restantes > 0),
         };
         if monstre.habilete.is_none() {
             monstre.habilete = monstre.espece.habiletes().first().copied();
@@ -440,6 +476,9 @@ pub struct EtatMonstre {
     pub habilete: Option<Habilete>,
     /// Absente des sauvegardes antérieures à la version 17.
     pub recu_de: Option<Nom>,
+    /// Absente des sauvegardes antérieures à la version 24 ; une location
+    /// sans expédition restante est ignorée.
+    pub location: Option<u8>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -758,6 +797,7 @@ mod tests {
             statut: monstre.statut(),
             habilete: monstre.habilete(),
             recu_de: monstre.recu_de().cloned(),
+            location: monstre.expeditions_de_location(),
         }
     }
 

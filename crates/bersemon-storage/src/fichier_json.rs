@@ -643,10 +643,10 @@ mod tests {
 
     #[test]
     fn version_inconnue() {
-        let texte = texte_de_partie().replacen("\"version\":23", "\"version\":24", 1);
+        let texte = texte_de_partie().replacen("\"version\":24", "\"version\":25", 1);
         assert_eq!(
             charger_texte(&texte),
-            Err(ErreurSauvegarde::VersionInconnue(24))
+            Err(ErreurSauvegarde::VersionInconnue(25))
         );
     }
 
@@ -1111,6 +1111,29 @@ mod tests {
         );
         let ecrite = serde_json::to_string(&format::depuis_partie(&relue)).unwrap();
         assert!(ecrite.contains("\"recu_de\":\"Ysolde\""), "{ecrite}");
+    }
+
+    #[test]
+    fn la_location_d_un_monstre_se_relit_depuis_la_version_24() {
+        let texte = texte_de_partie();
+        assert!(!texte.contains("location"), "{texte}");
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte).unwrap();
+        valeur["camp"][0]
+            .as_object_mut()
+            .unwrap()
+            .insert("location".to_string(), 2.into());
+        let relue = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        let monstre = &relue.collection().camp()[0];
+        assert_eq!(monstre.expeditions_de_location(), Some(2));
+        let ecrite = serde_json::to_string(&format::depuis_partie(&relue)).unwrap();
+        assert!(ecrite.contains("\"location\":2"), "{ecrite}");
+        // Avant la version 24, aucun monstre n'est loué (section 14.2).
+        valeur
+            .as_object_mut()
+            .unwrap()
+            .insert("version".to_string(), 23.into());
+        let ancienne = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        assert!(ancienne.collection().monstre_loue().is_none());
     }
 
     #[test]

@@ -5,8 +5,9 @@
 use std::fmt;
 
 use crate::collection::ErreurCollection;
-use crate::espece::Rarete;
+use crate::espece::{Espece, Rarete};
 use crate::monstre::Monstre;
+use crate::niveau::Niveau;
 use crate::soin::Soin;
 
 /// En pièces d'argent (sections 14.4 et 14.5).
@@ -39,13 +40,53 @@ fn multiplicateur_de_rarete(rarete: Rarete) -> u32 {
     }
 }
 
+/// Un monstre acheté coûte 4 fois sa revente, hors shiny (section 14.2).
+const MULTIPLICATEUR_D_ACHAT: u32 = 4;
+
+/// Une location vaut pour ce nombre d'expéditions manuelles (section 14.2).
+pub const EXPEDITIONS_DE_LOCATION: u8 = 3;
+
+/// Une espèce que Malvoise vend ou loue, au niveau du monstre qu'il
+/// confiera, et son prix (section 14.2).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OffreDeMonstre {
+    pub espece: Espece,
+    pub niveau: Niveau,
+    pub prix: u32,
+}
+
+impl OffreDeMonstre {
+    /// 4 fois la revente d'un monstre de cette espèce à ce niveau, hors
+    /// shiny.
+    pub(crate) fn a_l_achat(espece: Espece, niveau: Niveau) -> Self {
+        let prix = prix_d_une_espece(&espece, niveau) * MULTIPLICATEUR_D_ACHAT;
+        Self {
+            espece,
+            niveau,
+            prix,
+        }
+    }
+
+    /// La revente d'un monstre de cette espèce à ce niveau, hors shiny.
+    pub(crate) fn a_la_location(espece: Espece, niveau: Niveau) -> Self {
+        let prix = prix_d_une_espece(&espece, niveau);
+        Self {
+            espece,
+            niveau,
+            prix,
+        }
+    }
+}
+
+fn prix_d_une_espece(espece: &Espece, niveau: Niveau) -> u32 {
+    u32::from(niveau.valeur()) * espece.total_des_stats_de_base() / DIVISEUR_DE_REVENTE
+        * multiplicateur_de_rarete(espece.rarete())
+}
+
 /// Niveau x total des stats de base / 50, en division entière, puis
 /// multiplié selon la rareté de l'espèce et doublé pour un shiny.
 pub fn prix_de_revente(monstre: &Monstre) -> u32 {
-    let espece = monstre.espece();
-    let prix = u32::from(monstre.niveau().valeur()) * espece.total_des_stats_de_base()
-        / DIVISEUR_DE_REVENTE
-        * multiplicateur_de_rarete(espece.rarete());
+    let prix = prix_d_une_espece(monstre.espece(), monstre.niveau());
     if monstre.est_shiny() {
         prix * MULTIPLICATEUR_SHINY
     } else {
@@ -77,6 +118,14 @@ pub enum ErreurMarchand {
     /// (section 13.7).
     AucunEclatDAstre,
     DejaShiny,
+    /// Malvoise ne vend ni ne loue cette espèce pour l'instant (section
+    /// 14.2).
+    MonstreIndisponible,
+    /// L'équipe et le camp sont pleins.
+    PlusDePlace,
+    /// Un seul monstre loué à la fois.
+    DejaUnMonstreLoue,
+    AucunMonstreLoue,
 }
 
 impl fmt::Display for ErreurMarchand {
@@ -97,6 +146,12 @@ impl fmt::Display for ErreurMarchand {
             ErreurMarchand::Collection(erreur) => write!(f, "{erreur}"),
             ErreurMarchand::AucunEclatDAstre => write!(f, "aucun Éclat d'astre"),
             ErreurMarchand::DejaShiny => write!(f, "ce monstre est déjà shiny"),
+            ErreurMarchand::MonstreIndisponible => {
+                write!(f, "Malvoise ne propose pas cette espèce")
+            }
+            ErreurMarchand::PlusDePlace => write!(f, "l'équipe et le camp sont pleins"),
+            ErreurMarchand::DejaUnMonstreLoue => write!(f, "un monstre est déjà loué"),
+            ErreurMarchand::AucunMonstreLoue => write!(f, "aucun monstre loué"),
         }
     }
 }

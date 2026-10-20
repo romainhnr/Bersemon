@@ -310,6 +310,7 @@ mod tests {
             statut: None,
             habilete: loup.habilete(),
             recu_de: Some(bersemon_core::nom::Nom::new("Ysolde").unwrap()),
+            location: None,
         })
         .unwrap()
     }

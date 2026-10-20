@@ -42,7 +42,7 @@ use bersemon_core::zone::{Zone, ZoneId};
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 23;
+pub(crate) const VERSION: u64 = 24;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -71,6 +71,9 @@ const VERSION_DES_ECLATS_D_ASTRE: u64 = 20;
 /// (section 13.6).
 const VERSION_DES_MACHINES: u64 = 22;
 
+/// La version de la sauvegarde où Malvoise loue des monstres (section 14.2).
+const VERSION_DES_LOCATIONS: u64 = 24;
+
 /// Gunther est le prisonnier de cet humain : avant la version 14, une partie
 /// qui l'a vaincu a Gunther au camp (section 13.4, Q85).
 const GEOLIER_DE_GUNTHER: &str = "bourreau";
@@ -93,10 +96,10 @@ const GEOLIER_DE_GUNTHER: &str = "bourreau";
 /// sans changer la structure ; la version 20 ajoute les boosters et les
 /// Éclats d'astre, la version 21 les amis et le palmarès des duels, la
 /// version 22 les machines du camp, la version 23 les charmes de garde et
-/// les protections des expéditions automatiques. Une sauvegarde d'une
-/// version
-/// précédente se lit avec cette structure : les champs ajoutés y prennent
-/// leur valeur de début de partie.
+/// les protections des expéditions automatiques, la version 24 la location
+/// d'un monstre. Une sauvegarde d'une version précédente se lit avec cette
+/// structure : les champs ajoutés y prennent leur valeur de début de
+/// partie.
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct SauvegardeV14 {
     pub(crate) version: u64,
@@ -450,6 +453,10 @@ struct MonstreV1 {
     /// Depuis la version 17 : le héros qui l'a cédé (section 15.1).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     recu_de: Option<String>,
+    /// Depuis la version 24 : les expéditions qu'il reste à la location
+    /// d'un monstre loué (section 14.2).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    location: Option<u8>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -692,6 +699,12 @@ pub(crate) fn vers_partie(
         std::mem::take(&mut sauvegarde.heros.equipement_porte),
         catalogue,
     )?);
+    // Avant la version 24, aucun monstre n'est loué (section 14.2).
+    if sauvegarde.version < VERSION_DES_LOCATIONS {
+        for monstre in sauvegarde.equipe.iter_mut().chain(&mut sauvegarde.camp) {
+            monstre.location = None;
+        }
+    }
     let mut equipe = vers_monstres(sauvegarde.equipe, catalogue)?;
     let mut camp = vers_monstres(sauvegarde.camp, catalogue)?;
     let mut attaques_a_choisir = sauvegarde
@@ -1081,6 +1094,7 @@ fn depuis_monstre(monstre: &Monstre) -> MonstreV1 {
             .habilete()
             .map(|habilete| nom_d_habilete(habilete).to_string()),
         recu_de: monstre.recu_de().map(|heros| heros.as_str().to_string()),
+        location: monstre.expeditions_de_location(),
     }
 }
 
@@ -1152,6 +1166,7 @@ fn vers_monstre(
         statut,
         habilete,
         recu_de,
+        location: monstre.location,
     })
     .map_err(incoherente)
 }

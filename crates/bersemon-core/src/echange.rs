@@ -29,6 +29,8 @@ pub enum ErreurEchange {
     MonstreInexistant(Emplacement),
     /// Un Apôtre reste à celui qui l'a vaincu.
     Apotre,
+    /// Un monstre loué reste à Malvoise (section 14.2).
+    MonstreLoue,
     /// Un don laisserait le donneur sans monstre, en comptant ceux partis en
     /// expédition automatique.
     DernierMonstre,
@@ -48,6 +50,9 @@ impl fmt::Display for ErreurEchange {
                 write!(f, "aucun monstre à l'emplacement {emplacement:?}")
             }
             ErreurEchange::Apotre => write!(f, "un Apôtre ne se donne ni ne s'échange"),
+            ErreurEchange::MonstreLoue => {
+                write!(f, "un monstre loué ne se donne ni ne s'échange")
+            }
             ErreurEchange::DernierMonstre => {
                 write!(f, "le joueur doit garder au moins un monstre")
             }
@@ -175,6 +180,9 @@ fn offert(partie: &Partie, emplacement: Emplacement) -> Result<MonstreOffert, Er
     if monstre.espece().rarete() == Rarete::Apotre {
         return Err(ErreurEchange::Apotre);
     }
+    if monstre.est_loue() {
+        return Err(ErreurEchange::MonstreLoue);
+    }
     Ok(MonstreOffert {
         emplacement,
         monstre: monstre.clone(),
@@ -205,7 +213,7 @@ fn verifier_les_places(
     if !offre.est_un_don() {
         return Ok(());
     }
-    if donneur.collection().nombre_de_monstres() <= 1 {
+    if donneur.collection().nombre_de_monstres_a_soi() <= 1 {
         return Err(ErreurEchange::DernierMonstre);
     }
     if !receveur.collection().a_de_la_place() {

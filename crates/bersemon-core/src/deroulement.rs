@@ -27,7 +27,7 @@ use crate::combat::{self, Action, BilanCombat, Combat, ErreurCombat, Issue, Phas
 use crate::contenu::ContenuV1;
 use crate::echange::{ErreurEchange, Offre, conclure_offre};
 use crate::equipement::{ErreurEquipement, ObjetDEquipement, ObjetDEquipementId, PlaceDEquipement};
-use crate::espece::Espece;
+use crate::espece::{Espece, EspeceId};
 use crate::evolution::{Circonstances, ErreurEvolution, evolution_possible, faire_evoluer};
 use crate::expedition::{ErreurExpedition, EvenementExpedition, Expedition};
 use crate::expedition_automatique::{
@@ -103,6 +103,14 @@ pub enum Choix {
     /// Au camp, chez Malvoise, sans confirmation : une âme que le joueur
     /// porte (section 14.2).
     DonnerAme(MarchandId),
+    /// Au camp, chez Malvoise, sans confirmation : une espèce de
+    /// `Partie::offres_d_achat` (section 14.2).
+    AcheterMonstre(EspeceId),
+    /// Au camp, chez Malvoise, sans confirmation : une espèce de
+    /// `Partie::offres_de_location` (section 14.2).
+    LouerMonstre(EspeceId),
+    /// Au camp, après confirmation, sans remboursement (section 14.2).
+    RendreLeMonstreLoue,
     /// Au camp, chez Malvoise, sans confirmation (section 5.9).
     AcheterCapsulesDHabilete(u32),
     /// Au camp, chez Malvoise, sans confirmation (section 5.4).
@@ -326,6 +334,8 @@ pub enum Confirmation {
     },
     /// Un Éclat d'astre serait consommé (section 13.7).
     RendreShiny(Monstre),
+    /// La location ne serait pas remboursée (section 14.2).
+    RendreLeMonstreLoue(Monstre),
 }
 
 /// Ce qui s'est passé, dans l'ordre. Les monstres et les combats sont des
@@ -577,6 +587,22 @@ pub enum Evenement {
         monstre: Monstre,
         prix: u32,
     },
+    /// Chez Malvoise, avec la place qu'il a prise (section 14.2).
+    MonstreAchete {
+        monstre: Monstre,
+        prix: u32,
+        dans_l_equipe: bool,
+    },
+    /// Confié par Malvoise pour 3 expéditions (section 14.2).
+    MonstreLoue {
+        monstre: Monstre,
+        prix: u32,
+        dans_l_equipe: bool,
+    },
+    /// Rendu plus tôt à Malvoise.
+    MonstreLoueRendu(Monstre),
+    /// Au retour de sa dernière expédition, il repart chez Malvoise.
+    LocationFinie(Monstre),
     /// À un autre joueur, par don ou échange ; `heros` est le nom de son
     /// héros (section 15.1).
     MonstreCede {
@@ -937,7 +963,8 @@ fn evolution_a_proposer(
     contexte: &Contexte<'_>,
 ) -> Option<Espece> {
     let rapport = bilan.experience.get(index)?.as_ref()?;
-    if rapport.niveau_apres <= rapport.niveau_avant {
+    // Un monstre loué n'évolue pas (section 14.2).
+    if rapport.niveau_apres <= rapport.niveau_avant || bilan.equipe[index].est_loue() {
         return None;
     }
     evolution_possible(&bilan.equipe[index], circonstances, contexte.contenu)
@@ -1292,6 +1319,62 @@ impl EnJeu {
                     avant,
                     apres,
                 });
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::AcheterMonstre(espece) => {
+                let (monstre, placement, prix) = self
+                    .partie
+                    .acheter_monstre(
+                        espece,
+                        contexte.contenu.zones(),
+                        contexte.contenu.especes(),
+                        contexte.aleatoire,
+                    )
+                    .map_err(ErreurChoix::Marchand)?;
+                evenements.push(Evenement::MonstreAchete {
+                    monstre,
+                    prix,
+                    dans_l_equipe: matches!(placement, Placement::Equipe(_)),
+                });
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::LouerMonstre(espece) => {
+                let (monstre, placement, prix) = self
+                    .partie
+                    .louer_monstre(
+                        espece,
+                        contexte.contenu.zones(),
+                        contexte.contenu.piste(),
+                        contexte.aleatoire,
+                    )
+                    .map_err(ErreurChoix::Marchand)?;
+                evenements.push(Evenement::MonstreLoue {
+                    monstre,
+                    prix,
+                    dans_l_equipe: matches!(placement, Placement::Equipe(_)),
+                });
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::RendreLeMonstreLoue => {
+                if !confirme {
+                    let monstre = self
+                        .partie
+                        .collection()
+                        .monstre_loue()
+                        .map(|(_, monstre)| monstre.clone())
+                        .ok_or(ErreurChoix::Marchand(ErreurMarchand::AucunMonstreLoue))?;
+                    return Ok(Reponse::a_confirmer(Confirmation::RendreLeMonstreLoue(
+                        monstre,
+                    )));
+                }
+                let monstre = self
+                    .partie
+                    .rendre_le_monstre_loue()
+                    .map_err(ErreurChoix::Marchand)?;
+                evenements.push(Evenement::MonstreLoueRendu(monstre));
                 sauvegarder(&self.partie, contexte.depot, evenements);
                 Ok(Reponse::Faite)
             }
@@ -1769,6 +1852,7 @@ impl EnJeu {
         let zones = contexte.contenu.zones();
         let avant = self.partie.zones_accessibles(zones, piste).len();
         let indice = self.partie.rentrer_au_camp(&en_cours.expedition, piste);
+        let location_finie = self.partie.decompter_location();
         if en_cours.expedition.est_reussie() {
             evenements.push(Evenement::ZoneExploree(
                 en_cours.expedition.zone().nom().to_string(),
@@ -1784,6 +1868,9 @@ impl EnJeu {
             });
         }
         evenements.push(Evenement::RetourAuCamp);
+        if let Some(monstre) = location_finie {
+            evenements.push(Evenement::LocationFinie(monstre));
+        }
         if let Some(indice) = indice {
             evenements.push(Evenement::Indice {
                 numero: self.partie.indices_trouves(),
@@ -4552,6 +4639,60 @@ mod tests {
             }
         }
         assert!(trouvees > 0);
+    }
+
+    /// Au retour d'une expédition manuelle, quelle qu'en soit l'issue, la
+    /// location d'un monstre se décompte ; à la dernière, il repart chez
+    /// Malvoise (section 14.2).
+    #[test]
+    fn le_monstre_loue_repart_au_retour_de_sa_derniere_expedition() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut partie = partie_de(salamandre(&contenu, 30));
+        let cerf = Monstre::creer(
+            contenu.espece(&EspeceId::new("cerf-blanc")).unwrap(),
+            Niveau::new(20).unwrap(),
+            ValeursInternes::default(),
+            false,
+        )
+        .unwrap()
+        .louer(1);
+        partie.collection_mut().accueillir_capture(cerf);
+        let mut deroulement = au_camp(partie, &contenu, &depot);
+        let mut aleatoire = GenerateurAleatoire::new(3);
+        let mut finies = Vec::new();
+        let mut retours = 0;
+        for _ in 0..2_000 {
+            let choix = jouer_un_coup(&deroulement, &contenu);
+            let mut contexte = Contexte {
+                contenu: &contenu,
+                aleatoire: &mut aleatoire,
+                depot: &depot,
+                maintenant: Horodatage::depuis_secondes(0),
+            };
+            for evenement in deroulement.repondre(choix, &mut contexte).unwrap() {
+                match evenement {
+                    Evenement::LocationFinie(monstre) => finies.push(monstre),
+                    Evenement::RetourAuCamp => retours += 1,
+                    _ => {}
+                }
+            }
+            if retours == 2 {
+                break;
+            }
+        }
+        assert_eq!(finies.len(), 1);
+        assert_eq!(finies[0].espece().id().as_str(), "cerf-blanc");
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        let collection = sauvegarde.collection();
+        assert!(collection.monstre_loue().is_none());
+        assert!(
+            collection
+                .equipe()
+                .iter()
+                .chain(collection.camp())
+                .all(|monstre| monstre.espece().id().as_str() != "cerf-blanc")
+        );
     }
 
     #[test]

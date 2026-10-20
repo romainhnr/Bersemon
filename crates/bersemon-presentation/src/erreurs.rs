@@ -91,6 +91,12 @@ pub fn erreur_marchand(erreur: &ErreurMarchand) -> String {
         ErreurMarchand::Collection(erreur) => erreur_collection(erreur),
         ErreurMarchand::AucunEclatDAstre => "Il vous faut un Éclat d'astre.".to_string(),
         ErreurMarchand::DejaShiny => "Ce monstre est déjà shiny.".to_string(),
+        ErreurMarchand::MonstreIndisponible => {
+            "Malvoise ne propose pas ce monstre pour l'instant.".to_string()
+        }
+        ErreurMarchand::PlusDePlace => "L'équipe et le camp sont pleins.".to_string(),
+        ErreurMarchand::DejaUnMonstreLoue => "Vous avez déjà un monstre loué.".to_string(),
+        ErreurMarchand::AucunMonstreLoue => "Vous n'avez pas de monstre loué.".to_string(),
     }
 }
 
@@ -148,6 +154,7 @@ pub fn erreur_collection(erreur: &ErreurCollection) -> String {
         ErreurCollection::CampPlein => "Le camp est plein.".to_string(),
         ErreurCollection::DernierMonstre => "Vous devez garder au moins un monstre.".to_string(),
         ErreurCollection::EmplacementEnDouble(_) => "Ce monstre est déjà choisi.".to_string(),
+        ErreurCollection::MonstreLoue => "Un monstre loué ne peut pas faire cela.".to_string(),
         autre => format!("Action impossible : {autre}."),
     }
 }
