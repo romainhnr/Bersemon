@@ -866,3 +866,113 @@ Textes proposés sans validation (gamedesign.md, Q96) :
 | Libellés | Protéger {monstre} ; Sans protection ; Avec un charme de garde ; Sans charme ; Fabriquer un charme de garde |
 | Bilan | dans le bilan d'une expédition : "{monstre}, protégé à {p} %, subit {dégâts}". Bonus d'argent des offensifs : "dont {argent} grâce aux monstres offensifs". |
 | Fiche d'un monstre | Rôle : soutien (+10 % de Défense et de Défense spéciale en combat). / Rôle : offensif (+10 % d'Attaque et d'Attaque spéciale en combat). |
+
+## 21. Col du Givre-Noir, troisième Apôtre et stades 3
+
+Décidés le 20/10/2026, pour les étapes 79 à 82 (gamedesign.md, sections 5.3, 5.4, 9.1 et 9.4), contenu proposé par Claude et validé par l'utilisateur. Le Porte-étendard a l'IA relevée de l'Inquisiteur ; la répartition des tirages suit celle de l'Abbaye (hypothèses, gamedesign.md, Q97).
+
+Zone :
+
+| Identifiant | Nom | Niveaux | Taille des groupes | Espèces | Monstres rares | Humain | Apôtre |
+|---|---|---|---|---|---|---|---|
+| col-du-givre-noir | Col du Givre-Noir | 28 à 36 | 1 à 3 | Wendigo, Troll des cavernes, Harpie des orages, Gargouille, Warg, Chevalier noir | Wyrm de givre (hostile), Sylphe des neiges (pacifique) | Porte-étendard | Margrave de givre |
+
+Le Warg et le Chevalier noir sont des formes évoluées sauvages, une exception propre à cette zone (gamedesign.md, section 5.4) : ils lâchent la ressource de leur forme de base (Croc de loup, Fragment d'armure). Pas de marchand mort.
+
+Expédition automatique : durée de base 5 h, dégâts 220 à 450, XP 2200 à 3400, potions 1 à 3, argent 180 à 320. Coffres : 1 à 2 potions et 140 à 220 pièces d'argent ; capsules Blizzard (500), Séisme (450) et Onde de choc (450).
+
+Espèces (stats dans l'ordre PV / Attaque / Défense / Attaque spéciale / Défense spéciale / Vitesse) :
+
+| Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP | Rareté | Habiletés | Attaques apprises |
+|---|---|---|---|---|---|---|---|---|
+| wendigo | Wendigo | Glace, Spectre | offensif | 60 / 85 / 50 / 45 / 50 / 70 (360) | 110 | commune | Férocité, Traqueur | Croc de givre (1), Charge spectrale (1), Frisson d'outre-tombe (20), Avalanche (30) |
+| troll-des-cavernes | Troll des cavernes | Sol, Roche | soutien | 90 / 85 / 80 / 30 / 50 / 30 (365) | 112 | commune | Carapace, Volonté | Griffe de pierre (1), Secousse (1), Chute de pierres (22), Éboulement (32) |
+| harpie-des-orages | Harpie des orages | Vol, Électrique | offensif | 55 / 50 / 45 / 80 / 50 / 80 (360) | 108 | commune | Célérité, Éclaireur | Coup de bec (1), Étincelle (1), Bourrasque (20), Foudre (30) |
+| wyrm-de-givre | Wyrm de givre | Dragon, Glace | offensif | 80 / 85 / 70 / 85 / 65 / 60 (445) | 195 | rare, hostile | Affinité, Férocité | Souffle draconique (1), Croc de givre (1), Souffle glacial (20), Furie draconique (30) |
+| sylphe-des-neiges | Sylphe des neiges | Glace, Féérique | soutien | 65 / 45 / 60 / 95 / 90 / 90 (445) | 190 | rare, pacifique | Volonté, Instinct | Poussière d'elfe (1), Souffle glacial (1), Lumière d'aube (15), Rayon de lune (30) |
+| margrave-de-givre | Margrave de givre | Obscur | offensif | 95 / 100 / 90 / 95 / 85 / 65 (530) | 300 | Apôtre, niveau 38 | Férocité, Carapace | Charge spectrale (1), Taille d'acier (10), Étreinte obscure (18), Blizzard (25), Hurlement des abysses (30), Linceul de givre (36) |
+
+Au codex, ces espèces viennent après les monstres aquatiques, dans l'ordre du tableau, puis les formes de stade 3.
+
+Attaques nouvelles :
+
+| Identifiant | Nom | Type | Cat. | Puissance | Précision | Effet |
+|---|---|---|---|---|---|---|
+| croc-de-givre | Croc de givre | Glace | P | 60 | 100 | paralysie 10 % |
+| avalanche | Avalanche | Glace | P | 85 | 90 | |
+| souffle-glacial | Souffle glacial | Glace | S | 70 | 100 | |
+| blizzard | Blizzard | Glace | S | 90 | 85 | paralysie 10 % |
+| secousse | Secousse | Sol | P | 60 | 100 | |
+| seisme | Séisme | Sol | P | 90 | 90 | |
+| eboulement | Éboulement | Roche | P | 90 | 85 | |
+| etincelle | Étincelle | Électrique | S | 45 | 100 | paralysie 10 % |
+| foudre | Foudre | Électrique | S | 90 | 85 | paralysie 10 % |
+| onde-de-choc | Onde de choc | Électrique | S | 75 | 100 | paralysie 20 % |
+| linceul-de-givre | Linceul de givre | Obscur | S | 95 | 90 | paralysie 20 % |
+| souffle-de-cendre | Souffle de cendre | Feu | S | 95 | 90 | |
+| deluge-toxique | Déluge toxique | Poison | P | 90 | 90 | poison 30 % |
+| racines-du-gibet | Racines du gibet | Spectre | P | 85 | 95 | paralysie 20 % |
+| griffes-spectrales | Griffes spectrales | Spectre | P | 85 | 95 | |
+| dechiquetage | Déchiquetage | Combat | P | 90 | 90 | |
+
+Ressources : Poil de wendigo (poil-de-wendigo), Pierre de troll (pierre-de-troll) et Plume de harpie (plume-de-harpie), 5 pièces d'argent chacune, Écaille de wyrm (ecaille-de-wyrm), 15. Ressource rare des pièges dans cette zone : l'Écaille de wyrm.
+
+Le Porte-étendard attend au bout du Col avec un Wendigo de niveau 36, un Troll des cavernes de niveau 36 et un Wyrm de givre de niveau 37 (valeurs internes à 15, première habileté de leur espèce). Victoire : 400 pièces d'argent, puis l'indice 6 au retour.
+
+Textes :
+
+> Indice 5 : sous l'autel de l'Abbesse, une plaque de fer gravée du même sceau : au nord, le Col du Givre-Noir, où un margrave a mené son armée mourir dans la neige. Un troisième Apôtre y règne.
+
+> Indice 6 : le porte-étendard vaincu a parlé : le Margrave attend au sommet, dans la forteresse où ses soldats ont gelé à sa place.
+
+Porte-étendard, avant le combat :
+
+> Au milieu du col, un soldat couvert de givre tient encore l'étendard d'une armée morte. Trois bêtes sortent de la tempête à son signal.
+
+Après la victoire :
+
+> Le porte-étendard tombe à genoux ; l'étendard gelé se brise dans la neige.
+
+Margrave de givre, avant le combat :
+
+> Au sommet, sur un trône de glace entouré de soldats figés, le Margrave de givre se lève. Apôtre du Démiurge, il a offert son armée au froid. Il n'y aura pas de fuite.
+
+Épilogue :
+
+> Le Margrave de givre se brise sur son trône. Le même sceau, une main ouverte, est gravé dans la glace. Trois Apôtres sont tombés ; le Démiurge, lui, attend toujours. Votre traque continue.
+
+Âme, sur le modèle de la section 16 (texte proposé sans validation, Q97) :
+
+> L'âme du Margrave de givre s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.
+
+Stades 3, au niveau 36 (gamedesign.md, section 5.4). Chacun garde le rôle, la rareté et les habiletés de sa lignée, n'a pas de ressource, et son rendement d'XP vaut 1,4 fois celui de la forme précédente, arrondi à l'entier inférieur. Ses attaques sont celles de la forme précédente, puis l'attaque d'évolution et l'autre attaque au niveau 36.
+
+| Forme | Identifiant | Évolution | Types | Stats de base (total) | Rendement d'XP | Attaque d'évolution | Autre attaque, au même niveau |
+|---|---|---|---|---|---|---|---|
+| Lézard de braise | wyverne-de-cendre | Wyverne de cendre | Feu, Dragon | 75 / 68 / 68 / 110 / 80 / 90 (491) | 120 | Souffle de cendre | Furie draconique |
+| Crapaud géant | crapaud-roi | Crapaud-roi | Eau, Poison | 90 / 105 / 85 / 55 / 70 / 75 (480) | 123 | Déluge toxique | Croc de venin |
+| Mandragore ancienne | arbre-pendu | Arbre-pendu | Plante, Spectre | 110 / 70 / 110 / 70 / 100 / 30 (490) | 124 | Racines du gibet | Frisson d'outre-tombe |
+| Chat des ombres | cait-sith | Cait sith | Ténèbres, Spectre | 65 / 112 / 55 / 65 / 58 / 135 (490) | 120 | Griffes spectrales | Charge spectrale |
+| Warg | loup-garou | Loup-garou | Combat, Ténèbres | 85 / 110 / 75 / 45 / 65 / 100 (480) | 137 | Déchiquetage | Griffe d'ombre |
+
+Le Dragon de feu (stade 4, niveau 70) et le Dragon des brumes (Vouivre, niveau 45) restent seulement nommés.
+
+## 22. Achat et location de monstres
+
+Décidés le 20/10/2026, pour les étapes 83 à 86 (gamedesign.md, section 14.2), règles et prix choisis par l'utilisateur ; textes proposés sans validation (gamedesign.md, Q98).
+
+- Achat : chaque espèce commune sauvage, à sa forme de base, des zones menées au bout, au niveau minimal de la zone où elle se rencontre (le plus bas si elle vit dans plusieurs zones). Prix : 4 fois le prix de revente de l'espèce à ce niveau, hors shiny. Exemples : Loup de niveau 3, 68 ; Feu follet de niveau 8, 204 ; Gargouille de niveau 21, 588 ; Wendigo de niveau 28, 804.
+- Location : chaque espèce rare des zones menées au bout, Schnoz excepté, au niveau maximal de la zone ouverte la plus avancée, pour 3 expéditions manuelles. Prix : le prix de revente de l'espèce à ce niveau, hors shiny. Exemples, avec la Vallée ouverte (niveau 20) : Cerf blanc 320, Basilic 320 ; avec le Col (niveau 36) : Wyrm de givre 640.
+
+| Moment | Texte |
+|---|---|
+| Libellés | Acheter ou louer ; Acheter un monstre ; Louer un monstre ; Rendre {monstre} à Malvoise |
+| Offre d'achat | {espèce} de niveau {niveau} : {prix} |
+| Offre de location | {espèce} de niveau {niveau}, pour 3 expéditions : {prix} |
+| Achat | Malvoise ouvre une cage : {monstre} vous suit. Il rejoint l'équipe. / ... Il rejoint le camp. |
+| Location | Malvoise vous confie {monstre} pour 3 expéditions. Il rejoint l'équipe. / ... Il rejoint le camp. |
+| Fiche d'un monstre loué | Loué à Malvoise : encore {n} expédition(s). |
+| Fin de location, au retour au camp | {monstre} retourne chez Malvoise : sa location est finie. |
+| Rendu plus tôt | {monstre} retourne chez Malvoise. |
+| Confirmation, rendre | Rendre {monstre} à Malvoise ? La location n'est pas remboursée. |
+| Refus | Vous avez déjà un monstre loué. / Un monstre loué ne peut pas faire cela. / L'équipe et le camp sont pleins. |
