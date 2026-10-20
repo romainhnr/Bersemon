@@ -123,6 +123,7 @@ L'objectif du jeu est de proposer des boucles de gameplay intéressantes et stim
 - Bonus de classe : en combat, les monstres du joueur ont +10 % dans une stat, arrondi à l'entier inférieur. Guerrier : Attaque. Mage : Attaque spéciale. Après la V1, Templier : Défense et Défense spéciale, à chacune +10 % ; depuis l'étape 27, Assassin : Vitesse. Les actions de soutien viendront après la V1 ; depuis l'étape 52, ce sont les ordres (ci-dessous).
 - Décidé le 18/10/2026, pour l'étape 27 : l'Assassin devient jouable, avec un monstre attitré rapide, qui frappe fort mais encaisse mal. Précisé le 19/10/2026 (Q72) : ce monstre est le Chat noir, de type Ténèbres, offensif en attaque physique (section 6, fiche dans docs/contenu-v1.md).
 - Depuis l'étape 28, les habiletés de stats des monstres s'ajoutent à ce bonus (section 5.9).
+- Décidé le 20/10/2026, pour l'étape 75 (choix de l'utilisateur, Q19) : en combat, les monstres du joueur ont aussi le bonus de leur rôle (section 5.1), +10 % de Défense et de Défense spéciale pour un soutien, +10 % d'Attaque et d'Attaque spéciale pour un offensif, qui s'ajoute aux autres bonus. Seuls les monstres du joueur en profitent : ni les monstres sauvages, ni ceux des humains, ni les Apôtres. En duel, chaque joueur en profite pour les siens, comme du bonus de classe (hypothèse retenue, Q96). Le rôle ne joue pas sur les PV.
 - Ordres du héros, décidés le 20/10/2026 pour les étapes 52 à 54 (choix de l'utilisateur) :
   - chaque classe a un ordre : Guerrier, Cri de guerre (+20 % d'Attaque) ; Mage, Incantation (+20 % d'Attaque spéciale) ; Templier, Bouclier de foi (+20 % de Défense et de Défense spéciale) ; Assassin, Pas de l'ombre (+20 % de Vitesse). Textes dans docs/contenu-v1.md, section 12 ;
   - le héros donne son ordre une seule fois par combat, au monstre actif, avant de choisir l'action du tour. L'ordre ne prend pas le tour : le joueur choisit ensuite l'action de son monstre, et l'adversaire n'agit pas entre-temps. Il n'est pas tiré au sort ;
@@ -154,7 +155,7 @@ Chaque monstre possède :
 
 - un niveau, de 1 à 100 (section 7) ;
 - un à trois types ;
-- un rôle : soutien ou offensif, le soutien couvrant aussi les profils défensifs. Ce rôle s'ajoute aux types et il est propre à l'espèce ; il n'a pas d'effet dans la V1 ;
+- un rôle : soutien ou offensif, le soutien couvrant aussi les profils défensifs. Ce rôle s'ajoute aux types et il est propre à l'espèce ; il n'a pas d'effet dans la V1. Depuis les étapes 75 et 76 (choix de l'utilisateur), il joue en combat pour les monstres du joueur (section 4.2) et en expédition automatique (sections 12.5 et 12.6) ;
 - six stats, comme dans Pokémon : PV, Attaque, Défense, Attaque spéciale, Défense spéciale, Vitesse (section 5.8) ;
 - de 1 à 4 attaques distinctes, chacune d'un seul type, physique ou spéciale (section 10.4) ;
 - des valeurs internes aléatoires, de 0 à 31 pour chaque stat, qui influent sur ses stats (similaires aux IV de Pokémon), ce qui rend chaque monstre unique. Ces valeurs sont visibles dans le résumé du monstre ;
@@ -548,7 +549,7 @@ Décidé le 19/10/2026, pour l'étape 30 (Q75) :
 - Chaque zone a une fourchette de dégâts (section 12.8). Un total de dégâts est tiré dans cette fourchette, puis réparti à parts égales entre les monstres envoyés, en divisions entières : le reste de la division est perdu.
 - Un monstre dont la part atteint ses PV tombe KO. Ce qui dépasse ses PV est réparti à parts égales entre les monstres encore debout, et ainsi de suite. L'expédition échoue donc à peu près quand le tirage atteint le total des PV des monstres envoyés : un monstre faible aide peu, un monstre robuste aide beaucoup.
 - Exemple : une Salamandre de 26 PV et un Loup de 16 PV. Avec un tirage de 40, chacun reçoit 20 ; le Loup tombe KO et les 4 dégâts en trop passent à la Salamandre, qui en subit 24 et reste debout : c'est une réussite. Avec un tirage de 50, chacun reçoit 25 ; le Loup tombe KO et ses 9 dégâts en trop portent ceux de la Salamandre à 34 : elle tombe KO à son tour, c'est un échec.
-- Les protections réduiront les dégâts subis ; elles sont reportées (section 12.5).
+- Les protections réduiront les dégâts subis ; elles sont reportées (section 12.5). Depuis l'étape 76, un monstre protégé reporte une part de ses dégâts sur les autres (section 12.5).
 - Succès : au moins un monstre n'est pas KO. L'expédition rapporte de l'XP et des potions (section 12.6).
 - Échec : tous les monstres envoyés sont KO. L'expédition ne rapporte rien (section 5.7).
 - Le résultat n'est tiré et connu qu'au moment où le joueur accueille l'expédition (section 12.7). Au retour, tous les monstres sont soignés, comme au camp (section 13.1).
@@ -556,7 +557,7 @@ Décidé le 19/10/2026, pour l'étape 30 (Q75) :
 ### 12.4 Information avant le départ
 
 - Avant de lancer l'expédition, le joueur voit la difficulté de la zone (ses niveaux, section 9.1), sa fourchette de dégâts, la durée et les chances de réussite.
-- Les chances de réussite sont calculées exactement à partir de la fourchette de dégâts, du nombre de monstres envoyés et de leurs PV, et plus tard des protections.
+- Les chances de réussite sont calculées exactement à partir de la fourchette de dégâts, du nombre de monstres envoyés et de leurs PV, et depuis l'étape 76 des protections (section 12.5).
 
 ### 12.5 Protection
 
@@ -568,6 +569,14 @@ Décidé le 19/10/2026, pour l'étape 30 (Q75) :
   - Y monstres ou objets assurent une protection de 75%.
 - Les protections sont reportées : tant qu'il n'existe ni objet de protection ni effet du rôle (Q19), aucune protection ne s'applique (Q66).
 
+Décidé le 20/10/2026, pour les étapes 76 à 78 (choix de l'utilisateur, Q19 et Q66) :
+
+- Au départ, le joueur peut désigner un des monstres envoyés comme protégé, s'il en envoie au moins deux (hypothèse retenue, Q96). Sa protection vaut 25 % par monstre de soutien envoyé avec lui (lui-même ne compte pas) et 50 % avec un charme de garde, 100 % au plus. Un seul charme par expédition, pris au départ, du sac d'abord, puis du coffre ; il est consommé même si l'expédition est rappelée (hypothèse retenue, Q96).
+- La protection reporte une part des dégâts : à chaque répartition (section 12.3), tant qu'un autre monstre est debout, le protégé ne subit que sa part diminuée de sa protection, et ce qu'il ne subit pas est réparti à parts égales entre les autres monstres debout, en divisions entières, le reste étant perdu. Un monstre qui tombe KO n'encaisse que ses PV, et le surplus est réparti de nouveau, protection comprise. Quand le protégé reste seul debout, il subit tout ce qui reste.
+- Exemple : un Loup protégé de 20 PV, une Mandragore de soutien de 30 PV et une Salamandre de 26 PV, sans charme : protection de 25 %. Avec un tirage de 60, chacun devait subir 20 : le Loup en subit 15, et les 5 autres se partagent entre la Mandragore et la Salamandre, 2 chacune, le reste étant perdu. La Mandragore subit 22 et la Salamandre 22.
+- Les chances de réussite affichées avant le départ tiennent compte de la protection (section 12.4).
+- L'objet de protection est le charme de garde, fabriqué par Gunther (section 13.5).
+
 ### 12.6 Récompenses
 
 - Chaque monstre qui n'est pas KO au retour d'une expédition réussie reçoit en entier le même gain d'XP, tiré une fois dans la fourchette de la zone (section 12.8) ; les monstres KO ne gagnent rien, comme en combat (section 7). Ce gain vaut environ la moitié de ce que rapporte une expédition manuelle dans la même zone.
@@ -575,6 +584,7 @@ Décidé le 19/10/2026, pour l'étape 30 (Q75) :
 - Une somme d'argent est tirée dans la fourchette de la zone et ajoutée à celui du joueur (section 14.1).
 - Depuis l'étape 28, l'habileté Instinct ajoute 20 % à l'XP du monstre qui l'a, et l'habileté Pillard 50 % à l'argent, si son monstre rentre debout (section 5.9).
 - Les ressources et les autres objets (section 14.3) viendront plus tard (sections 13.4 et 14).
+- Depuis l'étape 76 (choix de l'utilisateur, Q19) : chaque monstre offensif rentré debout d'une expédition réussie ajoute 10 % à l'argent rapporté. Ces pourcentages s'ajoutent à celui de l'habileté Pillard (hypothèse retenue, Q96) : un Pillard et deux offensifs debout, +70 %.
 
 ### 12.7 Retour, accueil et rappel
 
@@ -664,6 +674,7 @@ Décidé le 20/10/2026, pour les étapes 48 à 51 (choix de l'utilisateur) :
 - Gunther forge l'équipement du héros (section 4.3) dans le même atelier que les améliorations : un seul travail à la fois, amélioration ou objet. Comme une amélioration (section 13.4), un objet se paie en ressources seules, prises au lancement, du sac d'abord puis du coffre ; il demande une durée, de 1 h à 8 h, sur l'horloge réelle ; un travail lancé ne s'annule pas ; le joueur constate lui-même le travail fini, au camp, et l'objet rejoint alors son équipement. Sur Discord, le bot prévient par message privé de la fin d'une fabrication.
 - Chaque objet ne se fabrique qu'une fois : un objet possédé n'est plus proposé.
 - Les filets de capture restent une amélioration du camp (section 13.4) : ils ne se fabriquent pas à l'unité.
+- Décidé le 20/10/2026, pour les étapes 76 à 78 (choix de l'utilisateur) : Gunther fabrique aussi le charme de garde, objet de protection des expéditions automatiques (section 12.5), un par travail, aussi souvent que le joueur le veut, contre 3 Os de squelette et 3 Fragment d'armure, en 30 minutes. C'est un travail ordinaire : un seul à la fois, avec les améliorations et l'équipement. Le charme va dans le coffre quand le joueur constate le travail. Il se range dans le sac et le coffre, se perd avec le sac et ne se revend pas.
 
 ### 13.6 Automatisation
 
@@ -672,6 +683,16 @@ Le joueur peut construire des machines pour automatiser certaines tâches, par e
 - récolter des ressources ;
 - entraîner automatiquement ses monstres au camp ;
 - etc.
+
+Décidé le 20/10/2026, pour les étapes 72 à 74 (choix de l'utilisateur) :
+
+- Deux machines, construites par Gunther comme des améliorations du camp (section 13.4), par niveaux, chacun demandant le précédent, contre des ressources et une durée, un travail à la fois : les pièges et la cour d'entraînement. Coûts, durées et rendements dans docs/contenu-v1.md, section 19.
+- Les machines se gèrent depuis la forge de Gunther : elle mène à un écran "Machines". Le camp ne gagne pas de bouton ; il signale seulement des pièges pleins.
+- Les pièges prennent des ressources dans une zone explorée (section 9.2), choisie par le joueur. Ils en prennent une à intervalle fixe, sur l'horloge réelle, même jeu fermé ou bot éteint, jusqu'à un stock maximal ; au-delà, ils n'en prennent plus. Le joueur relève le stock au camp quand il veut : les ressources sont tirées à ce moment, une par une, parmi celles des espèces communes de la zone (une ressource rare de la zone 1 fois sur 10 au niveau 3, s'il en existe une), puis vont dans le coffre, et la partie est sauvegardée aussitôt, comme pour la pêche (section 13.8).
+- Après une relève, le compte reprend où il en était : le temps d'une ressource entamée n'est pas perdu, sauf si le stock était plein, auquel cas il repart de la relève (hypothèse retenue, Q95). Changer de zone relève d'abord le stock, puis le compte repart de zéro. Un niveau constaté vaut pour tout le temps écoulé depuis la dernière relève (hypothèse retenue, Q95).
+- La cour d'entraînement reçoit 1 à 3 monstres, selon son niveau. Le joueur y place un monstre de l'équipe ou du camp, comme pour une expédition automatique (section 12.1) : il quitte l'équipe ou le camp, garde sa place au camp, et ne peut ni se relâcher, ni se renommer, ni s'échanger, ni partir ailleurs. Il y gagne une XP fixe par heure, comptée à la seconde près, versée quand le joueur le reprend, sans dépasser l'XP du niveau maximal de la zone ouverte la plus avancée (7, 13, 20 ou 27) : au-delà, il ne gagne plus rien. L'habileté Instinct ajoute ses 20 % (hypothèse retenue, Q95).
+- Repris, le monstre rejoint l'équipe s'il y reste une place, sinon le camp, comme au retour d'une expédition automatique (section 12.7) ; les attaques à apprendre au-delà de 4 se choisissent de même, et il n'évolue pas d'office (section 5.4). Le niveau constaté de la cour vaut pour tout le temps passé (hypothèse retenue, Q95).
+- Sur Discord, aucun message privé n'annonce des pièges pleins (hypothèse retenue, Q95).
 
 ### 13.7 Services rares
 
@@ -717,6 +738,7 @@ Décidé le 20/10/2026, pour les étapes 62 à 65 (choix de l'utilisateur) :
 - Depuis l'étape 49, en version 16 : l'équipement du héros, objets possédés et portés, et l'objet en fabrication (sections 4.3 et 13.5). Une sauvegarde antérieure n'a aucun objet. Une sauvegarde qui cite un objet disparu du jeu est refusée, comme une espèce disparue.
 - Depuis l'étape 39, en version 13 : les pierres d'évolution du sac et du coffre (section 5.4). Une sauvegarde antérieure n'en a pas.
 - Depuis l'étape 62, en version 18 : Ansgar au camp, l'heure où la ligne sera prête et le monstre pêché qui attend la réponse du joueur (section 13.8). Une sauvegarde antérieure n'a pas Ansgar au camp.
+- Depuis l'étape 72, en version 22 : les niveaux des pièges et de la cour d'entraînement, la zone des pièges et l'heure du début de leur compte, et les monstres à l'entraînement avec l'heure où ils y sont entrés (section 13.6). Depuis l'étape 76, en version 23 : les charmes de garde du sac et du coffre, le charme en fabrication, et le monstre protégé et le charme de chaque expédition automatique (section 12.5).
 - Depuis l'étape 66, en version 19, sans changement de structure : les âmes d'Apôtres sont celles des Apôtres vaincus, déjà gardés par la sauvegarde. À la lecture d'une sauvegarde antérieure, les Apôtres capturés quittent l'équipe, le camp et les expéditions automatiques, et la fiche de chaque Apôtre vaincu s'ouvre au codex (section 9.4).
 - Depuis l'étape 32, en version 12 : les attaques à choisir au retour d'une expédition automatique désignent un monstre de l'équipe ou du camp ; celles des versions antérieures désignent un monstre du camp. Les étapes 33 à 36 y ajoutent, toujours en version 12, les âmes à retrouver, les âmes portées, les capsules d'habileté et les ressources du sac et du coffre. Les âmes recueillies des versions antérieures comptent comme données à Malvoise : leur soin reste en vente.
 - Depuis l'étape 67, en version 20 : les boosters et les Éclats d'astre du sac et du coffre (section 14.3). Une sauvegarde antérieure n'en a pas, sauf un Éclat d'astre dans le coffre par Apôtre déjà vaincu (hypothèse retenue, Q93).
@@ -799,9 +821,9 @@ Premier marchand, après la V1 :
 - Capsule d'habileté, depuis l'étape 35 (section 5.9).
 - Argent (monnaie).
 - Objets d'évolution : depuis l'étape 39, la Pierre de braise et la Pierre de lune (section 5.4).
-- Objets de protection pour les expéditions automatiques.
 - Capsules d'attaque, qui enseignent une attaque (section 13.10).
 - Ressource très rare permettant de réanimer un monstre (en suspens, section 5.7).
+- Objets de protection pour les expéditions automatiques : depuis l'étape 76, le charme de garde, fabriqué par Gunther (sections 12.5 et 13.5).
 - Objet extrêmement rare permettant de rendre un monstre shiny. Décidé le 20/10/2026, pour les étapes 67 à 69 (choix de l'utilisateur) : l'Éclat d'astre. Chaque Apôtre vaincu en laisse un, après son âme (section 9.4), et la pêche en remonte 1 fois sur 100 (section 13.8). Il ne s'achète pas et ne se revend pas. Il se range dans le sac et le coffre et se perd avec le sac, comme tout objet trouvé en expédition (hypothèse retenue, Q93 : la victoire sur un Apôtre achève l'expédition, il rentre donc au camp avec le joueur). Il sert au service de Malvoise (section 13.7).
 
 ### 14.4 Potions (V1)
@@ -958,6 +980,11 @@ Les questions Q93 et suivantes ont été relevées le 20/10/2026 lors de la conc
 
 - Q93. (Étapes 67 à 69) Hypothèses retenues, à confirmer : un booster se donne sans confirmation ; sur un monstre, il augmente ses PV actuels d'autant que ses PV max, sauf s'il est KO, comme le service de Malvoise ; l'étal propose le service même sans Éclat d'astre, et le refus dit ce qui manque ; l'Éclat d'astre laissé par un Apôtre va dans le sac et se perd avec lui ; une sauvegarde antérieure reçoit, dans le coffre, un Éclat d'astre par Apôtre déjà vaincu ; dans le tirage du coffre, les boosters prennent les rangs 21 à 26, un par booster, dans l'ordre des stats ; à la pêche, la potion passe de 20 % à 14 %, au profit des boosters (5 %, puis un tirage parmi les six) et de l'Éclat d'astre (1 %). Textes proposés sans validation : ceux de docs/contenu-v1.md, section 17.
 - Q94. (Étapes 70 et 71) Hypothèses retenues, à confirmer : un abandon ou un forfait compte dans le palmarès ; le classement montre au plus les 10 premiers, et ne compte que les joueurs qui ont livré au moins un duel ; un joueur qui recommence sa partie (suicide du héros) perd sa liste d'amis et son palmarès, gardés dans sa sauvegarde ; un ami dont la partie n'existe plus n'est plus montré. Textes proposés sans validation : ceux de docs/contenu-v1.md, section 18.
+
+Les questions Q95 et suivantes ont été relevées le 20/10/2026 lors de la conception des étapes 72 machines dans le noyau, avec la sauvegarde en version 22, 73 écrans de la console, 74 bot Discord, 75 rôle en combat, 76 protections, effet offensif et charme de garde dans le noyau, avec la sauvegarde en version 23, 77 écrans de la console, 78 bot Discord.
+
+- Q95. (Étapes 72 à 74) Hypothèses retenues, à confirmer : après une relève, le temps d'une ressource entamée est gardé, sauf si le stock était plein ; un niveau constaté des pièges ou de la cour vaut pour tout le temps écoulé depuis la dernière relève ou l'entrée du monstre ; l'habileté Instinct joue à l'entraînement ; un monstre placé à l'entraînement suit les règles d'un monstre parti en expédition automatique (il garde sa place au camp, l'équipe peut se vider) ; aucun message privé n'annonce des pièges pleins. Rendements, coûts et durées à vérifier en jouant. Textes proposés sans validation : ceux de docs/contenu-v1.md, section 19.
+- Q96. (Étapes 75 à 78) Hypothèses retenues, à confirmer : en duel, chaque joueur a le bonus de rôle de ses monstres ; un monstre ne se protège que s'il part avec au moins un autre ; le charme est consommé même si l'expédition est rappelée ; les bonus d'argent des offensifs et de Pillard s'additionnent ; le monstre protégé ne compte pas dans sa propre protection s'il est de soutien. Textes proposés sans validation : ceux de docs/contenu-v1.md, section 20.
 
 - Q83. (Étapes 33 et 34) Hypothèses retenues, à confirmer : le gardien d'une âme à retrouver attaque à une étape tirée parmi celles qui précèdent la dernière ; le don d'une âme à Malvoise se fait sans confirmation ; une partie antérieure qui n'a pas recueilli l'âme de Bertrand le rencontre à l'étape 4 de sa prochaine expédition dans la Lisière, même avec Malvoise déjà au camp ; le texte du brigand de l'étape 5 ne change pas, même s'il a perdu son Loup à l'étape 4.
 
@@ -1345,3 +1372,12 @@ Les questions Q93 et suivantes ont été relevées le 20/10/2026 lors de la conc
 - Choix de l'utilisateur : une liste d'amis personnelle, qui les met en tête du menu des joueurs sans rien restreindre ; un palmarès des victoires et des défaites, avec un classement de tous les joueurs, sur l'écran "Autres joueurs" (section 15.4).
 - Sauvegarde en version 20 pour les boosters et l'Éclat d'astre, en version 21 pour les amis et le palmarès.
 - Hypothèses retenues, à confirmer : Q93 et Q94.
+
+20/10/2026 (conception des étapes 72 à 78, automatisation du camp, rôle et protections) :
+
+- Choix de l'utilisateur : l'automatisation du camp, puis l'effet du rôle et les protections des expéditions automatiques.
+- Choix de l'utilisateur : deux machines construites par Gunther, gérées depuis sa forge : des pièges qui prennent des ressources dans une zone explorée, en continu jusqu'à un stock maximal, et une cour d'entraînement qui donne une XP horaire plafonnée au niveau maximal de la zone ouverte la plus avancée (section 13.6). Valeurs proposées acceptées (docs/contenu-v1.md, section 19).
+- Choix de l'utilisateur : le rôle joue en combat, pour les monstres du joueur seulement (+10 % de Défense et de Défense spéciale pour un soutien, d'Attaque et d'Attaque spéciale pour un offensif), et en expédition automatique (protection par les soutiens, +10 % d'argent par offensif debout) (sections 4.2, 12.5 et 12.6).
+- Choix de l'utilisateur : un monstre protégé reporte une part de ses dégâts sur les autres, 25 % par soutien et 50 % avec un charme de garde ; le charme est fabriqué par Gunther, un par travail, contre 3 Os de squelette et 3 Fragment d'armure, en 30 minutes (sections 12.5 et 13.5).
+- Sauvegarde en version 22 pour les machines, en version 23 pour les protections et le charme.
+- Hypothèses retenues, à confirmer : Q95 et Q96.

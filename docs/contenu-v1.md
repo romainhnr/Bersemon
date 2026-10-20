@@ -814,3 +814,54 @@ Décidé le 20/10/2026, pour les étapes 70 et 71 (gamedesign.md, section 15.4).
 | Refus, rien à changer | Rien à changer à vos amis pour l'instant. |
 
 Un ami ajouté ou retiré n'a pas de récit : l'écran garde le joueur choisi, dont le bouton passe de "Ajouter aux amis" à "Retirer des amis", ou l'inverse.
+
+## 19. Machines du camp
+
+Décidé le 20/10/2026, pour les étapes 72 à 74 (gamedesign.md, section 13.6), valeurs validées par l'utilisateur, à ajuster en jouant. Construites par Gunther, comme les améliorations (section 9).
+
+| Machine | Identifiant | Niveau | Effet | Coût | Durée |
+|---|---|---|---|---|---|
+| Pièges | pieges | 1 | 1 ressource toutes les 2 h, stock de 6 | 5 Croc de loup, 5 Écaille de vipère | 1 h |
+| | | 2 | 1 ressource par heure, stock de 12 | 6 Cendre de feu follet, 6 Fragment d'armure | 3 h |
+| | | 3 | 1 ressource par heure, stock de 24, une ressource rare de la zone 1 fois sur 10 | 6 Aile de fée noire, 6 Os de squelette, 1 Écaille de vouivre | 6 h |
+| Cour d'entraînement | cour | 1 | 1 place, 50 XP par heure | 6 Croc de loup, 6 Plume de corbeau | 2 h |
+| | | 2 | 2 places, 50 XP par heure | 6 Fragment d'armure, 6 Os de squelette | 4 h |
+| | | 3 | 3 places, 100 XP par heure | 8 Éclat de gargouille, 6 Dent de goule | 8 h |
+
+Ressources des pièges, par zone : celles des espèces communes de la zone, au hasard ; au niveau 3, la ressource rare de la zone 1 fois sur 10 (Croc de basilic dans le Marais, Écaille de vouivre dans la Vallée, Crin de chimère dans l'Abbaye ; aucune dans la Lisière, dont le Cerf blanc ne lâche rien).
+
+Plafond de l'entraînement : l'XP du niveau maximal de la zone ouverte la plus avancée (7 avec la seule Lisière, 13 avec le Marais, 20 avec la Vallée, 27 avec l'Abbaye).
+
+Textes proposés sans validation (gamedesign.md, Q95) :
+
+| Moment | Texte |
+|---|---|
+| Libellés | Machines ; Pièges ; Cour d'entraînement ; Poser les pièges dans {zone} ; Relever les pièges ; Mettre à l'entraînement ; Reprendre {monstre} |
+| État des pièges | Pièges (niveau {n}) dans {zone} : {stock}/{maximum} ressources, une de plus dans {durée}. / Pièges pleins. / Pièges posés nulle part. |
+| Au camp | Les pièges de Gunther sont pleins. |
+| Relève | Vous relevez les pièges : {ressources}. Elles vont dans le coffre. |
+| Pièges vides | Les pièges sont vides. |
+| État de la cour | Cour d'entraînement (niveau {n}) : {places} place(s), {xp} XP par heure, jusqu'au niveau {niveau}. Puis, pour chaque monstre, "{monstre} : {xp} XP gagnée depuis {durée}". |
+| Monstre placé | {monstre} rejoint la cour d'entraînement. |
+| Monstre repris | {monstre} quitte la cour d'entraînement avec {xp} XP. |
+| Refus | Aucune zone explorée. / La cour est pleine. / Ce monstre est déjà à son plafond d'entraînement. |
+
+## 20. Rôle des monstres et protections
+
+Décidé le 20/10/2026, pour les étapes 75 à 78 (gamedesign.md, sections 4.2, 12.5, 12.6 et 13.5), valeurs validées par l'utilisateur.
+
+| Rôle | En combat, monstres du joueur | En expédition automatique |
+|---|---|---|
+| soutien | +10 % de Défense et de Défense spéciale | 25 % de protection au monstre protégé |
+| offensif | +10 % d'Attaque et d'Attaque spéciale | +10 % d'argent s'il rentre debout d'une réussite |
+
+Charme de garde (identifiant charme-de-garde) : 50 % de protection au monstre protégé, un par expédition. Fabriqué par Gunther, un par travail, contre 3 Os de squelette et 3 Fragment d'armure, en 30 minutes. Il ne se revend pas.
+
+Textes proposés sans validation (gamedesign.md, Q96) :
+
+| Moment | Texte |
+|---|---|
+| Préparation | Monstre protégé : {monstre}, à {p} % (soutien 25 % chacun, charme 50 %). / Aucun monstre protégé. |
+| Libellés | Protéger {monstre} ; Sans protection ; Avec un charme de garde ; Sans charme ; Fabriquer un charme de garde |
+| Bilan | dans le bilan d'une expédition : "{monstre}, protégé à {p} %, subit {dégâts}". Bonus d'argent des offensifs : "dont {argent} grâce aux monstres offensifs". |
+| Fiche d'un monstre | Rôle : soutien (+10 % de Défense et de Défense spéciale en combat). / Rôle : offensif (+10 % d'Attaque et d'Attaque spéciale en combat). |
