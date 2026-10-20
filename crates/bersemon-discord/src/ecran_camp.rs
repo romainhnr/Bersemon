@@ -71,6 +71,7 @@ pub fn question(
         Vue::Echanges { avec, cede } => {
             ecran_echanges::echanges(partie, &TableauDesEchanges::default(), avec, cede)
         }
+        Vue::Classement => ecran_echanges::classement(&TableauDesEchanges::default()),
     }
 }
 

@@ -801,14 +801,16 @@ Textes proposés sans validation (gamedesign.md, Q93). {monstre} est le nom du m
 
 ## 18. Amis et palmarès des duels
 
-Décidé le 20/10/2026, pour les étapes 70 et 71 (gamedesign.md, section 15.4). Textes proposés sans validation (gamedesign.md, Q94). {v} et {d} sont des nombres de victoires et de défaites.
+Décidé le 20/10/2026, pour les étapes 70 et 71 (gamedesign.md, section 15.4). Textes proposés sans validation (gamedesign.md, Q94). {bilan} est le nombre de victoires puis de défaites, au singulier jusqu'à 1 : "2 victoires, 1 défaite", "0 victoire, 0 défaite".
 
 | Moment | Texte |
 |---|---|
-| Palmarès, en tête de l'écran "Autres joueurs" | Vos duels : {v} victoire(s), {d} défaite(s). |
-| Joueur choisi | Duels de {héros} : {v} victoire(s), {d} défaite(s). |
-| Ami, dans le menu des joueurs | description de l'option : "Ami" suivi du pseudo, "Ami - {pseudo}" |
+| Palmarès, en tête de l'écran "Autres joueurs" | Vos duels : {bilan}. |
+| Joueur choisi | Duels de {héros} : {bilan}. |
+| Ami, dans le menu des joueurs | description de l'option : "Ami - {pseudo}", ou "Ami" sans pseudo connu |
 | Boutons | Ajouter aux amis / Retirer des amis / Classement / Retour aux autres joueurs |
-| Ami ajouté ou retiré | {héros} est ajouté à vos amis. / {héros} est retiré de vos amis. |
-| Classement | Classement des duels : puis une ligne par joueur, "1. {héros} ({pseudo}) : {v} victoire(s), {d} défaite(s)", 10 au plus |
+| Classement | Classement des duels : puis une ligne par joueur, "1. {héros} ({pseudo}) : {bilan}", 10 au plus |
 | Classement vide | Aucun duel n'a encore été livré. |
+| Refus, rien à changer | Rien à changer à vos amis pour l'instant. |
+
+Un ami ajouté ou retiré n'a pas de récit : l'écran garde le joueur choisi, dont le bouton passe de "Ajouter aux amis" à "Retirer des amis", ou l'inverse.

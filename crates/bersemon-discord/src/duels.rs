@@ -92,6 +92,9 @@ pub struct DuelEnCours {
     /// Après la fin, chacun revient au camp quand il veut ; le duel est
     /// oublié quand les deux y sont revenus.
     pub revenus: [bool; 2],
+    /// L'issue est notée au palmarès des deux joueurs dès la fin du duel,
+    /// une seule fois (section 15.4).
+    pub palmares_note: bool,
 }
 
 impl DuelEnCours {

@@ -1,9 +1,10 @@
 //! Duel en temps réel entre deux joueurs (section 15.3) : défis, récit du
-//! duel vu par chaque joueur, attente et fin. Textes dans
-//! docs/contenu-v1.md, section 14.
+//! duel vu par chaque joueur, attente et fin, palmarès et classement
+//! (section 15.4). Textes dans docs/contenu-v1.md, sections 14 et 18.
 
 use bersemon_core::combat::{Combat, Cote, Evenement, Issue, Phase};
 use bersemon_core::duel::EvenementDeDuel;
+use bersemon_core::relations::Palmares;
 
 use crate::combat::{evenement, ordre_donne};
 use crate::echanges::joueur;
@@ -16,6 +17,52 @@ pub fn defi_recu(heros: &str, pseudo: Option<&str>) -> String {
         "{} vous défie en duel. Ouvrez /bersemon, au camp, pour répondre.",
         joueur(heros, pseudo)
     )
+}
+
+/// "2 victoires, 1 défaite" (section 15.4).
+pub fn bilan(palmares: Palmares) -> String {
+    let pluriel = |nombre: u32, mot: &str| {
+        if nombre > 1 {
+            format!("{nombre} {mot}s")
+        } else {
+            format!("{nombre} {mot}")
+        }
+    };
+    format!(
+        "{}, {}",
+        pluriel(palmares.victoires, "victoire"),
+        pluriel(palmares.defaites, "défaite")
+    )
+}
+
+/// En tête de l'écran des autres joueurs.
+pub fn vos_duels(palmares: Palmares) -> String {
+    format!("Vos duels : {}.", bilan(palmares))
+}
+
+pub fn duels_de(heros: &str, palmares: Palmares) -> String {
+    format!("Duels de {heros} : {}.", bilan(palmares))
+}
+
+/// Les joueurs déjà classés, du premier au dernier, avec leur héros, leur
+/// pseudo s'il est connu, et leur palmarès.
+pub fn classement(classes: &[(String, Option<String>, Palmares)]) -> String {
+    if classes.is_empty() {
+        return "Aucun duel n'a encore été livré.".to_string();
+    }
+    let lignes: Vec<String> = classes
+        .iter()
+        .enumerate()
+        .map(|(rang, (heros, pseudo, palmares))| {
+            format!(
+                "{}. {} : {}",
+                rang + 1,
+                joueur(heros, pseudo.as_deref()),
+                bilan(*palmares)
+            )
+        })
+        .collect();
+    format!("Classement des duels :\n{}", lignes.join("\n"))
 }
 
 pub fn defi_accepte(heros: &str) -> String {

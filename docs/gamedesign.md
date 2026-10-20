@@ -889,6 +889,7 @@ Décidé le 20/10/2026, pour les étapes 70 et 71 (choix de l'utilisateur) :
 - Le palmarès compte les victoires et les défaites en duel de chaque joueur, gardées dans sa sauvegarde. Un abandon ou un forfait compte comme une défaite pour celui qui le subit et une victoire pour l'autre (hypothèse retenue, Q94). Seul le palmarès est enregistré à la fin d'un duel : le duel lui-même ne change toujours rien d'autre.
 - L'écran "Autres joueurs" montre en tête le palmarès du joueur, et propose un classement de tous les joueurs du bot qui ont livré au moins un duel, par victoires, puis par défaites, les moins nombreuses d'abord, puis par nom du héros (hypothèse retenue, Q94).
 - La console reste une partie seule : elle garde la liste d'amis et le palmarès dans la sauvegarde sans les montrer.
+- Précisé à l'étape 71, en codant : le palmarès est noté dans la sauvegarde de chaque joueur dès la fin du duel, une seule fois, sans attendre que chacun revienne au camp. Les boutons "Ajouter aux amis" ou "Retirer des amis" et le palmarès de l'autre joueur apparaissent une fois ce joueur choisi dans le menu ; comme le choix d'un joueur, ils ne sont donc pas proposés tant qu'une offre envoyée attend sa réponse. Le classement est un écran à part, ouvert par un bouton "Classement" de l'écran "Autres joueurs".
 
 ## 16. Questions ouvertes et valeurs à définir
 

@@ -2,11 +2,15 @@
 //! reçus, à accepter ou à refuser, l'offre et le défi envoyés, à retirer,
 //! puis, sans offre envoyée, une offre à faire en trois temps : le joueur,
 //! le monstre à lui céder, et celui qu'on lui demande, ou aucun pour un
-//! don. Une fois le joueur choisi, il peut aussi être défié en duel.
+//! don. Une fois le joueur choisi, il peut aussi être défié en duel, et
+//! ajouté aux amis ou retiré (section 15.4). Le palmarès du joueur est en
+//! tête, et le classement des duels s'ouvre d'un bouton.
 
 use bersemon_core::collection::{Collection, Emplacement};
 use bersemon_core::espece::Rarete;
 use bersemon_core::partie::Partie;
+use bersemon_core::relations::Palmares;
+use bersemon_presentation::duels::{classement as texte_du_classement, duels_de, vos_duels};
 use bersemon_presentation::echanges::{
     decrire_offre_envoyee, decrire_offre_recue, joueur, nom_et_niveau,
 };
@@ -70,13 +74,21 @@ pub fn echanges(
             boutons.push(bouton(Cle::RetirerOffre, "Retirer l'offre", SECONDAIRE));
         }
         (None, None) => {
+            let amis = partie.relations();
             let options: Vec<OptionDeMenu> = tableau
                 .joueurs
                 .iter()
                 .map(|autre| OptionDeMenu {
                     libelle: autre.heros.clone(),
                     valeur: autre.id.to_string(),
-                    description: autre.pseudo.clone(),
+                    description: if amis.est_ami(autre.id) {
+                        Some(match &autre.pseudo {
+                            Some(pseudo) => format!("Ami - {pseudo}"),
+                            None => "Ami".to_string(),
+                        })
+                    } else {
+                        autre.pseudo.clone()
+                    },
                 })
                 .collect();
             if options.is_empty() {
@@ -92,8 +104,14 @@ pub fn echanges(
         (None, Some((autre, collection))) => {
             let id = autre.id;
             let a_moi = partie.collection();
+            paragraphes.push(duels_de(&autre.heros, autre.palmares));
             if peut_defier {
                 boutons.push(bouton(Cle::Defier(id), "Défier en duel", PRINCIPAL));
+            }
+            if partie.relations().est_ami(id) {
+                boutons.push(bouton(Cle::RetirerAmi(id), "Retirer des amis", SECONDAIRE));
+            } else {
+                boutons.push(bouton(Cle::AjouterAmi(id), "Ajouter aux amis", SUCCES));
             }
             match cede.and_then(|cede| a_moi.monstre(cede).map(|monstre| (cede, monstre))) {
                 None => {
@@ -141,13 +159,43 @@ pub fn echanges(
             ));
         }
     }
+    // Au plus 9 boutons : ils tiennent en deux rangées.
+    boutons.push(bouton(
+        Cle::Afficher(Vue::Classement),
+        "Classement",
+        SECONDAIRE,
+    ));
     boutons.push(retour());
     lignes.extend(rangees(boutons));
     Question {
         texte: format!(
-            "Autres joueurs : offres de monstres et duels.\n\n{}",
+            "Autres joueurs : offres de monstres et duels.\n{}\n\n{}",
+            vos_duels(partie.relations().palmares()),
             paragraphes.join("\n\n")
         ),
         rangees: lignes,
+    }
+}
+
+/// Les 10 premiers joueurs du bot au classement des duels (section 15.4).
+pub fn classement(tableau: &TableauDesEchanges) -> Question {
+    let classes: Vec<(String, Option<String>, Palmares)> = tableau
+        .classement
+        .iter()
+        .map(|joueur| (joueur.heros.clone(), joueur.pseudo.clone(), joueur.palmares))
+        .collect();
+    Question {
+        texte: texte_du_classement(&classes),
+        rangees: rangees(vec![
+            bouton(
+                Cle::Afficher(Vue::Echanges {
+                    avec: None,
+                    cede: None,
+                }),
+                "Retour aux autres joueurs",
+                SECONDAIRE,
+            ),
+            retour(),
+        ]),
     }
 }

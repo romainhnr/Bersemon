@@ -32,6 +32,9 @@ use crate::messages_prives::{Annonces, Retour, parties};
 /// Identifiant du compte Discord.
 pub type IdJoueur = u64;
 
+/// Le classement des duels ne montre que les premiers (Q94).
+const PLACES_AU_CLASSEMENT: usize = 10;
+
 pub struct Session {
     pub deroulement: Deroulement,
     /// Change à chaque choix accepté : les boutons d'un message qui n'est
@@ -129,7 +132,12 @@ impl Joueurs {
 
     pub fn session(&mut self, joueur: IdJoueur, contenu: &ContenuV1) -> &Session {
         let vue = self.charger(joueur, contenu).vue;
-        if let Vue::Echanges { avec, .. } = vue {
+        let avec = match vue {
+            Vue::Echanges { avec, .. } => Some(avec),
+            Vue::Classement => Some(None),
+            _ => None,
+        };
+        if let Some(avec) = avec {
             let tableau = self.tableau_des_echanges(joueur, avec, contenu);
             self.charger(joueur, contenu).echanges = tableau;
         }
@@ -170,15 +178,14 @@ impl Joueurs {
 
     /// Le joueur tel que les autres le voient, s'il a une partie.
     fn autre_joueur(&mut self, joueur: IdJoueur, contenu: &ContenuV1) -> Option<AutreJoueur> {
-        let heros = partie_lisible(&self.charger(joueur, contenu).deroulement)?
-            .heros()
-            .nom()
-            .as_str()
-            .to_string();
+        let partie = partie_lisible(&self.charger(joueur, contenu).deroulement)?;
+        let heros = partie.heros().nom().as_str().to_string();
+        let palmares = partie.relations().palmares();
         Some(AutreJoueur {
             id: joueur,
             heros,
             pseudo: self.pseudos.pseudo(joueur).map(str::to_string),
+            palmares,
         })
     }
 
@@ -190,12 +197,25 @@ impl Joueurs {
         avec: Option<IdJoueur>,
         contenu: &ContenuV1,
     ) -> TableauDesEchanges {
-        let mut joueurs: Vec<AutreJoueur> = parties(&self.dossier)
+        let tous: Vec<AutreJoueur> = parties(&self.dossier)
             .into_iter()
-            .filter(|(autre, _)| *autre != joueur)
             .filter_map(|(autre, _)| self.autre_joueur(autre, contenu))
             .collect();
-        joueurs.sort_by(|a, b| a.heros.cmp(&b.heros).then(a.id.cmp(&b.id)));
+        let classement = classer(&tous);
+        let amis = partie_lisible(&self.charger(joueur, contenu).deroulement)
+            .map(|partie| partie.relations().clone())
+            .unwrap_or_default();
+        let mut joueurs: Vec<AutreJoueur> = tous
+            .into_iter()
+            .filter(|autre| autre.id != joueur)
+            .collect();
+        // Les amis d'abord (section 15.4).
+        joueurs.sort_by(|a, b| {
+            amis.est_ami(b.id)
+                .cmp(&amis.est_ami(a.id))
+                .then(a.heros.cmp(&b.heros))
+                .then(a.id.cmp(&b.id))
+        });
         joueurs.truncate(OPTIONS_PAR_MENU);
         let recue = self.bourse.recue(joueur).cloned();
         let recue =
@@ -219,6 +239,53 @@ impl Joueurs {
             choisi,
             defi_recu,
             defi_envoye,
+            classement,
+        }
+    }
+
+    /// Ajoute ou retire un ami de la liste du joueur, qui doit être au camp
+    /// (section 15.4).
+    fn changer_d_ami(
+        &mut self,
+        joueur: IdJoueur,
+        autre: IdJoueur,
+        ami: bool,
+        contenu: &ContenuV1,
+    ) -> Result<Vec<Evenement>, ErreurDOffre> {
+        if autre == joueur {
+            return Err(ErreurDOffre::AvecSoiMeme);
+        }
+        if ami {
+            self.autre_joueur(autre, contenu)
+                .ok_or(ErreurDOffre::JoueurSansPartie)?;
+        }
+        let depot = depot(&self.dossier, joueur);
+        self.charger(joueur, contenu)
+            .deroulement
+            .changer_d_ami(autre, ami, &depot)
+            .ok_or(ErreurDOffre::AmitieInchangee)
+    }
+
+    /// Une fois le duel fini, sa victoire ou sa défaite rejoint le palmarès
+    /// de chaque joueur, une seule fois (section 15.4).
+    fn noter_la_fin_du_duel(&mut self, joueur: IdJoueur) {
+        let Some((position, _)) = self.duel_de(joueur) else {
+            return;
+        };
+        let en_cours = &mut self.duels[position];
+        let Some(vainqueur) = en_cours.duel.vainqueur() else {
+            return;
+        };
+        if en_cours.palmares_note {
+            return;
+        }
+        en_cours.palmares_note = true;
+        let joueurs = en_cours.joueurs;
+        for (qui, cote) in joueurs.into_iter().zip([Cote::Joueur, Cote::Adversaire]) {
+            let depot = depot(&self.dossier, qui);
+            if let Some(session) = self.sessions.get_mut(&qui) {
+                session.deroulement.noter_duel(cote == vainqueur, &depot);
+            }
         }
     }
 
@@ -250,6 +317,7 @@ impl Joueurs {
             ActionDeDuel::RevenirAuCamp => self.revenir_du_duel(joueur),
         }
         .map_err(Refus::Duel)?;
+        self.noter_la_fin_du_duel(joueur);
         for concerne in concernes {
             let session = self.charger(concerne, contenu);
             session.version = session.version.wrapping_add(1);
@@ -351,6 +419,7 @@ impl Joueurs {
             joueurs: [defi.de, joueur],
             duel,
             revenus: [false; 2],
+            palmares_note: false,
         });
         if let Some(moi) = self.autre_joueur(joueur, contenu) {
             self.messages_prives.push(MessagePrive {
@@ -448,14 +517,18 @@ impl Joueurs {
                 .ok_or(ErreurDOffre::AucuneOffre),
             ActionDEchange::Refuser => self.refuser(joueur, contenu).map(|()| Vec::new()),
             ActionDEchange::Accepter => self.accepter(joueur, contenu),
+            ActionDEchange::AjouterAmi(autre) => self.changer_d_ami(joueur, autre, true, contenu),
+            ActionDEchange::RetirerAmi(autre) => self.changer_d_ami(joueur, autre, false, contenu),
         };
         let evenements = resultat.map_err(Refus::Echange)?;
+        // Après un changement d'ami, le joueur choisi reste à l'écran.
+        let avec = match action {
+            ActionDEchange::AjouterAmi(autre) | ActionDEchange::RetirerAmi(autre) => Some(autre),
+            _ => None,
+        };
         let session = self.charger(joueur, contenu);
         session.version = session.version.wrapping_add(1);
-        session.vue = Vue::Echanges {
-            avec: None,
-            cede: None,
-        };
+        session.vue = Vue::Echanges { avec, cede: None };
         Ok(evenements)
     }
 
@@ -589,7 +662,9 @@ impl Joueurs {
             return Err(Refus::MessagePerime);
         }
         if self.duel_de(joueur).is_some() {
-            for concerne in self.jouer_en_duel(joueur, choix, maintenant)? {
+            let concernes = self.jouer_en_duel(joueur, choix, maintenant)?;
+            self.noter_la_fin_du_duel(joueur);
+            for concerne in concernes {
                 let session = self.charger(concerne, contenu);
                 session.version = session.version.wrapping_add(1);
             }
@@ -658,6 +733,27 @@ fn vue_apres(vue: Vue, choix: &Choix) -> Vue {
 
 /// Une partie reprise après un redémarrage se lit avant que son joueur ne la
 /// reprenne : ses héros et ses monstres sont ceux de sa sauvegarde.
+/// Ceux qui ont livré au moins un duel, par victoires, puis par défaites,
+/// les moins nombreuses d'abord, puis par nom du héros ; 10 au plus (section
+/// 15.4, Q94).
+fn classer(joueurs: &[AutreJoueur]) -> Vec<AutreJoueur> {
+    let mut classes: Vec<AutreJoueur> = joueurs
+        .iter()
+        .filter(|joueur| joueur.palmares.duels() > 0)
+        .cloned()
+        .collect();
+    classes.sort_by(|a, b| {
+        b.palmares
+            .victoires
+            .cmp(&a.palmares.victoires)
+            .then(a.palmares.defaites.cmp(&b.palmares.defaites))
+            .then(a.heros.cmp(&b.heros))
+            .then(a.id.cmp(&b.id))
+    });
+    classes.truncate(PLACES_AU_CLASSEMENT);
+    classes
+}
+
 fn partie_lisible(deroulement: &Deroulement) -> Option<&Partie> {
     match deroulement.attente() {
         Attente::Reprise(partie) => Some(partie),

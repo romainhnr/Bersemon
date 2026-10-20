@@ -27,7 +27,7 @@ pub fn nom_de_stat(stat: Stat) -> &'static str {
     }
 }
 
-/// « de PV », « d'Attaque ».
+/// "de PV", "d'Attaque".
 fn de_la_stat(stat: Stat) -> String {
     let nom = nom_de_stat(stat);
     if nom.starts_with('A') {
@@ -48,7 +48,7 @@ fn au_pluriel(booster: Booster) -> &'static str {
     }
 }
 
-/// « 1 Fiole de sang », « 2 Fioles de sang ».
+/// "1 Fiole de sang", "2 Fioles de sang".
 pub fn boosters(booster: Booster, nombre: u32) -> String {
     if nombre > 1 {
         format!("{nombre} {}", au_pluriel(booster))
@@ -57,7 +57,7 @@ pub fn boosters(booster: Booster, nombre: u32) -> String {
     }
 }
 
-/// « 1 Éclat d'astre », « 2 Éclats d'astre ».
+/// "1 Éclat d'astre", "2 Éclats d'astre".
 pub fn eclats_d_astre(nombre: u32) -> String {
     if nombre > 1 {
         format!("{nombre} Éclats d'astre")
@@ -66,7 +66,7 @@ pub fn eclats_d_astre(nombre: u32) -> String {
     }
 }
 
-/// « +5 à la valeur interne de PV, 31 au plus. »
+/// "+5 à la valeur interne de PV, 31 au plus."
 pub fn effet_du_booster(booster: Booster) -> String {
     format!(
         "+{GAIN_D_UN_BOOSTER} à la valeur interne {}, {} au plus.",

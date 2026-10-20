@@ -67,6 +67,8 @@ pub enum Vue {
         avec: Option<IdJoueur>,
         cede: Option<Emplacement>,
     },
+    /// Le classement des duels de tous les joueurs du bot (section 15.4).
+    Classement,
 }
 
 /// Monstres choisis pour une expédition automatique, dans l'ordre du choix
@@ -289,6 +291,9 @@ pub enum Cle {
     RetirerOffre,
     /// Défie ce joueur en duel (section 15.3).
     Defier(IdJoueur),
+    /// La liste d'amis du joueur (section 15.4).
+    AjouterAmi(IdJoueur),
+    RetirerAmi(IdJoueur),
     AccepterDefi,
     RefuserDefi,
     RetirerDefi,
@@ -450,6 +455,8 @@ impl Cle {
             Cle::AccepterOffre => Some(Commande::Echanger(ActionDEchange::Accepter)),
             Cle::RefuserOffre => Some(Commande::Echanger(ActionDEchange::Refuser)),
             Cle::RetirerOffre => Some(Commande::Echanger(ActionDEchange::Retirer)),
+            Cle::AjouterAmi(autre) => Some(Commande::Echanger(ActionDEchange::AjouterAmi(*autre))),
+            Cle::RetirerAmi(autre) => Some(Commande::Echanger(ActionDEchange::RetirerAmi(*autre))),
             Cle::Defier(a) => Some(Commande::Duel(ActionDeDuel::Defier(*a))),
             Cle::AccepterDefi => Some(Commande::Duel(ActionDeDuel::AccepterDefi)),
             Cle::RefuserDefi => Some(Commande::Duel(ActionDeDuel::RefuserDefi)),
@@ -496,6 +503,9 @@ impl Cle {
             Cle::Afficher(Vue::Equipement) => "vue:equipement".to_string(),
             Cle::Afficher(Vue::Peche) => "vue:peche".to_string(),
             Cle::Afficher(Vue::Echanges { avec: None, .. }) => "vue:echanges".to_string(),
+            Cle::Afficher(Vue::Classement) => "vue:classement".to_string(),
+            Cle::AjouterAmi(autre) => format!("ajouter-ami:{autre}"),
+            Cle::RetirerAmi(autre) => format!("retirer-ami:{autre}"),
             Cle::Afficher(Vue::Echanges {
                 avec: Some(avec),
                 cede: None,
@@ -664,6 +674,7 @@ impl Cle {
             "relever-ligne" => Cle::ReleverLaLigne,
             "garder-prise" => Cle::GarderLaPrise,
             "relacher-prise" => Cle::RelacherLaPrise,
+            "vue:classement" => Cle::Afficher(Vue::Classement),
             "vue:echanges" => Cle::Afficher(Vue::Echanges {
                 avec: None,
                 cede: None,
@@ -763,6 +774,8 @@ impl Cle {
                         }
                     }
                     "defier" => Cle::Defier(parametre.parse().ok()?),
+                    "ajouter-ami" => Cle::AjouterAmi(parametre.parse().ok()?),
+                    "retirer-ami" => Cle::RetirerAmi(parametre.parse().ok()?),
                     "donner" => {
                         let (avec, cede) = parametre.split_once(':')?;
                         Cle::Donner {
@@ -1082,6 +1095,9 @@ mod tests {
             Cle::RefuserOffre,
             Cle::RetirerOffre,
             Cle::Defier(123_456_789_012_345_678),
+            Cle::AjouterAmi(123_456_789_012_345_678),
+            Cle::RetirerAmi(7),
+            Cle::Afficher(Vue::Classement),
             Cle::AccepterDefi,
             Cle::RefuserDefi,
             Cle::RetirerDefi,

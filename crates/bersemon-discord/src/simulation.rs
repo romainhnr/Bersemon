@@ -1826,6 +1826,21 @@ fn un_duel_complet_a_travers_les_ecrans_du_bot() {
     }
     assert_eq!(revenus.len(), 2, "duel inachevé");
     assert!(attentes > 0);
+    // Le duel compte au palmarès de chacun, une seule fois, et se relit
+    // dans sa sauvegarde (section 15.4).
+    let palmares = |joueur: IdJoueur| {
+        use bersemon_core::sauvegarde::SauvegardeRepository;
+        bersemon_storage::FichierJson::new(dossier.join(format!("{joueur}.json")))
+            .charger(&contenu)
+            .unwrap()
+            .unwrap()
+            .relations()
+            .palmares()
+    };
+    let (aldric, ysolde) = (palmares(JOUEUR), palmares(YSOLDE));
+    assert_eq!(aldric.duels(), 1);
+    assert_eq!(ysolde.duels(), 1);
+    assert_eq!(aldric.victoires + ysolde.victoires, 1);
     // Chacun retrouve son camp, et ses monstres tels qu'avant le duel.
     for joueur in [JOUEUR, YSOLDE] {
         let affiche = afficher_a(&mut joueurs, joueur, &contenu, 0);
@@ -1883,5 +1898,104 @@ fn un_joueur_qui_ne_joue_pas_perd_par_forfait() {
         "{}",
         affiche.texte
     );
+    // Le forfait compte au palmarès ; chacun revient au camp, et le
+    // classement met Aldric devant Ysolde (section 15.4).
+    for joueur in [JOUEUR, YSOLDE] {
+        executer_le_clic_a(
+            &mut joueurs,
+            joueur,
+            bouton(Cle::RevenirDuDuel),
+            &contenu,
+            1_302,
+        );
+    }
+    let autres = Cle::Afficher(Vue::Echanges {
+        avec: None,
+        cede: None,
+    });
+    let affiche = executer_le_clic(&mut joueurs, YSOLDE, bouton(autres), &contenu);
+    assert!(
+        affiche.texte.contains("Vos duels : 0 victoire, 1 défaite."),
+        "{}",
+        affiche.texte
+    );
+    let clic = cliquer(&affiche, |cle| *cle == Cle::Afficher(Vue::Classement));
+    let affiche = executer_le_clic(&mut joueurs, YSOLDE, clic, &contenu);
+    assert_eq!(
+        affiche.texte,
+        // Le message échappe les débuts de ligne numérotés, que Discord
+        // prendrait pour une liste.
+        "Classement des duels :\n1\\. Aldric : 1 victoire, 0 défaite\n2\\. Ysolde (ysolde_la_grise) : 0 victoire, 1 défaite"
+    );
+    let _ = fs::remove_dir_all(dossier);
+}
+
+/// Ysolde ajoute Aldric à ses amis : il passe en tête de sa liste des
+/// joueurs, marqué "Ami", et le reste après un redémarrage du bot (section
+/// 15.4).
+#[test]
+fn un_ami_passe_en_tete_de_la_liste_des_joueurs() {
+    let contenu = ContenuV1::new();
+    let (mut joueurs, dossier) = deux_joueurs_au_camp(&contenu, "amis");
+    // Un troisième joueur, Bran, que l'ordre alphabétique met devant Ysolde
+    // et Aldric... sauf Aldric, ami d'Ysolde.
+    fs::copy(
+        dossier.join(format!("{YSOLDE}.json")),
+        dossier.join("9.json"),
+    )
+    .unwrap();
+    let texte = fs::read_to_string(dossier.join("9.json"))
+        .unwrap()
+        .replace("\"Ysolde\"", "\"Bran\"");
+    fs::write(dossier.join("9.json"), texte).unwrap();
+    let autres = Cle::Afficher(Vue::Echanges {
+        avec: None,
+        cede: None,
+    });
+    let affiche = executer_le_clic(&mut joueurs, YSOLDE, bouton(autres.clone()), &contenu);
+    assert_eq!(
+        valeurs_des_menus(&affiche, |cle| *cle == Cle::ChoisirJoueur),
+        vec![JOUEUR.to_string(), "9".to_string()]
+    );
+    let clic = choisir_dans(&affiche, |cle| *cle == Cle::ChoisirJoueur, "9").unwrap();
+    let affiche = executer_le_clic(&mut joueurs, YSOLDE, clic, &contenu);
+    assert!(
+        affiche
+            .texte
+            .contains("Duels de Bran : 0 victoire, 0 défaite."),
+        "{}",
+        affiche.texte
+    );
+    let clic = cliquer(&affiche, |cle| *cle == Cle::AjouterAmi(9));
+    let affiche = executer_le_clic(&mut joueurs, YSOLDE, clic, &contenu);
+    // Le joueur choisi reste à l'écran, qui propose désormais de le retirer.
+    assert!(propose(&affiche, |cle| *cle == Cle::RetirerAmi(9)));
+    // Après un redémarrage du bot, Bran reste en tête, marqué "Ami".
+    let mut joueurs = Joueurs::new(dossier.clone(), 7);
+    executer_le_clic(
+        &mut joueurs,
+        YSOLDE,
+        bouton(Cle::ReprendreLaPartie),
+        &contenu,
+    );
+    let affiche = executer_le_clic(&mut joueurs, YSOLDE, bouton(autres), &contenu);
+    assert_eq!(
+        valeurs_des_menus(&affiche, |cle| *cle == Cle::ChoisirJoueur),
+        vec!["9".to_string(), JOUEUR.to_string()]
+    );
+    let menu = affiche
+        .rangees
+        .iter()
+        .find_map(|rangee| match rangee {
+            Rangee::Menu(menu) if menu.cle == Cle::ChoisirJoueur => Some(menu),
+            _ => None,
+        })
+        .unwrap();
+    assert_eq!(menu.options[0].description.as_deref(), Some("Ami"));
+    let clic = choisir_dans(&affiche, |cle| *cle == Cle::ChoisirJoueur, "9").unwrap();
+    let affiche = executer_le_clic(&mut joueurs, YSOLDE, clic, &contenu);
+    let clic = cliquer(&affiche, |cle| *cle == Cle::RetirerAmi(9));
+    let affiche = executer_le_clic(&mut joueurs, YSOLDE, clic, &contenu);
+    assert!(propose(&affiche, |cle| *cle == Cle::AjouterAmi(9)));
     let _ = fs::remove_dir_all(dossier);
 }

@@ -221,6 +221,7 @@ fn question(session: &Session, contenu: &ContenuV1, maintenant: Horodatage) -> Q
             Vue::Echanges { avec, cede } => {
                 ecran_echanges::echanges(partie(), &session.echanges, avec, cede)
             }
+            Vue::Classement => ecran_echanges::classement(&session.echanges),
             vue => ecran_camp::question(partie(), vue, contenu, maintenant),
         },
         Attente::EntreDeuxEtapes => ecran_expedition::entre_deux_etapes(partie()),

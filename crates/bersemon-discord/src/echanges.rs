@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 
 use bersemon_core::collection::{Collection, Emplacement};
 use bersemon_core::echange::{ErreurEchange, Offre};
+use bersemon_core::relations::Palmares;
 use bersemon_presentation::echanges::erreur_echange;
 
 use crate::joueurs::IdJoueur;
@@ -30,6 +31,9 @@ pub enum ActionDEchange {
     /// L'offre reçue.
     Accepter,
     Refuser,
+    /// La liste d'amis du joueur, qu'il tient seul (section 15.4).
+    AjouterAmi(IdJoueur),
+    RetirerAmi(IdJoueur),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -42,6 +46,8 @@ pub enum ErreurDOffre {
     AutreDejaSollicite,
     AucuneOffre,
     Echange(ErreurEchange),
+    /// Déjà ami, ou plus ami, ou le joueur n'est pas au camp (section 15.4).
+    AmitieInchangee,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -144,14 +150,16 @@ pub struct AutreJoueur {
     pub id: IdJoueur,
     pub heros: String,
     pub pseudo: Option<String>,
+    /// Ses duels (section 15.4).
+    pub palmares: Palmares,
 }
 
 /// Ce que montre l'écran des échanges, préparé par `Joueurs` : l'écran n'a
 /// accès qu'à la partie de son joueur.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct TableauDesEchanges {
-    /// Les autres joueurs qui ont une partie, triés par nom du héros, 25 au
-    /// plus (Q89).
+    /// Les autres joueurs qui ont une partie, les amis d'abord, puis triés
+    /// par nom du héros, 25 au plus (Q89, section 15.4).
     pub joueurs: Vec<AutreJoueur>,
     pub recue: Option<(AutreJoueur, Offre)>,
     pub envoyee: Option<(AutreJoueur, Offre)>,
@@ -160,6 +168,9 @@ pub struct TableauDesEchanges {
     /// Les défis en duel en attente (section 15.3).
     pub defi_recu: Option<AutreJoueur>,
     pub defi_envoye: Option<AutreJoueur>,
+    /// Tous les joueurs du bot qui ont livré au moins un duel, le joueur
+    /// compris, dans l'ordre du classement, 10 au plus (Q94).
+    pub classement: Vec<AutreJoueur>,
 }
 
 /// Un message privé à envoyer dès que possible.
@@ -184,6 +195,7 @@ pub fn erreur_d_offre(erreur: &ErreurDOffre) -> String {
         }
         ErreurDOffre::AucuneOffre => "Cette offre n'est plus en attente.".to_string(),
         ErreurDOffre::Echange(erreur) => erreur_echange(erreur),
+        ErreurDOffre::AmitieInchangee => "Rien à changer à vos amis pour l'instant.".to_string(),
     }
 }
 
