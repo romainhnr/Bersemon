@@ -14,6 +14,7 @@ use bersemon_core::collection::{Emplacement, TriDuCamp};
 use bersemon_core::combat::Action;
 use bersemon_core::deroulement::{ActionDeGestion, Choix};
 use bersemon_core::equipement::{ObjetDEquipementId, PlaceDEquipement};
+use bersemon_core::espece::EspeceId;
 use bersemon_core::expedition_automatique::MONSTRES_MAX;
 use bersemon_core::expedition_automatique::Protection;
 use bersemon_core::heros::Classe;
@@ -53,6 +54,8 @@ pub enum Vue {
     Marchand,
     /// Les monstres que le marchand rachète, avec leur prix.
     Vente,
+    /// Les monstres que Malvoise vend et loue (section 14.2).
+    Achats,
     /// Les attaques que ce monstre connaît et celles qu'il peut apprendre
     /// au camp (section 13.10).
     Attaques(Emplacement),
@@ -284,6 +287,11 @@ pub enum Cle {
     RendreShiny(Emplacement),
     /// Une capsule d'habileté, chez Malvoise.
     AcheterCapsuleDHabilete,
+    /// Menu des espèces que Malvoise vend (section 14.2).
+    AcheterMonstre,
+    /// Menu des espèces que Malvoise loue.
+    LouerMonstre,
+    RendreLeMonstreLoue,
     /// Une pierre d'évolution, chez Malvoise (section 5.4).
     AcheterPierre(PierreDEvolution),
     /// Menu des attaques à apprendre par ce monstre, en oubliant celle en
@@ -466,6 +474,9 @@ impl Cle {
             }),
             Cle::RendreShiny(emplacement) => jouer(Choix::RendreShiny(*emplacement)),
             Cle::AcheterCapsuleDHabilete => jouer(Choix::AcheterCapsulesDHabilete(1)),
+            Cle::AcheterMonstre => jouer(Choix::AcheterMonstre(EspeceId::new(valeur?))),
+            Cle::LouerMonstre => jouer(Choix::LouerMonstre(EspeceId::new(valeur?))),
+            Cle::RendreLeMonstreLoue => jouer(Choix::RendreLeMonstreLoue),
             Cle::AcheterPierre(pierre) => jouer(Choix::AcheterPierres(*pierre, 1)),
             Cle::Apprendre {
                 emplacement,
@@ -563,6 +574,7 @@ impl Cle {
             }
             Cle::Afficher(Vue::Marchand) => "vue:marchand".to_string(),
             Cle::Afficher(Vue::Vente) => "vue:vente".to_string(),
+            Cle::Afficher(Vue::Achats) => "vue:achats".to_string(),
             Cle::Afficher(Vue::Attaques(emplacement)) => {
                 format!("vue:attaques:{}", emplacement_en_texte(*emplacement))
             }
@@ -651,6 +663,9 @@ impl Cle {
                 format!("rendre-shiny:{}", emplacement_en_texte(*emplacement))
             }
             Cle::AcheterCapsuleDHabilete => "acheter-capsule-d-habilete".to_string(),
+            Cle::AcheterMonstre => "acheter-monstre".to_string(),
+            Cle::LouerMonstre => "louer-monstre".to_string(),
+            Cle::RendreLeMonstreLoue => "rendre-le-monstre-loue".to_string(),
             Cle::AcheterPierre(pierre) => format!("acheter-pierre:{}", pierre_en_texte(*pierre)),
             Cle::VendreCeMonstre(emplacement) => {
                 format!("vendre-monstre:{}", emplacement_en_texte(*emplacement))
@@ -735,6 +750,7 @@ impl Cle {
             "vue:expeditions" => Cle::Afficher(Vue::Expeditions),
             "vue:marchand" => Cle::Afficher(Vue::Marchand),
             "vue:vente" => Cle::Afficher(Vue::Vente),
+            "vue:achats" => Cle::Afficher(Vue::Achats),
             "vue:coffre" => Cle::Afficher(Vue::Coffre),
             "vue:ressources" => Cle::Afficher(Vue::Ressources),
             "sortir-du-coffre" => Cle::SortirDuCoffre,
@@ -777,6 +793,9 @@ impl Cle {
             "se-suicider" => Cle::SeSuicider,
             "acheter-capsule" => Cle::AcheterCapsule,
             "acheter-capsule-d-habilete" => Cle::AcheterCapsuleDHabilete,
+            "acheter-monstre" => Cle::AcheterMonstre,
+            "louer-monstre" => Cle::LouerMonstre,
+            "rendre-le-monstre-loue" => Cle::RendreLeMonstreLoue,
             "donner-ame" => Cle::DonnerAme,
             // Le menu unique d'avant l'étape 38 (section 5.4).
             "fiche" => Cle::Fiche(0),
@@ -1244,6 +1263,10 @@ mod tests {
             Cle::DonnerBooster(Emplacement::Camp(59)),
             Cle::RendreShiny(Emplacement::Equipe(3)),
             Cle::AcheterCapsuleDHabilete,
+            Cle::AcheterMonstre,
+            Cle::LouerMonstre,
+            Cle::RendreLeMonstreLoue,
+            Cle::Afficher(Vue::Achats),
             Cle::AcheterPierre(PierreDEvolution::Braise),
             Cle::AcheterPierre(PierreDEvolution::Lune),
             Cle::Apprendre {

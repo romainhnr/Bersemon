@@ -815,6 +815,141 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
 
 /// Une construction lancée depuis la forge, confirmée, annoncée par message
 /// privé à son heure, puis constatée (section 13.4).
+/// Malvoise vend un Loup, loue un Cerf blanc, puis le reprend, à travers
+/// l'écran "Acheter ou louer" ouvert depuis la vente (section 14.2). Toutes
+/// les zones explorées : les menus ont toutes leurs espèces.
+#[test]
+fn malvoise_vend_et_loue_des_monstres_a_travers_les_ecrans_du_bot() {
+    use bersemon_core::catalogue::Catalogue;
+    use bersemon_core::heros::Heros;
+    use bersemon_core::niveau::Niveau;
+    use bersemon_core::nom::Nom;
+    use bersemon_core::partie::Partie;
+    use bersemon_core::sauvegarde::SauvegardeRepository;
+    use bersemon_core::stats::ValeursInternes;
+    use bersemon_storage::FichierJson;
+
+    let contenu = ContenuV1::new();
+    let crapaud = Monstre::creer(
+        contenu.espece(&EspeceId::new("crapaud")).unwrap(),
+        Niveau::new(30).unwrap(),
+        ValeursInternes::default(),
+        false,
+    )
+    .unwrap();
+    let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Guerrier);
+    let partie = Partie::nouvelle(heros, crapaud);
+    let mut coffre = Inventaire::default();
+    coffre.ajouter_argent(10_000);
+    let partie = Partie::restaurer(EtatPartie {
+        heros: partie.heros().clone(),
+        collection: partie.collection().clone(),
+        sac: Inventaire::default(),
+        coffre_du_camp: coffre,
+        marchand_au_camp: true,
+        ames_donnees: Vec::new(),
+        ames_portees: Vec::new(),
+        ames_a_retrouver: Vec::new(),
+        codex: partie.codex().clone(),
+        zones_explorees: contenu
+            .zones()
+            .iter()
+            .map(|zone| zone.id().clone())
+            .collect(),
+        indices_trouves: 6,
+        apotres_vaincus: contenu
+            .piste()
+            .apotres()
+            .map(|apotre| apotre.espece().id().clone())
+            .collect(),
+        humains_vaincus: Vec::new(),
+        conseils_vus: Vec::new(),
+        expeditions_automatiques: Vec::new(),
+        attaques_a_choisir: Vec::new(),
+        peche: Default::default(),
+        forge: Default::default(),
+        relations: Default::default(),
+        machines: Default::default(),
+    })
+    .unwrap();
+    let dossier = dossier_de_test().join("achats");
+    fs::create_dir_all(&dossier).unwrap();
+    FichierJson::new(dossier.join(format!("{JOUEUR}.json")))
+        .enregistrer(&partie)
+        .unwrap();
+    let mut joueurs = Joueurs::new(dossier.clone(), 2026);
+    let maintenant = Horodatage::depuis_secondes(0);
+    let afficher = |joueurs: &mut Joueurs| {
+        let session = joueurs.session(JOUEUR, &contenu);
+        let affiche = message(session, &[], None, &contenu, maintenant);
+        verifier_les_limites(&affiche);
+        affiche
+    };
+    let jouer = |joueurs: &mut Joueurs, clic: Clic| {
+        let version = joueurs.session(JOUEUR, &contenu).version;
+        match clic
+            .cle
+            .commande(clic.valeur.as_deref(), None)
+            .expect("composant lisible")
+        {
+            Commande::Jouer(choix) => joueurs
+                .jouer(JOUEUR, version, choix, &contenu, maintenant)
+                .unwrap(),
+            Commande::Afficher(vue) => {
+                joueurs.afficher(JOUEUR, version, vue, &contenu).unwrap();
+                Vec::new()
+            }
+            commande => panic!("{commande:?}"),
+        }
+    };
+    let cliquer_sur = |joueurs: &mut Joueurs, cle: Cle| {
+        let affiche = afficher(joueurs);
+        let clic = cliquer(&affiche, |propose| *propose == cle);
+        jouer(joueurs, clic)
+    };
+    cliquer_sur(&mut joueurs, Cle::ReprendreLaPartie);
+    cliquer_sur(&mut joueurs, Cle::Afficher(Vue::Marchand));
+    cliquer_sur(&mut joueurs, Cle::Afficher(Vue::Vente));
+    cliquer_sur(&mut joueurs, Cle::Afficher(Vue::Achats));
+    let affiche = afficher(&mut joueurs);
+    let options = |cle: Cle| {
+        affiche
+            .rangees
+            .iter()
+            .find_map(|rangee| match rangee {
+                Rangee::Menu(menu) if menu.cle == cle => Some(menu.options.len()),
+                _ => None,
+            })
+            .unwrap_or(0)
+    };
+    assert_eq!(options(Cle::AcheterMonstre), 13);
+    assert_eq!(options(Cle::LouerMonstre), 8);
+    assert!(!propose(&affiche, |cle| *cle == Cle::RendreLeMonstreLoue));
+    let clic = choisir_dans(&affiche, |cle| *cle == Cle::AcheterMonstre, "loup").unwrap();
+    let achat = jouer(&mut joueurs, clic);
+    assert!(matches!(&achat[..], [Evenement::MonstreAchete { .. }, ..]));
+    let affiche = afficher(&mut joueurs);
+    let clic = choisir_dans(&affiche, |cle| *cle == Cle::LouerMonstre, "cerf-blanc").unwrap();
+    let location = jouer(&mut joueurs, clic);
+    assert!(matches!(&location[..], [Evenement::MonstreLoue { .. }, ..]));
+    let affiche = afficher(&mut joueurs);
+    assert!(
+        affiche
+            .texte
+            .contains("Monstre loué : Cerf blanc, encore 3 expéditions.")
+    );
+    cliquer_sur(&mut joueurs, Cle::RendreLeMonstreLoue);
+    let rendu = cliquer_sur(&mut joueurs, Cle::Oui);
+    assert!(matches!(&rendu[..], [Evenement::MonstreLoueRendu(_), ..]));
+    let session = joueurs.session(JOUEUR, &contenu);
+    let partie = session.deroulement.partie().unwrap();
+    assert!(partie.collection().monstre_loue().is_none());
+    assert_eq!(partie.collection().equipe().len(), 2);
+    // Le Loup au niveau 3, 68 ; le Cerf blanc au niveau 36, 576.
+    assert_eq!(partie.argent(), 10_000 - 68 - 576);
+    let _ = fs::remove_dir_all(dossier);
+}
+
 #[test]
 fn gunther_agrandit_l_enclos_a_travers_les_ecrans_du_bot() {
     use bersemon_core::amelioration::{Amelioration, Forge};

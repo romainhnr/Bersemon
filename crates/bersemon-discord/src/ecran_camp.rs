@@ -62,6 +62,7 @@ pub fn question(
         }
         Vue::Marchand => ecran_marchand::etal(partie, contenu),
         Vue::Vente => ecran_marchand::vente(partie),
+        Vue::Achats => ecran_marchand::achats(partie, contenu),
         Vue::Attaques(emplacement) => attaques(partie, emplacement, contenu),
         Vue::Coffre => ecran_coffre::coffre(partie),
         Vue::Ressources => ecran_coffre::ressources(partie),

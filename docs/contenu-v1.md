@@ -969,10 +969,13 @@ Décidés le 20/10/2026, pour les étapes 83 à 86 (gamedesign.md, section 14.2)
 | Libellés | Acheter ou louer ; Acheter un monstre ; Louer un monstre ; Rendre {monstre} à Malvoise |
 | Offre d'achat | {espèce} de niveau {niveau} : {prix} |
 | Offre de location | {espèce} de niveau {niveau}, pour 3 expéditions : {prix} |
-| Achat | Malvoise ouvre une cage : {monstre} vous suit. Il rejoint l'équipe. / ... Il rejoint le camp. |
-| Location | Malvoise vous confie {monstre} pour 3 expéditions. Il rejoint l'équipe. / ... Il rejoint le camp. |
-| Fiche d'un monstre loué | Loué à Malvoise : encore {n} expédition(s). |
+| Achat | Malvoise ouvre une cage contre {prix} : {monstre} rejoint l'équipe. / ... rejoint le camp. |
+| Location | Malvoise vous confie {monstre} pour 3 expéditions, contre {prix}. {monstre} rejoint l'équipe. / ... rejoint le camp. |
+| Étal, avec un monstre loué | Monstre loué : {monstre}, encore {n} expéditions. (au singulier pour 1) |
+| Fiche d'un monstre loué | Loué à Malvoise : encore {n} expéditions. (au singulier pour 1) |
+| Vente, monstre loué | {monstre} (niv. {niveau}) : loué, ne se vend pas |
 | Fin de location, au retour au camp | {monstre} retourne chez Malvoise : sa location est finie. |
 | Rendu plus tôt | {monstre} retourne chez Malvoise. |
 | Confirmation, rendre | Rendre {monstre} à Malvoise ? La location n'est pas remboursée. |
-| Refus | Vous avez déjà un monstre loué. / Un monstre loué ne peut pas faire cela. / L'équipe et le camp sont pleins. |
+| Écran du bot | Malvoise vend des monstres communs des zones que vous avez explorées, et loue des monstres rares pour 3 expéditions : un monstre loué ne fait que combattre, puis repart. Vous avez {argent}. |
+| Refus | Vous avez déjà un monstre loué. / Un monstre loué ne peut pas faire cela. / L'équipe et le camp sont pleins. / Malvoise ne propose pas ce monstre pour l'instant. / Vous n'avez pas de monstre loué. / Malvoise n'a encore aucun monstre à vendre : menez une expédition au bout. / Malvoise n'a encore aucun monstre à louer. |

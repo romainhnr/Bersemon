@@ -1,14 +1,18 @@
 //! Malvoise sur Discord (section 14.2) : son étal, où l'on achète
-//! soins, capsules et pierres d'évolution, et la vente des monstres. Les achats se
-//! font sans confirmation ; la vente est confirmée par le déroulement.
+//! soins, capsules et pierres d'évolution, la vente des monstres, et leur
+//! achat ou leur location. Les achats se font sans confirmation ; la vente
+//! et le retour d'un monstre loué sont confirmés par le déroulement.
 
 use bersemon_core::contenu::ContenuV1;
-use bersemon_core::marchand::{PRIX_CAPSULE_D_HABILETE, PRIX_PIERRE_D_EVOLUTION, prix_du_soin};
+use bersemon_core::marchand::{
+    EXPEDITIONS_DE_LOCATION, OffreDeMonstre, PRIX_CAPSULE_D_HABILETE, PRIX_PIERRE_D_EVOLUTION,
+    prix_du_soin,
+};
 use bersemon_core::partie::Partie;
 use bersemon_core::pierre::PierreDEvolution;
 use bersemon_presentation::marchand::{
-    capsules_en_vente, etal as texte_de_l_etal, offre_de_rachat, offre_de_ressources,
-    ressources_a_vendre,
+    capsules_en_vente, etal as texte_de_l_etal, location_en_cours, offre_d_achat,
+    offre_de_location, offre_de_rachat, offre_de_ressources, ressources_a_vendre,
 };
 use bersemon_presentation::monstres::decrire_attaque;
 use bersemon_presentation::partie::argent;
@@ -132,7 +136,10 @@ pub fn vente(partie: &Partie) -> Question {
         "Vendre des ressources",
         ressources,
     ));
+    // La dernière rangée de l'étal est pleine : l'achat et la location de
+    // monstres passent par la vente (section 14.2).
     lignes.extend(rangees(vec![
+        bouton(Cle::Afficher(Vue::Achats), "Acheter ou louer", PRINCIPAL),
         bouton(
             Cle::Afficher(Vue::Marchand),
             "Retour à Malvoise",
@@ -143,6 +150,61 @@ pub fn vente(partie: &Partie) -> Question {
     Question {
         texte: format!(
             "Malvoise rachète vos monstres et vos ressources : choisissez ce que vous vendez, son prix est indiqué dans le menu. Vous avez {}.",
+            argent(partie.argent())
+        ),
+        rangees: lignes,
+    }
+}
+
+/// Les espèces communes et rares des zones menées au bout : 13 et 8 dans le
+/// contenu, loin des 25 options d'un menu (section 14.2).
+pub fn achats(partie: &Partie, contenu: &ContenuV1) -> Question {
+    if !partie.marchand_au_camp() {
+        return sans_marchand();
+    }
+    // Sans les types : ceux d'une espèce seulement rencontrée restent
+    // cachés jusqu'à sa capture (section 5.6).
+    let option = |offre: &OffreDeMonstre, libelle: String| OptionDeMenu {
+        libelle,
+        valeur: offre.espece.id().as_str().to_string(),
+        description: None,
+    };
+    let mut lignes: Vec<Rangee> = Vec::new();
+    let a_vendre = partie
+        .offres_d_achat(contenu.zones(), contenu.especes())
+        .iter()
+        .map(|offre| option(offre, offre_d_achat(offre)))
+        .collect();
+    lignes.extend(menu(Cle::AcheterMonstre, "Acheter un monstre", a_vendre));
+    let a_louer = partie
+        .offres_de_location(contenu.zones(), contenu.piste())
+        .iter()
+        .map(|offre| option(offre, offre_de_location(offre)))
+        .collect();
+    lignes.extend(menu(Cle::LouerMonstre, "Louer un monstre", a_louer));
+    let mut boutons = Vec::new();
+    if let Some((_, monstre)) = partie.collection().monstre_loue() {
+        boutons.push(bouton(
+            Cle::RendreLeMonstreLoue,
+            &format!("Rendre {} à Malvoise", monstre.nom()),
+            DANGER,
+        ));
+    }
+    boutons.extend([
+        bouton(
+            Cle::Afficher(Vue::Marchand),
+            "Retour à Malvoise",
+            SECONDAIRE,
+        ),
+        retour(),
+    ]);
+    lignes.extend(rangees(boutons));
+    let location = location_en_cours(partie)
+        .map(|ligne| format!("\n{ligne}"))
+        .unwrap_or_default();
+    Question {
+        texte: format!(
+            "Malvoise vend des monstres communs des zones que vous avez explorées, et loue des monstres rares pour {EXPEDITIONS_DE_LOCATION} expéditions : un monstre loué ne fait que combattre, puis repart. Vous avez {}.{location}",
             argent(partie.argent())
         ),
         rangees: lignes,
