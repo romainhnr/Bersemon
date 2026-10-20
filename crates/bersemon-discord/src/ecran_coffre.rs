@@ -1,7 +1,8 @@
 //! Le coffre du camp sur Discord (section 13.3) : un menu pour prendre dans
 //! le coffre, un autre pour ranger ce que contient le sac, et de même pour
-//! les ressources, les pierres d'évolution, les boosters et les Éclats
-//! d'astre.
+//! les pierres d'évolution, les boosters et les Éclats d'astre. Les
+//! ressources ont leur propre écran : avec celles du Col du Givre-Noir, elles
+//! ne tiennent plus dans un menu avec ces objets (étape 82).
 
 use bersemon_core::inventaire::{Inventaire, Objet};
 use bersemon_core::partie::Partie;
@@ -10,14 +11,14 @@ use bersemon_presentation::boosters::{boosters, eclats_d_astre};
 use bersemon_presentation::monstres::decrire_attaque;
 use bersemon_presentation::partie::{
     argent, capsules_d_habilete as capsules_d_habilete_en_texte, charmes_de_garde, coffre_du_camp,
-    pierres, ressources,
+    pierres, ressources as ressources_en_texte,
 };
 use bersemon_presentation::soins::soins;
 
-use crate::composants::{Cle, objet_en_texte};
+use crate::composants::{Cle, Vue, objet_en_texte};
 use crate::ecran_camp::retour;
 use crate::message::{
-    OPTIONS_PAR_MENU, OptionDeMenu, PRINCIPAL, Question, Rangee, bouton, menu, rangees,
+    OPTIONS_PAR_MENU, OptionDeMenu, PRINCIPAL, Question, Rangee, SECONDAIRE, bouton, menu, rangees,
 };
 
 /// Quantités proposées en plus de tout ce qu'il y en a. Un seul lot pour
@@ -43,15 +44,22 @@ pub fn coffre(partie: &Partie) -> Question {
     ));
     lignes.extend(menu(
         Cle::SortirRessourcesDuCoffre,
-        "Prendre des ressources ou d'autres objets dans le coffre",
-        options_de_ressources(partie.coffre_du_camp()),
+        "Prendre d'autres objets dans le coffre",
+        options_d_objets(partie.coffre_du_camp()),
     ));
     lignes.extend(menu(
         Cle::RangerRessourcesAuCoffre,
-        "Ranger des ressources ou d'autres objets dans le coffre",
-        options_de_ressources(partie.sac()),
+        "Ranger d'autres objets dans le coffre",
+        options_d_objets(partie.sac()),
     ));
     let mut boutons = Vec::new();
+    if !partie.coffre_du_camp().ressources().is_empty() || !partie.sac().ressources().is_empty() {
+        boutons.push(bouton(
+            Cle::Afficher(Vue::Ressources),
+            "Ressources",
+            SECONDAIRE,
+        ));
+    }
     if !partie.sac().est_vide() {
         boutons.push(bouton(
             Cle::ToutRanger,
@@ -146,11 +154,34 @@ fn options(inventaire: &Inventaire, avec_capsules: bool) -> Vec<OptionDeMenu> {
     options
 }
 
-/// Toutes celles d'une sorte pour chaque ressource, une ou toutes pour
-/// chaque pierre, tous ceux d'une sorte pour chaque booster, et tous les
-/// Éclats d'astre : avec les treize ressources, les deux pierres et les six
-/// boosters du contenu, 24 options au plus (sections 5.4, 13.7 et 14.3).
-fn options_de_ressources(inventaire: &Inventaire) -> Vec<OptionDeMenu> {
+/// Les ressources du sac et du coffre (section 14.3). Les mêmes clés que les
+/// autres objets du coffre, qui sont sur un autre écran.
+pub fn ressources(partie: &Partie) -> Question {
+    let mut lignes: Vec<Rangee> = Vec::new();
+    lignes.extend(menu(
+        Cle::SortirRessourcesDuCoffre,
+        "Prendre des ressources dans le coffre",
+        options_de_ressources(partie.coffre_du_camp()),
+    ));
+    lignes.extend(menu(
+        Cle::RangerRessourcesAuCoffre,
+        "Ranger des ressources dans le coffre",
+        options_de_ressources(partie.sac()),
+    ));
+    lignes.extend(rangees(vec![
+        bouton(Cle::Afficher(Vue::Coffre), "Retour au coffre", SECONDAIRE),
+        retour(),
+    ]));
+    Question {
+        texte: coffre_du_camp(partie),
+        rangees: lignes,
+    }
+}
+
+/// Une ou toutes pour chaque pierre, tous ceux d'une sorte pour chaque
+/// booster, et tous les Éclats d'astre : avec les deux pierres et les six
+/// boosters du contenu, 11 options au plus (sections 5.4, 13.7 et 14.3).
+fn options_d_objets(inventaire: &Inventaire) -> Vec<OptionDeMenu> {
     let mut options = Vec::new();
     for &(booster, nombre) in inventaire.boosters() {
         options.push(option(
@@ -177,13 +208,23 @@ fn options_de_ressources(inventaire: &Inventaire) -> Vec<OptionDeMenu> {
             Some("Tout".to_string()),
         ));
     }
-    for (ressource, nombre) in inventaire.ressources() {
-        options.push(option(
-            Objet::Ressources(ressource.id().clone(), *nombre),
-            ressources(ressource, *nombre),
-            Some("Tout".to_string()),
-        ));
-    }
+    options
+}
+
+/// Toutes celles d'une sorte pour chaque ressource : 17 sortes dans le
+/// contenu.
+fn options_de_ressources(inventaire: &Inventaire) -> Vec<OptionDeMenu> {
+    let mut options: Vec<OptionDeMenu> = inventaire
+        .ressources()
+        .iter()
+        .map(|(ressource, nombre)| {
+            option(
+                Objet::Ressources(ressource.id().clone(), *nombre),
+                ressources_en_texte(ressource, *nombre),
+                Some("Tout".to_string()),
+            )
+        })
+        .collect();
     options.truncate(OPTIONS_PAR_MENU);
     options
 }

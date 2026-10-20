@@ -38,6 +38,10 @@ pub enum Vue {
     /// Avec la position, dans le codex, de l'espèce dont la fiche est
     /// ouverte.
     Codex(Option<usize>),
+    /// Une page de la liste du codex après la première, qui est celle de
+    /// `Codex(None)` : avec le Col du Givre-Noir, la liste ne tient plus dans
+    /// un message (étape 82).
+    PageDuCodex(u8),
     /// Avec le monstre choisi pour être géré.
     Gestion(Option<Emplacement>),
     /// Les zones explorées et leurs expéditions automatiques (section 12).
@@ -54,6 +58,8 @@ pub enum Vue {
     Attaques(Emplacement),
     /// Le sac et le coffre du camp (section 13.3).
     Coffre,
+    /// Les ressources du sac et du coffre, depuis le coffre (section 14.3).
+    Ressources,
     /// Le suicide du héros, pour recommencer (section 13.9).
     Options,
     /// La forge de Gunther, une fois libéré (section 13.4).
@@ -546,6 +552,7 @@ impl Cle {
             Cle::Afficher(Vue::Camp) => "vue:camp".to_string(),
             Cle::Afficher(Vue::Codex(None)) => "vue:codex".to_string(),
             Cle::Afficher(Vue::Codex(Some(index))) => format!("vue:codex:{index}"),
+            Cle::Afficher(Vue::PageDuCodex(page)) => format!("vue:page-du-codex:{page}"),
             Cle::Afficher(Vue::Gestion(None)) => "vue:gestion".to_string(),
             Cle::Afficher(Vue::Gestion(Some(emplacement))) => {
                 format!("vue:gestion:{}", emplacement_en_texte(*emplacement))
@@ -560,6 +567,7 @@ impl Cle {
                 format!("vue:attaques:{}", emplacement_en_texte(*emplacement))
             }
             Cle::Afficher(Vue::Coffre) => "vue:coffre".to_string(),
+            Cle::Afficher(Vue::Ressources) => "vue:ressources".to_string(),
             Cle::Afficher(Vue::Options) => "vue:options".to_string(),
             Cle::Afficher(Vue::Forge) => "vue:forge".to_string(),
             Cle::Afficher(Vue::Equipement) => "vue:equipement".to_string(),
@@ -728,6 +736,7 @@ impl Cle {
             "vue:marchand" => Cle::Afficher(Vue::Marchand),
             "vue:vente" => Cle::Afficher(Vue::Vente),
             "vue:coffre" => Cle::Afficher(Vue::Coffre),
+            "vue:ressources" => Cle::Afficher(Vue::Ressources),
             "sortir-du-coffre" => Cle::SortirDuCoffre,
             "ranger-au-coffre" => Cle::RangerAuCoffre,
             "sortir-ressources" => Cle::SortirRessourcesDuCoffre,
@@ -798,6 +807,9 @@ impl Cle {
                         let (vue, parametre) = parametre.split_once(':')?;
                         match vue {
                             "codex" => Cle::Afficher(Vue::Codex(Some(parametre.parse().ok()?))),
+                            "page-du-codex" => {
+                                Cle::Afficher(Vue::PageDuCodex(parametre.parse().ok()?))
+                            }
                             "gestion" => {
                                 Cle::Afficher(Vue::Gestion(Some(lire_emplacement(parametre)?)))
                             }
@@ -1122,6 +1134,7 @@ mod tests {
             Cle::Afficher(Vue::Camp),
             Cle::Afficher(Vue::Codex(None)),
             Cle::Afficher(Vue::Codex(Some(10))),
+            Cle::Afficher(Vue::PageDuCodex(1)),
             Cle::Afficher(Vue::Gestion(None)),
             Cle::Afficher(Vue::Gestion(Some(Emplacement::Camp(29)))),
             Cle::Fiche(0),
@@ -1245,6 +1258,7 @@ mod tests {
             Cle::Trier(TriDuCamp::Niveau),
             Cle::Trier(TriDuCamp::Type),
             Cle::Afficher(Vue::Coffre),
+            Cle::Afficher(Vue::Ressources),
             Cle::SortirDuCoffre,
             Cle::RangerAuCoffre,
             Cle::SortirRessourcesDuCoffre,

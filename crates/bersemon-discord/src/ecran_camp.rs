@@ -53,7 +53,8 @@ pub fn question(
 ) -> Question {
     match vue {
         Vue::Camp => principale(partie, contenu, maintenant),
-        Vue::Codex(fiche) => codex(partie, fiche, contenu),
+        Vue::Codex(fiche) => codex(partie, fiche, 0, contenu),
+        Vue::PageDuCodex(page) => codex(partie, None, usize::from(page), contenu),
         Vue::Gestion(choisi) => gestion(partie, choisi, contenu),
         Vue::Expeditions => ecran_expeditions_automatiques::liste(partie, contenu, maintenant),
         Vue::Preparation { zone, choisis } => {
@@ -63,6 +64,7 @@ pub fn question(
         Vue::Vente => ecran_marchand::vente(partie),
         Vue::Attaques(emplacement) => attaques(partie, emplacement, contenu),
         Vue::Coffre => ecran_coffre::coffre(partie),
+        Vue::Ressources => ecran_coffre::ressources(partie),
         Vue::Options => options(),
         Vue::Forge => forge(partie, contenu, maintenant),
         Vue::Equipement => equipement(partie),
@@ -365,7 +367,11 @@ fn options() -> Question {
 /// Avec plus de 40 espèces, la liste et une fiche ne tiennent plus ensemble
 /// dans un message : une fiche ouverte remplace la liste, qu'un bouton
 /// rouvre.
-fn codex(partie: &Partie, fiche: Option<usize>, contenu: &ContenuV1) -> Question {
+/// Assez peu pour qu'une page de la liste tienne dans un message, avec les
+/// noms d'espèces les plus longs.
+const ESPECES_PAR_PAGE: usize = 30;
+
+fn codex(partie: &Partie, fiche: Option<usize>, page: usize, contenu: &ContenuV1) -> Question {
     let codex = partie.codex();
     let especes = contenu.especes();
     let ouverte = fiche
@@ -379,7 +385,12 @@ fn codex(partie: &Partie, fiche: Option<usize>, contenu: &ContenuV1) -> Question
         }
         None => {
             lignes.push("Codex :".to_string());
-            for (position, espece) in especes.iter().enumerate() {
+            for (position, espece) in especes
+                .iter()
+                .enumerate()
+                .skip(page * ESPECES_PAR_PAGE)
+                .take(ESPECES_PAR_PAGE)
+            {
                 lignes.push(format!(
                     "  {}. {}",
                     position + 1,
@@ -388,6 +399,7 @@ fn codex(partie: &Partie, fiche: Option<usize>, contenu: &ContenuV1) -> Question
             }
         }
     }
+    let pages = especes.len().div_ceil(ESPECES_PAR_PAGE);
     let capturees: Vec<OptionDeMenu> = especes
         .iter()
         .enumerate()
@@ -420,6 +432,21 @@ fn codex(partie: &Partie, fiche: Option<usize>, contenu: &ContenuV1) -> Question
             "Liste du codex",
             SECONDAIRE,
         ));
+    } else {
+        let vers_la_page = |page: usize| match page {
+            0 => Some(Cle::Afficher(Vue::Codex(None))),
+            _ => u8::try_from(page)
+                .ok()
+                .map(|page| Cle::Afficher(Vue::PageDuCodex(page))),
+        };
+        if let Some(cle) = page.checked_sub(1).and_then(vers_la_page) {
+            boutons.push(bouton(cle, "Page précédente", SECONDAIRE));
+        }
+        if page + 1 < pages {
+            if let Some(cle) = vers_la_page(page + 1) {
+                boutons.push(bouton(cle, "Page suivante", SECONDAIRE));
+            }
+        }
     }
     boutons.push(retour());
     rangees_du_codex.extend(rangees(boutons));

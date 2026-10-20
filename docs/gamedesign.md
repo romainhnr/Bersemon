@@ -248,6 +248,7 @@ Le joueur peut :
 - Après la V1 : une espèce seulement rencontrée ne montre plus que son nom ; ses types n'apparaissent qu'à sa capture, comme en combat (section 10.6). La fiche d'une espèce capturée montre aussi le total de ses stats de base.
 - Depuis l'étape 66, un Apôtre ne se capture plus : sa victoire ouvre sa fiche, et la liste du codex le dit "Apôtre vaincu" au lieu de "capturée" (section 9.4).
 - Précisé à l'étape 65, en codant : avec les 41 espèces des monstres aquatiques, la liste du codex et une fiche ne tiennent plus ensemble dans un message Discord (2000 caractères). Sur Discord, une fiche ouverte remplace donc la liste, qu'un bouton "Liste du codex" rouvre ; la console garde la liste et la fiche.
+- Précisé à l'étape 82, en codant : avec les 52 espèces du Col du Givre-Noir, la liste du codex ne tient plus dans un message Discord ; elle s'y lit par pages de 30 espèces, avec les boutons "Page précédente" et "Page suivante".
 
 ### 5.7 KO (pas de mort définitive)
 
@@ -652,6 +653,7 @@ Repères, avec des valeurs internes de 15 : dans la Lisière, une Salamandre de 
   - À la reprise d'une sauvegarde antérieure, l'argent, les potions et les capsules déjà possédés sont rangés dans le coffre.
   - Au camp, l'écran du coffre montre le sac et le coffre ; on y prend ou range des potions, de l'argent et des capsules, ou l'on range tout le sac d'un coup. Le camp rappelle le contenu des deux.
   - Depuis les étapes 35 et 36, le sac et le coffre gardent aussi les capsules d'habileté et les ressources, qui se déplacent par lots comme les potions. Les âmes des marchands n'y sont pas : elles restent avec le joueur, que rien ne lui fait perdre (section 14.2).
+  - Précisé à l'étape 82, en codant : sur Discord, avec les ressources du Col du Givre-Noir, les ressources ne tiennent plus dans le menu des autres objets du coffre (pierres, boosters, Éclats d'astre) : un bouton "Ressources" du coffre ouvre leur écran, avec un menu pour en prendre et un pour en ranger. Dans les textes du sac et du coffre, plusieurs capsules d'attaque se regroupent : "les capsules d'attaque (Brasier, Déferlante)", pour que le camp tienne dans un message quand le joueur les a toutes.
 
 ### 13.4 Améliorations
 

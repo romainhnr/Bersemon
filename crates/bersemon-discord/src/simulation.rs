@@ -326,10 +326,12 @@ fn jouer_un_coup(
             let abbaye = choisir_dans(message, |cle| *cle == Cle::Partir, "abbaye");
             let vallee = choisir_dans(message, |cle| *cle == Cle::Partir, "vallee");
             let marais = choisir_dans(message, |cle| *cle == Cle::Partir, "marais");
-            match (abbaye, vallee, marais) {
-                (Some(clic), _, _) if niveau >= 34 => clic,
-                (_, Some(clic), _) if niveau >= 24 => clic,
-                (_, _, Some(clic)) if niveau >= 12 => clic,
+            let col = choisir_dans(message, |cle| *cle == Cle::Partir, "col-du-givre-noir");
+            match (col, abbaye, vallee, marais) {
+                (Some(clic), _, _, _) if niveau >= 44 => clic,
+                (_, Some(clic), _, _) if niveau >= 34 => clic,
+                (_, _, Some(clic), _) if niveau >= 24 => clic,
+                (_, _, _, Some(clic)) if niveau >= 12 => clic,
                 _ => choisir_dans(message, |cle| *cle == Cle::Partir, "lisiere").expect("lisière"),
             }
         }
@@ -665,12 +667,12 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
         let session = joueurs.session(JOUEUR, &contenu);
         let affiche = message(session, &evenements, None, &contenu, maintenant);
         verifier_les_limites(&affiche);
-        // Jusqu'à la chute du deuxième Apôtre, puis le retour au camp.
+        // Jusqu'à la chute du troisième Apôtre, puis le retour au camp.
         let epilogues = vus
             .iter()
             .filter(|evenement| matches!(evenement, Evenement::Epilogue(_)))
             .count();
-        if epilogues == 2 && session.deroulement.attente() == Attente::Camp {
+        if epilogues == 3 && session.deroulement.attente() == Attente::Camp {
             break;
         }
         let clic = jouer_un_coup(session, &affiche, &mut tour, automatique_faite, visite);
@@ -722,13 +724,13 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
         vus.iter()
             .any(|evenement| matches!(evenement, Evenement::Epilogue(_)))
     );
-    // Le brigand, le Bourreau et l'Inquisiteur barrent leur zone jusqu'à
-    // leur défaite, une seule chacun (section 10.7).
+    // Le brigand, le Bourreau, l'Inquisiteur et le Porte-étendard barrent
+    // leur zone jusqu'à leur défaite, une seule chacun (section 10.7).
     let humains_vaincus = vus
         .iter()
         .filter(|evenement| matches!(evenement, Evenement::HumainVaincu { .. }))
         .count();
-    assert_eq!(humains_vaincus, 3);
+    assert_eq!(humains_vaincus, 4);
     assert!(
         vus.iter()
             .any(|evenement| matches!(evenement, Evenement::OrdreDonne { .. })),
@@ -778,12 +780,13 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
     let session = joueurs.session(JOUEUR, &contenu);
     assert_eq!(session.deroulement.attente(), Attente::Camp);
     let partie = session.deroulement.partie().unwrap();
-    assert_eq!(partie.indices_trouves(), 4);
+    assert_eq!(partie.indices_trouves(), 6);
     assert_eq!(
         partie.apotres_vaincus(),
         &[
             EspeceId::new("baron-pendu"),
-            EspeceId::new("abbesse-ecorchee")
+            EspeceId::new("abbesse-ecorchee"),
+            EspeceId::new("margrave-de-givre")
         ]
     );
     assert_eq!(partie.collection().equipe()[0].nom(), "Braise");
@@ -791,7 +794,7 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
     // 9.4).
     assert_eq!(
         compter(|evenement| matches!(evenement, Evenement::AmeDApotreRecueillie(_))),
-        2
+        3
     );
     let camp = message(
         session,
@@ -802,7 +805,7 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
     );
     assert!(
         camp.texte
-            .contains("Âmes d'Apôtres : Baron pendu et Abbesse écorchée."),
+            .contains("Âmes d'Apôtres : Baron pendu, Abbesse écorchée et Margrave de givre."),
         "{}",
         camp.texte
     );
@@ -1465,20 +1468,33 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         let cles = afficher(&partie, Vue::Marchand);
         assert!(cles.contains(&Cle::AcheterCapsuleDHabilete));
         assert!(cles.contains(&Cle::AcheterPierre(PierreDEvolution::Lune)));
-        afficher(&partie, Vue::Coffre);
-        // Aucun menu du coffre n'est coupé : chaque ressource et chaque pierre
-        // se déplace (section 14.3).
-        let coffre = crate::ecran_coffre::coffre(&partie);
-        let sortes = contenu
+        let cles = afficher(&partie, Vue::Coffre);
+        assert!(cles.contains(&Cle::Afficher(Vue::Ressources)));
+        afficher(&partie, Vue::Ressources);
+        // Aucun menu du coffre n'est coupé : chaque ressource, chaque pierre
+        // et chaque booster se déplace (section 14.3). Les ressources ont leur
+        // écran (étape 82).
+        let mut sortes: Vec<&str> = contenu
             .especes()
             .iter()
-            .filter(|espece| espece.ressource().is_some())
-            .count();
-        for rangee in &coffre.rangees {
-            if let Rangee::Menu(menu) = rangee {
-                assert!(menu.options.len() < OPTIONS_PAR_MENU, "{}", menu.indication);
-                if menu.cle == Cle::SortirRessourcesDuCoffre {
-                    assert_eq!(menu.options.len(), sortes + 4 + Booster::TOUS.len() + 1);
+            .filter_map(|espece| espece.ressource())
+            .map(|ressource| ressource.id().as_str())
+            .collect();
+        sortes.sort_unstable();
+        sortes.dedup();
+        for (ecran, attendues) in [
+            (
+                crate::ecran_coffre::coffre(&partie),
+                4 + Booster::TOUS.len() + 1,
+            ),
+            (crate::ecran_coffre::ressources(&partie), sortes.len()),
+        ] {
+            for rangee in &ecran.rangees {
+                if let Rangee::Menu(menu) = rangee {
+                    assert!(menu.options.len() < OPTIONS_PAR_MENU, "{}", menu.indication);
+                    if menu.cle == Cle::SortirRessourcesDuCoffre {
+                        assert_eq!(menu.options.len(), attendues, "{}", menu.indication);
+                    }
                 }
             }
         }
@@ -1522,6 +1538,12 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         for fiche in [None, Some(0), Some(dernier)] {
             afficher(&partie, Vue::Codex(fiche));
         }
+        // La liste du codex se lit en deux pages (étape 82).
+        let cles = afficher(&partie, Vue::Codex(None));
+        assert!(cles.contains(&Cle::Afficher(Vue::PageDuCodex(1))));
+        let cles = afficher(&partie, Vue::PageDuCodex(1));
+        assert!(cles.contains(&Cle::Afficher(Vue::Codex(None))));
+        assert!(!cles.contains(&Cle::Afficher(Vue::PageDuCodex(2))));
     }
 }
 

@@ -152,7 +152,19 @@ pub fn contenu(inventaire: &Inventaire) -> String {
     if inventaire.argent() > 0 {
         elements.push(argent(inventaire.argent()));
     }
-    elements.extend(inventaire.capsules().iter().map(capsule));
+    // Regroupées, pour que le camp tienne dans un message Discord quand le
+    // joueur les a toutes (étape 82).
+    match inventaire.capsules() {
+        [] => {}
+        [seule] => elements.push(capsule(seule)),
+        plusieurs => {
+            let noms: Vec<&str> = plusieurs
+                .iter()
+                .map(|capsule| capsule.attaque().nom())
+                .collect();
+            elements.push(format!("les capsules d'attaque ({})", noms.join(", ")));
+        }
+    }
     if inventaire.capsules_d_habilete() > 0 {
         elements.push(capsules_d_habilete(inventaire.capsules_d_habilete()));
     }
