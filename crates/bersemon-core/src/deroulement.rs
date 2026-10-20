@@ -20,6 +20,7 @@ use crate::amelioration::{
     Amelioration, Chantier, ErreurAmelioration, PlanDAmelioration, PlanDeFabrication,
 };
 use crate::attaque::{Attaque, AttaqueId, ErreurAttaquesMonstre};
+use crate::booster::{Booster, ErreurBooster};
 use crate::capsule::{Capsule, ErreurApprentissage};
 use crate::collection::{Emplacement, ErreurCollection, Placement, TriDuCamp};
 use crate::combat::{self, Action, BilanCombat, Combat, ErreurCombat, Issue, Phase};
@@ -110,6 +111,15 @@ pub enum Choix {
     /// Au camp, après confirmation, pour un monstre qui remplit la condition
     /// de son évolution (section 5.4).
     FaireEvoluer(Emplacement),
+    /// Au camp, sans confirmation : le booster augmente une valeur interne
+    /// de ce monstre (section 14.3).
+    DonnerBooster {
+        emplacement: Emplacement,
+        booster: Booster,
+    },
+    /// Au camp, chez Malvoise, après confirmation : un Éclat d'astre rend ce
+    /// monstre shiny (section 13.7).
+    RendreShiny(Emplacement),
     /// Au camp, après confirmation : Gunther construit le niveau suivant de
     /// cette amélioration (section 13.4).
     LancerAmelioration(Amelioration),
@@ -293,6 +303,8 @@ pub enum Confirmation {
         vers: Espece,
         pierre: Option<PierreDEvolution>,
     },
+    /// Un Éclat d'astre serait consommé (section 13.7).
+    RendreShiny(Monstre),
 }
 
 /// Ce qui s'est passé, dans l'ordre. Les monstres et les combats sont des
@@ -323,6 +335,8 @@ pub enum Evenement {
         capsule_d_habilete: bool,
         /// Elle va dans le sac (section 5.4).
         pierre: Option<PierreDEvolution>,
+        /// Il va dans le sac (section 14.3).
+        booster: Option<Booster>,
     },
     MonstreRarePacifique(Monstre),
     MonstreRareHostile(Monstre),
@@ -404,6 +418,9 @@ pub enum Evenement {
     /// Après l'épilogue : le récit de l'âme de l'Apôtre vaincu, que le
     /// joueur garde (section 9.4).
     AmeDApotreRecueillie(String),
+    /// Après l'âme : l'Éclat d'astre que laisse l'Apôtre, qui va dans le sac
+    /// (section 14.3).
+    EclatDAstreRamasse,
     /// Toute l'équipe est KO : retour au camp, tout le sac perdu (section
     /// 9.3).
     Defaite {
@@ -500,6 +517,14 @@ pub enum Evenement {
         monstre: Monstre,
         ancienne: Option<Habilete>,
     },
+    /// Le monstre avant et après le booster (section 14.3).
+    BoosterDonne {
+        booster: Booster,
+        avant: Monstre,
+        apres: Monstre,
+    },
+    /// Le monstre, désormais shiny (section 13.7).
+    MonstreRenduShiny(Monstre),
     /// Nom du marchand dont l'âme est donnée, et le soin que Malvoise vend
     /// désormais.
     AmeDonnee {
@@ -564,6 +589,7 @@ pub enum ErreurChoix {
     CapsuleInconnue(AttaqueId),
     Apprentissage(ErreurApprentissage),
     Habilete(ErreurChangementDHabilete),
+    Booster(ErreurBooster),
     Evolution(ErreurEvolution),
     Amelioration(ErreurAmelioration),
     /// Le contenu n'a pas de plan pour ce niveau ou cet objet.
@@ -592,6 +618,7 @@ impl fmt::Display for ErreurChoix {
             }
             ErreurChoix::Apprentissage(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Habilete(erreur) => write!(f, "{erreur}"),
+            ErreurChoix::Booster(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Evolution(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Amelioration(erreur) => write!(f, "{erreur}"),
             ErreurChoix::PlanInconnu => write!(f, "aucun plan pour ce niveau ou cet objet"),
@@ -1157,6 +1184,51 @@ impl EnJeu {
                     .cloned()
                     .expect("le monstre vient de changer d'habileté");
                 evenements.push(Evenement::HabileteChangee { monstre, ancienne });
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::DonnerBooster {
+                emplacement,
+                booster,
+            } => {
+                let avant = self
+                    .partie
+                    .donner_booster(*emplacement, *booster)
+                    .map_err(ErreurChoix::Booster)?;
+                let apres = self
+                    .partie
+                    .collection()
+                    .monstre(*emplacement)
+                    .cloned()
+                    .expect("le monstre vient de recevoir le booster");
+                evenements.push(Evenement::BoosterDonne {
+                    booster: *booster,
+                    avant,
+                    apres,
+                });
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::RendreShiny(emplacement) => {
+                if !confirme {
+                    // Un service impossible est refusé sans demander de
+                    // confirmation.
+                    let monstre = self
+                        .partie
+                        .estimer_shiny(*emplacement)
+                        .map_err(ErreurChoix::Marchand)?;
+                    return Ok(Reponse::a_confirmer(Confirmation::RendreShiny(monstre)));
+                }
+                self.partie
+                    .rendre_shiny(*emplacement)
+                    .map_err(ErreurChoix::Marchand)?;
+                let monstre = self
+                    .partie
+                    .collection()
+                    .monstre(*emplacement)
+                    .cloned()
+                    .expect("le monstre vient d'être rendu shiny");
+                evenements.push(Evenement::MonstreRenduShiny(monstre));
                 sauvegarder(&self.partie, contexte.depot, evenements);
                 Ok(Reponse::Faite)
             }
@@ -2149,6 +2221,7 @@ impl EnExpedition {
                 evenements.push(Evenement::AmeDApotreRecueillie(
                     apotre.recit_de_l_ame().to_string(),
                 ));
+                evenements.push(Evenement::EclatDAstreRamasse);
             }
             let humain = self.expedition.humain().cloned();
             if let Some(humain) =
@@ -2234,6 +2307,7 @@ impl EnExpedition {
                 capsule,
                 capsule_d_habilete,
                 pierre,
+                booster,
             } => {
                 let argent_du_pillard = partie.ouvrir_coffre(potions, argent, capsule.clone());
                 if capsule_d_habilete {
@@ -2242,6 +2316,9 @@ impl EnExpedition {
                 if let Some(pierre) = pierre {
                     partie.trouver_pierre(pierre);
                 }
+                if let Some(booster) = booster {
+                    partie.trouver_booster(booster);
+                }
                 evenements.push(Evenement::Coffre {
                     potions,
                     argent: argent + argent_du_pillard,
@@ -2249,6 +2326,7 @@ impl EnExpedition {
                     capsule,
                     capsule_d_habilete,
                     pierre,
+                    booster,
                 });
                 self.apres_l_etape(partie, evenements)
             }
@@ -2715,7 +2793,8 @@ mod tests {
                     argent_du_pillard: 0,
                     capsule: None,
                     capsule_d_habilete: false,
-                    pierre: None
+                    pierre: None,
+                    booster: None
                 },
                 Evenement::Conseil(Conseil::PremierArretEntreDeuxEtapes),
             ]
@@ -3011,6 +3090,68 @@ mod tests {
         assert_eq!(
             repondre_sans_tirage(&mut deroulement, donner(), &contenu, &depot),
             Err(ErreurChoix::Marchand(ErreurMarchand::AmeNonPortee))
+        );
+    }
+
+    #[test]
+    fn un_booster_se_donne_sans_confirmation() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut etat = etat_de(&partie_pour_les_expeditions(&contenu));
+        etat.coffre_du_camp = Inventaire::default().avec_boosters(Booster::MoelleDeBete, 1);
+        let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
+        let avant = deroulement.partie().unwrap().collection().equipe()[0].clone();
+        let donner = Choix::DonnerBooster {
+            emplacement: Emplacement::Equipe(0),
+            booster: Booster::MoelleDeBete,
+        };
+        let evenements =
+            repondre_sans_tirage(&mut deroulement, donner.clone(), &contenu, &depot).unwrap();
+        let attendu = (avant.valeurs_internes().valeurs().attaque + 5).min(31);
+        assert!(matches!(
+            &evenements[..],
+            [Evenement::BoosterDonne { booster: Booster::MoelleDeBete, avant: monstre, apres }]
+                if *monstre == avant && apres.valeurs_internes().valeurs().attaque == attendu
+        ));
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert_eq!(sauvegarde.coffre_du_camp().boosters(), &[]);
+        assert_eq!(
+            repondre_sans_tirage(&mut deroulement, donner, &contenu, &depot),
+            Err(ErreurChoix::Booster(ErreurBooster::Aucun(
+                Booster::MoelleDeBete
+            )))
+        );
+    }
+
+    #[test]
+    fn malvoise_rend_un_monstre_shiny_apres_confirmation() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut etat = etat_de(&partie_pour_les_expeditions(&contenu));
+        etat.marchand_au_camp = true;
+        etat.coffre_du_camp = Inventaire::default().avec_eclats_d_astre(1);
+        let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
+        let avant = deroulement.partie().unwrap().collection().equipe()[0].clone();
+        assert!(!avant.est_shiny());
+        let rendre = Choix::RendreShiny(Emplacement::Equipe(0));
+        repondre_sans_tirage(&mut deroulement, rendre.clone(), &contenu, &depot).unwrap();
+        assert_eq!(
+            deroulement.attente(),
+            Attente::Confirmation(&Confirmation::RendreShiny(avant))
+        );
+        let evenements =
+            repondre_sans_tirage(&mut deroulement, Choix::Oui, &contenu, &depot).unwrap();
+        assert!(matches!(
+            &evenements[..],
+            [Evenement::MonstreRenduShiny(monstre)] if monstre.est_shiny()
+        ));
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert_eq!(sauvegarde.coffre_du_camp().eclats_d_astre(), 0);
+        assert!(sauvegarde.collection().equipe()[0].est_shiny());
+        // Déjà shiny : le refus vient sans confirmation.
+        assert_eq!(
+            repondre_sans_tirage(&mut deroulement, rendre, &contenu, &depot),
+            Err(ErreurChoix::Marchand(ErreurMarchand::DejaShiny))
         );
     }
 
@@ -4176,6 +4317,20 @@ mod tests {
             Evenement::AmeDApotreRecueillie(texte) if texte.contains("Baron pendu")
         ));
         assert_eq!(sauvegarde.ames_d_apotres(), sauvegarde.apotres_vaincus());
+        // Chacun laisse aussi un Éclat d'astre, juste après son âme (section
+        // 14.3).
+        let apres_les_ames: Vec<&Evenement> = vus
+            .windows(2)
+            .filter(|paire| matches!(paire[0], Evenement::AmeDApotreRecueillie(_)))
+            .map(|paire| &paire[1])
+            .collect();
+        assert_eq!(
+            apres_les_ames,
+            vec![
+                &Evenement::EclatDAstreRamasse,
+                &Evenement::EclatDAstreRamasse
+            ]
+        );
         let collection = sauvegarde.collection();
         assert!(
             collection
@@ -4830,9 +4985,20 @@ mod tests {
         let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
         assert_eq!(sauvegarde.coffre_du_camp().potions(), 1);
         // Une bourse noyée de la Lisière, de 10 à 25 pièces d'argent.
-        let evenements = pecher(&mut deroulement, vec![90, 25]);
+        let evenements = pecher(&mut deroulement, vec![84, 25]);
         assert_eq!(evenements, vec![Evenement::PrisePechee(Prise::Argent(25))]);
         assert_eq!(deroulement.partie().unwrap().coffre_du_camp().argent(), 25);
+        // Un booster, puis un Éclat d'astre (section 14.3).
+        let evenements = pecher(&mut deroulement, vec![95, 2]);
+        assert_eq!(
+            evenements,
+            vec![Evenement::PrisePechee(Prise::Booster(Booster::EcorceDeFer))]
+        );
+        let evenements = pecher(&mut deroulement, vec![100]);
+        assert_eq!(evenements, vec![Evenement::PrisePechee(Prise::EclatDAstre)]);
+        let coffre = deroulement.partie().unwrap().coffre_du_camp();
+        assert_eq!(coffre.nombre_de_boosters(Booster::EcorceDeFer), 1);
+        assert_eq!(coffre.eclats_d_astre(), 1);
     }
 
     #[test]

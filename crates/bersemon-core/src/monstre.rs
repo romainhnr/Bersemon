@@ -4,6 +4,7 @@
 
 use crate::aleatoire::Aleatoire;
 use crate::attaque::{Attaque, AttaquesMonstre, ErreurAttaquesMonstre};
+use crate::booster::{Booster, GAIN_D_UN_BOOSTER};
 use crate::espece::Espece;
 use crate::experience::experience_requise;
 use crate::habilete::{Habilete, tirer_habilete};
@@ -330,6 +331,30 @@ impl Monstre {
         let pv_max = self.stats().pv;
         if !self.est_ko() {
             self.pv_actuels = (self.pv_actuels + pv_max.saturating_sub(pv_max_avant)).min(pv_max);
+        }
+    }
+
+    /// Un booster ajoute 5 à la valeur interne de sa stat, sans dépasser 31
+    /// (section 14.3). Les PV actuels augmentent d'autant que les PV max,
+    /// sauf pour un monstre KO, qui le reste.
+    pub(crate) fn recevoir_booster(&mut self, booster: Booster) {
+        self.changer_de_valeurs_internes(|valeurs| {
+            valeurs.augmenter(booster.stat(), GAIN_D_UN_BOOSTER);
+        });
+    }
+
+    /// Le service de Malvoise (section 13.7) : un shiny a 31 dans chaque
+    /// valeur interne (section 5.1).
+    pub(crate) fn devenir_shiny(&mut self) {
+        self.shiny = true;
+        self.changer_de_valeurs_internes(|valeurs| *valeurs = ValeursInternes::maximales());
+    }
+
+    fn changer_de_valeurs_internes(&mut self, changer: impl FnOnce(&mut ValeursInternes)) {
+        let pv_max_avant = self.stats().pv;
+        changer(&mut self.valeurs_internes);
+        if !self.est_ko() {
+            self.pv_actuels += self.stats().pv - pv_max_avant;
         }
     }
 

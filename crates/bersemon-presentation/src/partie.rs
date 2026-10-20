@@ -19,6 +19,7 @@ use bersemon_core::pierre::PierreDEvolution;
 use bersemon_core::ressource::Ressource;
 use bersemon_core::zone::Zone;
 
+use crate::boosters::{boosters, eclats_d_astre, question_shiny};
 use crate::expeditions_automatiques::question_de_rappel;
 use crate::forge::{question_de_fabrication, question_de_lancement};
 use crate::monstres::{decrire_stats, effet_d_habilete, ligne_monstre, nom, types_de};
@@ -158,6 +159,15 @@ pub fn contenu(inventaire: &Inventaire) -> String {
             .iter()
             .map(|(pierre, nombre)| pierres(*pierre, *nombre)),
     );
+    elements.extend(
+        inventaire
+            .boosters()
+            .iter()
+            .map(|(booster, nombre)| boosters(*booster, *nombre)),
+    );
+    if inventaire.eclats_d_astre() > 0 {
+        elements.push(eclats_d_astre(inventaire.eclats_d_astre()));
+    }
     if elements.is_empty() {
         "vide".to_string()
     } else {
@@ -451,6 +461,7 @@ pub fn question_de_confirmation(confirmation: &Confirmation) -> String {
                 vers.nom()
             )
         }
+        Confirmation::RendreShiny(monstre) => question_shiny(monstre),
         Confirmation::Suicide(heros) => format!(
             "Vous suicider ? Votre partie sera effacée pour de bon : {}, vos monstres, votre sac, votre coffre, votre codex et vos expéditions automatiques en cours.",
             heros.nom().as_str()

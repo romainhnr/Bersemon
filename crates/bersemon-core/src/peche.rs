@@ -6,6 +6,7 @@ use std::fmt;
 use std::time::Duration;
 
 use crate::aleatoire::Aleatoire;
+use crate::booster::Booster;
 use crate::espece::{Espece, EspeceId};
 use crate::horodatage::Horodatage;
 use crate::monstre::Monstre;
@@ -14,14 +15,17 @@ use crate::pierre::PierreDEvolution;
 use crate::stats::ValeursInternes;
 use crate::zone::{Zone, creer_monstre_sauvage, tirer_entre};
 
-/// Bornes du tirage de la prise, sur 100 (docs/contenu-v1.md, section 15) :
-/// monstre commun 55 %, monstre rare 5 %, potion 20 %, bourse noyée 10 %,
-/// pierre d'évolution 5 %, capsule d'habileté 5 %.
+/// Bornes du tirage de la prise, sur 100 (docs/contenu-v1.md, sections 15
+/// et 17) : monstre commun 55 %, monstre rare 5 %, potion 14 %, bourse noyée
+/// 10 %, pierre d'évolution 5 %, capsule d'habileté 5 %, booster 5 %, Éclat
+/// d'astre 1 %.
 const JUSQU_AU_MONSTRE_COMMUN: u32 = 55;
 const JUSQU_AU_MONSTRE_RARE: u32 = 60;
-const JUSQU_A_LA_POTION: u32 = 80;
-const JUSQU_A_LA_BOURSE: u32 = 90;
-const JUSQU_A_LA_PIERRE: u32 = 95;
+const JUSQU_A_LA_POTION: u32 = 74;
+const JUSQU_A_LA_BOURSE: u32 = 84;
+const JUSQU_A_LA_PIERRE: u32 = 89;
+const JUSQU_A_LA_CAPSULE_D_HABILETE: u32 = 94;
+const JUSQU_AU_BOOSTER: u32 = 99;
 
 /// Ce que la pêche peut remonter (docs/contenu-v1.md, section 15).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -107,7 +111,7 @@ impl ParametresPeche {
     /// Tirages : la nature de la prise, puis, pour un monstre commun, son
     /// espèce ; pour un monstre, ceux d'un monstre sauvage de la zone
     /// (niveau, shiny, valeurs internes s'il n'est pas shiny, habileté) ;
-    /// pour une bourse, son argent ; pour une pierre, laquelle.
+    /// pour une bourse, son argent ; pour une pierre ou un booster, lequel.
     pub(crate) fn tirer_prise(&self, zone: &Zone, aleatoire: &mut dyn Aleatoire) -> Prise {
         match aleatoire.tirer(1..=100) {
             tirage if tirage <= JUSQU_AU_MONSTRE_COMMUN => {
@@ -133,7 +137,12 @@ impl ParametresPeche {
                     PierreDEvolution::TOUTES[tirer_entre(0, derniere, aleatoire) as usize],
                 )
             }
-            _ => Prise::CapsuleDHabilete,
+            tirage if tirage <= JUSQU_A_LA_CAPSULE_D_HABILETE => Prise::CapsuleDHabilete,
+            tirage if tirage <= JUSQU_AU_BOOSTER => {
+                let dernier = (Booster::TOUS.len() - 1) as u32;
+                Prise::Booster(Booster::TOUS[tirer_entre(0, dernier, aleatoire) as usize])
+            }
+            _ => Prise::EclatDAstre,
         }
     }
 }
@@ -207,6 +216,8 @@ pub enum Prise {
     Argent(u32),
     Pierre(PierreDEvolution),
     CapsuleDHabilete,
+    Booster(Booster),
+    EclatDAstre,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -376,24 +387,44 @@ mod tests {
         assert!(
             matches!(&prise, Prise::Monstre(monstre) if monstre.espece().id().as_str() == "kelpie")
         );
-        for tirage in [61, 80] {
+        for tirage in [61, 74] {
             assert_eq!(
                 parametres.tirer_prise(&marais, &mut AleatoireScripte::new([tirage])),
                 Prise::Potion
             );
         }
         // L'argent d'un coffre de la zone, toujours 10, sans tirage.
+        for tirage in [75, 84] {
+            assert_eq!(
+                parametres.tirer_prise(&marais, &mut AleatoireScripte::new([tirage])),
+                Prise::Argent(10)
+            );
+        }
         assert_eq!(
-            parametres.tirer_prise(&marais, &mut AleatoireScripte::new([90])),
-            Prise::Argent(10)
-        );
-        assert_eq!(
-            parametres.tirer_prise(&marais, &mut AleatoireScripte::new([91, 1])),
+            parametres.tirer_prise(&marais, &mut AleatoireScripte::new([85, 1])),
             Prise::Pierre(PierreDEvolution::Lune)
         );
         assert_eq!(
-            parametres.tirer_prise(&marais, &mut AleatoireScripte::new([96])),
-            Prise::CapsuleDHabilete
+            parametres.tirer_prise(&marais, &mut AleatoireScripte::new([89, 0])),
+            Prise::Pierre(PierreDEvolution::Braise)
+        );
+        for tirage in [90, 94] {
+            assert_eq!(
+                parametres.tirer_prise(&marais, &mut AleatoireScripte::new([tirage])),
+                Prise::CapsuleDHabilete
+            );
+        }
+        assert_eq!(
+            parametres.tirer_prise(&marais, &mut AleatoireScripte::new([95, 0])),
+            Prise::Booster(Booster::FioleDeSang)
+        );
+        assert_eq!(
+            parametres.tirer_prise(&marais, &mut AleatoireScripte::new([99, 5])),
+            Prise::Booster(Booster::PoudreDeVifArgent)
+        );
+        assert_eq!(
+            parametres.tirer_prise(&marais, &mut AleatoireScripte::new([100])),
+            Prise::EclatDAstre
         );
     }
 

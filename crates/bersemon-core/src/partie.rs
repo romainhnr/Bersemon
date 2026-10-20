@@ -9,6 +9,7 @@ use crate::amelioration::{
     Chantier, ErreurAmelioration, Forge, Ouvrage, PlanDAmelioration, PlanDeFabrication,
 };
 use crate::attaque::{Attaque, AttaqueId, ErreurAttaquesMonstre};
+use crate::booster::{Booster, ErreurBooster};
 use crate::capsule::{Capsule, ErreurApprentissage, attaques_a_apprendre};
 use crate::catalogue::Catalogue;
 use crate::codex::Codex;
@@ -42,6 +43,7 @@ use crate::peche::{ErreurPeche, ParametresPeche, Peche, Prise};
 use crate::pierre::PierreDEvolution;
 use crate::ressource::{Ressource, RessourceId};
 use crate::soin::{EffetDuSoin, ErreurSoin, Soin};
+use crate::stats::ValeursInternes;
 use crate::traque::{Apotre, Indice, Piste};
 use crate::tutoriel::Conseil;
 use crate::zone::{Zone, ZoneId};
@@ -349,6 +351,8 @@ impl Partie {
             Prise::Argent(argent) => self.coffre_du_camp.ajouter_argent(*argent),
             Prise::Pierre(pierre) => self.coffre_du_camp.ajouter_pierres(*pierre, 1),
             Prise::CapsuleDHabilete => self.coffre_du_camp.ajouter_capsules_d_habilete(1),
+            Prise::Booster(booster) => self.coffre_du_camp.ajouter_boosters(*booster, 1),
+            Prise::EclatDAstre => self.coffre_du_camp.ajouter_eclats_d_astre(1),
         }
         Ok(prise)
     }
@@ -793,6 +797,87 @@ impl Partie {
         self.sac.ajouter_pierres(pierre, 1);
     }
 
+    /// Ceux du sac et du coffre : au camp, ils servent tous (section 14.3).
+    pub fn nombre_de_boosters(&self, booster: Booster) -> u32 {
+        self.sac
+            .nombre_de_boosters(booster)
+            .saturating_add(self.coffre_du_camp.nombre_de_boosters(booster))
+    }
+
+    /// Trouvé dans un coffre, il va dans le sac (section 14.3).
+    pub fn trouver_booster(&mut self, booster: Booster) {
+        self.sac.ajouter_boosters(booster, 1);
+    }
+
+    /// Au camp, sans confirmation (section 14.3) : le booster est consommé,
+    /// du sac d'abord, puis du coffre. Refusé, sans rien consommer, si la
+    /// valeur interne visée est déjà à 31. Rend le monstre d'avant.
+    pub fn donner_booster(
+        &mut self,
+        emplacement: Emplacement,
+        booster: Booster,
+    ) -> Result<Monstre, ErreurBooster> {
+        let monstre = self
+            .collection
+            .monstre(emplacement)
+            .ok_or(ErreurBooster::Collection(
+                ErreurCollection::EmplacementInexistant(emplacement),
+            ))?
+            .clone();
+        if *monstre.valeurs_internes().valeurs().de(booster.stat()) >= ValeursInternes::MAX {
+            return Err(ErreurBooster::ValeurMaximale(booster));
+        }
+        if !self.sac.utiliser_booster(booster) && !self.coffre_du_camp.utiliser_booster(booster) {
+            return Err(ErreurBooster::Aucun(booster));
+        }
+        self.collection
+            .monstre_a_modifier(emplacement)
+            .expect("emplacement vérifié")
+            .recevoir_booster(booster);
+        Ok(monstre)
+    }
+
+    /// Ceux du sac et du coffre : au camp, ils servent tous (section 13.7).
+    pub fn eclats_d_astre(&self) -> u32 {
+        self.sac
+            .eclats_d_astre()
+            .saturating_add(self.coffre_du_camp.eclats_d_astre())
+    }
+
+    /// Le monstre que Malvoise rendrait shiny, sans rien changer : de quoi
+    /// demander confirmation. Refuse ce que refuserait `rendre_shiny`.
+    pub fn estimer_shiny(&self, emplacement: Emplacement) -> Result<Monstre, ErreurMarchand> {
+        self.verifier_marchand()?;
+        let monstre = self
+            .collection
+            .monstre(emplacement)
+            .ok_or(ErreurMarchand::Collection(
+                ErreurCollection::EmplacementInexistant(emplacement),
+            ))?;
+        if monstre.est_shiny() {
+            return Err(ErreurMarchand::DejaShiny);
+        }
+        if self.eclats_d_astre() == 0 {
+            return Err(ErreurMarchand::AucunEclatDAstre);
+        }
+        Ok(monstre.clone())
+    }
+
+    /// Au camp, chez Malvoise, après confirmation (section 13.7) : le
+    /// monstre devient shiny, et un Éclat d'astre est consommé, du sac
+    /// d'abord, puis du coffre. Rend le monstre d'avant.
+    pub fn rendre_shiny(&mut self, emplacement: Emplacement) -> Result<Monstre, ErreurMarchand> {
+        let monstre = self.estimer_shiny(emplacement)?;
+        if !self.sac.utiliser_eclat_d_astre() {
+            self.coffre_du_camp.utiliser_eclat_d_astre();
+        }
+        self.collection
+            .monstre_a_modifier(emplacement)
+            .expect("emplacement vérifié")
+            .devenir_shiny();
+        Ok(monstre)
+    }
+
     /// Au camp, après confirmation (section 5.4) : la forme évoluée compte
     /// comme capturée au codex, et la pierre éventuelle est consommée, du sac
     /// d'abord, puis du coffre. Une attaque d'évolution en attente rejoint
@@ -1127,10 +1212,12 @@ impl Partie {
 
     /// Après la victoire, l'Apôtre ne réapparaît plus ; il ne se capture
     /// pas, mais sa fiche s'ouvre au codex et le joueur garde son âme
-    /// (section 9.4).
+    /// (section 9.4). Il laisse aussi un Éclat d'astre, qui va dans le sac
+    /// (section 14.3).
     pub fn noter_apotre_vaincu(&mut self, apotre: &Apotre) {
         if !self.est_vaincu(apotre) {
             self.apotres_vaincus.push(apotre.espece().id().clone());
+            self.sac.ajouter_eclats_d_astre(1);
         }
         self.codex.noter_capture(apotre.espece().id());
     }
@@ -1478,7 +1565,7 @@ mod tests {
     use crate::expedition::EvenementExpedition;
     use crate::heros::Classe;
     use crate::nom::Nom;
-    use crate::stats::ValeursInternes;
+    use crate::stats::Stats;
     use crate::traque::Chapitre;
     use crate::types::Type;
     use std::time::Duration;
@@ -1578,6 +1665,112 @@ mod tests {
         );
         assert_eq!(partie.coffre_du_camp().capsules_d_habilete(), 1);
         assert!(partie.collection().equipe()[1].a_l_habilete(Habilete::Pillard));
+    }
+
+    fn loup_aux_valeurs(pv: u8) -> Monstre {
+        let valeurs = ValeursInternes::new(Stats {
+            pv,
+            ..Stats::default()
+        })
+        .unwrap();
+        Monstre::creer(espece("loup"), Niveau::new(50).unwrap(), valeurs, false).unwrap()
+    }
+
+    #[test]
+    fn un_booster_ajoute_5_a_une_valeur_interne_jusqu_a_31() {
+        let mut partie = partie();
+        partie.prendre_monstre_rare(loup_aux_valeurs(24));
+        let loup = Emplacement::Equipe(1);
+        assert_eq!(
+            partie.donner_booster(loup, Booster::FioleDeSang),
+            Err(ErreurBooster::Aucun(Booster::FioleDeSang))
+        );
+        partie.trouver_booster(Booster::FioleDeSang);
+        partie
+            .coffre_du_camp
+            .ajouter_boosters(Booster::FioleDeSang, 2);
+        assert_eq!(partie.nombre_de_boosters(Booster::FioleDeSang), 3);
+        // Les PV actuels suivent les PV max : 24 de plus en valeur interne,
+        // au niveau 50, font 2 PV de plus par tranche de 5.
+        partie
+            .collection
+            .monstre_a_modifier(loup)
+            .unwrap()
+            .subir_degats(10);
+        let avant = partie.collection().monstre(loup).unwrap().clone();
+        assert_eq!(
+            partie.donner_booster(loup, Booster::FioleDeSang),
+            Ok(avant.clone())
+        );
+        let apres = partie.collection().monstre(loup).unwrap().clone();
+        assert_eq!(apres.valeurs_internes().valeurs().pv, 29);
+        assert_eq!(apres.valeurs_internes().valeurs().attaque, 0);
+        let gain = apres.stats().pv - avant.stats().pv;
+        assert!(gain > 0);
+        assert_eq!(apres.pv_actuels(), avant.pv_actuels() + gain);
+        // Le sac d'abord.
+        assert_eq!(partie.sac().nombre_de_boosters(Booster::FioleDeSang), 0);
+        // 29 passe à 31, le surplus est perdu ; puis le booster est refusé
+        // sans être consommé.
+        partie.donner_booster(loup, Booster::FioleDeSang).unwrap();
+        assert_eq!(
+            partie
+                .collection()
+                .monstre(loup)
+                .unwrap()
+                .valeurs_internes()
+                .valeurs()
+                .pv,
+            31
+        );
+        assert_eq!(
+            partie.donner_booster(loup, Booster::FioleDeSang),
+            Err(ErreurBooster::ValeurMaximale(Booster::FioleDeSang))
+        );
+        assert_eq!(partie.nombre_de_boosters(Booster::FioleDeSang), 1);
+        assert_eq!(
+            partie.donner_booster(Emplacement::Camp(0), Booster::FioleDeSang),
+            Err(ErreurBooster::Collection(
+                ErreurCollection::EmplacementInexistant(Emplacement::Camp(0))
+            ))
+        );
+    }
+
+    #[test]
+    fn malvoise_rend_un_monstre_shiny_contre_un_eclat_d_astre() {
+        let mut partie = partie();
+        partie.prendre_monstre_rare(loup_aux_valeurs(3));
+        let loup = Emplacement::Equipe(1);
+        assert_eq!(
+            partie.estimer_shiny(loup),
+            Err(ErreurMarchand::AucunMarchand)
+        );
+        partie.accueillir_malvoise();
+        assert_eq!(
+            partie.rendre_shiny(loup),
+            Err(ErreurMarchand::AucunEclatDAstre)
+        );
+        partie.sac.ajouter_eclats_d_astre(1);
+        partie.coffre_du_camp.ajouter_eclats_d_astre(1);
+        assert_eq!(partie.eclats_d_astre(), 2);
+        let avant = partie.collection().monstre(loup).unwrap().clone();
+        assert_eq!(partie.estimer_shiny(loup), Ok(avant.clone()));
+        assert_eq!(partie.rendre_shiny(loup), Ok(avant.clone()));
+        let apres = partie.collection().monstre(loup).unwrap();
+        assert!(apres.est_shiny());
+        assert_eq!(apres.valeurs_internes(), &ValeursInternes::maximales());
+        assert_eq!(apres.pv_actuels(), apres.stats().pv);
+        assert_eq!(apres.niveau(), avant.niveau());
+        // Le sac d'abord.
+        assert_eq!(partie.sac().eclats_d_astre(), 0);
+        assert_eq!(partie.rendre_shiny(loup), Err(ErreurMarchand::DejaShiny));
+        assert_eq!(partie.eclats_d_astre(), 1);
+        // Un shiny n'a plus besoin de booster.
+        partie.trouver_booster(Booster::PoudreDeVifArgent);
+        assert_eq!(
+            partie.donner_booster(loup, Booster::PoudreDeVifArgent),
+            Err(ErreurBooster::ValeurMaximale(Booster::PoudreDeVifArgent))
+        );
     }
 
     #[test]

@@ -7,6 +7,7 @@ use std::ops::RangeInclusive;
 use crate::aleatoire::Aleatoire;
 use crate::ame::MarchandMort;
 use crate::attaque::AttaqueId;
+use crate::booster::Booster;
 use crate::capsule::Capsule;
 use crate::expedition_automatique::ErreurParametres;
 use crate::humain::Humain;
@@ -24,9 +25,11 @@ const CHANCE_DE_CAPSULE: u32 = 20;
 /// Un coffre sur 10 contient une capsule d'habileté (section 5.9, Q81), et
 /// un autre sur 10 une pierre d'évolution, chacune pour moitié (section 5.4,
 /// Q84) : un même tirage sur 100 décide des deux, 1 à 10 pour la capsule,
-/// puis 5 chances par pierre.
+/// puis 5 chances par pierre. Le même tirage donne ensuite un booster, 1
+/// chance par booster, de 21 à 26 (section 14.3, Q93).
 const CHANCE_DE_CAPSULE_D_HABILETE: u32 = 10;
 const CHANCE_PAR_PIERRE: u32 = 5;
+const PREMIER_TIRAGE_DES_BOOSTERS: u32 = 21;
 
 /// Contenu des coffres propre à chaque zone (section 14.5).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -67,6 +70,7 @@ pub enum EvenementExpedition {
         capsule: Option<Capsule>,
         capsule_d_habilete: bool,
         pierre: Option<PierreDEvolution>,
+        booster: Option<Booster>,
     },
     MonstreRare(MonstreRare),
     /// Combat, sans fuite, contre l'Apôtre (section 9.4).
@@ -236,7 +240,7 @@ impl Expedition {
     /// Q38 ; tant que l'âme du marchand de la zone peut être tirée, combat
     /// 70 % et âme 10 %, section 14.2), puis ceux de son contenu : pour un
     /// coffre, ses potions, son argent, sa capsule d'attaque puis sa capsule
-    /// d'habileté ; pour une âme, ceux
+    /// d'habileté, sa pierre ou son booster ; pour une âme, ceux
     /// de son adversaire. L'âme attendue à cette étape remplace l'événement,
     /// sans tirage de sa nature.
     /// Une zone sans monstre rare donne un combat à la place. L'Apôtre
@@ -335,12 +339,16 @@ impl Expedition {
             .checked_sub(CHANCE_DE_CAPSULE_D_HABILETE + 1)
             .map(|rang| (rang / CHANCE_PAR_PIERRE) as usize)
             .and_then(|rang| PierreDEvolution::TOUTES.get(rang).copied());
+        let booster = tirage
+            .checked_sub(PREMIER_TIRAGE_DES_BOOSTERS)
+            .and_then(|rang| Booster::TOUS.get(rang as usize).copied());
         EvenementExpedition::Coffre {
             potions,
             argent,
             capsule,
             capsule_d_habilete,
             pierre,
+            booster,
         }
     }
 
@@ -418,13 +426,14 @@ mod tests {
             Some(EvenementExpedition::Combat(groupe)) if groupe.len() == 1
         ));
         assert_eq!(
-            expedition.etape_suivante(&mut AleatoireScripte::new([81, 2, 21])),
+            expedition.etape_suivante(&mut AleatoireScripte::new([81, 2, 27])),
             Some(EvenementExpedition::Coffre {
                 potions: 2,
                 argent: 10,
                 capsule: None,
                 capsule_d_habilete: false,
-                pierre: None
+                pierre: None,
+                booster: None
             })
         );
         let mut rare = vec![96];
@@ -541,7 +550,8 @@ mod tests {
                 argent: 25,
                 capsule: None,
                 capsule_d_habilete: true,
-                pierre: None
+                pierre: None,
+                booster: None
             })
         );
         // Le même tirage donne une pierre, de 11 à 20.
@@ -551,12 +561,28 @@ mod tests {
             (16, Some(PierreDEvolution::Lune)),
             (20, Some(PierreDEvolution::Lune)),
             (21, None),
+            (100, None),
         ] {
             let mut expedition = Expedition::partir(zone.clone());
             assert!(matches!(
                 expedition.etape_suivante(&mut AleatoireScripte::new([90, 1, 25, tirage])),
                 Some(EvenementExpedition::Coffre { capsule_d_habilete: false, pierre: trouvee, .. })
                     if trouvee == pierre
+            ));
+        }
+        // Puis un booster, de 21 à 26, un par booster (section 14.3).
+        for (tirage, booster) in [
+            (20, None),
+            (21, Some(Booster::FioleDeSang)),
+            (22, Some(Booster::MoelleDeBete)),
+            (26, Some(Booster::PoudreDeVifArgent)),
+            (27, None),
+        ] {
+            let mut expedition = Expedition::partir(zone.clone());
+            assert!(matches!(
+                expedition.etape_suivante(&mut AleatoireScripte::new([90, 1, 25, tirage])),
+                Some(EvenementExpedition::Coffre { capsule_d_habilete: false, booster: trouve, .. })
+                    if trouve == booster
             ));
         }
     }

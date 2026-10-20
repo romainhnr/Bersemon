@@ -36,9 +36,14 @@ pub fn prise(prise: &Prise) -> String {
         )),
         Prise::Pierre(pierre) => objet_remonte(&format!("une {}", pierre.nom())),
         Prise::CapsuleDHabilete => objet_remonte("une capsule d'habileté"),
+        Prise::Booster(booster) => objet_remonte(&format!("une {}", booster.nom())),
+        Prise::EclatDAstre => {
+            "Vous remontez un Éclat d'astre. Vous le rangez dans le coffre.".to_string()
+        }
     }
 }
 
+/// Tous les objets à remonter sont féminins, sauf l'Éclat d'astre.
 fn objet_remonte(objet: &str) -> String {
     format!("Vous remontez {objet}. Vous la rangez dans le coffre.")
 }

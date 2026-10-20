@@ -9,6 +9,7 @@
 use bersemon_core::ame::MarchandId;
 use bersemon_core::amelioration::Amelioration;
 use bersemon_core::attaque::AttaqueId;
+use bersemon_core::booster::Booster;
 use bersemon_core::collection::{Emplacement, TriDuCamp};
 use bersemon_core::combat::Action;
 use bersemon_core::deroulement::{ActionDeGestion, Choix};
@@ -869,6 +870,24 @@ fn lire_pierre(texte: &str) -> Option<PierreDEvolution> {
 }
 
 /// Nom fixé ici, et non le nom Rust, comme dans la sauvegarde.
+pub fn booster_en_texte(booster: Booster) -> &'static str {
+    match booster {
+        Booster::FioleDeSang => "fiole-de-sang",
+        Booster::MoelleDeBete => "moelle-de-bete",
+        Booster::EcorceDeFer => "ecorce-de-fer",
+        Booster::EncreDArcane => "encre-d-arcane",
+        Booster::CendreBenite => "cendre-benite",
+        Booster::PoudreDeVifArgent => "poudre-de-vif-argent",
+    }
+}
+
+fn lire_booster(texte: &str) -> Option<Booster> {
+    Booster::TOUS
+        .into_iter()
+        .find(|booster| booster_en_texte(*booster) == texte)
+}
+
+/// Nom fixé ici, et non le nom Rust, comme dans la sauvegarde.
 pub fn soin_en_texte(soin: Soin) -> &'static str {
     match soin {
         Soin::Potion => "potion",
@@ -897,8 +916,9 @@ fn lire_soin_et_position(texte: &str) -> Option<(Soin, usize)> {
 
 /// Valeur d'option des menus du coffre : `soins:` suivi du soin et de la
 /// quantité, `argent:` suivi de la quantité, `capsule:` suivi de
-/// l'attaque, `capsules-d-habilete:` suivi de la quantité, ou `pierres:`
-/// suivi de la pierre et de la quantité.
+/// l'attaque, `capsules-d-habilete:` suivi de la quantité, `pierres:`
+/// suivi de la pierre et de la quantité, `boosters:` suivi du booster et de
+/// la quantité, ou `eclats-d-astre:` suivi de la quantité.
 pub fn objet_en_texte(objet: &Objet) -> String {
     match objet {
         Objet::Soins(soin, nombre) => format!("soins:{}:{nombre}", soin_en_texte(*soin)),
@@ -907,6 +927,10 @@ pub fn objet_en_texte(objet: &Objet) -> String {
         Objet::CapsulesDHabilete(nombre) => format!("capsules-d-habilete:{nombre}"),
         Objet::Pierres(pierre, nombre) => format!("pierres:{}:{nombre}", pierre_en_texte(*pierre)),
         Objet::Ressources(id, nombre) => format!("ressources:{}:{nombre}", id.as_str()),
+        Objet::Boosters(booster, nombre) => {
+            format!("boosters:{}:{nombre}", booster_en_texte(*booster))
+        }
+        Objet::EclatsDAstre(nombre) => format!("eclats-d-astre:{nombre}"),
     }
 }
 
@@ -924,6 +948,14 @@ fn lire_objet(texte: &str) -> Option<Objet> {
             let (pierre, nombre) = parametre.split_once(':')?;
             Some(Objet::Pierres(lire_pierre(pierre)?, nombre.parse().ok()?))
         }
+        "boosters" => {
+            let (booster, nombre) = parametre.split_once(':')?;
+            Some(Objet::Boosters(
+                lire_booster(booster)?,
+                nombre.parse().ok()?,
+            ))
+        }
+        "eclats-d-astre" => Some(Objet::EclatsDAstre(parametre.parse().ok()?)),
         "ressources" => {
             let (id, nombre) = parametre.rsplit_once(':')?;
             Some(Objet::Ressources(

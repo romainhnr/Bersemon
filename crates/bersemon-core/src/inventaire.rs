@@ -1,12 +1,13 @@
 //! Objets du joueur, rangés dans le sac, qu'il emporte en expédition
 //! manuelle, ou dans le coffre du camp, où ils sont à l'abri (sections 13.3
 //! et 14.4) : argent, soins, capsules d'attaque, capsules d'habileté,
-//! ressources et pierres d'évolution.
+//! ressources, pierres d'évolution, boosters et Éclats d'astre.
 
 use std::fmt;
 
 use crate::aleatoire::Aleatoire;
 use crate::attaque::AttaqueId;
+use crate::booster::Booster;
 use crate::capsule::Capsule;
 use crate::monstre::Monstre;
 use crate::pierre::PierreDEvolution;
@@ -30,6 +31,10 @@ pub struct Inventaire {
     /// Dans l'ordre de `PierreDEvolution::TOUTES`, sans nombre nul (section
     /// 5.4).
     pierres: Vec<(PierreDEvolution, u32)>,
+    /// Dans l'ordre de `Booster::TOUS`, sans nombre nul (section 14.3).
+    boosters: Vec<(Booster, u32)>,
+    /// Pour le service de Malvoise (section 13.7).
+    eclats_d_astre: u32,
 }
 
 /// Ce que le joueur déplace entre le sac et le coffre du camp.
@@ -41,6 +46,8 @@ pub enum Objet {
     CapsulesDHabilete(u32),
     Ressources(RessourceId, u32),
     Pierres(PierreDEvolution, u32),
+    Boosters(Booster, u32),
+    EclatsDAstre(u32),
 }
 
 impl Inventaire {
@@ -55,6 +62,8 @@ impl Inventaire {
             capsules_d_habilete: 0,
             ressources: Vec::new(),
             pierres: Vec::new(),
+            boosters: Vec::new(),
+            eclats_d_astre: 0,
         };
         inventaire.soins.ajouter(Soin::Potion, potions);
         for capsule in capsules {
@@ -120,6 +129,63 @@ impl Inventaire {
     /// Rend `false` sans rien changer s'il n'y en a pas.
     pub(crate) fn utiliser_pierre(&mut self, pierre: PierreDEvolution) -> bool {
         self.retirer(&Objet::Pierres(pierre, 1)).is_ok()
+    }
+
+    pub fn boosters(&self) -> &[(Booster, u32)] {
+        &self.boosters
+    }
+
+    pub fn nombre_de_boosters(&self, booster: Booster) -> u32 {
+        self.boosters
+            .iter()
+            .find(|(present, _)| *present == booster)
+            .map_or(0, |(_, nombre)| *nombre)
+    }
+
+    pub fn ajouter_boosters(&mut self, booster: Booster, nombre: u32) {
+        if nombre == 0 {
+            return;
+        }
+        match self
+            .boosters
+            .iter_mut()
+            .find(|(present, _)| *present == booster)
+        {
+            Some((_, present)) => *present = present.saturating_add(nombre),
+            None => {
+                self.boosters.push((booster, nombre));
+                let rang = |booster: &Booster| Booster::TOUS.iter().position(|b| b == booster);
+                self.boosters.sort_by_key(|(booster, _)| rang(booster));
+            }
+        }
+    }
+
+    pub fn avec_boosters(mut self, booster: Booster, nombre: u32) -> Self {
+        self.ajouter_boosters(booster, nombre);
+        self
+    }
+
+    /// Rend `false` sans rien changer s'il n'y en a pas.
+    pub(crate) fn utiliser_booster(&mut self, booster: Booster) -> bool {
+        self.retirer(&Objet::Boosters(booster, 1)).is_ok()
+    }
+
+    pub fn eclats_d_astre(&self) -> u32 {
+        self.eclats_d_astre
+    }
+
+    pub fn ajouter_eclats_d_astre(&mut self, nombre: u32) {
+        self.eclats_d_astre = self.eclats_d_astre.saturating_add(nombre);
+    }
+
+    pub fn avec_eclats_d_astre(mut self, nombre: u32) -> Self {
+        self.ajouter_eclats_d_astre(nombre);
+        self
+    }
+
+    /// Rend `false` sans rien changer s'il n'y en a pas.
+    pub(crate) fn utiliser_eclat_d_astre(&mut self) -> bool {
+        self.retirer(&Objet::EclatsDAstre(1)).is_ok()
     }
 
     pub fn ressources(&self) -> &[(Ressource, u32)] {
@@ -197,6 +263,8 @@ impl Inventaire {
             && self.capsules_d_habilete == 0
             && self.ressources.is_empty()
             && self.pierres.is_empty()
+            && self.boosters.is_empty()
+            && self.eclats_d_astre == 0
     }
 
     pub fn contient_capsule(&self, id: &AttaqueId) -> bool {
@@ -238,6 +306,10 @@ impl Inventaire {
         for (pierre, nombre) in autre.pierres {
             self.ajouter_pierres(pierre, nombre);
         }
+        for (booster, nombre) in autre.boosters {
+            self.ajouter_boosters(booster, nombre);
+        }
+        self.ajouter_eclats_d_astre(autre.eclats_d_astre);
     }
 
     /// Retire l'objet et le rend, seul dans un inventaire, sans rien changer
@@ -249,7 +321,9 @@ impl Inventaire {
             | Objet::Soins(_, 0)
             | Objet::CapsulesDHabilete(0)
             | Objet::Ressources(_, 0)
-            | Objet::Pierres(_, 0) => {
+            | Objet::Pierres(_, 0)
+            | Objet::Boosters(_, 0)
+            | Objet::EclatsDAstre(0) => {
                 return Err(ErreurObjet::QuantiteNulle);
             }
             Objet::Argent(montant) => {
@@ -310,6 +384,28 @@ impl Inventaire {
                     self.pierres.remove(position);
                 }
                 retire.ajouter_pierres(*pierre, *nombre);
+            }
+            Objet::Boosters(booster, nombre) => {
+                if *nombre > self.nombre_de_boosters(*booster) {
+                    return Err(ErreurObjet::Insuffisant);
+                }
+                let position = self
+                    .boosters
+                    .iter()
+                    .position(|(present, _)| present == booster)
+                    .expect("booster présent");
+                self.boosters[position].1 -= nombre;
+                if self.boosters[position].1 == 0 {
+                    self.boosters.remove(position);
+                }
+                retire.ajouter_boosters(*booster, *nombre);
+            }
+            Objet::EclatsDAstre(nombre) => {
+                if *nombre > self.eclats_d_astre {
+                    return Err(ErreurObjet::Insuffisant);
+                }
+                self.eclats_d_astre -= nombre;
+                retire.eclats_d_astre = *nombre;
             }
         }
         Ok(retire)

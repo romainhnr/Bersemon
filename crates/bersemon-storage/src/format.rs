@@ -1,4 +1,4 @@
-//! Format JSON de la sauvegarde, version 17, et sa conversion vers les types
+//! Format JSON de la sauvegarde, version 20, et sa conversion vers les types
 //! du noyau. Les énumérations sont écrites avec des noms fixés ici, et non
 //! avec les noms Rust, pour qu'un renommage dans le code ne casse pas les
 //! sauvegardes existantes.
@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use bersemon_core::ame::{MarchandId, MarchandMort};
 use bersemon_core::amelioration::{Amelioration, Ameliorations, Chantier, Forge, Ouvrage};
 use bersemon_core::attaque::{AttaqueId, AttaquesMonstre};
+use bersemon_core::booster::Booster;
 use bersemon_core::catalogue::Catalogue;
 use bersemon_core::codex::Codex;
 use bersemon_core::collection::{Collection, Emplacement};
@@ -39,7 +40,7 @@ use bersemon_core::zone::{Zone, ZoneId};
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 19;
+pub(crate) const VERSION: u64 = 20;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -60,6 +61,10 @@ const VERSION_DE_GUNTHER: u64 = 14;
 /// ils laissent leur âme (section 9.4).
 const VERSION_DES_AMES_D_APOTRES: u64 = 19;
 
+/// La version de la sauvegarde où chaque Apôtre vaincu laisse un Éclat
+/// d'astre (section 14.3).
+const VERSION_DES_ECLATS_D_ASTRE: u64 = 20;
+
 /// Gunther est le prisonnier de cet humain : avant la version 14, une partie
 /// qui l'a vaincu a Gunther au camp (section 13.4, Q85).
 const GEOLIER_DE_GUNTHER: &str = "bourreau";
@@ -79,7 +84,8 @@ const GEOLIER_DE_GUNTHER: &str = "bourreau";
 /// version 16 l'équipement du héros et sa fabrication, la version 17 la
 /// marque des monstres reçus d'un autre joueur, la version 18 la pêche
 /// d'Ansgar ; avec la version 19, les Apôtres capturés deviennent leur âme,
-/// sans changer la structure. Une sauvegarde d'une version
+/// sans changer la structure ; la version 20 ajoute les boosters et les
+/// Éclats d'astre. Une sauvegarde d'une version
 /// précédente se lit avec cette structure : les champs ajoutés y prennent
 /// leur valeur de début de partie.
 #[derive(Debug, Serialize, Deserialize)]
@@ -213,6 +219,35 @@ struct InventaireV7 {
     /// Depuis la version 13 (section 5.4).
     #[serde(default)]
     pierres: Vec<PierreV13>,
+    /// Depuis la version 20 (section 14.3).
+    #[serde(default)]
+    boosters: Vec<BoosterV20>,
+    #[serde(default)]
+    eclats_d_astre: u32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct BoosterV20 {
+    booster: String,
+    nombre: u32,
+}
+
+fn booster_en_texte(booster: Booster) -> &'static str {
+    match booster {
+        Booster::FioleDeSang => "fiole-de-sang",
+        Booster::MoelleDeBete => "moelle-de-bete",
+        Booster::EcorceDeFer => "ecorce-de-fer",
+        Booster::EncreDArcane => "encre-d-arcane",
+        Booster::CendreBenite => "cendre-benite",
+        Booster::PoudreDeVifArgent => "poudre-de-vif-argent",
+    }
+}
+
+fn lire_booster(texte: &str) -> Result<Booster, ErreurSauvegarde> {
+    Booster::TOUS
+        .into_iter()
+        .find(|booster| booster_en_texte(*booster) == texte)
+        .ok_or_else(|| ErreurSauvegarde::Incoherente(format!("booster inconnu : {texte}")))
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -509,6 +544,15 @@ fn depuis_inventaire(inventaire: &Inventaire) -> InventaireV7 {
                 nombre: *nombre,
             })
             .collect(),
+        boosters: inventaire
+            .boosters()
+            .iter()
+            .map(|(booster, nombre)| BoosterV20 {
+                booster: booster_en_texte(*booster).to_string(),
+                nombre: *nombre,
+            })
+            .collect(),
+        eclats_d_astre: inventaire.eclats_d_astre(),
     }
 }
 
@@ -540,6 +584,10 @@ fn vers_inventaire(
     for pierre in inventaire.pierres {
         resultat.ajouter_pierres(lire_pierre(&pierre.pierre)?, pierre.nombre);
     }
+    for booster in inventaire.boosters {
+        resultat.ajouter_boosters(lire_booster(&booster.booster)?, booster.nombre);
+    }
+    resultat.ajouter_eclats_d_astre(inventaire.eclats_d_astre);
     Ok(resultat)
 }
 
@@ -635,7 +683,7 @@ pub(crate) fn vers_partie(
         .map_err(|erreur| ErreurSauvegarde::Incoherente(erreur.to_string()))?;
     // Avant la version 7, tout ce que possédait le joueur est rangé dans le
     // coffre du camp, à l'abri (section 13.3).
-    let (sac, coffre_du_camp) = if sauvegarde.version < VERSION_DU_COFFRE {
+    let (sac, mut coffre_du_camp) = if sauvegarde.version < VERSION_DU_COFFRE {
         let ancien = InventaireV7 {
             argent: sauvegarde.argent,
             potions: sauvegarde.potions,
@@ -677,6 +725,11 @@ pub(crate) fn vers_partie(
             None => Err(ErreurSauvegarde::EspeceInconnue(id)),
         })
         .collect::<Result<Vec<_>, _>>()?;
+    // Chaque Apôtre vaincu laisse désormais un Éclat d'astre : celui des
+    // victoires passées attend dans le coffre (section 14.3, Q93).
+    if sauvegarde.version < VERSION_DES_ECLATS_D_ASTRE {
+        coffre_du_camp.ajouter_eclats_d_astre(apotres_vaincus.len() as u32);
+    }
     // L'ancienne piste comptait trois indices : une partie qui en a trouvé
     // reprend au premier, qui ouvre le Marais ; il faut vaincre le Bourreau
     // pour ouvrir la Vallée (section 9.4).

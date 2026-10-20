@@ -19,6 +19,54 @@ pub struct Stats<T> {
     pub vitesse: T,
 }
 
+/// Une des six stats, pour désigner celle que vise un booster (section
+/// 14.3).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Stat {
+    Pv,
+    Attaque,
+    Defense,
+    AttaqueSpeciale,
+    DefenseSpeciale,
+    Vitesse,
+}
+
+impl Stat {
+    /// Dans l'ordre des champs de `Stats`.
+    pub const TOUTES: [Stat; 6] = [
+        Stat::Pv,
+        Stat::Attaque,
+        Stat::Defense,
+        Stat::AttaqueSpeciale,
+        Stat::DefenseSpeciale,
+        Stat::Vitesse,
+    ];
+}
+
+impl<T> Stats<T> {
+    pub fn de(&self, stat: Stat) -> &T {
+        match stat {
+            Stat::Pv => &self.pv,
+            Stat::Attaque => &self.attaque,
+            Stat::Defense => &self.defense,
+            Stat::AttaqueSpeciale => &self.attaque_speciale,
+            Stat::DefenseSpeciale => &self.defense_speciale,
+            Stat::Vitesse => &self.vitesse,
+        }
+    }
+
+    fn de_a_modifier(&mut self, stat: Stat) -> &mut T {
+        match stat {
+            Stat::Pv => &mut self.pv,
+            Stat::Attaque => &mut self.attaque,
+            Stat::Defense => &mut self.defense,
+            Stat::AttaqueSpeciale => &mut self.attaque_speciale,
+            Stat::DefenseSpeciale => &mut self.defense_speciale,
+            Stat::Vitesse => &mut self.vitesse,
+        }
+    }
+}
+
 /// Stats propres à une espèce, à partir desquelles on calcule celles de
 /// chaque monstre. u16 suffit largement et garantit que le calcul ne
 /// déborde pas en u32.
@@ -114,6 +162,13 @@ impl ValeursInternes {
 
     pub fn valeurs(&self) -> &Stats<u8> {
         &self.0
+    }
+
+    /// Ajoute `gain` à la valeur de cette stat, sans dépasser 31, comme un
+    /// booster (section 14.3).
+    pub fn augmenter(&mut self, stat: Stat, gain: u8) {
+        let valeur = self.0.de_a_modifier(stat);
+        *valeur = valeur.saturating_add(gain).min(Self::MAX);
     }
 }
 

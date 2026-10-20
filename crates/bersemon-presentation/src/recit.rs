@@ -7,6 +7,7 @@ use bersemon_core::contenu::{
 use bersemon_core::deroulement::Evenement;
 use bersemon_core::ressource::Ressource;
 
+use crate::boosters::{ECLAT_RAMASSE, booster_donne, boosters, monstre_rendu_shiny};
 use crate::combat::{ordre_donne, rapport_experience, remplacement, renoncement};
 use crate::equipement::{nom_de_place, objet_et_bonus};
 use crate::erreurs::erreur_sauvegarde;
@@ -79,6 +80,7 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             capsule,
             capsule_d_habilete,
             pierre,
+            booster,
         } => {
             let mut contenu = vec![potions(*nombre)];
             if *montant > 0 {
@@ -90,6 +92,9 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             }
             if let Some(pierre) = pierre {
                 contenu.push(pierres(*pierre, 1));
+            }
+            if let Some(booster) = booster {
+                contenu.push(boosters(*booster, 1));
             }
             (
                 format!("Vous trouvez un coffre : {}.", enumerer(&contenu)),
@@ -222,6 +227,7 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
         ),
         Evenement::Epilogue(epilogue) => (epilogue.clone(), true),
         Evenement::AmeDApotreRecueillie(recit) => (recit.clone(), false),
+        Evenement::EclatDAstreRamasse => (ECLAT_RAMASSE.to_string(), false),
         Evenement::Defaite { sac_perdu } => {
             let texte = if sac_perdu.est_vide() {
                 "Toute votre équipe est KO : vous rentrez au camp, le sac vide.".to_string()
@@ -422,6 +428,12 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             ),
             false,
         ),
+        Evenement::BoosterDonne {
+            booster,
+            avant,
+            apres,
+        } => (booster_donne(*booster, avant, apres), false),
+        Evenement::MonstreRenduShiny(monstre) => (monstre_rendu_shiny(monstre), false),
         Evenement::HabileteChangee { monstre, ancienne } => {
             let avant = ancienne
                 .map(|habilete| format!(", à la place de {}", habilete.nom()))
@@ -528,6 +540,7 @@ mod tests {
             capsule: None,
             capsule_d_habilete: false,
             pierre: None,
+            booster: None,
         }])[0];
         assert_eq!(
             recit.texte,
@@ -540,6 +553,7 @@ mod tests {
             capsule: None,
             capsule_d_habilete: false,
             pierre: None,
+            booster: None,
         }])[0];
         assert_eq!(sans_argent.texte, "Vous trouvez un coffre : 1 potion.");
         let avec_capsule = &raconter(&[Evenement::Coffre {
@@ -549,6 +563,7 @@ mod tests {
             capsule: Some(brasier()),
             capsule_d_habilete: false,
             pierre: None,
+            booster: None,
         }])[0];
         assert_eq!(
             avec_capsule.texte,
@@ -561,6 +576,7 @@ mod tests {
             capsule: None,
             capsule_d_habilete: false,
             pierre: None,
+            booster: None,
         }])[0];
         assert_eq!(
             avec_pillard.texte,
@@ -573,10 +589,24 @@ mod tests {
             capsule: None,
             capsule_d_habilete: false,
             pierre: Some(bersemon_core::pierre::PierreDEvolution::Lune),
+            booster: None,
         }])[0];
         assert_eq!(
             avec_pierre.texte,
             "Vous trouvez un coffre : 2 potions et 1 Pierre de lune."
+        );
+        let avec_booster = &raconter(&[Evenement::Coffre {
+            potions: 1,
+            argent: 0,
+            argent_du_pillard: 0,
+            capsule: None,
+            capsule_d_habilete: false,
+            pierre: None,
+            booster: Some(bersemon_core::booster::Booster::EcorceDeFer),
+        }])[0];
+        assert_eq!(
+            avec_booster.texte,
+            "Vous trouvez un coffre : 1 potion et 1 Écorce de fer."
         );
     }
 

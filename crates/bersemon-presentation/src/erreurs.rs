@@ -1,5 +1,6 @@
 //! Choix refusés et sauvegardes impossibles, expliqués au joueur.
 
+use bersemon_core::booster::ErreurBooster;
 use bersemon_core::capsule::ErreurApprentissage;
 use bersemon_core::collection::ErreurCollection;
 use bersemon_core::combat::ErreurCombat;
@@ -10,6 +11,7 @@ use bersemon_core::marchand::ErreurMarchand;
 use bersemon_core::sauvegarde::ErreurSauvegarde;
 use bersemon_core::soin::ErreurSoin;
 
+use crate::boosters::{refus_sans_booster, refus_valeur_maximale};
 use crate::equipement::erreur_equipement;
 use crate::expeditions_automatiques::erreur_expedition_automatique;
 use crate::forge::erreur_amelioration;
@@ -50,6 +52,11 @@ pub fn erreur_de_choix(choix: &Choix, erreur: &ErreurChoix) -> String {
             }
             ErreurChangementDHabilete::Collection(erreur) => erreur_collection(erreur),
         },
+        ErreurChoix::Booster(erreur) => match erreur {
+            ErreurBooster::Aucun(booster) => refus_sans_booster(*booster),
+            ErreurBooster::ValeurMaximale(booster) => refus_valeur_maximale(*booster),
+            ErreurBooster::Collection(erreur) => erreur_collection(erreur),
+        },
         ErreurChoix::Amelioration(erreur) => erreur_amelioration(erreur),
         ErreurChoix::Equipement(erreur) => erreur_equipement(erreur),
         ErreurChoix::Peche(erreur) => erreur_peche(erreur),
@@ -80,6 +87,8 @@ pub fn erreur_marchand(erreur: &ErreurMarchand) -> String {
             "Vous n'avez aucune ressource de cette sorte.".to_string()
         }
         ErreurMarchand::Collection(erreur) => erreur_collection(erreur),
+        ErreurMarchand::AucunEclatDAstre => "Il vous faut un Éclat d'astre.".to_string(),
+        ErreurMarchand::DejaShiny => "Ce monstre est déjà shiny.".to_string(),
     }
 }
 

@@ -73,6 +73,10 @@ pub enum ErreurMarchand {
     RessourceAbsente,
     /// La revente suit les règles du relâcher.
     Collection(ErreurCollection),
+    /// Malvoise ne rend shiny un monstre que contre un Éclat d'astre
+    /// (section 13.7).
+    AucunEclatDAstre,
+    DejaShiny,
 }
 
 impl fmt::Display for ErreurMarchand {
@@ -91,6 +95,8 @@ impl fmt::Display for ErreurMarchand {
             ErreurMarchand::AmeNonPortee => write!(f, "le joueur ne porte pas cette âme"),
             ErreurMarchand::RessourceAbsente => write!(f, "aucune ressource de cette sorte"),
             ErreurMarchand::Collection(erreur) => write!(f, "{erreur}"),
+            ErreurMarchand::AucunEclatDAstre => write!(f, "aucun Éclat d'astre"),
+            ErreurMarchand::DejaShiny => write!(f, "ce monstre est déjà shiny"),
         }
     }
 }

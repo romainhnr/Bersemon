@@ -87,6 +87,7 @@ mod tests {
     use bersemon_core::ame::{Gardien, MarchandId, MarchandMort};
     use bersemon_core::amelioration::{Amelioration, Ameliorations, Chantier, Forge, Ouvrage};
     use bersemon_core::attaque::{Attaque, AttaqueId, Categorie, EffetSecondaire};
+    use bersemon_core::booster::Booster;
     use bersemon_core::capsule::Capsule;
     use bersemon_core::codex::EtatCodex;
     use bersemon_core::collection::Emplacement;
@@ -376,7 +377,10 @@ mod tests {
                 .avec_capsules_d_habilete(2)
                 .avec_ressources(croc(), 4)
                 .avec_pierres(PierreDEvolution::Lune, 2)
-                .avec_pierres(PierreDEvolution::Braise, 1),
+                .avec_pierres(PierreDEvolution::Braise, 1)
+                .avec_boosters(Booster::CendreBenite, 2)
+                .avec_boosters(Booster::FioleDeSang, 1)
+                .avec_eclats_d_astre(1),
             marchand_au_camp: true,
             ames_donnees: vec![bertrand()],
             ames_portees: vec![grete()],
@@ -616,11 +620,40 @@ mod tests {
 
     #[test]
     fn version_inconnue() {
-        let texte = texte_de_partie().replacen("\"version\":19", "\"version\":20", 1);
+        let texte = texte_de_partie().replacen("\"version\":20", "\"version\":21", 1);
         assert_eq!(
             charger_texte(&texte),
-            Err(ErreurSauvegarde::VersionInconnue(20))
+            Err(ErreurSauvegarde::VersionInconnue(21))
         );
+    }
+
+    #[test]
+    fn avant_la_version_20_chaque_apotre_vaincu_laisse_un_eclat_au_coffre() {
+        let partie = partie_complete();
+        assert_eq!(partie.apotres_vaincus().len(), 1);
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        valeur["version"] = 19.into();
+        valeur["coffre_du_camp"]
+            .as_object_mut()
+            .unwrap()
+            .remove("boosters");
+        valeur["coffre_du_camp"]["eclats_d_astre"] = 0.into();
+        let rechargee = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        assert_eq!(rechargee.coffre_du_camp().eclats_d_astre(), 1);
+        assert_eq!(rechargee.coffre_du_camp().boosters(), &[]);
+        assert_eq!(rechargee.sac(), partie.sac());
+        // En version 20, rien n'est ajouté.
+        let relue = charger_texte(&texte_de_partie()).unwrap().unwrap();
+        assert_eq!(relue.coffre_du_camp().eclats_d_astre(), 1);
+    }
+
+    #[test]
+    fn booster_inconnu_refuse() {
+        let texte = texte_de_partie().replace("\"cendre-benite\"", "\"sel-de-lune\"");
+        assert!(matches!(
+            charger_texte(&texte),
+            Err(ErreurSauvegarde::Incoherente(_))
+        ));
     }
 
     /// La partie complète en version 18, avec un Baron capturé en tête du
