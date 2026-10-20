@@ -1455,6 +1455,115 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
     }
 }
 
+/// Les machines au plus haut : la forge, l'écran des machines avec la cour
+/// pleine et les pièges posés, et le choix d'un monstre à entraîner parmi
+/// une équipe et un camp pleins (section 13.6).
+#[test]
+fn les_machines_tiennent_dans_les_limites() {
+    use bersemon_core::amelioration::{Ameliorations, Forge};
+    use bersemon_core::catalogue::Catalogue;
+    use bersemon_core::heros::Heros;
+    use bersemon_core::machines::{Entrainement, Machines, Pieges};
+    use bersemon_core::niveau::Niveau;
+    use bersemon_core::nom::Nom;
+    use bersemon_core::partie::Partie;
+    use bersemon_core::stats::ValeursInternes;
+
+    let contenu = ContenuV1::new();
+    let creer = |id: &str| {
+        Monstre::creer(
+            contenu.espece(&EspeceId::new(id)).unwrap(),
+            Niveau::new(16).unwrap(),
+            ValeursInternes::default(),
+            false,
+        )
+        .unwrap()
+    };
+    let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Mage);
+    let mut partie = Partie::nouvelle(heros, creer("salamandre"));
+    let ameliorations = Ameliorations::new(3, 3, 1)
+        .unwrap()
+        .avec_machines(3, 3)
+        .unwrap();
+    let etat = |partie: &Partie, machines: Machines| EtatPartie {
+        heros: partie.heros().clone(),
+        collection: partie.collection().clone(),
+        sac: Inventaire::default(),
+        coffre_du_camp: Inventaire::default(),
+        marchand_au_camp: true,
+        ames_donnees: Vec::new(),
+        ames_portees: Vec::new(),
+        ames_a_retrouver: Vec::new(),
+        codex: partie.codex().clone(),
+        zones_explorees: ["lisiere", "marais", "vallee", "abbaye"]
+            .into_iter()
+            .map(ZoneId::new)
+            .collect(),
+        indices_trouves: 4,
+        apotres_vaincus: Vec::new(),
+        humains_vaincus: Vec::new(),
+        conseils_vus: Vec::new(),
+        expeditions_automatiques: Vec::new(),
+        attaques_a_choisir: Vec::new(),
+        peche: Default::default(),
+        forge: Forge::restaurer(true, ameliorations, None).unwrap(),
+        relations: Default::default(),
+        machines,
+    };
+    // L'enclos et l'équipe agrandis d'abord, pour une équipe de 4 et 57
+    // monstres au camp, qui laissent leur place aux 3 de la cour.
+    partie = Partie::restaurer(etat(&partie, Machines::default())).unwrap();
+    for _ in 0..(4 + 57 - 1) {
+        partie.prendre_monstre_rare(creer("loup"));
+    }
+    let cour = (0..3)
+        .map(|_| Entrainement::new(creer("corbeau"), Horodatage::depuis_secondes(0)))
+        .collect();
+    let pieges = Pieges::new(ZoneId::new("lisiere"), Horodatage::depuis_secondes(0));
+    let partie = Partie::restaurer(etat(&partie, Machines::restaurer(Some(pieges), cour))).unwrap();
+    assert_eq!(partie.collection().camp().len(), 57);
+    let afficher = |vue: Vue| {
+        let question = crate::ecran_camp::question(
+            &partie,
+            vue,
+            &contenu,
+            Horodatage::depuis_secondes(90_000),
+        );
+        let affiche = Message {
+            texte: question.texte,
+            rangees: question.rangees,
+            version: 1,
+        };
+        verifier_les_limites(&affiche);
+        affiche
+    };
+    let forge = afficher(Vue::Forge);
+    assert!(propose(&forge, |cle| *cle == Cle::Afficher(Vue::Machines)));
+    let machines = afficher(Vue::Machines);
+    assert!(propose(&machines, |cle| *cle == Cle::ReleverLesPieges));
+    assert!(propose(&machines, |cle| *cle == Cle::Reprendre(2)));
+    // La cour est pleine.
+    assert!(!propose(&machines, |cle| *cle == Cle::Afficher(Vue::Entrainement)));
+    assert_eq!(
+        valeurs_des_menus(&machines, |cle| *cle == Cle::PoserLesPieges),
+        vec!["marais", "vallee", "abbaye"]
+    );
+    assert!(
+        machines.texte.contains("24/24 ressources, pleins."),
+        "{}",
+        machines.texte
+    );
+    let entrainement = afficher(Vue::Entrainement);
+    let menus = entrainement
+        .rangees
+        .iter()
+        .filter(
+            |rangee| matches!(rangee, Rangee::Menu(menu) if matches!(menu.cle, Cle::Entrainer(_))),
+        )
+        .count();
+    assert_eq!(menus, 3);
+}
+
 /// Un clic d'un des joueurs, appliqué, puis le message qu'il reçoit en
 /// retour, vérifié contre les limites de Discord.
 fn executer_le_clic(

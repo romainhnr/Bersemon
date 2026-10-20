@@ -25,6 +25,7 @@ use bersemon_presentation::equipement::{
 use bersemon_presentation::expeditions_automatiques::duree;
 use bersemon_presentation::expeditions_automatiques::expeditions_rentrees;
 use bersemon_presentation::forge::{cout, etat_de_la_forge, travail_fini};
+use bersemon_presentation::machines::{avis_des_pieges, machines as texte_des_machines};
 use bersemon_presentation::monstres::{
     attaques_connues, decrire_attaque, fiche_du_monstre, ligne_monstre, nom, provenance,
 };
@@ -72,6 +73,8 @@ pub fn question(
             ecran_echanges::echanges(partie, &TableauDesEchanges::default(), avec, cede)
         }
         Vue::Classement => ecran_echanges::classement(&TableauDesEchanges::default()),
+        Vue::Machines => machines(partie, contenu, maintenant),
+        Vue::Entrainement => entrainement(partie),
     }
 }
 
@@ -167,6 +170,7 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
     en_tete.extend(expeditions_rentrees(partie, maintenant));
     en_tete.extend(travail_fini(partie, maintenant));
     en_tete.extend(ligne_prete(partie, maintenant));
+    en_tete.extend(avis_des_pieges(partie, maintenant).map(str::to_string));
     Question {
         texte: format!(
             "{}\nVotre équipe :\n{}",
@@ -202,6 +206,11 @@ fn forge(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Questi
             boutons.push(bouton(Cle::Ameliorer(amelioration), &libelle, PRINCIPAL));
         }
     }
+    // Au plus 8 boutons : ils tiennent en deux rangées.
+    let ameliorations = partie.forge().ameliorations();
+    if ameliorations.pieges().is_some() || ameliorations.cour().is_some() {
+        boutons.push(bouton(Cle::Afficher(Vue::Machines), "Machines", PRINCIPAL));
+    }
     boutons.push(retour());
     let objets: Vec<OptionDeMenu> = contenu
         .plans_de_fabrication()
@@ -219,6 +228,82 @@ fn forge(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Questi
     lignes.extend(rangees(boutons));
     Question {
         texte: etat_de_la_forge(partie, contenu, maintenant),
+        rangees: lignes,
+    }
+}
+
+/// Les machines de Gunther (section 13.6) : un bouton pour relever les
+/// pièges, un pour mettre un monstre à l'entraînement, un pour reprendre
+/// chaque monstre de la cour (au plus 5 boutons), et un menu des autres
+/// zones explorées où poser les pièges.
+fn machines(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Question {
+    let plafond = partie.plafond_d_entrainement(contenu.zones(), contenu.piste());
+    let ameliorations = partie.forge().ameliorations();
+    let mut lignes: Vec<Rangee> = Vec::new();
+    let mut boutons = Vec::new();
+    if let Some(regles) = ameliorations.pieges() {
+        let pieges = partie.machines().pieges();
+        if pieges.is_some_and(|pieges| pieges.stock(&regles, maintenant) > 0) {
+            boutons.push(bouton(Cle::ReleverLesPieges, "Relever les pièges", SUCCES));
+        }
+        let zones: Vec<OptionDeMenu> = contenu
+            .zones()
+            .iter()
+            .filter(|zone| partie.est_exploree(zone.id()))
+            .filter(|zone| pieges.is_none_or(|pieges| pieges.zone() != zone.id()))
+            .map(|zone| OptionDeMenu {
+                libelle: zone.nom().to_string(),
+                valeur: zone.id().as_str().to_string(),
+                description: None,
+            })
+            .collect();
+        lignes.extend(menu(
+            Cle::PoserLesPieges,
+            "Poser les pièges dans une zone explorée",
+            zones,
+        ));
+    }
+    if let Some(regles) = ameliorations.cour() {
+        let cour = partie.machines().cour();
+        if cour.len() < regles.places {
+            boutons.push(bouton(
+                Cle::Afficher(Vue::Entrainement),
+                "Mettre un monstre à l'entraînement",
+                PRINCIPAL,
+            ));
+        }
+        for (position, entrainement) in cour.iter().enumerate() {
+            let libelle = format!("Reprendre {}", nom(entrainement.monstre(), Cote::Joueur));
+            boutons.push(bouton(Cle::Reprendre(position), &libelle, SECONDAIRE));
+        }
+    }
+    lignes.extend(rangees(boutons));
+    lignes.extend(rangees(vec![
+        bouton(Cle::Afficher(Vue::Forge), "Retour à la forge", SECONDAIRE),
+        retour(),
+    ]));
+    Question {
+        texte: texte_des_machines(partie, contenu.zones(), plafond, maintenant),
+        rangees: lignes,
+    }
+}
+
+/// Les monstres de l'équipe et du camp, à mettre à l'entraînement.
+fn entrainement(partie: &Partie) -> Question {
+    let mut lignes = menus_de_monstres(partie.collection(), Cle::Entrainer, "Entraîner", |_| true);
+    lignes.extend(rangees(vec![
+        bouton(
+            Cle::Afficher(Vue::Machines),
+            "Retour aux machines",
+            SECONDAIRE,
+        ),
+        retour(),
+    ]));
+    Question {
+        texte: format!(
+            "{}\n\nChoisissez le monstre à mettre à l'entraînement.",
+            liste_des_monstres(partie.collection())
+        ),
         rangees: lignes,
     }
 }

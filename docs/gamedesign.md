@@ -694,6 +694,7 @@ Décidé le 20/10/2026, pour les étapes 72 à 74 (choix de l'utilisateur) :
 - Repris, le monstre rejoint l'équipe s'il y reste une place, sinon le camp, comme au retour d'une expédition automatique (section 12.7) ; les attaques à apprendre au-delà de 4 se choisissent de même, et il n'évolue pas d'office (section 5.4). Le niveau constaté de la cour vaut pour tout le temps passé (hypothèse retenue, Q95).
 - Sur Discord, aucun message privé n'annonce des pièges pleins (hypothèse retenue, Q95).
 - Écrans, à l'étape 73 (console) : une fois une machine construite, la forge propose "Machines". L'écran montre les pièges (niveau, effet, zone, stock et temps avant la prochaine ressource) et la cour (niveau, effet, plafond, places occupées, puis chaque monstre avec l'XP gagnée et le temps passé). Il propose de relever les pièges s'ils ont un stock, de les poser dans chaque autre zone explorée, de mettre un monstre à l'entraînement s'il reste une place, puis de reprendre chaque monstre de la cour. Le camp signale des pièges pleins.
+- Écrans, à l'étape 74 (Discord) : la forge a un bouton "Machines", une fois une machine construite. L'écran des machines a le même texte que dans la console, un menu des autres zones explorées où poser les pièges, et une rangée de boutons : "Relever les pièges", "Mettre un monstre à l'entraînement", qui ouvre un écran des monstres de l'équipe et du camp en menus numérotés, et "Reprendre {monstre}" pour chaque monstre de la cour. Le camp signale des pièges pleins.
 
 ### 13.7 Services rares
 

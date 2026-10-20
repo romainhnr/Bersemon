@@ -727,6 +727,7 @@ fn vue_apres(vue: Vue, choix: &Choix) -> Vue {
         (_, Choix::EnvoyerEnExpeditionAutomatique { .. })
         | (_, Choix::AccueillirExpeditionAutomatique(_)) => Vue::Expeditions,
         (Vue::Gestion(Some(_)), _) => Vue::Gestion(None),
+        (Vue::Entrainement, _) => Vue::Machines,
         (vue, _) => vue,
     }
 }

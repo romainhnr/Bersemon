@@ -69,6 +69,10 @@ pub enum Vue {
     },
     /// Le classement des duels de tous les joueurs du bot (section 15.4).
     Classement,
+    /// Les machines de Gunther, depuis sa forge (section 13.6).
+    Machines,
+    /// Le choix du monstre à mettre à l'entraînement.
+    Entrainement,
 }
 
 /// Monstres choisis pour une expédition automatique, dans l'ordre du choix
@@ -256,6 +260,13 @@ pub enum Cle {
     Ameliorer(Amelioration),
     /// Le joueur constate le travail fini de Gunther.
     Constater,
+    /// Menu des zones explorées où poser les pièges (section 13.6).
+    PoserLesPieges,
+    ReleverLesPieges,
+    /// Menu de monstres numéroté, pour la cour d'entraînement.
+    Entrainer(u8),
+    /// Le monstre à cette position de la cour.
+    Reprendre(usize),
     /// Ansgar tend une ligne, que le joueur relève une fois prête (section
     /// 13.8).
     LancerLaLigne,
@@ -422,6 +433,10 @@ impl Cle {
             Cle::SeSuicider => jouer(Choix::SeSuicider),
             Cle::Ameliorer(amelioration) => jouer(Choix::LancerAmelioration(*amelioration)),
             Cle::Constater => jouer(Choix::ConstaterTravail),
+            Cle::PoserLesPieges => jouer(Choix::PoserLesPieges(ZoneId::new(valeur?))),
+            Cle::ReleverLesPieges => jouer(Choix::ReleverLesPieges),
+            Cle::Entrainer(_) => jouer(Choix::MettreALEntrainement(lire_emplacement(valeur?)?)),
+            Cle::Reprendre(position) => jouer(Choix::ReprendreDeLEntrainement(*position)),
             Cle::LancerLaLigne => jouer(Choix::LancerLaLigne),
             Cle::ReleverLaLigne => jouer(Choix::ReleverLaLigne),
             Cle::GarderLaPrise => jouer(Choix::GarderLaPrise),
@@ -607,6 +622,12 @@ impl Cle {
                 format!("ameliorer:{}", amelioration_en_texte(*amelioration))
             }
             Cle::Constater => "constater".to_string(),
+            Cle::Afficher(Vue::Machines) => "vue:machines".to_string(),
+            Cle::Afficher(Vue::Entrainement) => "vue:entrainement".to_string(),
+            Cle::PoserLesPieges => "poser-pieges".to_string(),
+            Cle::ReleverLesPieges => "relever-pieges".to_string(),
+            Cle::Entrainer(numero) => format!("entrainer:{numero}"),
+            Cle::Reprendre(position) => format!("reprendre:{position}"),
             Cle::LancerLaLigne => "lancer-ligne".to_string(),
             Cle::ReleverLaLigne => "relever-ligne".to_string(),
             Cle::GarderLaPrise => "garder-prise".to_string(),
@@ -668,6 +689,10 @@ impl Cle {
             "vue:options" => Cle::Afficher(Vue::Options),
             "vue:forge" => Cle::Afficher(Vue::Forge),
             "constater" => Cle::Constater,
+            "vue:machines" => Cle::Afficher(Vue::Machines),
+            "vue:entrainement" => Cle::Afficher(Vue::Entrainement),
+            "poser-pieges" => Cle::PoserLesPieges,
+            "relever-pieges" => Cle::ReleverLesPieges,
             "vue:equipement" => Cle::Afficher(Vue::Equipement),
             "vue:peche" => Cle::Afficher(Vue::Peche),
             "lancer-ligne" => Cle::LancerLaLigne,
@@ -797,6 +822,8 @@ impl Cle {
                         Cle::AcheterSoins(lire_soin(soin)?, nombre.parse().ok()?)
                     }
                     "vendre" => Cle::Vendre(numero()?),
+                    "entrainer" => Cle::Entrainer(numero()?),
+                    "reprendre" => Cle::Reprendre(position()?),
                     "vendre-monstre" => Cle::VendreCeMonstre(emplacement()?),
                     "changer-habilete" => Cle::ChangerDHabilete(emplacement()?),
                     "donner-booster" => Cle::DonnerBooster(emplacement()?),
@@ -1179,6 +1206,12 @@ mod tests {
             Cle::Ameliorer(Amelioration::Filets),
             Cle::Ameliorer(Amelioration::Equipe),
             Cle::Constater,
+            Cle::Afficher(Vue::Machines),
+            Cle::Afficher(Vue::Entrainement),
+            Cle::PoserLesPieges,
+            Cle::ReleverLesPieges,
+            Cle::Entrainer(2),
+            Cle::Reprendre(1),
             Cle::Fabriquer,
             Cle::Afficher(Vue::Equipement),
             Cle::Equiper(PlaceDEquipement::Arme),
