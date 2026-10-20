@@ -12,7 +12,7 @@ use crate::monstre::Monstre;
 use crate::niveau::Niveau;
 use crate::pierre::PierreDEvolution;
 use crate::stats::ValeursInternes;
-use crate::zone::{Zone, tirer_entre};
+use crate::zone::{Zone, creer_monstre_sauvage, tirer_entre};
 
 /// Bornes du tirage de la prise, sur 100 (docs/contenu-v1.md, section 15) :
 /// monstre commun 55 %, monstre rare 5 %, potion 20 %, bourse noyée 10 %,
@@ -135,6 +135,62 @@ impl ParametresPeche {
             }
             _ => Prise::CapsuleDHabilete,
         }
+    }
+}
+
+/// Ansgar, le pêcheur, tant qu'il n'est pas au camp : il se rencontre à
+/// coup sûr à son étape des expéditions dans sa zone, aux prises avec ce
+/// qu'il vient de ferrer (section 9.2).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Pecheur {
+    etape: u32,
+    espece: Espece,
+    niveau: Niveau,
+    avant_combat: String,
+    apres_victoire: String,
+}
+
+impl Pecheur {
+    /// Vérifie que le monstre qui l'attaque peut être créé à son niveau :
+    /// sa génération ne peut ensuite plus échouer.
+    pub fn new(
+        etape: u32,
+        espece: Espece,
+        niveau: Niveau,
+        avant_combat: impl Into<String>,
+        apres_victoire: impl Into<String>,
+    ) -> Result<Self, ErreurParametresPeche> {
+        Monstre::creer(espece.clone(), niveau, ValeursInternes::default(), false).map_err(
+            |_| ErreurParametresPeche::EspeceInvalide {
+                espece: espece.id().clone(),
+                niveau,
+            },
+        )?;
+        Ok(Self {
+            etape,
+            espece,
+            niveau,
+            avant_combat: avant_combat.into(),
+            apres_victoire: apres_victoire.into(),
+        })
+    }
+
+    pub fn etape(&self) -> u32 {
+        self.etape
+    }
+
+    pub fn avant_combat(&self) -> &str {
+        &self.avant_combat
+    }
+
+    pub fn apres_victoire(&self) -> &str {
+        &self.apres_victoire
+    }
+
+    /// Un monstre sauvage, comme le Loup qui suit le brigand. Tirages : son
+    /// shiny, ses valeurs internes s'il n'est pas shiny, puis son habileté.
+    pub(crate) fn generer_adversaire(&self, aleatoire: &mut dyn Aleatoire) -> Monstre {
+        creer_monstre_sauvage(&self.espece, self.niveau, aleatoire)
     }
 }
 
@@ -364,6 +420,16 @@ mod tests {
         assert_eq!(peche.verifier_releve(a(7_300)), Ok(()));
         peche.relever();
         assert_eq!(peche.ligne(), None);
+    }
+
+    #[test]
+    fn le_monstre_d_ansgar_est_sauvage_a_son_niveau() {
+        let ansgar = Pecheur::new(2, espece("noye"), Niveau::new(13).unwrap(), "", "").unwrap();
+        // Shiny (2 : non), puis six valeurs internes ; pas d'habileté à tirer.
+        let noye = ansgar.generer_adversaire(&mut AleatoireScripte::new([2, 7, 0, 0, 0, 0, 0]));
+        assert_eq!(noye.espece().id().as_str(), "noye");
+        assert_eq!(noye.niveau().valeur(), 13);
+        assert_eq!(noye.valeurs_internes().valeurs().pv, 7);
     }
 
     #[test]

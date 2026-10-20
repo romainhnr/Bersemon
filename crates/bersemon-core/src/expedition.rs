@@ -11,6 +11,7 @@ use crate::capsule::Capsule;
 use crate::expedition_automatique::ErreurParametres;
 use crate::humain::Humain;
 use crate::monstre::Monstre;
+use crate::peche::Pecheur;
 use crate::pierre::PierreDEvolution;
 use crate::traque::Apotre;
 use crate::zone::{MonstreRare, Zone, tirer_entre};
@@ -83,6 +84,12 @@ pub enum EvenementExpedition {
         marchand: Box<MarchandMort>,
         adversaire: Monstre,
     },
+    /// Combat ordinaire contre ce qu'Ansgar vient de ferrer : la victoire
+    /// l'installe au camp (section 9.2).
+    Pecheur {
+        pecheur: Box<Pecheur>,
+        adversaire: Monstre,
+    },
 }
 
 /// Quand l'âme du marchand mort de la zone se rencontre (section 14.2).
@@ -131,6 +138,8 @@ pub struct Expedition {
     /// Le marchand mort de la zone, tant que son âme peut être trouvée, et
     /// l'étape où elle se rencontre ; une fois au plus (section 14.2).
     ame: Option<(MarchandMort, RencontreDeLAme)>,
+    /// Ansgar, tant qu'il n'est pas au camp ; une fois au plus.
+    pecheur: Option<Pecheur>,
     /// Un coffre ne contient qu'une capsule que le joueur n'a pas encore.
     capsules_possedees: Vec<AttaqueId>,
     /// Pour qu'un autre coffre de la même expédition ne la contienne pas.
@@ -150,6 +159,7 @@ impl Expedition {
             apotre: None,
             humain: None,
             ame: None,
+            pecheur: None,
             capsules_possedees: Vec::new(),
             capsules_trouvees: Vec::new(),
         }
@@ -177,6 +187,11 @@ impl Expedition {
 
     pub(crate) fn avec_ame(mut self, marchand: MarchandMort, rencontre: RencontreDeLAme) -> Self {
         self.ame = Some((marchand, rencontre));
+        self
+    }
+
+    pub(crate) fn avec_pecheur(mut self, pecheur: Pecheur) -> Self {
+        self.pecheur = Some(pecheur);
         self
     }
 
@@ -227,6 +242,8 @@ impl Expedition {
     /// Une zone sans monstre rare donne un combat à la place. L'Apôtre
     /// remplace l'événement de la dernière étape, sans tirage de sa nature
     /// (Q57), comme l'humain de la zone, sans aucun tirage (section 10.7).
+    /// Ansgar remplace celui de son étape, avant l'âme, avec les tirages de
+    /// son adversaire (section 9.2).
     pub fn etape_suivante(&mut self, aleatoire: &mut dyn Aleatoire) -> Option<EvenementExpedition> {
         if self.est_terminee() {
             return None;
@@ -246,6 +263,13 @@ impl Expedition {
             });
         }
         let etape = self.etapes_faites;
+        if let Some(pecheur) = self.pecheur.take_if(|pecheur| pecheur.etape() == etape) {
+            let adversaire = pecheur.generer_adversaire(aleatoire);
+            return Some(EvenementExpedition::Pecheur {
+                pecheur: Box::new(pecheur),
+                adversaire,
+            });
+        }
         if matches!(&self.ame, Some((_, RencontreDeLAme::AEtape(attendue))) if *attendue == etape) {
             return Some(self.rencontrer_l_ame(aleatoire));
         }
@@ -264,12 +288,25 @@ impl Expedition {
 
     /// Une âme à retrouver se rencontre à une étape tirée parmi celles qui
     /// précèdent la dernière, réservée aux combats de fin de zone (section
-    /// 14.2).
+    /// 14.2), sans celle d'Ansgar.
     fn placer_l_ame_a_retrouver(&mut self, aleatoire: &mut dyn Aleatoire) {
         let derniere_possible = self.nombre_etapes.saturating_sub(1).max(1);
+        let etape_d_ansgar = self
+            .pecheur
+            .as_ref()
+            .map(Pecheur::etape)
+            .filter(|etape| *etape <= derniere_possible && derniere_possible > 1);
         if let Some((_, rencontre)) = &mut self.ame {
             if *rencontre == RencontreDeLAme::ARetrouver {
-                *rencontre = RencontreDeLAme::AEtape(aleatoire.tirer(1..=derniere_possible));
+                let etape = match etape_d_ansgar {
+                    // Les étapes après la sienne se décalent d'un cran.
+                    Some(reservee) => {
+                        let tiree = aleatoire.tirer(1..=derniere_possible - 1);
+                        if tiree >= reservee { tiree + 1 } else { tiree }
+                    }
+                    None => aleatoire.tirer(1..=derniere_possible),
+                };
+                *rencontre = RencontreDeLAme::AEtape(etape);
             }
         }
     }
@@ -681,5 +718,58 @@ mod tests {
             capsule_du_coffre(expedition.etape_suivante(&mut AleatoireScripte::new([90, 1, 100]))),
             None
         );
+    }
+
+    fn ansgar() -> Pecheur {
+        Pecheur::new(2, espece("noye"), Niveau::new(5).unwrap(), "", "").unwrap()
+    }
+
+    #[test]
+    fn ansgar_attend_a_son_etape_sans_tirage_de_nature() {
+        let mut expedition = Expedition::partir(zone(false)).avec_pecheur(ansgar());
+        assert!(matches!(
+            expedition.etape_suivante(&mut AleatoireScripte::new([81, 1, 100])),
+            Some(EvenementExpedition::Coffre { .. })
+        ));
+        assert!(matches!(
+            expedition.etape_suivante(&mut AleatoireScripte::new(MONSTRE)),
+            Some(EvenementExpedition::Pecheur { adversaire, .. })
+                if adversaire.espece().id().as_str() == "noye"
+        ));
+        // Une fois au plus.
+        assert!(matches!(
+            expedition.etape_suivante(&mut AleatoireScripte::new([81, 1, 100])),
+            Some(EvenementExpedition::Coffre { .. })
+        ));
+    }
+
+    #[test]
+    fn l_ame_a_retrouver_laisse_son_etape_a_ansgar() {
+        let ulrich = MarchandMort::new(
+            MarchandId::new("ulrich"),
+            "Ulrich",
+            Soin::Elixir,
+            Gardien::MonstreDeLaZone,
+            "",
+            "",
+        )
+        .unwrap();
+        // Parmi les étapes 1 et 3, la seconde : le tirage de 2 saute celle
+        // d'Ansgar.
+        let mut expedition = Expedition::partir(zone(false))
+            .avec_ame(ulrich, RencontreDeLAme::ARetrouver)
+            .avec_pecheur(ansgar());
+        assert!(matches!(
+            expedition.etape_suivante(&mut AleatoireScripte::new([2, 81, 1, 100])),
+            Some(EvenementExpedition::Coffre { .. })
+        ));
+        assert!(matches!(
+            expedition.etape_suivante(&mut AleatoireScripte::new(MONSTRE)),
+            Some(EvenementExpedition::Pecheur { .. })
+        ));
+        assert!(matches!(
+            expedition.etape_suivante(&mut AleatoireScripte::new(MONSTRE)),
+            Some(EvenementExpedition::Ame { .. })
+        ));
     }
 }

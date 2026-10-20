@@ -24,7 +24,7 @@ use crate::habilete::Habilete;
 use crate::heros::Classe;
 use crate::humain::{Humain, HumainId, IaHumain};
 use crate::niveau::Niveau;
-use crate::peche::ParametresPeche;
+use crate::peche::{ParametresPeche, Pecheur};
 use crate::pierre::PierreDEvolution;
 use crate::ressource::{Ressource, RessourceId};
 use crate::soin::Soin;
@@ -108,6 +108,13 @@ const APRES_LE_BRIGAND: &str =
 const AVANT_LE_BOURREAU: &str = "Au cœur du Marais, sous un gibet chargé de cordes, un bourreau encagoulé aiguise sa hache. Trois bêtes attendent ses ordres. Il sert le Baron pendu, et il ne vous laissera pas passer.";
 
 const APRES_LE_BOURREAU: &str = "Le bourreau s'effondre dans la vase, sa hache brisée.";
+
+/// Ansgar attend à l'étape 2 du Marais (docs/contenu-v1.md, section 15).
+const ETAPE_D_ANSGAR: u32 = 2;
+
+const AVANT_ANSGAR: &str = "Au bord d'une mare noire, un vieil homme s'arc-boute sur sa canne. Ce qu'il vient de ferrer surgit de l'eau et se jette sur vous.";
+
+const APRES_ANSGAR: &str = "Le vieil homme reprend son souffle : Ansgar, pêcheur, chassé de sa cabane par ce qui remonte des eaux du Marais. Il vous suit jusqu'au camp et y tend ses lignes.";
 
 // Après la victoire sur le Bourreau (section 13.4).
 const LIBERATION_DE_GUNTHER: &str = "Derrière le gibet, un homme enchaîné relève la tête : Gunther, forgeron, que le bourreau gardait pour forger ses chaînes. Libéré, il vous suit jusqu'au camp et y installe sa forge.";
@@ -249,6 +256,16 @@ impl ContenuV1 {
             AVANT_ULRICH,
             APRES_ULRICH,
         );
+        // Aux prises avec un Noyé, au niveau maximal du Marais (section
+        // 9.2).
+        let ansgar = Pecheur::new(
+            ETAPE_D_ANSGAR,
+            trouver("noye"),
+            niveau(13),
+            AVANT_ANSGAR,
+            APRES_ANSGAR,
+        )
+        .expect("Ansgar conforme aux règles");
         let lisiere = Zone::new(
             ZoneId::new("lisiere"),
             "Lisière du Bois-Sombre",
@@ -286,7 +303,11 @@ impl ContenuV1 {
             coffre(25..=50, capsules_de("marais")),
         )
         .and_then(|zone| zone.avec_monstre_cache(schnoz()))
-        .map(|zone| zone.avec_humain(bourreau).avec_marchand_mort(grete))
+        .map(|zone| {
+            zone.avec_humain(bourreau)
+                .avec_marchand_mort(grete)
+                .avec_pecheur(ansgar)
+        })
         .expect("Marais conforme aux règles");
         let vallee = Zone::new(
             ZoneId::new("vallee"),
@@ -2708,6 +2729,13 @@ mod tests {
         let contenu = ContenuV1::new();
         let peche = contenu.peche();
         assert_eq!(peche.duree(), Duration::from_secs(7_200));
+        // Ansgar attend à l'étape 2 du Marais, et nulle part ailleurs.
+        let etapes: Vec<Option<u32>> = contenu
+            .zones()
+            .iter()
+            .map(|zone| zone.pecheur().map(Pecheur::etape))
+            .collect();
+        assert_eq!(etapes, vec![None, Some(2), None, None]);
         let ids: Vec<&str> = peche
             .especes()
             .iter()

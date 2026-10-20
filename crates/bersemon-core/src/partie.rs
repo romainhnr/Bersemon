@@ -1006,7 +1006,8 @@ impl Partie {
     /// vaincu (section 9.4). Elle peut trouver l'âme du marchand mort de la
     /// zone, tant qu'elle n'est pas recueillie : à son étape s'il en a une,
     /// à coup sûr si elle est à retrouver, sinon à 10 % des étapes (section
-    /// 14.2). Ses coffres ne contiennent que des
+    /// 14.2). Ansgar l'attend à son étape tant qu'il n'est pas au camp
+    /// (section 9.2). Ses coffres ne contiennent que des
     /// capsules que le joueur n'a pas encore (section 13.10). Une équipe vide
     /// ne part pas (section 13.2).
     pub fn partir_en_expedition(
@@ -1037,6 +1038,9 @@ impl Partie {
                 None => RencontreDeLAme::Tiree,
             };
             expedition = expedition.avec_ame(marchand.clone(), rencontre);
+        }
+        if let Some(pecheur) = zone.pecheur().filter(|_| !self.peche.pecheur_au_camp()) {
+            expedition = expedition.avec_pecheur(pecheur.clone());
         }
         if let Some(apotre) =
             piste.apotre_en_attente(zone.id(), self.indices_trouves, &self.apotres_vaincus)

@@ -115,6 +115,8 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
         | Evenement::HumainRencontre(recit)
         | Evenement::AmeRencontree(recit) => (recit.clone(), false),
         Evenement::AmeRecueillie(texte) => (texte.clone(), true),
+        Evenement::PecheurRencontre(texte) => (texte.clone(), false),
+        Evenement::PecheurSauve(texte) => (texte.clone(), true),
         Evenement::AmeDonnee { marchand, soin } => (
             format!(
                 "Vous remettez l'âme {} à Malvoise, qui l'enferme dans le crâne. Malvoise vendra désormais {}.",

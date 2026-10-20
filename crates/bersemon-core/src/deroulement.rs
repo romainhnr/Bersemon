@@ -40,7 +40,7 @@ use crate::marchand::ErreurMarchand;
 use crate::monstre::{Monstre, RapportExperience};
 use crate::nom::{ErreurNom, Nom};
 use crate::partie::{Partie, creer_monstre_de_depart};
-use crate::peche::{ErreurPeche, Prise};
+use crate::peche::{ErreurPeche, Pecheur, Prise};
 use crate::pierre::PierreDEvolution;
 use crate::ressource::{Ressource, RessourceId};
 use crate::sauvegarde::{ErreurSauvegarde, SauvegardeRepository};
@@ -342,6 +342,11 @@ pub enum Evenement {
     AmeRencontree(String),
     /// Son texte après la victoire : le joueur porte désormais l'âme.
     AmeRecueillie(String),
+    /// Le texte d'Ansgar aux prises avec ce qu'il a ferré, avant le combat
+    /// (section 9.2).
+    PecheurRencontre(String),
+    /// Son texte après la victoire : Ansgar s'installe au camp.
+    PecheurSauve(String),
     Rencontre(Combat),
     /// Événements d'un tour, avec le combat qui permet de les mettre en texte.
     Combat {
@@ -928,6 +933,7 @@ impl EnJeu {
                     expedition,
                     moment: Moment::EntreDeuxEtapes,
                     ame: None,
+                    pecheur: None,
                 };
                 let reponse = en_cours.etape_suivante(&mut self.partie, contexte, evenements);
                 let reponse =
@@ -1562,6 +1568,8 @@ struct EnExpedition {
     moment: Moment,
     /// Le marchand mort dont le combat en cours peut recueillir l'âme.
     ame: Option<MarchandMort>,
+    /// Ansgar, que le combat en cours peut sauver.
+    pecheur: Option<Pecheur>,
 }
 
 enum Moment {
@@ -2112,9 +2120,9 @@ impl EnExpedition {
 
     /// L'Apôtre vaincu ne réapparaît plus et l'épilogue suit ; un humain
     /// vaincu non plus, et son argent va dans le sac ; une victoire recueille
-    /// l'âme du marchand mort, que la fuite ou la défaite laisse à retrouver ;
-    /// une défaite met fin à l'expédition (sections
-    /// 9.3, 9.4, 10.7 et 14.2).
+    /// l'âme du marchand mort, que la fuite ou la défaite laisse à retrouver,
+    /// ou installe Ansgar au camp ; une défaite met fin à l'expédition
+    /// (sections 9.2, 9.3, 9.4, 10.7 et 14.2).
     fn conclure(
         &mut self,
         partie: &mut Partie,
@@ -2143,6 +2151,16 @@ impl EnExpedition {
                 if let Some(texte) = humain.liberation_de_gunther() {
                     partie.accueillir_gunther();
                     evenements.push(Evenement::GuntherLibere(texte.to_string()));
+                }
+            }
+            // Une fuite ou une défaite laisse Ansgar à sauver à l'expédition
+            // suivante, à la même étape.
+            if let Some(pecheur) = self.pecheur.take() {
+                if fin.issue == Some(Issue::Victoire) {
+                    partie.accueillir_ansgar();
+                    evenements.push(Evenement::PecheurSauve(
+                        pecheur.apres_victoire().to_string(),
+                    ));
                 }
             }
             // Une fuite ou une défaite laisse l'âme à retrouver.
@@ -2242,6 +2260,21 @@ impl EnExpedition {
                 .avec_limite_d_obeissance(limite);
                 evenements.push(Evenement::Rencontre(combat.clone()));
                 self.ame = Some(*marchand);
+                self.engager(partie, combat, evenements)
+            }
+            EvenementExpedition::Pecheur {
+                pecheur,
+                adversaire,
+            } => {
+                evenements.push(Evenement::PecheurRencontre(
+                    pecheur.avant_combat().to_string(),
+                ));
+                let combat = partie
+                    .preparer_combat(vec![adversaire])
+                    .expect(EQUIPE_APTE)
+                    .avec_limite_d_obeissance(limite);
+                evenements.push(Evenement::Rencontre(combat.clone()));
+                self.pecheur = Some(*pecheur);
                 self.engager(partie, combat, evenements)
             }
             EvenementExpedition::MonstreRare(rare) => {
@@ -4795,5 +4828,70 @@ mod tests {
             Err(ErreurChoix::Peche(ErreurPeche::PlaceManquante))
         );
         assert!(deroulement.partie().unwrap().peche().est_prete(a(7_200)));
+    }
+
+    #[test]
+    fn ansgar_sauve_a_l_etape_2_du_marais_s_installe_au_camp() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut etat = etat_de(&partie_pour_les_expeditions(&contenu));
+        etat.collection = crate::collection::Collection::new(salamandre(&contenu, 40));
+        let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
+        // Un coffre d'une potion et de 25 pièces d'argent, sans capsule.
+        let marais = Choix::PartirEnExpedition(ZoneId::new("marais"));
+        repondre_a(
+            &mut deroulement,
+            marais,
+            &contenu,
+            &depot,
+            0,
+            vec![81, 1, 25, 100, 100],
+        )
+        .unwrap();
+        // À l'étape 2, sans tirage de sa nature : le Noyé, au niveau 13, non
+        // shiny, valeurs internes nulles, première habileté.
+        let evenements = repondre_a(
+            &mut deroulement,
+            Choix::ContinuerLExpedition,
+            &contenu,
+            &depot,
+            0,
+            vec![2, 0, 0, 0, 0, 0, 0, 0],
+        )
+        .unwrap();
+        assert!(matches!(
+            &evenements[1],
+            Evenement::PecheurRencontre(texte) if texte.contains("vieil homme")
+        ));
+        let Attente::ActionDeCombat(combat) = deroulement.attente() else {
+            panic!("combat attendu");
+        };
+        // Un combat ordinaire contre un monstre sauvage (section 9.2).
+        assert!(combat.filet_possible() && combat.fuite_possible());
+        let noye = &combat.adversaires()[0];
+        assert_eq!(noye.espece().id().as_str(), "noye");
+        assert_eq!(noye.niveau().valeur(), 13);
+        let vus = jouer_le_combat(&mut deroulement, &contenu, &depot);
+        assert!(vus.iter().any(|evenement| matches!(
+            evenement,
+            Evenement::PecheurSauve(texte) if texte.contains("Ansgar")
+        )));
+        // Le Noyé ne lâche pas de ressource.
+        assert!(
+            !vus.iter()
+                .any(|evenement| matches!(evenement, Evenement::RessourcesTrouvees(_)))
+        );
+        let partie = deroulement.partie().unwrap();
+        assert!(partie.peche().pecheur_au_camp());
+        // Il ne se rencontre plus.
+        let marais = &contenu.zones()[1];
+        let mut expedition = partie
+            .partir_en_expedition(marais, contenu.piste())
+            .unwrap();
+        expedition.etape_suivante(&mut AleatoireScripte::new([81, 1, 25, 100, 100]));
+        assert!(matches!(
+            expedition.etape_suivante(&mut AleatoireScripte::new([81, 1, 25, 100, 100])),
+            Some(EvenementExpedition::Coffre { .. })
+        ));
     }
 }

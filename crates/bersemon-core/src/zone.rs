@@ -15,6 +15,7 @@ use crate::expedition_automatique::ParametresExpeditionAutomatique;
 use crate::humain::Humain;
 use crate::monstre::{Monstre, tirer_shiny, tirer_valeurs_internes};
 use crate::niveau::Niveau;
+use crate::peche::Pecheur;
 use crate::stats::ValeursInternes;
 
 /// Un monstre rare sur 20 est le monstre caché, dans toute zone qui en a un
@@ -106,6 +107,9 @@ pub struct Zone {
     /// Le marchand mort de la zone, dont l'âme attend d'être recueillie
     /// (section 14.2). En boîte, comme l'humain.
     marchand_mort: Option<Box<MarchandMort>>,
+    /// Ansgar, qui attend d'être sauvé (section 9.2). En boîte, comme
+    /// l'humain.
+    pecheur: Option<Box<Pecheur>>,
     expedition_automatique: ParametresExpeditionAutomatique,
     coffre: ParametresCoffre,
 }
@@ -159,6 +163,7 @@ impl Zone {
             cache: None,
             humain: None,
             marchand_mort: None,
+            pecheur: None,
             expedition_automatique,
             coffre,
         })
@@ -223,6 +228,15 @@ impl Zone {
 
     pub fn marchand_mort(&self) -> Option<&MarchandMort> {
         self.marchand_mort.as_deref()
+    }
+
+    pub fn avec_pecheur(mut self, pecheur: Pecheur) -> Self {
+        self.pecheur = Some(Box::new(pecheur));
+        self
+    }
+
+    pub fn pecheur(&self) -> Option<&Pecheur> {
+        self.pecheur.as_deref()
     }
 
     /// Durée, dégâts et récompenses d'une expédition automatique (section
