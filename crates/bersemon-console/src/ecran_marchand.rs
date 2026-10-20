@@ -1,8 +1,8 @@
 //! Malvoise, le nécromancien du camp (section 14.2) : soins, capsules,
 //! pierres d'évolution, rachat des monstres et des ressources, don des
-//! âmes, et monstre rendu shiny contre un Éclat d'astre. Les achats se font
-//! sans confirmation ; la vente et le service shiny sont confirmés par le
-//! déroulement.
+//! âmes, monstre rendu shiny contre un Éclat d'astre, achat et location de
+//! monstres. Les achats se font sans confirmation ; la vente, le service
+//! shiny et le retour d'un monstre loué sont confirmés par le déroulement.
 
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::Choix;
@@ -11,7 +11,8 @@ use bersemon_core::partie::Partie;
 use bersemon_core::pierre::PierreDEvolution;
 use bersemon_presentation::boosters::SERVICE_SHINY;
 use bersemon_presentation::marchand::{
-    capsules_en_vente, etal, offre_de_capsule, offre_de_ressources, ressources_a_vendre,
+    capsules_en_vente, etal, offre_d_achat, offre_de_capsule, offre_de_location,
+    offre_de_ressources, ressources_a_vendre,
 };
 use bersemon_presentation::partie::argent;
 use bersemon_presentation::soins::{le_soin, offre_de_soin};
@@ -41,8 +42,16 @@ pub fn choisir(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Opt
             "  8. {SERVICE_SHINY} : vous en avez {}",
             partie.eclats_d_astre()
         );
+        println!("  9. Acheter un monstre");
+        println!("  10. Louer un monstre");
+        // Le retour d'un monstre loué n'est proposé que s'il y en a un.
+        let loue = partie.collection().monstre_loue();
+        if let Some((_, monstre)) = loue {
+            println!("  11. Rendre {} à Malvoise", monstre.nom());
+        }
         println!("  0. Retour au camp");
-        let choix = match entree.choix(0, 8)? {
+        let dernier = if loue.is_some() { 11 } else { 10 };
+        let choix = match entree.choix(0, dernier)? {
             0 => return Some(None),
             1 => acheter_soins(partie, entree)?,
             2 => acheter_capsule(partie, contenu, entree)?,
@@ -51,8 +60,11 @@ pub fn choisir(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Opt
             5 => acheter_capsules_d_habilete(partie, entree)?,
             6 => vendre_ressources(partie, entree)?,
             7 => acheter_pierres(partie, entree)?,
-            _ => designer(partie.collection(), entree, "Quel monstre rendre shiny ?")?
+            8 => designer(partie.collection(), entree, "Quel monstre rendre shiny ?")?
                 .map(Choix::RendreShiny),
+            9 => acheter_monstre(partie, contenu, entree)?,
+            10 => louer_monstre(partie, contenu, entree)?,
+            _ => Some(Choix::RendreLeMonstreLoue),
         };
         if choix.is_some() {
             return Some(choix);
@@ -155,6 +167,46 @@ fn acheter_pierres(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>
     let nombre = entree.choix(0, au_plus as usize)?;
     let pierre = PierreDEvolution::TOUTES[choix - 1];
     Some((nombre > 0).then_some(Choix::AcheterPierres(pierre, nombre as u32)))
+}
+
+/// Les espèces communes des zones menées au bout (section 14.2).
+fn acheter_monstre(
+    partie: &Partie,
+    contenu: &ContenuV1,
+    entree: &mut Entree,
+) -> Option<Option<Choix>> {
+    let offres = partie.offres_d_achat(contenu.zones(), contenu.especes());
+    if offres.is_empty() {
+        println!("Malvoise n'a encore aucun monstre à vendre : menez une expédition au bout.");
+        return Some(None);
+    }
+    println!("Monstres en vente :");
+    for (position, offre) in offres.iter().enumerate() {
+        println!("  {}. {}", position + 1, offre_d_achat(offre));
+    }
+    println!("Lequel acheter ? (0 pour annuler)");
+    let choix = entree.choix(0, offres.len())?;
+    Some((choix > 0).then(|| Choix::AcheterMonstre(offres[choix - 1].espece.id().clone())))
+}
+
+/// Les espèces rares des zones menées au bout (section 14.2).
+fn louer_monstre(
+    partie: &Partie,
+    contenu: &ContenuV1,
+    entree: &mut Entree,
+) -> Option<Option<Choix>> {
+    let offres = partie.offres_de_location(contenu.zones(), contenu.piste());
+    if offres.is_empty() {
+        println!("Malvoise n'a encore aucun monstre à louer.");
+        return Some(None);
+    }
+    println!("Monstres à louer :");
+    for (position, offre) in offres.iter().enumerate() {
+        println!("  {}. {}", position + 1, offre_de_location(offre));
+    }
+    println!("Lequel louer ? (0 pour annuler)");
+    let choix = entree.choix(0, offres.len())?;
+    Some((choix > 0).then(|| Choix::LouerMonstre(offres[choix - 1].espece.id().clone())))
 }
 
 /// Toutes celles d'une sorte, du sac et du coffre, sans confirmation

@@ -5,12 +5,12 @@
 use bersemon_core::capsule::Capsule;
 use bersemon_core::collection::Collection;
 use bersemon_core::combat::Cote;
-use bersemon_core::marchand::prix_de_revente;
+use bersemon_core::marchand::{EXPEDITIONS_DE_LOCATION, OffreDeMonstre, prix_de_revente};
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_core::ressource::Ressource;
 
-use crate::monstres::{decrire_attaque, nom};
+use crate::monstres::{decrire_attaque, expeditions, nom};
 use crate::partie::{argent, ligne_des_ames, ressources};
 use crate::soins::offre_de_soin;
 
@@ -22,12 +22,46 @@ pub fn etal(partie: &Partie) -> String {
         .into_iter()
         .map(|soin| format!("  {}", offre_de_soin(soin)))
         .collect();
+    let location = location_en_cours(partie)
+        .map(|ligne| format!("\n{ligne}"))
+        .unwrap_or_default();
     format!(
-        "Malvoise vous attend près du feu. Vous avez {}, entre votre sac et le coffre ; vos achats iront dans le coffre.\nSoins en vente :\n{}\n{}{}",
+        "Malvoise vous attend près du feu. Vous avez {}, entre votre sac et le coffre ; vos achats iront dans le coffre.\nSoins en vente :\n{}\n{}{}{location}",
         argent(partie.argent()),
         soins.join("\n"),
         capsules_obtenues(partie),
         ligne_des_ames(partie)
+    )
+}
+
+/// "Monstre loué : Cerf blanc, encore 2 expéditions." (section 14.2).
+pub fn location_en_cours(partie: &Partie) -> Option<String> {
+    let (_, monstre) = partie.collection().monstre_loue()?;
+    let restantes = monstre.expeditions_de_location()?;
+    Some(format!(
+        "Monstre loué : {}, encore {}.",
+        monstre.nom(),
+        expeditions(restantes)
+    ))
+}
+
+/// "Loup de niveau 3 : 68 pièces d'argent" (section 14.2).
+pub fn offre_d_achat(offre: &OffreDeMonstre) -> String {
+    format!(
+        "{} de niveau {} : {}",
+        offre.espece.nom(),
+        offre.niveau.valeur(),
+        argent(offre.prix)
+    )
+}
+
+/// "Cerf blanc de niveau 20, pour 3 expéditions : 320 pièces d'argent".
+pub fn offre_de_location(offre: &OffreDeMonstre) -> String {
+    format!(
+        "{} de niveau {}, pour {EXPEDITIONS_DE_LOCATION} expéditions : {}",
+        offre.espece.nom(),
+        offre.niveau.valeur(),
+        argent(offre.prix)
     )
 }
 
@@ -98,11 +132,16 @@ pub fn offre_de_rachat(monstre: &Monstre) -> String {
     } else {
         String::new()
     };
-    format!(
-        "{} ({espece}niv. {}) : {}",
-        nom(monstre, Cote::Joueur),
-        monstre.niveau().valeur(),
+    // Un monstre loué ne se vend pas (section 14.2).
+    let prix = if monstre.est_loue() {
+        "loué, ne se vend pas".to_string()
+    } else {
         argent(prix_de_revente(monstre))
+    };
+    format!(
+        "{} ({espece}niv. {}) : {prix}",
+        nom(monstre, Cote::Joueur),
+        monstre.niveau().valeur()
     )
 }
 

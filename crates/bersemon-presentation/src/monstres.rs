@@ -121,7 +121,22 @@ pub fn fiche_du_monstre(monstre: &Monstre) -> String {
         "Valeurs internes : {}",
         decrire_stats(monstre.valeurs_internes().valeurs())
     ));
+    if let Some(restantes) = monstre.expeditions_de_location() {
+        lignes.push(format!(
+            "Loué à Malvoise : encore {}.",
+            expeditions(restantes)
+        ));
+    }
     lignes.join("\n")
+}
+
+/// "1 expédition", "3 expéditions" (section 14.2).
+pub fn expeditions(nombre: u8) -> String {
+    if nombre > 1 {
+        format!("{nombre} expéditions")
+    } else {
+        format!("{nombre} expédition")
+    }
 }
 
 /// Pour un monstre reçu d'un autre joueur, de qui il vient et jusqu'à quel
