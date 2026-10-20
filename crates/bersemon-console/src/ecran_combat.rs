@@ -21,14 +21,19 @@ use crate::saisie::Entree;
 pub enum Commande {
     Attaquer,
     Changer,
+    DonnerOrdre,
     LancerFilet,
     UtiliserSoin,
     Fuir,
 }
 
-/// Face à un Apôtre, le filet et la fuite ne sont pas proposés (section 9.4).
+/// Face à un Apôtre, le filet et la fuite ne sont pas proposés (section 9.4),
+/// ni l'ordre du héros une fois donné (section 4.2).
 fn commandes(combat: &Combat) -> Vec<Commande> {
     let mut commandes = vec![Commande::Attaquer, Commande::Changer];
+    if combat.ordre_disponible().is_some() {
+        commandes.push(Commande::DonnerOrdre);
+    }
     if combat.filet_possible() {
         commandes.push(Commande::LancerFilet);
     }
@@ -66,6 +71,9 @@ pub fn choisir_action(combat: &Combat, partie: &Partie, entree: &mut Entree) -> 
                 let choix = entree.choix(0, combat.equipe().len())?;
                 (choix > 0).then(|| Action::Changer(choix - 1))
             }
+            // L'ordre ne prend pas le tour : le déroulement redemande
+            // l'action.
+            Commande::DonnerOrdre => return Some(Choix::DonnerOrdre),
             Commande::LancerFilet => Some(Action::LancerFilet),
             // La confirmation d'un soin perdu est demandée par le
             // déroulement (Q53).

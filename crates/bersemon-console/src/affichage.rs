@@ -10,7 +10,7 @@ use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_core::soin::Soins;
 use bersemon_core::zone::Zone;
-use bersemon_presentation::combat::{attaque_de_trop, attaque_en_combat};
+use bersemon_presentation::combat::{attaque_de_trop, attaque_en_combat, ordre_et_bonus};
 use bersemon_presentation::monstres::{decrire_attaque, ligne_monstre, nom_en_combat};
 use bersemon_presentation::partie::{
     decrire_zone, fiche_d_espece, ligne_du_codex, sac_en_expedition,
@@ -25,6 +25,10 @@ pub fn menu_action(combat: &Combat, commandes: &[Commande]) -> String {
         let libelle = match commande {
             Commande::Attaquer => "Attaquer".to_string(),
             Commande::Changer => "Changer de monstre".to_string(),
+            Commande::DonnerOrdre => match combat.ordre_disponible() {
+                Some(ordre) => format!("Ordre du héros : {}", ordre_et_bonus(ordre)),
+                None => "Ordre du héros".to_string(),
+            },
             Commande::LancerFilet => format!(
                 "Lancer un filet ({} % de chances)",
                 combat.chance_de_capture()
