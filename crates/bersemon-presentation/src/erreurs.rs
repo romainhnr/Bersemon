@@ -10,6 +10,7 @@ use bersemon_core::marchand::ErreurMarchand;
 use bersemon_core::sauvegarde::ErreurSauvegarde;
 use bersemon_core::soin::ErreurSoin;
 
+use crate::equipement::erreur_equipement;
 use crate::expeditions_automatiques::erreur_expedition_automatique;
 use crate::forge::erreur_amelioration;
 use crate::partie::argent;
@@ -49,6 +50,7 @@ pub fn erreur_de_choix(choix: &Choix, erreur: &ErreurChoix) -> String {
             ErreurChangementDHabilete::Collection(erreur) => erreur_collection(erreur),
         },
         ErreurChoix::Amelioration(erreur) => erreur_amelioration(erreur),
+        ErreurChoix::Equipement(erreur) => erreur_equipement(erreur),
         autre => format!("Action impossible : {autre}."),
     }
 }

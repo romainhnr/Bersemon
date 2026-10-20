@@ -160,13 +160,15 @@ impl Equipement {
         self.portes[place.index()].map(|position| &self.possedes[position])
     }
 
-    /// Les objets possédés qui peuvent aller à cette place sans y être déjà.
+    /// Les objets possédés qui peuvent aller à cette place : de sa sorte, et
+    /// portés nulle part, ni à cette place ni à l'autre place de talisman.
     pub fn disponibles(&self, place: PlaceDEquipement) -> Vec<&ObjetDEquipement> {
-        let porte = self.portes[place.index()];
         self.possedes
             .iter()
             .enumerate()
-            .filter(|(position, objet)| objet.sorte() == place.sorte() && porte != Some(*position))
+            .filter(|(position, objet)| {
+                objet.sorte() == place.sorte() && !self.portes.contains(&Some(*position))
+            })
             .map(|(_, objet)| objet)
             .collect()
     }
@@ -357,7 +359,7 @@ mod tests {
             Err(ErreurEquipement::DejaPorte(croc().id().clone()))
         );
         let disponibles: Vec<_> = equipement
-            .disponibles(PlaceDEquipement::PremierTalisman)
+            .disponibles(PlaceDEquipement::SecondTalisman)
             .into_iter()
             .map(|objet| objet.id().as_str())
             .collect();

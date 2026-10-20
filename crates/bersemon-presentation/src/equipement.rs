@@ -1,7 +1,7 @@
 //! L'équipement du héros (section 4.3) : ses objets, leurs bonus et ce
 //! qu'il porte.
 
-use bersemon_core::equipement::{Equipement, ObjetDEquipement, PlaceDEquipement};
+use bersemon_core::equipement::{Equipement, ErreurEquipement, ObjetDEquipement, PlaceDEquipement};
 use bersemon_core::stats::BonusDeStats;
 
 use crate::partie::enumerer;
@@ -99,6 +99,30 @@ pub fn etat_de_l_equipement(equipement: &Equipement) -> String {
         lignes.push(format!("Non portés : {}.", ranges.join(", ")));
     }
     lignes.join("\n")
+}
+
+pub fn erreur_equipement(erreur: &ErreurEquipement) -> String {
+    match erreur {
+        ErreurEquipement::NonPossede(_) => {
+            "Vous ne possédez pas cet objet : Gunther peut le forger.".to_string()
+        }
+        ErreurEquipement::DejaPossede(_) => "Vous possédez déjà cet objet.".to_string(),
+        ErreurEquipement::MauvaisePlace(place) => {
+            format!(
+                "Cet objet ne va pas à cette place : {}.",
+                nom_de_place(*place)
+            )
+        }
+        ErreurEquipement::DejaPorte(_) => {
+            "Vous portez déjà ce talisman : les deux talismans sont différents.".to_string()
+        }
+        ErreurEquipement::PlaceVide(place) => {
+            format!("{} : vous ne portez rien.", nom_de_place(*place))
+        }
+        ErreurEquipement::PlaceEnDouble(place) => {
+            format!("Deux objets à la même place : {}.", nom_de_place(*place))
+        }
+    }
 }
 
 #[cfg(test)]

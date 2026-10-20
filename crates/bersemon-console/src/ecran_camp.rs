@@ -1,6 +1,7 @@
 //! Camp de base : départ en expédition par la carte, expéditions
 //! automatiques, gestion des monstres (section 13.2), coffre du camp (section
-//! 13.3), codex, marchand et options (section 13.9). Les monstres sont
+//! 13.3), codex, marchand, forge, équipement du héros (section 4.3) et
+//! options (section 13.9). Les monstres sont
 //! désignés par leur numéro dans la liste de la collection : l'équipe
 //! d'abord, le camp ensuite.
 
@@ -18,13 +19,15 @@ use bersemon_presentation::partie::{
 
 use crate::affichage;
 use crate::ecran_coffre;
+use crate::ecran_equipement;
 use crate::ecran_expeditions_automatiques;
 use crate::ecran_forge;
 use crate::ecran_marchand;
 use crate::horloge::maintenant;
 use crate::saisie::Entree;
 
-/// Le menu de gestion, celui du coffre et celui du marchand restent ouverts
+/// Le menu de gestion, ceux du coffre, du marchand et de l'équipement restent
+/// ouverts
 /// d'une action à l'autre, jusqu'au retour.
 #[derive(Debug, Default)]
 pub struct MenuDuCamp {
@@ -40,6 +43,7 @@ enum EntreeDuCamp {
     Codex,
     Marchand,
     Forge,
+    Equipement,
     Options,
     Quitter,
 }
@@ -51,6 +55,7 @@ enum SousMenu {
     Gestion,
     Coffre,
     Marchand,
+    Equipement,
 }
 
 /// Rend `None` si le joueur quitte ou que l'entrée est fermée.
@@ -66,6 +71,7 @@ pub fn choisir(
             SousMenu::Gestion => Some(gerer(partie, contenu, entree)?),
             SousMenu::Coffre => Some(ecran_coffre::choisir(partie, entree)?),
             SousMenu::Marchand => Some(ecran_marchand::choisir(partie, contenu, entree)?),
+            SousMenu::Equipement => Some(ecran_equipement::choisir(partie, entree)?),
         };
         match sous_menu {
             Some(Some(choix)) => return Some(choix),
@@ -98,6 +104,10 @@ pub fn choisir(
         if partie.forge().est_au_camp() {
             entrees.push((EntreeDuCamp::Forge, "Forge de Gunther"));
         }
+        // L'équipement vient de la forge (section 13.5).
+        if partie.forge().est_au_camp() || !partie.heros().equipement().possedes().is_empty() {
+            entrees.push((EntreeDuCamp::Equipement, "Équipement du héros"));
+        }
         entrees.push((EntreeDuCamp::Options, "Options"));
         entrees.push((EntreeDuCamp::Quitter, "Quitter"));
         for (position, (_, libelle)) in entrees.iter().enumerate() {
@@ -126,6 +136,10 @@ pub fn choisir(
                 None
             }
             EntreeDuCamp::Forge => ecran_forge::choisir(partie, contenu, entree)?,
+            EntreeDuCamp::Equipement => {
+                menu.ouvert = SousMenu::Equipement;
+                None
+            }
             EntreeDuCamp::Options => choisir_une_option(entree)?,
             EntreeDuCamp::Quitter => return None,
         };

@@ -8,6 +8,7 @@ mod ecran_accueil;
 mod ecran_camp;
 mod ecran_coffre;
 mod ecran_combat;
+mod ecran_equipement;
 mod ecran_expedition;
 mod ecran_expeditions_automatiques;
 mod ecran_forge;

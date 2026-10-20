@@ -136,6 +136,7 @@ Décidé le 20/10/2026, pour les étapes 48 à 51 (choix de l'utilisateur) :
 - Les objets se fabriquent chez Gunther (section 13.5), chacun une seule fois. Le héros garde tous les objets qu'il possède : ils ne vont ni dans le sac ni dans le coffre, et rien ne les lui fait perdre, pas même une défaite.
 - Il les porte, les change ou les retire au camp seulement, sans confirmation. Un objet fabriqué n'est pas porté d'office.
 - Liste, bonus, coûts et durées dans docs/contenu-v1.md, section 11 : 14 objets en trois paliers, liés aux ressources des zones.
+- Écrans, à l'étape 50 (console) : une fois Gunther au camp, ou dès que le héros possède un objet, le camp propose "Équipement du héros". L'écran montre l'objet porté à chaque place (arme, armure, premier et second talisman), le bonus total des objets portés et les objets non portés ; le joueur choisit une place, puis l'objet à y porter, parmi ceux de sa sorte qui ne sont portés nulle part, ou de retirer l'objet porté. La forge propose "Fabriquer un objet" : la liste de tous les objets, avec leur coût et leur durée, ou "possédé", puis ceux qui ne sont pas encore possédés, même faute de ressources ou si Gunther est occupé (le refus dit pourquoi). Le lancement est confirmé, comme pour une amélioration.
 
 ## 5. Les monstres
 
