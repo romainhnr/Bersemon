@@ -15,6 +15,7 @@ use crate::{ContexteDeCommande, Erreur};
 pub async fn bersemon(contexte: ContexteDeCommande<'_>) -> Result<(), Erreur> {
     let donnees = contexte.data();
     let joueur = contexte.author().id.get();
+    crate::interactions::noter_pseudo(donnees, contexte.author());
     // Le verrou est relâché avant d'envoyer la réponse à Discord.
     let affiche = {
         let mut joueurs = verrouiller(&donnees.joueurs);

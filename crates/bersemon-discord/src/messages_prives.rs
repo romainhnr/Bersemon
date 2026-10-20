@@ -247,7 +247,7 @@ pub async fn annoncer_les_retours(http: Arc<serenity::Http>, joueurs: Arc<Mutex<
 
 /// Les parties du dossier, une par compte : `<identifiant>.json`. Un
 /// identifiant Discord n'est jamais nul.
-fn parties(dossier: &Path) -> Vec<(IdJoueur, PathBuf)> {
+pub(crate) fn parties(dossier: &Path) -> Vec<(IdJoueur, PathBuf)> {
     let Ok(entrees) = fs::read_dir(dossier) else {
         return Vec::new();
     };

@@ -32,8 +32,10 @@ pub async fn composant(
     let Some(commande) = lu.cle.commande(valeur.map(String::as_str), None) else {
         return Ok(());
     };
+    noter_pseudo(donnees, &composant.user);
     let reponse = executer(donnees, composant.user.id.get(), lu.version, commande);
     composant.create_response(contexte, reponse).await?;
+    envoyer_les_messages_prives(contexte, donnees).await;
     Ok(())
 }
 
@@ -59,6 +61,7 @@ pub async fn formulaire(
     let Some(commande) = lu.cle.commande(None, Some(&texte)) else {
         return Ok(());
     };
+    noter_pseudo(donnees, &formulaire.user);
     let reponse = executer(donnees, formulaire.user.id.get(), lu.version, commande);
     formulaire.create_response(contexte, reponse).await?;
     Ok(())
@@ -105,6 +108,10 @@ fn executer(
             Vec::new(),
             joueurs.afficher(joueur, version, vue, contenu).err(),
         ),
+        Commande::Echanger(action) => match joueurs.echanger(joueur, version, action, contenu) {
+            Ok(evenements) => (evenements, None),
+            Err(refus) => (Vec::new(), Some(refus)),
+        },
         Commande::Ouvrir(formulaire) => {
             if joueurs.est_a_jour(joueur, version, contenu) {
                 let partie = joueurs.session(joueur, contenu).deroulement.partie();
@@ -123,6 +130,37 @@ fn executer(
         contenu,
         maintenant(),
     ))
+}
+
+/// Le nom affiché du compte, sinon son nom d'utilisateur : celui que les
+/// autres joueurs reconnaissent dans la liste des joueurs (section 15.1).
+pub fn noter_pseudo(donnees: &DonneesDuBot, utilisateur: &serenity::User) {
+    let pseudo = utilisateur
+        .global_name
+        .as_deref()
+        .unwrap_or(&utilisateur.name);
+    verrouiller(&donnees.joueurs).noter_pseudo(utilisateur.id.get(), pseudo);
+}
+
+/// Les offres reçues, acceptées ou refusées, annoncées aussitôt. Un message
+/// refusé, par exemple parce que le joueur n'accepte pas les messages privés
+/// du bot, est signalé et n'est pas réessayé.
+pub async fn envoyer_les_messages_prives(contexte: &serenity::Context, donnees: &DonneesDuBot) {
+    let messages = verrouiller(&donnees.joueurs).prendre_les_messages_prives();
+    for message in messages {
+        let envoi = serenity::UserId::new(message.joueur)
+            .direct_message(
+                &contexte.http,
+                serenity::CreateMessage::new().content(message.texte),
+            )
+            .await;
+        if let Err(erreur) = envoi {
+            eprintln!(
+                "Message privé impossible pour le joueur {} : {erreur}.",
+                message.joueur
+            );
+        }
+    }
 }
 
 /// Remplace le texte et les composants du message d'où vient l'interaction.

@@ -13,9 +13,10 @@ use bersemon_presentation::partie::{compteur_d_etapes, question_de_confirmation}
 use bersemon_presentation::recit::raconter;
 use poise::serenity_prelude as serenity;
 
-use crate::composants::{Cle, Composant};
+use crate::composants::{Cle, Composant, Vue};
+use crate::echanges::erreur_d_offre;
 use crate::joueurs::{Refus, Session};
-use crate::{ecran_accueil, ecran_camp, ecran_combat, ecran_expedition};
+use crate::{ecran_accueil, ecran_camp, ecran_combat, ecran_echanges, ecran_expedition};
 
 pub const LONGUEUR_MAX: usize = 2000;
 pub const RANGEES_MAX: usize = 5;
@@ -193,6 +194,7 @@ fn expliquer(refus: &Refus) -> String {
             "Ce message n'était plus à jour : voici où en est votre partie.".to_string()
         }
         Refus::Choix { choix, erreur } => erreur_de_choix(choix, erreur),
+        Refus::Echange(erreur) => erreur_d_offre(erreur),
     }
 }
 
@@ -206,7 +208,12 @@ fn question(session: &Session, contenu: &ContenuV1, maintenant: Horodatage) -> Q
         Attente::SauvegardeIllisible(erreur) => ecran_accueil::sauvegarde_illisible(erreur),
         Attente::NomDuHeros => ecran_accueil::nom_du_heros(),
         Attente::Classe => ecran_accueil::classe(contenu),
-        Attente::Camp => ecran_camp::question(partie(), session.vue, contenu, maintenant),
+        Attente::Camp => match session.vue {
+            Vue::Echanges { avec, cede } => {
+                ecran_echanges::echanges(partie(), &session.echanges, avec, cede)
+            }
+            vue => ecran_camp::question(partie(), vue, contenu, maintenant),
+        },
         Attente::EntreDeuxEtapes => ecran_expedition::entre_deux_etapes(partie()),
         Attente::MonstreRare(_) => ecran_expedition::monstre_rare(),
         Attente::PlaceManquante(capture) => {

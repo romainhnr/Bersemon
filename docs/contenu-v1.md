@@ -680,5 +680,7 @@ Décidé le 20/10/2026, pour les étapes 55 à 58 (gamedesign.md, sections 15.1 
 | Message privé, offre de don | {héros} ({pseudo}) vous offre {monstre}. Ouvrez /bersemon, au camp, pour répondre. |
 | Message privé, offre acceptée | {héros} a accepté votre offre. |
 | Message privé, offre refusée | {héros} a refusé votre offre. |
+| Récit, pour chaque monstre cédé (hypothèse, Q89) | Vous cédez {monstre} à {héros}. |
+| Récit, pour chaque monstre reçu (hypothèse, Q89) | Vous recevez {monstre} de {héros}. |
 
 Au camp, le bouton s'appelle "Échanges". Limite d'obéissance : niveau maximal de la zone la plus avancée ouverte, plus 5 (12, 18, 25 puis 32).

@@ -23,18 +23,19 @@ use bersemon_presentation::expeditions_automatiques::duree;
 use bersemon_presentation::expeditions_automatiques::expeditions_rentrees;
 use bersemon_presentation::forge::{cout, etat_de_la_forge, travail_fini};
 use bersemon_presentation::monstres::{
-    attaques_connues, decrire_attaque, fiche_du_monstre, ligne_monstre, nom,
+    attaques_connues, decrire_attaque, fiche_du_monstre, ligne_monstre, nom, provenance,
 };
 use bersemon_presentation::partie::{
     argent, collection as liste_complete, en_tete_du_camp, fiche_d_espece, ligne_du_codex,
 };
 
 use crate::composants::{Cle, RETIRER, Vue, emplacement_en_texte};
+use crate::echanges::TableauDesEchanges;
 use crate::message::{
     Bouton, DANGER, OPTIONS_PAR_MENU, OptionDeMenu, PRINCIPAL, Question, Rangee, SECONDAIRE,
     SUCCES, bouton, menu, rangees,
 };
-use crate::{ecran_coffre, ecran_expeditions_automatiques, ecran_marchand};
+use crate::{ecran_coffre, ecran_echanges, ecran_expeditions_automatiques, ecran_marchand};
 
 pub fn question(
     partie: &Partie,
@@ -57,6 +58,11 @@ pub fn question(
         Vue::Options => options(),
         Vue::Forge => forge(partie, contenu, maintenant),
         Vue::Equipement => equipement(partie),
+        // Le tableau des échanges vient des autres parties : le message le
+        // prépare (`message::question`). Sans lui, l'écran n'en montre rien.
+        Vue::Echanges { avec, cede } => {
+            ecran_echanges::echanges(partie, &TableauDesEchanges::default(), avec, cede)
+        }
     }
 }
 
@@ -114,8 +120,8 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
         bouton(Cle::Afficher(Vue::Codex(None)), "Codex", SECONDAIRE),
     ];
     // Malvoise et Gunther n'apparaissent qu'une fois au camp (sections 13.4
-    // et 14.2), et l'équipement avec la forge (section 13.5) : au plus 8
-    // boutons, sur deux rangées.
+    // et 14.2), et l'équipement avec la forge (section 13.5) ; les échanges
+    // sont toujours là (section 15.1) : au plus 9 boutons, sur deux rangées.
     if partie.marchand_au_camp() {
         boutons.push(bouton(Cle::Afficher(Vue::Marchand), "Malvoise", SECONDAIRE));
     }
@@ -133,6 +139,14 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
             SECONDAIRE,
         ));
     }
+    boutons.push(bouton(
+        Cle::Afficher(Vue::Echanges {
+            avec: None,
+            cede: None,
+        }),
+        "Échanges",
+        SECONDAIRE,
+    ));
     boutons.push(bouton(Cle::Afficher(Vue::Options), "Options", SECONDAIRE));
     lignes.extend(rangees(boutons));
     let mut en_tete = vec![en_tete_du_camp(partie)];
@@ -326,6 +340,18 @@ pub fn liste_des_monstres(collection: &Collection) -> String {
     lignes.join("\n")
 }
 
+/// Pour un monstre reçu d'un autre joueur, sa fiche dit aussi de qui il
+/// vient et jusqu'à quel niveau il obéit (section 15.2).
+fn fiche(partie: &Partie, monstre: &Monstre, contenu: &ContenuV1) -> String {
+    let limite = partie.limite_d_obeissance(contenu.zones(), contenu.piste());
+    let mut fiche = fiche_du_monstre(monstre);
+    if let Some(provenance) = provenance(monstre, limite) {
+        fiche.push('\n');
+        fiche.push_str(&provenance);
+    }
+    fiche
+}
+
 /// Des menus pour choisir un monstre, puis les actions possibles pour le
 /// monstre choisi.
 fn gestion(partie: &Partie, choisi: Option<Emplacement>, contenu: &ContenuV1) -> Question {
@@ -430,7 +456,7 @@ fn gestion(partie: &Partie, choisi: Option<Emplacement>, contenu: &ContenuV1) ->
         retour(),
     ]));
     Question {
-        texte: format!("Monstre choisi :\n{}", fiche_du_monstre(monstre)),
+        texte: format!("Monstre choisi :\n{}", fiche(partie, monstre, contenu)),
         rangees: lignes,
     }
 }
@@ -529,7 +555,7 @@ fn attaques(partie: &Partie, emplacement: Emplacement, contenu: &ContenuV1) -> Q
     };
     let mut texte = format!(
         "{}\n{}",
-        fiche_du_monstre(monstre),
+        fiche(partie, monstre, contenu),
         attaques_connues(monstre)
     );
     let mut lignes: Vec<Rangee> = Vec::new();

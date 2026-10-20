@@ -21,6 +21,9 @@ use bersemon_core::ressource::RessourceId;
 use bersemon_core::soin::Soin;
 use bersemon_core::zone::ZoneId;
 
+use crate::echanges::ActionDEchange;
+use crate::joueurs::IdJoueur;
+
 /// Distingue les composants de Bersemon de ceux d'autres usages éventuels.
 const PREFIXE: &str = "bersemon";
 
@@ -54,6 +57,12 @@ pub enum Vue {
     Forge,
     /// Ce que porte le héros (section 4.3).
     Equipement,
+    /// Les offres de don et d'échange (section 15.1), avec le joueur choisi
+    /// pour une offre, puis le monstre à lui céder.
+    Echanges {
+        avec: Option<IdJoueur>,
+        cede: Option<Emplacement>,
+    },
 }
 
 /// Monstres choisis pour une expédition automatique, dans l'ordre du choix
@@ -118,6 +127,7 @@ pub enum Commande {
     Jouer(Choix),
     Afficher(Vue),
     Ouvrir(Formulaire),
+    Echanger(ActionDEchange),
 }
 
 /// Un composant tel qu'il figure dans un message. Les menus présents
@@ -237,6 +247,27 @@ pub enum Cle {
     /// Menu des objets à porter à cette place, avec de quoi retirer celui
     /// qui y est (section 4.3).
     Equiper(PlaceDEquipement),
+    /// Menu des autres joueurs, pour leur faire une offre (section 15.1).
+    ChoisirJoueur,
+    /// Menu de monstres numéroté : celui à céder à ce joueur.
+    Ceder {
+        menu: u8,
+        avec: IdJoueur,
+    },
+    /// Menu numéroté des monstres de ce joueur : celui demandé en échange.
+    Demander {
+        menu: u8,
+        avec: IdJoueur,
+        cede: Emplacement,
+    },
+    /// Le monstre choisi, offert sans contrepartie.
+    Donner {
+        avec: IdJoueur,
+        cede: Emplacement,
+    },
+    AccepterOffre,
+    RefuserOffre,
+    RetirerOffre,
 }
 
 /// Valeur de l'option qui retire l'objet porté, dans le menu d'une place :
@@ -360,6 +391,27 @@ impl Cle {
                     objet: ObjetDEquipementId::new(objet),
                 }),
             },
+            Cle::ChoisirJoueur => Some(Commande::Afficher(Vue::Echanges {
+                avec: Some(valeur?.parse().ok()?),
+                cede: None,
+            })),
+            Cle::Ceder { avec, .. } => Some(Commande::Afficher(Vue::Echanges {
+                avec: Some(*avec),
+                cede: Some(lire_emplacement(valeur?)?),
+            })),
+            Cle::Demander { avec, cede, .. } => Some(Commande::Echanger(ActionDEchange::Offrir {
+                a: *avec,
+                cede: *cede,
+                demande: Some(lire_emplacement(valeur?)?),
+            })),
+            Cle::Donner { avec, cede } => Some(Commande::Echanger(ActionDEchange::Offrir {
+                a: *avec,
+                cede: *cede,
+                demande: None,
+            })),
+            Cle::AccepterOffre => Some(Commande::Echanger(ActionDEchange::Accepter)),
+            Cle::RefuserOffre => Some(Commande::Echanger(ActionDEchange::Refuser)),
+            Cle::RetirerOffre => Some(Commande::Echanger(ActionDEchange::Retirer)),
         }
     }
 
@@ -396,6 +448,15 @@ impl Cle {
             Cle::Afficher(Vue::Options) => "vue:options".to_string(),
             Cle::Afficher(Vue::Forge) => "vue:forge".to_string(),
             Cle::Afficher(Vue::Equipement) => "vue:equipement".to_string(),
+            Cle::Afficher(Vue::Echanges { avec: None, .. }) => "vue:echanges".to_string(),
+            Cle::Afficher(Vue::Echanges {
+                avec: Some(avec),
+                cede: None,
+            }) => format!("vue:echanges:{avec}"),
+            Cle::Afficher(Vue::Echanges {
+                avec: Some(avec),
+                cede: Some(cede),
+            }) => format!("vue:echanges:{avec}:{}", emplacement_en_texte(*cede)),
             Cle::Fiche(numero) => format!("fiche:{numero}"),
             Cle::Choisir(numero) => format!("choisir:{numero}"),
             Cle::Monter(index) => format!("monter:{index}"),
@@ -485,6 +546,15 @@ impl Cle {
             Cle::Constater => "constater".to_string(),
             Cle::Fabriquer => "fabriquer".to_string(),
             Cle::Equiper(place) => format!("equiper:{}", place_en_texte(*place)),
+            Cle::ChoisirJoueur => "choisir-joueur".to_string(),
+            Cle::Ceder { menu, avec } => format!("ceder:{menu}:{avec}"),
+            Cle::Demander { menu, avec, cede } => {
+                format!("demander:{menu}:{avec}:{}", emplacement_en_texte(*cede))
+            }
+            Cle::Donner { avec, cede } => format!("donner:{avec}:{}", emplacement_en_texte(*cede)),
+            Cle::AccepterOffre => "accepter-offre".to_string(),
+            Cle::RefuserOffre => "refuser-offre".to_string(),
+            Cle::RetirerOffre => "retirer-offre".to_string(),
         }
     }
 
@@ -524,6 +594,14 @@ impl Cle {
             "vue:forge" => Cle::Afficher(Vue::Forge),
             "constater" => Cle::Constater,
             "vue:equipement" => Cle::Afficher(Vue::Equipement),
+            "vue:echanges" => Cle::Afficher(Vue::Echanges {
+                avec: None,
+                cede: None,
+            }),
+            "choisir-joueur" => Cle::ChoisirJoueur,
+            "accepter-offre" => Cle::AccepterOffre,
+            "refuser-offre" => Cle::RefuserOffre,
+            "retirer-offre" => Cle::RetirerOffre,
             "fabriquer" => Cle::Fabriquer,
             "se-suicider" => Cle::SeSuicider,
             "acheter-capsule" => Cle::AcheterCapsule,
@@ -571,6 +649,16 @@ impl Cle {
                                     choisis: Choisis::lire(choisis)?,
                                 })
                             }
+                            "echanges" => {
+                                let (avec, cede) = match parametre.split_once(':') {
+                                    Some((avec, cede)) => (avec, Some(lire_emplacement(cede)?)),
+                                    None => (parametre, None),
+                                };
+                                Cle::Afficher(Vue::Echanges {
+                                    avec: Some(avec.parse().ok()?),
+                                    cede,
+                                })
+                            }
                             _ => return None,
                         }
                     }
@@ -580,6 +668,28 @@ impl Cle {
                             menu: morceaux.next()?.parse().ok()?,
                             zone: morceaux.next()?.parse().ok()?,
                             choisis: Choisis::lire(morceaux.next()?)?,
+                        }
+                    }
+                    "ceder" => {
+                        let (menu, avec) = parametre.split_once(':')?;
+                        Cle::Ceder {
+                            menu: menu.parse().ok()?,
+                            avec: avec.parse().ok()?,
+                        }
+                    }
+                    "demander" => {
+                        let mut morceaux = parametre.splitn(3, ':');
+                        Cle::Demander {
+                            menu: morceaux.next()?.parse().ok()?,
+                            avec: morceaux.next()?.parse().ok()?,
+                            cede: lire_emplacement(morceaux.next()?)?,
+                        }
+                    }
+                    "donner" => {
+                        let (avec, cede) = parametre.split_once(':')?;
+                        Cle::Donner {
+                            avec: avec.parse().ok()?,
+                            cede: lire_emplacement(cede)?,
                         }
                     }
                     "expedier" => {
@@ -831,6 +941,35 @@ mod tests {
             Cle::RelacherLaCapture,
             Cle::Attaquer(3),
             Cle::Ordre,
+            Cle::Afficher(Vue::Echanges {
+                avec: None,
+                cede: None,
+            }),
+            Cle::Afficher(Vue::Echanges {
+                avec: Some(123_456_789_012_345_678),
+                cede: None,
+            }),
+            Cle::Afficher(Vue::Echanges {
+                avec: Some(42),
+                cede: Some(Emplacement::Camp(59)),
+            }),
+            Cle::ChoisirJoueur,
+            Cle::Ceder {
+                menu: 2,
+                avec: 123_456_789_012_345_678,
+            },
+            Cle::Demander {
+                menu: 1,
+                avec: 123_456_789_012_345_678,
+                cede: Emplacement::Camp(59),
+            },
+            Cle::Donner {
+                avec: 7,
+                cede: Emplacement::Equipe(3),
+            },
+            Cle::AccepterOffre,
+            Cle::RefuserOffre,
+            Cle::RetirerOffre,
             Cle::Filet,
             Cle::Fuir,
             Cle::Changer,

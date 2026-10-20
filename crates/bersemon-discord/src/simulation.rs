@@ -680,6 +680,7 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
                 Vec::new()
             }
             Commande::Ouvrir(formulaire) => panic!("formulaire {formulaire:?} non envoyé"),
+            Commande::Echanger(action) => panic!("échange {action:?} sans autre joueur"),
         };
         for evenement in &evenements {
             match evenement {
@@ -853,6 +854,7 @@ fn gunther_agrandit_l_enclos_a_travers_les_ecrans_du_bot() {
                 Vec::new()
             }
             Commande::Ouvrir(formulaire) => panic!("formulaire {formulaire:?}"),
+            Commande::Echanger(action) => panic!("échange {action:?}"),
         }
     };
     cliquer_a(&mut joueurs, Cle::ReprendreLaPartie, 1_000);
@@ -1251,4 +1253,200 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
             afficher(&partie, Vue::Codex(fiche));
         }
     }
+}
+
+/// Un clic d'un des joueurs, appliqué, puis le message qu'il reçoit en
+/// retour, vérifié contre les limites de Discord.
+fn executer_le_clic(
+    joueurs: &mut Joueurs,
+    joueur: IdJoueur,
+    clic: Clic,
+    contenu: &ContenuV1,
+) -> Message {
+    let version = joueurs.session(joueur, contenu).version;
+    let maintenant = Horodatage::depuis_secondes(0);
+    let commande = clic
+        .cle
+        .commande(clic.valeur.as_deref(), clic.texte.as_deref())
+        .expect("composant lisible");
+    let evenements = match commande {
+        Commande::Jouer(choix) => joueurs
+            .jouer(joueur, version, choix, contenu, maintenant)
+            .unwrap(),
+        Commande::Afficher(vue) => {
+            joueurs.afficher(joueur, version, vue, contenu).unwrap();
+            Vec::new()
+        }
+        Commande::Echanger(action) => joueurs
+            .echanger(joueur, version, action, contenu)
+            .unwrap_or_else(|refus| panic!("{action:?} refusé : {refus:?}")),
+        Commande::Ouvrir(formulaire) => panic!("formulaire {formulaire:?}"),
+    };
+    let affiche = message(
+        joueurs.session(joueur, contenu),
+        &evenements,
+        None,
+        contenu,
+        maintenant,
+    );
+    verifier_les_limites(&affiche);
+    affiche
+}
+
+fn valeurs_des_menus(message: &Message, voulu: impl Fn(&Cle) -> bool) -> Vec<String> {
+    message
+        .rangees
+        .iter()
+        .flat_map(|rangee| match rangee {
+            Rangee::Menu(menu) if voulu(&menu.cle) => menu
+                .options
+                .iter()
+                .map(|option| option.valeur.clone())
+                .collect(),
+            _ => Vec::new(),
+        })
+        .collect()
+}
+
+/// Aldric propose sa Salamandre contre un Loup du camp d'Ysolde, qui accepte,
+/// à travers les écrans du bot ; les deux ont une équipe complète et un camp
+/// plein (section 15.1).
+#[test]
+fn deux_joueurs_echangent_a_travers_les_ecrans_du_bot() {
+    use bersemon_core::catalogue::Catalogue;
+    use bersemon_core::heros::Heros;
+    use bersemon_core::niveau::Niveau;
+    use bersemon_core::nom::Nom;
+    use bersemon_core::partie::Partie;
+    use bersemon_core::sauvegarde::SauvegardeRepository;
+    use bersemon_core::stats::ValeursInternes;
+    use bersemon_storage::FichierJson;
+
+    const YSOLDE: IdJoueur = 8;
+    let contenu = ContenuV1::new();
+    let creer = |id: &str, niveau: u8| {
+        Monstre::creer(
+            contenu.espece(&EspeceId::new(id)).unwrap(),
+            Niveau::new(niveau).unwrap(),
+            ValeursInternes::default(),
+            false,
+        )
+        .unwrap()
+    };
+    let dossier = dossier_de_test().join("echanges");
+    fs::create_dir_all(&dossier).unwrap();
+    // Ysolde a vaincu le Baron pendu : un Apôtre ne se demande pas.
+    for (joueur, nom, depart, deuxieme) in [
+        (JOUEUR, "Aldric", "salamandre", "corbeau"),
+        (YSOLDE, "Ysolde", "mandragore", "baron-pendu"),
+    ] {
+        let heros = Heros::new(Nom::new(nom).unwrap(), Classe::Mage);
+        let mut partie = Partie::nouvelle(heros, creer(depart, 5));
+        partie.prendre_monstre_rare(creer(deuxieme, 20));
+        while partie.collection().a_de_la_place() {
+            partie.prendre_monstre_rare(creer("loup", 9));
+        }
+        FichierJson::new(dossier.join(format!("{joueur}.json")))
+            .enregistrer(&partie)
+            .unwrap();
+    }
+    let mut joueurs = Joueurs::new(dossier.clone(), 2026);
+    joueurs.noter_pseudo(YSOLDE, "ysolde_la_grise");
+    for joueur in [JOUEUR, YSOLDE] {
+        executer_le_clic(
+            &mut joueurs,
+            joueur,
+            bouton(Cle::ReprendreLaPartie),
+            &contenu,
+        );
+    }
+
+    // Aldric ouvre les échanges depuis le camp et choisit Ysolde.
+    let affiche = message(
+        joueurs.session(JOUEUR, &contenu),
+        &[],
+        None,
+        &contenu,
+        Horodatage::depuis_secondes(0),
+    );
+    let echanges = Cle::Afficher(Vue::Echanges {
+        avec: None,
+        cede: None,
+    });
+    let clic = cliquer(&affiche, |cle| *cle == echanges);
+    let affiche = executer_le_clic(&mut joueurs, JOUEUR, clic, &contenu);
+    assert!(
+        affiche.texte.contains("Choisissez un joueur"),
+        "{}",
+        affiche.texte
+    );
+    let clic = choisir_dans(&affiche, |cle| *cle == Cle::ChoisirJoueur, "8").expect("Ysolde");
+    let affiche = executer_le_clic(&mut joueurs, JOUEUR, clic, &contenu);
+    // 3 monstres dans l'équipe et 30 au camp : deux menus.
+    let a_ceder = valeurs_des_menus(&affiche, |cle| matches!(cle, Cle::Ceder { .. }));
+    assert_eq!(a_ceder.len(), 33);
+    let clic = choisir_dans(&affiche, |cle| matches!(cle, Cle::Ceder { .. }), "e0").unwrap();
+    let affiche = executer_le_clic(&mut joueurs, JOUEUR, clic, &contenu);
+    assert!(
+        affiche.texte.contains("vous cédez Salamandre (niv. 5)"),
+        "{}",
+        affiche.texte
+    );
+    let demandables = valeurs_des_menus(&affiche, |cle| matches!(cle, Cle::Demander { .. }));
+    assert_eq!(demandables.len(), 32);
+    assert!(
+        !demandables.contains(&"e1".to_string()),
+        "l'Apôtre est proposé"
+    );
+    assert!(propose(&affiche, |cle| matches!(cle, Cle::Donner { .. })));
+    let clic = choisir_dans(&affiche, |cle| matches!(cle, Cle::Demander { .. }), "c0").unwrap();
+    let affiche = executer_le_clic(&mut joueurs, JOUEUR, clic, &contenu);
+    assert!(
+        affiche.texte.contains(
+            "Vous proposez à Ysolde (ysolde_la_grise) Salamandre (niv. 5) contre Loup (niv. 9)."
+        ),
+        "{}",
+        affiche.texte
+    );
+    assert!(propose(&affiche, |cle| *cle == Cle::RetirerOffre));
+    let messages = joueurs.prendre_les_messages_prives();
+    assert_eq!(messages.len(), 1);
+    assert_eq!(messages[0].joueur, YSOLDE);
+
+    // Ysolde voit l'offre et l'accepte.
+    let affiche = executer_le_clic(&mut joueurs, YSOLDE, bouton(echanges.clone()), &contenu);
+    assert!(
+        affiche
+            .texte
+            .contains("Aldric vous propose Salamandre (niv. 5), contre votre Loup (niv. 9)."),
+        "{}",
+        affiche.texte
+    );
+    assert!(propose(&affiche, |cle| *cle == Cle::RefuserOffre));
+    let clic = cliquer(&affiche, |cle| *cle == Cle::AccepterOffre);
+    let affiche = executer_le_clic(&mut joueurs, YSOLDE, clic, &contenu);
+    assert!(affiche.texte.contains("Vous cédez"), "{}", affiche.texte);
+    assert!(affiche.texte.contains("de Aldric."), "{}", affiche.texte);
+    assert!(!propose(&affiche, |cle| *cle == Cle::AccepterOffre));
+    let messages = joueurs.prendre_les_messages_prives();
+    assert_eq!(messages[0].texte, "Ysolde a accepté votre offre.");
+
+    // La Salamandre est au camp d'Ysolde, à la place du Loup.
+    let gestion = Cle::Afficher(Vue::Gestion(Some(Emplacement::Camp(0))));
+    executer_le_clic(
+        &mut joueurs,
+        YSOLDE,
+        bouton(Cle::Afficher(Vue::Camp)),
+        &contenu,
+    );
+    let affiche = executer_le_clic(&mut joueurs, YSOLDE, bouton(gestion), &contenu);
+    assert!(affiche.texte.contains("Salamandre"), "{}", affiche.texte);
+    assert!(
+        affiche
+            .texte
+            .contains("Reçu de Aldric. Obéit jusqu'au niveau 12."),
+        "{}",
+        affiche.texte
+    );
+    let _ = fs::remove_dir_all(dossier);
 }
