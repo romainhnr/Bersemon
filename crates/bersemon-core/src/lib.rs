@@ -40,6 +40,7 @@ pub mod obeissance;
 pub mod partie;
 pub mod peche;
 pub mod pierre;
+pub mod relations;
 pub mod ressource;
 pub mod sauvegarde;
 pub mod soin;

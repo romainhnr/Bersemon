@@ -264,6 +264,7 @@ mod tests {
             attaques_a_choisir: Vec::new(),
             peche: Default::default(),
             forge: Default::default(),
+            relations: Default::default(),
         })
         .unwrap()
     }

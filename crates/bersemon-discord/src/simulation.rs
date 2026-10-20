@@ -492,6 +492,7 @@ fn l_equipe_et_le_camp_pleins_tiennent_dans_les_limites() {
             attaques_a_choisir: Vec::new(),
             peche: Default::default(),
             forge,
+            relations: Default::default(),
         })
         .unwrap();
         let maintenant = Horodatage::depuis_secondes(0);
@@ -590,6 +591,7 @@ fn les_attaques_au_camp_se_choisissent_par_menu() {
         attaques_a_choisir: Vec::new(),
         peche: Default::default(),
         forge: Default::default(),
+        relations: Default::default(),
     })
     .unwrap();
     let menus = |emplacement: Emplacement| -> Vec<(Cle, Vec<String>)> {
@@ -855,6 +857,7 @@ fn gunther_agrandit_l_enclos_a_travers_les_ecrans_du_bot() {
         attaques_a_choisir: Vec::new(),
         peche: Default::default(),
         forge: Forge::restaurer(true, Default::default(), None).unwrap(),
+        relations: Default::default(),
     })
     .unwrap();
     let dossier = dossier_de_test().join("forge");
@@ -1012,6 +1015,7 @@ fn ansgar_peche_a_travers_les_ecrans_du_bot() {
         attaques_a_choisir: Vec::new(),
         peche: Peche::restaurer(true, None, None).unwrap(),
         forge: Default::default(),
+        relations: Default::default(),
     })
     .unwrap();
     let dossier = dossier_de_test().join("peche");
@@ -1159,6 +1163,7 @@ fn la_forge_et_l_equipement_tiennent_dans_les_limites() {
             attaques_a_choisir: Vec::new(),
             peche: Default::default(),
             forge: Forge::restaurer(true, Default::default(), None).unwrap(),
+            relations: Default::default(),
         })
         .unwrap();
         let maintenant = Horodatage::depuis_secondes(0);
@@ -1205,6 +1210,7 @@ fn toute_l_equipe_se_prepare_d_un_bouton_s_il_y_a_de_la_place_au_camp() {
             attaques_a_choisir: Vec::new(),
             peche: Default::default(),
             forge: Default::default(),
+            relations: Default::default(),
         })
         .unwrap()
     };
@@ -1361,6 +1367,7 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
             }),
         )
         .unwrap(),
+        relations: Default::default(),
     };
     let afficher = |partie: &Partie, vue: Vue| {
         let question =

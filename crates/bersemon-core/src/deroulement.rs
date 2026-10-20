@@ -43,6 +43,7 @@ use crate::nom::{ErreurNom, Nom};
 use crate::partie::{Partie, creer_monstre_de_depart};
 use crate::peche::{ErreurPeche, Pecheur, Prise};
 use crate::pierre::PierreDEvolution;
+use crate::relations::IdJoueur;
 use crate::ressource::{Ressource, RessourceId};
 use crate::sauvegarde::{ErreurSauvegarde, SauvegardeRepository};
 use crate::soin::{EffetDuSoin, ErreurSoin, Soin, Soins, soin_sans_effet, verifier_cible};
@@ -758,6 +759,45 @@ impl Deroulement {
         sauvegarder(partie_du_receveur, depot_du_receveur, &mut du_receveur);
         sauvegarder(partie_du_donneur, depot_du_donneur, &mut du_donneur);
         Ok((du_donneur, du_receveur))
+    }
+
+    /// Au camp, sans question en attente : ajoute ou retire cet ami, puis
+    /// sauvegarde (section 15.4). Rend ce qu'a donné la sauvegarde, ou
+    /// `None` hors du camp ou si rien n'a changé.
+    pub fn changer_d_ami(
+        &mut self,
+        joueur: IdJoueur,
+        ami: bool,
+        depot: &dyn SauvegardeRepository,
+    ) -> Option<Vec<Evenement>> {
+        let partie = self.partie_au_camp_mut()?;
+        let relations = partie.relations_mut();
+        let change = if ami {
+            relations.ajouter_ami(joueur)
+        } else {
+            relations.retirer_ami(joueur)
+        };
+        if !change {
+            return None;
+        }
+        let mut evenements = Vec::new();
+        sauvegarder(partie, depot, &mut evenements);
+        Some(evenements)
+    }
+
+    /// À la fin d'un duel, que le joueur a livré depuis le camp : sa
+    /// victoire ou sa défaite rejoint son palmarès, puis la partie est
+    /// sauvegardée (section 15.4). `None` si le joueur n'est plus au camp.
+    pub fn noter_duel(
+        &mut self,
+        victoire: bool,
+        depot: &dyn SauvegardeRepository,
+    ) -> Option<Vec<Evenement>> {
+        let partie = self.partie_au_camp_mut()?;
+        partie.relations_mut().noter_duel(victoire);
+        let mut evenements = Vec::new();
+        sauvegarder(partie, depot, &mut evenements);
+        Some(evenements)
     }
 
     /// `None` hors expédition.
@@ -2568,6 +2608,7 @@ mod tests {
             attaques_a_choisir: partie.attaques_a_choisir().to_vec(),
             peche: partie.peche().clone(),
             forge: partie.forge().clone(),
+            relations: partie.relations().clone(),
         }
     }
 
@@ -3153,6 +3194,35 @@ mod tests {
             repondre_sans_tirage(&mut deroulement, rendre, &contenu, &depot),
             Err(ErreurChoix::Marchand(ErreurMarchand::DejaShiny))
         );
+    }
+
+    #[test]
+    fn amis_et_duels_se_sauvegardent_au_camp() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut deroulement = au_camp(partie_pour_les_expeditions(&contenu), &contenu, &depot);
+        assert_eq!(
+            deroulement.changer_d_ami(42, true, &depot),
+            Some(Vec::new())
+        );
+        assert_eq!(deroulement.changer_d_ami(42, true, &depot), None);
+        deroulement.noter_duel(true, &depot).unwrap();
+        deroulement.noter_duel(false, &depot).unwrap();
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert_eq!(sauvegarde.relations().amis(), &[42]);
+        assert_eq!(sauvegarde.relations().palmares().victoires, 1);
+        assert_eq!(sauvegarde.relations().palmares().defaites, 1);
+        assert_eq!(
+            deroulement.changer_d_ami(42, false, &depot),
+            Some(Vec::new())
+        );
+        assert_eq!(deroulement.changer_d_ami(42, false, &depot), None);
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert!(sauvegarde.relations().amis().is_empty());
+        // Hors du camp, rien ne change.
+        let mut ailleurs = Deroulement::demarrer(Ok(None));
+        assert_eq!(ailleurs.changer_d_ami(42, true, &depot), None);
+        assert_eq!(ailleurs.noter_duel(true, &depot), None);
     }
 
     #[test]
@@ -4476,6 +4546,7 @@ mod tests {
             attaques_a_choisir: Vec::new(),
             peche: Default::default(),
             forge: Default::default(),
+            relations: Default::default(),
         })
         .unwrap()
     }

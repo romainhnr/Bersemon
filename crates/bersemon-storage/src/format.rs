@@ -1,4 +1,4 @@
-//! Format JSON de la sauvegarde, version 20, et sa conversion vers les types
+//! Format JSON de la sauvegarde, version 21, et sa conversion vers les types
 //! du noyau. Les énumérations sont écrites avec des noms fixés ici, et non
 //! avec les noms Rust, pour qu'un renommage dans le code ne casse pas les
 //! sauvegardes existantes.
@@ -30,6 +30,7 @@ use bersemon_core::nom::Nom;
 use bersemon_core::partie::{AttaqueAChoisir, EtatPartie, Partie};
 use bersemon_core::peche::Peche;
 use bersemon_core::pierre::PierreDEvolution;
+use bersemon_core::relations::{Palmares, Relations};
 use bersemon_core::ressource::RessourceId;
 use bersemon_core::sauvegarde::ErreurSauvegarde;
 use bersemon_core::soin::Soin;
@@ -40,7 +41,7 @@ use bersemon_core::zone::{Zone, ZoneId};
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 20;
+pub(crate) const VERSION: u64 = 21;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -85,7 +86,8 @@ const GEOLIER_DE_GUNTHER: &str = "bourreau";
 /// marque des monstres reçus d'un autre joueur, la version 18 la pêche
 /// d'Ansgar ; avec la version 19, les Apôtres capturés deviennent leur âme,
 /// sans changer la structure ; la version 20 ajoute les boosters et les
-/// Éclats d'astre. Une sauvegarde d'une version
+/// Éclats d'astre, la version 21 les amis et le palmarès des duels. Une
+/// sauvegarde d'une version
 /// précédente se lit avec cette structure : les champs ajoutés y prennent
 /// leur valeur de début de partie.
 #[derive(Debug, Serialize, Deserialize)]
@@ -152,6 +154,14 @@ pub(crate) struct SauvegardeV14 {
     /// Le monstre pêché que le joueur n'a encore ni gardé ni relâché.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     prise: Option<MonstreV1>,
+    /// Depuis la version 21 (section 15.4) : identifiants des comptes
+    /// Discord des amis.
+    #[serde(default)]
+    amis: Vec<u64>,
+    #[serde(default)]
+    victoires_en_duel: u32,
+    #[serde(default)]
+    defaites_en_duel: u32,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -512,6 +522,9 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV14 {
         ansgar_au_camp: partie.peche().pecheur_au_camp(),
         ligne: partie.peche().ligne().map(Horodatage::secondes),
         prise: partie.peche().prise().map(depuis_monstre),
+        amis: partie.relations().amis().to_vec(),
+        victoires_en_duel: partie.relations().palmares().victoires,
+        defaites_en_duel: partie.relations().palmares().defaites,
     }
 }
 
@@ -786,6 +799,13 @@ pub(crate) fn vers_partie(
         attaques_a_choisir,
         forge,
         peche,
+        relations: Relations::restaurer(
+            sauvegarde.amis,
+            Palmares {
+                victoires: sauvegarde.victoires_en_duel,
+                defaites: sauvegarde.defaites_en_duel,
+            },
+        ),
     })
     .map_err(incoherente)
 }

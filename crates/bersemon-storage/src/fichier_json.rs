@@ -108,6 +108,7 @@ mod tests {
     use bersemon_core::partie::{AttaqueAChoisir, EtatPartie};
     use bersemon_core::peche::Peche;
     use bersemon_core::pierre::PierreDEvolution;
+    use bersemon_core::relations::{Palmares, Relations};
     use bersemon_core::ressource::{Ressource, RessourceId};
     use bersemon_core::soin::Soin;
     use bersemon_core::stats::{Stats, ValeursInternes};
@@ -411,6 +412,13 @@ mod tests {
                 }),
             )
             .unwrap(),
+            relations: Relations::restaurer(
+                vec![1_234_567_890_123, 42],
+                Palmares {
+                    victoires: 3,
+                    defaites: 1,
+                },
+            ),
         };
         let mut partie = Partie::restaurer(etat(&partie, Vec::new())).unwrap();
         // Croc apprend l'attaque de la capsule, hors de la liste de son
@@ -620,11 +628,23 @@ mod tests {
 
     #[test]
     fn version_inconnue() {
-        let texte = texte_de_partie().replacen("\"version\":20", "\"version\":21", 1);
+        let texte = texte_de_partie().replacen("\"version\":21", "\"version\":22", 1);
         assert_eq!(
             charger_texte(&texte),
-            Err(ErreurSauvegarde::VersionInconnue(21))
+            Err(ErreurSauvegarde::VersionInconnue(22))
         );
+    }
+
+    #[test]
+    fn une_sauvegarde_en_version_20_n_a_ni_ami_ni_duel() {
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        let objet = valeur.as_object_mut().unwrap();
+        objet.insert("version".to_string(), 20.into());
+        for champ in ["amis", "victoires_en_duel", "defaites_en_duel"] {
+            assert!(objet.remove(champ).is_some(), "{champ}");
+        }
+        let partie = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        assert_eq!(partie.relations(), &Relations::default());
     }
 
     #[test]

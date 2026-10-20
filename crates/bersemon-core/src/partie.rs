@@ -41,6 +41,7 @@ use crate::nom::Nom;
 use crate::obeissance::limite_d_obeissance;
 use crate::peche::{ErreurPeche, ParametresPeche, Peche, Prise};
 use crate::pierre::PierreDEvolution;
+use crate::relations::Relations;
 use crate::ressource::{Ressource, RessourceId};
 use crate::soin::{EffetDuSoin, ErreurSoin, Soin};
 use crate::stats::ValeursInternes;
@@ -108,6 +109,8 @@ pub struct Partie {
     forge: Forge,
     /// Ansgar et sa ligne (section 13.8).
     peche: Peche,
+    /// Amis et palmarès des duels, sur le bot Discord (section 15.4).
+    relations: Relations,
 }
 
 /// Attaque qu'un monstre rentré d'expédition automatique veut apprendre en
@@ -141,6 +144,7 @@ pub struct EtatPartie {
     pub attaques_a_choisir: Vec<AttaqueAChoisir>,
     pub forge: Forge,
     pub peche: Peche,
+    pub relations: Relations,
 }
 
 /// Sauvegarde lisible mais contraire aux règles des expéditions
@@ -214,6 +218,7 @@ impl Partie {
             humains_vaincus: Vec::new(),
             forge: Forge::default(),
             peche: Peche::default(),
+            relations: Relations::default(),
             conseils_vus: Vec::new(),
             expeditions_automatiques: Vec::new(),
             attaques_a_choisir: Vec::new(),
@@ -305,6 +310,16 @@ impl Partie {
 
     pub fn peche(&self) -> &Peche {
         &self.peche
+    }
+
+    pub fn relations(&self) -> &Relations {
+        &self.relations
+    }
+
+    /// Les amis et le palmarès se tiennent depuis le bot Discord (section
+    /// 15.4).
+    pub fn relations_mut(&mut self) -> &mut Relations {
+        &mut self.relations
     }
 
     /// Sauvé dans le Marais, Ansgar rentre au camp avec le joueur et y reste
@@ -1067,6 +1082,7 @@ impl Partie {
             attaques_a_choisir: etat.attaques_a_choisir,
             forge: etat.forge,
             peche: etat.peche,
+            relations: etat.relations,
         })
     }
 
@@ -2559,6 +2575,7 @@ mod tests {
             attaques_a_choisir: partie.attaques_a_choisir().to_vec(),
             peche: partie.peche().clone(),
             forge: partie.forge().clone(),
+            relations: partie.relations().clone(),
         }
     }
 
