@@ -761,3 +761,54 @@ Décidé le 20/10/2026, pour l'étape 66 (gamedesign.md, section 9.4), texte val
 > L'âme de l'Abbesse écorchée s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.
 
 Textes proposés sans validation (gamedesign.md, Q92) : au camp, "Âmes d'Apôtres : {noms}." (par exemple "Âmes d'Apôtres : Baron pendu et Abbesse écorchée."), et au codex, "{nom} ({types}) : Apôtre vaincu".
+
+## 17. Boosters et Éclat d'astre
+
+Décidé le 20/10/2026, pour les étapes 67 à 69 (gamedesign.md, sections 5.8, 13.7 et 14.3). Noms et taux validés par l'utilisateur ; les identifiants, l'ordre des tirages et les textes sont des hypothèses (gamedesign.md, Q93).
+
+Chaque booster ajoute 5 à la valeur interne de sa stat, sans dépasser 31, et se consomme. On ne les achète pas.
+
+| Identifiant | Booster | Stat | Rang dans le tirage du coffre |
+|---|---|---|---|
+| fiole-de-sang | Fiole de sang | PV | 21 |
+| moelle-de-bete | Moelle de bête | Attaque | 22 |
+| ecorce-de-fer | Écorce de fer | Défense | 23 |
+| encre-d-arcane | Encre d'arcane | Attaque spéciale | 24 |
+| cendre-benite | Cendre bénite | Défense spéciale | 25 |
+| poudre-de-vif-argent | Poudre de vif-argent | Vitesse | 26 |
+
+Le tirage sur 100 du coffre décide ainsi de la capsule d'habileté (1 à 10), de la Pierre de braise (11 à 15), de la Pierre de lune (16 à 20) et d'un booster (21 à 26) ; rien de plus au-delà.
+
+L'Éclat d'astre (identifiant eclat-d-astre) : chaque Apôtre vaincu en laisse un, et la pêche en remonte 1 fois sur 100. Malvoise s'en sert pour rendre un monstre shiny. Il ne s'achète pas et ne se revend pas.
+
+Pêche, depuis l'étape 67 (section 15) : monstre aquatique commun 55 %, Kelpie 5 %, potion 14 %, bourse noyée 10 %, pierre d'évolution 5 %, capsule d'habileté 5 %, booster 5 % (puis un tirage parmi les six, dans l'ordre du tableau), Éclat d'astre 1 %.
+
+Textes proposés sans validation (gamedesign.md, Q93). {monstre} est le nom du monstre, {stat} le nom de la stat, {booster} celui du booster.
+
+| Moment | Texte |
+|---|---|
+| Effet d'un booster, dans les listes | +5 à la valeur interne de {stat}, 31 au plus. |
+| Booster donné | {monstre} : valeur interne de {stat} de {avant} à {après}. |
+| Refus, valeur déjà au maximum | La valeur interne de {stat} de {monstre} est déjà à 31. |
+| Refus, pas de booster | Vous n'avez pas de {booster}. |
+| Éclat laissé par un Apôtre, après son âme | Dans la poussière de sa dépouille luit un Éclat d'astre. Vous le ramassez. |
+| Objet pêché | Vous remontez une Fiole de sang. Vous la rangez dans le coffre. / Vous remontez un Éclat d'astre. Vous le rangez dans le coffre. |
+| Service, à l'étal | Rendre un monstre shiny (1 Éclat d'astre) |
+| Confirmation | Malvoise rendra {monstre} shiny contre un Éclat d'astre : ses valeurs internes passeront toutes à 31. Confirmer ? |
+| Monstre rendu shiny | Malvoise broie l'Éclat d'astre au-dessus de {monstre}, dont la robe prend un reflet nouveau. {monstre} est désormais shiny. |
+| Refus, pas d'Éclat | Il vous faut un Éclat d'astre. |
+| Refus, déjà shiny | {monstre} est déjà shiny. |
+
+## 18. Amis et palmarès des duels
+
+Décidé le 20/10/2026, pour les étapes 70 et 71 (gamedesign.md, section 15.4). Textes proposés sans validation (gamedesign.md, Q94). {v} et {d} sont des nombres de victoires et de défaites.
+
+| Moment | Texte |
+|---|---|
+| Palmarès, en tête de l'écran "Autres joueurs" | Vos duels : {v} victoire(s), {d} défaite(s). |
+| Joueur choisi | Duels de {héros} : {v} victoire(s), {d} défaite(s). |
+| Ami, dans le menu des joueurs | description de l'option : "Ami" suivi du pseudo, "Ami - {pseudo}" |
+| Boutons | Ajouter aux amis / Retirer des amis / Classement / Retour aux autres joueurs |
+| Ami ajouté ou retiré | {héros} est ajouté à vos amis. / {héros} est retiré de vos amis. |
+| Classement | Classement des duels : puis une ligne par joueur, "1. {héros} ({pseudo}) : {v} victoire(s), {d} défaite(s)", 10 au plus |
+| Classement vide | Aucun duel n'a encore été livré. |

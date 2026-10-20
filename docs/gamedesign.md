@@ -230,7 +230,7 @@ Le joueur peut :
 
 - renommer son monstre : un surnom de 1 à 20 caractères, affiché à la place du nom de l'espèce ;
 - ajuster ses attaques, au camp : réapprendre une attaque de son espèce ou en apprendre une nouvelle grâce à une capsule d'attaque (section 13.10) ;
-- ajuster ses statistiques à l'aide d'objets ;
+- ajuster ses statistiques à l'aide d'objets ; depuis l'étape 67, au camp, avec les boosters, qui augmentent une valeur interne (section 14.3) ;
 - depuis l'étape 35, changer son habileté pour l'autre de son espèce, au camp, avec une capsule d'habileté (section 5.9) ;
 - consulter le codex, par exemple pour savoir quand il évolue. Depuis l'étape 38, la fiche d'une espèce capturée dit son évolution et sa condition (section 5.4) ;
 - depuis l'étape 37, le faire évoluer au camp, depuis la gestion des monstres, quand il en remplit la condition (section 5.4).
@@ -261,6 +261,7 @@ Le joueur peut :
 - Les valeurs internes vont de 0 à 31. Elles sont tirées uniformément, une par stat, à la création du monstre.
 - Exemple pour une stat de base 50 : au niveau 100, avec une valeur interne de 0, 210 PV ou 105 pour une autre stat ; avec une valeur interne de 31, 241 PV ou 136.
 - Depuis l'étape 28, un shiny a 31 dans chaque valeur interne (section 5.1).
+- Depuis l'étape 67, un booster ajoute 5 à une valeur interne, sans dépasser 31 (section 14.3).
 
 ### 5.9 Habiletés (après la V1)
 
@@ -395,6 +396,7 @@ Si tous les monstres du joueur sont KO pendant une expédition manuelle :
   - Une âme d'Apôtre est gardée à part, ni dans le sac ni dans le coffre, et rien ne la fait perdre. Elle ne se donne pas à Malvoise : son usage est différent de celui des âmes des marchands et sera défini plus tard (Q92). Idée de l'utilisateur : réunir les âmes de tous les Apôtres pour créer un Béhérit pourpre, qui permettra d'invoquer le Démiurge et de l'affronter.
   - Le camp rappelle les âmes d'Apôtres gardées, sur une ligne à part de celles des marchands.
   - La victoire ouvre la fiche de l'Apôtre au codex, comme une capture ; la liste du codex le dit "Apôtre vaincu" (section 5.6).
+  - Depuis l'étape 67 (choix de l'utilisateur), l'Apôtre vaincu laisse aussi un Éclat d'astre, après son âme, qui va dans le sac (section 14.3).
   - Choix de l'utilisateur pour les sauvegardes antérieures : un Apôtre déjà capturé quitte l'équipe, le camp ou son expédition automatique, et le joueur garde son âme, comme celle de tout Apôtre vaincu ; la fiche de chaque Apôtre vaincu s'ouvre au codex (section 13.9, hypothèses de Q92).
 - Décidé le 18/10/2026, pour l'étape 30 : un indice par zone, trouvé à la première expédition menée au bout dans cette zone. La première zone s'achève par un combat contre un humain et ses monstres (étape 29). La deuxième s'achève par un humain plus fort, au service de l'Apôtre, qui donne l'indice de la troisième zone ; l'Apôtre attend à la fin de la troisième. Les détails sont dans Q75.
 - Précisé le 19/10/2026, pour l'étape 30 (Q75), et remplace la piste de la V1 décrite plus haut :
@@ -676,6 +678,12 @@ Le joueur peut construire des machines pour automatiser certaines tâches, par e
 - Réanimer un monstre mort, contre une ressource très rare : en suspens tant qu'il n'existe pas de mort définitive (section 5.7).
 - Rendre un de ses monstres shiny, contre un objet extrêmement rare.
 
+Décidé le 20/10/2026, pour les étapes 67 à 69 (choix de l'utilisateur) :
+
+- C'est Malvoise qui rend un monstre shiny, au camp, depuis son étal, contre un Éclat d'astre (section 14.3), sans argent. Le joueur choisit un monstre de l'équipe ou du camp qui n'est pas shiny ; le jeu demande confirmation, puis l'Éclat est consommé, du sac d'abord, puis du coffre.
+- Le monstre devient shiny, avec ce que cela implique déjà (section 5.1) : 31 dans chaque valeur interne, et une revente doublée (section 14.5). Il garde le reste : surnom, niveau, XP, attaques, habileté, marque "reçu de". Ses PV actuels augmentent d'autant que ses PV max, sauf s'il est KO (hypothèse retenue, Q93).
+- L'étal propose le service même sans Éclat, comme la forge propose une amélioration faute de ressources : le refus dit ce qui manque (hypothèse retenue, Q93).
+
 ### 13.8 Pêche
 
 - Le joueur peut pêcher pour trouver des monstres aquatiques ou des objets plus ou moins rares.
@@ -685,7 +693,7 @@ Décidé le 20/10/2026, pour les étapes 62 à 65 (choix de l'utilisateur) :
 - La pêche se fait au camp, avec Ansgar, vieux pêcheur sauvé dans le Marais des Pendus (section 9.2). Tant qu'il n'est pas au camp, le camp ne propose pas la pêche.
 - Une seule ligne à la fois. Le joueur la lance au camp, gratuitement et sans confirmation ; elle est prête 2 h plus tard, sur l'horloge réelle, comme une expédition automatique, et une ligne lancée ne se retire pas (hypothèse retenue, Q91). Le joueur la relève lui-même, au camp, une fois prête.
 - La prise est tirée au moment de relever la ligne, une fois par ligne, et la partie est sauvegardée aussitôt, pour que quitter le jeu ne permette pas de la tirer de nouveau. Si l'équipe et le camp sont pleins, la ligne ne se relève pas, avant tout tirage : le refus dit de faire de la place (hypothèse retenue, Q91).
-- Prises : monstre aquatique commun 55 %, Kelpie (rare) 5 %, potion 20 %, bourse noyée 10 %, pierre d'évolution 5 % (Pierre de braise ou de lune, pour moitié), capsule d'habileté 5 %. Un objet va dans le coffre, comme tout ce qui est gagné au camp (section 13.3). La bourse contient l'argent d'un coffre de la zone ouverte la plus avancée (section 14.5).
+- Prises : monstre aquatique commun 55 %, Kelpie (rare) 5 %, potion 20 %, bourse noyée 10 %, pierre d'évolution 5 % (Pierre de braise ou de lune, pour moitié), capsule d'habileté 5 %. Depuis l'étape 67 (choix de l'utilisateur) : potion 14 %, booster 5 %, tiré parmi les six (section 14.3), Éclat d'astre 1 % (section 13.7). Un objet va dans le coffre, comme tout ce qui est gagné au camp (section 13.3). La bourse contient l'argent d'un coffre de la zone ouverte la plus avancée (section 14.5).
 - Un monstre pêché est un monstre sauvage : son niveau est tiré parmi ceux de la zone ouverte la plus avancée, avec ses valeurs internes, son shiny (1 sur 512) et son habileté. Il entre au codex comme rencontré dès la prise. Choix de l'utilisateur : le joueur le garde ou le relâche ; gardé, il compte comme capturé et rejoint l'équipe s'il y a de la place, sinon le camp ; relâché, il retourne à l'eau, sans confirmation (hypothèse retenue, Q91). Tant qu'il n'a pas répondu, le camp n'accepte aucune autre action, comme pour une attaque à choisir (section 12.7), et la question revient à la reprise de la partie.
 - Les espèces aquatiques ne vivent qu'à la pêche (le Noyé attaque aussi Ansgar, section 9.2). Elles n'ont ni ressource ni évolution (hypothèses retenues, Q91). Fiches dans docs/contenu-v1.md, section 15.
 - La pêche ne joue pas sur les expéditions et ne touche pas au multijoueur.
@@ -709,6 +717,8 @@ Décidé le 20/10/2026, pour les étapes 62 à 65 (choix de l'utilisateur) :
 - Depuis l'étape 62, en version 18 : Ansgar au camp, l'heure où la ligne sera prête et le monstre pêché qui attend la réponse du joueur (section 13.8). Une sauvegarde antérieure n'a pas Ansgar au camp.
 - Depuis l'étape 66, en version 19, sans changement de structure : les âmes d'Apôtres sont celles des Apôtres vaincus, déjà gardés par la sauvegarde. À la lecture d'une sauvegarde antérieure, les Apôtres capturés quittent l'équipe, le camp et les expéditions automatiques, et la fiche de chaque Apôtre vaincu s'ouvre au codex (section 9.4).
 - Depuis l'étape 32, en version 12 : les attaques à choisir au retour d'une expédition automatique désignent un monstre de l'équipe ou du camp ; celles des versions antérieures désignent un monstre du camp. Les étapes 33 à 36 y ajoutent, toujours en version 12, les âmes à retrouver, les âmes portées, les capsules d'habileté et les ressources du sac et du coffre. Les âmes recueillies des versions antérieures comptent comme données à Malvoise : leur soin reste en vente.
+- Depuis l'étape 67, en version 20 : les boosters et les Éclats d'astre du sac et du coffre (section 14.3). Une sauvegarde antérieure n'en a pas, sauf un Éclat d'astre dans le coffre par Apôtre déjà vaincu (hypothèse retenue, Q93).
+- Depuis l'étape 70, en version 21 : la liste d'amis et le palmarès des duels du joueur (section 15.4), vides dans une sauvegarde antérieure.
 - Après la V1 (19/10/2026), un sous-menu « Options » du camp permet au joueur de se suicider, après confirmation, pour recommencer sans attendre la reprise au lancement. La sauvegarde est effacée dès la confirmation, avec le héros, les monstres, le sac, le coffre, le codex et les expéditions automatiques en cours ; un court texte suit, puis la création d'un nouveau héros. Ce n'est possible qu'au camp. Le texte est dans docs/contenu-v1.md, section 4.
 
 ### 13.10 Attaques des monstres
@@ -775,6 +785,10 @@ Premier marchand, après la V1 :
 
 - Ressources de fabrication et d'amélioration : bois, métal, tissu, minerai rare, etc.
 - Consommables : soins, boosters de stats.
+- Décidé le 20/10/2026, pour les étapes 67 à 69 (choix de l'utilisateur) : six boosters, un par stat, qui ajoutent chacun 5 à la valeur interne de leur stat, sans dépasser 31 (section 5.8). Noms : Fiole de sang (PV), Moelle de bête (Attaque), Écorce de fer (Défense), Encre d'arcane (Attaque spéciale), Cendre bénite (Défense spéciale), Poudre de vif-argent (Vitesse). Détails dans docs/contenu-v1.md, section 17.
+  - Ils ne s'achètent pas : on les trouve dans les coffres (6 %, 1 % par booster) et à la pêche (5 %, section 13.8). Malvoise ne les vend ni ne les rachète.
+  - Ils se rangent dans le sac et le coffre, se déplacent par lots et se perdent avec le sac, comme les pierres d'évolution.
+  - Au camp, depuis la gestion des monstres, le joueur donne un booster à un monstre de l'équipe ou du camp, sans confirmation (hypothèse retenue, Q93). Le booster est consommé, du sac d'abord, puis du coffre. Un booster sur une valeur interne déjà à 31 est refusé, sans être consommé ; une valeur à 28 passe à 31 et le surplus est perdu. Un shiny a déjà 31 partout : aucun booster ne lui sert. Les PV actuels augmentent d'autant que les PV max, sauf pour un monstre KO (hypothèse retenue, Q93).
 - Objets permettant d'ajuster les statistiques d'un monstre.
 - Filets de capture : achetables, fabricables, améliorables.
 - Équipement du héros : armes, armures, talismans. Depuis les étapes 48 à 51, fabriqués par Gunther et gardés par le héros, hors du sac et du coffre (sections 4.3 et 13.5).
@@ -786,7 +800,7 @@ Premier marchand, après la V1 :
 - Objets de protection pour les expéditions automatiques.
 - Capsules d'attaque, qui enseignent une attaque (section 13.10).
 - Ressource très rare permettant de réanimer un monstre (en suspens, section 5.7).
-- Objet extrêmement rare permettant de rendre un monstre shiny.
+- Objet extrêmement rare permettant de rendre un monstre shiny. Décidé le 20/10/2026, pour les étapes 67 à 69 (choix de l'utilisateur) : l'Éclat d'astre. Chaque Apôtre vaincu en laisse un, après son âme (section 9.4), et la pêche en remonte 1 fois sur 100 (section 13.8). Il ne s'achète pas et ne se revend pas. Il se range dans le sac et le coffre et se perd avec le sac, comme tout objet trouvé en expédition (hypothèse retenue, Q93 : la victoire sur un Apôtre achève l'expédition, il rentre donc au camp avec le joueur). Il sert au service de Malvoise (section 13.7).
 
 ### 14.4 Potions (V1)
 
@@ -861,7 +875,18 @@ Décidé le 20/10/2026, pour les étapes 59 à 61 (choix de l'utilisateur) :
 - À chaque tour, les deux joueurs choisissent leur action sans voir celle de l'autre ; le tour se joue quand les deux ont choisi. Les changements de monstre passent avant les attaques, celui du joueur qui a lancé le défi le premier ; l'ordre des attaques suit la vitesse, avec un tirage à égalité (section 10.2). Chacun remplace lui-même son monstre KO avant le tour suivant.
 - Le joueur qui a choisi attend l'autre : son message le dit, avec un bouton Actualiser qui montre le tour une fois joué. Si l'autre n'a toujours pas joué 5 minutes après lui, il peut réclamer la victoire par forfait. Chacun peut abandonner à tout moment, ce qui donne la victoire à l'autre.
 - Le duel se gagne quand toute l'équipe de l'autre est KO. Si les deux équipes tombent au même tour, le joueur dont le dernier monstre est tombé le premier perd.
-- Pas de palmarès des duels pour l'instant.
+- Pas de palmarès des duels pour l'instant. Remplacé le 20/10/2026, pour les étapes 70 et 71 : voir la section 15.4.
+
+### 15.4 Amis et palmarès des duels
+
+Décidé le 20/10/2026, pour les étapes 70 et 71 (choix de l'utilisateur) :
+
+- Sur le bot Discord seulement, comme le reste du multijoueur.
+- Chaque joueur tient sa propre liste d'amis : il ajoute ou retire un autre joueur, depuis l'écran "Autres joueurs", une fois ce joueur choisi, sans demande à accepter ni message à l'autre. La liste est gardée dans sa sauvegarde.
+- Les amis ne restreignent rien : ils sont proposés en tête du menu des joueurs (qui en montre 25 au plus), marqués "ami", puis viennent les autres, toujours triés par nom du héros. Les offres et les défis restent ouverts à tous.
+- Le palmarès compte les victoires et les défaites en duel de chaque joueur, gardées dans sa sauvegarde. Un abandon ou un forfait compte comme une défaite pour celui qui le subit et une victoire pour l'autre (hypothèse retenue, Q94). Seul le palmarès est enregistré à la fin d'un duel : le duel lui-même ne change toujours rien d'autre.
+- L'écran "Autres joueurs" montre en tête le palmarès du joueur, et propose un classement de tous les joueurs du bot qui ont livré au moins un duel, par victoires, puis par défaites, les moins nombreuses d'abord, puis par nom du héros (hypothèse retenue, Q94).
+- La console reste une partie seule : elle garde la liste d'amis et le palmarès dans la sauvegarde sans les montrer.
 
 ## 16. Questions ouvertes et valeurs à définir
 
@@ -925,6 +950,11 @@ Les questions Q91 et suivantes ont été relevées le 20/10/2026 lors de la conc
 Les questions Q92 et suivantes ont été relevées le 20/10/2026 lors de la conception de l'étape 66, âmes d'Apôtres.
 
 - Q92. (Étape 66, puis plus tard) Usage des âmes d'Apôtres, à définir : idée de l'utilisateur, réunir les âmes de tous les Apôtres pour créer un Béhérit pourpre, qui permettra d'invoquer et d'affronter le Démiurge (combien d'âmes, qui le crée, où, et ce que devient l'âme). Hypothèses retenues, à confirmer : tant qu'elles n'ont pas d'usage, les âmes d'Apôtres sont simplement celles des Apôtres vaincus, sans champ à part dans la sauvegarde ; à la lecture d'une sauvegarde antérieure, les Apôtres capturés disparaissent sans message ; un joueur qui n'aurait plus aucun autre monstre, en comptant le camp et les expéditions automatiques, garde ses Apôtres ; une attaque qu'un Apôtre attendait de choisir est oubliée ; une expédition automatique dont l'Apôtre partait seul disparaît, sans rien rapporter ; les règles qui citent les Apôtres de la collection (revente, don et échange interdits) restent pour ce dernier cas. Textes proposés sans validation : "Âmes d'Apôtres : {noms}." au camp et la mention "Apôtre vaincu" au codex.
+
+Les questions Q93 et suivantes ont été relevées le 20/10/2026 lors de la conception des étapes 67 règles des boosters et de l'Éclat d'astre, avec la sauvegarde en version 20, 68 écrans de la console, 69 écrans du bot Discord, 70 amis et palmarès dans le noyau, avec la sauvegarde en version 21, 71 écran "Autres joueurs" du bot.
+
+- Q93. (Étapes 67 à 69) Hypothèses retenues, à confirmer : un booster se donne sans confirmation ; sur un monstre, il augmente ses PV actuels d'autant que ses PV max, sauf s'il est KO, comme le service de Malvoise ; l'étal propose le service même sans Éclat d'astre, et le refus dit ce qui manque ; l'Éclat d'astre laissé par un Apôtre va dans le sac et se perd avec lui ; une sauvegarde antérieure reçoit, dans le coffre, un Éclat d'astre par Apôtre déjà vaincu ; dans le tirage du coffre, les boosters prennent les rangs 21 à 26, un par booster, dans l'ordre des stats ; à la pêche, la potion passe de 20 % à 14 %, au profit des boosters (5 %, puis un tirage parmi les six) et de l'Éclat d'astre (1 %). Textes proposés sans validation : ceux de docs/contenu-v1.md, section 17.
+- Q94. (Étapes 70 et 71) Hypothèses retenues, à confirmer : un abandon ou un forfait compte dans le palmarès ; le classement montre au plus les 10 premiers, et ne compte que les joueurs qui ont livré au moins un duel ; un joueur qui recommence sa partie (suicide du héros) perd sa liste d'amis et son palmarès, gardés dans sa sauvegarde ; un ami dont la partie n'existe plus n'est plus montré. Textes proposés sans validation : ceux de docs/contenu-v1.md, section 18.
 
 - Q83. (Étapes 33 et 34) Hypothèses retenues, à confirmer : le gardien d'une âme à retrouver attaque à une étape tirée parmi celles qui précèdent la dernière ; le don d'une âme à Malvoise se fait sans confirmation ; une partie antérieure qui n'a pas recueilli l'âme de Bertrand le rencontre à l'étape 4 de sa prochaine expédition dans la Lisière, même avec Malvoise déjà au camp ; le texte du brigand de l'étape 5 ne change pas, même s'il a perdu son Loup à l'étape 4.
 
@@ -1303,3 +1333,12 @@ Les questions Q92 et suivantes ont été relevées le 20/10/2026 lors de la conc
 - Choix de l'utilisateur : dans les sauvegardes antérieures, un Apôtre capturé est changé en son âme ; au codex, la victoire ouvre la fiche de l'Apôtre, dit vaincu. Texte de l'âme validé (docs/contenu-v1.md, section 16).
 - Sauvegarde en version 19, sans changement de structure.
 - Hypothèses retenues, à confirmer : Q92.
+
+20/10/2026 (conception des étapes 67 à 71, boosters, service shiny, amis et palmarès) :
+
+- Choix de l'utilisateur : les trois petits lots, boosters de stats, service shiny et système d'amis avec palmarès des duels.
+- Choix de l'utilisateur : les boosters sont permanents et ajoutent 5 à une valeur interne, 31 au plus ; ils ne se trouvent que dans les coffres (6 %) et à la pêche (5 %) ; noms proposés acceptés, la Poudre de vif-argent remplaçant la Plume de corbeau, déjà prise par une ressource (section 14.3, docs/contenu-v1.md, section 17).
+- Choix de l'utilisateur : Malvoise rend un monstre shiny contre un Éclat d'astre, laissé par chaque Apôtre vaincu et pêché 1 fois sur 100 (sections 13.7 et 14.3).
+- Choix de l'utilisateur : une liste d'amis personnelle, qui les met en tête du menu des joueurs sans rien restreindre ; un palmarès des victoires et des défaites, avec un classement de tous les joueurs, sur l'écran "Autres joueurs" (section 15.4).
+- Sauvegarde en version 20 pour les boosters et l'Éclat d'astre, en version 21 pour les amis et le palmarès.
+- Hypothèses retenues, à confirmer : Q93 et Q94.
