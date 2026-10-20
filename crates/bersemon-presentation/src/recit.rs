@@ -371,7 +371,7 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
         Evenement::GuntherLibere(texte) => (texte.clone(), true),
         Evenement::AmeliorationLancee { plan, .. } => (lancement(plan), false),
         Evenement::TravailConstate(chantier) => (constat(chantier), true),
-        Evenement::LigneLancee(delai) => (peche::lancement(*delai), false),
+        Evenement::LigneLancee { delai, .. } => (peche::lancement(*delai), false),
         Evenement::PrisePechee(prise) => (peche::prise(prise), true),
         Evenement::PriseRelachee(monstre) => (peche::prise_relachee(monstre), false),
         Evenement::FabricationLancee { plan, .. } => (lancement_de_fabrication(plan), false),

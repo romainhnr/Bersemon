@@ -58,6 +58,8 @@ pub enum Vue {
     Forge,
     /// Ce que porte le héros (section 4.3).
     Equipement,
+    /// La ligne d'Ansgar, une fois au camp (section 13.8).
+    Peche,
     /// Les offres de don et d'échange (section 15.1), avec le joueur choisi
     /// pour une offre, puis le monstre à lui céder.
     Echanges {
@@ -247,6 +249,13 @@ pub enum Cle {
     Ameliorer(Amelioration),
     /// Le joueur constate le travail fini de Gunther.
     Constater,
+    /// Ansgar tend une ligne, que le joueur relève une fois prête (section
+    /// 13.8).
+    LancerLaLigne,
+    ReleverLaLigne,
+    /// Répond au monstre pêché.
+    GarderLaPrise,
+    RelacherLaPrise,
     /// Menu des objets que Gunther peut forger (section 13.5).
     Fabriquer,
     /// Menu des objets à porter à cette place, avec de quoi retirer celui
@@ -398,6 +407,10 @@ impl Cle {
             Cle::SeSuicider => jouer(Choix::SeSuicider),
             Cle::Ameliorer(amelioration) => jouer(Choix::LancerAmelioration(*amelioration)),
             Cle::Constater => jouer(Choix::ConstaterTravail),
+            Cle::LancerLaLigne => jouer(Choix::LancerLaLigne),
+            Cle::ReleverLaLigne => jouer(Choix::ReleverLaLigne),
+            Cle::GarderLaPrise => jouer(Choix::GarderLaPrise),
+            Cle::RelacherLaPrise => jouer(Choix::RelacherLaPrise),
             Cle::Fabriquer => jouer(Choix::LancerFabrication(ObjetDEquipementId::new(valeur?))),
             Cle::Equiper(place) => match valeur? {
                 RETIRER => jouer(Choix::RetirerEquipement(*place)),
@@ -471,6 +484,7 @@ impl Cle {
             Cle::Afficher(Vue::Options) => "vue:options".to_string(),
             Cle::Afficher(Vue::Forge) => "vue:forge".to_string(),
             Cle::Afficher(Vue::Equipement) => "vue:equipement".to_string(),
+            Cle::Afficher(Vue::Peche) => "vue:peche".to_string(),
             Cle::Afficher(Vue::Echanges { avec: None, .. }) => "vue:echanges".to_string(),
             Cle::Afficher(Vue::Echanges {
                 avec: Some(avec),
@@ -567,6 +581,10 @@ impl Cle {
                 format!("ameliorer:{}", amelioration_en_texte(*amelioration))
             }
             Cle::Constater => "constater".to_string(),
+            Cle::LancerLaLigne => "lancer-ligne".to_string(),
+            Cle::ReleverLaLigne => "relever-ligne".to_string(),
+            Cle::GarderLaPrise => "garder-prise".to_string(),
+            Cle::RelacherLaPrise => "relacher-prise".to_string(),
             Cle::Fabriquer => "fabriquer".to_string(),
             Cle::Equiper(place) => format!("equiper:{}", place_en_texte(*place)),
             Cle::ChoisirJoueur => "choisir-joueur".to_string(),
@@ -625,6 +643,11 @@ impl Cle {
             "vue:forge" => Cle::Afficher(Vue::Forge),
             "constater" => Cle::Constater,
             "vue:equipement" => Cle::Afficher(Vue::Equipement),
+            "vue:peche" => Cle::Afficher(Vue::Peche),
+            "lancer-ligne" => Cle::LancerLaLigne,
+            "relever-ligne" => Cle::ReleverLaLigne,
+            "garder-prise" => Cle::GarderLaPrise,
+            "relacher-prise" => Cle::RelacherLaPrise,
             "vue:echanges" => Cle::Afficher(Vue::Echanges {
                 avec: None,
                 cede: None,
@@ -1093,6 +1116,11 @@ mod tests {
             Cle::Equiper(PlaceDEquipement::Armure),
             Cle::Equiper(PlaceDEquipement::PremierTalisman),
             Cle::Equiper(PlaceDEquipement::SecondTalisman),
+            Cle::Afficher(Vue::Peche),
+            Cle::LancerLaLigne,
+            Cle::ReleverLaLigne,
+            Cle::GarderLaPrise,
+            Cle::RelacherLaPrise,
         ]
     }
 

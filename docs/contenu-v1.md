@@ -746,7 +746,8 @@ Textes proposés sans validation (gamedesign.md, Q91). {durée} est le temps res
 | Monstre relâché | {monstre} retourne à l'eau. |
 | Objet pêché | Vous remontez {objet}. Vous la rangez dans le coffre. ("une potion", "une bourse noyée, qui contient 30 pièces d'argent", "une Pierre de lune", "une capsule d'habileté") |
 | État de la ligne | Aucune ligne à l'eau. / La ligne est à l'eau : prête dans {durée}. / La ligne est prête à relever. |
-| Au camp, et message privé sur Discord | La ligne d'Ansgar est prête à relever. |
+| Au camp | La ligne d'Ansgar est prête à relever. |
+| Message privé sur Discord | La ligne d'Ansgar est prête. Ouvrez /bersemon pour la relever. |
 | Refus, équipe et camp pleins | Votre équipe et votre camp sont pleins : faites de la place avant de relever la ligne. |
 
 Libellés : "Pêche d'Ansgar" (console), "Pêche" (Discord), "Lancer la ligne", "Relever la ligne", "Garder", "Relâcher".

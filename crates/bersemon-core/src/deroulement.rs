@@ -471,8 +471,12 @@ pub enum Evenement {
     /// Le niveau construit compte désormais, ou l'objet forgé rejoint
     /// l'équipement du héros.
     TravailConstate(Chantier),
-    /// La ligne d'Ansgar sera prête dans ce délai (section 13.8).
-    LigneLancee(Duration),
+    /// La ligne d'Ansgar sera prête à l'heure `fin`, dans `delai` (section
+    /// 13.8).
+    LigneLancee {
+        fin: Horodatage,
+        delai: Duration,
+    },
     /// Ce qu'a remonté la ligne : un objet est déjà dans le coffre, un
     /// monstre attend que le joueur le garde ou le relâche.
     PrisePechee(Prise),
@@ -1269,9 +1273,10 @@ impl EnJeu {
                     .partie
                     .lancer_la_ligne(contexte.contenu.peche(), contexte.maintenant)
                     .map_err(ErreurChoix::Peche)?;
-                evenements.push(Evenement::LigneLancee(
-                    contexte.maintenant.duree_jusqu_a(fin),
-                ));
+                evenements.push(Evenement::LigneLancee {
+                    fin,
+                    delai: contexte.maintenant.duree_jusqu_a(fin),
+                });
                 sauvegarder(&self.partie, contexte.depot, evenements);
                 Ok(Reponse::Faite)
             }
@@ -4682,7 +4687,10 @@ mod tests {
         .unwrap();
         assert_eq!(
             evenements,
-            vec![Evenement::LigneLancee(Duration::from_secs(7_200))]
+            vec![Evenement::LigneLancee {
+                fin: a(7_300),
+                delai: Duration::from_secs(7_200)
+            }]
         );
         let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
         assert_eq!(sauvegarde.peche().ligne(), Some(a(7_300)));

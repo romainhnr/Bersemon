@@ -351,6 +351,7 @@ fn jouer_un_coup(
             cliquer(message, |cle| *cle == Cle::Continuer)
         }
         Attente::MonstreRare(_) => cliquer(message, |cle| *cle == Cle::Prendre),
+        Attente::Prise(_) => cliquer(message, |cle| *cle == Cle::GarderLaPrise),
         // L'ordre du héros, gardé pour les Apôtres et les humains (section
         // 4.2).
         Attente::ActionDeCombat(combat)
@@ -733,6 +734,14 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
         "expédition automatique jamais accueillie"
     );
     assert_eq!(visite, Visite::Faite, "visite à Malvoise jamais faite");
+    // Ansgar, sauvé une fois dans le Marais, s'est installé au camp (section
+    // 9.2).
+    assert_eq!(
+        vus.iter()
+            .filter(|evenement| matches!(evenement, Evenement::PecheurSauve(_)))
+            .count(),
+        1
+    );
     // La défaite du Bourreau a libéré Gunther (section 13.4).
     assert_eq!(
         vus.iter()
@@ -937,6 +946,124 @@ fn gunther_agrandit_l_enclos_a_travers_les_ecrans_du_bot() {
     );
     let retire = choisir_a(&mut joueurs, Cle::Equiper(place), RETIRER, 8_200);
     assert!(matches!(&retire[..], [Evenement::ObjetRetire { .. }]));
+    let _ = fs::remove_dir_all(dossier);
+}
+
+/// Une ligne lancée depuis la pêche, annoncée par message privé à son heure,
+/// puis relevée ; un monstre pêché est gardé (section 13.8).
+#[test]
+fn ansgar_peche_a_travers_les_ecrans_du_bot() {
+    use bersemon_core::catalogue::Catalogue;
+    use bersemon_core::heros::Heros;
+    use bersemon_core::niveau::Niveau;
+    use bersemon_core::nom::Nom;
+    use bersemon_core::partie::Partie;
+    use bersemon_core::peche::{Peche, Prise};
+    use bersemon_core::sauvegarde::SauvegardeRepository;
+    use bersemon_core::stats::ValeursInternes;
+    use bersemon_storage::FichierJson;
+
+    let contenu = ContenuV1::new();
+    let loup = Monstre::creer(
+        contenu.espece(&EspeceId::new("loup")).unwrap(),
+        Niveau::new(5).unwrap(),
+        ValeursInternes::default(),
+        false,
+    )
+    .unwrap();
+    let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Mage);
+    let partie = Partie::nouvelle(heros, loup);
+    let partie = Partie::restaurer(EtatPartie {
+        heros: partie.heros().clone(),
+        collection: partie.collection().clone(),
+        sac: Inventaire::default(),
+        coffre_du_camp: Inventaire::default(),
+        marchand_au_camp: false,
+        ames_donnees: Vec::new(),
+        ames_portees: Vec::new(),
+        ames_a_retrouver: Vec::new(),
+        codex: partie.codex().clone(),
+        zones_explorees: Vec::new(),
+        indices_trouves: 0,
+        apotres_vaincus: Vec::new(),
+        humains_vaincus: Vec::new(),
+        conseils_vus: Vec::new(),
+        expeditions_automatiques: Vec::new(),
+        attaques_a_choisir: Vec::new(),
+        peche: Peche::restaurer(true, None, None).unwrap(),
+        forge: Default::default(),
+    })
+    .unwrap();
+    let dossier = dossier_de_test().join("peche");
+    fs::create_dir_all(&dossier).unwrap();
+    FichierJson::new(dossier.join(format!("{JOUEUR}.json")))
+        .enregistrer(&partie)
+        .unwrap();
+    let mut joueurs = Joueurs::new(dossier.clone(), 2026);
+    let afficher_a = |joueurs: &mut Joueurs, secondes: u64| {
+        let maintenant = Horodatage::depuis_secondes(secondes);
+        let session = joueurs.session(JOUEUR, &contenu);
+        let affiche = message(session, &[], None, &contenu, maintenant);
+        verifier_les_limites(&affiche);
+        affiche
+    };
+    let cliquer_a = |joueurs: &mut Joueurs, cle: Cle, secondes: u64| {
+        let affiche = afficher_a(joueurs, secondes);
+        assert!(
+            propose(&affiche, |propose| *propose == cle),
+            "{cle:?} absent : {}",
+            affiche.texte
+        );
+        let version = joueurs.session(JOUEUR, &contenu).version;
+        let maintenant = Horodatage::depuis_secondes(secondes);
+        match cle.commande(None, None).expect("composant lisible") {
+            Commande::Jouer(choix) => joueurs
+                .jouer(JOUEUR, version, choix, &contenu, maintenant)
+                .unwrap(),
+            Commande::Afficher(vue) => {
+                joueurs.afficher(JOUEUR, version, vue, &contenu).unwrap();
+                Vec::new()
+            }
+            autre => panic!("{autre:?}"),
+        }
+    };
+    cliquer_a(&mut joueurs, Cle::ReprendreLaPartie, 1_000);
+    cliquer_a(&mut joueurs, Cle::Afficher(Vue::Peche), 1_000);
+    let lancee = cliquer_a(&mut joueurs, Cle::LancerLaLigne, 1_000);
+    assert!(matches!(&lancee[..], [Evenement::LigneLancee { .. }]));
+    // Rien à relever avant l'heure ; à l'heure, le bot l'annonce.
+    let avant = afficher_a(&mut joueurs, 8_199);
+    assert!(!propose(&avant, |cle| *cle == Cle::ReleverLaLigne));
+    assert!(
+        joueurs
+            .retours_echus(Horodatage::depuis_secondes(8_199))
+            .is_empty()
+    );
+    let prete = Horodatage::depuis_secondes(8_200);
+    let echus = joueurs.retours_echus(prete);
+    assert_eq!(echus.len(), 1);
+    assert_eq!(
+        echus[0].texte(),
+        "La ligne d'Ansgar est prête. Ouvrez /bersemon pour la relever."
+    );
+    let relevee = cliquer_a(&mut joueurs, Cle::ReleverLaLigne, 8_200);
+    assert!(joueurs.retours_echus(prete).is_empty());
+    let [Evenement::PrisePechee(prise)] = &relevee[..] else {
+        panic!("prise attendue : {relevee:?}");
+    };
+    if let Prise::Monstre(monstre) = prise {
+        let affiche = afficher_a(&mut joueurs, 8_200);
+        assert!(propose(&affiche, |cle| *cle == Cle::RelacherLaPrise));
+        let gardee = cliquer_a(&mut joueurs, Cle::GarderLaPrise, 8_200);
+        assert_eq!(
+            gardee,
+            vec![Evenement::RejointLEquipe(Monstre::clone(monstre))]
+        );
+    }
+    let session = joueurs.session(JOUEUR, &contenu);
+    assert_eq!(session.deroulement.attente(), Attente::Camp);
+    let affiche = afficher_a(&mut joueurs, 8_200);
+    assert!(propose(&affiche, |cle| *cle == Cle::LancerLaLigne));
     let _ = fs::remove_dir_all(dossier);
 }
 
@@ -1190,8 +1317,14 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         conseils_vus: Vec::new(),
         expeditions_automatiques: Vec::new(),
         attaques_a_choisir: Vec::new(),
+        // Ansgar a une ligne prête à relever.
+        peche: bersemon_core::peche::Peche::restaurer(
+            true,
+            Some(Horodatage::depuis_secondes(0)),
+            None,
+        )
+        .unwrap(),
         // Gunther a fini un chantier, qui attend d'être constaté.
-        peche: Default::default(),
         forge: bersemon_core::amelioration::Forge::restaurer(
             true,
             bersemon_core::amelioration::Ameliorations::new(2, 1, 0).unwrap(),
@@ -1243,8 +1376,14 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
             }
         }
         afficher(&partie, Vue::Vente);
+        // Malvoise, Gunther et Ansgar au camp : deux rangées de boutons
+        // pleines (section 13.8).
         let cles = afficher(&partie, Vue::Camp);
         assert!(cles.contains(&Cle::Afficher(Vue::Forge)));
+        assert!(cles.contains(&Cle::Afficher(Vue::Peche)));
+        assert_eq!(cles.len(), 2 * BOUTONS_PAR_RANGEE);
+        let cles = afficher(&partie, Vue::Peche);
+        assert!(cles.contains(&Cle::ReleverLaLigne));
         let cles = afficher(&partie, Vue::Forge);
         assert!(cles.contains(&Cle::Constater));
         // Un monstre de l'équipe, qui peut monter et descendre, et un du

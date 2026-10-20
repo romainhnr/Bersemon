@@ -19,6 +19,7 @@ use crate::echanges::erreur_d_offre;
 use crate::joueurs::{Refus, Session};
 use crate::{
     ecran_accueil, ecran_camp, ecran_combat, ecran_duel, ecran_echanges, ecran_expedition,
+    ecran_peche,
 };
 
 pub const LONGUEUR_MAX: usize = 2000;
@@ -224,6 +225,7 @@ fn question(session: &Session, contenu: &ContenuV1, maintenant: Horodatage) -> Q
         },
         Attente::EntreDeuxEtapes => ecran_expedition::entre_deux_etapes(partie()),
         Attente::MonstreRare(_) => ecran_expedition::monstre_rare(),
+        Attente::Prise(monstre) => ecran_peche::prise(monstre),
         Attente::PlaceManquante(capture) => {
             ecran_expedition::place_manquante(capture, partie().collection())
         }

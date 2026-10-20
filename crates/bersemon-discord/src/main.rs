@@ -17,6 +17,7 @@ mod ecran_echanges;
 mod ecran_expedition;
 mod ecran_expeditions_automatiques;
 mod ecran_marchand;
+mod ecran_peche;
 mod formulaires;
 mod horloge;
 mod interactions;

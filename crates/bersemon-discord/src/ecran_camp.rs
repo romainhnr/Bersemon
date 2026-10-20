@@ -1,8 +1,8 @@
 //! Camp de base sur Discord : départ en expédition par la carte, expéditions
 //! automatiques, codex, gestion des monstres et de leurs attaques (sections
 //! 13.2 et 13.10), coffre du camp (section 13.3), marchand, options (section
-//! 13.9), forge de Gunther et équipement du héros (sections 4.3, 13.4 et
-//! 13.5). Les vues ne changent rien à la partie ; seules les actions la
+//! 13.9), forge de Gunther, équipement du héros (sections 4.3, 13.4 et
+//! 13.5) et pêche d'Ansgar (section 13.8). Les vues ne changent rien à la partie ; seules les actions la
 //! modifient, et la sauvegardent.
 
 use bersemon_core::amelioration::Amelioration;
@@ -28,6 +28,7 @@ use bersemon_presentation::monstres::{
 use bersemon_presentation::partie::{
     argent, collection as liste_complete, en_tete_du_camp, fiche_d_espece, ligne_du_codex,
 };
+use bersemon_presentation::peche::ligne_prete;
 
 use crate::composants::{Cle, RETIRER, Vue, emplacement_en_texte};
 use crate::echanges::TableauDesEchanges;
@@ -35,7 +36,9 @@ use crate::message::{
     Bouton, DANGER, OPTIONS_PAR_MENU, OptionDeMenu, PRINCIPAL, Question, Rangee, SECONDAIRE,
     SUCCES, bouton, menu, rangees,
 };
-use crate::{ecran_coffre, ecran_echanges, ecran_expeditions_automatiques, ecran_marchand};
+use crate::{
+    ecran_coffre, ecran_echanges, ecran_expeditions_automatiques, ecran_marchand, ecran_peche,
+};
 
 pub fn question(
     partie: &Partie,
@@ -58,6 +61,7 @@ pub fn question(
         Vue::Options => options(),
         Vue::Forge => forge(partie, contenu, maintenant),
         Vue::Equipement => equipement(partie),
+        Vue::Peche => ecran_peche::peche(partie, maintenant),
         // Le tableau des échanges vient des autres parties : le message le
         // prépare (`message::question`). Sans lui, l'écran n'en montre rien.
         Vue::Echanges { avec, cede } => {
@@ -119,10 +123,10 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
         bouton(Cle::Afficher(Vue::Coffre), "Coffre du camp", SECONDAIRE),
         bouton(Cle::Afficher(Vue::Codex(None)), "Codex", SECONDAIRE),
     ];
-    // Malvoise et Gunther n'apparaissent qu'une fois au camp (sections 13.4
-    // et 14.2), et l'équipement avec la forge (section 13.5) ; les autres
-    // joueurs sont toujours là (sections 15.1 et 15.3) : au plus 9 boutons,
-    // sur deux rangées.
+    // Malvoise, Gunther et Ansgar n'apparaissent qu'une fois au camp
+    // (sections 13.4, 13.8 et 14.2), et l'équipement avec la forge (section
+    // 13.5) ; les autres joueurs sont toujours là (sections 15.1 et 15.3) :
+    // au plus 10 boutons, sur deux rangées pleines.
     if partie.marchand_au_camp() {
         boutons.push(bouton(Cle::Afficher(Vue::Marchand), "Malvoise", SECONDAIRE));
     }
@@ -140,6 +144,9 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
             SECONDAIRE,
         ));
     }
+    if partie.peche().pecheur_au_camp() {
+        boutons.push(bouton(Cle::Afficher(Vue::Peche), "Pêche", SECONDAIRE));
+    }
     boutons.push(bouton(
         Cle::Afficher(Vue::Echanges {
             avec: None,
@@ -153,6 +160,7 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
     let mut en_tete = vec![en_tete_du_camp(partie)];
     en_tete.extend(expeditions_rentrees(partie, maintenant));
     en_tete.extend(travail_fini(partie, maintenant));
+    en_tete.extend(ligne_prete(partie, maintenant));
     Question {
         texte: format!(
             "{}\nVotre équipe :\n{}",
@@ -255,24 +263,31 @@ fn options() -> Question {
 
 /// Une ligne par espèce ; la fiche d'une espèce capturée s'ouvre par le menu
 /// (section 5.6).
+/// Avec plus de 40 espèces, la liste et une fiche ne tiennent plus ensemble
+/// dans un message : une fiche ouverte remplace la liste, qu'un bouton
+/// rouvre.
 fn codex(partie: &Partie, fiche: Option<usize>, contenu: &ContenuV1) -> Question {
     let codex = partie.codex();
     let especes = contenu.especes();
-    let mut lignes = vec!["Codex :".to_string()];
-    for (position, espece) in especes.iter().enumerate() {
-        lignes.push(format!(
-            "  {}. {}",
-            position + 1,
-            ligne_du_codex(codex, espece)
-        ));
-    }
     let ouverte = fiche
         .and_then(|position| especes.get(position))
         .filter(|espece| codex.etat(espece.id()) == EtatCodex::Capturee);
-    if let Some(espece) = ouverte {
-        lignes.push(String::new());
-        lignes.push(espece.nom().to_string());
-        lignes.extend(fiche_d_espece(espece, contenu));
+    let mut lignes = Vec::new();
+    match ouverte {
+        Some(espece) => {
+            lignes.push(espece.nom().to_string());
+            lignes.extend(fiche_d_espece(espece, contenu));
+        }
+        None => {
+            lignes.push("Codex :".to_string());
+            for (position, espece) in especes.iter().enumerate() {
+                lignes.push(format!(
+                    "  {}. {}",
+                    position + 1,
+                    ligne_du_codex(codex, espece)
+                ));
+            }
+        }
     }
     let capturees: Vec<OptionDeMenu> = especes
         .iter()
@@ -299,7 +314,16 @@ fn codex(partie: &Partie, fiche: Option<usize>, contenu: &ContenuV1) -> Question
             menu(Cle::Fiche(numero), &indication, options.to_vec())
         })
         .collect();
-    rangees_du_codex.extend(rangees(vec![retour()]));
+    let mut boutons = Vec::new();
+    if ouverte.is_some() {
+        boutons.push(bouton(
+            Cle::Afficher(Vue::Codex(None)),
+            "Liste du codex",
+            SECONDAIRE,
+        ));
+    }
+    boutons.push(retour());
+    rangees_du_codex.extend(rangees(boutons));
     Question {
         texte: lignes.join("\n"),
         rangees: rangees_du_codex,

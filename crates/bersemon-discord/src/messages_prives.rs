@@ -1,5 +1,6 @@
 //! Messages privés envoyés au retour des expéditions automatiques (section
-//! 12.7) et à la fin des constructions de Gunther (section 13.4). Chaque
+//! 12.7), à la fin des constructions de Gunther (section 13.4) et quand la
+//! ligne d'Ansgar est prête (section 13.8). Chaque
 //! retour n'est annoncé qu'une fois, même si le bot redémarre avant que le
 //! joueur l'accueille (Q65) : les retours annoncés sont notés, un par ligne,
 //! dans un fichier texte du dossier des parties.
@@ -35,9 +36,13 @@ const PERIODE: Duration = Duration::from_secs(60);
 /// zone ne porte comme identifiant.
 const CLE_DE_LA_FORGE: &str = "forge";
 
+/// De même pour la ligne d'Ansgar.
+const CLE_DE_LA_PECHE: &str = "peche";
+
 /// Une expédition se reconnaît à son joueur, sa zone et son heure de retour :
 /// une nouvelle expédition dans la même zone a une autre heure. Une
-/// construction, à son joueur, à la forge et à son heure de fin.
+/// construction, à son joueur, à la forge et à son heure de fin ; une ligne,
+/// à son joueur, à la pêche et à l'heure où elle est prête.
 type Reference = (IdJoueur, String, Horodatage);
 
 /// Ce qui est à annoncer.
@@ -51,6 +56,7 @@ pub enum Sujet {
     Forge {
         travail: String,
     },
+    Peche,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -82,10 +88,19 @@ impl Retour {
         }
     }
 
+    fn de_la_peche(joueur: IdJoueur, prete: Horodatage) -> Self {
+        Self {
+            joueur,
+            sujet: Sujet::Peche,
+            heure: prete,
+        }
+    }
+
     fn cle(&self) -> &str {
         match &self.sujet {
             Sujet::Expedition { zone, .. } => zone.as_str(),
             Sujet::Forge { .. } => CLE_DE_LA_FORGE,
+            Sujet::Peche => CLE_DE_LA_PECHE,
         }
     }
 
@@ -102,6 +117,9 @@ impl Retour {
             ),
             Sujet::Forge { travail } => {
                 format!("Gunther a fini : {travail}. Ouvrez /bersemon pour constater son travail.")
+            }
+            Sujet::Peche => {
+                "La ligne d'Ansgar est prête. Ouvrez /bersemon pour la relever.".to_string()
             }
         }
     }
@@ -150,7 +168,11 @@ impl Annonces {
                 .forge()
                 .chantier()
                 .map(|chantier| Retour::de_la_forge(joueur, chantier));
-            for retour in expeditions.chain(chantier) {
+            let ligne = partie
+                .peche()
+                .ligne()
+                .map(|prete| Retour::de_la_peche(joueur, prete));
+            for retour in expeditions.chain(chantier).chain(ligne) {
                 if deja_annonces.contains(&retour.reference()) {
                     toujours_en_attente.push(retour.reference());
                 } else {
@@ -164,9 +186,9 @@ impl Annonces {
     }
 
     /// Ce que vient de faire le joueur : un départ, un rappel, un accueil,
-    /// une construction ou une fabrication lancée ou constatée, ou une nouvelle
-    /// partie, qui
-    /// remplace l'ancienne avec ses expéditions et sa forge.
+    /// une construction ou une fabrication lancée ou constatée, une ligne
+    /// lancée ou relevée, ou une nouvelle partie, qui remplace l'ancienne
+    /// avec ses expéditions, sa forge et sa ligne.
     pub fn suivre(&mut self, joueur: IdJoueur, evenements: &[Evenement]) {
         for evenement in evenements {
             match evenement {
@@ -186,6 +208,10 @@ impl Annonces {
                 Evenement::TravailConstate(_) => {
                     self.oublier(joueur, Some(CLE_DE_LA_FORGE));
                 }
+                Evenement::LigneLancee { fin, .. } => {
+                    self.a_annoncer.push(Retour::de_la_peche(joueur, *fin));
+                }
+                Evenement::PrisePechee(_) => self.oublier(joueur, Some(CLE_DE_LA_PECHE)),
                 Evenement::PartieCommencee(_) | Evenement::Suicide => self.oublier(joueur, None),
                 _ => {}
             }
@@ -266,7 +292,7 @@ pub(crate) fn parties(dossier: &Path) -> Vec<(IdJoueur, PathBuf)> {
         .collect()
 }
 
-/// Une ligne par retour : le joueur, la zone ou la forge, et l'heure en
+/// Une ligne par retour : le joueur, la zone, la forge ou la pêche, et l'heure en
 /// secondes.
 fn en_lignes(references: &[Reference]) -> String {
     references
