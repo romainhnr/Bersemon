@@ -80,7 +80,7 @@ pub fn etat_de_la_cour(partie: &Partie, plafond: Niveau, maintenant: Horodatage)
         .niveau(bersemon_core::amelioration::Amelioration::Cour);
     let regles = partie.forge().ameliorations().cour()?;
     let mut lignes = vec![format!(
-        "Cour d'entraînement (niveau {niveau}, {}), jusqu'au niveau {} : {}/{} occupées.",
+        "Cour d'entraînement (niveau {niveau}, {}), jusqu'au niveau {} : {}/{} places occupées.",
         effet_de_la_cour(&regles),
         plafond.valeur(),
         partie.machines().cour().len(),

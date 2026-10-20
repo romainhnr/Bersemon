@@ -13,6 +13,7 @@ use bersemon_core::partie::Partie;
 use bersemon_presentation::boosters::{boosters, effet_du_booster};
 use bersemon_presentation::expeditions_automatiques::expeditions_rentrees;
 use bersemon_presentation::forge::travail_fini;
+use bersemon_presentation::machines::avis_des_pieges;
 use bersemon_presentation::marchand::liste_de_rachat;
 use bersemon_presentation::monstres::{attaques_connues, decrire_attaque, fiche_du_monstre};
 use bersemon_presentation::partie::{
@@ -98,6 +99,9 @@ pub fn choisir(
             println!("{avis}");
         }
         if let Some(avis) = ligne_prete(partie, maintenant()) {
+            println!("{avis}");
+        }
+        if let Some(avis) = avis_des_pieges(partie, maintenant()) {
             println!("{avis}");
         }
         // Malvoise, Gunther et Ansgar n'apparaissent qu'une fois au camp

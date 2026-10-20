@@ -836,12 +836,13 @@ Textes proposés sans validation (gamedesign.md, Q95) :
 
 | Moment | Texte |
 |---|---|
-| Libellés | Machines ; Pièges ; Cour d'entraînement ; Poser les pièges dans {zone} ; Relever les pièges ; Mettre à l'entraînement ; Reprendre {monstre} |
-| État des pièges | Pièges (niveau {n}) dans {zone} : {stock}/{maximum} ressources, une de plus dans {durée}. / Pièges pleins. / Pièges posés nulle part. |
+| Libellés | Machines ; Pièges ; Cour d'entraînement ; Poser les pièges dans {zone} ; Relever les pièges ; Mettre un monstre à l'entraînement ; Reprendre {monstre} |
+| État des pièges | Pièges (niveau {n}, {effet}) dans {zone} : {stock}/{maximum} ressources, une de plus dans {durée}. / ..., pleins. / Pièges (niveau {n}, {effet}) : posés nulle part. |
 | Au camp | Les pièges de Gunther sont pleins. |
+| Pièges posés | Gunther pose ses pièges dans {zone}. |
 | Relève | Vous relevez les pièges : {ressources}. Elles vont dans le coffre. |
 | Pièges vides | Les pièges sont vides. |
-| État de la cour | Cour d'entraînement (niveau {n}) : {places} place(s), {xp} XP par heure, jusqu'au niveau {niveau}. Puis, pour chaque monstre, "{monstre} : {xp} XP gagnée depuis {durée}". |
+| État de la cour | Cour d'entraînement (niveau {n}, {effet}), jusqu'au niveau {niveau} : {occupées}/{places} places occupées. Puis, pour chaque monstre, "{monstre} : {xp} XP gagnée depuis {durée}". |
 | Monstre placé | {monstre} rejoint la cour d'entraînement. |
 | Monstre repris | {monstre} quitte la cour d'entraînement avec {xp} XP. |
 | Refus | Aucune zone explorée. / La cour est pleine. / Ce monstre est déjà à son plafond d'entraînement. |

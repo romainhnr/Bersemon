@@ -12,6 +12,7 @@ mod ecran_equipement;
 mod ecran_expedition;
 mod ecran_expeditions_automatiques;
 mod ecran_forge;
+mod ecran_machines;
 mod ecran_marchand;
 mod ecran_peche;
 mod horloge;

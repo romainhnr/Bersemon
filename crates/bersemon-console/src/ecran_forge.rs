@@ -1,6 +1,7 @@
 //! La forge de Gunther (sections 13.4 et 13.5) : le joueur lance une
 //! amélioration ou la fabrication d'un objet, que le déroulement fait
-//! confirmer, ou constate le travail fini.
+//! confirmer, constate le travail fini, ou gère les machines (section
+//! 13.6).
 
 use bersemon_core::amelioration::Amelioration;
 use bersemon_core::contenu::ContenuV1;
@@ -9,6 +10,7 @@ use bersemon_core::partie::Partie;
 use bersemon_presentation::equipement::objet_et_bonus;
 use bersemon_presentation::forge::{etat_de_la_forge, etat_des_fabrications};
 
+use crate::ecran_machines;
 use crate::horloge::maintenant;
 use crate::saisie::Entree;
 
@@ -39,14 +41,24 @@ pub fn choisir(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Opt
         }
     }
     let fabriquer = choix.len() + 1;
+    // Les machines se gèrent ici dès que l'une d'elles est construite.
+    let ameliorations = partie.forge().ameliorations();
+    let avec_machines = ameliorations.pieges().is_some() || ameliorations.cour().is_some();
+    let machines = fabriquer + 1;
     for (position, (_, libelle)) in choix.iter().enumerate() {
         println!("  {}. {libelle}", position + 1);
     }
     println!("  {fabriquer}. Fabriquer un objet");
+    if avec_machines {
+        println!("  {machines}. Machines");
+    }
     println!("  0. Retour au camp");
-    let numero = entree.choix(0, fabriquer)?;
+    let numero = entree.choix(0, if avec_machines { machines } else { fabriquer })?;
     if numero == fabriquer {
         return fabriquer_un_objet(partie, contenu, entree);
+    }
+    if numero == machines {
+        return ecran_machines::choisir(partie, contenu, entree);
     }
     Some((numero > 0).then(|| choix.swap_remove(numero - 1).0))
 }
