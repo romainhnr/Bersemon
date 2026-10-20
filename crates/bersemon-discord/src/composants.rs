@@ -77,52 +77,94 @@ pub enum Vue {
 }
 
 /// Monstres choisis pour une expédition automatique, dans l'ordre du choix
-/// (section 12.1).
+/// (section 12.1), avec le monstre protégé, par sa position parmi eux, et
+/// le charme de garde (section 12.5).
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub struct Choisis([Option<Emplacement>; MONSTRES_MAX]);
+pub struct Choisis {
+    monstres: [Option<Emplacement>; MONSTRES_MAX],
+    protege: Option<u8>,
+    charme: bool,
+}
 
 impl Choisis {
     pub fn liste(&self) -> Vec<Emplacement> {
-        self.0.iter().flatten().copied().collect()
+        self.monstres.iter().flatten().copied().collect()
     }
 
     pub fn contient(&self, emplacement: Emplacement) -> bool {
-        self.0.contains(&Some(emplacement))
+        self.monstres.contains(&Some(emplacement))
     }
 
     pub fn est_complet(&self) -> bool {
-        self.0.iter().all(Option::is_some)
+        self.monstres.iter().all(Option::is_some)
     }
 
-    /// `None` si le monstre est déjà choisi ou qu'il y en a déjà 3.
+    /// `None` si le monstre est déjà choisi ou qu'il y en a déjà 3. Le
+    /// monstre protégé garde sa position.
     pub fn avec(self, emplacement: Emplacement) -> Option<Self> {
         if self.contient(emplacement) {
             return None;
         }
         let mut choisis = self;
-        *choisis.0.iter_mut().find(|place| place.is_none())? = Some(emplacement);
+        *choisis.monstres.iter_mut().find(|place| place.is_none())? = Some(emplacement);
         Some(choisis)
     }
 
-    /// `-` pour aucun monstre, sinon les emplacements séparés par des points.
-    fn en_texte(&self) -> String {
-        let liste: Vec<String> = self.liste().into_iter().map(emplacement_en_texte).collect();
-        if liste.is_empty() {
-            "-".to_string()
-        } else {
-            liste.join(".")
+    pub fn protection(&self) -> Protection {
+        Protection {
+            protege: self.protege.map(usize::from),
+            charme: self.charme,
         }
     }
 
-    fn lire(texte: &str) -> Option<Self> {
-        if texte == "-" {
-            return Some(Self::default());
+    /// Sans monstre protégé, pas de charme.
+    pub fn avec_protection(mut self, protege: Option<u8>, charme: bool) -> Self {
+        self.protege = protege;
+        self.charme = charme && protege.is_some();
+        self
+    }
+
+    /// `-` pour aucun monstre, sinon les emplacements séparés par des points,
+    /// suivis de `~` et de la position du monstre protégé, puis de `c` avec
+    /// un charme.
+    fn en_texte(&self) -> String {
+        let liste: Vec<String> = self.liste().into_iter().map(emplacement_en_texte).collect();
+        let mut texte = if liste.is_empty() {
+            "-".to_string()
+        } else {
+            liste.join(".")
+        };
+        if let Some(protege) = self.protege {
+            texte.push_str(&format!("~{protege}"));
+            if self.charme {
+                texte.push('c');
+            }
         }
         texte
-            .split('.')
-            .try_fold(Self::default(), |choisis, emplacement| {
-                choisis.avec(lire_emplacement(emplacement)?)
-            })
+    }
+
+    fn lire(texte: &str) -> Option<Self> {
+        let (monstres, protection) = match texte.split_once('~') {
+            Some((monstres, protection)) => (monstres, Some(protection)),
+            None => (texte, None),
+        };
+        let choisis = if monstres == "-" {
+            Self::default()
+        } else {
+            monstres
+                .split('.')
+                .try_fold(Self::default(), |choisis, emplacement| {
+                    choisis.avec(lire_emplacement(emplacement)?)
+                })?
+        };
+        let Some(protection) = protection else {
+            return Some(choisis);
+        };
+        let (protege, charme) = match protection.strip_suffix('c') {
+            Some(protege) => (protege, true),
+            None => (protection, false),
+        };
+        Some(choisis.avec_protection(Some(protege.parse().ok()?), charme))
     }
 }
 
@@ -261,6 +303,8 @@ pub enum Cle {
     Ameliorer(Amelioration),
     /// Le joueur constate le travail fini de Gunther.
     Constater,
+    /// Gunther forge un charme de garde (section 13.5).
+    FabriquerCharme,
     /// Menu des zones explorées où poser les pièges (section 13.6).
     PoserLesPieges,
     ReleverLesPieges,
@@ -400,7 +444,7 @@ impl Cle {
             Cle::Expedier { zone, choisis } => jouer(Choix::EnvoyerEnExpeditionAutomatique {
                 zone: zone.clone(),
                 monstres: choisis.liste(),
-                protection: Protection::default(),
+                protection: choisis.protection(),
             }),
             Cle::Accueillir(zone) => jouer(Choix::AccueillirExpeditionAutomatique(zone.clone())),
             Cle::Rappeler(zone) => jouer(Choix::RappelerExpeditionAutomatique(zone.clone())),
@@ -435,6 +479,7 @@ impl Cle {
             Cle::SeSuicider => jouer(Choix::SeSuicider),
             Cle::Ameliorer(amelioration) => jouer(Choix::LancerAmelioration(*amelioration)),
             Cle::Constater => jouer(Choix::ConstaterTravail),
+            Cle::FabriquerCharme => jouer(Choix::FabriquerCharme),
             Cle::PoserLesPieges => jouer(Choix::PoserLesPieges(ZoneId::new(valeur?))),
             Cle::ReleverLesPieges => jouer(Choix::ReleverLesPieges),
             Cle::Entrainer(_) => jouer(Choix::MettreALEntrainement(lire_emplacement(valeur?)?)),
@@ -626,6 +671,7 @@ impl Cle {
             Cle::Constater => "constater".to_string(),
             Cle::Afficher(Vue::Machines) => "vue:machines".to_string(),
             Cle::Afficher(Vue::Entrainement) => "vue:entrainement".to_string(),
+            Cle::FabriquerCharme => "fabriquer-charme".to_string(),
             Cle::PoserLesPieges => "poser-pieges".to_string(),
             Cle::ReleverLesPieges => "relever-pieges".to_string(),
             Cle::Entrainer(numero) => format!("entrainer:{numero}"),
@@ -693,6 +739,7 @@ impl Cle {
             "constater" => Cle::Constater,
             "vue:machines" => Cle::Afficher(Vue::Machines),
             "vue:entrainement" => Cle::Afficher(Vue::Entrainement),
+            "fabriquer-charme" => Cle::FabriquerCharme,
             "poser-pieges" => Cle::PoserLesPieges,
             "relever-pieges" => Cle::ReleverLesPieges,
             "vue:equipement" => Cle::Afficher(Vue::Equipement),
@@ -1213,6 +1260,7 @@ mod tests {
             Cle::Constater,
             Cle::Afficher(Vue::Machines),
             Cle::Afficher(Vue::Entrainement),
+            Cle::FabriquerCharme,
             Cle::PoserLesPieges,
             Cle::ReleverLesPieges,
             Cle::Entrainer(2),
@@ -1229,6 +1277,33 @@ mod tests {
             Cle::GarderLaPrise,
             Cle::RelacherLaPrise,
         ]
+    }
+
+    #[test]
+    fn la_protection_suit_les_monstres_choisis() {
+        let avec = trois_choisis().avec_protection(Some(1), true);
+        let cle = Cle::Expedier {
+            zone: ZoneId::new("lisiere"),
+            choisis: avec,
+        };
+        let relue = Cle::depuis_texte(&cle.en_texte()).unwrap();
+        assert_eq!(relue, cle);
+        assert_eq!(
+            relue.commande(None, None),
+            Some(Commande::Jouer(Choix::EnvoyerEnExpeditionAutomatique {
+                zone: ZoneId::new("lisiere"),
+                monstres: trois_choisis().liste(),
+                protection: Protection {
+                    protege: Some(1),
+                    charme: true
+                },
+            }))
+        );
+        // Sans monstre protégé, pas de charme.
+        assert_eq!(
+            trois_choisis().avec_protection(None, true).protection(),
+            Protection::default()
+        );
     }
 
     fn trois_choisis() -> Choisis {

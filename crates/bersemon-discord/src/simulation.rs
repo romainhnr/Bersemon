@@ -1267,6 +1267,74 @@ fn toute_l_equipe_se_prepare_d_un_bouton_s_il_y_a_de_la_place_au_camp() {
     // Deux places libres : pas de bouton.
     partie.prendre_monstre_rare(loup.clone());
     assert_eq!(preparation(&explorer(&partie)), None);
+
+    // Trois monstres choisis, le premier protégé avec un charme : les
+    // boutons de protection tiennent avec les autres (section 12.5).
+    let etat = Partie::restaurer(EtatPartie {
+        heros: partie.heros().clone(),
+        collection: partie.collection().clone(),
+        sac: Inventaire::default().avec_charmes_de_garde(1),
+        coffre_du_camp: Inventaire::default(),
+        marchand_au_camp: false,
+        ames_donnees: Vec::new(),
+        ames_portees: Vec::new(),
+        ames_a_retrouver: Vec::new(),
+        codex: partie.codex().clone(),
+        zones_explorees: vec![ZoneId::new("lisiere")],
+        indices_trouves: 1,
+        apotres_vaincus: Vec::new(),
+        humains_vaincus: Vec::new(),
+        conseils_vus: Vec::new(),
+        expeditions_automatiques: Vec::new(),
+        attaques_a_choisir: Vec::new(),
+        peche: Default::default(),
+        forge: Default::default(),
+        relations: Default::default(),
+        machines: Default::default(),
+    })
+    .unwrap();
+    let choisis = [
+        Emplacement::Equipe(0),
+        Emplacement::Equipe(1),
+        Emplacement::Camp(0),
+    ]
+    .into_iter()
+    .try_fold(Choisis::default(), Choisis::avec)
+    .unwrap()
+    .avec_protection(Some(0), true);
+    let question = crate::ecran_camp::question(
+        &etat,
+        Vue::Preparation { zone: 0, choisis },
+        &contenu,
+        Horodatage::depuis_secondes(0),
+    );
+    let affiche = Message {
+        texte: question.texte,
+        rangees: question.rangees,
+        version: 1,
+    };
+    verifier_les_limites(&affiche);
+    assert!(
+        affiche
+            .texte
+            .contains("Monstre protégé : Loup, à 50 %, avec un charme de garde"),
+        "{}",
+        affiche.texte
+    );
+    let cles = boutons(&affiche);
+    assert!(
+        cles.iter().any(
+            |cle| matches!(cle, Cle::Expedier { choisis: avec, .. } if avec.protection().charme)
+        )
+    );
+    assert_eq!(
+        cles.iter()
+            .filter(|cle| matches!(cle, Cle::Afficher(Vue::Preparation { .. })))
+            .count(),
+        // Recommencer, protéger chacun des deux autres, sans protection,
+        // sans charme.
+        5
+    );
 }
 
 #[test]
@@ -1315,7 +1383,8 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
             .avec_capsules_d_habilete(3)
             .avec_pierres(PierreDEvolution::Braise, 2)
             .avec_pierres(PierreDEvolution::Lune, 2)
-            .avec_eclats_d_astre(2);
+            .avec_eclats_d_astre(2)
+            .avec_charmes_de_garde(3);
         for booster in Booster::TOUS {
             inventaire = inventaire.avec_boosters(booster, 2);
         }
@@ -1424,6 +1493,7 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         assert!(cles.contains(&Cle::ReleverLaLigne));
         let cles = afficher(&partie, Vue::Forge);
         assert!(cles.contains(&Cle::Constater));
+        assert!(cles.contains(&Cle::FabriquerCharme));
         // Un monstre de l'équipe, qui peut monter et descendre, et un du
         // camp, qui peut s'échanger.
         // Avec un Éclat d'astre et des boosters (sections 13.7 et 14.3).

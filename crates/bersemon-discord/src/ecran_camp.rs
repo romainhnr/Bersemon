@@ -206,7 +206,15 @@ fn forge(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Questi
             boutons.push(bouton(Cle::Ameliorer(amelioration), &libelle, PRINCIPAL));
         }
     }
-    // Au plus 8 boutons : ils tiennent en deux rangées.
+    // Aussi souvent que le joueur le veut (section 13.5). Au plus 9
+    // boutons : ils tiennent en deux rangées.
+    let charme = contenu.plan_du_charme();
+    let libelle = format!(
+        "Charme de garde ({}, {})",
+        cout(charme.cout()),
+        duree(charme.duree())
+    );
+    boutons.push(bouton(Cle::FabriquerCharme, &libelle, PRINCIPAL));
     let ameliorations = partie.forge().ameliorations();
     if ameliorations.pieges().is_some() || ameliorations.cour().is_some() {
         boutons.push(bouton(Cle::Afficher(Vue::Machines), "Machines", PRINCIPAL));

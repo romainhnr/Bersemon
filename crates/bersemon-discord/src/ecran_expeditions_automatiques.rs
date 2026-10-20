@@ -9,15 +9,16 @@ use bersemon_core::contenu::ContenuV1;
 use bersemon_core::expedition_automatique::ExpeditionAutomatique;
 use bersemon_core::expedition_automatique::Protection;
 use bersemon_core::horodatage::Horodatage;
+use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_core::zone::Zone;
 use bersemon_presentation::expeditions_automatiques::{
-    erreur_expedition_automatique, estimation, noms,
+    erreur_expedition_automatique, estimation, ligne_de_protection, noms,
 };
 
 use crate::composants::{Choisis, Cle, Vue};
 use crate::ecran_camp::{menus_de_monstres, retour};
-use crate::message::{DANGER, PRINCIPAL, Question, SECONDAIRE, bouton, rangees};
+use crate::message::{Bouton, DANGER, PRINCIPAL, Question, SECONDAIRE, SUCCES, bouton, rangees};
 
 const PRESENTATION: &str =
     "Expéditions automatiques : vos monstres partent seuls dans une zone explorée.";
@@ -94,6 +95,58 @@ fn en_cours(zone: &Zone, expedition: &ExpeditionAutomatique) -> String {
     )
 }
 
+/// Avec au moins deux monstres : de quoi protéger chacun des autres, ou
+/// n'en protéger aucun, puis donner ou reprendre un charme de garde s'il y
+/// en a un (section 12.5). Au plus 4 boutons.
+fn boutons_de_protection(
+    partie: &Partie,
+    position: usize,
+    choisis: Choisis,
+    monstres: &[Monstre],
+) -> Vec<Bouton> {
+    if monstres.len() < 2 {
+        return Vec::new();
+    }
+    let protection = choisis.protection();
+    let vers = |protege: Option<u8>, charme: bool| {
+        Cle::Afficher(Vue::Preparation {
+            zone: position,
+            choisis: choisis.avec_protection(protege, charme),
+        })
+    };
+    let mut boutons: Vec<Bouton> = monstres
+        .iter()
+        .enumerate()
+        .filter(|(rang, _)| protection.protege != Some(*rang))
+        .filter_map(|(rang, monstre)| {
+            let rang = u8::try_from(rang).ok()?;
+            let libelle = format!("Protéger {}", monstre.nom());
+            Some(bouton(
+                vers(Some(rang), protection.charme),
+                &libelle,
+                SECONDAIRE,
+            ))
+        })
+        .collect();
+    if let Some(protege) = protection.protege.and_then(|rang| u8::try_from(rang).ok()) {
+        boutons.push(bouton(vers(None, false), "Sans protection", SECONDAIRE));
+        if protection.charme {
+            boutons.push(bouton(
+                vers(Some(protege), false),
+                "Sans charme",
+                SECONDAIRE,
+            ));
+        } else if partie.charmes_de_garde() > 0 {
+            boutons.push(bouton(
+                vers(Some(protege), true),
+                "Avec un charme de garde",
+                SUCCES,
+            ));
+        }
+    }
+    boutons
+}
+
 /// Une zone qui n'est plus libre ramène à la liste, par exemple après le
 /// départ de l'expédition.
 pub fn preparation(
@@ -123,9 +176,13 @@ pub fn preparation(
             .filter_map(|emplacement| collection.monstre(*emplacement).cloned())
             .collect();
         lignes.push(format!("Monstres choisis : {}.", noms(&monstres)));
-        match partie.estimer_expedition_automatique(zone, &emplacements, Protection::default()) {
+        let protection = choisis.protection();
+        match partie.estimer_expedition_automatique(zone, &emplacements, protection) {
             Ok(previsions) => {
                 lignes.push(estimation(zone, &previsions));
+                if monstres.len() > 1 {
+                    lignes.push(ligne_de_protection(&monstres, protection));
+                }
                 boutons.push(bouton(
                     Cle::Expedier {
                         zone: zone.id().clone(),
@@ -145,6 +202,7 @@ pub fn preparation(
             "Recommencer",
             SECONDAIRE,
         ));
+        boutons.extend(boutons_de_protection(partie, position, choisis, &monstres));
     }
     // Proposé seulement si ce départ est possible : il faut une place au
     // camp pour chaque monstre de l'équipe à son retour. L'équipe reste vide

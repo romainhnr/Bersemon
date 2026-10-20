@@ -9,8 +9,8 @@ use bersemon_core::soin::Soin;
 use bersemon_presentation::boosters::{boosters, eclats_d_astre};
 use bersemon_presentation::monstres::decrire_attaque;
 use bersemon_presentation::partie::{
-    argent, capsules_d_habilete as capsules_d_habilete_en_texte, coffre_du_camp, pierres,
-    ressources,
+    argent, capsules_d_habilete as capsules_d_habilete_en_texte, charmes_de_garde, coffre_du_camp,
+    pierres, ressources,
 };
 use bersemon_presentation::soins::soins;
 
@@ -101,6 +101,19 @@ fn options(inventaire: &Inventaire, avec_capsules: bool) -> Vec<OptionDeMenu> {
         options.push(option(
             Objet::Argent(argent_disponible),
             argent(argent_disponible),
+            Some("Tout".to_string()),
+        ));
+    }
+    // Ils se consomment, un par expédition : un lot d'un, puis tous
+    // (section 12.5).
+    let charmes = inventaire.charmes_de_garde();
+    if charmes > 1 {
+        options.push(option(Objet::CharmesDeGarde(1), charmes_de_garde(1), None));
+    }
+    if charmes > 0 {
+        options.push(option(
+            Objet::CharmesDeGarde(charmes),
+            charmes_de_garde(charmes),
             Some("Tout".to_string()),
         ));
     }

@@ -577,6 +577,7 @@ Décidé le 20/10/2026, pour les étapes 76 à 78 (choix de l'utilisateur, Q19 e
 - Les chances de réussite affichées avant le départ tiennent compte de la protection (section 12.4).
 - L'objet de protection est le charme de garde, fabriqué par Gunther (section 13.5).
 - Écrans, à l'étape 77 (console) : une fois les monstres choisis, s'il y en a au moins deux, le jeu demande lequel protéger, ou aucun, puis, si le joueur a un charme de garde, s'il le lui donne. La durée, les chances de réussite et la protection s'affichent avant la confirmation. La forge propose "Fabriquer un charme de garde", avec son coût, sa durée et le nombre de charmes possédés ; le coffre déplace les charmes. Le bilan dit le monstre protégé et sa protection, et la part d'argent due aux monstres offensifs.
+- Écrans, à l'étape 78 (Discord) : avec au moins deux monstres choisis, l'écran de préparation a un bouton "Protéger {monstre}" pour chacun des autres monstres, puis, un monstre protégé, "Sans protection" et "Avec un charme de garde" ou "Sans charme" ; la protection s'affiche avec la durée et les chances. La forge a un bouton "Charme de garde", avec son coût et sa durée ; le coffre déplace les charmes, un ou tous.
 - Précisé à l'étape 77, en jouant : la protection ne change presque pas les chances de réussite, puisque la part reportée reste à encaisser par les autres ; elle sert à garder debout un monstre précis, pour qu'il gagne son XP.
 
 ### 12.6 Récompenses
