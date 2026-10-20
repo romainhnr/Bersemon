@@ -1,7 +1,7 @@
 //! Améliorations du camp (section 13.4) : Gunther, le forgeron, agrandit
-//! l'enclos, améliore les filets et fait une place de plus dans l'équipe,
-//! contre des ressources, un niveau à la fois, chacun avec sa durée de
-//! construction. Il fabrique aussi l'équipement du héros (section 13.5),
+//! l'enclos, améliore les filets, fait une place de plus dans l'équipe et
+//! construit les machines (section 13.6), contre des ressources, un niveau à
+//! la fois, chacun avec sa durée de construction. Il fabrique aussi l'équipement du héros (section 13.5),
 //! dans le même atelier : un seul travail à la fois.
 //!
 //! Les effets de chaque niveau sont des règles, fixées ici ; les coûts et
@@ -13,6 +13,7 @@ use std::time::Duration;
 use crate::collection::Tailles;
 use crate::equipement::{Equipement, ObjetDEquipement};
 use crate::horodatage::Horodatage;
+use crate::machines::{ReglesDeLaCour, ReglesDesPieges, regles_de_la_cour, regles_des_pieges};
 use crate::ressource::Ressource;
 
 /// Places que chaque niveau d'enclos ajoute au camp (section 13.4).
@@ -26,15 +27,20 @@ pub enum Amelioration {
     Enclos,
     Filets,
     Equipe,
+    /// Les machines (section 13.6).
+    Pieges,
+    Cour,
 }
 
 impl Amelioration {
-    /// Dans l'ordre de docs/contenu-v1.md, section 9, qui est aussi celui
-    /// des affichages.
-    pub const TOUTES: [Amelioration; 3] = [
+    /// Dans l'ordre de docs/contenu-v1.md, sections 9 puis 19, qui est aussi
+    /// celui des affichages.
+    pub const TOUTES: [Amelioration; 5] = [
         Amelioration::Enclos,
         Amelioration::Filets,
         Amelioration::Equipe,
+        Amelioration::Pieges,
+        Amelioration::Cour,
     ];
 
     pub fn nom(self) -> &'static str {
@@ -42,12 +48,17 @@ impl Amelioration {
             Amelioration::Enclos => "Enclos",
             Amelioration::Filets => "Filets",
             Amelioration::Equipe => "Équipe",
+            Amelioration::Pieges => "Pièges",
+            Amelioration::Cour => "Cour d'entraînement",
         }
     }
 
     pub fn niveau_max(self) -> u8 {
         match self {
-            Amelioration::Enclos | Amelioration::Filets => 3,
+            Amelioration::Enclos
+            | Amelioration::Filets
+            | Amelioration::Pieges
+            | Amelioration::Cour => 3,
             Amelioration::Equipe => 1,
         }
     }
@@ -62,6 +73,12 @@ impl Amelioration {
             Amelioration::Equipe => {
                 EffetDAmelioration::PlacesDansLEquipe(places_dans_l_equipe(niveau))
             }
+            Amelioration::Pieges => EffetDAmelioration::Pieges(
+                regles_des_pieges(niveau).expect("un niveau construit est au moins 1"),
+            ),
+            Amelioration::Cour => EffetDAmelioration::Cour(
+                regles_de_la_cour(niveau).expect("un niveau construit est au moins 1"),
+            ),
         }
     }
 }
@@ -80,6 +97,8 @@ pub enum EffetDAmelioration {
     PlacesDansLEquipe(usize),
     /// En pourcentage de la chance de capture.
     ChanceDeCaptureEnPlus(u32),
+    Pieges(ReglesDesPieges),
+    Cour(ReglesDeLaCour),
 }
 
 /// Les niveaux atteints, 0 au départ.
@@ -88,6 +107,8 @@ pub struct Ameliorations {
     enclos: u8,
     filets: u8,
     equipe: u8,
+    pieges: u8,
+    cour: u8,
 }
 
 impl Ameliorations {
@@ -97,11 +118,25 @@ impl Ameliorations {
             enclos,
             filets,
             equipe,
+            pieges: 0,
+            cour: 0,
         };
+        ameliorations.verifier()
+    }
+
+    /// Reprise d'une sauvegarde : les niveaux des machines s'ajoutent à
+    /// ceux de `new`. `None` pour un niveau au-delà du maximum.
+    pub fn avec_machines(mut self, pieges: u8, cour: u8) -> Option<Self> {
+        self.pieges = pieges;
+        self.cour = cour;
+        self.verifier()
+    }
+
+    fn verifier(self) -> Option<Self> {
         Amelioration::TOUTES
             .iter()
-            .all(|amelioration| ameliorations.niveau(*amelioration) <= amelioration.niveau_max())
-            .then_some(ameliorations)
+            .all(|amelioration| self.niveau(*amelioration) <= amelioration.niveau_max())
+            .then_some(self)
     }
 
     pub fn niveau(&self, amelioration: Amelioration) -> u8 {
@@ -109,7 +144,17 @@ impl Ameliorations {
             Amelioration::Enclos => self.enclos,
             Amelioration::Filets => self.filets,
             Amelioration::Equipe => self.equipe,
+            Amelioration::Pieges => self.pieges,
+            Amelioration::Cour => self.cour,
         }
+    }
+
+    pub fn pieges(&self) -> Option<ReglesDesPieges> {
+        regles_des_pieges(self.pieges)
+    }
+
+    pub fn cour(&self) -> Option<ReglesDeLaCour> {
+        regles_de_la_cour(self.cour)
     }
 
     fn monter(&mut self, amelioration: Amelioration) {
@@ -117,6 +162,8 @@ impl Ameliorations {
             Amelioration::Enclos => &mut self.enclos,
             Amelioration::Filets => &mut self.filets,
             Amelioration::Equipe => &mut self.equipe,
+            Amelioration::Pieges => &mut self.pieges,
+            Amelioration::Cour => &mut self.cour,
         };
         *niveau = (*niveau + 1).min(amelioration.niveau_max());
     }

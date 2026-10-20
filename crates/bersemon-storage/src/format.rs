@@ -1,4 +1,4 @@
-//! Format JSON de la sauvegarde, version 21, et sa conversion vers les types
+//! Format JSON de la sauvegarde, version 22, et sa conversion vers les types
 //! du noyau. Les énumérations sont écrites avec des noms fixés ici, et non
 //! avec les noms Rust, pour qu'un renommage dans le code ne casse pas les
 //! sauvegardes existantes.
@@ -24,6 +24,7 @@ use bersemon_core::heros::{Classe, Heros};
 use bersemon_core::horodatage::Horodatage;
 use bersemon_core::humain::HumainId;
 use bersemon_core::inventaire::Inventaire;
+use bersemon_core::machines::{Entrainement, Machines, Pieges};
 use bersemon_core::monstre::{EtatMonstre, Monstre};
 use bersemon_core::niveau::Niveau;
 use bersemon_core::nom::Nom;
@@ -41,7 +42,7 @@ use bersemon_core::zone::{Zone, ZoneId};
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 21;
+pub(crate) const VERSION: u64 = 22;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -66,6 +67,10 @@ const VERSION_DES_AMES_D_APOTRES: u64 = 19;
 /// d'astre (section 14.3).
 const VERSION_DES_ECLATS_D_ASTRE: u64 = 20;
 
+/// La version de la sauvegarde où Gunther construit les machines du camp
+/// (section 13.6).
+const VERSION_DES_MACHINES: u64 = 22;
+
 /// Gunther est le prisonnier de cet humain : avant la version 14, une partie
 /// qui l'a vaincu a Gunther au camp (section 13.4, Q85).
 const GEOLIER_DE_GUNTHER: &str = "bourreau";
@@ -86,8 +91,8 @@ const GEOLIER_DE_GUNTHER: &str = "bourreau";
 /// marque des monstres reçus d'un autre joueur, la version 18 la pêche
 /// d'Ansgar ; avec la version 19, les Apôtres capturés deviennent leur âme,
 /// sans changer la structure ; la version 20 ajoute les boosters et les
-/// Éclats d'astre, la version 21 les amis et le palmarès des duels. Une
-/// sauvegarde d'une version
+/// Éclats d'astre, la version 21 les amis et le palmarès des duels, la
+/// version 22 les machines du camp. Une sauvegarde d'une version
 /// précédente se lit avec cette structure : les champs ajoutés y prennent
 /// leur valeur de début de partie.
 #[derive(Debug, Serialize, Deserialize)]
@@ -162,6 +167,11 @@ pub(crate) struct SauvegardeV14 {
     victoires_en_duel: u32,
     #[serde(default)]
     defaites_en_duel: u32,
+    /// Depuis la version 22 (section 13.6).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pieges: Option<PiegesV22>,
+    #[serde(default)]
+    entrainement: Vec<EntrainementV22>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -173,6 +183,26 @@ struct AmeliorationsV14 {
     /// Depuis la version 15.
     #[serde(default)]
     equipe: u8,
+    /// Depuis la version 22 (section 13.6).
+    #[serde(default)]
+    pieges: u8,
+    #[serde(default)]
+    cour: u8,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct PiegesV22 {
+    zone: String,
+    /// Secondes depuis le 1er janvier 1970 (UTC) : l'heure d'où part leur
+    /// compte.
+    depuis: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct EntrainementV22 {
+    monstre: MonstreV1,
+    /// Secondes depuis le 1er janvier 1970 (UTC).
+    depuis: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -194,6 +224,8 @@ fn amelioration_en_texte(amelioration: Amelioration) -> &'static str {
         Amelioration::Enclos => "enclos",
         Amelioration::Filets => "filets",
         Amelioration::Equipe => "equipe",
+        Amelioration::Pieges => "pieges",
+        Amelioration::Cour => "cour",
     }
 }
 
@@ -498,6 +530,8 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV14 {
             enclos: partie.forge().ameliorations().niveau(Amelioration::Enclos),
             filets: partie.forge().ameliorations().niveau(Amelioration::Filets),
             equipe: partie.forge().ameliorations().niveau(Amelioration::Equipe),
+            pieges: partie.forge().ameliorations().niveau(Amelioration::Pieges),
+            cour: partie.forge().ameliorations().niveau(Amelioration::Cour),
         },
         chantier: partie
             .forge()
@@ -525,6 +559,19 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV14 {
         amis: partie.relations().amis().to_vec(),
         victoires_en_duel: partie.relations().palmares().victoires,
         defaites_en_duel: partie.relations().palmares().defaites,
+        pieges: partie.machines().pieges().map(|pieges| PiegesV22 {
+            zone: pieges.zone().as_str().to_string(),
+            depuis: pieges.depuis().secondes(),
+        }),
+        entrainement: partie
+            .machines()
+            .cour()
+            .iter()
+            .map(|entrainement| EntrainementV22 {
+                monstre: depuis_monstre(entrainement.monstre()),
+                depuis: entrainement.depuis().secondes(),
+            })
+            .collect(),
     }
 }
 
@@ -639,6 +686,13 @@ pub(crate) fn vers_partie(
                 .map_err(incoherente)
         })
         .collect::<Result<Vec<_>, _>>()?;
+    // Avant la version 22, ni pièges ni cour d'entraînement (section 13.6).
+    if sauvegarde.version < VERSION_DES_MACHINES {
+        sauvegarde.ameliorations.pieges = 0;
+        sauvegarde.ameliorations.cour = 0;
+        sauvegarde.pieges = None;
+        sauvegarde.entrainement.clear();
+    }
     // Avant la version 14, ni amélioration ni chantier : seul Gunther peut
     // être au camp, s'il est déjà libéré.
     if sauvegarde.version < VERSION_DE_GUNTHER {
@@ -655,6 +709,12 @@ pub(crate) fn vers_partie(
         sauvegarde.ameliorations.filets,
         sauvegarde.ameliorations.equipe,
     )
+    .and_then(|ameliorations| {
+        ameliorations.avec_machines(
+            sauvegarde.ameliorations.pieges,
+            sauvegarde.ameliorations.cour,
+        )
+    })
     .ok_or_else(|| {
         ErreurSauvegarde::Incoherente("niveau d'amélioration hors limites".to_string())
     })?;
@@ -774,6 +834,25 @@ pub(crate) fn vers_partie(
         .iter()
         .map(|marchand| marchand.id().clone())
         .collect();
+    // Une zone disparue du jeu est refusée par le noyau, comme des pièges
+    // posés dans une zone inexplorée.
+    let cour = sauvegarde
+        .entrainement
+        .into_iter()
+        .map(|entrainement| {
+            Ok(Entrainement::new(
+                vers_monstre(entrainement.monstre, catalogue)?,
+                Horodatage::depuis_secondes(entrainement.depuis),
+            ))
+        })
+        .collect::<Result<Vec<_>, ErreurSauvegarde>>()?;
+    let pieges = sauvegarde.pieges.map(|pieges| {
+        Pieges::new(
+            ZoneId::new(pieges.zone),
+            Horodatage::depuis_secondes(pieges.depuis),
+        )
+    });
+    let machines = Machines::restaurer(pieges, cour);
     let conseils_vus = sauvegarde
         .conseils_vus
         .iter()
@@ -806,6 +885,7 @@ pub(crate) fn vers_partie(
                 defaites: sauvegarde.defaites_en_duel,
             },
         ),
+        machines,
     })
     .map_err(incoherente)
 }

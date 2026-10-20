@@ -13,6 +13,7 @@ use crate::equipement::{nom_de_place, objet_et_bonus};
 use crate::erreurs::erreur_sauvegarde;
 use crate::expeditions_automatiques;
 use crate::forge::{constat, lancement, lancement_de_fabrication};
+use crate::machines;
 use crate::mise_en_valeur::important;
 use crate::monstres::{effet_d_habilete, nom_en_valeur, nom_sauvage};
 use crate::partie::{
@@ -228,6 +229,16 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
         Evenement::Epilogue(epilogue) => (epilogue.clone(), true),
         Evenement::AmeDApotreRecueillie(recit) => (recit.clone(), false),
         Evenement::EclatDAstreRamasse => (ECLAT_RAMASSE.to_string(), false),
+        Evenement::PiegesPoses(zone) => (machines::pieges_poses(zone), false),
+        Evenement::PiegesReleves(prises) => (machines::pieges_releves(prises), false),
+        Evenement::EntreeALEntrainement(monstre) => {
+            (machines::entree_a_l_entrainement(monstre), false)
+        }
+        Evenement::SortieDeLEntrainement {
+            monstre,
+            experience,
+            ..
+        } => (machines::sortie_de_l_entrainement(monstre, *experience), false),
         Evenement::Defaite { sac_perdu } => {
             let texte = if sac_perdu.est_vide() {
                 "Toute votre équipe est KO : vous rentrez au camp, le sac vide.".to_string()

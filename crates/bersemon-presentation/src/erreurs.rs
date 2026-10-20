@@ -15,6 +15,7 @@ use crate::boosters::{refus_sans_booster, refus_valeur_maximale};
 use crate::equipement::erreur_equipement;
 use crate::expeditions_automatiques::erreur_expedition_automatique;
 use crate::forge::erreur_amelioration;
+use crate::machines::erreur_machine;
 use crate::partie::argent;
 use crate::peche::erreur_peche;
 use crate::soins::plus_aucun;
@@ -60,6 +61,7 @@ pub fn erreur_de_choix(choix: &Choix, erreur: &ErreurChoix) -> String {
         ErreurChoix::Amelioration(erreur) => erreur_amelioration(erreur),
         ErreurChoix::Equipement(erreur) => erreur_equipement(erreur),
         ErreurChoix::Peche(erreur) => erreur_peche(erreur),
+        ErreurChoix::Machine(erreur) => erreur_machine(erreur),
         autre => format!("Action impossible : {autre}."),
     }
 }

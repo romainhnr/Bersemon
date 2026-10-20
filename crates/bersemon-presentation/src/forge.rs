@@ -12,6 +12,7 @@ use bersemon_core::ressource::Ressource;
 
 use crate::equipement::objet_et_bonus;
 use crate::expeditions_automatiques::duree;
+use crate::machines::{effet_de_la_cour, effet_des_pieges};
 use crate::partie::{enumerer, ressources};
 
 pub fn effet(amelioration: Amelioration, niveau: u8) -> String {
@@ -21,6 +22,8 @@ pub fn effet(amelioration: Amelioration, niveau: u8) -> String {
         EffetDAmelioration::ChanceDeCaptureEnPlus(pour_cent) => {
             format!("chance de capture +{pour_cent} %")
         }
+        EffetDAmelioration::Pieges(regles) => effet_des_pieges(&regles),
+        EffetDAmelioration::Cour(regles) => effet_de_la_cour(&regles),
     }
 }
 

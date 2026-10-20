@@ -32,6 +32,7 @@ pub mod heros;
 pub mod horodatage;
 pub mod humain;
 pub mod inventaire;
+pub mod machines;
 pub mod marchand;
 pub mod monstre;
 pub mod niveau;

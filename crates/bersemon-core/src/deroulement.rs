@@ -37,6 +37,7 @@ use crate::habilete::{ErreurChangementDHabilete, Habilete};
 use crate::heros::{Classe, Heros, Ordre};
 use crate::horodatage::Horodatage;
 use crate::inventaire::{ErreurObjet, Inventaire, Objet};
+use crate::machines::ErreurMachine;
 use crate::marchand::ErreurMarchand;
 use crate::monstre::{Monstre, RapportExperience};
 use crate::nom::{ErreurNom, Nom};
@@ -137,6 +138,17 @@ pub enum Choix {
     GarderLaPrise,
     /// Répond au monstre pêché, sans confirmation : il retourne à l'eau.
     RelacherLaPrise,
+    /// Au camp, sans confirmation : les pièges se posent dans cette zone
+    /// explorée, après avoir été relevés s'ils ont un stock (section 13.6).
+    PoserLesPieges(ZoneId),
+    /// Au camp : leur stock va dans le coffre.
+    ReleverLesPieges,
+    /// Au camp, sans confirmation : le monstre entre dans la cour
+    /// d'entraînement.
+    MettreALEntrainement(Emplacement),
+    /// Au camp : le monstre à cette position de la cour en sort, avec l'XP
+    /// gagnée.
+    ReprendreDeLEntrainement(usize),
     /// Au camp, sans confirmation : l'objet remplace celui de cette place
     /// (section 4.3).
     Equiper {
@@ -419,6 +431,17 @@ pub enum Evenement {
     /// Après l'épilogue : le récit de l'âme de l'Apôtre vaincu, que le
     /// joueur garde (section 9.4).
     AmeDApotreRecueillie(String),
+    /// Nom de la zone (section 13.6).
+    PiegesPoses(String),
+    /// Ce qu'ils avaient pris, rangé dans le coffre, par sorte.
+    PiegesReleves(Vec<(Ressource, u32)>),
+    EntreeALEntrainement(Monstre),
+    /// Suivi de l'XP gagnée, s'il en a gagné.
+    SortieDeLEntrainement {
+        monstre: Monstre,
+        experience: u32,
+        emplacement: Emplacement,
+    },
     /// Après l'âme : l'Éclat d'astre que laisse l'Apôtre, qui va dans le sac
     /// (section 14.3).
     EclatDAstreRamasse,
@@ -597,6 +620,7 @@ pub enum ErreurChoix {
     PlanInconnu,
     Equipement(ErreurEquipement),
     Peche(ErreurPeche),
+    Machine(ErreurMachine),
 }
 
 impl fmt::Display for ErreurChoix {
@@ -625,6 +649,7 @@ impl fmt::Display for ErreurChoix {
             ErreurChoix::PlanInconnu => write!(f, "aucun plan pour ce niveau ou cet objet"),
             ErreurChoix::Equipement(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Peche(erreur) => write!(f, "{erreur}"),
+            ErreurChoix::Machine(erreur) => write!(f, "{erreur}"),
         }
     }
 }
@@ -1413,6 +1438,101 @@ impl EnJeu {
                 evenements.push(Evenement::PrisePechee(prise));
                 // Tout de suite, pour que quitter le jeu ne permette pas de
                 // tirer de nouveau la prise.
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::PoserLesPieges(id) => {
+                let contenu = contexte.contenu;
+                let zone = contenu
+                    .zones()
+                    .iter()
+                    .find(|zone| zone.id() == id)
+                    .ok_or_else(|| ErreurChoix::ZoneInconnue(id.clone()))?;
+                if !self.partie.est_exploree(zone.id()) {
+                    return Err(ErreurChoix::Machine(ErreurMachine::ZoneNonExploree));
+                }
+                // Déplacés, les pièges sont d'abord relevés.
+                let pieges = self.partie.machines().pieges().cloned();
+                if let Some(pieges) = pieges.filter(|pieges| pieges.zone() != zone.id()) {
+                    let ancienne = contenu
+                        .zones()
+                        .iter()
+                        .find(|zone| zone.id() == pieges.zone())
+                        .ok_or_else(|| ErreurChoix::ZoneInconnue(pieges.zone().clone()))?;
+                    match self.partie.relever_les_pieges(
+                        ancienne,
+                        contexte.maintenant,
+                        &mut *contexte.aleatoire,
+                    ) {
+                        Ok(prises) => evenements.push(Evenement::PiegesReleves(prises)),
+                        Err(ErreurMachine::PiegesVides) => {}
+                        Err(erreur) => return Err(ErreurChoix::Machine(erreur)),
+                    }
+                }
+                self.partie
+                    .poser_les_pieges(zone, contexte.maintenant)
+                    .map_err(ErreurChoix::Machine)?;
+                evenements.push(Evenement::PiegesPoses(zone.nom().to_string()));
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::ReleverLesPieges => {
+                let contenu = contexte.contenu;
+                let pieges = self
+                    .partie
+                    .machines()
+                    .pieges()
+                    .ok_or(ErreurChoix::Machine(ErreurMachine::PiegesNonPoses))?;
+                let zone = contenu
+                    .zones()
+                    .iter()
+                    .find(|zone| zone.id() == pieges.zone())
+                    .ok_or_else(|| ErreurChoix::ZoneInconnue(pieges.zone().clone()))?;
+                let prises = self
+                    .partie
+                    .relever_les_pieges(zone, contexte.maintenant, &mut *contexte.aleatoire)
+                    .map_err(ErreurChoix::Machine)?;
+                evenements.push(Evenement::PiegesReleves(prises));
+                // Tout de suite, pour que quitter le jeu ne permette pas de
+                // tirer de nouveau les ressources.
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::MettreALEntrainement(emplacement) => {
+                let contenu = contexte.contenu;
+                let plafond = self
+                    .partie
+                    .plafond_d_entrainement(contenu.zones(), contenu.piste());
+                let monstre = self.partie.collection().monstre(*emplacement).cloned();
+                self.partie
+                    .mettre_a_l_entrainement(*emplacement, plafond, contexte.maintenant)
+                    .map_err(ErreurChoix::Machine)?;
+                evenements.push(Evenement::EntreeALEntrainement(
+                    monstre.expect("le monstre vient d'entrer dans la cour"),
+                ));
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::ReprendreDeLEntrainement(position) => {
+                let contenu = contexte.contenu;
+                let plafond = self
+                    .partie
+                    .plafond_d_entrainement(contenu.zones(), contenu.piste());
+                let reprise = self
+                    .partie
+                    .reprendre_de_l_entrainement(*position, plafond, contexte.maintenant)
+                    .map_err(ErreurChoix::Machine)?;
+                evenements.push(Evenement::SortieDeLEntrainement {
+                    monstre: reprise.monstre.clone(),
+                    experience: reprise.rapport.experience_gagnee,
+                    emplacement: reprise.emplacement,
+                });
+                if reprise.rapport.experience_gagnee > 0 {
+                    evenements.push(Evenement::Experience {
+                        monstre: reprise.monstre,
+                        rapport: reprise.rapport,
+                    });
+                }
                 sauvegarder(&self.partie, contexte.depot, evenements);
                 Ok(Reponse::Faite)
             }
@@ -2609,6 +2729,7 @@ mod tests {
             peche: partie.peche().clone(),
             forge: partie.forge().clone(),
             relations: partie.relations().clone(),
+            machines: partie.machines().clone(),
         }
     }
 
@@ -3194,6 +3315,98 @@ mod tests {
             repondre_sans_tirage(&mut deroulement, rendre, &contenu, &depot),
             Err(ErreurChoix::Marchand(ErreurMarchand::DejaShiny))
         );
+    }
+
+    #[test]
+    fn les_machines_de_gunther_au_camp() {
+        use crate::amelioration::Ameliorations;
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut etat = etat_de(&partie_pour_les_expeditions(&contenu));
+        let ameliorations = Ameliorations::new(0, 0, 0)
+            .unwrap()
+            .avec_machines(1, 1)
+            .unwrap();
+        etat.forge = Forge::restaurer(true, ameliorations, None).unwrap();
+        let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
+        let mut repondre = |choix: Choix, secondes: u64, tirages: Vec<u32>| {
+            repondre_a(&mut deroulement, choix, &contenu, &depot, secondes, tirages)
+        };
+        assert_eq!(
+            repondre(Choix::PoserLesPieges(ZoneId::new("vallee")), 0, vec![]),
+            Err(ErreurChoix::Machine(ErreurMachine::ZoneNonExploree))
+        );
+        assert_eq!(
+            repondre(Choix::PoserLesPieges(ZoneId::new("lisiere")), 0, vec![]),
+            Ok(vec![Evenement::PiegesPoses(
+                "Lisière du Bois-Sombre".to_string()
+            )])
+        );
+        assert_eq!(
+            repondre(Choix::ReleverLesPieges, 7_199, vec![]),
+            Err(ErreurChoix::Machine(ErreurMachine::PiegesVides))
+        );
+        // Une ressource toutes les 2 h : la deuxième de la Lisière.
+        let evenements = repondre(Choix::ReleverLesPieges, 7_200, vec![1]).unwrap();
+        assert!(matches!(
+            &evenements[..],
+            [Evenement::PiegesReleves(prises)]
+                if prises.len() == 1 && prises[0].0.id().as_str() == "plume-de-corbeau"
+        ));
+        // Déplacés dans le Marais, ils sont d'abord relevés.
+        let evenements = repondre(
+            Choix::PoserLesPieges(ZoneId::new("marais")),
+            14_400,
+            vec![2],
+        )
+        .unwrap();
+        assert!(matches!(
+            &evenements[..],
+            [Evenement::PiegesReleves(prises), Evenement::PiegesPoses(zone)]
+                if prises[0].0.id().as_str() == "ecaille-de-vipere" && zone == "Marais des Pendus"
+        ));
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert_eq!(sauvegarde.coffre_du_camp().ressources().len(), 2);
+        assert_eq!(
+            sauvegarde.machines().pieges().unwrap().zone(),
+            &ZoneId::new("marais")
+        );
+        // Le premier Loup entre dans la cour, d'une place au niveau 1.
+        let evenements = repondre(
+            Choix::MettreALEntrainement(Emplacement::Equipe(1)),
+            14_400,
+            vec![],
+        )
+        .unwrap();
+        assert!(
+            matches!(&evenements[..], [Evenement::EntreeALEntrainement(loup)] if loup.niveau().valeur() == 3)
+        );
+        assert_eq!(
+            repondre(
+                Choix::MettreALEntrainement(Emplacement::Equipe(0)),
+                14_400,
+                vec![]
+            ),
+            Err(ErreurChoix::Machine(ErreurMachine::CourPleine))
+        );
+        // 10 h plus tard, 500 XP : il rejoint l'équipe, en troisième place.
+        let evenements =
+            repondre(Choix::ReprendreDeLEntrainement(0), 14_400 + 36_000, vec![]).unwrap();
+        assert!(matches!(
+            &evenements[..],
+            [
+                Evenement::SortieDeLEntrainement {
+                    experience: 500,
+                    emplacement: Emplacement::Equipe(2),
+                    ..
+                },
+                Evenement::Experience { .. },
+            ]
+        ));
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert!(sauvegarde.machines().cour().is_empty());
+        assert_eq!(sauvegarde.collection().places_reservees(), 0);
+        assert_eq!(sauvegarde.collection().equipe()[2].experience(), 27 + 500);
     }
 
     #[test]
@@ -4547,6 +4760,7 @@ mod tests {
             peche: Default::default(),
             forge: Default::default(),
             relations: Default::default(),
+            machines: Default::default(),
         })
         .unwrap()
     }

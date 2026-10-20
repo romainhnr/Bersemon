@@ -2119,7 +2119,8 @@ fn creer_evolution(fiche: &FicheEvolution) -> Evolution {
 /// ressources et durée en heures.
 type FichePlan = (Amelioration, u8, &'static [(&'static str, u32)], u64);
 
-const PLANS_D_AMELIORATION: [FichePlan; 7] = [
+/// Section 9 de docs/contenu-v1.md, puis les machines de la section 19.
+const PLANS_D_AMELIORATION: [FichePlan; 13] = [
     (
         Amelioration::Enclos,
         1,
@@ -2169,6 +2170,46 @@ const PLANS_D_AMELIORATION: [FichePlan; 7] = [
             ("os-de-squelette", 8),
             ("aile-de-fee-noire", 8),
         ],
+        8,
+    ),
+    (
+        Amelioration::Pieges,
+        1,
+        &[("croc-de-loup", 5), ("ecaille-de-vipere", 5)],
+        1,
+    ),
+    (
+        Amelioration::Pieges,
+        2,
+        &[("cendre-de-feu-follet", 6), ("fragment-d-armure", 6)],
+        3,
+    ),
+    (
+        Amelioration::Pieges,
+        3,
+        &[
+            ("aile-de-fee-noire", 6),
+            ("os-de-squelette", 6),
+            ("ecaille-de-vouivre", 1),
+        ],
+        6,
+    ),
+    (
+        Amelioration::Cour,
+        1,
+        &[("croc-de-loup", 6), ("plume-de-corbeau", 6)],
+        2,
+    ),
+    (
+        Amelioration::Cour,
+        2,
+        &[("fragment-d-armure", 6), ("os-de-squelette", 6)],
+        4,
+    ),
+    (
+        Amelioration::Cour,
+        3,
+        &[("eclat-de-gargouille", 8), ("dent-de-goule", 6)],
         8,
     ),
 ];
@@ -2647,7 +2688,7 @@ mod tests {
                 }
             }
         }
-        assert_eq!(contenu.plans_d_amelioration().len(), 7);
+        assert_eq!(contenu.plans_d_amelioration().len(), 13);
     }
 
     #[test]

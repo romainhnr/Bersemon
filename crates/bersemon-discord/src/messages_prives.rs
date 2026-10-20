@@ -382,6 +382,7 @@ mod tests {
             peche: Default::default(),
             forge: Default::default(),
             relations: Default::default(),
+            machines: Default::default(),
         })
         .unwrap();
         partie

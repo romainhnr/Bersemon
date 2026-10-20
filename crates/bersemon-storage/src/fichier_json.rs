@@ -102,6 +102,7 @@ mod tests {
     use bersemon_core::horodatage::Horodatage;
     use bersemon_core::humain::HumainId;
     use bersemon_core::inventaire::Inventaire;
+    use bersemon_core::machines::{Entrainement, Machines, Pieges};
     use bersemon_core::monstre::Monstre;
     use bersemon_core::niveau::Niveau;
     use bersemon_core::nom::Nom;
@@ -402,7 +403,10 @@ mod tests {
             .unwrap(),
             forge: Forge::restaurer(
                 true,
-                Ameliorations::new(1, 2, 1).unwrap(),
+                Ameliorations::new(1, 2, 1)
+                    .unwrap()
+                    .avec_machines(2, 1)
+                    .unwrap(),
                 Some(Chantier {
                     ouvrage: Ouvrage::Amelioration {
                         amelioration: Amelioration::Enclos,
@@ -418,6 +422,16 @@ mod tests {
                     victoires: 3,
                     defaites: 1,
                 },
+            ),
+            machines: Machines::restaurer(
+                Some(Pieges::new(
+                    ZoneId::new("lisiere"),
+                    Horodatage::depuis_secondes(500),
+                )),
+                vec![Entrainement::new(
+                    creer("loup", 4),
+                    Horodatage::depuis_secondes(600),
+                )],
             ),
         };
         let mut partie = Partie::restaurer(etat(&partie, Vec::new())).unwrap();
@@ -628,11 +642,48 @@ mod tests {
 
     #[test]
     fn version_inconnue() {
-        let texte = texte_de_partie().replacen("\"version\":21", "\"version\":22", 1);
+        let texte = texte_de_partie().replacen("\"version\":22", "\"version\":23", 1);
         assert_eq!(
             charger_texte(&texte),
-            Err(ErreurSauvegarde::VersionInconnue(22))
+            Err(ErreurSauvegarde::VersionInconnue(23))
         );
+    }
+
+    #[test]
+    fn une_sauvegarde_en_version_21_n_a_pas_de_machine() {
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        let objet = valeur.as_object_mut().unwrap();
+        objet.insert("version".to_string(), 21.into());
+        for champ in ["pieges", "entrainement"] {
+            assert!(objet.remove(champ).is_some(), "{champ}");
+        }
+        let ameliorations = objet["ameliorations"].as_object_mut().unwrap();
+        for champ in ["pieges", "cour"] {
+            assert!(ameliorations.remove(champ).is_some(), "{champ}");
+        }
+        let partie = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        assert_eq!(partie.machines(), &Machines::default());
+        assert_eq!(
+            partie.forge().ameliorations().niveau(Amelioration::Pieges),
+            0
+        );
+        // Le monstre à l'entraînement n'y est plus : sa place se libère.
+        assert_eq!(
+            partie.collection().places_reservees(),
+            partie_complete().collection().places_reservees() - 1
+        );
+    }
+
+    #[test]
+    fn des_pieges_dans_une_zone_inexploree_sont_refuses() {
+        let texte = texte_de_partie().replace(
+            "\"pieges\":{\"zone\":\"lisiere\"",
+            "\"pieges\":{\"zone\":\"marais\"",
+        );
+        assert!(matches!(
+            charger_texte(&texte),
+            Err(ErreurSauvegarde::Incoherente(_))
+        ));
     }
 
     #[test]

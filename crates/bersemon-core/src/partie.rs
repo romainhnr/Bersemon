@@ -32,10 +32,11 @@ use crate::heros::Heros;
 use crate::horodatage::Horodatage;
 use crate::humain::{Humain, HumainId, IaHumain};
 use crate::inventaire::{ErreurObjet, Inventaire, Objet};
+use crate::machines::{ErreurMachine, Machines, reste_avant_le_plafond};
 use crate::marchand::{
     ErreurMarchand, PRIX_CAPSULE_D_HABILETE, PRIX_PIERRE_D_EVOLUTION, prix_de_revente, prix_du_soin,
 };
-use crate::monstre::{Monstre, tirer_shiny, tirer_valeurs_internes};
+use crate::monstre::{Monstre, RapportExperience, tirer_shiny, tirer_valeurs_internes};
 use crate::niveau::Niveau;
 use crate::nom::Nom;
 use crate::obeissance::limite_d_obeissance;
@@ -111,6 +112,8 @@ pub struct Partie {
     peche: Peche,
     /// Amis et palmarès des duels, sur le bot Discord (section 15.4).
     relations: Relations,
+    /// Les pièges et la cour d'entraînement (section 13.6).
+    machines: Machines,
 }
 
 /// Attaque qu'un monstre rentré d'expédition automatique veut apprendre en
@@ -121,6 +124,16 @@ pub struct AttaqueAChoisir {
     /// Là où le monstre est allé à son retour (section 12.7).
     pub emplacement: Emplacement,
     pub attaque: Attaque,
+}
+
+/// Un monstre repris de la cour d'entraînement (section 13.6).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RepriseDEntrainement {
+    /// Copie prise à la reprise, XP comprise.
+    pub monstre: Monstre,
+    pub rapport: RapportExperience,
+    /// Dans l'équipe s'il y avait de la place, sinon au camp.
+    pub emplacement: Emplacement,
 }
 
 /// Tout ce qu'une sauvegarde conserve d'une partie.
@@ -145,6 +158,7 @@ pub struct EtatPartie {
     pub forge: Forge,
     pub peche: Peche,
     pub relations: Relations,
+    pub machines: Machines,
 }
 
 /// Sauvegarde lisible mais contraire aux règles des expéditions
@@ -164,6 +178,9 @@ pub enum ErreurRestaurationPartie {
     /// Un monstre pêché attend que le joueur le garde ou le relâche, mais
     /// l'équipe et le camp sont pleins.
     PriseSansPlace,
+    /// Des pièges posés sans être construits ou dans une zone inexplorée,
+    /// ou plus de monstres à l'entraînement que de places dans la cour.
+    MachinesIncoherentes,
 }
 
 impl fmt::Display for ErreurRestaurationPartie {
@@ -190,6 +207,9 @@ impl fmt::Display for ErreurRestaurationPartie {
             ErreurRestaurationPartie::AucunMonstre => write!(f, "aucun monstre"),
             ErreurRestaurationPartie::PriseSansPlace => {
                 write!(f, "monstre pêché sans place dans l'équipe ni au camp")
+            }
+            ErreurRestaurationPartie::MachinesIncoherentes => {
+                write!(f, "machines du camp incohérentes")
             }
         }
     }
@@ -219,6 +239,7 @@ impl Partie {
             forge: Forge::default(),
             peche: Peche::default(),
             relations: Relations::default(),
+            machines: Machines::default(),
             conseils_vus: Vec::new(),
             expeditions_automatiques: Vec::new(),
             attaques_a_choisir: Vec::new(),
@@ -310,6 +331,137 @@ impl Partie {
 
     pub fn peche(&self) -> &Peche {
         &self.peche
+    }
+
+    pub fn machines(&self) -> &Machines {
+        &self.machines
+    }
+
+    /// Le niveau jusqu'auquel la cour entraîne : le niveau maximal de la
+    /// zone ouverte la plus avancée (section 13.6).
+    pub fn plafond_d_entrainement(&self, zones: &[Zone], piste: &Piste) -> Niveau {
+        let premier = Niveau::new(Niveau::MIN).expect("le niveau minimal est valide");
+        self.zone_la_plus_avancee(zones, piste)
+            .map_or(premier, |zone| zone.niveaux().1)
+    }
+
+    /// Au camp : les pièges se posent dans une zone explorée. Déjà posés
+    /// ailleurs, ils doivent d'abord être relevés (section 13.6).
+    pub fn poser_les_pieges(
+        &mut self,
+        zone: &Zone,
+        maintenant: Horodatage,
+    ) -> Result<(), ErreurMachine> {
+        let regles = self
+            .forge
+            .ameliorations()
+            .pieges()
+            .ok_or(ErreurMachine::NonConstruite)?;
+        if !self.est_exploree(zone.id()) {
+            return Err(ErreurMachine::ZoneNonExploree);
+        }
+        if let Some(pieges) = self.machines.pieges() {
+            if pieges.zone() == zone.id() {
+                return Err(ErreurMachine::DejaPosesIci);
+            }
+            if pieges.stock(&regles, maintenant) > 0 {
+                return Err(ErreurMachine::PiegesARelever);
+            }
+        }
+        self.machines.poser(zone.id().clone(), maintenant);
+        Ok(())
+    }
+
+    /// Au camp : les ressources prises par les pièges, posés dans `zone`,
+    /// vont dans le coffre (section 13.6). Les tirages sont ceux de
+    /// `Machines::relever`.
+    pub fn relever_les_pieges(
+        &mut self,
+        zone: &Zone,
+        maintenant: Horodatage,
+        aleatoire: &mut dyn Aleatoire,
+    ) -> Result<Vec<(Ressource, u32)>, ErreurMachine> {
+        let regles = self
+            .forge
+            .ameliorations()
+            .pieges()
+            .ok_or(ErreurMachine::NonConstruite)?;
+        let prises = self
+            .machines
+            .relever(&regles, zone, maintenant, aleatoire)?;
+        for (ressource, nombre) in &prises {
+            self.coffre_du_camp
+                .ajouter_ressources(ressource.clone(), *nombre);
+        }
+        Ok(prises)
+    }
+
+    /// Au camp : le monstre quitte l'équipe ou le camp pour la cour, comme
+    /// pour une expédition automatique, et garde sa place au camp (sections
+    /// 12.1 et 13.6). Refusé s'il est déjà à son plafond.
+    pub fn mettre_a_l_entrainement(
+        &mut self,
+        emplacement: Emplacement,
+        plafond: Niveau,
+        maintenant: Horodatage,
+    ) -> Result<(), ErreurMachine> {
+        let regles = self
+            .forge
+            .ameliorations()
+            .cour()
+            .ok_or(ErreurMachine::NonConstruite)?;
+        if self.machines.cour().len() >= regles.places {
+            return Err(ErreurMachine::CourPleine);
+        }
+        let monstre = self
+            .collection
+            .monstre(emplacement)
+            .ok_or(ErreurMachine::Collection(
+                ErreurCollection::EmplacementInexistant(emplacement),
+            ))?;
+        if reste_avant_le_plafond(monstre, plafond) == 0 {
+            return Err(ErreurMachine::PlafondAtteint);
+        }
+        let monstre = self
+            .collection
+            .retirer_pour_expedition(&[emplacement])
+            .map_err(ErreurMachine::Collection)?
+            .remove(0);
+        self.machines.entrer(monstre, maintenant);
+        Ok(())
+    }
+
+    /// Au camp : le monstre en `position` dans la cour reçoit l'XP gagnée,
+    /// puis rejoint l'équipe s'il y reste une place, sinon le camp, comme au
+    /// retour d'une expédition automatique ; ses attaques en attente
+    /// s'ajoutent aux attaques à choisir (sections 12.7 et 13.6).
+    pub fn reprendre_de_l_entrainement(
+        &mut self,
+        position: usize,
+        plafond: Niveau,
+        maintenant: Horodatage,
+    ) -> Result<RepriseDEntrainement, ErreurMachine> {
+        let regles = self
+            .forge
+            .ameliorations()
+            .cour()
+            .ok_or(ErreurMachine::NonConstruite)?;
+        let entrainement = self.machines.sortir(position)?;
+        let gain = entrainement.experience(&regles, plafond, maintenant);
+        let mut monstre = entrainement.monstre().clone();
+        let rapport = monstre.gagner_experience(gain);
+        let emplacement = self.collection.accueillir_retour(vec![monstre.clone()])[0];
+        for attaque in &rapport.attaques_en_attente {
+            self.attaques_a_choisir.push(AttaqueAChoisir {
+                emplacement,
+                attaque: attaque.clone(),
+            });
+        }
+        Ok(RepriseDEntrainement {
+            monstre,
+            rapport,
+            emplacement,
+        })
     }
 
     pub fn relations(&self) -> &Relations {
@@ -1032,11 +1184,22 @@ impl Partie {
         collection
             .definir_tailles(etat.forge.ameliorations().tailles())
             .map_err(ErreurRestaurationPartie::Collection)?;
+        let ameliorations = etat.forge.ameliorations();
+        let cour = ameliorations.cour().map_or(0, |regles| regles.places);
+        let pieges_valides = etat.machines.pieges().is_none_or(|pieges| {
+            ameliorations.pieges().is_some() && etat.zones_explorees.contains(pieges.zone())
+        });
+        if etat.machines.cour().len() > cour || !pieges_valides {
+            return Err(ErreurRestaurationPartie::MachinesIncoherentes);
+        }
+        // Un monstre à l'entraînement garde sa place au camp, comme un
+        // monstre parti (section 13.6).
         let partis = etat
             .expeditions_automatiques
             .iter()
             .map(|expedition| expedition.monstres().len())
-            .sum();
+            .sum::<usize>()
+            + etat.machines.cour().len();
         collection
             .definir_places_reservees(partis)
             .map_err(ErreurRestaurationPartie::Collection)?;
@@ -1083,6 +1246,7 @@ impl Partie {
             forge: etat.forge,
             peche: etat.peche,
             relations: etat.relations,
+            machines: etat.machines,
         })
     }
 
@@ -2576,6 +2740,7 @@ mod tests {
             peche: partie.peche().clone(),
             forge: partie.forge().clone(),
             relations: partie.relations().clone(),
+            machines: partie.machines().clone(),
         }
     }
 
