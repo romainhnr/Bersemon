@@ -657,3 +657,13 @@ Décidé le 20/10/2026, pour les étapes 48 à 51 (gamedesign.md, sections 4.3 e
 
 Paliers : le premier se fabrique avec les ressources de la Lisière et du Marais, le deuxième avec celles du Marais et de la Vallée, plus une ressource rare, le troisième avec celles de l'Abbaye des Cendres et un Crin de chimère.
 
+## 12. Ordres du héros
+
+Décidé le 20/10/2026, pour les étapes 52 à 54 (gamedesign.md, section 4.2), noms et textes validés par l'utilisateur. Un ordre par combat, au monstre actif, jusqu'à la fin du combat. {héros} est le nom du héros, {monstre} celui du monstre.
+
+| Classe | Ordre | Bonus | Texte |
+|---|---|---|---|
+| Guerrier | Cri de guerre | +20 % d'Attaque | {héros} pousse un cri de guerre : {monstre} gagne 20 % d'Attaque jusqu'à la fin du combat. |
+| Mage | Incantation | +20 % d'Attaque spéciale | {héros} murmure une incantation : {monstre} gagne 20 % d'Attaque spéciale jusqu'à la fin du combat. |
+| Templier | Bouclier de foi | +20 % de Défense et de Défense spéciale | {héros} invoque un bouclier de foi : {monstre} gagne 20 % de Défense et de Défense spéciale jusqu'à la fin du combat. |
+| Assassin | Pas de l'ombre | +20 % de Vitesse | {héros} souffle le pas de l'ombre : {monstre} gagne 20 % de Vitesse jusqu'à la fin du combat. |

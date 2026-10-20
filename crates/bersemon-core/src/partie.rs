@@ -947,7 +947,7 @@ impl Partie {
         Ok(expedition)
     }
 
-    /// Combat contre un groupe sauvage, avec l'équipe, le bonus de classe du
+    /// Combat contre un groupe sauvage, avec l'équipe, le bonus et l'ordre du
     /// héros et les soins du sac. Les espèces du groupe entrent dans le
     /// codex comme rencontrées.
     pub fn preparer_combat(&mut self, groupe: Vec<Monstre>) -> Result<Combat, ErreurCombat> {
@@ -957,6 +957,7 @@ impl Partie {
             .collect();
         let combat = Combat::new(self.collection.equipe().to_vec(), groupe)?
             .avec_bonus_du_joueur(self.heros.bonus_en_combat())
+            .avec_ordre(self.heros.classe().ordre())
             .avec_filets(self.forge.ameliorations().facteur_des_filets())
             .avec_soins(*self.sac.soins());
         for espece in &especes {
@@ -982,6 +983,7 @@ impl Partie {
     ) -> Result<Combat, ErreurCombat> {
         Ok(Combat::new(self.collection.equipe().to_vec(), groupe)?
             .avec_bonus_du_joueur(self.heros.bonus_en_combat())
+            .avec_ordre(self.heros.classe().ordre())
             .avec_soins(*self.sac.soins())
             .sans_capture())
     }

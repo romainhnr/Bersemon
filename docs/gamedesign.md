@@ -118,11 +118,18 @@ L'objectif du jeu est de proposer des boucles de gameplay intéressantes et stim
 
 ### 4.2 Rôle en combat
 
-- Pour le moment, seuls les monstres combattent, un à un. Le héros ne combat pas et n'a pas de PV en combat.
+- Pour le moment, seuls les monstres combattent, un à un. Le héros ne combat pas et n'a pas de PV en combat ; depuis l'étape 52, il donne un ordre par combat (ci-dessous).
 - La classe et l'équipement du héros donnent des bonus aux monstres et quelques actions de soutien, par exemple des ordres ou l'utilisation d'objets.
-- Bonus de classe : en combat, les monstres du joueur ont +10 % dans une stat, arrondi à l'entier inférieur. Guerrier : Attaque. Mage : Attaque spéciale. Après la V1, Templier : Défense et Défense spéciale, à chacune +10 % ; depuis l'étape 27, Assassin : Vitesse. Les actions de soutien viendront après la V1.
+- Bonus de classe : en combat, les monstres du joueur ont +10 % dans une stat, arrondi à l'entier inférieur. Guerrier : Attaque. Mage : Attaque spéciale. Après la V1, Templier : Défense et Défense spéciale, à chacune +10 % ; depuis l'étape 27, Assassin : Vitesse. Les actions de soutien viendront après la V1 ; depuis l'étape 52, ce sont les ordres (ci-dessous).
 - Décidé le 18/10/2026, pour l'étape 27 : l'Assassin devient jouable, avec un monstre attitré rapide, qui frappe fort mais encaisse mal. Précisé le 19/10/2026 (Q72) : ce monstre est le Chat noir, de type Ténèbres, offensif en attaque physique (section 6, fiche dans docs/contenu-v1.md).
 - Depuis l'étape 28, les habiletés de stats des monstres s'ajoutent à ce bonus (section 5.9).
+- Ordres du héros, décidés le 20/10/2026 pour les étapes 52 à 54 (choix de l'utilisateur) :
+  - chaque classe a un ordre : Guerrier, Cri de guerre (+20 % d'Attaque) ; Mage, Incantation (+20 % d'Attaque spéciale) ; Templier, Bouclier de foi (+20 % de Défense et de Défense spéciale) ; Assassin, Pas de l'ombre (+20 % de Vitesse). Textes dans docs/contenu-v1.md, section 12 ;
+  - le héros donne son ordre une seule fois par combat, au monstre actif, avant de choisir l'action du tour. L'ordre ne prend pas le tour : le joueur choisit ensuite l'action de son monstre, et l'adversaire n'agit pas entre-temps. Il n'est pas tiré au sort ;
+  - le bonus s'ajoute, en pourcentage, à ceux de la classe, de l'équipement et de l'habileté (sections 4.3 et 5.9), et reste au monstre jusqu'à la fin du combat, même s'il sort puis revient ;
+  - l'ordre se donne dans tous les combats, dès le premier, contre les Apôtres et les humains compris ; pas pendant le remplacement d'un monstre KO. Il ne joue pas sur les expéditions automatiques (hypothèses retenues, Q88) ;
+  - l'utilisation d'objets en combat existe déjà : les soins sont l'action du tour (section 14.4).
+  - Écrans : la console ajoute "Ordre du héros" au menu de combat (étape 53), le bot Discord un bouton dans la rangée du filet et de la fuite (étape 54), tant que l'ordre n'est pas donné.
 - À terme, option hybride envisagée : le héros combat lui-même uniquement lorsque tous ses monstres sont KO.
 
 ### 4.3 Équipement
@@ -841,6 +848,10 @@ Les questions Q87 et suivantes ont été relevées le 20/10/2026 lors de la conc
 
 - Q87. (Étapes 48 à 51) Hypothèses retenues, à confirmer : le héros n'a ni niveau ni stats propres, et n'a pas encore d'actions de soutien (section 4.2) ; aucun objet n'est réservé à une classe ; l'équipement ne joue pas sur les expéditions automatiques ; un objet disparu du jeu rend la sauvegarde illisible. Le cumul des bonus (jusqu'à +40 % sur une stat) est à vérifier en jouant, comme les coûts et les durées.
 
+Les questions Q88 et suivantes ont été relevées le 20/10/2026 lors de la conception des étapes 52 ordres du héros dans le noyau, 53 écran de la console, 54 écran du bot Discord.
+
+- Q88. (Étapes 52 à 54) Hypothèses retenues, à confirmer : l'ordre est disponible dès le premier combat, contre les Apôtres et les humains compris ; il ne joue pas sur les expéditions automatiques ; l'état du combat ne rappelle pas quel monstre l'a reçu. Le cumul des bonus (jusqu'à +60 % sur une stat, par exemple un Guerrier avec l'Espadon des cendres, le Croc tressé, Férocité et le Cri de guerre) est à vérifier en jouant. Le niveau et les stats propres du héros restent pour plus tard (Q87).
+
 - Q83. (Étapes 33 et 34) Hypothèses retenues, à confirmer : le gardien d'une âme à retrouver attaque à une étape tirée parmi celles qui précèdent la dernière ; le don d'une âme à Malvoise se fait sans confirmation ; une partie antérieure qui n'a pas recueilli l'âme de Bertrand le rencontre à l'étape 4 de sa prochaine expédition dans la Lisière, même avec Malvoise déjà au camp ; le texte du brigand de l'étape 5 ne change pas, même s'il a perdu son Loup à l'étape 4.
 
 ## 17. Journal des décisions
@@ -1180,3 +1191,10 @@ Les questions Q87 et suivantes ont été relevées le 20/10/2026 lors de la conc
 - Choix de l'utilisateur : l'équipement donne des bonus de stats en pourcentage aux monstres du joueur en combat, comme la classe ; il n'est jamais perdu ; Gunther le forge dans le même atelier que les améliorations, avec une durée (section 13.5).
 - Contenu validé par l'utilisateur : 14 objets, 6 armes, 3 armures et 5 talismans, en trois paliers (docs/contenu-v1.md, section 11). Sauvegarde en version 16.
 - Hypothèses retenues, à confirmer : Q87.
+
+20/10/2026 (conception des étapes 52 à 54, ordres du héros) :
+
+- Choix de l'utilisateur : les actions de soutien du héros passent avant les autres fonctionnalités en attente (protections des expéditions automatiques, suite de la traque, multijoueur).
+- Choix de l'utilisateur : un ordre par classe, gratuit, une fois par combat, sur le monstre actif, +20 % dans la stat du bonus de classe jusqu'à la fin du combat (section 4.2). Noms et textes validés (docs/contenu-v1.md, section 12).
+- Choix de l'utilisateur : pas encore de niveau ni de stats propres du héros. Pas de changement de sauvegarde.
+- Hypothèses retenues, à confirmer : Q88.

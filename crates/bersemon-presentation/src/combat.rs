@@ -4,10 +4,12 @@
 use bersemon_core::attaque::{Attaque, Categorie};
 use bersemon_core::codex::Codex;
 use bersemon_core::combat::{Combat, Combattant, Cote, Evenement, Issue};
+use bersemon_core::heros::Ordre;
 use bersemon_core::monstre::{Monstre, RapportExperience};
 use bersemon_core::statut::Statut;
 use bersemon_core::types::Efficacite;
 
+use crate::equipement::decrire_bonus;
 use crate::mise_en_valeur::important;
 use crate::monstres::{
     decrire_attaque, ligne_monstre, nom, nom_en_combat, nom_en_valeur, progression_d_experience,
@@ -182,6 +184,27 @@ pub fn evenement(evenement: &Evenement, combat: &Combat) -> String {
     }
 }
 
+/// "Cri de guerre (+20 % d'Attaque)".
+pub fn ordre_et_bonus(ordre: Ordre) -> String {
+    format!("{} ({})", ordre.nom(), decrire_bonus(&ordre.bonus()))
+}
+
+/// `monstre` est le nom, déjà mis en valeur, du monstre qui reçoit l'ordre
+/// (docs/contenu-v1.md, section 12).
+pub fn ordre_donne(heros: &str, ordre: Ordre, monstre: &str) -> String {
+    let geste = match ordre {
+        Ordre::CriDeGuerre => "pousse un cri de guerre",
+        Ordre::Incantation => "murmure une incantation",
+        Ordre::BouclierDeFoi => "invoque un bouclier de foi",
+        Ordre::PasDeLOmbre => "souffle le pas de l'ombre",
+    };
+    let bonus = decrire_bonus(&ordre.bonus());
+    format!(
+        "{heros} {geste} : {monstre} gagne {} jusqu'à la fin du combat.",
+        bonus.trim_start_matches('+')
+    )
+}
+
 fn phrase_efficacite(efficacite: Efficacite) -> Option<&'static str> {
     match efficacite {
         Efficacite::TresForte => Some("C'est extrêmement efficace !"),
@@ -256,6 +279,30 @@ mod tests {
             false,
         )
         .unwrap()
+    }
+
+    #[test]
+    fn les_ordres_disent_leur_bonus() {
+        assert_eq!(
+            ordre_et_bonus(Ordre::CriDeGuerre),
+            "Cri de guerre (+20 % d'Attaque)"
+        );
+        assert_eq!(
+            ordre_donne("Guts", Ordre::CriDeGuerre, "Loup"),
+            "Guts pousse un cri de guerre : Loup gagne 20 % d'Attaque jusqu'à la fin du combat."
+        );
+        assert_eq!(
+            ordre_donne("Guts", Ordre::BouclierDeFoi, "Loup"),
+            "Guts invoque un bouclier de foi : Loup gagne 20 % de Défense et de Défense spéciale jusqu'à la fin du combat."
+        );
+        assert_eq!(
+            ordre_donne("Guts", Ordre::Incantation, "Loup"),
+            "Guts murmure une incantation : Loup gagne 20 % d'Attaque spéciale jusqu'à la fin du combat."
+        );
+        assert_eq!(
+            ordre_donne("Guts", Ordre::PasDeLOmbre, "Loup"),
+            "Guts souffle le pas de l'ombre : Loup gagne 20 % de Vitesse jusqu'à la fin du combat."
+        );
     }
 
     #[test]

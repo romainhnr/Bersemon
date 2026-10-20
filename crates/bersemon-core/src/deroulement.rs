@@ -31,7 +31,7 @@ use crate::expedition_automatique::{
     BilanExpeditionAutomatique, ErreurExpeditionAutomatique, ExpeditionAutomatique,
 };
 use crate::habilete::{ErreurChangementDHabilete, Habilete};
-use crate::heros::{Classe, Heros};
+use crate::heros::{Classe, Heros, Ordre};
 use crate::horodatage::Horodatage;
 use crate::inventaire::{ErreurObjet, Inventaire, Objet};
 use crate::marchand::ErreurMarchand;
@@ -151,6 +151,9 @@ pub enum Choix {
     PrendreLeMonstreRare,
     LaisserLeMonstreRare,
     Combat(Action),
+    /// En combat, avant l'action du tour : le héros donne son ordre au
+    /// monstre actif, une fois par combat (section 4.2).
+    DonnerOrdre,
     /// Position, dans l'équipe, du monstre envoyé à la place du monstre KO.
     Remplacer(usize),
     /// Position, dans le groupe adverse, du monstre KO à capturer.
@@ -383,6 +386,12 @@ pub enum Evenement {
     /// 9.3).
     Defaite {
         sac_perdu: Inventaire,
+    },
+    /// En combat ; `monstre` est celui qui reçoit l'ordre (section 4.2).
+    OrdreDonne {
+        heros: String,
+        ordre: Ordre,
+        monstre: Monstre,
     },
     /// Entre deux étapes ; `monstre` est le monstre soigné.
     SoinUtilise {
@@ -1601,6 +1610,22 @@ impl EnExpedition {
         contexte: &mut Contexte<'_>,
         evenements: &mut Vec<Evenement>,
     ) -> Result<Reponse, ErreurChoix> {
+        if *choix == Choix::DonnerOrdre {
+            let resultat = combat.donner_ordre();
+            let reponse = match resultat {
+                Ok((ordre, cible)) => {
+                    evenements.push(Evenement::OrdreDonne {
+                        heros: partie.heros().nom().as_str().to_string(),
+                        ordre,
+                        monstre: combat.monstre(cible).clone(),
+                    });
+                    Ok(Reponse::Faite)
+                }
+                Err(erreur) => Err(ErreurChoix::Combat(erreur)),
+            };
+            self.moment = Moment::Combat(combat);
+            return reponse;
+        }
         let resultat = match (combat.phase(), choix) {
             (Phase::ChoixAction, Choix::Combat(action)) => {
                 if let Action::UtiliserSoin(soin, index) = *action {
@@ -2854,6 +2879,23 @@ mod tests {
             combat.adversaires()[0].espece().id().as_str(),
             "marchand-zombie"
         );
+        // L'ordre du héros, sans tirage, ne prend pas le tour.
+        let evenements =
+            repondre_sans_tirage(&mut deroulement, Choix::DonnerOrdre, &contenu, &depot).unwrap();
+        assert!(matches!(
+            evenements.as_slice(),
+            [Evenement::OrdreDonne { ordre: Ordre::Incantation, monstre, .. }]
+                if monstre.espece().id().as_str() == "salamandre"
+        ));
+        let Attente::ActionDeCombat(combat) = deroulement.attente() else {
+            panic!("combat attendu");
+        };
+        assert!(combat.a_recu_l_ordre(0));
+        assert_eq!(
+            repondre_sans_tirage(&mut deroulement, Choix::DonnerOrdre, &contenu, &depot),
+            Err(ErreurChoix::Combat(ErreurCombat::OrdreImpossible))
+        );
+        assert!(matches!(deroulement.attente(), Attente::ActionDeCombat(_)));
     }
 
     #[test]

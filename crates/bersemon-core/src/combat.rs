@@ -24,6 +24,7 @@ use crate::capture::calculer_chance_capture;
 use crate::degats::{ResultatAttaque, a_le_bonus_de_type, estimer_degats, resoudre_attaque};
 use crate::experience::tirer_gain_experience;
 use crate::habilete::{BONUS_D_INSTINCT, Habilete, majorer};
+use crate::heros::Ordre;
 use crate::humain::IaHumain;
 use crate::monstre::{Monstre, RapportExperience};
 use crate::soin::{EffetDuSoin, ErreurSoin, Soin, Soins, appliquer_soin, verifier_cible};
@@ -142,6 +143,8 @@ pub enum ErreurCombat {
     AucunSoin(Soin),
     FuiteImpossible,
     FiletImpossible,
+    /// Aucun ordre dans ce combat, ou il a déjà été donné.
+    OrdreImpossible,
 }
 
 impl fmt::Display for ErreurCombat {
@@ -183,6 +186,9 @@ impl fmt::Display for ErreurCombat {
             ErreurCombat::FuiteImpossible => write!(f, "impossible de fuir ce combat"),
             ErreurCombat::FiletImpossible => {
                 write!(f, "impossible de lancer un filet dans ce combat")
+            }
+            ErreurCombat::OrdreImpossible => {
+                write!(f, "le héros n'a plus d'ordre à donner dans ce combat")
             }
         }
     }
@@ -233,6 +239,11 @@ pub struct Combat {
     /// Bonus de la classe du héros, appliqué aux stats des monstres du joueur
     /// (section 4.2).
     bonus_joueur: BonusDeStats,
+    /// L'ordre que le héros peut donner (section 4.2).
+    ordre: Option<Ordre>,
+    /// Position, dans l'équipe, du monstre qui a reçu l'ordre : un seul
+    /// ordre par combat, dont le bonus dure jusqu'à la fin.
+    ordre_donne: Option<usize>,
     /// Multiplie la chance de capture, en fraction : les filets améliorés
     /// par Gunther (section 13.4).
     facteur_des_filets: (u64, u64),
@@ -273,6 +284,8 @@ impl Combat {
             actif_adversaire: 0,
             captures: Vec::new(),
             bonus_joueur: BonusDeStats::default(),
+            ordre: None,
+            ordre_donne: None,
             facteur_des_filets: (1, 1),
             soins: Soins::default(),
             contre_un_apotre: false,
@@ -350,6 +363,40 @@ impl Combat {
         self
     }
 
+    pub fn avec_ordre(mut self, ordre: Ordre) -> Self {
+        self.ordre = Some(ordre);
+        self
+    }
+
+    /// L'ordre que le héros peut donner maintenant : un seul par combat,
+    /// avant de choisir l'action du tour.
+    pub fn ordre_disponible(&self) -> Option<Ordre> {
+        self.ordre
+            .filter(|_| self.ordre_donne.is_none() && self.phase == Phase::ChoixAction)
+    }
+
+    /// Le monstre actif du joueur reçoit le bonus de l'ordre jusqu'à la fin
+    /// du combat. L'ordre ne prend pas le tour : le joueur choisit ensuite
+    /// l'action de son monstre, et l'adversaire n'agit pas entre-temps. Sans
+    /// tirage.
+    pub fn donner_ordre(&mut self) -> Result<(Ordre, Combattant), ErreurCombat> {
+        match self.phase {
+            Phase::ChoixAction => {}
+            Phase::Remplacement => return Err(ErreurCombat::RemplacementAttendu),
+            Phase::Termine(_) => return Err(ErreurCombat::CombatTermine),
+        }
+        let ordre = self
+            .ordre_disponible()
+            .ok_or(ErreurCombat::OrdreImpossible)?;
+        self.ordre_donne = Some(self.actif_joueur);
+        Ok((ordre, self.actif(Cote::Joueur)))
+    }
+
+    /// Le monstre de l'équipe qui a reçu l'ordre du héros.
+    pub fn a_recu_l_ordre(&self, index: usize) -> bool {
+        self.ordre_donne == Some(index)
+    }
+
     pub fn avec_filets(mut self, facteur: (u64, u64)) -> Self {
         self.facteur_des_filets = facteur;
         self
@@ -357,7 +404,8 @@ impl Combat {
 
     /// Stats utilisées en combat : celles du monstre, plus le bonus de son
     /// habileté, de chaque côté, et le bonus du joueur pour ses monstres
-    /// (section 5.9).
+    /// (section 5.9), avec celui de l'ordre pour le monstre qui l'a reçu
+    /// (section 4.2).
     pub fn stats_en_combat(&self, combattant: Combattant) -> Stats<u32> {
         let monstre = self.monstre(combattant);
         let habilete = monstre
@@ -365,7 +413,13 @@ impl Combat {
             .map(Habilete::bonus_de_stats)
             .unwrap_or_default();
         let bonus = match combattant.cote {
-            Cote::Joueur => cumuler_bonus(&habilete, &self.bonus_joueur),
+            Cote::Joueur => {
+                let bonus = cumuler_bonus(&habilete, &self.bonus_joueur);
+                match self.ordre.filter(|_| self.a_recu_l_ordre(combattant.index)) {
+                    Some(ordre) => cumuler_bonus(&bonus, &ordre.bonus()),
+                    None => bonus,
+                }
+            }
             Cote::Adversaire => habilete,
         };
         appliquer_bonus(&monstre.stats(), &bonus)
@@ -1953,6 +2007,49 @@ mod tests {
         let combat = combat(vec![rapide()], vec![lent()]).avec_bonus_du_joueur(bonus_d_attaque());
         assert_eq!(combat.stats_en_combat(j(0)).attaque, 11);
         assert_eq!(combat.stats_en_combat(a(0)).attaque, 10);
+    }
+
+    #[test]
+    fn l_ordre_renforce_le_monstre_actif_jusqu_a_la_fin_du_combat() {
+        let mut combat = combat(vec![rapide(), lent()], vec![lent()])
+            .avec_bonus_du_joueur(bonus_d_attaque())
+            .avec_ordre(Ordre::CriDeGuerre);
+        assert_eq!(combat.ordre_disponible(), Some(Ordre::CriDeGuerre));
+        // L'ordre ne fait aucun tirage et ne prend pas le tour.
+        assert_eq!(combat.donner_ordre(), Ok((Ordre::CriDeGuerre, j(0))));
+        assert_eq!(combat.phase(), Phase::ChoixAction);
+        assert!(combat.a_recu_l_ordre(0));
+        // 10 d'Attaque, +10 % de bonus du joueur et +20 % d'ordre.
+        assert_eq!(combat.stats_en_combat(j(0)).attaque, 13);
+        assert_eq!(combat.stats_en_combat(j(1)).attaque, 11);
+        assert_eq!(combat.stats_en_combat(a(0)).attaque, 10);
+        assert_eq!(combat.ordre_disponible(), None);
+        assert_eq!(combat.donner_ordre(), Err(ErreurCombat::OrdreImpossible));
+        tour(&mut combat, Action::Changer(1), &[2, 100]);
+        tour(&mut combat, Action::Changer(0), &[2, 100]);
+        assert_eq!(combat.stats_en_combat(j(0)).attaque, 13);
+    }
+
+    #[test]
+    fn sans_ordre_le_heros_ne_peut_rien_donner() {
+        let mut combat = combat(vec![rapide()], vec![lent()]);
+        assert_eq!(combat.ordre_disponible(), None);
+        assert_eq!(combat.donner_ordre(), Err(ErreurCombat::OrdreImpossible));
+    }
+
+    #[test]
+    fn pas_d_ordre_pendant_un_remplacement() {
+        let mut combat = combat(vec![affaibli(lent(), 3), lent()], vec![tres_rapide()])
+            .avec_ordre(Ordre::Incantation);
+        tour(&mut combat, Action::Attaquer(0), &[2, 100]);
+        assert_eq!(combat.phase(), Phase::Remplacement);
+        assert_eq!(combat.ordre_disponible(), None);
+        assert_eq!(
+            combat.donner_ordre(),
+            Err(ErreurCombat::RemplacementAttendu)
+        );
+        combat.remplacer(1).unwrap();
+        assert_eq!(combat.donner_ordre(), Ok((Ordre::Incantation, j(1))));
     }
 
     #[test]

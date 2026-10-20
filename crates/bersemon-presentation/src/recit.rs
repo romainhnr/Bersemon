@@ -7,7 +7,7 @@ use bersemon_core::contenu::{
 use bersemon_core::deroulement::Evenement;
 use bersemon_core::ressource::Ressource;
 
-use crate::combat::{rapport_experience, remplacement, renoncement};
+use crate::combat::{ordre_donne, rapport_experience, remplacement, renoncement};
 use crate::equipement::{nom_de_place, objet_et_bonus};
 use crate::erreurs::erreur_sauvegarde;
 use crate::expeditions_automatiques;
@@ -229,6 +229,14 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             };
             (important(&texte), true)
         }
+        Evenement::OrdreDonne {
+            heros,
+            ordre,
+            monstre,
+        } => (
+            ordre_donne(heros, *ordre, &nom_en_valeur(monstre, Cote::Joueur)),
+            false,
+        ),
         Evenement::SoinUtilise {
             soin,
             monstre,
