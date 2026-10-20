@@ -185,6 +185,16 @@ pub fn evenement(evenement: &Evenement, combat: &Combat) -> String {
         Evenement::FinDuCombat(Issue::Victoire) => "Victoire !".to_string(),
         Evenement::FinDuCombat(Issue::Defaite) => important("Défaite : toute votre équipe est KO."),
         Evenement::FinDuCombat(Issue::Fuite) => "Le combat est terminé.".to_string(),
+        // Le récit d'un duel nomme le héros qui abandonne ou perd par
+        // forfait (`duels::raconter`) : ces phrases ne servent qu'à défaut.
+        Evenement::Abandon(cote) => match cote {
+            Cote::Joueur => "Vous abandonnez le duel.".to_string(),
+            Cote::Adversaire => "Votre adversaire abandonne le duel.".to_string(),
+        },
+        Evenement::Forfait(cote) => match cote {
+            Cote::Joueur => "Vous perdez le duel par forfait.".to_string(),
+            Cote::Adversaire => "Votre adversaire perd le duel par forfait.".to_string(),
+        },
     }
 }
 

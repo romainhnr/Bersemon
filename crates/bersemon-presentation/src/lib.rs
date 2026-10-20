@@ -7,6 +7,7 @@
 //! permet pas de connaître.
 
 pub mod combat;
+pub mod duels;
 pub mod echanges;
 pub mod equipement;
 pub mod erreurs;

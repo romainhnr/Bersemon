@@ -683,4 +683,21 @@ Décidé le 20/10/2026, pour les étapes 55 à 58 (gamedesign.md, sections 15.1 
 | Récit, pour chaque monstre cédé (hypothèse, Q89) | Vous cédez {monstre} à {héros}. |
 | Récit, pour chaque monstre reçu (hypothèse, Q89) | Vous recevez {monstre} de {héros}. |
 
-Au camp, le bouton s'appelle "Échanges". Limite d'obéissance : niveau maximal de la zone la plus avancée ouverte, plus 5 (12, 18, 25 puis 32).
+Au camp, le bouton s'appelle "Échanges", puis "Autres joueurs" depuis l'étape 60 (section 14). Limite d'obéissance : niveau maximal de la zone la plus avancée ouverte, plus 5 (12, 18, 25 puis 32).
+
+## 14. Duel en temps réel
+
+Décidé le 20/10/2026, pour les étapes 59 à 61 (gamedesign.md, section 15.3), textes validés par l'utilisateur. {héros} est le nom du héros de l'autre joueur, {pseudo} son pseudo Discord.
+
+| Moment | Texte |
+|---|---|
+| Message privé, défi reçu | {héros} ({pseudo}) vous défie en duel. Ouvrez /bersemon, au camp, pour répondre. |
+| Message privé, défi accepté | {héros} a accepté votre défi : le duel commence. Ouvrez /bersemon. |
+| Message privé, défi refusé | {héros} a refusé votre défi. |
+| Duel, après avoir choisi son action | En attente de l'action de {héros}. |
+| Duel, l'autre abandonne | {héros} abandonne le duel. |
+| Duel, victoire par forfait | {héros} n'a pas joué depuis 5 minutes : vous remportez le duel par forfait. |
+| Fin du duel, victoire | Victoire : vous remportez le duel contre {héros}. |
+| Fin du duel, défaite | Défaite : {héros} remporte le duel. |
+
+Boutons : Défier en duel, Accepter le défi, Refuser le défi, Retirer le défi, Abandonner, Actualiser, Réclamer la victoire. Au camp, le bouton "Échanges" devient "Autres joueurs".

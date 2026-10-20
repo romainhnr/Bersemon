@@ -18,6 +18,7 @@ pub mod combat;
 pub mod contenu;
 mod degats;
 pub mod deroulement;
+pub mod duel;
 pub mod echange;
 pub mod equipement;
 pub mod espece;

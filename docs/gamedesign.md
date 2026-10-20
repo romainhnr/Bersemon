@@ -800,7 +800,7 @@ Repères : un Loup de niveau 5 se revend 28 pièces d'argent, un Feu follet de n
 
 ## 15. Multijoueur (après l'adaptation à Discord)
 
-- Combats contre d'autres vrais joueurs. Le vainqueur ne peut pas prendre de monstre à son adversaire.
+- Combats contre d'autres vrais joueurs. Le vainqueur ne peut pas prendre de monstre à son adversaire. Depuis les étapes 59 à 61 : le duel en temps réel (section 15.3).
 - Échange et don de monstres entre joueurs : depuis les étapes 55 à 58 (section 15.1).
 - Expéditions en groupe avec un ami.
 - Système d'amis : remplacé pour l'instant par la liste des joueurs du bot (section 15.1).
@@ -810,7 +810,7 @@ Repères : un Loup de niveau 5 se revend 28 pièces d'argent, un Feu follet de n
 Décidé le 20/10/2026, pour les étapes 55 à 58 (choix de l'utilisateur) :
 
 - Le multijoueur ne concerne que le bot Discord : la console reste une partie seule. Ses règles sont dans le noyau.
-- Au camp, un bouton "Échanges" ouvre l'écran des échanges. Le joueur y choisit un autre joueur dans la liste des joueurs qui ont une partie sur le bot (nom du héros et pseudo Discord), puis un de ses monstres, et enfin un monstre de l'autre joueur, dont il voit la liste, pour un échange, ou aucun, pour un don.
+- Au camp, un bouton "Échanges" ouvre l'écran des échanges ; depuis l'étape 60, il s'appelle "Autres joueurs" et sert aussi aux défis (section 15.3). Le joueur y choisit un autre joueur dans la liste des joueurs qui ont une partie sur le bot (nom du héros et pseudo Discord), puis un de ses monstres, et enfin un monstre de l'autre joueur, dont il voit la liste, pour un échange, ou aucun, pour un don.
 - L'autre joueur accepte ou refuse l'offre depuis son écran des échanges. Celui qui l'a faite peut la retirer tant qu'elle n'est pas acceptée. Chaque joueur a au plus une offre envoyée et une offre reçue en attente. Le bot prévient par message privé de l'arrivée d'une offre, puis de son acceptation ou de son refus. Textes dans docs/contenu-v1.md, section 13.
 - Au moment de l'acceptation, les deux joueurs doivent être au camp, sans question en attente ; sinon, l'offre reste en attente. Elle n'est plus valable si l'un des monstres a changé ou changé de place depuis : elle est alors retirée.
 - Un échange : chaque monstre prend la place, dans l'équipe ou au camp, de celui qu'il remplace. Un don : le monstre rejoint l'équipe s'il y reste une place, sinon le camp ; si les deux sont pleins, le don est refusé, sans relâcher de monstre.
@@ -826,6 +826,19 @@ Décidé le 20/10/2026, pour l'étape 55 (choix de l'utilisateur) :
 - Au-dessus de sa limite, chaque fois que le joueur lui ordonne d'attaquer, il a 10 % de chances par niveau au-dessus de la limite, 50 % au plus, d'ignorer l'ordre : il ne fait rien ce tour, comme un monstre bloqué par la paralysie (section 10.5). Ce tirage n'a lieu que pour un monstre au-dessus de sa limite, avant celui de la paralysie. Changer de monstre, le soigner, lancer un filet ou fuir ne sont pas touchés.
 - La fiche d'un monstre reçu rappelle de qui il vient et sa limite.
 - L'obéissance ne joue pas sur les expéditions automatiques (hypothèse retenue, Q89).
+
+### 15.3 Duel en temps réel
+
+Décidé le 20/10/2026, pour les étapes 59 à 61 (choix de l'utilisateur) :
+
+- Sur le bot Discord seulement. Depuis l'écran "Autres joueurs" du camp, le joueur choisit un autre joueur et le défie en duel. L'autre accepte ou refuse ; celui qui a lancé le défi peut le retirer. Un défi à la fois par joueur, envoyé ou reçu. Le bot prévient par message privé du défi, puis de son acceptation ou de son refus. Textes dans docs/contenu-v1.md, section 14.
+- Le défi s'accepte si les deux joueurs sont au camp, sans question en attente, et ont chacun au moins un monstre dans l'équipe. Pendant le duel, le message de chacun montre le duel à la place du camp.
+- Duel amical : chacun combat avec une copie de son équipe, soignée. Aucun gain ni perte : ni XP, ni argent, ni monstre KO après le duel, et rien n'est sauvegardé. Les monstres gardent leur niveau. Un duel en cours est perdu, sans conséquence, si le bot redémarre.
+- Les règles sont celles du combat contre un humain (section 10) : attaquer, changer de monstre, donner l'ordre de son héros (section 4.2). Chaque côté a le bonus de classe et d'équipement de son héros (sections 4.2 et 4.3), et ses monstres reçus peuvent lui désobéir (section 15.2). Ni soin, ni filet, ni fuite.
+- À chaque tour, les deux joueurs choisissent leur action sans voir celle de l'autre ; le tour se joue quand les deux ont choisi. Les changements de monstre passent avant les attaques, celui du joueur qui a lancé le défi le premier ; l'ordre des attaques suit la vitesse, avec un tirage à égalité (section 10.2). Chacun remplace lui-même son monstre KO avant le tour suivant.
+- Le joueur qui a choisi attend l'autre : son message le dit, avec un bouton Actualiser qui montre le tour une fois joué. Si l'autre n'a toujours pas joué 5 minutes après lui, il peut réclamer la victoire par forfait. Chacun peut abandonner à tout moment, ce qui donne la victoire à l'autre.
+- Le duel se gagne quand toute l'équipe de l'autre est KO. Si les deux équipes tombent au même tour, le joueur dont le dernier monstre est tombé le premier perd.
+- Pas de palmarès des duels pour l'instant.
 
 ## 16. Questions ouvertes et valeurs à définir
 
@@ -877,6 +890,10 @@ Les questions Q88 et suivantes ont été relevées le 20/10/2026 lors de la conc
 Les questions Q89 et suivantes ont été relevées le 20/10/2026 lors de la conception des étapes 55 monstres reçus et obéissance, avec la sauvegarde en version 17, 56 règles du don et de l'échange, 57 offres sur le bot Discord, 58 écran des échanges.
 
 - Q89. (Étapes 55 à 58) Hypothèses retenues, à confirmer : les offres en attente sont gardées en mémoire, sans délai d'expiration, et perdues si le bot redémarre ; la sauvegarde de celui qui reçoit est écrite la première, si bien qu'un incident entre les deux écritures dupliquerait le monstre plutôt que de le perdre ; la liste des joueurs montre au plus 25 joueurs, triés par nom du héros, avec le dernier pseudo Discord connu du bot ; un monstre rendu à celui qui l'avait cédé reste marqué "reçu de" et peut lui désobéir ; l'obéissance ne joue pas sur les expéditions automatiques, et l'ordre du héros renforce aussi un monstre qui désobéit. Textes proposés sans validation : le récit d'un monstre cédé ou reçu (docs/contenu-v1.md, section 13), les refus de l'écran des échanges et ses boutons (Accepter l'offre, Refuser l'offre, Retirer l'offre, Le donner sans contrepartie, Annuler l'offre). Celui qui a fait l'offre n'en voit pas le récit : le message privé le prévient. Restent à faire : combats entre joueurs, expéditions en groupe, système d'amis (section 15).
+
+Les questions Q90 et suivantes ont été relevées le 20/10/2026 lors de la conception des étapes 59 combat symétrique et duel dans le noyau, 60 défis sur le bot Discord et écran "Autres joueurs", 61 écran du duel.
+
+- Q90. (Étapes 59 à 61) Hypothèses retenues, à confirmer : le délai du forfait court aussi pendant le remplacement d'un monstre KO ; l'ordre du héros se donne à tout moment avant de choisir son action, et l'autre le voit en actualisant ; un joueur en duel ne peut ni lancer ni recevoir de défi, mais les offres de don et d'échange restent possibles ; le joueur qui a lancé le défi est le premier côté du combat. Restent à faire : expéditions en groupe, système d'amis (section 15).
 
 - Q83. (Étapes 33 et 34) Hypothèses retenues, à confirmer : le gardien d'une âme à retrouver attaque à une étape tirée parmi celles qui précèdent la dernière ; le don d'une âme à Malvoise se fait sans confirmation ; une partie antérieure qui n'a pas recueilli l'âme de Bertrand le rencontre à l'étape 4 de sa prochaine expédition dans la Lisière, même avec Malvoise déjà au camp ; le texte du brigand de l'étape 5 ne change pas, même s'il a perdu son Loup à l'étape 4.
 
@@ -1232,3 +1249,9 @@ Les questions Q89 et suivantes ont été relevées le 20/10/2026 lors de la conc
 - Choix de l'utilisateur : pas de limite de niveau à la réception, mais un monstre reçu désobéit au-dessus du niveau maximal de la zone la plus avancée ouverte plus 5, avec 10 % de chances par niveau au-dessus, 50 % au plus (section 15.2). Un Apôtre ne s'échange pas.
 - Sauvegarde en version 17 : la marque "reçu de" de chaque monstre.
 - Hypothèses retenues, à confirmer : Q89.
+
+20/10/2026 (conception des étapes 59 à 61, duel en temps réel) :
+
+- Choix de l'utilisateur : le duel en temps réel passe avant le duel contre une copie menée par l'IA, les expéditions en groupe et le système d'amis.
+- Choix de l'utilisateur : duel amical sur des copies soignées, sans gain ni perte ; règles du combat contre un humain avec l'ordre du héros, sans soin ni filet ni fuite ; attente avec un bouton Actualiser et forfait après 5 minutes ; défis lancés depuis l'écran "Autres joueurs", qui remplace "Échanges" (section 15.3). Si les deux équipes tombent au même tour, la première tombée perd. Pas de palmarès. Textes validés (docs/contenu-v1.md, section 14).
+- Hypothèses retenues, à confirmer : Q90.

@@ -28,13 +28,15 @@ pub fn nom_en_valeur(monstre: &Monstre, cote: Cote) -> String {
     important(&nom(monstre, cote))
 }
 
-/// Comme `nom`, sauf qu'un Apôtre, les monstres d'un humain et le marchand
-/// zombie ne sont pas dits sauvages (sections 9.4, 10.7 et 14.2).
+/// Comme `nom`, sauf qu'un Apôtre, les monstres d'un humain ou d'un autre
+/// joueur et le marchand zombie ne sont pas dits sauvages (sections 9.4,
+/// 10.7, 14.2 et 15.3).
 pub fn nom_en_combat(combat: &Combat, combattant: Combattant) -> String {
     let sauvage = combattant.cote == Cote::Adversaire
         && !combat.est_contre_un_apotre()
         && !combat.est_contre_un_humain()
-        && !combat.est_sans_capture();
+        && !combat.est_sans_capture()
+        && !combat.est_un_duel();
     nommer(combat.monstre(combattant), sauvage)
 }
 

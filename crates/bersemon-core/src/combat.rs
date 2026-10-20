@@ -47,6 +47,13 @@ impl Cote {
             Cote::Adversaire => Cote::Joueur,
         }
     }
+
+    fn position(self) -> usize {
+        match self {
+            Cote::Joueur => 0,
+            Cote::Adversaire => 1,
+        }
+    }
 }
 
 /// Désigne un monstre du combat par son côté et sa position dans l'équipe du
@@ -58,6 +65,16 @@ pub struct Combattant {
     pub index: usize,
 }
 
+impl Combattant {
+    /// Le même monstre, vu par l'autre joueur d'un duel.
+    pub fn miroir(self) -> Combattant {
+        Combattant {
+            cote: self.cote.oppose(),
+            index: self.index,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Issue {
     Victoire,
@@ -65,12 +82,24 @@ pub enum Issue {
     Fuite,
 }
 
+impl Issue {
+    /// La même issue, vue par l'autre joueur d'un duel.
+    pub fn miroir(self) -> Issue {
+        match self {
+            Issue::Victoire => Issue::Defaite,
+            Issue::Defaite => Issue::Victoire,
+            Issue::Fuite => Issue::Fuite,
+        }
+    }
+}
+
 /// Ce que le combat attend du joueur.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Phase {
     /// L'action du tour, par `jouer_tour`.
     ChoixAction,
-    /// Le monstre à envoyer à la place du monstre actif KO, par `remplacer`.
+    /// Le monstre à envoyer à la place du monstre actif KO, par `remplacer` ;
+    /// en duel, de chaque côté qui en attend un (`remplacer_pour`).
     Remplacement,
     Termine(Issue),
 }
@@ -130,6 +159,64 @@ pub enum Evenement {
     },
     Fuite,
     FinDuCombat(Issue),
+    /// En duel, ce côté abandonne et perd (section 15.3).
+    Abandon(Cote),
+    /// En duel, ce côté n'a pas joué à temps et perd par forfait.
+    Forfait(Cote),
+}
+
+impl Evenement {
+    /// Le même événement, vu par l'autre joueur d'un duel.
+    pub fn miroir(&self) -> Evenement {
+        match self.clone() {
+            Evenement::MonstreEnvoye(combattant) => Evenement::MonstreEnvoye(combattant.miroir()),
+            Evenement::AttaqueLancee { lanceur, attaque } => Evenement::AttaqueLancee {
+                lanceur: lanceur.miroir(),
+                attaque,
+            },
+            Evenement::AttaqueRatee(lanceur) => Evenement::AttaqueRatee(lanceur.miroir()),
+            Evenement::SansEffet(cible) => Evenement::SansEffet(cible.miroir()),
+            Evenement::Degats {
+                cible,
+                degats,
+                critique,
+                efficacite,
+            } => Evenement::Degats {
+                cible: cible.miroir(),
+                degats,
+                critique,
+                efficacite,
+            },
+            Evenement::StatutInflige { cible, statut } => Evenement::StatutInflige {
+                cible: cible.miroir(),
+                statut,
+            },
+            Evenement::BloqueParLaParalysie(combattant) => {
+                Evenement::BloqueParLaParalysie(combattant.miroir())
+            }
+            Evenement::Desobeissance(combattant) => Evenement::Desobeissance(combattant.miroir()),
+            Evenement::DegatsDePoison { cible, degats } => Evenement::DegatsDePoison {
+                cible: cible.miroir(),
+                degats,
+            },
+            Evenement::Ko(combattant) => Evenement::Ko(combattant.miroir()),
+            Evenement::FiletLance { cible, chance } => Evenement::FiletLance {
+                cible: cible.miroir(),
+                chance,
+            },
+            Evenement::CaptureReussie(cible) => Evenement::CaptureReussie(cible.miroir()),
+            Evenement::CaptureRatee(cible) => Evenement::CaptureRatee(cible.miroir()),
+            Evenement::SoinUtilise { soin, cible, effet } => Evenement::SoinUtilise {
+                soin,
+                cible: cible.miroir(),
+                effet,
+            },
+            Evenement::Fuite => Evenement::Fuite,
+            Evenement::FinDuCombat(issue) => Evenement::FinDuCombat(issue.miroir()),
+            Evenement::Abandon(cote) => Evenement::Abandon(cote.oppose()),
+            Evenement::Forfait(cote) => Evenement::Forfait(cote.oppose()),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -150,6 +237,11 @@ pub enum ErreurCombat {
     FiletImpossible,
     /// Aucun ordre dans ce combat, ou il a déjà été donné.
     OrdreImpossible,
+    /// Ni soin, ni filet, ni fuite en duel, et ses tours se jouent à deux
+    /// (section 15.3).
+    InterditEnDuel,
+    /// Abandon, forfait ou tour à deux hors d'un duel.
+    ReserveAuDuel,
 }
 
 impl fmt::Display for ErreurCombat {
@@ -195,6 +287,8 @@ impl fmt::Display for ErreurCombat {
             ErreurCombat::OrdreImpossible => {
                 write!(f, "le héros n'a plus d'ordre à donner dans ce combat")
             }
+            ErreurCombat::InterditEnDuel => write!(f, "action impossible en duel"),
+            ErreurCombat::ReserveAuDuel => write!(f, "action réservée aux duels"),
         }
     }
 }
@@ -241,17 +335,8 @@ pub struct Combat {
     /// Pour chaque monstre adverse, les monstres de l'équipe qui ont été
     /// actifs face à lui : ce sont eux qui reçoivent son XP (section 7).
     participants: Vec<Vec<usize>>,
-    /// Bonus de la classe du héros, appliqué aux stats des monstres du joueur
-    /// (section 4.2).
-    bonus_joueur: BonusDeStats,
-    /// L'ordre que le héros peut donner (section 4.2).
-    ordre: Option<Ordre>,
-    /// Position, dans l'équipe, du monstre qui a reçu l'ordre : un seul
-    /// ordre par combat, dont le bonus dure jusqu'à la fin.
-    ordre_donne: Option<usize>,
-    /// Niveau jusqu'auquel les monstres reçus d'un autre joueur obéissent
-    /// (section 15.2) ; sans limite, tous obéissent.
-    limite_d_obeissance: Option<u8>,
+    /// Celles du joueur, puis celles de l'adversaire, qui n'en a qu'en duel.
+    regles: [ReglesDuCote; 2],
     /// Multiplie la chance de capture, en fraction : les filets améliorés
     /// par Gunther (section 13.4).
     facteur_des_filets: (u64, u64),
@@ -266,7 +351,31 @@ pub struct Combat {
     /// (section 14.2).
     sans_capture: bool,
     ia: Ia,
+    /// Contre un autre joueur, qui choisit les actions de l'adversaire
+    /// (section 15.3).
+    duel: bool,
+    /// En duel, le côté dont toute l'équipe est tombée la première pendant
+    /// le tour : il perd, même si l'autre tombe aussi.
+    premiere_equipe_tombee: Option<Cote>,
     phase: Phase,
+}
+
+/// Ce qui ne vaut que pour un côté du combat.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+struct ReglesDuCote {
+    /// Bonus de la classe et de l'équipement de son héros (sections 4.2 et
+    /// 4.3).
+    bonus: BonusDeStats,
+    /// L'ordre que son héros peut donner (section 4.2).
+    ordre: Option<Ordre>,
+    /// Position, dans son équipe, du monstre qui a reçu l'ordre : un seul
+    /// ordre par combat, dont le bonus dure jusqu'à la fin.
+    ordre_donne: Option<usize>,
+    /// Niveau jusqu'auquel ses monstres reçus d'un autre joueur obéissent
+    /// (section 15.2) ; sans limite, tous obéissent.
+    limite_d_obeissance: Option<u8>,
+    /// Son monstre actif est KO et attend d'être remplacé.
+    a_remplacer: bool,
 }
 
 impl Combat {
@@ -291,20 +400,49 @@ impl Combat {
             adversaires,
             actif_adversaire: 0,
             captures: Vec::new(),
-            bonus_joueur: BonusDeStats::default(),
-            ordre: None,
-            ordre_donne: None,
-            limite_d_obeissance: None,
+            regles: Default::default(),
             facteur_des_filets: (1, 1),
             soins: Soins::default(),
             contre_un_apotre: false,
             contre_un_humain: false,
             sans_capture: false,
             ia: Ia::Hasard,
+            duel: false,
+            premiere_equipe_tombee: None,
             phase: Phase::ChoixAction,
         };
         combat.noter_participation();
         Ok(combat)
+    }
+
+    /// Duel entre deux joueurs (section 15.3), avec des équipes soignées :
+    /// ni soin, ni filet, ni fuite, ni capture, ni XP. Le premier joueur est
+    /// le côté `Joueur`, le second le côté `Adversaire`, qui choisit lui
+    /// aussi ses actions (`jouer_tour_en_duel`).
+    pub fn duel(premier: Vec<Monstre>, second: Vec<Monstre>) -> Result<Self, ErreurCombat> {
+        let mut combat = Combat::new(premier, second)?;
+        combat.duel = true;
+        Ok(combat)
+    }
+
+    pub fn est_un_duel(&self) -> bool {
+        self.duel
+    }
+
+    /// Bonus de la classe et de l'équipement du héros de ce côté.
+    pub fn avec_bonus_du_cote(mut self, cote: Cote, bonus: BonusDeStats) -> Self {
+        self.regles[cote.position()].bonus = bonus;
+        self
+    }
+
+    pub fn avec_ordre_du_cote(mut self, cote: Cote, ordre: Ordre) -> Self {
+        self.regles[cote.position()].ordre = Some(ordre);
+        self
+    }
+
+    pub fn avec_limite_du_cote(mut self, cote: Cote, limite: u8) -> Self {
+        self.regles[cote.position()].limite_d_obeissance = Some(limite);
+        self
     }
 
     /// Soins que le joueur emporte dans le combat ; le bilan rend ceux qui
@@ -358,30 +496,34 @@ impl Combat {
     }
 
     pub fn fuite_possible(&self) -> bool {
-        !self.contre_un_apotre && !self.contre_un_humain
+        !self.contre_un_apotre && !self.contre_un_humain && !self.duel
     }
 
     pub fn filet_possible(&self) -> bool {
-        !self.contre_un_apotre && !self.contre_un_humain && !self.sans_capture
+        !self.contre_un_apotre && !self.contre_un_humain && !self.sans_capture && !self.duel
     }
 
     /// Bonus appliqué aux stats des monstres du joueur pendant tout le combat,
     /// comme celui de la classe du héros (section 4.2).
-    pub fn avec_bonus_du_joueur(mut self, bonus: BonusDeStats) -> Self {
-        self.bonus_joueur = bonus;
-        self
+    pub fn avec_bonus_du_joueur(self, bonus: BonusDeStats) -> Self {
+        self.avec_bonus_du_cote(Cote::Joueur, bonus)
     }
 
-    pub fn avec_ordre(mut self, ordre: Ordre) -> Self {
-        self.ordre = Some(ordre);
-        self
+    pub fn avec_ordre(self, ordre: Ordre) -> Self {
+        self.avec_ordre_du_cote(Cote::Joueur, ordre)
     }
 
     /// L'ordre que le héros peut donner maintenant : un seul par combat,
     /// avant de choisir l'action du tour.
     pub fn ordre_disponible(&self) -> Option<Ordre> {
-        self.ordre
-            .filter(|_| self.ordre_donne.is_none() && self.phase == Phase::ChoixAction)
+        self.ordre_disponible_pour(Cote::Joueur)
+    }
+
+    pub fn ordre_disponible_pour(&self, cote: Cote) -> Option<Ordre> {
+        let regles = &self.regles[cote.position()];
+        regles
+            .ordre
+            .filter(|_| regles.ordre_donne.is_none() && self.phase == Phase::ChoixAction)
     }
 
     /// Le monstre actif du joueur reçoit le bonus de l'ordre jusqu'à la fin
@@ -389,34 +531,64 @@ impl Combat {
     /// l'action de son monstre, et l'adversaire n'agit pas entre-temps. Sans
     /// tirage.
     pub fn donner_ordre(&mut self) -> Result<(Ordre, Combattant), ErreurCombat> {
+        self.donner_ordre_pour(Cote::Joueur)
+    }
+
+    /// En duel, chaque joueur donne l'ordre de son héros (section 15.3).
+    pub fn donner_ordre_pour(&mut self, cote: Cote) -> Result<(Ordre, Combattant), ErreurCombat> {
         match self.phase {
             Phase::ChoixAction => {}
             Phase::Remplacement => return Err(ErreurCombat::RemplacementAttendu),
             Phase::Termine(_) => return Err(ErreurCombat::CombatTermine),
         }
         let ordre = self
-            .ordre_disponible()
+            .ordre_disponible_pour(cote)
             .ok_or(ErreurCombat::OrdreImpossible)?;
-        self.ordre_donne = Some(self.actif_joueur);
-        Ok((ordre, self.actif(Cote::Joueur)))
+        let actif = self.actif(cote);
+        self.regles[cote.position()].ordre_donne = Some(actif.index);
+        Ok((ordre, actif))
     }
 
     /// Le monstre de l'équipe qui a reçu l'ordre du héros.
     pub fn a_recu_l_ordre(&self, index: usize) -> bool {
-        self.ordre_donne == Some(index)
+        self.a_recu_l_ordre_pour(Combattant {
+            cote: Cote::Joueur,
+            index,
+        })
     }
 
-    pub fn avec_limite_d_obeissance(mut self, limite: u8) -> Self {
-        self.limite_d_obeissance = Some(limite);
-        self
+    fn a_recu_l_ordre_pour(&self, combattant: Combattant) -> bool {
+        self.regles[combattant.cote.position()].ordre_donne == Some(combattant.index)
+    }
+
+    pub fn avec_limite_d_obeissance(self, limite: u8) -> Self {
+        self.avec_limite_du_cote(Cote::Joueur, limite)
     }
 
     /// Pourcentage de chances que ce monstre de l'équipe ignore l'ordre
     /// d'attaquer.
     pub fn chances_de_desobeir(&self, index: usize) -> u32 {
-        match (self.limite_d_obeissance, self.equipe.get(index)) {
+        self.chances_de_desobeir_pour(Combattant {
+            cote: Cote::Joueur,
+            index,
+        })
+    }
+
+    fn chances_de_desobeir_pour(&self, combattant: Combattant) -> u32 {
+        let limite = self.regles[combattant.cote.position()].limite_d_obeissance;
+        match (
+            limite,
+            self.equipe_du(combattant.cote).get(combattant.index),
+        ) {
             (Some(limite), Some(monstre)) => chances_de_desobeir(monstre, limite),
             _ => 0,
+        }
+    }
+
+    fn equipe_du(&self, cote: Cote) -> &[Monstre] {
+        match cote {
+            Cote::Joueur => &self.equipe,
+            Cote::Adversaire => &self.adversaires,
         }
     }
 
@@ -426,24 +598,23 @@ impl Combat {
     }
 
     /// Stats utilisées en combat : celles du monstre, plus le bonus de son
-    /// habileté, de chaque côté, et le bonus du joueur pour ses monstres
-    /// (section 5.9), avec celui de l'ordre pour le monstre qui l'a reçu
-    /// (section 4.2).
+    /// habileté et le bonus de son côté (section 5.9), avec celui de l'ordre
+    /// pour le monstre qui l'a reçu (section 4.2). Hors duel, l'adversaire
+    /// n'a que celui de son habileté.
     pub fn stats_en_combat(&self, combattant: Combattant) -> Stats<u32> {
         let monstre = self.monstre(combattant);
         let habilete = monstre
             .habilete()
             .map(Habilete::bonus_de_stats)
             .unwrap_or_default();
-        let bonus = match combattant.cote {
-            Cote::Joueur => {
-                let bonus = cumuler_bonus(&habilete, &self.bonus_joueur);
-                match self.ordre.filter(|_| self.a_recu_l_ordre(combattant.index)) {
-                    Some(ordre) => cumuler_bonus(&bonus, &ordre.bonus()),
-                    None => bonus,
-                }
-            }
-            Cote::Adversaire => habilete,
+        let regles = &self.regles[combattant.cote.position()];
+        let bonus = cumuler_bonus(&habilete, &regles.bonus);
+        let bonus = match regles
+            .ordre
+            .filter(|_| self.a_recu_l_ordre_pour(combattant))
+        {
+            Some(ordre) => cumuler_bonus(&bonus, &ordre.bonus()),
+            None => bonus,
         };
         appliquer_bonus(&monstre.stats(), &bonus)
     }
@@ -516,11 +687,10 @@ impl Combat {
         action: Action,
         aleatoire: &mut dyn Aleatoire,
     ) -> Result<Vec<Evenement>, ErreurCombat> {
-        match self.phase {
-            Phase::ChoixAction => {}
-            Phase::Remplacement => return Err(ErreurCombat::RemplacementAttendu),
-            Phase::Termine(_) => return Err(ErreurCombat::CombatTermine),
+        if self.duel {
+            return Err(ErreurCombat::InterditEnDuel);
         }
+        self.verifier_choix_d_action()?;
         self.valider(action)?;
         // L'IA décide avant de connaître l'action du joueur.
         let action_adversaire = self.choisir_action_adversaire(aleatoire);
@@ -595,17 +765,191 @@ impl Combat {
         Ok(evenements)
     }
 
+    fn verifier_choix_d_action(&self) -> Result<(), ErreurCombat> {
+        match self.phase {
+            Phase::ChoixAction => Ok(()),
+            Phase::Remplacement => Err(ErreurCombat::RemplacementAttendu),
+            Phase::Termine(_) => Err(ErreurCombat::CombatTermine),
+        }
+    }
+
+    /// Le tour d'un duel, une fois que les deux joueurs ont choisi : chacun
+    /// attaque ou change de monstre (section 15.3). Les changements passent
+    /// avant les attaques, celui du premier joueur d'abord ; les attaques
+    /// suivent la vitesse, avec un tirage à égalité. Une action refusée ne
+    /// consomme aucun tirage et ne modifie pas le combat.
+    pub fn jouer_tour_en_duel(
+        &mut self,
+        action_du_premier: Action,
+        action_du_second: Action,
+        aleatoire: &mut dyn Aleatoire,
+    ) -> Result<Vec<Evenement>, ErreurCombat> {
+        if !self.duel {
+            return Err(ErreurCombat::ReserveAuDuel);
+        }
+        self.verifier_choix_d_action()?;
+        self.verifier_action(Cote::Joueur, action_du_premier)?;
+        self.verifier_action(Cote::Adversaire, action_du_second)?;
+        let mut evenements = Vec::new();
+        let actions = [
+            (Cote::Joueur, action_du_premier),
+            (Cote::Adversaire, action_du_second),
+        ];
+        for (cote, action) in actions {
+            if let Action::Changer(index) = action {
+                self.envoyer(cote, index);
+                evenements.push(Evenement::MonstreEnvoye(self.actif(cote)));
+            }
+        }
+        let attaque = |action: Action| match action {
+            Action::Attaquer(index) => Some(index),
+            _ => None,
+        };
+        match (attaque(action_du_premier), attaque(action_du_second)) {
+            (Some(premiere), Some(seconde)) => {
+                for cote in self.ordre_du_tour(aleatoire) {
+                    let index = match cote {
+                        Cote::Joueur => premiere,
+                        Cote::Adversaire => seconde,
+                    };
+                    self.attaquer(cote, index, false, aleatoire, &mut evenements);
+                }
+            }
+            (Some(premiere), None) => {
+                self.attaquer(Cote::Joueur, premiere, false, aleatoire, &mut evenements)
+            }
+            (None, Some(seconde)) => {
+                self.attaquer(Cote::Adversaire, seconde, false, aleatoire, &mut evenements)
+            }
+            (None, None) => {}
+        }
+        self.finir_le_tour(&mut evenements);
+        Ok(evenements)
+    }
+
+    /// L'action que ce côté peut choisir maintenant. En duel, seulement
+    /// attaquer ou changer de monstre.
+    pub fn verifier_action(&self, cote: Cote, action: Action) -> Result<(), ErreurCombat> {
+        if !self.duel {
+            return match cote {
+                Cote::Joueur => self.valider(action),
+                Cote::Adversaire => Err(ErreurCombat::ReserveAuDuel),
+            };
+        }
+        match action {
+            Action::Attaquer(index) => {
+                let nombre = self.monstre(self.actif(cote)).attaques().liste().len();
+                if index < nombre {
+                    Ok(())
+                } else {
+                    Err(ErreurCombat::AttaqueInexistante(index))
+                }
+            }
+            Action::Changer(index) => {
+                if index == self.actif(cote).index {
+                    return Err(ErreurCombat::MonstreDejaActif(index));
+                }
+                self.verifier_remplacant_pour(cote, index)
+            }
+            Action::LancerFilet | Action::UtiliserSoin(..) | Action::Fuir => {
+                Err(ErreurCombat::InterditEnDuel)
+            }
+        }
+    }
+
+    fn envoyer(&mut self, cote: Cote, index: usize) {
+        match cote {
+            Cote::Joueur => {
+                self.actif_joueur = index;
+                self.noter_participation();
+            }
+            Cote::Adversaire => self.actif_adversaire = index,
+        }
+    }
+
     /// Envoie un monstre à la place du monstre actif KO. Ce remplacement est
     /// gratuit : l'adversaire n'agit pas (Q25).
     pub fn remplacer(&mut self, index: usize) -> Result<Vec<Evenement>, ErreurCombat> {
-        if self.phase != Phase::Remplacement {
+        self.remplacer_pour(Cote::Joueur, index)
+    }
+
+    /// En duel, chaque joueur remplace son monstre KO ; le tour suivant
+    /// attend les deux remplacements.
+    pub fn remplacer_pour(
+        &mut self,
+        cote: Cote,
+        index: usize,
+    ) -> Result<Vec<Evenement>, ErreurCombat> {
+        if self.phase != Phase::Remplacement || !self.remplacement_attendu(cote) {
             return Err(ErreurCombat::AucunRemplacementAttendu);
         }
-        self.verifier_remplacant(index)?;
-        self.actif_joueur = index;
-        self.noter_participation();
-        self.phase = Phase::ChoixAction;
-        Ok(vec![Evenement::MonstreEnvoye(self.actif(Cote::Joueur))])
+        self.verifier_remplacant_pour(cote, index)?;
+        self.envoyer(cote, index);
+        self.regles[cote.position()].a_remplacer = false;
+        if !self.regles.iter().any(|regles| regles.a_remplacer) {
+            self.phase = Phase::ChoixAction;
+        }
+        Ok(vec![Evenement::MonstreEnvoye(self.actif(cote))])
+    }
+
+    pub fn remplacement_attendu(&self, cote: Cote) -> bool {
+        self.regles[cote.position()].a_remplacer
+    }
+
+    /// En duel, à tout moment avant la fin : ce côté perd.
+    pub fn abandonner(&mut self, cote: Cote) -> Result<Vec<Evenement>, ErreurCombat> {
+        self.perdre(cote, Evenement::Abandon(cote))
+    }
+
+    /// En duel, ce côté perd parce qu'il n'a pas joué à temps ; c'est au
+    /// duel de mesurer le temps (`duel::Duel`).
+    pub fn declarer_forfait(&mut self, cote: Cote) -> Result<Vec<Evenement>, ErreurCombat> {
+        self.perdre(cote, Evenement::Forfait(cote))
+    }
+
+    fn perdre(&mut self, cote: Cote, evenement: Evenement) -> Result<Vec<Evenement>, ErreurCombat> {
+        if !self.duel {
+            return Err(ErreurCombat::ReserveAuDuel);
+        }
+        if let Phase::Termine(_) = self.phase {
+            return Err(ErreurCombat::CombatTermine);
+        }
+        for regles in &mut self.regles {
+            regles.a_remplacer = false;
+        }
+        self.phase = Phase::Termine(match cote {
+            Cote::Joueur => Issue::Defaite,
+            Cote::Adversaire => Issue::Victoire,
+        });
+        Ok(vec![evenement])
+    }
+
+    /// Le duel vu par le second joueur : il y devient le côté `Joueur`, et
+    /// les écrans du combat lui servent tels quels.
+    pub fn miroir(&self) -> Combat {
+        let mut regles = self.regles.clone();
+        regles.swap(0, 1);
+        Combat {
+            equipe: self.adversaires.clone(),
+            actif_joueur: self.actif_adversaire,
+            adversaires: self.equipe.clone(),
+            actif_adversaire: self.actif_joueur,
+            captures: Vec::new(),
+            participants: vec![Vec::new(); self.equipe.len()],
+            regles,
+            facteur_des_filets: self.facteur_des_filets,
+            soins: Soins::default(),
+            contre_un_apotre: self.contre_un_apotre,
+            contre_un_humain: self.contre_un_humain,
+            sans_capture: self.sans_capture,
+            ia: self.ia,
+            duel: self.duel,
+            premiere_equipe_tombee: self.premiere_equipe_tombee.map(Cote::oppose),
+            phase: match self.phase {
+                Phase::Termine(issue) => Phase::Termine(issue.miroir()),
+                autre => autre,
+            },
+        }
     }
 
     /// Monstres adverses KO, pas encore capturés, qu'il est possible de
@@ -614,6 +958,7 @@ impl Combat {
     pub fn adversaires_capturables(&self) -> Vec<usize> {
         if self.phase != Phase::Termine(Issue::Victoire)
             || self.sans_capture
+            || self.duel
             || (self.contre_un_humain && !self.captures.is_empty())
         {
             return Vec::new();
@@ -953,7 +1298,11 @@ impl Combat {
     }
 
     fn verifier_remplacant(&self, index: usize) -> Result<(), ErreurCombat> {
-        match self.equipe.get(index) {
+        self.verifier_remplacant_pour(Cote::Joueur, index)
+    }
+
+    fn verifier_remplacant_pour(&self, cote: Cote, index: usize) -> Result<(), ErreurCombat> {
+        match self.equipe_du(cote).get(index) {
             None => Err(ErreurCombat::MonstreInexistant(index)),
             Some(monstre) if monstre.est_ko() => Err(ErreurCombat::MonstreKo(index)),
             Some(_) => Ok(()),
@@ -1019,12 +1368,9 @@ impl Combat {
         }
         let lanceur = self.actif(cote);
         let cible = self.actif(cote.oppose());
-        // Seul l'ordre du joueur peut être ignoré ; un tirage seulement si
-        // la désobéissance est possible.
-        let desobeissance = match cote {
-            Cote::Joueur => self.chances_de_desobeir(lanceur.index),
-            Cote::Adversaire => 0,
-        };
+        // Hors duel, seul l'ordre du joueur peut être ignoré ; un tirage
+        // seulement si la désobéissance est possible.
+        let desobeissance = self.chances_de_desobeir_pour(lanceur);
         if desobeissance > 0 && aleatoire.tirer(1..=100) <= desobeissance {
             evenements.push(Evenement::Desobeissance(lanceur));
             return;
@@ -1083,6 +1429,18 @@ impl Combat {
                 }
             }
         }
+        if self.monstre(cible).est_ko() {
+            self.noter_chute(cible.cote);
+        }
+    }
+
+    /// Retient le côté dont toute l'équipe tombe la première (section
+    /// 15.3).
+    fn noter_chute(&mut self, cote: Cote) {
+        if self.premiere_equipe_tombee.is_none() && self.equipe_du(cote).iter().all(Monstre::est_ko)
+        {
+            self.premiere_equipe_tombee = Some(cote);
+        }
     }
 
     /// Rend `true` si le monstre adverse actif est capturé.
@@ -1129,7 +1487,13 @@ impl Combat {
             });
             if ko {
                 evenements.push(Evenement::Ko(combattant));
+                self.noter_chute(cote);
             }
+        }
+
+        if self.duel {
+            self.finir_le_tour_du_duel(evenements);
+            return;
         }
 
         // Une équipe entièrement KO perd, même si le dernier adversaire tombe
@@ -1152,7 +1516,27 @@ impl Combat {
             }
         }
         if !self.est_en_jeu(Cote::Joueur) {
+            self.regles[Cote::Joueur.position()].a_remplacer = true;
             self.phase = Phase::Remplacement;
+        }
+    }
+
+    /// Le côté dont l'équipe est tombée la première perd ; sinon, chacun
+    /// remplace son monstre KO.
+    fn finir_le_tour_du_duel(&mut self, evenements: &mut Vec<Evenement>) {
+        if let Some(cote) = self.premiere_equipe_tombee {
+            let issue = match cote {
+                Cote::Joueur => Issue::Defaite,
+                Cote::Adversaire => Issue::Victoire,
+            };
+            self.terminer_avec(issue, evenements);
+            return;
+        }
+        for cote in [Cote::Joueur, Cote::Adversaire] {
+            if !self.est_en_jeu(cote) {
+                self.regles[cote.position()].a_remplacer = true;
+                self.phase = Phase::Remplacement;
+            }
         }
     }
 
