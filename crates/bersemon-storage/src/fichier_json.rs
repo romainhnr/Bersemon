@@ -382,7 +382,8 @@ mod tests {
                 .avec_pierres(PierreDEvolution::Braise, 1)
                 .avec_boosters(Booster::CendreBenite, 2)
                 .avec_boosters(Booster::FioleDeSang, 1)
-                .avec_eclats_d_astre(1),
+                .avec_eclats_d_astre(1)
+                .avec_charmes_de_garde(2),
             marchand_au_camp: true,
             ames_donnees: vec![bertrand()],
             ames_portees: vec![grete()],
@@ -642,11 +643,50 @@ mod tests {
 
     #[test]
     fn version_inconnue() {
-        let texte = texte_de_partie().replacen("\"version\":22", "\"version\":23", 1);
+        let texte = texte_de_partie().replacen("\"version\":23", "\"version\":24", 1);
         assert_eq!(
             charger_texte(&texte),
-            Err(ErreurSauvegarde::VersionInconnue(23))
+            Err(ErreurSauvegarde::VersionInconnue(24))
         );
+    }
+
+    #[test]
+    fn un_charme_en_fabrication_se_relit() {
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        valeur["chantier"] = serde_json::json!({"charme": true, "fin": 9_000});
+        let partie = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        assert_eq!(
+            partie.forge().chantier().map(|chantier| &chantier.ouvrage),
+            Some(&Ouvrage::CharmeDeGarde)
+        );
+        let relue = charger_texte(&serde_json::to_string(&format::depuis_partie(&partie)).unwrap())
+            .unwrap()
+            .unwrap();
+        assert_eq!(relue, partie);
+        // Un charme et un objet à la fois : refusé.
+        valeur["chantier"]["objet"] = "couteau-de-chasse".into();
+        assert!(matches!(
+            charger_texte(&valeur.to_string()),
+            Err(ErreurSauvegarde::Incoherente(_))
+        ));
+    }
+
+    #[test]
+    fn la_protection_d_une_expedition_se_relit_ou_se_refuse() {
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        // L'expédition de la partie n'emmène qu'un monstre : il ne se
+        // protège pas.
+        valeur["expeditions_automatiques"][0]["protege"] = 0.into();
+        assert!(matches!(
+            charger_texte(&valeur.to_string()),
+            Err(ErreurSauvegarde::Incoherente(_))
+        ));
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        valeur["expeditions_automatiques"][0]["charme"] = true.into();
+        assert!(matches!(
+            charger_texte(&valeur.to_string()),
+            Err(ErreurSauvegarde::Incoherente(_))
+        ));
     }
 
     #[test]

@@ -7,6 +7,7 @@ use crate::aleatoire::Aleatoire;
 use crate::ame::{MarchandId, MarchandMort};
 use crate::amelioration::{
     Chantier, ErreurAmelioration, Forge, Ouvrage, PlanDAmelioration, PlanDeFabrication,
+    PlanDuCharme,
 };
 use crate::attaque::{Attaque, AttaqueId, ErreurAttaquesMonstre};
 use crate::booster::{Booster, ErreurBooster};
@@ -23,7 +24,7 @@ use crate::evolution::{
 use crate::expedition::{ErreurExpedition, Expedition, RencontreDeLAme};
 use crate::expedition_automatique::{
     BilanExpeditionAutomatique, ErreurExpeditionAutomatique, Estimation, ExpeditionAutomatique,
-    MONSTRES_MAX, MONSTRES_MIN,
+    MONSTRES_MAX, MONSTRES_MIN, Protection, verifier_protection,
 };
 use crate::habilete::{
     BONUS_DU_PILLARD, CHANCES_DU_FOUINEUR, ErreurChangementDHabilete, Habilete, autre_habilete,
@@ -615,6 +616,35 @@ impl Partie {
         Ok(self.forge.lancer_fabrication(plan, maintenant))
     }
 
+    /// Au camp, après confirmation : un charme de garde, aussi souvent que
+    /// le joueur le veut, un travail à la fois (section 13.5).
+    pub fn lancer_charme(
+        &mut self,
+        plan: &PlanDuCharme,
+        maintenant: Horodatage,
+    ) -> Result<Chantier, ErreurAmelioration> {
+        self.verifier_charme(plan)?;
+        self.payer_ressources(plan.cout());
+        Ok(self.forge.lancer_charme(plan, maintenant))
+    }
+
+    /// Refuse ce que refuserait `lancer_charme`, sans rien changer.
+    pub fn verifier_charme(&self, plan: &PlanDuCharme) -> Result<(), ErreurAmelioration> {
+        self.forge.verifier_charme()?;
+        let manquantes = self.ressources_manquantes(plan.cout());
+        if !manquantes.is_empty() {
+            return Err(ErreurAmelioration::RessourcesManquantes(manquantes));
+        }
+        Ok(())
+    }
+
+    /// Ceux du sac et du coffre : au camp, ils servent tous (section 12.5).
+    pub fn charmes_de_garde(&self) -> u32 {
+        self.sac
+            .charmes_de_garde()
+            .saturating_add(self.coffre_du_camp.charmes_de_garde())
+    }
+
     /// Refuse ce que refuserait `lancer_fabrication`, sans rien changer.
     pub fn verifier_fabrication(&self, plan: &PlanDeFabrication) -> Result<(), ErreurAmelioration> {
         self.forge
@@ -644,6 +674,8 @@ impl Partie {
             Ouvrage::Objet(objet) => {
                 let _ = self.heros.equipement_mut().ajouter(objet.clone());
             }
+            // Comme tout ce qui est gagné au camp (section 13.3).
+            Ouvrage::CharmeDeGarde => self.coffre_du_camp.ajouter_charmes_de_garde(1),
         }
         Ok(chantier)
     }
@@ -1587,8 +1619,10 @@ impl Partie {
         &self,
         zone: &Zone,
         emplacements: &[Emplacement],
+        protection: Protection,
     ) -> Result<Estimation, ErreurExpeditionAutomatique> {
         self.verifier_depart(zone, emplacements)?;
+        self.verifier_protection(protection, emplacements.len())?;
         let monstres: Vec<Monstre> = emplacements
             .iter()
             .filter_map(|emplacement| self.collection.monstre(*emplacement).cloned())
@@ -1596,7 +1630,7 @@ impl Partie {
         let parametres = zone.expedition_automatique();
         Ok(Estimation {
             duree: parametres.duree_pour(&monstres),
-            chances: parametres.chances_de_reussite(&monstres),
+            chances: parametres.chances_de_reussite(&monstres, protection),
         })
     }
 
@@ -1608,17 +1642,53 @@ impl Partie {
         emplacements: &[Emplacement],
         maintenant: Horodatage,
     ) -> Result<(), ErreurExpeditionAutomatique> {
+        self.envoyer_en_expedition_automatique_avec(
+            zone,
+            emplacements,
+            Protection::default(),
+            maintenant,
+        )
+    }
+
+    /// Comme `envoyer_en_expedition_automatique`, avec un monstre protégé,
+    /// désigné par sa position dans `emplacements`, et peut-être un charme
+    /// de garde, pris du sac d'abord, puis du coffre, et consommé au départ
+    /// (section 12.5).
+    pub fn envoyer_en_expedition_automatique_avec(
+        &mut self,
+        zone: &Zone,
+        emplacements: &[Emplacement],
+        protection: Protection,
+        maintenant: Horodatage,
+    ) -> Result<(), ErreurExpeditionAutomatique> {
         self.verifier_depart(zone, emplacements)?;
+        self.verifier_protection(protection, emplacements.len())?;
         let partis = self
             .collection
             .retirer_pour_expedition(emplacements)
             .map_err(ErreurExpeditionAutomatique::Collection)?;
+        if protection.charme && !self.sac.utiliser_charme_de_garde() {
+            self.coffre_du_camp.utiliser_charme_de_garde();
+        }
         self.expeditions_automatiques
             .push(ExpeditionAutomatique::partir(
                 zone.clone(),
                 partis,
+                protection,
                 maintenant,
             ));
+        Ok(())
+    }
+
+    fn verifier_protection(
+        &self,
+        protection: Protection,
+        nombre_de_monstres: usize,
+    ) -> Result<(), ErreurExpeditionAutomatique> {
+        verifier_protection(protection, nombre_de_monstres)?;
+        if protection.charme && self.charmes_de_garde() == 0 {
+            return Err(ErreurExpeditionAutomatique::AucunCharme);
+        }
         Ok(())
     }
 
@@ -2589,6 +2659,76 @@ mod tests {
     }
 
     #[test]
+    fn un_charme_de_garde_part_avec_un_monstre_protege() {
+        let bois = zone("bois");
+        let mut partie = partie();
+        partie.collection_mut().accueillir_capture(creer("loup", 5));
+        partie.zones_explorees.push(ZoneId::new("bois"));
+        let deux = [Emplacement::Equipe(0), Emplacement::Equipe(1)];
+        let avec_charme = Protection {
+            protege: Some(1),
+            charme: true,
+        };
+        assert_eq!(
+            partie.envoyer_en_expedition_automatique_avec(&bois, &deux, avec_charme, a(0)),
+            Err(ErreurExpeditionAutomatique::AucunCharme)
+        );
+        assert_eq!(
+            partie.estimer_expedition_automatique(
+                &bois,
+                &deux[..1],
+                Protection {
+                    protege: Some(0),
+                    charme: false
+                }
+            ),
+            Err(ErreurExpeditionAutomatique::ProtectionImpossible)
+        );
+        partie.sac.ajouter_charmes_de_garde(1);
+        partie.coffre_du_camp.ajouter_charmes_de_garde(1);
+        assert_eq!(partie.charmes_de_garde(), 2);
+        partie
+            .envoyer_en_expedition_automatique_avec(&bois, &deux, avec_charme, a(0))
+            .unwrap();
+        // Le sac d'abord.
+        assert_eq!(partie.sac().charmes_de_garde(), 0);
+        assert_eq!(partie.charmes_de_garde(), 1);
+        let expedition = partie.expedition_automatique(&ZoneId::new("bois")).unwrap();
+        assert_eq!(expedition.protection(), avec_charme);
+    }
+
+    #[test]
+    fn gunther_forge_un_charme_de_garde_qui_va_au_coffre() {
+        let ressource = |id: &str| Ressource::new(RessourceId::new(id), id, 5);
+        let plan =
+            PlanDuCharme::new(vec![(ressource("os"), 3)], Duration::from_secs(1_800)).unwrap();
+        let mut partie = partie();
+        assert_eq!(
+            partie.verifier_charme(&plan),
+            Err(ErreurAmelioration::AucunArtisan)
+        );
+        partie.forge.accueillir_gunther();
+        assert!(matches!(
+            partie.verifier_charme(&plan),
+            Err(ErreurAmelioration::RessourcesManquantes(_))
+        ));
+        partie.coffre_du_camp.ajouter_ressources(ressource("os"), 7);
+        let chantier = partie.lancer_charme(&plan, a(0)).unwrap();
+        assert_eq!(chantier.ouvrage, Ouvrage::CharmeDeGarde);
+        assert_eq!(chantier.fin, a(1_800));
+        assert_eq!(
+            partie
+                .coffre_du_camp()
+                .nombre_de_ressources(&RessourceId::new("os")),
+            4
+        );
+        partie.constater_travail(a(1_800)).unwrap();
+        assert_eq!(partie.coffre_du_camp().charmes_de_garde(), 1);
+        // Il se forge aussi souvent que le joueur le veut.
+        assert!(partie.lancer_charme(&plan, a(2_000)).is_ok());
+    }
+
+    #[test]
     fn une_expedition_automatique_part_dans_une_zone_exploree() {
         let bois = zone("bois");
         let mut partie = partie();
@@ -2608,14 +2748,17 @@ mod tests {
             partie
                 .estimer_expedition_automatique(
                     &bois,
-                    &[Emplacement::Equipe(0), Emplacement::Equipe(1)]
+                    &[Emplacement::Equipe(0), Emplacement::Equipe(1)],
+                    Protection::default()
                 )
                 .is_ok()
         );
 
         // 20 PV contre 10 à 40 dégâts : 10 totaux sur 31 laissent le loup
         // debout.
-        let estimation = partie.estimer_expedition_automatique(&bois, &loup).unwrap();
+        let estimation = partie
+            .estimer_expedition_automatique(&bois, &loup, Protection::default())
+            .unwrap();
         assert_eq!(estimation.duree, Duration::from_secs(3_600));
         assert_eq!(estimation.chances.pourcentage(), 32);
 
@@ -2627,7 +2770,11 @@ mod tests {
         let expedition = partie.expedition_automatique(&ZoneId::new("bois")).unwrap();
         assert_eq!(expedition.retour(), a(3_600));
         assert_eq!(
-            partie.estimer_expedition_automatique(&bois, &[Emplacement::Equipe(0)]),
+            partie.estimer_expedition_automatique(
+                &bois,
+                &[Emplacement::Equipe(0)],
+                Protection::default()
+            ),
             Err(ErreurExpeditionAutomatique::DejaEnCours)
         );
     }
@@ -2684,9 +2831,10 @@ mod tests {
         assert_eq!(partie.collection().equipe()[1].experience(), 125 + 100);
         assert!(partie.collection().camp().is_empty());
         assert_eq!(partie.collection().places_reservees(), 0);
-        // Ce qui est gagné au camp va dans le coffre (section 13.3).
+        // Ce qui est gagné au camp va dans le coffre (section 13.3) : 20
+        // pièces d'argent, et 10 % de plus pour le Loup, offensif, debout.
         assert_eq!(partie.coffre_du_camp().potions(), 1);
-        assert_eq!(partie.coffre_du_camp().argent(), 20);
+        assert_eq!(partie.coffre_du_camp().argent(), 22);
         assert!(partie.sac().est_vide());
         assert!(partie.expeditions_automatiques().is_empty());
         assert_eq!(

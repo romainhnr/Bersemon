@@ -15,6 +15,7 @@ use bersemon_core::combat::Action;
 use bersemon_core::deroulement::{ActionDeGestion, Choix};
 use bersemon_core::equipement::{ObjetDEquipementId, PlaceDEquipement};
 use bersemon_core::expedition_automatique::MONSTRES_MAX;
+use bersemon_core::expedition_automatique::Protection;
 use bersemon_core::heros::Classe;
 use bersemon_core::inventaire::Objet;
 use bersemon_core::pierre::PierreDEvolution;
@@ -399,6 +400,7 @@ impl Cle {
             Cle::Expedier { zone, choisis } => jouer(Choix::EnvoyerEnExpeditionAutomatique {
                 zone: zone.clone(),
                 monstres: choisis.liste(),
+                protection: Protection::default(),
             }),
             Cle::Accueillir(zone) => jouer(Choix::AccueillirExpeditionAutomatique(zone.clone())),
             Cle::Rappeler(zone) => jouer(Choix::RappelerExpeditionAutomatique(zone.clone())),
@@ -977,7 +979,8 @@ fn lire_soin_et_position(texte: &str) -> Option<(Soin, usize)> {
 /// quantité, `argent:` suivi de la quantité, `capsule:` suivi de
 /// l'attaque, `capsules-d-habilete:` suivi de la quantité, `pierres:`
 /// suivi de la pierre et de la quantité, `boosters:` suivi du booster et de
-/// la quantité, ou `eclats-d-astre:` suivi de la quantité.
+/// la quantité, `eclats-d-astre:` ou `charmes-de-garde:` suivi de la
+/// quantité.
 pub fn objet_en_texte(objet: &Objet) -> String {
     match objet {
         Objet::Soins(soin, nombre) => format!("soins:{}:{nombre}", soin_en_texte(*soin)),
@@ -990,6 +993,7 @@ pub fn objet_en_texte(objet: &Objet) -> String {
             format!("boosters:{}:{nombre}", booster_en_texte(*booster))
         }
         Objet::EclatsDAstre(nombre) => format!("eclats-d-astre:{nombre}"),
+        Objet::CharmesDeGarde(nombre) => format!("charmes-de-garde:{nombre}"),
     }
 }
 
@@ -1015,6 +1019,7 @@ fn lire_objet(texte: &str) -> Option<Objet> {
             ))
         }
         "eclats-d-astre" => Some(Objet::EclatsDAstre(parametre.parse().ok()?)),
+        "charmes-de-garde" => Some(Objet::CharmesDeGarde(parametre.parse().ok()?)),
         "ressources" => {
             let (id, nombre) = parametre.rsplit_once(':')?;
             Some(Objet::Ressources(
@@ -1278,6 +1283,7 @@ mod tests {
             Some(Commande::Jouer(Choix::EnvoyerEnExpeditionAutomatique {
                 zone: ZoneId::new("lisiere"),
                 monstres: trois_choisis().liste(),
+                protection: Protection::default(),
             }))
         );
     }

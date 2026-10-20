@@ -3,9 +3,10 @@
 
 use bersemon_core::amelioration::{
     Amelioration, Chantier, EffetDAmelioration, ErreurAmelioration, Ouvrage, PlanDAmelioration,
-    PlanDeFabrication,
+    PlanDeFabrication, PlanDuCharme,
 };
 use bersemon_core::contenu::ContenuV1;
+use bersemon_core::expedition_automatique::PROTECTION_DU_CHARME;
 use bersemon_core::horodatage::Horodatage;
 use bersemon_core::partie::Partie;
 use bersemon_core::ressource::Ressource;
@@ -44,6 +45,7 @@ pub fn ouvrage(ouvrage: &Ouvrage) -> String {
             niveau,
         } => niveau_d_amelioration(*amelioration, *niveau),
         Ouvrage::Objet(objet) => objet_et_bonus(objet),
+        Ouvrage::CharmeDeGarde => "Charme de garde".to_string(),
     }
 }
 
@@ -100,7 +102,35 @@ pub fn constat(chantier: &Chantier) -> String {
             "Gunther a fini : {}. Vous pouvez le porter depuis l'équipement du héros.",
             objet_et_bonus(objet)
         ),
+        Ouvrage::CharmeDeGarde => {
+            "Gunther a fini : un charme de garde. Il va dans le coffre.".to_string()
+        }
     }
+}
+
+/// "Charme de garde : 50 % de protection au monstre protégé d'une
+/// expédition automatique" (section 12.5).
+pub fn effet_du_charme() -> String {
+    format!(
+        "{PROTECTION_DU_CHARME} % de protection au monstre protégé d'une expédition automatique, un par expédition"
+    )
+}
+
+pub fn question_du_charme(plan: &PlanDuCharme) -> String {
+    format!(
+        "Faire forger un charme de garde ({}) ? Gunther prendra {}, et aura fini dans {}. Un travail lancé ne s'annule pas.",
+        effet_du_charme(),
+        cout(plan.cout()),
+        duree(plan.duree())
+    )
+}
+
+pub fn lancement_du_charme(plan: &PlanDuCharme) -> String {
+    format!(
+        "Vous remettez à Gunther {}. Il se met à forger un charme de garde. Il aura fini dans {}.",
+        cout(plan.cout()),
+        duree(plan.duree())
+    )
 }
 
 /// Pour la construction en cours : son temps restant, ou qu'elle est finie.

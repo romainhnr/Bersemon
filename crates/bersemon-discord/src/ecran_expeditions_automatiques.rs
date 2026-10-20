@@ -7,6 +7,7 @@
 use bersemon_core::collection::Emplacement;
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::expedition_automatique::ExpeditionAutomatique;
+use bersemon_core::expedition_automatique::Protection;
 use bersemon_core::horodatage::Horodatage;
 use bersemon_core::partie::Partie;
 use bersemon_core::zone::Zone;
@@ -122,7 +123,7 @@ pub fn preparation(
             .filter_map(|emplacement| collection.monstre(*emplacement).cloned())
             .collect();
         lignes.push(format!("Monstres choisis : {}.", noms(&monstres)));
-        match partie.estimer_expedition_automatique(zone, &emplacements) {
+        match partie.estimer_expedition_automatique(zone, &emplacements, Protection::default()) {
             Ok(previsions) => {
                 lignes.push(estimation(zone, &previsions));
                 boutons.push(bouton(
@@ -153,7 +154,7 @@ pub fn preparation(
         .try_fold(Choisis::default(), Choisis::avec);
     if let Some(toute_l_equipe) = toute_l_equipe {
         let possible = partie
-            .estimer_expedition_automatique(zone, &toute_l_equipe.liste())
+            .estimer_expedition_automatique(zone, &toute_l_equipe.liste(), Protection::default())
             .is_ok();
         if possible && toute_l_equipe != choisis {
             boutons.push(bouton(

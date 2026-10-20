@@ -1,4 +1,4 @@
-//! Format JSON de la sauvegarde, version 22, et sa conversion vers les types
+//! Format JSON de la sauvegarde, version 23, et sa conversion vers les types
 //! du noyau. Les énumérations sont écrites avec des noms fixés ici, et non
 //! avec les noms Rust, pour qu'un renommage dans le code ne casse pas les
 //! sauvegardes existantes.
@@ -18,7 +18,7 @@ use bersemon_core::equipement::{
     Equipement, ObjetDEquipement, ObjetDEquipementId, PlaceDEquipement,
 };
 use bersemon_core::espece::{EspeceId, Rarete};
-use bersemon_core::expedition_automatique::ExpeditionAutomatique;
+use bersemon_core::expedition_automatique::{ExpeditionAutomatique, Protection};
 use bersemon_core::habilete::Habilete;
 use bersemon_core::heros::{Classe, Heros};
 use bersemon_core::horodatage::Horodatage;
@@ -42,7 +42,7 @@ use bersemon_core::zone::{Zone, ZoneId};
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 22;
+pub(crate) const VERSION: u64 = 23;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -92,7 +92,9 @@ const GEOLIER_DE_GUNTHER: &str = "bourreau";
 /// d'Ansgar ; avec la version 19, les Apôtres capturés deviennent leur âme,
 /// sans changer la structure ; la version 20 ajoute les boosters et les
 /// Éclats d'astre, la version 21 les amis et le palmarès des duels, la
-/// version 22 les machines du camp. Une sauvegarde d'une version
+/// version 22 les machines du camp, la version 23 les charmes de garde et
+/// les protections des expéditions automatiques. Une sauvegarde d'une
+/// version
 /// précédente se lit avec cette structure : les champs ajoutés y prennent
 /// leur valeur de début de partie.
 #[derive(Debug, Serialize, Deserialize)]
@@ -215,6 +217,10 @@ struct ChantierV14 {
     /// Depuis la version 16 : l'objet que fabrique Gunther (section 13.5).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     objet: Option<String>,
+    /// Depuis la version 23 : un charme de garde, sans amélioration ni
+    /// objet (section 13.5).
+    #[serde(default)]
+    charme: bool,
     /// Secondes depuis le 1er janvier 1970 (UTC).
     fin: u64,
 }
@@ -266,6 +272,9 @@ struct InventaireV7 {
     boosters: Vec<BoosterV20>,
     #[serde(default)]
     eclats_d_astre: u32,
+    /// Depuis la version 23 (section 12.5).
+    #[serde(default)]
+    charmes_de_garde: u32,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -329,6 +338,12 @@ struct ExpeditionAutomatiqueV3 {
     /// Fixé au départ, et non recalculé à la lecture : un rééquilibrage des
     /// durées ne change pas une expédition déjà partie.
     retour: u64,
+    /// Depuis la version 23 (section 12.5) : la position du monstre protégé
+    /// parmi ceux envoyés, et le charme de garde.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    protege: Option<usize>,
+    #[serde(default)]
+    charme: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -508,6 +523,8 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV14 {
                 monstres: expedition.monstres().iter().map(depuis_monstre).collect(),
                 depart: expedition.depart().secondes(),
                 retour: expedition.retour().secondes(),
+                protege: expedition.protection().protege,
+                charme: expedition.protection().charme,
             })
             .collect(),
         attaques_a_choisir: partie
@@ -544,12 +561,21 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV14 {
                     amelioration: Some(amelioration_en_texte(*amelioration).to_string()),
                     niveau: *niveau,
                     objet: None,
+                    charme: false,
                     fin: chantier.fin.secondes(),
                 },
                 Ouvrage::Objet(objet) => ChantierV14 {
                     amelioration: None,
                     niveau: 0,
                     objet: Some(objet.id().as_str().to_string()),
+                    charme: false,
+                    fin: chantier.fin.secondes(),
+                },
+                Ouvrage::CharmeDeGarde => ChantierV14 {
+                    amelioration: None,
+                    niveau: 0,
+                    objet: None,
+                    charme: true,
                     fin: chantier.fin.secondes(),
                 },
             }),
@@ -613,6 +639,7 @@ fn depuis_inventaire(inventaire: &Inventaire) -> InventaireV7 {
             })
             .collect(),
         eclats_d_astre: inventaire.eclats_d_astre(),
+        charmes_de_garde: inventaire.charmes_de_garde(),
     }
 }
 
@@ -648,6 +675,7 @@ fn vers_inventaire(
         resultat.ajouter_boosters(lire_booster(&booster.booster)?, booster.nombre);
     }
     resultat.ajouter_eclats_d_astre(inventaire.eclats_d_astre);
+    resultat.ajouter_charmes_de_garde(inventaire.charmes_de_garde);
     Ok(resultat)
 }
 
@@ -683,6 +711,7 @@ pub(crate) fn vers_partie(
         .into_iter()
         .map(|parti| {
             ExpeditionAutomatique::restaurer(parti.zone, parti.monstres, parti.depart, parti.retour)
+                .and_then(|expedition| expedition.avec_protection(parti.protection))
                 .map_err(incoherente)
         })
         .collect::<Result<Vec<_>, _>>()?;
@@ -721,12 +750,13 @@ pub(crate) fn vers_partie(
     let chantier = sauvegarde
         .chantier
         .map(|chantier| {
-            let ouvrage = match (chantier.amelioration, chantier.objet) {
-                (Some(amelioration), None) => Ouvrage::Amelioration {
+            let ouvrage = match (chantier.amelioration, chantier.objet, chantier.charme) {
+                (Some(amelioration), None, false) => Ouvrage::Amelioration {
                     amelioration: lire_amelioration(&amelioration)?,
                     niveau: chantier.niveau,
                 },
-                (None, Some(objet)) => Ouvrage::Objet(vers_objet(&objet, catalogue)?),
+                (None, Some(objet), false) => Ouvrage::Objet(vers_objet(&objet, catalogue)?),
+                (None, None, true) => Ouvrage::CharmeDeGarde,
                 _ => {
                     return Err(ErreurSauvegarde::Incoherente(
                         "travail de Gunther sans ouvrage, ou double".to_string(),
@@ -907,6 +937,7 @@ fn vers_marchands(ids: &[String], catalogue: &dyn Catalogue) -> Vec<MarchandMort
 struct MonstresPartis {
     zone: Zone,
     monstres: Vec<Monstre>,
+    protection: Protection,
     depart: Horodatage,
     retour: Horodatage,
 }
@@ -921,6 +952,10 @@ fn vers_monstres_partis(
     Ok(MonstresPartis {
         zone,
         monstres: vers_monstres(expedition.monstres, catalogue)?,
+        protection: Protection {
+            protege: expedition.protege,
+            charme: expedition.charme,
+        },
         depart: Horodatage::depuis_secondes(expedition.depart),
         retour: Horodatage::depuis_secondes(expedition.retour),
     })

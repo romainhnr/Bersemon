@@ -12,7 +12,7 @@ use crate::combat::{ordre_donne, rapport_experience, remplacement, renoncement};
 use crate::equipement::{nom_de_place, objet_et_bonus};
 use crate::erreurs::erreur_sauvegarde;
 use crate::expeditions_automatiques;
-use crate::forge::{constat, lancement, lancement_de_fabrication};
+use crate::forge::{constat, lancement, lancement_de_fabrication, lancement_du_charme};
 use crate::machines;
 use crate::mise_en_valeur::important;
 use crate::monstres::{effet_d_habilete, nom_en_valeur, nom_sauvage};
@@ -393,6 +393,7 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
         Evenement::PrisePechee(prise) => (peche::prise(prise), true),
         Evenement::PriseRelachee(monstre) => (peche::prise_relachee(monstre), false),
         Evenement::FabricationLancee { plan, .. } => (lancement_de_fabrication(plan), false),
+        Evenement::CharmeLance { plan, .. } => (lancement_du_charme(plan), false),
         Evenement::ObjetEquipe {
             place,
             objet,

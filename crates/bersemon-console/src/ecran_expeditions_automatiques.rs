@@ -6,6 +6,7 @@ use bersemon_core::collection::Emplacement;
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::Choix;
 use bersemon_core::expedition_automatique::MONSTRES_MAX;
+use bersemon_core::expedition_automatique::Protection;
 use bersemon_core::partie::Partie;
 use bersemon_core::zone::Zone;
 use bersemon_presentation::expeditions_automatiques::{
@@ -77,7 +78,7 @@ fn envoyer(partie: &Partie, zone: &Zone, entree: &mut Entree) -> Option<Option<C
         .map(Emplacement::Equipe)
         .collect();
     let monstres = if partie
-        .estimer_expedition_automatique(zone, &toute_l_equipe)
+        .estimer_expedition_automatique(zone, &toute_l_equipe, Protection::default())
         .is_err()
     {
         choisir_un_par_un(partie, entree)?
@@ -94,7 +95,7 @@ fn envoyer(partie: &Partie, zone: &Zone, entree: &mut Entree) -> Option<Option<C
     if monstres.is_empty() {
         return Some(None);
     }
-    match partie.estimer_expedition_automatique(zone, &monstres) {
+    match partie.estimer_expedition_automatique(zone, &monstres, Protection::default()) {
         Err(erreur) => {
             println!("{}", erreur_expedition_automatique(&erreur));
             Some(None)
@@ -105,6 +106,7 @@ fn envoyer(partie: &Partie, zone: &Zone, entree: &mut Entree) -> Option<Option<C
             Some(partir.then(|| Choix::EnvoyerEnExpeditionAutomatique {
                 zone: zone.id().clone(),
                 monstres,
+                protection: Protection::default(),
             }))
         }
     }

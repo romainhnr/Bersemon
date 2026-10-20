@@ -11,7 +11,7 @@ use std::ops::RangeInclusive;
 use std::time::Duration;
 
 use crate::ame::{Gardien, MarchandId, MarchandMort};
-use crate::amelioration::{Amelioration, PlanDAmelioration, PlanDeFabrication};
+use crate::amelioration::{Amelioration, PlanDAmelioration, PlanDeFabrication, PlanDuCharme};
 use crate::attaque::{Attaque, AttaqueId, Categorie, EffetSecondaire};
 use crate::capsule::Capsule;
 use crate::catalogue::Catalogue;
@@ -165,6 +165,7 @@ pub struct ContenuV1 {
     capsules: Vec<Capsule>,
     plans_d_amelioration: Vec<PlanDAmelioration>,
     plans_de_fabrication: Vec<PlanDeFabrication>,
+    plan_du_charme: PlanDuCharme,
     peche: ParametresPeche,
 }
 
@@ -467,6 +468,14 @@ impl ContenuV1 {
             &zones,
         )
         .expect("pêche conforme aux règles");
+        let plan_du_charme = PlanDuCharme::new(
+            COUT_DU_CHARME
+                .iter()
+                .map(|(id, nombre)| (ressource(id), *nombre))
+                .collect(),
+            Duration::from_secs(MINUTES_DU_CHARME * 60),
+        )
+        .expect("plan du charme conforme aux règles");
         Self {
             especes,
             zones,
@@ -474,6 +483,7 @@ impl ContenuV1 {
             capsules,
             plans_d_amelioration,
             plans_de_fabrication,
+            plan_du_charme,
             peche,
         }
     }
@@ -531,6 +541,11 @@ impl ContenuV1 {
     /// l'ordre de docs/contenu-v1.md, section 11.
     pub fn plans_de_fabrication(&self) -> &[PlanDeFabrication] {
         &self.plans_de_fabrication
+    }
+
+    /// Le charme de garde, que Gunther forge à l'unité (section 13.5).
+    pub fn plan_du_charme(&self) -> &PlanDuCharme {
+        &self.plan_du_charme
     }
 
     pub fn plan_de_fabrication(&self, objet: &ObjetDEquipementId) -> Option<&PlanDeFabrication> {
@@ -2214,6 +2229,10 @@ const PLANS_D_AMELIORATION: [FichePlan; 13] = [
     ),
 ];
 
+/// Section 20 de docs/contenu-v1.md : le charme de garde, un par travail.
+const COUT_DU_CHARME: [(&str, u32); 2] = [("os-de-squelette", 3), ("fragment-d-armure", 3)];
+const MINUTES_DU_CHARME: u64 = 30;
+
 /// Section 11 de docs/contenu-v1.md. Les bonus sont en pourcentage, dans
 /// l'ordre Attaque, Défense, Attaque spéciale, Défense spéciale, Vitesse :
 /// l'équipement ne donne pas de PV, que le combat ne majore pas.
@@ -2521,7 +2540,10 @@ mod tests {
                 .collect();
             contenu.zones()[zone]
                 .expedition_automatique()
-                .chances_de_reussite(&monstres)
+                .chances_de_reussite(
+                    &monstres,
+                    crate::expedition_automatique::Protection::default(),
+                )
                 .pourcentage()
         };
         let salamandre = ("salamandre", 8);

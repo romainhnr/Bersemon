@@ -21,7 +21,7 @@ use bersemon_core::zone::Zone;
 
 use crate::boosters::{boosters, eclats_d_astre, question_shiny};
 use crate::expeditions_automatiques::question_de_rappel;
-use crate::forge::{question_de_fabrication, question_de_lancement};
+use crate::forge::{question_de_fabrication, question_de_lancement, question_du_charme};
 use crate::monstres::{decrire_stats, effet_d_habilete, ligne_monstre, nom, types_de};
 use crate::soins::{liste_de_soins, question_du_soin_perdu};
 
@@ -78,6 +78,15 @@ pub fn potions(nombre: u32) -> String {
         format!("{nombre} potions")
     } else {
         format!("{nombre} potion")
+    }
+}
+
+/// "1 charme de garde", "2 charmes de garde" (section 12.5).
+pub fn charmes_de_garde(nombre: u32) -> String {
+    if nombre > 1 {
+        format!("{nombre} charmes de garde")
+    } else {
+        format!("{nombre} charme de garde")
     }
 }
 
@@ -167,6 +176,9 @@ pub fn contenu(inventaire: &Inventaire) -> String {
     );
     if inventaire.eclats_d_astre() > 0 {
         elements.push(eclats_d_astre(inventaire.eclats_d_astre()));
+    }
+    if inventaire.charmes_de_garde() > 0 {
+        elements.push(charmes_de_garde(inventaire.charmes_de_garde()));
     }
     if elements.is_empty() {
         "vide".to_string()
@@ -462,6 +474,7 @@ pub fn question_de_confirmation(confirmation: &Confirmation) -> String {
             )
         }
         Confirmation::RendreShiny(monstre) => question_shiny(monstre),
+        Confirmation::FabriquerCharme(plan) => question_du_charme(plan),
         Confirmation::Suicide(heros) => format!(
             "Vous suicider ? Votre partie sera effacée pour de bon : {}, vos monstres, votre sac, votre coffre, votre codex et vos expéditions automatiques en cours.",
             heros.nom().as_str()

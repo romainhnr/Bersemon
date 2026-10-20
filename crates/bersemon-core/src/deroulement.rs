@@ -17,7 +17,7 @@ use std::time::Duration;
 use crate::aleatoire::Aleatoire;
 use crate::ame::{Gardien, MarchandId, MarchandMort};
 use crate::amelioration::{
-    Amelioration, Chantier, ErreurAmelioration, PlanDAmelioration, PlanDeFabrication,
+    Amelioration, Chantier, ErreurAmelioration, PlanDAmelioration, PlanDeFabrication, PlanDuCharme,
 };
 use crate::attaque::{Attaque, AttaqueId, ErreurAttaquesMonstre};
 use crate::booster::{Booster, ErreurBooster};
@@ -31,7 +31,7 @@ use crate::espece::Espece;
 use crate::evolution::{Circonstances, ErreurEvolution, evolution_possible, faire_evoluer};
 use crate::expedition::{ErreurExpedition, EvenementExpedition, Expedition};
 use crate::expedition_automatique::{
-    BilanExpeditionAutomatique, ErreurExpeditionAutomatique, ExpeditionAutomatique,
+    BilanExpeditionAutomatique, ErreurExpeditionAutomatique, ExpeditionAutomatique, Protection,
 };
 use crate::habilete::{ErreurChangementDHabilete, Habilete};
 use crate::heros::{Classe, Heros, Ordre};
@@ -83,6 +83,9 @@ pub enum Choix {
     EnvoyerEnExpeditionAutomatique {
         zone: ZoneId,
         monstres: Vec<Emplacement>,
+        /// Le monstre protégé, par sa position dans `monstres`, et le charme
+        /// de garde (section 12.5).
+        protection: Protection,
     },
     /// Une expédition rentrée, accueillie au camp (section 12.7).
     AccueillirExpeditionAutomatique(ZoneId),
@@ -128,6 +131,9 @@ pub enum Choix {
     /// Au camp, après confirmation : Gunther forge cet objet d'équipement
     /// (section 13.5).
     LancerFabrication(ObjetDEquipementId),
+    /// Au camp, après confirmation : Gunther forge un charme de garde
+    /// (section 13.5).
+    FabriquerCharme,
     /// Au camp : le joueur constate le travail fini de Gunther.
     ConstaterTravail,
     /// Au camp, sans confirmation : Ansgar tend une ligne (section 13.8).
@@ -309,6 +315,8 @@ pub enum Confirmation {
     LancerAmelioration(Box<PlanDAmelioration>),
     /// Les ressources du plan seront prises (section 13.5).
     LancerFabrication(Box<PlanDeFabrication>),
+    /// Les ressources du charme seront prises (section 13.5).
+    FabriquerCharme(Box<PlanDuCharme>),
     /// L'évolution est définitive, et consomme la pierre éventuelle (section
     /// 5.4).
     Evoluer {
@@ -510,6 +518,10 @@ pub enum Evenement {
     /// Gunther se met à forger cet objet (section 13.5).
     FabricationLancee {
         plan: Box<PlanDeFabrication>,
+        chantier: Chantier,
+    },
+    CharmeLance {
+        plan: Box<PlanDuCharme>,
         chantier: Chantier,
     },
     /// Le niveau construit compte désormais, ou l'objet forgé rejoint
@@ -1050,10 +1062,19 @@ impl EnJeu {
                 }
                 Ok(reponse)
             }
-            Choix::EnvoyerEnExpeditionAutomatique { zone, monstres } => {
+            Choix::EnvoyerEnExpeditionAutomatique {
+                zone,
+                monstres,
+                protection,
+            } => {
                 let zone = zone_du_contenu(contexte.contenu, zone)?;
                 self.partie
-                    .envoyer_en_expedition_automatique(zone, monstres, contexte.maintenant)
+                    .envoyer_en_expedition_automatique_avec(
+                        zone,
+                        monstres,
+                        *protection,
+                        contexte.maintenant,
+                    )
                     .map_err(ErreurChoix::ExpeditionAutomatique)?;
                 if let Some(expedition) = self.partie.expedition_automatique(zone.id()) {
                     evenements.push(Evenement::ExpeditionAutomatiquePartie(expedition.clone()));
@@ -1352,6 +1373,29 @@ impl EnJeu {
                     .lancer_fabrication(plan, contexte.maintenant)
                     .map_err(ErreurChoix::Amelioration)?;
                 evenements.push(Evenement::FabricationLancee {
+                    plan: Box::new(plan.clone()),
+                    chantier,
+                });
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::FabriquerCharme => {
+                let plan = contexte.contenu.plan_du_charme();
+                if !confirme {
+                    // Un travail impossible est refusé sans demander de
+                    // confirmation.
+                    self.partie
+                        .verifier_charme(plan)
+                        .map_err(ErreurChoix::Amelioration)?;
+                    return Ok(Reponse::a_confirmer(Confirmation::FabriquerCharme(
+                        Box::new(plan.clone()),
+                    )));
+                }
+                let chantier = self
+                    .partie
+                    .lancer_charme(plan, contexte.maintenant)
+                    .map_err(ErreurChoix::Amelioration)?;
+                evenements.push(Evenement::CharmeLance {
                     plan: Box::new(plan.clone()),
                     chantier,
                 });
@@ -4892,6 +4936,7 @@ mod tests {
         let envoi = Choix::EnvoyerEnExpeditionAutomatique {
             zone: lisiere.clone(),
             monstres: vec![Emplacement::Equipe(1)],
+            protection: Protection::default(),
         };
         let evenements =
             repondre_a(&mut deroulement, envoi, &contenu, &depot, 1_000, vec![]).unwrap();
@@ -4970,6 +5015,7 @@ mod tests {
         let envoi = Choix::EnvoyerEnExpeditionAutomatique {
             zone: lisiere.clone(),
             monstres: vec![Emplacement::Equipe(1)],
+            protection: Protection::default(),
         };
         repondre_a(&mut deroulement, envoi, &contenu, &depot, 0, vec![]).unwrap();
         assert_eq!(
@@ -4997,6 +5043,7 @@ mod tests {
         let envoi = Choix::EnvoyerEnExpeditionAutomatique {
             zone: marais.clone(),
             monstres: vec![Emplacement::Equipe(0), Emplacement::Equipe(1)],
+            protection: Protection::default(),
         };
         repondre_a(&mut deroulement, envoi, &contenu, &depot, 0, vec![]).unwrap();
 
@@ -5026,8 +5073,9 @@ mod tests {
         assert_eq!(monstre.espece().id().as_str(), "salamandre");
         assert_eq!(rapport.niveau_apres, Niveau::new(14).unwrap());
         assert_eq!(deroulement.partie().unwrap().coffre_du_camp().potions(), 1);
-        assert_eq!(bilan.argent, 55);
-        assert_eq!(deroulement.partie().unwrap().coffre_du_camp().argent(), 55);
+        // 55, et 10 % de plus pour la Salamandre, offensive, debout.
+        assert_eq!(bilan.argent, 60);
+        assert_eq!(deroulement.partie().unwrap().coffre_du_camp().argent(), 60);
         // Sauvegardée dès l'accueil, avec l'attaque qui reste à choisir.
         let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
         assert_eq!(sauvegarde.attaques_a_choisir().len(), 1);
@@ -5085,6 +5133,7 @@ mod tests {
                 Emplacement::Equipe(1),
                 Emplacement::Equipe(2),
             ],
+            protection: Protection::default(),
         };
         let evenements = repondre_a(&mut deroulement, envoi, &contenu, &depot, 0, vec![]).unwrap();
         assert!(matches!(

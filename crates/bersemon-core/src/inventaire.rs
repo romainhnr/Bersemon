@@ -1,7 +1,8 @@
 //! Objets du joueur, rangés dans le sac, qu'il emporte en expédition
 //! manuelle, ou dans le coffre du camp, où ils sont à l'abri (sections 13.3
 //! et 14.4) : argent, soins, capsules d'attaque, capsules d'habileté,
-//! ressources, pierres d'évolution, boosters et Éclats d'astre.
+//! ressources, pierres d'évolution, boosters, Éclats d'astre et charmes de
+//! garde.
 
 use std::fmt;
 
@@ -35,6 +36,8 @@ pub struct Inventaire {
     boosters: Vec<(Booster, u32)>,
     /// Pour le service de Malvoise (section 13.7).
     eclats_d_astre: u32,
+    /// Pour protéger un monstre en expédition automatique (section 12.5).
+    charmes_de_garde: u32,
 }
 
 /// Ce que le joueur déplace entre le sac et le coffre du camp.
@@ -48,6 +51,7 @@ pub enum Objet {
     Pierres(PierreDEvolution, u32),
     Boosters(Booster, u32),
     EclatsDAstre(u32),
+    CharmesDeGarde(u32),
 }
 
 impl Inventaire {
@@ -64,6 +68,7 @@ impl Inventaire {
             pierres: Vec::new(),
             boosters: Vec::new(),
             eclats_d_astre: 0,
+            charmes_de_garde: 0,
         };
         inventaire.soins.ajouter(Soin::Potion, potions);
         for capsule in capsules {
@@ -188,6 +193,24 @@ impl Inventaire {
         self.retirer(&Objet::EclatsDAstre(1)).is_ok()
     }
 
+    pub fn charmes_de_garde(&self) -> u32 {
+        self.charmes_de_garde
+    }
+
+    pub fn ajouter_charmes_de_garde(&mut self, nombre: u32) {
+        self.charmes_de_garde = self.charmes_de_garde.saturating_add(nombre);
+    }
+
+    pub fn avec_charmes_de_garde(mut self, nombre: u32) -> Self {
+        self.ajouter_charmes_de_garde(nombre);
+        self
+    }
+
+    /// Rend `false` sans rien changer s'il n'y en a pas.
+    pub(crate) fn utiliser_charme_de_garde(&mut self) -> bool {
+        self.retirer(&Objet::CharmesDeGarde(1)).is_ok()
+    }
+
     pub fn ressources(&self) -> &[(Ressource, u32)] {
         &self.ressources
     }
@@ -265,6 +288,7 @@ impl Inventaire {
             && self.pierres.is_empty()
             && self.boosters.is_empty()
             && self.eclats_d_astre == 0
+            && self.charmes_de_garde == 0
     }
 
     pub fn contient_capsule(&self, id: &AttaqueId) -> bool {
@@ -310,6 +334,7 @@ impl Inventaire {
             self.ajouter_boosters(booster, nombre);
         }
         self.ajouter_eclats_d_astre(autre.eclats_d_astre);
+        self.ajouter_charmes_de_garde(autre.charmes_de_garde);
     }
 
     /// Retire l'objet et le rend, seul dans un inventaire, sans rien changer
@@ -323,7 +348,8 @@ impl Inventaire {
             | Objet::Ressources(_, 0)
             | Objet::Pierres(_, 0)
             | Objet::Boosters(_, 0)
-            | Objet::EclatsDAstre(0) => {
+            | Objet::EclatsDAstre(0)
+            | Objet::CharmesDeGarde(0) => {
                 return Err(ErreurObjet::QuantiteNulle);
             }
             Objet::Argent(montant) => {
@@ -406,6 +432,13 @@ impl Inventaire {
                 }
                 self.eclats_d_astre -= nombre;
                 retire.eclats_d_astre = *nombre;
+            }
+            Objet::CharmesDeGarde(nombre) => {
+                if *nombre > self.charmes_de_garde {
+                    return Err(ErreurObjet::Insuffisant);
+                }
+                self.charmes_de_garde -= nombre;
+                retire.charmes_de_garde = *nombre;
             }
         }
         Ok(retire)

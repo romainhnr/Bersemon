@@ -63,6 +63,20 @@ pub(crate) fn espece(id: &str) -> Espece {
     )
 }
 
+/// Comme `espece`, de soutien (section 5.1).
+pub(crate) fn espece_de_soutien(id: &str) -> Espece {
+    let espece = espece(id);
+    Espece::new(
+        espece.id().clone(),
+        id,
+        TypesMonstre::new(&[Type::Normal]).unwrap(),
+        Role::Soutien,
+        stats_uniformes(50),
+        RENDEMENT_DE_TEST,
+        espece.apprentissage().to_vec(),
+    )
+}
+
 /// Une heure, 10 à 40 dégâts, 100 à 200 XP, 0 à 1 potion et toujours 20
 /// pièces d'argent, sans tirage.
 pub(crate) fn parametres_expedition_automatique() -> ParametresExpeditionAutomatique {

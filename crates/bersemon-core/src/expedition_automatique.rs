@@ -12,6 +12,7 @@ use std::time::Duration;
 
 use crate::aleatoire::Aleatoire;
 use crate::collection::{Emplacement, ErreurCollection};
+use crate::espece::Role;
 use crate::habilete::{
     BONUS_D_INSTINCT, BONUS_DU_PILLARD, Habilete, REDUCTION_D_ECLAIREUR, majorer,
 };
@@ -26,6 +27,52 @@ pub const MONSTRES_MAX: usize = 3;
 /// Chaque monstre en plus du premier réduit la durée de 25 % de la durée de
 /// base (Q7).
 const REDUCTION_PAR_MONSTRE_EN_PLUS: u64 = 25;
+
+/// Chaque monstre de soutien envoyé avec le monstre protégé lui donne 25 %
+/// de protection, un charme de garde 50 %, 100 % au plus (section 12.5).
+const PROTECTION_PAR_SOUTIEN: u32 = 25;
+pub const PROTECTION_DU_CHARME: u32 = 50;
+const PROTECTION_MAXIMALE: u32 = 100;
+/// Chaque monstre offensif rentré debout d'une réussite ajoute 10 % à
+/// l'argent rapporté (section 12.6).
+const BONUS_PAR_OFFENSIF: u32 = 10;
+
+/// Ce que le joueur choisit au départ pour protéger un de ses monstres
+/// (section 12.5) : sa position parmi les monstres envoyés, et un charme de
+/// garde. Par défaut, aucune protection.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct Protection {
+    pub protege: Option<usize>,
+    pub charme: bool,
+}
+
+impl Protection {
+    /// La part de ses dégâts que le monstre protégé reporte sur les autres :
+    /// 25 % par autre monstre de soutien, 50 % avec un charme, 100 % au
+    /// plus. Nulle sans monstre protégé.
+    pub fn pourcentage(&self, monstres: &[Monstre]) -> u32 {
+        let Some(protege) = self.protege else {
+            return 0;
+        };
+        let soutiens = monstres
+            .iter()
+            .enumerate()
+            .filter(|(position, monstre)| {
+                *position != protege && monstre.espece().role() == Role::Soutien
+            })
+            .count() as u32;
+        let charme = if self.charme { PROTECTION_DU_CHARME } else { 0 };
+        (soutiens * PROTECTION_PAR_SOUTIEN + charme).min(PROTECTION_MAXIMALE)
+    }
+
+    /// Le monstre protégé et sa protection, si elle n'est pas nulle.
+    fn effective(&self, monstres: &[Monstre]) -> Option<(usize, u32)> {
+        let pourcentage = self.pourcentage(monstres);
+        self.protege
+            .filter(|_| pourcentage > 0)
+            .map(|protege| (protege, pourcentage))
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ErreurParametres {
@@ -127,14 +174,15 @@ impl ParametresExpeditionAutomatique {
 
     /// Calcul exact : chaque total de la fourchette de dégâts est aussi
     /// probable que les autres, et l'on compte ceux qui laissent un monstre
-    /// debout (section 12.4). Les fourchettes du contenu ne comptent que
-    /// quelques dizaines de valeurs.
-    pub fn chances_de_reussite(&self, monstres: &[Monstre]) -> Chances {
+    /// debout, protection comprise (sections 12.4 et 12.5). Les fourchettes
+    /// du contenu ne comptent que quelques centaines de valeurs.
+    pub fn chances_de_reussite(&self, monstres: &[Monstre], protection: Protection) -> Chances {
         let pv = pv_max(monstres);
+        let protection = protection.effective(monstres);
         let favorables = self
             .degats
             .clone()
-            .filter(|&total| est_reussie(&repartir_degats(total, &pv), &pv))
+            .filter(|&total| est_reussie(&repartir_degats(total, &pv, protection), &pv))
             .count();
         Chances {
             favorables: favorables as u64,
@@ -176,6 +224,13 @@ pub enum ErreurExpeditionAutomatique {
     Collection(ErreurCollection),
     /// Aucune expédition automatique en cours dans cette zone.
     Inexistante,
+    /// Un monstre ne se protège que s'il part avec au moins un autre, qui
+    /// reprend sa part (section 12.5, Q96).
+    ProtectionImpossible,
+    /// Un charme sert à protéger un monstre désigné.
+    CharmeSansProtege,
+    /// Ni le sac ni le coffre ne contiennent de charme de garde.
+    AucunCharme,
     PasEncoreRentree,
     /// Une expédition rentrée s'accueille, elle ne se rappelle plus.
     DejaRentree,
@@ -201,6 +256,13 @@ impl fmt::Display for ErreurExpeditionAutomatique {
             ErreurExpeditionAutomatique::Inexistante => {
                 write!(f, "aucune expédition automatique dans cette zone")
             }
+            ErreurExpeditionAutomatique::ProtectionImpossible => {
+                write!(f, "un monstre ne se protège qu'avec au moins un autre")
+            }
+            ErreurExpeditionAutomatique::CharmeSansProtege => {
+                write!(f, "un charme protège un monstre désigné")
+            }
+            ErreurExpeditionAutomatique::AucunCharme => write!(f, "aucun charme de garde"),
             ErreurExpeditionAutomatique::PasEncoreRentree => {
                 write!(f, "l'expédition n'est pas encore rentrée")
             }
@@ -217,6 +279,7 @@ impl std::error::Error for ErreurExpeditionAutomatique {}
 pub struct ExpeditionAutomatique {
     zone: Zone,
     monstres: Vec<Monstre>,
+    protection: Protection,
     depart: Horodatage,
     retour: Horodatage,
 }
@@ -224,11 +287,17 @@ pub struct ExpeditionAutomatique {
 impl ExpeditionAutomatique {
     /// Le départ passe par `Partie::envoyer_en_expedition_automatique`, qui
     /// vérifie la zone et les monstres envoyés.
-    pub(crate) fn partir(zone: Zone, monstres: Vec<Monstre>, maintenant: Horodatage) -> Self {
+    pub(crate) fn partir(
+        zone: Zone,
+        monstres: Vec<Monstre>,
+        protection: Protection,
+        maintenant: Horodatage,
+    ) -> Self {
         let duree = zone.expedition_automatique().duree_pour(&monstres);
         Self {
             zone,
             monstres,
+            protection,
             depart: maintenant,
             retour: maintenant.plus(duree),
         }
@@ -250,9 +319,25 @@ impl ExpeditionAutomatique {
         Ok(Self {
             zone,
             monstres,
+            protection: Protection::default(),
             depart,
             retour,
         })
+    }
+
+    /// Reprise d'une sauvegarde : le monstre protégé doit être parmi ceux
+    /// envoyés, avec au moins un autre, et un charme ne va qu'avec lui.
+    pub fn avec_protection(
+        mut self,
+        protection: Protection,
+    ) -> Result<Self, ErreurExpeditionAutomatique> {
+        verifier_protection(protection, self.monstres.len())?;
+        self.protection = protection;
+        Ok(self)
+    }
+
+    pub fn protection(&self) -> Protection {
+        self.protection
     }
 
     pub fn zone(&self) -> &Zone {
@@ -293,7 +378,9 @@ impl ExpeditionAutomatique {
     /// 12.7). Tirages : total des dégâts,
     /// puis, après une réussite, le gain d'XP, le nombre de potions et
     /// l'argent. Instinct augmente l'XP de son monstre, et Pillard l'argent
-    /// s'il rentre debout (section 5.9).
+    /// s'il rentre debout (section 5.9), comme chaque monstre offensif
+    /// (section 12.6). Le monstre protégé reporte une part de ses dégâts sur
+    /// les autres (section 12.5).
     pub(crate) fn resoudre(
         self,
         places: &[Emplacement],
@@ -302,7 +389,8 @@ impl ExpeditionAutomatique {
         let parametres = self.zone.expedition_automatique();
         let degats = tirer_dans(parametres.degats(), aleatoire);
         let pv = pv_max(&self.monstres);
-        let subis = repartir_degats(degats, &pv);
+        let protection = self.protection.effective(&self.monstres);
+        let subis = repartir_degats(degats, &pv, protection);
         let reussite = est_reussie(&subis, &pv);
         let (experience, potions, mut argent) = if reussite {
             let experience = tirer_dans(parametres.experience(), aleatoire);
@@ -325,7 +413,17 @@ impl ExpeditionAutomatique {
         } else {
             0
         };
-        argent += argent_du_pillard;
+        let offensifs_debout = monstres
+            .iter()
+            .enumerate()
+            .filter(|(index, monstre)| {
+                subis[*index] < pv[*index] && monstre.espece().role() == Role::Offensif
+            })
+            .count() as u32;
+        // Les pourcentages s'ajoutent à celui de Pillard, tous comptés sur
+        // l'argent tiré (Q96).
+        let argent_des_offensifs = argent * offensifs_debout * BONUS_PAR_OFFENSIF / 100;
+        argent += argent_du_pillard + argent_des_offensifs;
         let mut rentres = Vec::with_capacity(monstres.len());
         for (index, monstre) in monstres.iter_mut().enumerate() {
             let ko = subis[index] >= pv[index];
@@ -352,6 +450,8 @@ impl ExpeditionAutomatique {
             potions,
             argent,
             argent_du_pillard,
+            argent_des_offensifs,
+            protection,
             monstres: rentres,
         };
         (bilan, monstres)
@@ -373,6 +473,11 @@ pub struct BilanExpeditionAutomatique {
     pub argent: u32,
     /// La part due à l'habileté Pillard (section 5.9).
     pub argent_du_pillard: u32,
+    /// La part due aux monstres offensifs rentrés debout (section 12.6).
+    pub argent_des_offensifs: u32,
+    /// La position du monstre protégé et sa protection, si elle n'était pas
+    /// nulle (section 12.5).
+    pub protection: Option<(usize, u32)>,
     /// Dans l'ordre de l'expédition.
     pub monstres: Vec<MonstreRentre>,
 }
@@ -398,33 +503,80 @@ fn tirer_dans(fourchette: &RangeInclusive<u32>, aleatoire: &mut dyn Aleatoire) -
     tirer_entre(*fourchette.start(), *fourchette.end(), aleatoire)
 }
 
+/// Vérifie qu'un monstre protégé part avec au moins un autre, et qu'un
+/// charme ne va qu'avec un monstre protégé (section 12.5).
+pub(crate) fn verifier_protection(
+    protection: Protection,
+    nombre_de_monstres: usize,
+) -> Result<(), ErreurExpeditionAutomatique> {
+    match protection.protege {
+        Some(protege) if protege >= nombre_de_monstres || nombre_de_monstres < 2 => {
+            Err(ErreurExpeditionAutomatique::ProtectionImpossible)
+        }
+        None if protection.charme => Err(ErreurExpeditionAutomatique::CharmeSansProtege),
+        _ => Ok(()),
+    }
+}
+
 /// Dégâts subis par chaque monstre, dans l'ordre. Le total est réparti à
 /// parts égales entre les monstres encore debout, en divisions entières. Un
 /// monstre dont la part atteint ses PV tombe KO et n'encaisse que ses PV : le
-/// reste est réparti de nouveau entre les autres (section 12.3).
-fn repartir_degats(total: u32, pv: &[u32]) -> Vec<u32> {
+/// reste est réparti de nouveau entre les autres (section 12.3). Le monstre
+/// protégé, tant qu'un autre est debout, reporte sur eux le pourcentage de
+/// sa part (section 12.5).
+fn repartir_degats(total: u32, pv: &[u32], protection: Option<(usize, u32)>) -> Vec<u32> {
     let mut subis = vec![0; pv.len()];
     let mut debout: Vec<usize> = (0..pv.len()).collect();
     let mut restant = total;
     while !debout.is_empty() {
-        let part = restant / debout.len() as u32;
-        let (tombes, autres): (Vec<usize>, Vec<usize>) =
-            debout.iter().partition(|&&index| pv[index] <= part);
+        let parts = parts(restant, &debout, protection);
+        let tombes: Vec<usize> = debout
+            .iter()
+            .zip(&parts)
+            .filter(|(index, part)| pv[**index] <= **part)
+            .map(|(index, _)| *index)
+            .collect();
         if tombes.is_empty() {
-            for index in debout {
+            for (index, part) in debout.into_iter().zip(parts) {
                 subis[index] = part;
             }
             break;
         }
-        for index in tombes {
+        for &index in &tombes {
             subis[index] = pv[index];
             // Les PV des monstres tombés ne dépassent pas leurs parts, dont
             // la somme ne dépasse pas ce qui restait.
             restant -= pv[index];
         }
-        debout = autres;
+        debout.retain(|index| !tombes.contains(index));
     }
     subis
+}
+
+/// La part de chaque monstre debout, dans l'ordre de `debout` : à parts
+/// égales, puis le monstre protégé, s'il est debout avec d'autres, leur
+/// reporte le pourcentage de la sienne, partagé à parts égales. Les restes
+/// des divisions sont perdus.
+fn parts(restant: u32, debout: &[usize], protection: Option<(usize, u32)>) -> Vec<u32> {
+    let nombre = debout.len() as u32;
+    let part = restant / nombre;
+    let mut parts = vec![part; debout.len()];
+    let protege = protection.and_then(|(protege, pourcentage)| {
+        let position = debout.iter().position(|index| *index == protege)?;
+        (nombre > 1).then_some((position, pourcentage))
+    });
+    if let Some((position, pourcentage)) = protege {
+        let reportee = part * pourcentage / 100;
+        let par_autre = reportee / (nombre - 1);
+        for (rang, part) in parts.iter_mut().enumerate() {
+            if rang == position {
+                *part -= reportee;
+            } else {
+                *part += par_autre;
+            }
+        }
+    }
+    parts
 }
 
 fn est_reussie(subis: &[u32], pv: &[u32]) -> bool {
@@ -509,32 +661,32 @@ mod tests {
 
     #[test]
     fn degats_repartis_a_parts_egales_sans_ko() {
-        assert_eq!(repartir_degats(41, &[30, 30]), vec![20, 20]);
-        assert_eq!(repartir_degats(1, &[30, 30]), vec![0, 0]);
+        assert_eq!(repartir_degats(41, &[30, 30], None), vec![20, 20]);
+        assert_eq!(repartir_degats(1, &[30, 30], None), vec![0, 0]);
     }
 
     /// Exemple de la section 12.3 : une Salamandre de 26 PV et un Loup de 16.
     #[test]
     fn le_surplus_d_un_monstre_ko_passe_aux_autres() {
         let pv = [26, 16];
-        assert_eq!(repartir_degats(40, &pv), vec![24, 16]);
-        assert!(est_reussie(&repartir_degats(40, &pv), &pv));
-        assert_eq!(repartir_degats(50, &pv), vec![26, 16]);
-        assert!(!est_reussie(&repartir_degats(50, &pv), &pv));
+        assert_eq!(repartir_degats(40, &pv, None), vec![24, 16]);
+        assert!(est_reussie(&repartir_degats(40, &pv, None), &pv));
+        assert_eq!(repartir_degats(50, &pv, None), vec![26, 16]);
+        assert!(!est_reussie(&repartir_degats(50, &pv, None), &pv));
     }
 
     #[test]
     fn report_en_cascade() {
         // 60 en trois parts de 20 : le monstre de 10 PV tombe, il reste 50
         // en deux parts de 25 ; celui de 25 PV tombe, le dernier en subit 25.
-        assert_eq!(repartir_degats(60, &[10, 25, 40]), vec![10, 25, 25]);
+        assert_eq!(repartir_degats(60, &[10, 25, 40], None), vec![10, 25, 25]);
     }
 
     #[test]
     fn chances_exactes_sur_toute_la_fourchette() {
         let parametres = parametres(10..=40);
         // Un monstre de 20 PV seul résiste aux totaux de 10 à 19.
-        let seul = parametres.chances_de_reussite(&[monstre(5)]);
+        let seul = parametres.chances_de_reussite(&[monstre(5)], Protection::default());
         assert_eq!(
             seul,
             Chances {
@@ -544,15 +696,19 @@ mod tests {
         );
         assert_eq!(seul.pourcentage(), 32);
         // À deux (20 et 30 PV), seuls les totaux de 50 et plus échouent.
-        let duo = parametres.chances_de_reussite(&[monstre(5), monstre(10)]);
+        let duo = parametres.chances_de_reussite(&[monstre(5), monstre(10)], Protection::default());
         assert_eq!(duo.pourcentage(), 100);
     }
 
     #[test]
     fn le_retour_est_fixe_au_depart() {
         let depart = Horodatage::depuis_secondes(10_000);
-        let expedition =
-            ExpeditionAutomatique::partir(bois(), vec![monstre(5), monstre(5)], depart);
+        let expedition = ExpeditionAutomatique::partir(
+            bois(),
+            vec![monstre(5), monstre(5)],
+            Protection::default(),
+            depart,
+        );
         assert_eq!(expedition.retour(), Horodatage::depuis_secondes(12_700));
         let avant = Horodatage::depuis_secondes(12_699);
         assert!(!expedition.est_rentree(avant));
@@ -567,15 +723,21 @@ mod tests {
     #[test]
     fn une_reussite_rapporte_l_xp_aux_monstres_debout_et_des_potions() {
         let depart = Horodatage::depuis_secondes(0);
-        let expedition =
-            ExpeditionAutomatique::partir(bois(), vec![monstre(5), monstre(10)], depart);
+        let expedition = ExpeditionAutomatique::partir(
+            bois(),
+            vec![monstre(5), monstre(10)],
+            Protection::default(),
+            depart,
+        );
         // 30 dégâts en deux parts de 15 : personne ne tombe.
         let (bilan, monstres) =
             expedition.resoudre(&PLACES, &mut AleatoireScripte::new([30, 150, 1]));
         assert!(bilan.reussite);
         assert_eq!(bilan.degats, 30);
         assert_eq!(bilan.potions, 1);
-        assert_eq!(bilan.argent, 20);
+        // 20 pièces d'argent, et 10 % de plus par Loup, offensif, debout.
+        assert_eq!(bilan.argent, 24);
+        assert_eq!(bilan.argent_des_offensifs, 4);
         assert_eq!(monstres.len(), 2);
         for (index, rentre) in bilan.monstres.iter().enumerate() {
             assert_eq!(rentre.degats_subis, 15);
@@ -591,8 +753,12 @@ mod tests {
     #[test]
     fn un_monstre_ko_ne_gagne_pas_d_xp() {
         let depart = Horodatage::depuis_secondes(0);
-        let expedition =
-            ExpeditionAutomatique::partir(bois(), vec![monstre(5), monstre(10)], depart);
+        let expedition = ExpeditionAutomatique::partir(
+            bois(),
+            vec![monstre(5), monstre(10)],
+            Protection::default(),
+            depart,
+        );
         // 40 en deux parts de 20 : le monstre de 20 PV tombe, l'autre subit
         // ses 20 dégâts et reste debout avec 10 PV.
         let (bilan, monstres) =
@@ -609,7 +775,8 @@ mod tests {
     #[test]
     fn un_echec_ne_rapporte_rien_et_ne_tire_ni_xp_ni_potions() {
         let depart = Horodatage::depuis_secondes(0);
-        let expedition = ExpeditionAutomatique::partir(bois(), vec![monstre(5)], depart);
+        let expedition =
+            ExpeditionAutomatique::partir(bois(), vec![monstre(5)], Protection::default(), depart);
         let (bilan, monstres) = expedition.resoudre(&PLACES, &mut AleatoireScripte::new([25]));
         assert!(!bilan.reussite);
         assert_eq!(bilan.potions, 0);
@@ -647,7 +814,8 @@ mod tests {
             monstre(5).avec_habilete(Habilete::Instinct),
             monstre(10).avec_habilete(Habilete::Pillard),
         ];
-        let expedition = ExpeditionAutomatique::partir(bois(), monstres, depart);
+        let expedition =
+            ExpeditionAutomatique::partir(bois(), monstres, Protection::default(), depart);
         let (bilan, _) = expedition.resoudre(&PLACES, &mut AleatoireScripte::new([30, 150, 1]));
         // 150 XP, et 20 % de plus pour Instinct.
         let gains: Vec<u32> = bilan
@@ -656,18 +824,95 @@ mod tests {
             .map(|rentre| rentre.rapport.as_ref().unwrap().experience_gagnee)
             .collect();
         assert_eq!(gains, vec![180, 150]);
-        // 20 pièces d'argent, et 50 % de plus pour le Pillard debout.
-        assert_eq!((bilan.argent, bilan.argent_du_pillard), (30, 10));
+        // 20 pièces d'argent, 50 % de plus pour le Pillard debout, et 10 %
+        // par Loup, offensif, debout.
+        assert_eq!((bilan.argent, bilan.argent_du_pillard), (34, 10));
+        assert_eq!(bilan.argent_des_offensifs, 4);
+    }
+
+    #[test]
+    fn le_monstre_protege_reporte_une_part_de_ses_degats() {
+        // L'exemple de la section 12.5 : un Loup protégé à 25 %, une
+        // Mandragore et une Salamandre ; chacun devait subir 20.
+        let protege = Some((0, 25));
+        assert_eq!(
+            repartir_degats(60, &[20, 30, 26], protege),
+            vec![15, 22, 22]
+        );
+        // Sans protection, le Loup tombait.
+        assert_eq!(repartir_degats(60, &[20, 30, 26], None), vec![20, 20, 20]);
+        // À 100 %, il ne subit rien tant qu'un autre est debout ; seul, il
+        // subit ce qui reste.
+        assert_eq!(repartir_degats(25, &[20, 30], Some((0, 100))), vec![0, 24]);
+        assert_eq!(repartir_degats(40, &[20, 30], Some((0, 100))), vec![10, 30]);
+        assert_eq!(repartir_degats(70, &[20, 30], Some((0, 100))), vec![20, 30]);
+        assert_eq!(repartir_degats(45, &[20, 30], Some((0, 100))), vec![15, 30]);
+    }
+
+    #[test]
+    fn la_protection_vient_des_soutiens_et_du_charme() {
+        let soutien = || {
+            Monstre::creer(
+                crate::donnees_de_test::espece_de_soutien("mandragore"),
+                Niveau::new(5).unwrap(),
+                ValeursInternes::default(),
+                false,
+            )
+            .unwrap()
+        };
+        let monstres = vec![monstre(5), soutien(), soutien()];
+        let protection = |protege, charme| Protection { protege, charme };
+        assert_eq!(protection(None, false).pourcentage(&monstres), 0);
+        assert_eq!(protection(Some(0), false).pourcentage(&monstres), 50);
+        assert_eq!(protection(Some(0), true).pourcentage(&monstres), 100);
+        // Le protégé ne compte pas dans sa propre protection.
+        assert_eq!(protection(Some(1), false).pourcentage(&monstres), 25);
+        assert_eq!(protection(Some(1), true).pourcentage(&monstres), 75);
+        // Les chances en tiennent compte.
+        let parametres = parametres(10..=60);
+        let seuls = parametres.chances_de_reussite(&monstres[..2], Protection::default());
+        let proteges = parametres.chances_de_reussite(&monstres[..2], protection(Some(1), true));
+        assert!(proteges.favorables >= seuls.favorables);
+        assert_eq!(
+            verifier_protection(protection(Some(0), false), 1),
+            Err(ErreurExpeditionAutomatique::ProtectionImpossible)
+        );
+        assert_eq!(
+            verifier_protection(protection(None, true), 2),
+            Err(ErreurExpeditionAutomatique::CharmeSansProtege)
+        );
+        assert_eq!(verifier_protection(protection(Some(1), true), 2), Ok(()));
+    }
+
+    #[test]
+    fn le_bilan_dit_la_protection() {
+        let depart = Horodatage::depuis_secondes(0);
+        let expedition = ExpeditionAutomatique::partir(
+            bois(),
+            vec![monstre(5), monstre(10)],
+            Protection {
+                protege: Some(0),
+                charme: true,
+            },
+            depart,
+        );
+        // 30 dégâts : 15 chacun, dont 7 que le premier reporte sur l'autre.
+        let (bilan, _) = expedition.resoudre(&PLACES, &mut AleatoireScripte::new([30, 150, 1]));
+        assert_eq!(bilan.protection, Some((0, 50)));
+        assert_eq!(bilan.monstres[0].degats_subis, 8);
+        assert_eq!(bilan.monstres[1].degats_subis, 22);
     }
 
     #[test]
     fn un_pillard_ko_ne_rapporte_rien_de_plus() {
         let depart = Horodatage::depuis_secondes(0);
         let monstres = vec![monstre(5).avec_habilete(Habilete::Pillard), monstre(10)];
-        let expedition = ExpeditionAutomatique::partir(bois(), monstres, depart);
+        let expedition =
+            ExpeditionAutomatique::partir(bois(), monstres, Protection::default(), depart);
         // 40 dégâts : le Pillard, à 20 PV, tombe.
         let (bilan, _) = expedition.resoudre(&PLACES, &mut AleatoireScripte::new([40, 100, 0]));
         assert!(bilan.reussite && bilan.monstres[0].ko);
-        assert_eq!((bilan.argent, bilan.argent_du_pillard), (20, 0));
+        // Seul le Loup debout, offensif, ajoute ses 10 %.
+        assert_eq!((bilan.argent, bilan.argent_du_pillard), (22, 0));
     }
 }

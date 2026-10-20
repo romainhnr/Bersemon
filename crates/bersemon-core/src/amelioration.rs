@@ -283,6 +283,20 @@ impl Forge {
         self.commencer(ouvrage, plan.duree(), maintenant)
     }
 
+    /// Le charme de garde se forge aussi souvent que le joueur le veut
+    /// (section 13.5) : seul l'atelier doit être libre.
+    pub(crate) fn verifier_charme(&self) -> Result<(), ErreurAmelioration> {
+        self.verifier_atelier()
+    }
+
+    pub(crate) fn lancer_charme(
+        &mut self,
+        plan: &PlanDuCharme,
+        maintenant: Horodatage,
+    ) -> Chantier {
+        self.commencer(Ouvrage::CharmeDeGarde, plan.duree(), maintenant)
+    }
+
     fn commencer(&mut self, ouvrage: Ouvrage, duree: Duration, maintenant: Horodatage) -> Chantier {
         let chantier = Chantier {
             ouvrage,
@@ -423,6 +437,34 @@ impl PlanDeFabrication {
     }
 }
 
+/// Ce que coûte un charme de garde et le temps qu'il demande à Gunther
+/// (docs/contenu-v1.md, section 20).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PlanDuCharme {
+    cout: Vec<(Ressource, u32)>,
+    duree: Duration,
+}
+
+impl PlanDuCharme {
+    pub fn new(cout: Vec<(Ressource, u32)>, duree: Duration) -> Result<Self, ErreurPlan> {
+        if cout.is_empty() || cout.iter().any(|(_, nombre)| *nombre == 0) {
+            return Err(ErreurPlan::CoutVide);
+        }
+        if duree.as_secs() == 0 {
+            return Err(ErreurPlan::DureeNulle);
+        }
+        Ok(Self { cout, duree })
+    }
+
+    pub fn cout(&self) -> &[(Ressource, u32)] {
+        &self.cout
+    }
+
+    pub fn duree(&self) -> Duration {
+        self.duree
+    }
+}
+
 /// Ce que Gunther a sur l'enclume.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Ouvrage {
@@ -431,6 +473,9 @@ pub enum Ouvrage {
         niveau: u8,
     },
     Objet(ObjetDEquipement),
+    /// Un charme de garde, objet de protection des expéditions
+    /// automatiques (section 12.5).
+    CharmeDeGarde,
 }
 
 /// Le travail de Gunther, et l'heure où il aura fini.

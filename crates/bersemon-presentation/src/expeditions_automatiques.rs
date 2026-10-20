@@ -94,6 +94,16 @@ pub fn erreur_expedition_automatique(erreur: &ErreurExpeditionAutomatique) -> St
         ErreurExpeditionAutomatique::Inexistante => {
             "Aucune expédition automatique dans cette zone.".to_string()
         }
+        ErreurExpeditionAutomatique::ProtectionImpossible => {
+            "Un monstre ne se protège qu'avec au moins un autre, qui reprend sa part des dégâts."
+                .to_string()
+        }
+        ErreurExpeditionAutomatique::CharmeSansProtege => {
+            "Un charme de garde protège un monstre : désignez-le d'abord.".to_string()
+        }
+        ErreurExpeditionAutomatique::AucunCharme => {
+            "Vous n'avez aucun charme de garde : Gunther en forge à sa forge.".to_string()
+        }
         ErreurExpeditionAutomatique::PasEncoreRentree => {
             "L'expédition n'est pas encore rentrée.".to_string()
         }
@@ -171,10 +181,16 @@ pub fn retour(zone: &str, bilan: &BilanExpeditionAutomatique) -> String {
         "L'expédition partie pour {zone} est de retour : elle a dû encaisser {} dégâts.",
         bilan.degats
     )];
-    for rentre in &bilan.monstres {
+    for (position, rentre) in bilan.monstres.iter().enumerate() {
         let ko = if rentre.ko { " et tombe KO" } else { "" };
+        let protege = match bilan.protection {
+            Some((protege, pourcentage)) if protege == position => {
+                format!(", protégé à {pourcentage} %,")
+            }
+            _ => String::new(),
+        };
         lignes.push(format!(
-            "{} perd {} PV{ko}.",
+            "{}{protege} perd {} PV{ko}.",
             rentre.monstre.nom(),
             rentre.degats_subis
         ));
@@ -184,10 +200,19 @@ pub fn retour(zone: &str, bilan: &BilanExpeditionAutomatique) -> String {
         gains.push(potions(bilan.potions));
     }
     if bilan.argent > 0 {
-        gains.push(argent_et_part_du_pillard(
-            bilan.argent,
-            bilan.argent_du_pillard,
-        ));
+        let mut argent = argent_et_part_du_pillard(bilan.argent, bilan.argent_du_pillard);
+        if bilan.argent_des_offensifs > 0 {
+            let lien = if bilan.argent_du_pillard > 0 {
+                " et"
+            } else {
+                ", dont"
+            };
+            argent.push_str(&format!(
+                "{lien} {} grâce aux monstres offensifs",
+                bilan.argent_des_offensifs
+            ));
+        }
+        gains.push(argent);
     }
     let conclusion = if !bilan.reussite {
         "Échec : tous vos monstres sont tombés KO, l'expédition ne rapporte rien.".to_string()
@@ -314,6 +339,7 @@ mod tests {
         bilan.reussite = true;
         bilan.potions = 1;
         bilan.argent = 25;
+        bilan.argent_des_offensifs = 0;
         let texte = retour("Lisière du Bois-Sombre", &bilan);
         assert!(
             texte.contains("Réussite : vos monstres rapportent 1 potion et 25 pièces d'argent."),
@@ -340,6 +366,24 @@ mod tests {
             texte.contains("25 pièces d'argent, dont 8 grâce à l'habileté Pillard."),
             "{texte}"
         );
+        // Les monstres offensifs et la protection (sections 12.5 et 12.6).
+        bilan.argent_des_offensifs = 2;
+        bilan.protection = Some((0, 50));
+        let texte = retour("Lisière du Bois-Sombre", &bilan);
+        assert!(
+            texte.contains(
+                "25 pièces d'argent, dont 8 grâce à l'habileté Pillard et 2 grâce aux monstres offensifs."
+            ),
+            "{texte}"
+        );
+        assert!(texte.contains("Loup, protégé à 50 %, perd"), "{texte}");
+        bilan.argent_du_pillard = 0;
+        let texte = retour("Lisière du Bois-Sombre", &bilan);
+        assert!(
+            texte.contains("25 pièces d'argent, dont 2 grâce aux monstres offensifs."),
+            "{texte}"
+        );
+        bilan.argent_des_offensifs = 0;
         bilan.potions = 0;
         bilan.argent = 0;
         bilan.argent_du_pillard = 0;
