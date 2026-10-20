@@ -667,3 +667,18 @@ Décidé le 20/10/2026, pour les étapes 52 à 54 (gamedesign.md, section 4.2), 
 | Mage | Incantation | +20 % d'Attaque spéciale | {héros} murmure une incantation : {monstre} gagne 20 % d'Attaque spéciale jusqu'à la fin du combat. |
 | Templier | Bouclier de foi | +20 % de Défense et de Défense spéciale | {héros} invoque un bouclier de foi : {monstre} gagne 20 % de Défense et de Défense spéciale jusqu'à la fin du combat. |
 | Assassin | Pas de l'ombre | +20 % de Vitesse | {héros} souffle le pas de l'ombre : {monstre} gagne 20 % de Vitesse jusqu'à la fin du combat. |
+
+## 13. Don et échange de monstres
+
+Décidé le 20/10/2026, pour les étapes 55 à 58 (gamedesign.md, sections 15.1 et 15.2), textes validés par l'utilisateur. {héros} est le nom du héros de l'autre joueur, {pseudo} son pseudo Discord, {monstre} le nom d'un monstre.
+
+| Moment | Texte |
+|---|---|
+| Combat, un monstre reçu désobéit | {monstre} n'en fait qu'à sa tête et ignore votre ordre. |
+| Fiche d'un monstre reçu | Reçu de {héros}. Obéit jusqu'au niveau {limite}. |
+| Message privé, offre d'échange | {héros} ({pseudo}) vous propose {son monstre} contre votre {monstre}. Ouvrez /bersemon, au camp, pour répondre. |
+| Message privé, offre de don | {héros} ({pseudo}) vous offre {monstre}. Ouvrez /bersemon, au camp, pour répondre. |
+| Message privé, offre acceptée | {héros} a accepté votre offre. |
+| Message privé, offre refusée | {héros} a refusé votre offre. |
+
+Au camp, le bouton s'appelle "Échanges". Limite d'obéissance : niveau maximal de la zone la plus avancée ouverte, plus 5 (12, 18, 25 puis 32).

@@ -272,6 +272,11 @@ impl Collection {
         }
     }
 
+    /// Un monstre de plus trouverait sa place, dans l'équipe ou au camp.
+    pub fn a_de_la_place(&self) -> bool {
+        self.equipe.len() < self.tailles.equipe || self.places_libres_au_camp() > 0
+    }
+
     /// Le monstre capturé rejoint l'équipe s'il y a de la place, sinon le
     /// camp (Q12).
     pub fn accueillir_capture(&mut self, capture: Monstre) -> Placement {

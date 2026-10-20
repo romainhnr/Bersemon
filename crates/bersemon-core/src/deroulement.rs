@@ -23,6 +23,7 @@ use crate::capsule::{Capsule, ErreurApprentissage};
 use crate::collection::{Emplacement, ErreurCollection, Placement, TriDuCamp};
 use crate::combat::{self, Action, BilanCombat, Combat, ErreurCombat, Issue, Phase};
 use crate::contenu::ContenuV1;
+use crate::echange::{ErreurEchange, Offre, conclure_offre};
 use crate::equipement::{ErreurEquipement, ObjetDEquipement, ObjetDEquipementId, PlaceDEquipement};
 use crate::espece::Espece;
 use crate::evolution::{Circonstances, ErreurEvolution, evolution_possible, faire_evoluer};
@@ -483,6 +484,17 @@ pub enum Evenement {
         monstre: Monstre,
         prix: u32,
     },
+    /// À un autre joueur, par don ou échange ; `heros` est le nom de son
+    /// héros (section 15.1).
+    MonstreCede {
+        heros: String,
+        monstre: Monstre,
+    },
+    /// D'un autre joueur, déjà marqué du nom de son héros.
+    MonstreRecu {
+        heros: String,
+        monstre: Monstre,
+    },
     CapsuleAchetee {
         capsule: Capsule,
         prix: u32,
@@ -612,6 +624,79 @@ impl Deroulement {
             Etat::EnJeu(jeu) => Some(&jeu.partie),
             _ => None,
         }
+    }
+
+    /// La partie, si le joueur est au camp sans question en attente : seule
+    /// une telle partie cède ou reçoit un monstre (section 15.1).
+    pub fn partie_au_camp(&self) -> Option<&Partie> {
+        if self.attente() != Attente::Camp {
+            return None;
+        }
+        self.partie()
+    }
+
+    fn partie_au_camp_mut(&mut self) -> Option<&mut Partie> {
+        if self.attente() != Attente::Camp {
+            return None;
+        }
+        match &mut self.etat {
+            Etat::EnJeu(jeu) => Some(&mut jeu.partie),
+            _ => None,
+        }
+    }
+
+    /// Conclut l'offre faite par `donneur` à `receveur`, tous deux au camp,
+    /// puis sauvegarde la partie du receveur avant celle du donneur : un
+    /// incident entre les deux dupliquerait le monstre plutôt que de le
+    /// perdre (Q89). Rend ce que chacun a vécu, ou ne change rien si l'offre
+    /// n'est plus valable.
+    pub fn conclure_offre(
+        donneur: &mut Deroulement,
+        receveur: &mut Deroulement,
+        offre: &Offre,
+        depot_du_donneur: &dyn SauvegardeRepository,
+        depot_du_receveur: &dyn SauvegardeRepository,
+    ) -> Result<(Vec<Evenement>, Vec<Evenement>), ErreurEchange> {
+        let partie_du_donneur = donneur
+            .partie_au_camp_mut()
+            .ok_or(ErreurEchange::DonneurPasAuCamp)?;
+        let partie_du_receveur = receveur
+            .partie_au_camp_mut()
+            .ok_or(ErreurEchange::ReceveurPasAuCamp)?;
+        let conclusion = conclure_offre(partie_du_donneur, partie_du_receveur, offre)?;
+        let recu = |partie: &Partie, emplacement: Emplacement| {
+            partie
+                .collection()
+                .monstre(emplacement)
+                .expect("monstre placé par conclure_offre")
+                .clone()
+        };
+        let heros_du_donneur = partie_du_donneur.heros().nom().as_str().to_string();
+        let heros_du_receveur = partie_du_receveur.heros().nom().as_str().to_string();
+        let mut du_donneur = vec![Evenement::MonstreCede {
+            heros: heros_du_receveur.clone(),
+            monstre: offre.cede.monstre.clone(),
+        }];
+        let mut du_receveur = Vec::new();
+        if let Some(demande) = &offre.demande {
+            du_receveur.push(Evenement::MonstreCede {
+                heros: heros_du_donneur.clone(),
+                monstre: demande.monstre.clone(),
+            });
+        }
+        du_receveur.push(Evenement::MonstreRecu {
+            heros: heros_du_donneur,
+            monstre: recu(partie_du_receveur, conclusion.chez_le_receveur),
+        });
+        if let Some(emplacement) = conclusion.chez_le_donneur {
+            du_donneur.push(Evenement::MonstreRecu {
+                heros: heros_du_receveur,
+                monstre: recu(partie_du_donneur, emplacement),
+            });
+        }
+        sauvegarder(partie_du_receveur, depot_du_receveur, &mut du_receveur);
+        sauvegarder(partie_du_donneur, depot_du_donneur, &mut du_donneur);
+        Ok((du_donneur, du_receveur))
     }
 
     /// `None` hors expédition.
@@ -2011,9 +2096,14 @@ impl EnExpedition {
             numero: self.expedition.etapes_faites(),
             total: self.expedition.nombre_etapes(),
         });
+        let contenu = contexte.contenu;
+        let limite = partie.limite_d_obeissance(contenu.zones(), contenu.piste());
         match evenement {
             EvenementExpedition::Combat(groupe) => {
-                let combat = partie.preparer_combat(groupe).expect(EQUIPE_APTE);
+                let combat = partie
+                    .preparer_combat(groupe)
+                    .expect(EQUIPE_APTE)
+                    .avec_limite_d_obeissance(limite);
                 evenements.push(Evenement::Rencontre(combat.clone()));
                 self.engager(partie, combat, evenements)
             }
@@ -2056,7 +2146,8 @@ impl EnExpedition {
                         partie.preparer_combat_sans_capture(vec![adversaire])
                     }
                 }
-                .expect(EQUIPE_APTE);
+                .expect(EQUIPE_APTE)
+                .avec_limite_d_obeissance(limite);
                 evenements.push(Evenement::Rencontre(combat.clone()));
                 self.ame = Some(*marchand);
                 self.engager(partie, combat, evenements)
@@ -2071,7 +2162,8 @@ impl EnExpedition {
                 evenements.push(Evenement::MonstreRareHostile(rare.monstre.clone()));
                 let combat = partie
                     .preparer_combat(vec![rare.monstre])
-                    .expect(EQUIPE_APTE);
+                    .expect(EQUIPE_APTE)
+                    .avec_limite_d_obeissance(limite);
                 evenements.push(Evenement::Rencontre(combat.clone()));
                 self.engager(partie, combat, evenements)
             }
@@ -2085,7 +2177,8 @@ impl EnExpedition {
                 evenements.push(Evenement::RecitDeLApotre(recit));
                 let combat = partie
                     .preparer_combat_contre_apotre(monstre)
-                    .expect(EQUIPE_APTE);
+                    .expect(EQUIPE_APTE)
+                    .avec_limite_d_obeissance(limite);
                 self.moment = Moment::AnnonceDeCombat(combat);
                 Reponse::Faite
             }
@@ -2096,7 +2189,8 @@ impl EnExpedition {
                 ));
                 let combat = partie
                     .preparer_combat_contre_humain(equipe, humain.ia())
-                    .expect(EQUIPE_APTE);
+                    .expect(EQUIPE_APTE)
+                    .avec_limite_d_obeissance(limite);
                 self.moment = Moment::AnnonceDeCombat(combat);
                 Reponse::Faite
             }
@@ -4066,6 +4160,111 @@ mod tests {
             forge: Default::default(),
         })
         .unwrap()
+    }
+
+    fn partie_d_ysolde(contenu: &ContenuV1) -> Partie {
+        let heros = Heros::new(Nom::new("Ysolde").unwrap(), Classe::Templier);
+        Partie::nouvelle(heros, monstre_du_contenu(contenu, "mandragore", 5))
+    }
+
+    #[test]
+    fn un_don_entre_deux_joueurs_au_camp_est_sauvegarde_des_deux_cotes() {
+        let contenu = ContenuV1::new();
+        let (depot_d_aldric, depot_d_ysolde) = (DepotMemoire::default(), DepotMemoire::default());
+        let mut aldric = au_camp(partie(&contenu), &contenu, &depot_d_aldric);
+        let mut ysolde = au_camp(partie_d_ysolde(&contenu), &contenu, &depot_d_ysolde);
+        let offre = Offre::don(
+            aldric.partie_au_camp().unwrap(),
+            Emplacement::Equipe(1),
+            ysolde.partie_au_camp().unwrap(),
+        )
+        .unwrap();
+        let (du_donneur, du_receveur) = Deroulement::conclure_offre(
+            &mut aldric,
+            &mut ysolde,
+            &offre,
+            &depot_d_aldric,
+            &depot_d_ysolde,
+        )
+        .unwrap();
+        assert!(matches!(
+            du_donneur.as_slice(),
+            [Evenement::MonstreCede { heros, monstre }]
+                if heros == "Ysolde" && monstre.espece().id().as_str() == "loup"
+        ));
+        assert!(matches!(
+            du_receveur.as_slice(),
+            [Evenement::MonstreRecu { heros, monstre }]
+                if heros == "Aldric" && monstre.recu_de().map(Nom::as_str) == Some("Aldric")
+        ));
+        let sauvee = depot_d_ysolde.sauvegardes.borrow().last().cloned().unwrap();
+        assert_eq!(sauvee.collection().equipe().len(), 2);
+        let sauvee = depot_d_aldric.sauvegardes.borrow().last().cloned().unwrap();
+        assert_eq!(sauvee.collection().equipe().len(), 1);
+    }
+
+    #[test]
+    fn pas_d_echange_avec_un_joueur_en_expedition() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut aldric = au_camp(partie(&contenu), &contenu, &depot);
+        let mut ysolde = au_camp(partie_d_ysolde(&contenu), &contenu, &depot);
+        let offre = Offre::echange(
+            aldric.partie_au_camp().unwrap(),
+            Emplacement::Equipe(1),
+            ysolde.partie_au_camp().unwrap(),
+            Emplacement::Equipe(0),
+        )
+        .unwrap();
+        let lisiere = Choix::PartirEnExpedition(ZoneId::new("lisiere"));
+        let mut aleatoire = GenerateurAleatoire::new(3);
+        let mut contexte = Contexte {
+            contenu: &contenu,
+            aleatoire: &mut aleatoire,
+            depot: &depot,
+            maintenant: Horodatage::depuis_secondes(0),
+        };
+        ysolde.repondre(lisiere, &mut contexte).unwrap();
+        assert!(ysolde.partie_au_camp().is_none());
+        let sauvegardes = depot.sauvegardes.borrow().len();
+        assert_eq!(
+            Deroulement::conclure_offre(&mut aldric, &mut ysolde, &offre, &depot, &depot),
+            Err(ErreurEchange::ReceveurPasAuCamp)
+        );
+        assert_eq!(depot.sauvegardes.borrow().len(), sauvegardes);
+        assert_eq!(aldric.partie().unwrap().collection().equipe().len(), 2);
+    }
+
+    #[test]
+    fn un_monstre_recu_trop_fort_peut_desobeir_en_expedition() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Mage);
+        let mut fort = monstre_du_contenu(&contenu, "salamandre", 15);
+        fort.marquer_recu(Nom::new("Ysolde").unwrap());
+        let mut deroulement = au_camp(Partie::nouvelle(heros, fort), &contenu, &depot);
+        let mut aleatoire = GenerateurAleatoire::new(7);
+        let mut choix = Choix::PartirEnExpedition(ZoneId::new("lisiere"));
+        loop {
+            let mut contexte = Contexte {
+                contenu: &contenu,
+                aleatoire: &mut aleatoire,
+                depot: &depot,
+                maintenant: Horodatage::depuis_secondes(0),
+            };
+            deroulement.repondre(choix, &mut contexte).unwrap();
+            match deroulement.attente() {
+                // Seule la Lisière est ouverte : il obéit jusqu'au niveau
+                // 12, et désobéit 30 fois sur 100 au niveau 15.
+                Attente::ActionDeCombat(combat) => {
+                    assert_eq!(combat.chances_de_desobeir(0), 30);
+                    break;
+                }
+                Attente::EntreDeuxEtapes => choix = Choix::ContinuerLExpedition,
+                Attente::MonstreRare(_) => choix = Choix::LaisserLeMonstreRare,
+                autre => panic!("combat attendu : {autre:?}"),
+            }
+        }
     }
 
     fn au_camp(partie: Partie, contenu: &ContenuV1, depot: &DepotMemoire) -> Deroulement {

@@ -11,8 +11,9 @@
 //! - l'attaque choisie par l'IA, si le monstre adverse en connaît plusieurs ;
 //! - pour une attaque du joueur, l'ordre d'action en cas d'égalité de vitesse ;
 //!   pour un filet, la capture, si sa chance n'est ni nulle ni certaine ;
-//! - pour chaque monstre qui attaque : la paralysie s'il est paralysé, ceux de
-//!   la résolution de l'attaque, puis l'effet secondaire si la cible peut le
+//! - pour chaque monstre qui attaque : la désobéissance d'un monstre reçu
+//!   au-dessus de sa limite, la paralysie s'il est paralysé, ceux de la
+//!   résolution de l'attaque, puis l'effet secondaire si la cible peut le
 //!   subir.
 
 use std::cmp::Ordering;
@@ -27,6 +28,7 @@ use crate::habilete::{BONUS_D_INSTINCT, Habilete, majorer};
 use crate::heros::Ordre;
 use crate::humain::IaHumain;
 use crate::monstre::{Monstre, RapportExperience};
+use crate::obeissance::chances_de_desobeir;
 use crate::soin::{EffetDuSoin, ErreurSoin, Soin, Soins, appliquer_soin, verifier_cible};
 use crate::stats::{BonusDeStats, Stats, appliquer_bonus, cumuler_bonus};
 use crate::statut::{CHANCES_BLOCAGE_PARALYSIE, Statut, degats_de_poison};
@@ -107,6 +109,9 @@ pub enum Evenement {
         statut: Statut,
     },
     BloqueParLaParalysie(Combattant),
+    /// Un monstre reçu au-dessus de sa limite ignore l'ordre d'attaquer
+    /// (section 15.2).
+    Desobeissance(Combattant),
     DegatsDePoison {
         cible: Combattant,
         degats: u32,
@@ -244,6 +249,9 @@ pub struct Combat {
     /// Position, dans l'équipe, du monstre qui a reçu l'ordre : un seul
     /// ordre par combat, dont le bonus dure jusqu'à la fin.
     ordre_donne: Option<usize>,
+    /// Niveau jusqu'auquel les monstres reçus d'un autre joueur obéissent
+    /// (section 15.2) ; sans limite, tous obéissent.
+    limite_d_obeissance: Option<u8>,
     /// Multiplie la chance de capture, en fraction : les filets améliorés
     /// par Gunther (section 13.4).
     facteur_des_filets: (u64, u64),
@@ -286,6 +294,7 @@ impl Combat {
             bonus_joueur: BonusDeStats::default(),
             ordre: None,
             ordre_donne: None,
+            limite_d_obeissance: None,
             facteur_des_filets: (1, 1),
             soins: Soins::default(),
             contre_un_apotre: false,
@@ -395,6 +404,20 @@ impl Combat {
     /// Le monstre de l'équipe qui a reçu l'ordre du héros.
     pub fn a_recu_l_ordre(&self, index: usize) -> bool {
         self.ordre_donne == Some(index)
+    }
+
+    pub fn avec_limite_d_obeissance(mut self, limite: u8) -> Self {
+        self.limite_d_obeissance = Some(limite);
+        self
+    }
+
+    /// Pourcentage de chances que ce monstre de l'équipe ignore l'ordre
+    /// d'attaquer.
+    pub fn chances_de_desobeir(&self, index: usize) -> u32 {
+        match (self.limite_d_obeissance, self.equipe.get(index)) {
+            (Some(limite), Some(monstre)) => chances_de_desobeir(monstre, limite),
+            _ => 0,
+        }
     }
 
     pub fn avec_filets(mut self, facteur: (u64, u64)) -> Self {
@@ -996,6 +1019,16 @@ impl Combat {
         }
         let lanceur = self.actif(cote);
         let cible = self.actif(cote.oppose());
+        // Seul l'ordre du joueur peut être ignoré ; un tirage seulement si
+        // la désobéissance est possible.
+        let desobeissance = match cote {
+            Cote::Joueur => self.chances_de_desobeir(lanceur.index),
+            Cote::Adversaire => 0,
+        };
+        if desobeissance > 0 && aleatoire.tirer(1..=100) <= desobeissance {
+            evenements.push(Evenement::Desobeissance(lanceur));
+            return;
+        }
         if self.monstre(lanceur).statut() == Some(Statut::Paralysie)
             && aleatoire.tirer(1..=CHANCES_BLOCAGE_PARALYSIE) == 1
         {
@@ -2028,6 +2061,35 @@ mod tests {
         tour(&mut combat, Action::Changer(1), &[2, 100]);
         tour(&mut combat, Action::Changer(0), &[2, 100]);
         assert_eq!(combat.stats_en_combat(j(0)).attaque, 13);
+    }
+
+    fn recu(mut monstre: Monstre) -> Monstre {
+        monstre.marquer_recu(crate::nom::Nom::new("Ysolde").unwrap());
+        monstre
+    }
+
+    #[test]
+    fn un_monstre_recu_au_dessus_de_sa_limite_ignore_parfois_l_ordre() {
+        // Niveau 5 pour une limite de 3 : 20 % de chances de désobéir.
+        let mut combat = combat(vec![recu(rapide())], vec![lent()]).avec_limite_d_obeissance(3);
+        assert_eq!(combat.chances_de_desobeir(0), 20);
+        let evenements = tour(&mut combat, Action::Attaquer(0), &[20, 2, 100]);
+        assert_eq!(evenements[0], Evenement::Desobeissance(j(0)));
+        assert_eq!(evenements[1], lancee(a(0), coup()));
+        let evenements = tour(&mut combat, Action::Attaquer(0), &[21, 2, 100, 2, 100]);
+        assert_eq!(evenements[0], lancee(j(0), coup()));
+    }
+
+    #[test]
+    fn sans_desobeissance_possible_aucun_tirage() {
+        // Reçu mais sous sa limite, ou à soi au-dessus : il obéit, sans
+        // tirage.
+        for (monstre, limite) in [(recu(rapide()), 5), (rapide(), 1)] {
+            let mut combat = combat(vec![monstre], vec![lent()]).avec_limite_d_obeissance(limite);
+            assert_eq!(combat.chances_de_desobeir(0), 0);
+            let evenements = tour(&mut combat, Action::Attaquer(0), &[2, 100, 2, 100]);
+            assert_eq!(evenements[0], lancee(j(0), coup()));
+        }
     }
 
     #[test]

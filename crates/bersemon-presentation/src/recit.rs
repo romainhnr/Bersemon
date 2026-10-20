@@ -306,6 +306,20 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             ),
             false,
         ),
+        Evenement::MonstreCede { heros, monstre } => (
+            format!(
+                "Vous cédez {} à {heros}.",
+                nom_en_valeur(monstre, Cote::Joueur)
+            ),
+            false,
+        ),
+        Evenement::MonstreRecu { heros, monstre } => (
+            format!(
+                "Vous recevez {} de {heros}.",
+                nom_en_valeur(monstre, Cote::Joueur)
+            ),
+            false,
+        ),
         // Tout ranger reste possible avec un sac vide.
         Evenement::RangeAuCoffre(range) if range.est_vide() => {
             ("Le sac est déjà vide.".to_string(), false)

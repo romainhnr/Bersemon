@@ -162,6 +162,10 @@ pub fn evenement(evenement: &Evenement, combat: &Combat) -> String {
             "La paralysie empêche {} d'attaquer.",
             nom_de(*combattant)
         )),
+        Evenement::Desobeissance(combattant) => important(&format!(
+            "{} n'en fait qu'à sa tête et ignore votre ordre.",
+            nom_de(*combattant)
+        )),
         Evenement::DegatsDePoison { cible, degats } => important(&format!(
             "Le poison fait perdre {degats} PV à {}.",
             nom_de(*cible)
@@ -279,6 +283,48 @@ mod tests {
             false,
         )
         .unwrap()
+    }
+
+    /// Le loup, comme reçu d'Ysolde.
+    fn loup_recu(contenu: &ContenuV1) -> Monstre {
+        let loup = creer(contenu, "loup", 15);
+        Monstre::restaurer(bersemon_core::monstre::EtatMonstre {
+            espece: loup.espece().clone(),
+            surnom: None,
+            niveau: loup.niveau(),
+            experience: loup.experience(),
+            valeurs_internes: *loup.valeurs_internes(),
+            attaques: loup.attaques().clone(),
+            shiny: false,
+            pv_actuels: loup.pv_actuels(),
+            statut: None,
+            habilete: loup.habilete(),
+            recu_de: Some(bersemon_core::nom::Nom::new("Ysolde").unwrap()),
+        })
+        .unwrap()
+    }
+
+    #[test]
+    fn un_monstre_recu_dit_de_qui_il_vient_et_peut_desobeir() {
+        let contenu = ContenuV1::new();
+        let loup = loup_recu(&contenu);
+        assert_eq!(
+            crate::monstres::provenance(&loup, 12).as_deref(),
+            Some("Reçu de Ysolde. Obéit jusqu'au niveau 12.")
+        );
+        assert_eq!(
+            crate::monstres::provenance(&creer(&contenu, "loup", 5), 12),
+            None
+        );
+        let combat = Combat::new(vec![loup], vec![creer(&contenu, "corbeau", 5)]).unwrap();
+        let texte = evenement(
+            &Evenement::Desobeissance(combat.actif(Cote::Joueur)),
+            &combat,
+        );
+        assert!(
+            texte.contains("n'en fait qu'à sa tête et ignore votre ordre."),
+            "{texte}"
+        );
     }
 
     #[test]

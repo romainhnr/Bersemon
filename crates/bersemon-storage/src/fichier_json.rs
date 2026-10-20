@@ -604,10 +604,10 @@ mod tests {
 
     #[test]
     fn version_inconnue() {
-        let texte = texte_de_partie().replacen("\"version\":16", "\"version\":17", 1);
+        let texte = texte_de_partie().replacen("\"version\":17", "\"version\":18", 1);
         assert_eq!(
             charger_texte(&texte),
-            Err(ErreurSauvegarde::VersionInconnue(17))
+            Err(ErreurSauvegarde::VersionInconnue(18))
         );
     }
 
@@ -837,6 +837,26 @@ mod tests {
         assert_eq!(partie.heros().equipement(), &Equipement::default());
         assert_eq!(partie.heros().nom().as_str(), "Éléonore");
         assert!(partie.forge().chantier().is_some());
+    }
+
+    #[test]
+    fn la_marque_d_un_monstre_recu_se_relit() {
+        let texte = texte_de_partie();
+        // Avant la version 17, aucun monstre n'est reçu.
+        assert!(!texte.contains("recu_de"), "{texte}");
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte).unwrap();
+        valeur["equipe"][0]
+            .as_object_mut()
+            .unwrap()
+            .insert("recu_de".to_string(), "Ysolde".into());
+        let relue = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        let monstre = &relue.collection().equipe()[0];
+        assert_eq!(
+            monstre.recu_de().map(|heros| heros.as_str()),
+            Some("Ysolde")
+        );
+        let ecrite = serde_json::to_string(&format::depuis_partie(&relue)).unwrap();
+        assert!(ecrite.contains("\"recu_de\":\"Ysolde\""), "{ecrite}");
     }
 
     #[test]

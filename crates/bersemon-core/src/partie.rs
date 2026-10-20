@@ -36,6 +36,8 @@ use crate::marchand::{
 };
 use crate::monstre::{Monstre, tirer_shiny, tirer_valeurs_internes};
 use crate::niveau::Niveau;
+use crate::nom::Nom;
+use crate::obeissance::limite_d_obeissance;
 use crate::pierre::PierreDEvolution;
 use crate::ressource::{Ressource, RessourceId};
 use crate::soin::{EffetDuSoin, ErreurSoin, Soin};
@@ -894,6 +896,20 @@ impl Partie {
             .iter()
             .filter(|zone| piste.zone_ouverte(zone.id(), self.indices_trouves))
             .collect()
+    }
+
+    /// Un monstre reçu d'un autre joueur porte le nom du héros qui l'a cédé,
+    /// et son espèce passe capturée au codex (section 15.1).
+    pub(crate) fn preparer_monstre_recu(&mut self, mut monstre: Monstre, de: &Nom) -> Monstre {
+        monstre.marquer_recu(de.clone());
+        self.codex.noter_capture(monstre.espece().id());
+        monstre
+    }
+
+    /// Niveau jusqu'auquel ses monstres reçus d'un autre joueur obéissent
+    /// (section 15.2).
+    pub fn limite_d_obeissance(&self, zones: &[Zone], piste: &Piste) -> u8 {
+        limite_d_obeissance(self.zones_accessibles(zones, piste))
     }
 
     /// Une fois tous les indices trouvés, une expédition dans la zone de

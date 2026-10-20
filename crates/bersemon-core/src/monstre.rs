@@ -56,6 +56,9 @@ pub struct Monstre {
     statut: Option<Statut>,
     /// `None` seulement pour une espèce sans habileté (section 5.9).
     habilete: Option<Habilete>,
+    /// Le héros qui l'a cédé, pour un monstre reçu d'un autre joueur : lui
+    /// seul peut désobéir (section 15.2).
+    recu_de: Option<Nom>,
 }
 
 impl Monstre {
@@ -83,6 +86,7 @@ impl Monstre {
             pv_actuels: 0,
             statut: None,
             habilete: None,
+            recu_de: None,
         };
         monstre.habilete = monstre.espece.habiletes().first().copied();
         monstre.soigner_completement();
@@ -144,6 +148,15 @@ impl Monstre {
     /// `None` efface le surnom.
     pub fn renommer(&mut self, surnom: Option<Nom>) {
         self.surnom = surnom;
+    }
+
+    pub fn recu_de(&self) -> Option<&Nom> {
+        self.recu_de.as_ref()
+    }
+
+    /// Un nouveau don remplace la marque du précédent (section 15.1).
+    pub(crate) fn marquer_recu(&mut self, heros: Nom) {
+        self.recu_de = Some(heros);
     }
 
     pub fn niveau(&self) -> Niveau {
@@ -368,6 +381,7 @@ impl Monstre {
             pv_actuels: 0,
             statut: etat.statut,
             habilete: etat.habilete,
+            recu_de: etat.recu_de,
         };
         if monstre.habilete.is_none() {
             monstre.habilete = monstre.espece.habiletes().first().copied();
@@ -399,6 +413,8 @@ pub struct EtatMonstre {
     pub statut: Option<Statut>,
     /// Absente des sauvegardes antérieures à la version 8.
     pub habilete: Option<Habilete>,
+    /// Absente des sauvegardes antérieures à la version 17.
+    pub recu_de: Option<Nom>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -716,6 +732,7 @@ mod tests {
             pv_actuels: monstre.pv_actuels(),
             statut: monstre.statut(),
             habilete: monstre.habilete(),
+            recu_de: monstre.recu_de().cloned(),
         }
     }
 
@@ -726,6 +743,7 @@ mod tests {
         monstre.subir_degats(7);
         monstre.infliger_statut(Statut::Poison);
         monstre.renommer(Some(Nom::new("Braise").unwrap()));
+        monstre.marquer_recu(Nom::new("Ysolde").unwrap());
         assert_eq!(Monstre::restaurer(etat_de(&monstre)), Ok(monstre));
     }
 

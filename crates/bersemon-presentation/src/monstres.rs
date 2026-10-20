@@ -121,6 +121,17 @@ pub fn fiche_du_monstre(monstre: &Monstre) -> String {
     lignes.join("\n")
 }
 
+/// Pour un monstre reçu d'un autre joueur, de qui il vient et jusqu'à quel
+/// niveau il obéit (section 15.2).
+pub fn provenance(monstre: &Monstre, limite_d_obeissance: u8) -> Option<String> {
+    monstre.recu_de().map(|heros| {
+        format!(
+            "Reçu de {}. Obéit jusqu'au niveau {limite_d_obeissance}.",
+            heros.as_str()
+        )
+    })
+}
+
 /// "Férocité (+10 % d'Attaque en combat)" (section 5.9).
 pub fn decrire_habilete(habilete: Habilete) -> String {
     format!("{} ({})", habilete.nom(), effet_d_habilete(habilete))

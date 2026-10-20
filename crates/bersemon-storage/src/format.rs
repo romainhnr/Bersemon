@@ -1,4 +1,4 @@
-//! Format JSON de la sauvegarde, version 16, et sa conversion vers les types
+//! Format JSON de la sauvegarde, version 17, et sa conversion vers les types
 //! du noyau. Les énumérations sont écrites avec des noms fixés ici, et non
 //! avec les noms Rust, pour qu'un renommage dans le code ne casse pas les
 //! sauvegardes existantes.
@@ -38,7 +38,7 @@ use bersemon_core::zone::ZoneId;
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 16;
+pub(crate) const VERSION: u64 = 17;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -71,7 +71,8 @@ const GEOLIER_DE_GUNTHER: &str = "bourreau";
 /// retrouver, les capsules d'habileté et les ressources ; la version 13
 /// ajoute les pierres d'évolution, la version 14 Gunther et les
 /// améliorations du camp, la version 15 l'amélioration de l'équipe, la
-/// version 16 l'équipement du héros et sa fabrication. Une sauvegarde d'une version
+/// version 16 l'équipement du héros et sa fabrication, la version 17 la
+/// marque des monstres reçus d'un autre joueur. Une sauvegarde d'une version
 /// précédente se lit avec cette structure : les champs ajoutés y prennent
 /// leur valeur de début de partie.
 #[derive(Debug, Serialize, Deserialize)]
@@ -337,6 +338,9 @@ struct MonstreV1 {
     /// de son espèce (section 5.9).
     #[serde(default)]
     habilete: Option<String>,
+    /// Depuis la version 17 : le héros qui l'a cédé (section 15.1).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    recu_de: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -774,6 +778,7 @@ fn depuis_monstre(monstre: &Monstre) -> MonstreV1 {
         habilete: monstre
             .habilete()
             .map(|habilete| nom_d_habilete(habilete).to_string()),
+        recu_de: monstre.recu_de().map(|heros| heros.as_str().to_string()),
     }
 }
 
@@ -832,6 +837,7 @@ fn vers_monstre(
     let surnom = monstre.surnom.as_deref().map(nom).transpose()?;
     let statut = monstre.statut.as_deref().map(statut).transpose()?;
     let habilete = monstre.habilete.as_deref().map(habilete).transpose()?;
+    let recu_de = monstre.recu_de.as_deref().map(nom).transpose()?;
     Monstre::restaurer(EtatMonstre {
         espece,
         surnom,
@@ -843,6 +849,7 @@ fn vers_monstre(
         pv_actuels: monstre.pv,
         statut,
         habilete,
+        recu_de,
     })
     .map_err(incoherente)
 }

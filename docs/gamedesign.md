@@ -801,9 +801,31 @@ Repères : un Loup de niveau 5 se revend 28 pièces d'argent, un Feu follet de n
 ## 15. Multijoueur (après l'adaptation à Discord)
 
 - Combats contre d'autres vrais joueurs. Le vainqueur ne peut pas prendre de monstre à son adversaire.
-- Échange et don de monstres entre joueurs.
+- Échange et don de monstres entre joueurs : depuis les étapes 55 à 58 (section 15.1).
 - Expéditions en groupe avec un ami.
-- Système d'amis.
+- Système d'amis : remplacé pour l'instant par la liste des joueurs du bot (section 15.1).
+
+### 15.1 Don et échange de monstres
+
+Décidé le 20/10/2026, pour les étapes 55 à 58 (choix de l'utilisateur) :
+
+- Le multijoueur ne concerne que le bot Discord : la console reste une partie seule. Ses règles sont dans le noyau.
+- Au camp, un bouton "Échanges" ouvre l'écran des échanges. Le joueur y choisit un autre joueur dans la liste des joueurs qui ont une partie sur le bot (nom du héros et pseudo Discord), puis un de ses monstres, et enfin un monstre de l'autre joueur, dont il voit la liste, pour un échange, ou aucun, pour un don.
+- L'autre joueur accepte ou refuse l'offre depuis son écran des échanges. Celui qui l'a faite peut la retirer tant qu'elle n'est pas acceptée. Chaque joueur a au plus une offre envoyée et une offre reçue en attente. Le bot prévient par message privé de l'arrivée d'une offre, puis de son acceptation ou de son refus. Textes dans docs/contenu-v1.md, section 13.
+- Au moment de l'acceptation, les deux joueurs doivent être au camp, sans question en attente ; sinon, l'offre reste en attente. Elle n'est plus valable si l'un des monstres a changé ou changé de place depuis : elle est alors retirée.
+- Un échange : chaque monstre prend la place, dans l'équipe ou au camp, de celui qu'il remplace. Un don : le monstre rejoint l'équipe s'il y reste une place, sinon le camp ; si les deux sont pleins, le don est refusé, sans relâcher de monstre.
+- On ne donne pas son dernier monstre, en comptant ceux partis en expédition automatique (section 13.2). Un monstre parti en expédition automatique ne s'offre pas. Un Apôtre ne se donne ni ne s'échange, et ne se demande pas : il reste à celui qui l'a vaincu (Q78).
+- Le monstre garde son surnom, son niveau, son XP, ses attaques, son habileté, son statut shiny et ses valeurs internes. Son espèce passe "capturée" au codex de celui qui le reçoit (section 5.6).
+- Le monstre reçu porte la marque "reçu de" suivie du nom du héros qui l'a cédé, gardée même après une évolution ; un nouveau don la remplace.
+
+### 15.2 Obéissance des monstres reçus
+
+Décidé le 20/10/2026, pour l'étape 55 (choix de l'utilisateur) :
+
+- Seul un monstre reçu d'un autre joueur peut désobéir. Il obéit jusqu'à sa limite : le niveau maximal de la zone la plus avancée que le joueur a ouverte, plus 5. Soit 12 avec la seule Lisière (7), 18 avec le Marais (13), 25 avec la Vallée (20) et 32 avec l'Abbaye des Cendres (27).
+- Au-dessus de sa limite, chaque fois que le joueur lui ordonne d'attaquer, il a 10 % de chances par niveau au-dessus de la limite, 50 % au plus, d'ignorer l'ordre : il ne fait rien ce tour, comme un monstre bloqué par la paralysie (section 10.5). Ce tirage n'a lieu que pour un monstre au-dessus de sa limite, avant celui de la paralysie. Changer de monstre, le soigner, lancer un filet ou fuir ne sont pas touchés.
+- La fiche d'un monstre reçu rappelle de qui il vient et sa limite.
+- L'obéissance ne joue pas sur les expéditions automatiques (hypothèse retenue, Q89).
 
 ## 16. Questions ouvertes et valeurs à définir
 
@@ -851,6 +873,10 @@ Les questions Q87 et suivantes ont été relevées le 20/10/2026 lors de la conc
 Les questions Q88 et suivantes ont été relevées le 20/10/2026 lors de la conception des étapes 52 ordres du héros dans le noyau, 53 écran de la console, 54 écran du bot Discord.
 
 - Q88. (Étapes 52 à 54) Hypothèses retenues, à confirmer : l'ordre est disponible dès le premier combat, contre les Apôtres et les humains compris ; il ne joue pas sur les expéditions automatiques ; l'état du combat ne rappelle pas quel monstre l'a reçu. Le cumul des bonus (jusqu'à +60 % sur une stat, par exemple un Guerrier avec l'Espadon des cendres, le Croc tressé, Férocité et le Cri de guerre) est à vérifier en jouant. Le niveau et les stats propres du héros restent pour plus tard (Q87).
+
+Les questions Q89 et suivantes ont été relevées le 20/10/2026 lors de la conception des étapes 55 monstres reçus et obéissance, avec la sauvegarde en version 17, 56 règles du don et de l'échange, 57 offres sur le bot Discord, 58 écran des échanges.
+
+- Q89. (Étapes 55 à 58) Hypothèses retenues, à confirmer : les offres en attente sont gardées en mémoire, sans délai d'expiration, et perdues si le bot redémarre ; la sauvegarde de celui qui reçoit est écrite la première, si bien qu'un incident entre les deux écritures dupliquerait le monstre plutôt que de le perdre ; la liste des joueurs montre au plus 25 joueurs, triés par nom du héros, avec le dernier pseudo Discord connu du bot ; un monstre rendu à celui qui l'avait cédé reste marqué "reçu de" et peut lui désobéir ; l'obéissance ne joue pas sur les expéditions automatiques, et l'ordre du héros renforce aussi un monstre qui désobéit. Restent à faire : combats entre joueurs, expéditions en groupe, système d'amis (section 15).
 
 - Q83. (Étapes 33 et 34) Hypothèses retenues, à confirmer : le gardien d'une âme à retrouver attaque à une étape tirée parmi celles qui précèdent la dernière ; le don d'une âme à Malvoise se fait sans confirmation ; une partie antérieure qui n'a pas recueilli l'âme de Bertrand le rencontre à l'étape 4 de sa prochaine expédition dans la Lisière, même avec Malvoise déjà au camp ; le texte du brigand de l'étape 5 ne change pas, même s'il a perdu son Loup à l'étape 4.
 
@@ -1198,3 +1224,11 @@ Les questions Q88 et suivantes ont été relevées le 20/10/2026 lors de la conc
 - Choix de l'utilisateur : un ordre par classe, gratuit, une fois par combat, sur le monstre actif, +20 % dans la stat du bonus de classe jusqu'à la fin du combat (section 4.2). Noms et textes validés (docs/contenu-v1.md, section 12).
 - Choix de l'utilisateur : pas encore de niveau ni de stats propres du héros. Pas de changement de sauvegarde.
 - Hypothèses retenues, à confirmer : Q88.
+
+20/10/2026 (conception des étapes 55 à 58, don et échange de monstres) :
+
+- Choix de l'utilisateur : le don et l'échange de monstres passent avant les combats entre joueurs, sur le bot Discord seulement (section 15.1).
+- Choix de l'utilisateur : l'autre joueur se choisit dans la liste des joueurs du bot ; une offre, don ou échange, se fait puis s'accepte ou se refuse ; les règles du transfert et les textes sont validés (section 15.1, docs/contenu-v1.md, section 13).
+- Choix de l'utilisateur : pas de limite de niveau à la réception, mais un monstre reçu désobéit au-dessus du niveau maximal de la zone la plus avancée ouverte plus 5, avec 10 % de chances par niveau au-dessus, 50 % au plus (section 15.2). Un Apôtre ne s'échange pas.
+- Sauvegarde en version 17 : la marque "reçu de" de chaque monstre.
+- Hypothèses retenues, à confirmer : Q89.
