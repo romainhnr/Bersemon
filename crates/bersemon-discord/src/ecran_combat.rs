@@ -11,7 +11,7 @@ use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_core::soin::{Soin, Soins};
 use bersemon_core::types::Efficacite;
-use bersemon_presentation::combat::{attaque_de_trop, attaque_en_combat, etat};
+use bersemon_presentation::combat::{attaque_de_trop, attaque_en_combat, etat, ordre_et_bonus};
 use bersemon_presentation::monstres::{decrire_attaque, ligne_monstre, nom, nom_en_combat};
 use bersemon_presentation::partie::{places_pour_une_capture, proposition_d_evolution};
 use bersemon_presentation::soins::nom_du_soin;
@@ -22,8 +22,9 @@ use crate::message::{
     DANGER, OptionDeMenu, PRINCIPAL, Question, SECONDAIRE, SUCCES, bouton, menu, rangees,
 };
 
-/// Une rangée d'attaques, le filet et la fuite (absents face à un Apôtre,
-/// section 9.4), puis un menu pour changer de monstre et un pour les soins.
+/// Une rangée d'attaques, l'ordre du héros tant qu'il n'est pas donné
+/// (section 4.2), le filet et la fuite (absents face à un Apôtre, section
+/// 9.4), puis un menu pour changer de monstre et un pour les soins.
 /// Chaque attaque dit ses dégâts estimés, et sa couleur son efficacité
 /// (section 10.6).
 pub fn action(combat: &Combat, partie: &Partie) -> Question {
@@ -45,6 +46,10 @@ pub fn action(combat: &Combat, partie: &Partie) -> Question {
         .collect();
     let mut lignes = rangees(attaques);
     let mut autres = Vec::new();
+    if let Some(ordre) = combat.ordre_disponible() {
+        let libelle = format!("Ordre : {}", ordre_et_bonus(ordre));
+        autres.push(bouton(Cle::Ordre, &libelle, SECONDAIRE));
+    }
     if combat.filet_possible() {
         let libelle = format!(
             "Lancer un filet ({} % de chances)",

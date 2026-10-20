@@ -351,7 +351,20 @@ fn jouer_un_coup(
             cliquer(message, |cle| *cle == Cle::Continuer)
         }
         Attente::MonstreRare(_) => cliquer(message, |cle| *cle == Cle::Prendre),
+        // L'ordre du héros, gardé pour les Apôtres et les humains (section
+        // 4.2).
+        Attente::ActionDeCombat(combat)
+            if (combat.est_contre_un_apotre() || combat.est_contre_un_humain())
+                && combat.ordre_disponible().is_some() =>
+        {
+            cliquer(message, |cle| *cle == Cle::Ordre)
+        }
         Attente::ActionDeCombat(combat) => {
+            // Le bouton disparaît une fois l'ordre donné.
+            assert_eq!(
+                propose(message, |cle| *cle == Cle::Ordre),
+                combat.ordre_disponible().is_some()
+            );
             let meilleure = meilleure_attaque(combat);
             cliquer(message, |cle| *cle == Cle::Attaquer(meilleure))
         }
@@ -705,6 +718,11 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
         .filter(|evenement| matches!(evenement, Evenement::HumainVaincu { .. }))
         .count();
     assert_eq!(humains_vaincus, 3);
+    assert!(
+        vus.iter()
+            .any(|evenement| matches!(evenement, Evenement::OrdreDonne { .. })),
+        "ordre du héros jamais donné"
+    );
     assert!(
         automatique_faite,
         "expédition automatique jamais accueillie"
