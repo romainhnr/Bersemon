@@ -13,6 +13,7 @@ mod ecran_expedition;
 mod ecran_expeditions_automatiques;
 mod ecran_forge;
 mod ecran_marchand;
+mod ecran_peche;
 mod horloge;
 mod recit;
 mod saisie;
@@ -108,6 +109,7 @@ fn demander(
             let collection = deroulement.partie().expect(PARTIE_EN_JEU).collection();
             ecran_expedition::place_manquante(capture, collection, entree)
         }
+        Attente::Prise(monstre) => ecran_peche::prise(monstre, entree),
         Attente::Annonce(annonce) => ecran_expedition::annonce(annonce, entree),
         Attente::Confirmation(confirmation) => confirmer(confirmation, entree),
     }

@@ -742,7 +742,7 @@ Textes proposés sans validation (gamedesign.md, Q91). {durée} est le temps res
 |---|---|
 | Ligne lancée | Vous lancez la ligne. Elle sera prête à relever dans {durée}. |
 | Monstre pêché | Au bout de la ligne : {monstre}, de niveau {niveau} ! |
-| Question | Garder {monstre} ? Sinon, il retourne à l'eau. |
+| Question | Garder {monstre} ? Sinon, la prise retourne à l'eau. |
 | Monstre relâché | {monstre} retourne à l'eau. |
 | Objet pêché | Vous remontez {objet}. Vous la rangez dans le coffre. ("une potion", "une bourse noyée, qui contient 30 pièces d'argent", "une Pierre de lune", "une capsule d'habileté") |
 | État de la ligne | Aucune ligne à l'eau. / La ligne est à l'eau : prête dans {durée}. / La ligne est prête à relever. |

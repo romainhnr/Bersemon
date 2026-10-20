@@ -1,7 +1,7 @@
 //! Camp de base : départ en expédition par la carte, expéditions
 //! automatiques, gestion des monstres (section 13.2), coffre du camp (section
-//! 13.3), codex, marchand, forge, équipement du héros (section 4.3) et
-//! options (section 13.9). Les monstres sont
+//! 13.3), codex, marchand, forge, équipement du héros (section 4.3), pêche
+//! (section 13.8) et options (section 13.9). Les monstres sont
 //! désignés par leur numéro dans la liste de la collection : l'équipe
 //! d'abord, le camp ensuite.
 
@@ -16,6 +16,7 @@ use bersemon_presentation::monstres::{attaques_connues, decrire_attaque, fiche_d
 use bersemon_presentation::partie::{
     capsules_d_habilete, collection as liste_des_monstres, en_tete_du_camp,
 };
+use bersemon_presentation::peche::ligne_prete;
 
 use crate::affichage;
 use crate::ecran_coffre;
@@ -23,6 +24,7 @@ use crate::ecran_equipement;
 use crate::ecran_expeditions_automatiques;
 use crate::ecran_forge;
 use crate::ecran_marchand;
+use crate::ecran_peche;
 use crate::horloge::maintenant;
 use crate::saisie::Entree;
 
@@ -44,6 +46,7 @@ enum EntreeDuCamp {
     Marchand,
     Forge,
     Equipement,
+    Peche,
     Options,
     Quitter,
 }
@@ -89,8 +92,11 @@ pub fn choisir(
         if let Some(avis) = travail_fini(partie, maintenant()) {
             println!("{avis}");
         }
-        // Malvoise et Gunther n'apparaissent qu'une fois au camp (sections
-        // 13.4 et 14.2).
+        if let Some(avis) = ligne_prete(partie, maintenant()) {
+            println!("{avis}");
+        }
+        // Malvoise, Gunther et Ansgar n'apparaissent qu'une fois au camp
+        // (sections 13.4, 13.8 et 14.2).
         let mut entrees = vec![
             (EntreeDuCamp::Carte, "Partir en expédition"),
             (EntreeDuCamp::Automatiques, "Expéditions automatiques"),
@@ -107,6 +113,9 @@ pub fn choisir(
         // L'équipement vient de la forge (section 13.5).
         if partie.forge().est_au_camp() || !partie.heros().equipement().possedes().is_empty() {
             entrees.push((EntreeDuCamp::Equipement, "Équipement du héros"));
+        }
+        if partie.peche().pecheur_au_camp() {
+            entrees.push((EntreeDuCamp::Peche, "Pêche d'Ansgar"));
         }
         entrees.push((EntreeDuCamp::Options, "Options"));
         entrees.push((EntreeDuCamp::Quitter, "Quitter"));
@@ -140,6 +149,7 @@ pub fn choisir(
                 menu.ouvert = SousMenu::Equipement;
                 None
             }
+            EntreeDuCamp::Peche => ecran_peche::choisir(partie, entree)?,
             EntreeDuCamp::Options => choisir_une_option(entree)?,
             EntreeDuCamp::Quitter => return None,
         };

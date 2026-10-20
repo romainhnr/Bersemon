@@ -47,7 +47,7 @@ fn objet_remonte(objet: &str) -> String {
 /// pêché.
 pub fn question_de_la_prise(monstre: &Monstre) -> String {
     format!(
-        "Garder {} ? Sinon, il retourne à l'eau.",
+        "Garder {} ? Sinon, la prise retourne à l'eau.",
         important(&nom_sauvage(monstre))
     )
 }
