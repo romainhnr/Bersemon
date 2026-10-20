@@ -1,20 +1,22 @@
 //! Malvoise, le nécromancien du camp (section 14.2) : soins, capsules,
-//! pierres d'évolution, rachat des monstres et des ressources, et don des
-//! âmes. Les achats se font sans confirmation ; la vente
-//! est confirmée par le déroulement.
+//! pierres d'évolution, rachat des monstres et des ressources, don des
+//! âmes, et monstre rendu shiny contre un Éclat d'astre. Les achats se font
+//! sans confirmation ; la vente et le service shiny sont confirmés par le
+//! déroulement.
 
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::Choix;
 use bersemon_core::marchand::{PRIX_CAPSULE_D_HABILETE, PRIX_PIERRE_D_EVOLUTION, prix_du_soin};
 use bersemon_core::partie::Partie;
 use bersemon_core::pierre::PierreDEvolution;
+use bersemon_presentation::boosters::SERVICE_SHINY;
 use bersemon_presentation::marchand::{
     capsules_en_vente, etal, offre_de_capsule, offre_de_ressources, ressources_a_vendre,
 };
 use bersemon_presentation::partie::argent;
 use bersemon_presentation::soins::{le_soin, offre_de_soin};
 
-use crate::ecran_camp::vendre;
+use crate::ecran_camp::{designer, vendre};
 use crate::saisie::Entree;
 
 /// `Some(None)` au retour vers le menu du camp.
@@ -35,8 +37,12 @@ pub fn choisir(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Opt
             "  7. Acheter des pierres d'évolution ({} l'une)",
             argent(PRIX_PIERRE_D_EVOLUTION)
         );
+        println!(
+            "  8. {SERVICE_SHINY} : vous en avez {}",
+            partie.eclats_d_astre()
+        );
         println!("  0. Retour au camp");
-        let choix = match entree.choix(0, 7)? {
+        let choix = match entree.choix(0, 8)? {
             0 => return Some(None),
             1 => acheter_soins(partie, entree)?,
             2 => acheter_capsule(partie, contenu, entree)?,
@@ -44,7 +50,9 @@ pub fn choisir(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Opt
             4 => donner_ame(partie, entree)?,
             5 => acheter_capsules_d_habilete(partie, entree)?,
             6 => vendre_ressources(partie, entree)?,
-            _ => acheter_pierres(partie, entree)?,
+            7 => acheter_pierres(partie, entree)?,
+            _ => designer(partie.collection(), entree, "Quel monstre rendre shiny ?")?
+                .map(Choix::RendreShiny),
         };
         if choix.is_some() {
             return Some(choix);

@@ -6,6 +6,7 @@ use bersemon_core::combat::Cote;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::stats::{Stat, ValeursInternes};
 
+use crate::mise_en_valeur::important;
 use crate::monstres::nom_en_valeur;
 
 /// Après l'âme d'un Apôtre vaincu (section 9.4).
@@ -99,14 +100,15 @@ pub fn refus_sans_booster(booster: Booster) -> String {
 
 pub fn question_shiny(monstre: &Monstre) -> String {
     format!(
-        "Malvoise rendra {} shiny contre un Éclat d'astre : ses valeurs internes passeront toutes à {}. Confirmer ?",
+        "Faire rendre {} shiny par Malvoise contre un Éclat d'astre ? Ses valeurs internes passeront toutes à {}.",
         monstre.nom(),
         ValeursInternes::MAX
     )
 }
 
+/// Le nom seul : celui d'un shiny porte déjà la mention "(shiny)".
 pub fn monstre_rendu_shiny(monstre: &Monstre) -> String {
-    let nom = nom_en_valeur(monstre, Cote::Joueur);
+    let nom = important(monstre.nom());
     format!(
         "Malvoise broie l'Éclat d'astre au-dessus de {nom}, dont la robe prend un reflet nouveau. {nom} est désormais shiny."
     )
@@ -129,5 +131,24 @@ mod tests {
             effet_du_booster(Booster::EncreDArcane),
             "+5 à la valeur interne d'Attaque spéciale, 31 au plus."
         );
+    }
+
+    #[test]
+    fn le_monstre_rendu_shiny_n_est_dit_shiny_qu_une_fois() {
+        use bersemon_core::catalogue::Catalogue;
+        use bersemon_core::contenu::ContenuV1;
+        use bersemon_core::espece::EspeceId;
+        use bersemon_core::niveau::Niveau;
+        let contenu = ContenuV1::new();
+        let loup = Monstre::creer(
+            contenu.espece(&EspeceId::new("loup")).unwrap().clone(),
+            Niveau::new(5).unwrap(),
+            ValeursInternes::default(),
+            true,
+        )
+        .unwrap();
+        let texte = monstre_rendu_shiny(&loup);
+        assert_eq!(texte.matches("shiny").count(), 1, "{texte}");
+        assert!(texte.ends_with("**Loup** est désormais shiny."), "{texte}");
     }
 }

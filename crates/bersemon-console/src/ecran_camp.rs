@@ -5,10 +5,12 @@
 //! désignés par leur numéro dans la liste de la collection : l'équipe
 //! d'abord, le camp ensuite.
 
+use bersemon_core::booster::Booster;
 use bersemon_core::collection::{Collection, Emplacement, TriDuCamp};
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::{ActionDeGestion, Choix};
 use bersemon_core::partie::Partie;
+use bersemon_presentation::boosters::{boosters, effet_du_booster};
 use bersemon_presentation::expeditions_automatiques::expeditions_rentrees;
 use bersemon_presentation::forge::travail_fini;
 use bersemon_presentation::marchand::liste_de_rachat;
@@ -204,12 +206,13 @@ fn gerer(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Option<Op
             "  10. Changer l'habileté d'un monstre ({})",
             capsules_d_habilete(partie.capsules_d_habilete())
         );
-        println!("  11. Faire évoluer un monstre");
+        println!("  11. Donner un booster à un monstre");
+        println!("  12. Faire évoluer un monstre");
         if marchand {
-            println!("  12. Vendre un monstre à Malvoise");
+            println!("  13. Vendre un monstre à Malvoise");
         }
         println!("  0. Retour");
-        let dernier = if marchand { 12 } else { 11 };
+        let dernier = if marchand { 13 } else { 12 };
         let gestion = |action: Option<ActionDeGestion>| action.map(Choix::Gerer);
         let choix = match entree.choix(0, dernier)? {
             0 => return Some(None),
@@ -226,7 +229,8 @@ fn gerer(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Option<Op
             8 => attaques(partie, entree)?,
             9 => gestion(trier(entree)?),
             10 => changer_d_habilete(collection, entree)?,
-            11 => faire_evoluer(partie, contenu, entree)?,
+            11 => donner_booster(partie, entree)?,
+            12 => faire_evoluer(partie, contenu, entree)?,
             _ => vendre(collection, entree)?,
         };
         if let Some(choix) = choix {
@@ -237,7 +241,7 @@ fn gerer(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Option<Op
 
 /// Ce que le joueur a désigné : un monstre, ou rien (0). `None` si l'entrée
 /// est fermée.
-fn designer(
+pub fn designer(
     collection: &Collection,
     entree: &mut Entree,
     question: &str,
@@ -375,6 +379,43 @@ fn changer_d_habilete(collection: &Collection, entree: &mut Entree) -> Option<Op
         "Sur quel monstre utiliser une capsule d'habileté ?",
     )?;
     Some(emplacement.map(Choix::ChangerDHabilete))
+}
+
+/// Parmi les boosters du sac et du coffre, sans confirmation (section
+/// 14.3).
+fn donner_booster(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
+    let possedes: Vec<(Booster, u32)> = Booster::TOUS
+        .into_iter()
+        .map(|booster| (booster, partie.nombre_de_boosters(booster)))
+        .filter(|(_, nombre)| *nombre > 0)
+        .collect();
+    if possedes.is_empty() {
+        println!("Vous n'avez aucun booster.");
+        return Some(None);
+    }
+    println!("Quel booster donner ? (0 pour annuler)");
+    for (numero, (booster, nombre)) in possedes.iter().enumerate() {
+        println!(
+            "  {}. {} : {}",
+            numero + 1,
+            boosters(*booster, *nombre),
+            effet_du_booster(*booster)
+        );
+    }
+    let choix = entree.choix(0, possedes.len())?;
+    if choix == 0 {
+        return Some(None);
+    }
+    let booster = possedes[choix - 1].0;
+    let emplacement = designer(
+        partie.collection(),
+        entree,
+        &format!("À quel monstre donner la {} ?", booster.nom()),
+    )?;
+    Some(emplacement.map(|emplacement| Choix::DonnerBooster {
+        emplacement,
+        booster,
+    }))
 }
 
 /// Parmi les monstres qui en remplissent la condition ; la confirmation est

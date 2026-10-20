@@ -683,6 +683,8 @@ Décidé le 20/10/2026, pour les étapes 67 à 69 (choix de l'utilisateur) :
 - C'est Malvoise qui rend un monstre shiny, au camp, depuis son étal, contre un Éclat d'astre (section 14.3), sans argent. Le joueur choisit un monstre de l'équipe ou du camp qui n'est pas shiny ; le jeu demande confirmation, puis l'Éclat est consommé, du sac d'abord, puis du coffre.
 - Le monstre devient shiny, avec ce que cela implique déjà (section 5.1) : 31 dans chaque valeur interne, et une revente doublée (section 14.5). Il garde le reste : surnom, niveau, XP, attaques, habileté, marque "reçu de". Ses PV actuels augmentent d'autant que ses PV max, sauf s'il est KO (hypothèse retenue, Q93).
 - L'étal propose le service même sans Éclat, comme la forge propose une amélioration faute de ressources : le refus dit ce qui manque (hypothèse retenue, Q93).
+- Écrans, à l'étape 68 (console) : l'étal de Malvoise propose "Rendre un monstre shiny (1 Éclat d'astre)", avec le nombre d'Éclats possédés, puis le choix du monstre et la confirmation. La gestion des monstres propose "Donner un booster à un monstre" : le booster, parmi ceux du sac et du coffre, avec son effet, puis le monstre. Le coffre déplace les boosters, par sorte et au nombre choisi, et les Éclats d'astre.
+- Écrans, à l'étape 69 (Discord) : à définir en codant, avec les mêmes actions, dans les limites des menus (le coffre a déjà 4 menus et une rangée).
 
 ### 13.8 Pêche
 

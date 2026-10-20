@@ -4,6 +4,7 @@
 use bersemon_core::deroulement::Choix;
 use bersemon_core::inventaire::{Inventaire, Objet};
 use bersemon_core::partie::Partie;
+use bersemon_presentation::boosters::boosters as texte_des_boosters;
 use bersemon_presentation::monstres::decrire_attaque;
 use bersemon_presentation::partie::{
     coffre_du_camp, pierres as texte_des_pierres, ressources as texte_des_ressources,
@@ -31,9 +32,13 @@ pub fn choisir(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
         println!("  10. Ranger des ressources");
         println!("  11. Prendre des pierres d'évolution");
         println!("  12. Ranger des pierres d'évolution");
-        println!("  13. Tout ranger dans le coffre");
+        println!("  13. Prendre des boosters");
+        println!("  14. Ranger des boosters");
+        println!("  15. Prendre des Éclats d'astre");
+        println!("  16. Ranger des Éclats d'astre");
+        println!("  17. Tout ranger dans le coffre");
         println!("  0. Retour au camp");
-        let choix = match entree.choix(0, 13)? {
+        let choix = match entree.choix(0, 17)? {
             0 => return Some(None),
             1 => soins(coffre, entree)?.map(Choix::SortirDuCoffre),
             2 => soins(sac, entree)?.map(Choix::RangerAuCoffre),
@@ -51,6 +56,12 @@ pub fn choisir(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
             10 => ressources(sac, entree)?.map(Choix::RangerAuCoffre),
             11 => pierres(coffre, entree)?.map(Choix::SortirDuCoffre),
             12 => pierres(sac, entree)?.map(Choix::RangerAuCoffre),
+            13 => boosters(coffre, entree)?.map(Choix::SortirDuCoffre),
+            14 => boosters(sac, entree)?.map(Choix::RangerAuCoffre),
+            15 => quantite(coffre.eclats_d_astre(), "Éclats d'astre", entree)?
+                .map(|nombre| Choix::SortirDuCoffre(Objet::EclatsDAstre(nombre))),
+            16 => quantite(sac.eclats_d_astre(), "Éclats d'astre", entree)?
+                .map(|nombre| Choix::RangerAuCoffre(Objet::EclatsDAstre(nombre))),
             _ => Some(Choix::ToutRangerAuCoffre),
         };
         if choix.is_some() {
@@ -123,6 +134,29 @@ fn pierres(inventaire: &Inventaire, entree: &mut Entree) -> Option<Option<Objet>
     let (pierre, disponible) = presentes[choix - 1];
     let nombre = quantite(disponible, "pierres", entree)?;
     Some(nombre.map(|nombre| Objet::Pierres(pierre, nombre)))
+}
+
+fn boosters(inventaire: &Inventaire, entree: &mut Entree) -> Option<Option<Objet>> {
+    let presents = inventaire.boosters();
+    if presents.is_empty() {
+        println!("Il n'y a aucun booster.");
+        return Some(None);
+    }
+    for (position, (booster, nombre)) in presents.iter().enumerate() {
+        println!(
+            "  {}. {}",
+            position + 1,
+            texte_des_boosters(*booster, *nombre)
+        );
+    }
+    println!("Lequel ? (0 pour annuler)");
+    let choix = entree.choix(0, presents.len())?;
+    if choix == 0 {
+        return Some(None);
+    }
+    let (booster, disponible) = presents[choix - 1];
+    let nombre = quantite(disponible, "boosters", entree)?;
+    Some(nombre.map(|nombre| Objet::Boosters(booster, nombre)))
 }
 
 fn capsule(inventaire: &Inventaire, entree: &mut Entree) -> Option<Option<Objet>> {

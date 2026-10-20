@@ -794,7 +794,7 @@ Textes proposés sans validation (gamedesign.md, Q93). {monstre} est le nom du m
 | Éclat laissé par un Apôtre, après son âme | Dans la poussière de sa dépouille luit un Éclat d'astre. Vous le ramassez. |
 | Objet pêché | Vous remontez une Fiole de sang. Vous la rangez dans le coffre. / Vous remontez un Éclat d'astre. Vous le rangez dans le coffre. |
 | Service, à l'étal | Rendre un monstre shiny (1 Éclat d'astre) |
-| Confirmation | Malvoise rendra {monstre} shiny contre un Éclat d'astre : ses valeurs internes passeront toutes à 31. Confirmer ? |
+| Confirmation | Faire rendre {monstre} shiny par Malvoise contre un Éclat d'astre ? Ses valeurs internes passeront toutes à 31. |
 | Monstre rendu shiny | Malvoise broie l'Éclat d'astre au-dessus de {monstre}, dont la robe prend un reflet nouveau. {monstre} est désormais shiny. |
 | Refus, pas d'Éclat | Il vous faut un Éclat d'astre. |
 | Refus, déjà shiny | {monstre} est déjà shiny. |
