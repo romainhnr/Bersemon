@@ -8,6 +8,7 @@ use std::fs;
 use std::path::PathBuf;
 
 use bersemon_core::attaque::Attaque;
+use bersemon_core::booster::Booster;
 use bersemon_core::codex::EtatCodex;
 use bersemon_core::collection::Emplacement;
 use bersemon_core::combat::{Combat, Cote};
@@ -1301,7 +1302,11 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         let mut inventaire = Inventaire::new(1_000, 9, capsules)
             .avec_capsules_d_habilete(3)
             .avec_pierres(PierreDEvolution::Braise, 2)
-            .avec_pierres(PierreDEvolution::Lune, 2);
+            .avec_pierres(PierreDEvolution::Lune, 2)
+            .avec_eclats_d_astre(2);
+        for booster in Booster::TOUS {
+            inventaire = inventaire.avec_boosters(booster, 2);
+        }
         for soin in [Soin::Remede, Soin::GrandePotion, Soin::Elixir] {
             inventaire = inventaire.avec_soins(soin, 7);
         }
@@ -1390,7 +1395,7 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
             if let Rangee::Menu(menu) = rangee {
                 assert!(menu.options.len() < OPTIONS_PAR_MENU, "{}", menu.indication);
                 if menu.cle == Cle::SortirRessourcesDuCoffre {
-                    assert_eq!(menu.options.len(), sortes + 4);
+                    assert_eq!(menu.options.len(), sortes + 4 + Booster::TOUS.len() + 1);
                 }
             }
         }
@@ -1407,10 +1412,23 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         assert!(cles.contains(&Cle::Constater));
         // Un monstre de l'équipe, qui peut monter et descendre, et un du
         // camp, qui peut s'échanger.
+        // Avec un Éclat d'astre et des boosters (sections 13.7 et 14.3).
         for emplacement in [Emplacement::Equipe(1), Emplacement::Camp(0)] {
             let cles = afficher(&partie, Vue::Gestion(Some(emplacement)));
             assert!(cles.contains(&Cle::ChangerDHabilete(emplacement)));
             assert!(cles.contains(&Cle::FaireEvoluer(emplacement)));
+            assert!(cles.contains(&Cle::RendreShiny(emplacement)));
+            let gestion = crate::ecran_camp::question(
+                &partie,
+                Vue::Gestion(Some(emplacement)),
+                &contenu,
+                Horodatage::depuis_secondes(0),
+            );
+            assert!(gestion.rangees.iter().any(|rangee| matches!(
+                rangee,
+                Rangee::Menu(menu) if menu.cle == Cle::DonnerBooster(emplacement)
+                    && menu.options.len() == Booster::TOUS.len()
+            )));
         }
         // Le Feu follet, deuxième du camp, évolue avec la Pierre de braise.
         let feu_follet = Emplacement::Camp(1);

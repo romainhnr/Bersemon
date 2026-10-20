@@ -6,6 +6,7 @@
 //! modifient, et la sauvegardent.
 
 use bersemon_core::amelioration::Amelioration;
+use bersemon_core::booster::Booster;
 use bersemon_core::codex::EtatCodex;
 use bersemon_core::collection::{Collection, Emplacement, TriDuCamp};
 use bersemon_core::combat::Cote;
@@ -16,6 +17,8 @@ use bersemon_core::horodatage::Horodatage;
 use bersemon_core::marchand::prix_de_revente;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
+use bersemon_core::stats::ValeursInternes;
+use bersemon_presentation::boosters::{boosters, effet_du_booster};
 use bersemon_presentation::equipement::{
     decrire_bonus, etat_de_l_equipement, nom_de_place, objet_et_bonus,
 };
@@ -31,7 +34,7 @@ use bersemon_presentation::partie::{
 };
 use bersemon_presentation::peche::ligne_prete;
 
-use crate::composants::{Cle, RETIRER, Vue, emplacement_en_texte};
+use crate::composants::{Cle, RETIRER, Vue, booster_en_texte, emplacement_en_texte};
 use crate::echanges::TableauDesEchanges;
 use crate::message::{
     Bouton, DANGER, OPTIONS_PAR_MENU, OptionDeMenu, PRINCIPAL, Question, Rangee, SECONDAIRE,
@@ -455,8 +458,15 @@ fn gestion(partie: &Partie, choisi: Option<Emplacement>, contenu: &ContenuV1) ->
         let libelle = format!("Vendre ({})", argent(prix_de_revente(monstre)));
         boutons.push(bouton(Cle::VendreCeMonstre(emplacement), &libelle, DANGER));
     }
-    // Au plus 9 boutons : ils tiennent en deux rangées (sections 5.4 et
-    // 5.9).
+    // Au plus 10 boutons : ils tiennent en deux rangées (sections 5.4, 5.9
+    // et 13.7).
+    if partie.marchand_au_camp() && partie.eclats_d_astre() > 0 && !monstre.est_shiny() {
+        boutons.push(bouton(
+            Cle::RendreShiny(emplacement),
+            "Rendre shiny (Malvoise)",
+            PRINCIPAL,
+        ));
+    }
     if partie.capsules_d_habilete() > 0 {
         if let Some(nouvelle) = autre_habilete(monstre) {
             let libelle = format!("Passer à {}", nouvelle.nom());
@@ -474,6 +484,11 @@ fn gestion(partie: &Partie, choisi: Option<Emplacement>, contenu: &ContenuV1) ->
     }
     let mut lignes = rangees(boutons);
     lignes.extend(echange);
+    lignes.extend(menu(
+        Cle::DonnerBooster(emplacement),
+        "Donner un booster",
+        options_de_boosters(partie, monstre),
+    ));
     lignes.extend(rangees(vec![
         bouton(
             Cle::Afficher(Vue::Gestion(None)),
@@ -486,6 +501,25 @@ fn gestion(partie: &Partie, choisi: Option<Emplacement>, contenu: &ContenuV1) ->
         texte: format!("Monstre choisi :\n{}", fiche(partie, monstre, contenu)),
         rangees: lignes,
     }
+}
+
+/// Les boosters du sac et du coffre qui servent encore à ce monstre : 6 au
+/// plus (section 14.3).
+fn options_de_boosters(partie: &Partie, monstre: &Monstre) -> Vec<OptionDeMenu> {
+    Booster::TOUS
+        .into_iter()
+        .filter(|booster| {
+            *monstre.valeurs_internes().valeurs().de(booster.stat()) < ValeursInternes::MAX
+        })
+        .filter_map(|booster| {
+            let nombre = partie.nombre_de_boosters(booster);
+            (nombre > 0).then(|| OptionDeMenu {
+                libelle: boosters(booster, nombre),
+                valeur: booster_en_texte(booster).to_string(),
+                description: Some(effet_du_booster(booster)),
+            })
+        })
+        .collect()
 }
 
 /// Les monstres de l'équipe, puis ceux du camp, numérotés à la suite et 25

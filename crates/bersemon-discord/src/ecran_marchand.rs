@@ -93,8 +93,15 @@ pub fn etal(partie: &Partie, contenu: &ContenuV1) -> Question {
         retour(),
     ]);
     lignes.extend(rangees(boutons));
+    // La dernière rangée est pleine : le service se rend depuis la gestion
+    // des monstres (section 13.7).
+    let texte = format!(
+        "{}\nMalvoise rend un monstre shiny contre un Éclat d'astre (vous en avez {}) : bouton \"Rendre shiny (Malvoise)\" de la gestion des monstres.",
+        texte_de_l_etal(partie),
+        partie.eclats_d_astre()
+    );
     Question {
-        texte: texte_de_l_etal(partie),
+        texte,
         rangees: lignes,
     }
 }

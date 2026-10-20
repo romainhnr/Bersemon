@@ -223,6 +223,10 @@ pub enum Cle {
     VendreCeMonstre(Emplacement),
     /// Une capsule d'habileté sur le monstre choisi (section 5.9).
     ChangerDHabilete(Emplacement),
+    /// Menu des boosters à donner au monstre choisi (section 14.3).
+    DonnerBooster(Emplacement),
+    /// Malvoise rend shiny le monstre choisi (section 13.7).
+    RendreShiny(Emplacement),
     /// Une capsule d'habileté, chez Malvoise.
     AcheterCapsuleDHabilete,
     /// Une pierre d'évolution, chez Malvoise (section 5.4).
@@ -388,6 +392,11 @@ impl Cle {
             Cle::Vendre(_) => jouer(Choix::Vendre(lire_emplacement(valeur?)?)),
             Cle::VendreCeMonstre(emplacement) => jouer(Choix::Vendre(*emplacement)),
             Cle::ChangerDHabilete(emplacement) => jouer(Choix::ChangerDHabilete(*emplacement)),
+            Cle::DonnerBooster(emplacement) => jouer(Choix::DonnerBooster {
+                emplacement: *emplacement,
+                booster: lire_booster(valeur?)?,
+            }),
+            Cle::RendreShiny(emplacement) => jouer(Choix::RendreShiny(*emplacement)),
             Cle::AcheterCapsuleDHabilete => jouer(Choix::AcheterCapsulesDHabilete(1)),
             Cle::AcheterPierre(pierre) => jouer(Choix::AcheterPierres(*pierre, 1)),
             Cle::Apprendre {
@@ -554,6 +563,12 @@ impl Cle {
             Cle::Vendre(numero) => format!("vendre:{numero}"),
             Cle::ChangerDHabilete(emplacement) => {
                 format!("changer-habilete:{}", emplacement_en_texte(*emplacement))
+            }
+            Cle::DonnerBooster(emplacement) => {
+                format!("donner-booster:{}", emplacement_en_texte(*emplacement))
+            }
+            Cle::RendreShiny(emplacement) => {
+                format!("rendre-shiny:{}", emplacement_en_texte(*emplacement))
             }
             Cle::AcheterCapsuleDHabilete => "acheter-capsule-d-habilete".to_string(),
             Cle::AcheterPierre(pierre) => format!("acheter-pierre:{}", pierre_en_texte(*pierre)),
@@ -771,6 +786,8 @@ impl Cle {
                     "vendre" => Cle::Vendre(numero()?),
                     "vendre-monstre" => Cle::VendreCeMonstre(emplacement()?),
                     "changer-habilete" => Cle::ChangerDHabilete(emplacement()?),
+                    "donner-booster" => Cle::DonnerBooster(emplacement()?),
+                    "rendre-shiny" => Cle::RendreShiny(emplacement()?),
                     "faire-evoluer" => Cle::FaireEvoluer(emplacement()?),
                     "acheter-pierre" => Cle::AcheterPierre(lire_pierre(parametre)?),
                     "ameliorer" => Cle::Ameliorer(lire_amelioration(parametre)?),
@@ -1114,6 +1131,8 @@ mod tests {
             Cle::Vendre(2),
             Cle::VendreCeMonstre(Emplacement::Equipe(2)),
             Cle::ChangerDHabilete(Emplacement::Camp(7)),
+            Cle::DonnerBooster(Emplacement::Camp(59)),
+            Cle::RendreShiny(Emplacement::Equipe(3)),
             Cle::AcheterCapsuleDHabilete,
             Cle::AcheterPierre(PierreDEvolution::Braise),
             Cle::AcheterPierre(PierreDEvolution::Lune),
@@ -1270,6 +1289,31 @@ mod tests {
         assert_eq!(
             Cle::Soin.commande(Some("remede:0"), None),
             Some(Commande::Jouer(Choix::UtiliserSoin(Soin::Remede, 0)))
+        );
+        assert_eq!(
+            Cle::DonnerBooster(Emplacement::Camp(3))
+                .commande(Some(booster_en_texte(Booster::CendreBenite)), None),
+            Some(Commande::Jouer(Choix::DonnerBooster {
+                emplacement: Emplacement::Camp(3),
+                booster: Booster::CendreBenite
+            }))
+        );
+        assert_eq!(
+            Cle::SortirRessourcesDuCoffre.commande(
+                Some(&objet_en_texte(&Objet::Boosters(Booster::FioleDeSang, 2))),
+                None
+            ),
+            Some(Commande::Jouer(Choix::SortirDuCoffre(Objet::Boosters(
+                Booster::FioleDeSang,
+                2
+            ))))
+        );
+        assert_eq!(
+            Cle::RangerRessourcesAuCoffre
+                .commande(Some(&objet_en_texte(&Objet::EclatsDAstre(1))), None),
+            Some(Commande::Jouer(Choix::RangerAuCoffre(Objet::EclatsDAstre(
+                1
+            ))))
         );
     }
 

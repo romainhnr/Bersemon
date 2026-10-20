@@ -1,10 +1,12 @@
 //! Le coffre du camp sur Discord (section 13.3) : un menu pour prendre dans
 //! le coffre, un autre pour ranger ce que contient le sac, et de même pour
-//! les ressources et les pierres d'évolution.
+//! les ressources, les pierres d'évolution, les boosters et les Éclats
+//! d'astre.
 
 use bersemon_core::inventaire::{Inventaire, Objet};
 use bersemon_core::partie::Partie;
 use bersemon_core::soin::Soin;
+use bersemon_presentation::boosters::{boosters, eclats_d_astre};
 use bersemon_presentation::monstres::decrire_attaque;
 use bersemon_presentation::partie::{
     argent, capsules_d_habilete as capsules_d_habilete_en_texte, coffre_du_camp, pierres,
@@ -41,12 +43,12 @@ pub fn coffre(partie: &Partie) -> Question {
     ));
     lignes.extend(menu(
         Cle::SortirRessourcesDuCoffre,
-        "Prendre des ressources ou des pierres dans le coffre",
+        "Prendre des ressources ou d'autres objets dans le coffre",
         options_de_ressources(partie.coffre_du_camp()),
     ));
     lignes.extend(menu(
         Cle::RangerRessourcesAuCoffre,
-        "Ranger des ressources ou des pierres dans le coffre",
+        "Ranger des ressources ou d'autres objets dans le coffre",
         options_de_ressources(partie.sac()),
     ));
     let mut boutons = Vec::new();
@@ -132,10 +134,26 @@ fn options(inventaire: &Inventaire, avec_capsules: bool) -> Vec<OptionDeMenu> {
 }
 
 /// Toutes celles d'une sorte pour chaque ressource, une ou toutes pour
-/// chaque pierre : avec les treize ressources et les deux pierres du
-/// contenu, 17 options au plus (sections 5.4 et 14.3).
+/// chaque pierre, tous ceux d'une sorte pour chaque booster, et tous les
+/// Éclats d'astre : avec les treize ressources, les deux pierres et les six
+/// boosters du contenu, 24 options au plus (sections 5.4, 13.7 et 14.3).
 fn options_de_ressources(inventaire: &Inventaire) -> Vec<OptionDeMenu> {
     let mut options = Vec::new();
+    for &(booster, nombre) in inventaire.boosters() {
+        options.push(option(
+            Objet::Boosters(booster, nombre),
+            boosters(booster, nombre),
+            Some("Tout".to_string()),
+        ));
+    }
+    let eclats = inventaire.eclats_d_astre();
+    if eclats > 0 {
+        options.push(option(
+            Objet::EclatsDAstre(eclats),
+            eclats_d_astre(eclats),
+            Some("Tout".to_string()),
+        ));
+    }
     for &(pierre, nombre) in inventaire.pierres() {
         if nombre > 1 {
             options.push(option(Objet::Pierres(pierre, 1), pierres(pierre, 1), None));
