@@ -828,6 +828,7 @@ Premier marchand, après la V1 :
   - sauvegarde en version 24 : la location en cours et le nombre d'expéditions qui lui restent.
   - Précisé aux étapes 83 à 86, en codant : l'achat et la location se font sans confirmation ; le retour d'un monstre loué est confirmé. Un monstre loué ne compte pas parmi les autres monstres quand le joueur vend, donne ou relâche (Q98) ; il peut réapprendre au camp les attaques de son espèce, mais rien d'une capsule. La fiche d'un monstre loué et l'étal disent les expéditions qui restent ; dans la vente, il est dit "loué, ne se vend pas". Une sauvegarde qui aurait plus d'un monstre loué, ou un monstre loué pour seul monstre, est illisible.
   - Écrans : dans la console, l'étal de Malvoise propose "Acheter un monstre" (9), "Louer un monstre" (10) et, avec un monstre loué, "Rendre {monstre} à Malvoise" (11). Sur Discord, la dernière rangée de l'étal étant pleine, l'écran de vente a un bouton "Acheter ou louer", qui ouvre un écran avec un menu d'achat, un menu de location et, avec un monstre loué, le bouton "Rendre {monstre} à Malvoise". Les menus ne disent pas les types des espèces, cachés jusqu'à leur capture (section 5.6).
+  - Précisé à l'étape 87 : sur Discord, la gestion d'un monstre loué ne propose ni "Renommer", ni "Relâcher", ni la vente, ni le service shiny, ni la capsule d'habileté, ni les boosters ; elle propose "Rendre à Malvoise", confirmé comme depuis l'écran des achats.
 
 ### 14.3 Objets et ressources cités dans ce document
 

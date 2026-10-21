@@ -569,27 +569,39 @@ fn gestion(partie: &Partie, choisi: Option<Emplacement>, contenu: &ContenuV1) ->
             );
         }
     }
-    boutons.push(bouton(Cle::Renommer(emplacement), "Renommer", SECONDAIRE));
-    boutons.push(bouton(Cle::Relacher(emplacement), "Relâcher", DANGER));
+    // Un monstre loué ne fait que combattre : ni surnom, ni relâcher, ni
+    // vente, ni shiny, ni capsule, ni booster ; il se rend à Malvoise
+    // (section 14.2).
+    let a_soi = !monstre.est_loue();
+    if a_soi {
+        boutons.push(bouton(Cle::Renommer(emplacement), "Renommer", SECONDAIRE));
+        boutons.push(bouton(Cle::Relacher(emplacement), "Relâcher", DANGER));
+    } else {
+        boutons.push(bouton(
+            Cle::RendreLeMonstreLoue,
+            "Rendre à Malvoise",
+            DANGER,
+        ));
+    }
     boutons.push(bouton(
         Cle::Afficher(Vue::Attaques(emplacement)),
         "Attaques",
         SECONDAIRE,
     ));
-    if partie.marchand_au_camp() {
+    if partie.marchand_au_camp() && a_soi {
         let libelle = format!("Vendre ({})", argent(prix_de_revente(monstre)));
         boutons.push(bouton(Cle::VendreCeMonstre(emplacement), &libelle, DANGER));
     }
     // Au plus 10 boutons : ils tiennent en deux rangées (sections 5.4, 5.9
     // et 13.7).
-    if partie.marchand_au_camp() && partie.eclats_d_astre() > 0 && !monstre.est_shiny() {
+    if partie.marchand_au_camp() && partie.eclats_d_astre() > 0 && !monstre.est_shiny() && a_soi {
         boutons.push(bouton(
             Cle::RendreShiny(emplacement),
             "Rendre shiny (Malvoise)",
             PRINCIPAL,
         ));
     }
-    if partie.capsules_d_habilete() > 0 {
+    if partie.capsules_d_habilete() > 0 && a_soi {
         if let Some(nouvelle) = autre_habilete(monstre) {
             let libelle = format!("Passer à {}", nouvelle.nom());
             boutons.push(bouton(
@@ -606,11 +618,13 @@ fn gestion(partie: &Partie, choisi: Option<Emplacement>, contenu: &ContenuV1) ->
     }
     let mut lignes = rangees(boutons);
     lignes.extend(echange);
-    lignes.extend(menu(
-        Cle::DonnerBooster(emplacement),
-        "Donner un booster",
-        options_de_boosters(partie, monstre),
-    ));
+    if a_soi {
+        lignes.extend(menu(
+            Cle::DonnerBooster(emplacement),
+            "Donner un booster",
+            options_de_boosters(partie, monstre),
+        ));
+    }
     lignes.extend(rangees(vec![
         bouton(
             Cle::Afficher(Vue::Gestion(None)),

@@ -938,6 +938,32 @@ fn malvoise_vend_et_loue_des_monstres_a_travers_les_ecrans_du_bot() {
             .texte
             .contains("Monstre loué : Cerf blanc, encore 3 expéditions.")
     );
+    // Sa gestion ne propose que ce qu'il peut faire (étape 87).
+    let loue = Emplacement::Equipe(2);
+    let version = joueurs.session(JOUEUR, &contenu).version;
+    joueurs
+        .afficher(JOUEUR, version, Vue::Gestion(Some(loue)), &contenu)
+        .unwrap();
+    let gestion = afficher(&mut joueurs);
+    assert!(
+        gestion
+            .texte
+            .contains("Loué à Malvoise : encore 3 expéditions.")
+    );
+    for absent in [
+        Cle::Renommer(loue),
+        Cle::Relacher(loue),
+        Cle::VendreCeMonstre(loue),
+        Cle::DonnerBooster(loue),
+    ] {
+        assert!(!propose(&gestion, |cle| *cle == absent), "{absent:?}");
+    }
+    assert!(propose(&gestion, |cle| *cle == Cle::Afficher(Vue::Attaques(loue))));
+    assert!(propose(&gestion, |cle| *cle == Cle::RendreLeMonstreLoue));
+    let version = joueurs.session(JOUEUR, &contenu).version;
+    joueurs
+        .afficher(JOUEUR, version, Vue::Achats, &contenu)
+        .unwrap();
     cliquer_sur(&mut joueurs, Cle::RendreLeMonstreLoue);
     let rendu = cliquer_sur(&mut joueurs, Cle::Oui);
     assert!(matches!(&rendu[..], [Evenement::MonstreLoueRendu(_), ..]));
