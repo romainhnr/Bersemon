@@ -5,17 +5,22 @@
 //! désignés par leur numéro dans la liste de la collection : l'équipe
 //! d'abord, le camp ensuite.
 
+use bersemon_core::beherit::EtatDuBeherit;
 use bersemon_core::booster::Booster;
 use bersemon_core::collection::{Collection, Emplacement, TriDuCamp};
+use bersemon_core::combat::Cote;
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::{ActionDeGestion, Choix};
 use bersemon_core::partie::Partie;
+use bersemon_presentation::beherit::{DEMANDE_DE_SACRIFICE, destination_de_l_eclipse};
 use bersemon_presentation::boosters::{boosters, effet_du_booster};
 use bersemon_presentation::expeditions_automatiques::expeditions_rentrees;
 use bersemon_presentation::forge::travail_fini;
 use bersemon_presentation::machines::avis_des_pieges;
 use bersemon_presentation::marchand::liste_de_rachat;
-use bersemon_presentation::monstres::{attaques_connues, decrire_attaque, fiche_du_monstre};
+use bersemon_presentation::monstres::{
+    attaques_connues, decrire_attaque, fiche_du_monstre, ligne_monstre,
+};
 use bersemon_presentation::partie::{
     ames_d_apotres, capsules_d_habilete, collection as liste_des_monstres, en_tete_du_camp,
 };
@@ -179,14 +184,52 @@ fn choisir_une_option(entree: &mut Entree) -> Option<Option<Choix>> {
     Some((choix == 1).then_some(Choix::SeSuicider))
 }
 
-/// `Some(None)` si le joueur reste au camp.
+/// `Some(None)` si le joueur reste au camp. Avec le Béhérit, l'Éclipse suit
+/// les zones (section 9.4).
 fn carte(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Option<Option<Choix>> {
     let accessibles = partie.zones_accessibles(contenu.zones(), contenu.piste());
     println!();
     println!("{}", affichage::carte(partie, &accessibles));
+    let eclipse = destination_de_l_eclipse(partie, contenu);
+    if let Some(ligne) = &eclipse {
+        println!("  {}. {ligne}", accessibles.len() + 1);
+    }
     println!("  0. Rester au camp");
-    let choix = entree.choix(0, accessibles.len())?;
-    Some((choix > 0).then(|| Choix::PartirEnExpedition(accessibles[choix - 1].id().clone())))
+    let dernier = accessibles.len() + usize::from(eclipse.is_some());
+    let choix = entree.choix(0, dernier)?;
+    match choix {
+        0 => Some(None),
+        numero if numero <= accessibles.len() => Some(Some(Choix::PartirEnExpedition(
+            accessibles[numero - 1].id().clone(),
+        ))),
+        _ if partie.beherit() == EtatDuBeherit::Forge => choisir_le_sacrifice(partie, entree),
+        _ => Some(Some(Choix::PartirEnExpedition(
+            contenu.invocation().eclipse().id().clone(),
+        ))),
+    }
+}
+
+/// Seuls les monstres que le Béhérit accepte sont proposés.
+fn choisir_le_sacrifice(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
+    let sacrifiables = partie.monstres_sacrifiables();
+    println!();
+    println!("{DEMANDE_DE_SACRIFICE}");
+    if sacrifiables.is_empty() {
+        println!("Aucun de vos monstres ne convient.");
+        return Some(None);
+    }
+    for (position, emplacement) in sacrifiables.iter().enumerate() {
+        if let Some(monstre) = partie.collection().monstre(*emplacement) {
+            println!(
+                "  {}. {}",
+                position + 1,
+                ligne_monstre(monstre, Cote::Joueur)
+            );
+        }
+    }
+    println!("Lequel sacrifier ? (0 pour renoncer)");
+    let choix = entree.choix(0, sacrifiables.len())?;
+    Some((choix > 0).then(|| Choix::Sacrifier(sacrifiables[choix - 1])))
 }
 
 /// `Some(None)` au retour vers le menu du camp.

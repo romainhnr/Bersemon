@@ -9,6 +9,7 @@ use bersemon_core::deroulement::Choix;
 use bersemon_core::marchand::{PRIX_CAPSULE_D_HABILETE, PRIX_PIERRE_D_EVOLUTION, prix_du_soin};
 use bersemon_core::partie::Partie;
 use bersemon_core::pierre::PierreDEvolution;
+use bersemon_presentation::beherit::{FORGER_LE_BEHERIT, peut_forger_le_beherit};
 use bersemon_presentation::boosters::SERVICE_SHINY;
 use bersemon_presentation::marchand::{
     capsules_en_vente, etal, offre_d_achat, offre_de_capsule, offre_de_location,
@@ -56,7 +57,7 @@ pub fn choisir(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Opt
             1 => acheter_soins(partie, entree)?,
             2 => acheter_capsule(partie, contenu, entree)?,
             3 => vendre(partie.collection(), entree)?,
-            4 => donner_ame(partie, entree)?,
+            4 => donner_ame(partie, contenu, entree)?,
             5 => acheter_capsules_d_habilete(partie, entree)?,
             6 => vendre_ressources(partie, entree)?,
             7 => acheter_pierres(partie, entree)?,
@@ -115,9 +116,12 @@ fn acheter_capsule(
 }
 
 /// Sans confirmation : donner une âme ne fait rien perdre (section 14.2).
-fn donner_ame(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
+/// Les âmes des Apôtres, une fois toutes réunies, se donnent ensemble pour
+/// forger le Béhérit, après confirmation (section 9.4).
+fn donner_ame(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Option<Option<Choix>> {
     let ames = partie.ames_portees();
-    if ames.is_empty() {
+    let beherit = peut_forger_le_beherit(partie, contenu);
+    if ames.is_empty() && !beherit {
         println!("Vous ne portez aucune âme.");
         return Some(None);
     }
@@ -130,9 +134,16 @@ fn donner_ame(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
             le_soin(marchand.soin()).to_lowercase()
         );
     }
+    if beherit {
+        println!("  {}. {FORGER_LE_BEHERIT}", ames.len() + 1);
+    }
     println!("Laquelle donner à Malvoise ? (0 pour annuler)");
-    let choix = entree.choix(0, ames.len())?;
-    Some((choix > 0).then(|| Choix::DonnerAme(ames[choix - 1].id().clone())))
+    let choix = entree.choix(0, ames.len() + usize::from(beherit))?;
+    Some(match choix {
+        0 => None,
+        numero if numero <= ames.len() => Some(Choix::DonnerAme(ames[numero - 1].id().clone())),
+        _ => Some(Choix::ForgerLeBeherit),
+    })
 }
 
 /// Le joueur ne choisit que ce qu'il peut payer (section 5.9).
