@@ -311,6 +311,7 @@ mod tests {
             forge: Default::default(),
             relations: Default::default(),
             machines: Default::default(),
+            beherit: Default::default(),
         })
         .unwrap()
     }

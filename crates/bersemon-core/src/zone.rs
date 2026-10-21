@@ -112,6 +112,9 @@ pub struct Zone {
     pecheur: Option<Box<Pecheur>>,
     expedition_automatique: ParametresExpeditionAutomatique,
     coffre: ParametresCoffre,
+    /// L'Éclipse, où le Béhérit fait venir le Démiurge : elle ne compte
+    /// jamais comme explorée (section 9.4).
+    lieu_d_invocation: bool,
 }
 
 impl Zone {
@@ -166,7 +169,17 @@ impl Zone {
             pecheur: None,
             expedition_automatique,
             coffre,
+            lieu_d_invocation: false,
         })
+    }
+
+    pub(crate) fn en_lieu_d_invocation(mut self) -> Self {
+        self.lieu_d_invocation = true;
+        self
+    }
+
+    pub fn est_un_lieu_d_invocation(&self) -> bool {
+        self.lieu_d_invocation
     }
 
     /// Comme les autres espèces, le monstre caché doit pouvoir être créé à

@@ -73,8 +73,9 @@ pub enum EvenementExpedition {
         booster: Option<Booster>,
     },
     MonstreRare(MonstreRare),
-    /// Combat, sans fuite, contre l'Apôtre (section 9.4).
-    Apotre(Monstre),
+    /// Combat, sans fuite, contre l'Apôtre ; le Démiurge a deux formes, la
+    /// seconde après la première (section 9.4).
+    Apotre(Vec<Monstre>),
     /// Combat, ni fuite ni filet, contre un humain et son équipe (section
     /// 10.7).
     Humain {
@@ -258,7 +259,9 @@ impl Expedition {
         self.etapes_faites += 1;
         let derniere = self.etapes_faites == self.nombre_etapes;
         if let Some(apotre) = self.apotre.as_ref().filter(|_| derniere) {
-            return Some(EvenementExpedition::Apotre(apotre.generer(aleatoire)));
+            return Some(EvenementExpedition::Apotre(
+                apotre.generer_ses_formes(aleatoire),
+            ));
         }
         if let Some(humain) = self.humain.as_ref().filter(|_| derniere) {
             return Some(EvenementExpedition::Humain {
@@ -484,7 +487,8 @@ mod tests {
         // Seul le shiny de l'Apôtre est tiré.
         assert!(matches!(
             expedition.etape_suivante(&mut AleatoireScripte::new([2])),
-            Some(EvenementExpedition::Apotre(apotre)) if apotre.niveau() == Niveau::new(7).unwrap()
+            Some(EvenementExpedition::Apotre(formes))
+                if formes.len() == 1 && formes[0].niveau() == Niveau::new(7).unwrap()
         ));
         assert!(expedition.est_terminee());
     }

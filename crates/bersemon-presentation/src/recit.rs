@@ -2,7 +2,8 @@
 
 use bersemon_core::combat::Cote;
 use bersemon_core::contenu::{
-    INTRODUCTION, MALVOISE_ET_L_AME, MALVOISE_SANS_AME, fin_de_l_introduction, texte_du_conseil,
+    INTRODUCTION, MALVOISE_ET_L_AME, MALVOISE_SANS_AME, RECOMPENSE_DU_DEMIURGE,
+    fin_de_l_introduction, texte_du_conseil,
 };
 use bersemon_core::deroulement::Evenement;
 use bersemon_core::marchand::EXPEDITIONS_DE_LOCATION;
@@ -230,6 +231,9 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
         Evenement::Epilogue(epilogue) => (epilogue.clone(), true),
         Evenement::AmeDApotreRecueillie(recit) => (recit.clone(), false),
         Evenement::EclatDAstreRamasse => (ECLAT_RAMASSE.to_string(), false),
+        Evenement::BeheritForge(recit) => (recit.clone(), true),
+        Evenement::Sacrifice(recit) => (important(recit), true),
+        Evenement::RecompenseDuDemiurge => (RECOMPENSE_DU_DEMIURGE.to_string(), false),
         Evenement::PiegesPoses(zone) => (machines::pieges_poses(zone), false),
         Evenement::PiegesReleves(prises) => (machines::pieges_releves(prises), false),
         Evenement::EntreeALEntrainement(monstre) => {

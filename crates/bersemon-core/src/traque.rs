@@ -60,6 +60,9 @@ pub struct Apotre {
     /// Le récit de son âme, que le joueur recueille après la victoire
     /// (section 9.4).
     recit_de_l_ame: String,
+    /// Le Démiurge se relève sous cette forme quand la première tombe KO
+    /// (section 9.4). En boîte, pour que l'Apôtre reste léger.
+    seconde_forme: Option<Box<Espece>>,
 }
 
 impl Apotre {
@@ -86,7 +89,26 @@ impl Apotre {
             avant_combat: avant_combat.into(),
             epilogue: epilogue.into(),
             recit_de_l_ame: String::new(),
+            seconde_forme: None,
         })
+    }
+
+    /// Vérifie, comme `new`, que la seconde forme peut être créée au niveau
+    /// de l'Apôtre.
+    pub fn avec_seconde_forme(mut self, espece: Espece) -> Result<Self, ErreurTraque> {
+        Monstre::creer(
+            espece.clone(),
+            self.niveau,
+            ValeursInternes::default(),
+            false,
+        )
+        .map_err(|_| ErreurTraque::EspeceInvalide(espece.id().clone()))?;
+        self.seconde_forme = Some(Box::new(espece));
+        Ok(self)
+    }
+
+    pub fn seconde_forme(&self) -> Option<&Espece> {
+        self.seconde_forme.as_deref()
     }
 
     pub fn avec_recit_de_l_ame(mut self, recit: impl Into<String>) -> Self {
@@ -122,14 +144,28 @@ impl Apotre {
     /// monstre sauvage, il a 1 chance sur 512 d'être shiny (Q58) et tire son
     /// habileté (section 5.9). Tirages : le shiny, puis l'habileté.
     pub fn generer(&self, aleatoire: &mut dyn Aleatoire) -> Monstre {
+        self.generer_forme(&self.espece, aleatoire)
+    }
+
+    /// Ses formes, dans l'ordre du combat : la seconde, s'il en a une, suit
+    /// la première, et se tire de même après elle (section 9.4).
+    pub fn generer_ses_formes(&self, aleatoire: &mut dyn Aleatoire) -> Vec<Monstre> {
+        let mut formes = vec![self.generer(aleatoire)];
+        if let Some(seconde) = &self.seconde_forme {
+            formes.push(self.generer_forme(seconde, aleatoire));
+        }
+        formes
+    }
+
+    fn generer_forme(&self, espece: &Espece, aleatoire: &mut dyn Aleatoire) -> Monstre {
         let shiny = tirer_shiny(aleatoire);
         Monstre::creer(
-            self.espece.clone(),
+            espece.clone(),
             self.niveau,
             ValeursInternes::maximales(),
             shiny,
         )
-        .expect("espèce vérifiée au niveau de l'Apôtre par Apotre::new")
+        .expect("espèce vérifiée au niveau de l'Apôtre")
         .tirer_son_habilete(aleatoire)
     }
 }

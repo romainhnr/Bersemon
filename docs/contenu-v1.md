@@ -1024,12 +1024,12 @@ Textes proposés sans validation (gamedesign.md, Q99) :
 
 | Moment | Texte |
 |---|---|
-| Au camp, avec le Béhérit | Béhérit pourpre : il vous ouvre l'Éclipse. / ... : il attend son sacrifice. (avant l'invocation) |
+| Au camp, avec le Béhérit, à la place des âmes d'Apôtres | Béhérit pourpre : il attend son sacrifice. / Béhérit pourpre : il vous ouvre l'Éclipse. / Béhérit pourpre : l'Éclipse s'est refermée. |
 | Étal, menu des âmes | Âmes des Apôtres : forger le Béhérit pourpre |
 | Confirmation, Béhérit | Donner à Malvoise les âmes des trois Apôtres pour forger le Béhérit pourpre ? Elles seront perdues. |
 | Écran du sacrifice | Le Béhérit pourpre réclame un sacrifice pour ouvrir l'Éclipse : choisissez un de vos monstres de niveau 30 ou plus. Il sera perdu pour toujours. |
 | Confirmation, sacrifice | Sacrifier {monstre} au Béhérit pourpre ? Il sera perdu pour toujours. |
 | Codex | {nom} ({types}) : vaincu |
 | Libellés | Forger le Béhérit pourpre ; Sacrifier ; Partir vers l'Éclipse |
-| Refus | Il vous faut les âmes des trois Apôtres. / Le Béhérit réclame un monstre de niveau 30 ou plus. / Ce sacrifice laisserait votre équipe vide. / Le Béhérit n'a pas encore reçu son sacrifice. / L'Éclipse est refermée. |
+| Refus | Il vous faut les âmes des trois Apôtres. / Le Béhérit pourpre est déjà forgé. / Il vous faut le Béhérit pourpre. / Le Béhérit a déjà reçu son sacrifice. / Le Béhérit réclame un monstre de niveau 30 ou plus. / Ce sacrifice laisserait votre équipe vide. / L'Éclipse est fermée : le Béhérit n'a pas reçu son sacrifice, ou le Démiurge est vaincu. |
 

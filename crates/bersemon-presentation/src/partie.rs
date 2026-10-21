@@ -1,5 +1,6 @@
 //! Partie en cours : héros, camp, carte, codex et confirmations.
 
+use bersemon_core::beherit::EtatDuBeherit;
 use bersemon_core::capsule::Capsule;
 use bersemon_core::catalogue::Catalogue;
 use bersemon_core::codex::{Codex, EtatCodex};
@@ -338,13 +339,29 @@ pub fn ligne_du_codex(codex: &Codex, espece: &Espece) -> String {
         EtatCodex::Capturee if espece.rarete() == Rarete::Apotre => {
             format!("{} ({}) : Apôtre vaincu", espece.nom(), types_de(espece))
         }
+        EtatCodex::Capturee if espece.rarete() == Rarete::Demiurge => {
+            format!("{} ({}) : vaincu", espece.nom(), types_de(espece))
+        }
         EtatCodex::Capturee => format!("{} ({}) : capturée", espece.nom(), types_de(espece)),
     }
 }
 
 /// Les âmes des Apôtres vaincus, au camp : rien ne les fait perdre (section
 /// 9.4). `None` avant la première victoire sur un Apôtre.
+/// Une fois forgé, le Béhérit pourpre remplace leurs âmes (section 9.4).
 pub fn ames_d_apotres(partie: &Partie, catalogue: &dyn Catalogue) -> Option<String> {
+    match partie.beherit() {
+        EtatDuBeherit::Aucun => {}
+        EtatDuBeherit::Forge => {
+            return Some("Béhérit pourpre : il attend son sacrifice.".to_string());
+        }
+        EtatDuBeherit::EclipseOuverte => {
+            return Some("Béhérit pourpre : il vous ouvre l'Éclipse.".to_string());
+        }
+        EtatDuBeherit::DemiurgeVaincu => {
+            return Some("Béhérit pourpre : l'Éclipse s'est refermée.".to_string());
+        }
+    }
     let noms: Vec<String> = partie
         .ames_d_apotres()
         .iter()
@@ -486,6 +503,11 @@ pub fn question_de_confirmation(confirmation: &Confirmation) -> String {
             )
         }
         Confirmation::RendreShiny(monstre) => question_shiny(monstre),
+        Confirmation::ForgerLeBeherit => "Donner à Malvoise les âmes des trois Apôtres pour forger le Béhérit pourpre ? Elles seront perdues.".to_string(),
+        Confirmation::Sacrifier(monstre) => format!(
+            "Sacrifier {} au Béhérit pourpre ? Il sera perdu pour toujours.",
+            monstre.nom()
+        ),
         Confirmation::RendreLeMonstreLoue(monstre) => format!(
             "Rendre {} à Malvoise ? La location n'est pas remboursée.",
             monstre.nom()

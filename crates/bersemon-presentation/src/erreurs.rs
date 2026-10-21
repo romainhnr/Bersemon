@@ -1,5 +1,6 @@
 //! Choix refusés et sauvegardes impossibles, expliqués au joueur.
 
+use bersemon_core::beherit::{ErreurBeherit, NIVEAU_MINIMAL_DU_SACRIFICE};
 use bersemon_core::booster::ErreurBooster;
 use bersemon_core::capsule::ErreurApprentissage;
 use bersemon_core::collection::ErreurCollection;
@@ -62,6 +63,7 @@ pub fn erreur_de_choix(choix: &Choix, erreur: &ErreurChoix) -> String {
         ErreurChoix::Equipement(erreur) => erreur_equipement(erreur),
         ErreurChoix::Peche(erreur) => erreur_peche(erreur),
         ErreurChoix::Machine(erreur) => erreur_machine(erreur),
+        ErreurChoix::Beherit(erreur) => erreur_beherit(erreur),
         autre => format!("Action impossible : {autre}."),
     }
 }
@@ -144,6 +146,26 @@ pub fn erreur_de_combat(erreur: &ErreurCombat) -> String {
         // Les autres erreurs ne viennent pas d'une saisie du joueur :
         // l'interface suit la phase du combat.
         autre => format!("Action impossible : {autre}."),
+    }
+}
+
+/// Le Béhérit pourpre et l'Éclipse (section 9.4).
+pub fn erreur_beherit(erreur: &ErreurBeherit) -> String {
+    match erreur {
+        ErreurBeherit::AucunMarchand => "Malvoise ne s'est pas encore installé au camp.".to_string(),
+        ErreurBeherit::AmesManquantes => "Il vous faut les âmes des trois Apôtres.".to_string(),
+        ErreurBeherit::DejaForge => "Le Béhérit pourpre est déjà forgé.".to_string(),
+        ErreurBeherit::AucunBeherit => "Il vous faut le Béhérit pourpre.".to_string(),
+        ErreurBeherit::SacrificeDejaFait => "Le Béhérit a déjà reçu son sacrifice.".to_string(),
+        ErreurBeherit::NiveauInsuffisant => format!(
+            "Le Béhérit réclame un monstre de niveau {NIVEAU_MINIMAL_DU_SACRIFICE} ou plus."
+        ),
+        ErreurBeherit::EquipeVide => "Ce sacrifice laisserait votre équipe vide.".to_string(),
+        ErreurBeherit::Collection(erreur) => erreur_collection(erreur),
+        ErreurBeherit::EclipseFermee => {
+            "L'Éclipse est fermée : le Béhérit n'a pas reçu son sacrifice, ou le Démiurge est vaincu."
+                .to_string()
+        }
     }
 }
 

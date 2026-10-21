@@ -36,7 +36,7 @@ fn multiplicateur_de_rarete(rarete: Rarete) -> u32 {
     match rarete {
         Rarete::Commune => 1,
         Rarete::Rare => 2,
-        Rarete::Apotre => 4,
+        Rarete::Apotre | Rarete::Demiurge => 4,
     }
 }
 

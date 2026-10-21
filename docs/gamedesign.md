@@ -436,6 +436,7 @@ Décidé le 21/10/2026, pour les étapes 88 à 92 (choix de l'utilisateur, Q92 ;
 - Une défaite est une défaite ordinaire (section 9.3) : le sac est perdu, et l'Éclipse reste ouverte.
 - Après la victoire : un épilogue, et le Démiurge laisse 3 Éclats d'astre, dans le sac. Il ne se capture pas et ne revient plus ; l'Éclipse se referme. Ses deux formes s'ouvrent au codex, dites "vaincu". Le joueur continue d'explorer ; d'autres Apôtres pourront venir plus tard.
 - Sauvegarde en version 25 : l'avancée du Béhérit (forgé, Éclipse ouverte, Démiurge vaincu).
+- Précisé aux étapes 88 à 90, en codant : le sacrifice est sauvegardé aussitôt, avant le départ qu'il déclenche ; l'Éclipse n'est pas parmi les zones de la carte, et ses paramètres d'expédition automatique et de coffre ne servent jamais. En combat, la seconde forme n'est pas comptée parmi les monstres en attente, et son entrée est racontée par le texte de la métamorphose.
 
 ## 10. Combat
 

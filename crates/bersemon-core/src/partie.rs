@@ -10,6 +10,9 @@ use crate::amelioration::{
     PlanDuCharme,
 };
 use crate::attaque::{Attaque, AttaqueId, ErreurAttaquesMonstre};
+use crate::beherit::{
+    ECLATS_DU_DEMIURGE, ErreurBeherit, EtatDuBeherit, Invocation, NIVEAU_MINIMAL_DU_SACRIFICE,
+};
 use crate::booster::{Booster, ErreurBooster};
 use crate::capsule::{Capsule, ErreurApprentissage, attaques_a_apprendre};
 use crate::catalogue::Catalogue;
@@ -116,6 +119,8 @@ pub struct Partie {
     relations: Relations,
     /// Les pièges et la cour d'entraînement (section 13.6).
     machines: Machines,
+    /// Le Béhérit pourpre et l'Éclipse (section 9.4).
+    beherit: EtatDuBeherit,
 }
 
 /// Attaque qu'un monstre rentré d'expédition automatique veut apprendre en
@@ -161,6 +166,7 @@ pub struct EtatPartie {
     pub peche: Peche,
     pub relations: Relations,
     pub machines: Machines,
+    pub beherit: EtatDuBeherit,
 }
 
 /// Sauvegarde lisible mais contraire aux règles des expéditions
@@ -248,6 +254,7 @@ impl Partie {
             peche: Peche::default(),
             relations: Relations::default(),
             machines: Machines::default(),
+            beherit: EtatDuBeherit::Aucun,
             conseils_vus: Vec::new(),
             expeditions_automatiques: Vec::new(),
             attaques_a_choisir: Vec::new(),
@@ -1320,10 +1327,122 @@ impl Partie {
     }
 
     /// L'âme de chaque Apôtre vaincu, dans l'ordre des victoires : à part
-    /// du sac et du coffre, rien ne la fait perdre. Elles serviront à
-    /// affronter le Démiurge (section 9.4, Q92).
+    /// du sac et du coffre, rien ne la fait perdre, jusqu'à ce que Malvoise
+    /// en forge le Béhérit pourpre (section 9.4).
     pub fn ames_d_apotres(&self) -> &[EspeceId] {
-        &self.apotres_vaincus
+        if self.beherit.est_forge() {
+            &[]
+        } else {
+            &self.apotres_vaincus
+        }
+    }
+
+    pub fn beherit(&self) -> EtatDuBeherit {
+        self.beherit
+    }
+
+    /// Ce que refuserait `forger_le_beherit`, sans rien changer : de quoi
+    /// demander confirmation.
+    pub fn verifier_la_forge_du_beherit(&self, piste: &Piste) -> Result<(), ErreurBeherit> {
+        if !self.marchand_au_camp {
+            return Err(ErreurBeherit::AucunMarchand);
+        }
+        if self.beherit.est_forge() {
+            return Err(ErreurBeherit::DejaForge);
+        }
+        if !piste.apotres().all(|apotre| self.est_vaincu(apotre)) {
+            return Err(ErreurBeherit::AmesManquantes);
+        }
+        Ok(())
+    }
+
+    /// Au camp, chez Malvoise, après confirmation : les âmes de tous les
+    /// Apôtres sont consommées (section 9.4).
+    pub fn forger_le_beherit(&mut self, piste: &Piste) -> Result<(), ErreurBeherit> {
+        self.verifier_la_forge_du_beherit(piste)?;
+        self.beherit = EtatDuBeherit::Forge;
+        Ok(())
+    }
+
+    /// Le monstre que le Béhérit prendrait, sans rien changer : de quoi
+    /// demander confirmation. Refuse ce que refuserait `sacrifier`.
+    pub fn estimer_sacrifice(&self, emplacement: Emplacement) -> Result<Monstre, ErreurBeherit> {
+        match self.beherit {
+            EtatDuBeherit::Aucun => return Err(ErreurBeherit::AucunBeherit),
+            EtatDuBeherit::Forge => {}
+            EtatDuBeherit::EclipseOuverte | EtatDuBeherit::DemiurgeVaincu => {
+                return Err(ErreurBeherit::SacrificeDejaFait);
+            }
+        }
+        let monstre = self
+            .collection
+            .monstre_a_soi(emplacement)
+            .map_err(ErreurBeherit::Collection)?;
+        if monstre.niveau().valeur() < NIVEAU_MINIMAL_DU_SACRIFICE {
+            return Err(ErreurBeherit::NiveauInsuffisant);
+        }
+        if matches!(emplacement, Emplacement::Equipe(_)) && self.collection.equipe().len() == 1 {
+            return Err(ErreurBeherit::EquipeVide);
+        }
+        // Les règles du relâcher valent aussi : jamais le dernier monstre.
+        self.collection
+            .clone()
+            .relacher(emplacement)
+            .map_err(ErreurBeherit::Collection)?;
+        Ok(monstre.clone())
+    }
+
+    /// Les monstres que le Béhérit accepterait, équipe puis camp.
+    pub fn monstres_sacrifiables(&self) -> Vec<Emplacement> {
+        let equipe = (0..self.collection.equipe().len()).map(Emplacement::Equipe);
+        let camp = (0..self.collection.camp().len()).map(Emplacement::Camp);
+        equipe
+            .chain(camp)
+            .filter(|emplacement| self.estimer_sacrifice(*emplacement).is_ok())
+            .collect()
+    }
+
+    /// Après confirmation, la première fois que le joueur part vers
+    /// l'Éclipse : le monstre est perdu pour toujours, et l'Éclipse reste
+    /// ouverte jusqu'à la victoire (section 9.4). Rend le monstre sacrifié.
+    pub fn sacrifier(&mut self, emplacement: Emplacement) -> Result<Monstre, ErreurBeherit> {
+        self.estimer_sacrifice(emplacement)?;
+        let monstre = self
+            .collection
+            .relacher(emplacement)
+            .map_err(ErreurBeherit::Collection)?;
+        self.oublier_les_attaques_a_choisir(emplacement);
+        self.beherit = EtatDuBeherit::EclipseOuverte;
+        Ok(monstre)
+    }
+
+    /// Une expédition d'une seule étape, où attend le Démiurge, une fois le
+    /// sacrifice fait et tant qu'il n'est pas vaincu (section 9.4).
+    pub fn partir_vers_l_eclipse(
+        &self,
+        invocation: &Invocation,
+    ) -> Result<Expedition, ErreurExpedition> {
+        if self.beherit != EtatDuBeherit::EclipseOuverte {
+            return Err(ErreurExpedition::ZoneFermee);
+        }
+        if self.collection.equipe().is_empty() {
+            return Err(ErreurExpedition::EquipeVide);
+        }
+        Ok(Expedition::partir(invocation.eclipse().clone())
+            .vers_l_antre(invocation.demiurge().clone()))
+    }
+
+    /// Ses deux formes s'ouvrent au codex ; il laisse 3 Éclats d'astre dans
+    /// le sac, et l'Éclipse se referme (section 9.4).
+    pub(crate) fn noter_demiurge_vaincu(&mut self, demiurge: &Apotre) {
+        if self.beherit != EtatDuBeherit::DemiurgeVaincu {
+            self.beherit = EtatDuBeherit::DemiurgeVaincu;
+            self.sac.ajouter_eclats_d_astre(ECLATS_DU_DEMIURGE);
+        }
+        self.codex.noter_capture(demiurge.espece().id());
+        if let Some(seconde) = demiurge.seconde_forme() {
+            self.codex.noter_capture(seconde.id());
+        }
     }
 
     pub fn est_vaincu(&self, apotre: &Apotre) -> bool {
@@ -1431,6 +1550,7 @@ impl Partie {
             peche: etat.peche,
             relations: etat.relations,
             machines: etat.machines,
+            beherit: etat.beherit,
         })
     }
 
@@ -1520,25 +1640,40 @@ impl Partie {
             .iter()
             .map(|monstre| monstre.espece().id().clone())
             .collect();
-        let combat = Combat::new(self.collection.equipe().to_vec(), groupe)?
-            .avec_bonus_du_joueur(self.heros.bonus_en_combat())
-            .avec_bonus_de_role_du_cote(Cote::Joueur)
-            .avec_ordre(self.heros.classe().ordre())
-            .avec_filets(self.forge.ameliorations().facteur_des_filets())
-            .avec_soins(*self.sac.soins());
+        let combat = self.combat_contre(groupe)?;
         for espece in &especes {
             self.codex.noter_rencontre(espece);
         }
         Ok(combat)
     }
 
-    /// Comme `preparer_combat`, sans fuite ni filet (section 9.4).
+    fn combat_contre(&self, groupe: Vec<Monstre>) -> Result<Combat, ErreurCombat> {
+        Ok(Combat::new(self.collection.equipe().to_vec(), groupe)?
+            .avec_bonus_du_joueur(self.heros.bonus_en_combat())
+            .avec_bonus_de_role_du_cote(Cote::Joueur)
+            .avec_ordre(self.heros.classe().ordre())
+            .avec_filets(self.forge.ameliorations().facteur_des_filets())
+            .avec_soins(*self.sac.soins()))
+    }
+
+    /// Comme `preparer_combat`, sans fuite ni filet (section 9.4). Les
+    /// formes du Démiurge se succèdent : la seconde reste cachée, et n'entre
+    /// au codex qu'en apparaissant (Q99).
     pub fn preparer_combat_contre_apotre(
         &mut self,
-        apotre: Monstre,
+        formes: Vec<Monstre>,
     ) -> Result<Combat, ErreurCombat> {
-        self.preparer_combat(vec![apotre])
-            .map(Combat::contre_un_apotre)
+        let premiere = formes.first().map(|forme| forme.espece().id().clone());
+        let deux_phases = formes.len() > 1;
+        let combat = self.combat_contre(formes)?.contre_un_apotre();
+        if let Some(premiere) = premiere {
+            self.codex.noter_rencontre(&premiere);
+        }
+        Ok(if deux_phases {
+            combat.en_deux_phases()
+        } else {
+            combat
+        })
     }
 
     /// Contre un marchand relevé d'entre les morts : fuite possible, mais ni
@@ -1940,7 +2075,8 @@ impl Partie {
         piste: &'p Piste,
     ) -> Option<&'p Indice> {
         self.collection.soigner_tout();
-        if !expedition.est_reussie() {
+        // L'Éclipse ne compte jamais comme explorée (section 9.4).
+        if !expedition.est_reussie() || expedition.zone().est_un_lieu_d_invocation() {
             return None;
         }
         let zone = expedition.zone().id();
@@ -2680,6 +2816,7 @@ mod tests {
         };
         let combat = partie.preparer_combat_contre_apotre(apotre).unwrap();
         assert!(combat.est_contre_un_apotre());
+        assert!(!combat.est_en_deux_phases());
 
         let baron = piste.apotres().next().unwrap();
         partie.noter_apotre_vaincu(baron);
@@ -3055,6 +3192,7 @@ mod tests {
             forge: partie.forge().clone(),
             relations: partie.relations().clone(),
             machines: partie.machines().clone(),
+            beherit: partie.beherit(),
         }
     }
 
@@ -3323,5 +3461,83 @@ mod tests {
             partie.rendre_le_monstre_loue(),
             Err(ErreurMarchand::AucunMonstreLoue)
         );
+    }
+
+    #[test]
+    fn le_beherit_se_forge_des_ames_de_tous_les_apotres() {
+        let (mut partie, contenu) = chez_malvoise();
+        let piste = contenu.piste();
+        assert_eq!(
+            partie.forger_le_beherit(piste),
+            Err(ErreurBeherit::AmesManquantes)
+        );
+        partie.apotres_vaincus = piste
+            .apotres()
+            .map(|apotre| apotre.espece().id().clone())
+            .collect();
+        assert_eq!(partie.ames_d_apotres().len(), 3);
+        partie.marchand_au_camp = false;
+        assert_eq!(
+            partie.forger_le_beherit(piste),
+            Err(ErreurBeherit::AucunMarchand)
+        );
+        partie.marchand_au_camp = true;
+        assert_eq!(partie.forger_le_beherit(piste), Ok(()));
+        assert!(partie.ames_d_apotres().is_empty());
+        assert_eq!(
+            partie.forger_le_beherit(piste),
+            Err(ErreurBeherit::DejaForge)
+        );
+    }
+
+    #[test]
+    fn le_beherit_ne_prend_qu_un_monstre_de_niveau_30_qui_ne_vide_pas_l_equipe() {
+        let (mut partie, contenu) = chez_malvoise();
+        let creer = |id: &str, niveau: u8| {
+            Monstre::creer(
+                contenu.espece(&EspeceId::new(id)).unwrap(),
+                Niveau::new(niveau).unwrap(),
+                ValeursInternes::default(),
+                false,
+            )
+            .unwrap()
+        };
+        let seul = Emplacement::Equipe(0);
+        assert_eq!(
+            partie.estimer_sacrifice(seul),
+            Err(ErreurBeherit::AucunBeherit)
+        );
+        partie.beherit = EtatDuBeherit::Forge;
+        // Le Crapaud de départ, de niveau 12, est trop faible.
+        assert_eq!(
+            partie.estimer_sacrifice(seul),
+            Err(ErreurBeherit::NiveauInsuffisant)
+        );
+        partie.collection = Collection::new(creer("crapaud", 40));
+        assert_eq!(
+            partie.estimer_sacrifice(seul),
+            Err(ErreurBeherit::EquipeVide)
+        );
+        partie
+            .collection
+            .accueillir_capture(creer("cerf-blanc", 36).louer(3));
+        assert_eq!(
+            partie.estimer_sacrifice(Emplacement::Equipe(1)),
+            Err(ErreurBeherit::Collection(ErreurCollection::MonstreLoue))
+        );
+        partie.collection.accueillir_capture(creer("loup", 30));
+        assert_eq!(
+            partie.monstres_sacrifiables(),
+            vec![seul, Emplacement::Equipe(2)]
+        );
+        let sacrifie = partie.sacrifier(seul).unwrap();
+        assert_eq!(sacrifie.espece().id().as_str(), "crapaud");
+        assert_eq!(partie.beherit(), EtatDuBeherit::EclipseOuverte);
+        assert_eq!(
+            partie.estimer_sacrifice(Emplacement::Equipe(1)),
+            Err(ErreurBeherit::SacrificeDejaFait)
+        );
+        let expedition = partie.partir_vers_l_eclipse(contenu.invocation()).unwrap();
+        assert_eq!(expedition.nombre_etapes(), 1);
     }
 }

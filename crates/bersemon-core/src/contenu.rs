@@ -13,6 +13,7 @@ use std::time::Duration;
 use crate::ame::{Gardien, MarchandId, MarchandMort};
 use crate::amelioration::{Amelioration, PlanDAmelioration, PlanDeFabrication, PlanDuCharme};
 use crate::attaque::{Attaque, AttaqueId, Categorie, EffetSecondaire};
+use crate::beherit::Invocation;
 use crate::capsule::Capsule;
 use crate::catalogue::Catalogue;
 use crate::equipement::{ObjetDEquipement, ObjetDEquipementId, SorteDObjet};
@@ -152,6 +153,25 @@ const AME_DE_L_ABBESSE: &str =
 const AME_DU_MARGRAVE: &str =
     "L'âme du Margrave de givre s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.";
 
+/// L'Éclipse et le Démiurge, section 23 de docs/contenu-v1.md (étapes 88 à
+/// 90).
+const FORGE_DU_BEHERIT: &str = "Malvoise dépose les trois âmes au creux de ses mains. Elles se tordent, se mêlent et durcissent en un œuf de pierre pourpre, où des yeux et une bouche s'ouvrent et se referment. \"Le Béhérit pourpre. Il t'ouvrira la porte du Démiurge, mais il réclamera son dû.\"";
+
+const SACRIFICE: &str = "Le Béhérit pourpre s'ouvre en un cri. {monstre} vous est arraché et disparaît dans une lumière rouge. Le ciel s'assombrit : l'Éclipse commence.";
+
+const AVANT_LE_DEMIURGE: &str = "Sous un soleil noir, la terre s'ouvre sur un abîme de chair. Une silhouette ailée descend lentement : le Démiurge, maître des Apôtres. Il n'y aura pas de fuite.";
+
+/// Quand la première forme du Démiurge tombe, à la place de l'arrivée d'un
+/// nouvel adversaire.
+pub const METAMORPHOSE_DU_DEMIURGE: &str =
+    "Le Démiurge s'effondre, puis sa chair se déchire : sa forme véritable s'en arrache, immense.";
+
+const EPILOGUE_DU_DEMIURGE: &str = "Le Démiurge se disloque dans un hurlement qui fait trembler le ciel. Le soleil noir pâlit, et le jour revient sur le royaume. Votre vengeance est accomplie ; mais d'autres choses rôdent encore au bord des bois.";
+
+/// Les Éclats d'astre ramassés après l'épilogue du Démiurge.
+pub const RECOMPENSE_DU_DEMIURGE: &str =
+    "Dans les cendres du Démiurge luisent trois Éclats d'astre. Vous les ramassez.";
+
 const AVANT_LE_BARON: &str = "Au fond de la Vallée, la brume se déchire sur un gibet dressé contre le ciel. Le Baron pendu, Apôtre du Démiurge, s'y balance encore, puis ouvre les yeux. Il n'y aura pas de fuite.";
 
 const EPILOGUE: &str = "Le Baron pendu s'effondre au pied de son gibet. Sur sa poitrine, un sceau gravé d'une main ouverte : le signe du Démiurge. D'autres Apôtres portent ce sceau, au-delà des terres connues. Votre traque ne fait que commencer.";
@@ -183,6 +203,7 @@ pub struct ContenuV1 {
     plans_de_fabrication: Vec<PlanDeFabrication>,
     plan_du_charme: PlanDuCharme,
     peche: ParametresPeche,
+    invocation: Invocation,
 }
 
 impl ContenuV1 {
@@ -542,6 +563,30 @@ impl ContenuV1 {
                 .expect("plan de fabrication conforme aux règles")
             })
             .collect();
+        // Le Démiurge attend seul dans l'Éclipse, deux niveaux au-dessus de
+        // ce lieu d'une étape, comme un Apôtre (section 9.4). Ses paramètres
+        // d'expédition automatique et de coffre ne servent jamais.
+        let eclipse = Zone::new(
+            ZoneId::new("eclipse"),
+            "Éclipse",
+            (niveau(40), niveau(40)),
+            1,
+            1,
+            vec![trouver("demiurge")],
+            Vec::new(),
+            expedition_automatique(5, 220..=450, 2200..=3400, 1..=3, 180..=320),
+            coffre(140..=220, Vec::new()),
+        )
+        .expect("Éclipse conforme aux règles");
+        let demiurge = Apotre::new(
+            trouver("demiurge"),
+            &eclipse,
+            AVANT_LE_DEMIURGE,
+            EPILOGUE_DU_DEMIURGE,
+        )
+        .and_then(|apotre| apotre.avec_seconde_forme(trouver("demiurge-eveille")))
+        .expect("Démiurge conforme aux règles");
+        let invocation = Invocation::new(eclipse, demiurge, FORGE_DU_BEHERIT, SACRIFICE);
         let zones = vec![lisiere, marais, vallee, abbaye, col];
         let peche = ParametresPeche::new(
             Duration::from_secs(HEURES_DE_PECHE * 3_600),
@@ -567,7 +612,14 @@ impl ContenuV1 {
             plans_de_fabrication,
             plan_du_charme,
             peche,
+            invocation,
         }
+    }
+
+    /// L'Éclipse et le Démiurge, que le Béhérit pourpre fait venir (section
+    /// 9.4).
+    pub fn invocation(&self) -> &Invocation {
+        &self.invocation
     }
 
     /// Toutes les espèces, dans l'ordre du codex.
@@ -732,7 +784,7 @@ const fn avec_effet(fiche: FicheAttaque, statut: Statut, chance: u8) -> FicheAtt
 }
 
 /// Section 1 de docs/contenu-v1.md, dans le même ordre.
-const ATTAQUES: [FicheAttaque; 93] = [
+const ATTAQUES: [FicheAttaque; 95] = [
     fiche(
         "souffle-chaud",
         "Souffle chaud",
@@ -1369,6 +1421,31 @@ const ATTAQUES: [FicheAttaque; 93] = [
         90,
         90,
     ),
+    // Attaques du Démiurge (étape 90).
+    avec_effet(
+        fiche(
+            "marque-du-sacrifice",
+            "Marque du sacrifice",
+            Type::Obscur,
+            Physique,
+            95,
+            95,
+        ),
+        Poison,
+        30,
+    ),
+    avec_effet(
+        fiche(
+            "soleil-noir",
+            "Soleil noir",
+            Type::Obscur,
+            Speciale,
+            100,
+            90,
+        ),
+        Paralysie,
+        20,
+    ),
 ];
 
 struct FicheCapsule {
@@ -1549,7 +1626,7 @@ const MARCHAND_ZOMBIE: FicheEspece = FicheEspece {
 /// Section 2 de docs/contenu-v1.md, dans l'ordre du codex : les monstres de
 /// départ, les communs, les rares, l'Apôtre, le monstre caché, puis les
 /// formes évoluées de la section 8.
-const ESPECES: [FicheEspece; 52] = [
+const ESPECES: [FicheEspece; 54] = [
     FicheEspece {
         id: "salamandre",
         nom: "Salamandre",
@@ -2483,6 +2560,42 @@ const ESPECES: [FicheEspece; 52] = [
         ],
         evolution: None,
     },
+    // Les deux formes du Démiurge, section 23 de docs/contenu-v1.md (étape
+    // 90).
+    FicheEspece {
+        id: "demiurge",
+        nom: "Démiurge",
+        types: &[Type::Obscur],
+        role: Role::Offensif,
+        stats_de_base: [95, 100, 90, 100, 90, 85],
+        rendement_experience: 320,
+        rarete: Rarete::Demiurge,
+        habiletes: &[Habilete::Ferocite, Habilete::Volonte],
+        apprentissage: &[
+            (1, "etreinte-obscure"),
+            (10, "hurlement-des-abysses"),
+            (20, "flagellation"),
+            (40, "marque-du-sacrifice"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "demiurge-eveille",
+        nom: "Démiurge éveillé",
+        types: &[Type::Obscur],
+        role: Role::Offensif,
+        stats_de_base: [110, 115, 100, 120, 100, 95],
+        rendement_experience: 380,
+        rarete: Rarete::Demiurge,
+        habiletes: &[Habilete::Sorcellerie, Habilete::Carapace],
+        apprentissage: &[
+            (1, "hurlement-des-abysses"),
+            (1, "psaume-impie"),
+            (1, "marque-du-sacrifice"),
+            (1, "soleil-noir"),
+        ],
+        evolution: None,
+    },
 ];
 
 /// Section 15 de docs/contenu-v1.md : la ligne est prête 2 h après avoir
@@ -2534,7 +2647,7 @@ fn creer_espece(fiche: &FicheEspece) -> Espece {
         Some((_, id, nom)) => {
             let prix = match fiche.rarete {
                 Rarete::Rare => PRIX_D_UNE_RESSOURCE_RARE,
-                Rarete::Commune | Rarete::Apotre => PRIX_D_UNE_RESSOURCE_COMMUNE,
+                Rarete::Commune | Rarete::Apotre | Rarete::Demiurge => PRIX_D_UNE_RESSOURCE_COMMUNE,
             };
             espece.avec_ressource(Ressource::new(RessourceId::new(*id), *nom, prix))
         }
@@ -3087,7 +3200,7 @@ mod tests {
     #[test]
     fn contenu_conforme_aux_regles() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.especes().len(), 52);
+        assert_eq!(contenu.especes().len(), 54);
         assert_eq!(contenu.zones().len(), 5);
         assert_eq!(contenu.piste().indices().count(), 6);
         // Toute espèce rencontrée en zone se retrouve au chargement d'une
@@ -3120,6 +3233,12 @@ mod tests {
             .apotres()
             .map(|apotre| apotre.espece().id())
             .collect();
+        let demiurge = contenu.invocation().demiurge();
+        let formes_du_demiurge = [demiurge.espece()]
+            .into_iter()
+            .chain(demiurge.seconde_forme())
+            .map(Espece::id)
+            .collect::<Vec<_>>();
         for espece in contenu.especes() {
             // Une forme évoluée a la rareté de sa forme de base (section 5.4).
             let base = contenu.especes().iter().find(|base| {
@@ -3130,6 +3249,8 @@ mod tests {
                 base.rarete()
             } else if apotres.contains(&espece.id()) {
                 Rarete::Apotre
+            } else if formes_du_demiurge.contains(&espece.id()) {
+                Rarete::Demiurge
             } else if rares.contains(&espece.id()) {
                 Rarete::Rare
             } else {
@@ -3513,6 +3634,54 @@ mod tests {
         assert_eq!(
             wyverne.condition(),
             &ConditionEvolution::Niveau(col.niveaux().1)
+        );
+    }
+
+    #[test]
+    fn le_demiurge_attend_seul_dans_l_eclipse_sous_deux_formes_au_niveau_42() {
+        let contenu = ContenuV1::new();
+        let invocation = contenu.invocation();
+        let eclipse = invocation.eclipse();
+        assert!(eclipse.est_un_lieu_d_invocation());
+        assert_eq!(eclipse.etapes(), 1);
+        assert!(contenu.zones().iter().all(|zone| zone.id() != eclipse.id()));
+        let demiurge = invocation.demiurge();
+        assert_eq!(demiurge.niveau(), niveau(42));
+        assert_eq!(demiurge.espece().id().as_str(), "demiurge");
+        assert_eq!(
+            demiurge.seconde_forme().map(|espece| espece.id().as_str()),
+            Some("demiurge-eveille")
+        );
+        let attaques = |id: &str| -> Vec<String> {
+            creer(&contenu, id, 42)
+                .attaques()
+                .liste()
+                .iter()
+                .map(|attaque| attaque.id().as_str().to_string())
+                .collect()
+        };
+        assert_eq!(
+            attaques("demiurge"),
+            vec![
+                "etreinte-obscure",
+                "hurlement-des-abysses",
+                "flagellation",
+                "marque-du-sacrifice"
+            ]
+        );
+        assert_eq!(
+            attaques("demiurge-eveille"),
+            vec![
+                "hurlement-des-abysses",
+                "psaume-impie",
+                "marque-du-sacrifice",
+                "soleil-noir"
+            ]
+        );
+        assert!(
+            invocation
+                .recit_du_sacrifice("Loup")
+                .starts_with("Le Béhérit pourpre s'ouvre en un cri. Loup vous est arraché")
         );
     }
 

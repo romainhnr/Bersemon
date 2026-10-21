@@ -120,6 +120,9 @@ pub enum Action {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Evenement {
     MonstreEnvoye(Combattant),
+    /// Face au Démiurge, sa seconde forme se relève à la place de la
+    /// première, tombée KO (section 9.4).
+    Metamorphose(Combattant),
     AttaqueLancee {
         lanceur: Combattant,
         attaque: Attaque,
@@ -170,6 +173,7 @@ impl Evenement {
     pub fn miroir(&self) -> Evenement {
         match self.clone() {
             Evenement::MonstreEnvoye(combattant) => Evenement::MonstreEnvoye(combattant.miroir()),
+            Evenement::Metamorphose(combattant) => Evenement::Metamorphose(combattant.miroir()),
             Evenement::AttaqueLancee { lanceur, attaque } => Evenement::AttaqueLancee {
                 lanceur: lanceur.miroir(),
                 attaque,
@@ -344,6 +348,9 @@ pub struct Combat {
     soins: Soins,
     /// Face à un Apôtre, ni fuite ni filet (section 9.4).
     contre_un_apotre: bool,
+    /// Face au Démiurge, ses formes se succèdent : la seconde n'est pas
+    /// annoncée avant d'entrer (section 9.4).
+    en_deux_phases: bool,
     /// Face à un humain, ni fuite ni filet, et une seule capture après la
     /// victoire (section 10.7).
     contre_un_humain: bool,
@@ -407,6 +414,7 @@ impl Combat {
             facteur_des_filets: (1, 1),
             soins: Soins::default(),
             contre_un_apotre: false,
+            en_deux_phases: false,
             contre_un_humain: false,
             sans_capture: false,
             ia: Ia::Hasard,
@@ -477,6 +485,17 @@ impl Combat {
 
     pub fn est_contre_un_apotre(&self) -> bool {
         self.contre_un_apotre
+    }
+
+    /// Contre le Démiurge : les monstres du groupe sont ses formes
+    /// successives (section 9.4).
+    pub fn en_deux_phases(mut self) -> Self {
+        self.en_deux_phases = true;
+        self
+    }
+
+    pub fn est_en_deux_phases(&self) -> bool {
+        self.en_deux_phases
     }
 
     /// Combat contre un humain et son équipe : ni fuite ni filet, son IA
@@ -957,6 +976,7 @@ impl Combat {
             facteur_des_filets: self.facteur_des_filets,
             soins: Soins::default(),
             contre_un_apotre: self.contre_un_apotre,
+            en_deux_phases: self.en_deux_phases,
             contre_un_humain: self.contre_un_humain,
             sans_capture: self.sans_capture,
             ia: self.ia,
@@ -1525,7 +1545,12 @@ impl Combat {
                 Some(index) => {
                     self.actif_adversaire = index;
                     self.noter_participation();
-                    evenements.push(Evenement::MonstreEnvoye(self.actif(Cote::Adversaire)));
+                    let entree = self.actif(Cote::Adversaire);
+                    evenements.push(if self.en_deux_phases {
+                        Evenement::Metamorphose(entree)
+                    } else {
+                        Evenement::MonstreEnvoye(entree)
+                    });
                 }
                 None => {
                     self.terminer_avec(Issue::Victoire, evenements);

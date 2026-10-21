@@ -20,6 +20,7 @@ use crate::amelioration::{
     Amelioration, Chantier, ErreurAmelioration, PlanDAmelioration, PlanDeFabrication, PlanDuCharme,
 };
 use crate::attaque::{Attaque, AttaqueId, ErreurAttaquesMonstre};
+use crate::beherit::ErreurBeherit;
 use crate::booster::{Booster, ErreurBooster};
 use crate::capsule::{Capsule, ErreurApprentissage};
 use crate::collection::{Emplacement, ErreurCollection, Placement, TriDuCamp};
@@ -111,6 +112,13 @@ pub enum Choix {
     LouerMonstre(EspeceId),
     /// Au camp, après confirmation, sans remboursement (section 14.2).
     RendreLeMonstreLoue,
+    /// Au camp, chez Malvoise, après confirmation : les âmes des Apôtres
+    /// deviennent le Béhérit pourpre (section 9.4).
+    ForgerLeBeherit,
+    /// Au camp, après confirmation, le premier départ vers l'Éclipse : le
+    /// Béhérit prend ce monstre pour toujours, et l'expédition part
+    /// (section 9.4).
+    Sacrifier(Emplacement),
     /// Au camp, chez Malvoise, sans confirmation (section 5.9).
     AcheterCapsulesDHabilete(u32),
     /// Au camp, chez Malvoise, sans confirmation (section 5.4).
@@ -336,6 +344,10 @@ pub enum Confirmation {
     RendreShiny(Monstre),
     /// La location ne serait pas remboursée (section 14.2).
     RendreLeMonstreLoue(Monstre),
+    /// Les âmes des Apôtres seraient perdues (section 9.4).
+    ForgerLeBeherit,
+    /// Le monstre serait perdu pour toujours.
+    Sacrifier(Monstre),
 }
 
 /// Ce qui s'est passé, dans l'ordre. Les monstres et les combats sont des
@@ -603,6 +615,13 @@ pub enum Evenement {
     MonstreLoueRendu(Monstre),
     /// Au retour de sa dernière expédition, il repart chez Malvoise.
     LocationFinie(Monstre),
+    /// Le récit de Malvoise qui forge le Béhérit pourpre (section 9.4).
+    BeheritForge(String),
+    /// Le récit du sacrifice, qui ouvre l'Éclipse.
+    Sacrifice(String),
+    /// Après l'épilogue du Démiurge, ses Éclats d'astre
+    /// (`contenu::RECOMPENSE_DU_DEMIURGE`).
+    RecompenseDuDemiurge,
     /// À un autre joueur, par don ou échange ; `heros` est le nom de son
     /// héros (section 15.1).
     MonstreCede {
@@ -659,6 +678,7 @@ pub enum ErreurChoix {
     Equipement(ErreurEquipement),
     Peche(ErreurPeche),
     Machine(ErreurMachine),
+    Beherit(ErreurBeherit),
 }
 
 impl fmt::Display for ErreurChoix {
@@ -683,6 +703,7 @@ impl fmt::Display for ErreurChoix {
             ErreurChoix::Habilete(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Booster(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Evolution(erreur) => write!(f, "{erreur}"),
+            ErreurChoix::Beherit(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Amelioration(erreur) => write!(f, "{erreur}"),
             ErreurChoix::PlanInconnu => write!(f, "aucun plan pour ce niveau ou cet objet"),
             ErreurChoix::Equipement(erreur) => write!(f, "{erreur}"),
@@ -1057,6 +1078,11 @@ impl EnJeu {
             return self.choisir_prise(choix, contexte, evenements);
         }
         match choix {
+            Choix::PartirEnExpedition(id) if id == contexte.contenu.invocation().eclipse().id() => {
+                let expedition = self.partir_vers_l_eclipse(contexte)?;
+                self.lancer(expedition, contexte, evenements);
+                Ok(Reponse::Faite)
+            }
             Choix::PartirEnExpedition(id) => {
                 let zone = zone_du_contenu(contexte.contenu, id)?;
                 let expedition = self
@@ -1066,20 +1092,53 @@ impl EnJeu {
                         ErreurExpedition::ZoneFermee => ErreurChoix::ZoneFermee,
                         ErreurExpedition::EquipeVide => ErreurChoix::EquipeVide,
                     })?;
-                evenements.push(Evenement::Depart(zone.nom().to_string()));
-                let mut en_cours = EnExpedition {
-                    expedition,
-                    moment: Moment::EntreDeuxEtapes,
-                    ame: None,
-                    pecheur: None,
-                };
-                let reponse = en_cours.etape_suivante(&mut self.partie, contexte, evenements);
-                let reponse =
-                    en_cours.annoncer_l_indice(&self.partie, contexte.contenu.piste(), reponse);
-                self.expedition = Some(en_cours);
-                if reponse == Reponse::RetourAuCamp {
-                    self.rentrer(contexte, evenements);
+                self.lancer(expedition, contexte, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::ForgerLeBeherit => {
+                let piste = contexte.contenu.piste();
+                if !confirme {
+                    self.partie
+                        .verifier_la_forge_du_beherit(piste)
+                        .map_err(ErreurChoix::Beherit)?;
+                    return Ok(Reponse::a_confirmer(Confirmation::ForgerLeBeherit));
                 }
+                self.partie
+                    .forger_le_beherit(piste)
+                    .map_err(ErreurChoix::Beherit)?;
+                evenements.push(Evenement::BeheritForge(
+                    contexte
+                        .contenu
+                        .invocation()
+                        .recit_de_la_forge()
+                        .to_string(),
+                ));
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::Sacrifier(emplacement) => {
+                if !confirme {
+                    let monstre = self
+                        .partie
+                        .estimer_sacrifice(*emplacement)
+                        .map_err(ErreurChoix::Beherit)?;
+                    return Ok(Reponse::a_confirmer(Confirmation::Sacrifier(monstre)));
+                }
+                let monstre = self
+                    .partie
+                    .sacrifier(*emplacement)
+                    .map_err(ErreurChoix::Beherit)?;
+                evenements.push(Evenement::Sacrifice(
+                    contexte
+                        .contenu
+                        .invocation()
+                        .recit_du_sacrifice(monstre.nom()),
+                ));
+                // Le sacrifice est définitif, même si le joueur quitte avant
+                // le retour de l'expédition qu'il ouvre.
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                let expedition = self.partir_vers_l_eclipse(contexte)?;
+                self.lancer(expedition, contexte, evenements);
                 Ok(Reponse::Faite)
             }
             Choix::Gerer(action) => {
@@ -1844,6 +1903,37 @@ impl EnJeu {
 
     /// Soin de tous les monstres, indice éventuel, nouvelle zone, puis
     /// sauvegarde (sections 9.4, 13.1 et 13.9).
+    /// Le premier événement de l'expédition suit aussitôt le départ.
+    fn lancer(
+        &mut self,
+        expedition: Expedition,
+        contexte: &mut Contexte<'_>,
+        evenements: &mut Vec<Evenement>,
+    ) {
+        evenements.push(Evenement::Depart(expedition.zone().nom().to_string()));
+        let mut en_cours = EnExpedition {
+            expedition,
+            moment: Moment::EntreDeuxEtapes,
+            ame: None,
+            pecheur: None,
+        };
+        let reponse = en_cours.etape_suivante(&mut self.partie, contexte, evenements);
+        let reponse = en_cours.annoncer_l_indice(&self.partie, contexte.contenu.piste(), reponse);
+        self.expedition = Some(en_cours);
+        if reponse == Reponse::RetourAuCamp {
+            self.rentrer(contexte, evenements);
+        }
+    }
+
+    fn partir_vers_l_eclipse(&self, contexte: &Contexte<'_>) -> Result<Expedition, ErreurChoix> {
+        self.partie
+            .partir_vers_l_eclipse(contexte.contenu.invocation())
+            .map_err(|erreur| match erreur {
+                ErreurExpedition::ZoneFermee => ErreurChoix::Beherit(ErreurBeherit::EclipseFermee),
+                ErreurExpedition::EquipeVide => ErreurChoix::EquipeVide,
+            })
+    }
+
     fn rentrer(&mut self, contexte: &mut Contexte<'_>, evenements: &mut Vec<Evenement>) {
         let Some(en_cours) = self.expedition.take() else {
             return;
@@ -1853,7 +1943,9 @@ impl EnJeu {
         let avant = self.partie.zones_accessibles(zones, piste).len();
         let indice = self.partie.rentrer_au_camp(&en_cours.expedition, piste);
         let location_finie = self.partie.decompter_location();
-        if en_cours.expedition.est_reussie() {
+        // L'Éclipse ne compte jamais comme explorée (section 9.4).
+        let lieu_d_invocation = en_cours.expedition.zone().est_un_lieu_d_invocation();
+        if en_cours.expedition.est_reussie() && !lieu_d_invocation {
             evenements.push(Evenement::ZoneExploree(
                 en_cours.expedition.zone().nom().to_string(),
             ));
@@ -2209,6 +2301,12 @@ impl EnExpedition {
                 return Err(ErreurChoix::Combat(erreur));
             }
         };
+        // La seconde forme du Démiurge entre au codex en apparaissant (Q99).
+        for evenement in &tour {
+            if let combat::Evenement::Metamorphose(forme) = evenement {
+                partie.noter_rencontre(combat.monstre(*forme));
+            }
+        }
         if !tour.is_empty() {
             evenements.push(Evenement::Combat {
                 evenements: tour,
@@ -2507,12 +2605,19 @@ impl EnExpedition {
                     .apotre()
                     .expect("un combat contre un Apôtre suit l'antre de l'expédition")
                     .clone();
-                partie.noter_apotre_vaincu(&apotre);
                 evenements.push(Evenement::Epilogue(apotre.epilogue().to_string()));
-                evenements.push(Evenement::AmeDApotreRecueillie(
-                    apotre.recit_de_l_ame().to_string(),
-                ));
-                evenements.push(Evenement::EclatDAstreRamasse);
+                // Le Démiurge ne laisse pas d'âme, mais ses Éclats d'astre
+                // (section 9.4).
+                if self.expedition.zone().est_un_lieu_d_invocation() {
+                    partie.noter_demiurge_vaincu(&apotre);
+                    evenements.push(Evenement::RecompenseDuDemiurge);
+                } else {
+                    partie.noter_apotre_vaincu(&apotre);
+                    evenements.push(Evenement::AmeDApotreRecueillie(
+                        apotre.recit_de_l_ame().to_string(),
+                    ));
+                    evenements.push(Evenement::EclatDAstreRamasse);
+                }
             }
             let humain = self.expedition.humain().cloned();
             if let Some(humain) =
@@ -2672,7 +2777,7 @@ impl EnExpedition {
                 evenements.push(Evenement::Rencontre(combat.clone()));
                 self.engager(partie, combat, evenements)
             }
-            EvenementExpedition::Apotre(monstre) => {
+            EvenementExpedition::Apotre(formes) => {
                 // Le récit de l'Apôtre tient lieu d'annonce de la rencontre.
                 let recit = self
                     .expedition
@@ -2681,7 +2786,7 @@ impl EnExpedition {
                     .unwrap_or_default();
                 evenements.push(Evenement::RecitDeLApotre(recit));
                 let combat = partie
-                    .preparer_combat_contre_apotre(monstre)
+                    .preparer_combat_contre_apotre(formes)
                     .expect(EQUIPE_APTE)
                     .avec_limite_d_obeissance(limite);
                 self.moment = Moment::AnnonceDeCombat(combat);
@@ -2763,6 +2868,7 @@ mod tests {
     use crate::aleatoire::{AleatoireScripte, GenerateurAleatoire};
     use crate::ame::MarchandId;
     use crate::amelioration::Forge;
+    use crate::beherit::EtatDuBeherit;
     use crate::catalogue::Catalogue;
     use crate::codex::EtatCodex;
     use crate::espece::EspeceId;
@@ -2861,6 +2967,7 @@ mod tests {
             forge: partie.forge().clone(),
             relations: partie.relations().clone(),
             machines: partie.machines().clone(),
+            beherit: partie.beherit(),
         }
     }
 
@@ -4641,6 +4748,139 @@ mod tests {
         assert!(trouvees > 0);
     }
 
+    /// Les trois Apôtres vaincus, Malvoise au camp, et une équipe de
+    /// niveau 100 avec un Loup de niveau 30 au camp, à sacrifier (section
+    /// 9.4).
+    fn partie_pour_le_demiurge(contenu: &ContenuV1) -> Partie {
+        let mut partie = partie_de(salamandre(contenu, 100));
+        partie.prendre_monstre_rare(monstre_du_contenu(contenu, "crapaud", 100));
+        partie.prendre_monstre_rare(monstre_du_contenu(contenu, "mandragore", 100));
+        partie
+            .collection_mut()
+            .envoyer_au_camp(2)
+            .expect("place au camp");
+        partie.prendre_monstre_rare(monstre_du_contenu(contenu, "loup", 30));
+        let mut etat = etat_de(&partie);
+        etat.marchand_au_camp = true;
+        etat.apotres_vaincus = contenu
+            .piste()
+            .apotres()
+            .map(|apotre| apotre.espece().id().clone())
+            .collect();
+        Partie::restaurer(etat).unwrap()
+    }
+
+    #[test]
+    fn le_beherit_ouvre_l_eclipse_ou_le_demiurge_se_releve_sous_sa_seconde_forme() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut deroulement = au_camp(partie_pour_le_demiurge(&contenu), &contenu, &depot);
+        let eclipse = contenu.invocation().eclipse().id().clone();
+        // Ni départ ni sacrifice avant le Béhérit.
+        assert_eq!(
+            repondre_sans_tirage(
+                &mut deroulement,
+                Choix::PartirEnExpedition(eclipse.clone()),
+                &contenu,
+                &depot
+            ),
+            Err(ErreurChoix::Beherit(ErreurBeherit::EclipseFermee))
+        );
+        repondre_sans_tirage(&mut deroulement, Choix::ForgerLeBeherit, &contenu, &depot).unwrap();
+        assert_eq!(
+            deroulement.attente(),
+            Attente::Confirmation(&Confirmation::ForgerLeBeherit)
+        );
+        let forge = repondre_sans_tirage(&mut deroulement, Choix::Oui, &contenu, &depot).unwrap();
+        assert!(matches!(&forge[..], [Evenement::BeheritForge(_), ..]));
+        let partie = deroulement.partie().unwrap();
+        assert_eq!(partie.beherit(), EtatDuBeherit::Forge);
+        assert!(partie.ames_d_apotres().is_empty());
+        // Le Béhérit attend son sacrifice : un monstre de niveau 30 ou plus.
+        assert_eq!(
+            repondre_sans_tirage(
+                &mut deroulement,
+                Choix::PartirEnExpedition(eclipse.clone()),
+                &contenu,
+                &depot
+            ),
+            Err(ErreurChoix::Beherit(ErreurBeherit::EclipseFermee))
+        );
+        let loup = Emplacement::Equipe(2);
+        assert_eq!(
+            deroulement.partie().unwrap().monstres_sacrifiables(),
+            vec![
+                Emplacement::Equipe(0),
+                Emplacement::Equipe(1),
+                loup,
+                Emplacement::Camp(0)
+            ]
+        );
+        repondre_sans_tirage(&mut deroulement, Choix::Sacrifier(loup), &contenu, &depot).unwrap();
+        let mut aleatoire = GenerateurAleatoire::new(11);
+        let mut vus = Vec::new();
+        let mut choix = Choix::Oui;
+        for _ in 0..500 {
+            let mut contexte = Contexte {
+                contenu: &contenu,
+                aleatoire: &mut aleatoire,
+                depot: &depot,
+                maintenant: Horodatage::depuis_secondes(0),
+            };
+            vus.extend(deroulement.repondre(choix, &mut contexte).unwrap());
+            if deroulement.attente() == Attente::Camp {
+                break;
+            }
+            choix = jouer_un_coup(&deroulement, &contenu);
+        }
+        assert!(
+            matches!(&vus[..], [Evenement::Sacrifice(recit), Evenement::Depart(_), ..] if recit.contains("Loup"))
+        );
+        let metamorphoses = vus
+            .iter()
+            .filter(|evenement| {
+                matches!(evenement, Evenement::Combat { evenements, .. }
+                    if evenements.iter().any(|e| matches!(e, combat::Evenement::Metamorphose(_))))
+            })
+            .count();
+        assert_eq!(metamorphoses, 1);
+        assert!(vus.iter().any(|evenement| matches!(evenement, Evenement::Epilogue(texte) if texte.contains("Démiurge"))));
+        assert!(vus.contains(&Evenement::RecompenseDuDemiurge));
+        assert!(!vus.iter().any(|evenement| matches!(
+            evenement,
+            Evenement::ZoneExploree(_) | Evenement::AmeDApotreRecueillie(_)
+        )));
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert_eq!(sauvegarde.beherit(), EtatDuBeherit::DemiurgeVaincu);
+        assert_eq!(sauvegarde.sac().eclats_d_astre(), 3);
+        assert!(!sauvegarde.est_exploree(&eclipse));
+        for forme in ["demiurge", "demiurge-eveille"] {
+            assert_eq!(
+                sauvegarde.codex().etat(&EspeceId::new(forme)),
+                EtatCodex::Capturee
+            );
+        }
+        let collection = sauvegarde.collection();
+        assert!(
+            collection
+                .equipe()
+                .iter()
+                .chain(collection.camp())
+                .all(|monstre| monstre.espece().id().as_str() != "loup")
+        );
+        // L'Éclipse s'est refermée.
+        let mut deroulement = au_camp(sauvegarde, &contenu, &depot);
+        assert_eq!(
+            repondre_sans_tirage(
+                &mut deroulement,
+                Choix::PartirEnExpedition(eclipse),
+                &contenu,
+                &depot
+            ),
+            Err(ErreurChoix::Beherit(ErreurBeherit::EclipseFermee))
+        );
+    }
+
     /// Au retour d'une expédition manuelle, quelle qu'en soit l'issue, la
     /// location d'un monstre se décompte ; à la dernière, il repart chez
     /// Malvoise (section 14.2).
@@ -4960,6 +5200,7 @@ mod tests {
             forge: Default::default(),
             relations: Default::default(),
             machines: Default::default(),
+            beherit: Default::default(),
         })
         .unwrap()
     }

@@ -65,6 +65,8 @@ pub enum Rarete {
     Commune,
     Rare,
     Apotre,
+    /// Ses deux formes, qui ne se capturent pas (section 9.4).
+    Demiurge,
 }
 
 /// Attaque qu'un monstre de l'espèce apprend en atteignant ce niveau (Q33).

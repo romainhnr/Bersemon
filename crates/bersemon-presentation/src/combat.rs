@@ -4,6 +4,7 @@
 use bersemon_core::attaque::{Attaque, Categorie};
 use bersemon_core::codex::Codex;
 use bersemon_core::combat::{Combat, Combattant, Cote, Evenement, Issue};
+use bersemon_core::contenu::METAMORPHOSE_DU_DEMIURGE;
 use bersemon_core::heros::Ordre;
 use bersemon_core::monstre::{Monstre, RapportExperience};
 use bersemon_core::statut::Statut;
@@ -17,8 +18,15 @@ use crate::monstres::{
 use crate::partie::types_connus;
 use crate::soins::soin_utilise;
 
+/// La seconde forme du Démiurge reste cachée jusqu'à son entrée (section
+/// 9.4).
 pub fn rencontre(combat: &Combat) -> String {
-    let noms: Vec<String> = (0..combat.adversaires().len())
+    let visibles = if combat.est_en_deux_phases() {
+        1
+    } else {
+        combat.adversaires().len()
+    };
+    let noms: Vec<String> = (0..visibles)
         .map(|index| {
             important(&nom_en_combat(
                 combat,
@@ -66,7 +74,7 @@ pub fn etat(combat: &Combat, codex: &Codex) -> String {
         .enumerate()
         .filter(|&(index, monstre)| index > adversaire.index && !monstre.est_ko())
         .count();
-    if en_attente > 0 {
+    if en_attente > 0 && !combat.est_en_deux_phases() {
         lignes.push(format!("  et {en_attente} autre(s) monstre(s) en attente"));
     }
     lignes.join("\n")
@@ -131,6 +139,7 @@ pub fn evenement(evenement: &Evenement, combat: &Combat) -> String {
             Cote::Joueur => format!("Vous envoyez {}.", fort(*combattant)),
             Cote::Adversaire => format!("{} entre en combat.", fort(*combattant)),
         },
+        Evenement::Metamorphose(_) => important(METAMORPHOSE_DU_DEMIURGE),
         Evenement::AttaqueLancee { lanceur, attaque } => {
             format!("{} utilise {}.", fort(*lanceur), attaque.nom())
         }

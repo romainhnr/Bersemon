@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use bersemon_core::ame::{MarchandId, MarchandMort};
 use bersemon_core::amelioration::{Amelioration, Ameliorations, Chantier, Forge, Ouvrage};
 use bersemon_core::attaque::{AttaqueId, AttaquesMonstre};
+use bersemon_core::beherit::EtatDuBeherit;
 use bersemon_core::booster::Booster;
 use bersemon_core::catalogue::Catalogue;
 use bersemon_core::codex::Codex;
@@ -42,7 +43,7 @@ use bersemon_core::zone::{Zone, ZoneId};
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 24;
+pub(crate) const VERSION: u64 = 25;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -74,6 +75,10 @@ const VERSION_DES_MACHINES: u64 = 22;
 /// La version de la sauvegarde où Malvoise loue des monstres (section 14.2).
 const VERSION_DES_LOCATIONS: u64 = 24;
 
+/// La version de la sauvegarde où Malvoise forge le Béhérit pourpre (section
+/// 9.4).
+const VERSION_DU_BEHERIT: u64 = 25;
+
 /// Gunther est le prisonnier de cet humain : avant la version 14, une partie
 /// qui l'a vaincu a Gunther au camp (section 13.4, Q85).
 const GEOLIER_DE_GUNTHER: &str = "bourreau";
@@ -97,7 +102,7 @@ const GEOLIER_DE_GUNTHER: &str = "bourreau";
 /// Éclats d'astre, la version 21 les amis et le palmarès des duels, la
 /// version 22 les machines du camp, la version 23 les charmes de garde et
 /// les protections des expéditions automatiques, la version 24 la location
-/// d'un monstre. Une sauvegarde d'une version précédente se lit avec cette
+/// d'un monstre, la version 25 le Béhérit pourpre. Une sauvegarde d'une version précédente se lit avec cette
 /// structure : les champs ajoutés y prennent leur valeur de début de
 /// partie.
 #[derive(Debug, Serialize, Deserialize)]
@@ -177,6 +182,10 @@ pub(crate) struct SauvegardeV14 {
     pieges: Option<PiegesV22>,
     #[serde(default)]
     entrainement: Vec<EntrainementV22>,
+    /// Depuis la version 25 (section 9.4) : "forge", "eclipse-ouverte" ou
+    /// "demiurge-vaincu", absent tant que le Béhérit n'est pas forgé.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    beherit: Option<String>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -605,7 +614,29 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV14 {
                 depuis: entrainement.depuis().secondes(),
             })
             .collect(),
+        beherit: beherit_en_texte(partie.beherit()).map(str::to_string),
     }
+}
+
+fn beherit_en_texte(etat: EtatDuBeherit) -> Option<&'static str> {
+    match etat {
+        EtatDuBeherit::Aucun => None,
+        EtatDuBeherit::Forge => Some("forge"),
+        EtatDuBeherit::EclipseOuverte => Some("eclipse-ouverte"),
+        EtatDuBeherit::DemiurgeVaincu => Some("demiurge-vaincu"),
+    }
+}
+
+fn lire_beherit(texte: Option<&str>) -> Result<EtatDuBeherit, ErreurSauvegarde> {
+    [
+        EtatDuBeherit::Aucun,
+        EtatDuBeherit::Forge,
+        EtatDuBeherit::EclipseOuverte,
+        EtatDuBeherit::DemiurgeVaincu,
+    ]
+    .into_iter()
+    .find(|etat| beherit_en_texte(*etat) == texte)
+    .ok_or_else(|| ErreurSauvegarde::Incoherente(format!("Béhérit inconnu : {texte:?}")))
 }
 
 fn depuis_inventaire(inventaire: &Inventaire) -> InventaireV7 {
@@ -902,6 +933,12 @@ pub(crate) fn vers_partie(
         .map(String::as_str)
         .map(conseil)
         .collect::<Result<Vec<_>, _>>()?;
+    // Avant la version 25, pas de Béhérit (section 9.4).
+    let beherit = if sauvegarde.version < VERSION_DU_BEHERIT {
+        EtatDuBeherit::Aucun
+    } else {
+        lire_beherit(sauvegarde.beherit.as_deref())?
+    };
     Partie::restaurer(EtatPartie {
         heros,
         collection,
@@ -929,6 +966,7 @@ pub(crate) fn vers_partie(
             },
         ),
         machines,
+        beherit,
     })
     .map_err(incoherente)
 }

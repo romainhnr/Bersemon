@@ -87,6 +87,7 @@ mod tests {
     use bersemon_core::ame::{Gardien, MarchandId, MarchandMort};
     use bersemon_core::amelioration::{Amelioration, Ameliorations, Chantier, Forge, Ouvrage};
     use bersemon_core::attaque::{Attaque, AttaqueId, Categorie, EffetSecondaire};
+    use bersemon_core::beherit::EtatDuBeherit;
     use bersemon_core::booster::Booster;
     use bersemon_core::capsule::Capsule;
     use bersemon_core::codex::EtatCodex;
@@ -434,6 +435,7 @@ mod tests {
                     Horodatage::depuis_secondes(600),
                 )],
             ),
+            beherit: EtatDuBeherit::EclipseOuverte,
         };
         let mut partie = Partie::restaurer(etat(&partie, Vec::new())).unwrap();
         // Croc apprend l'attaque de la capsule, hors de la liste de son
@@ -643,10 +645,10 @@ mod tests {
 
     #[test]
     fn version_inconnue() {
-        let texte = texte_de_partie().replacen("\"version\":24", "\"version\":25", 1);
+        let texte = texte_de_partie().replacen("\"version\":25", "\"version\":26", 1);
         assert_eq!(
             charger_texte(&texte),
-            Err(ErreurSauvegarde::VersionInconnue(25))
+            Err(ErreurSauvegarde::VersionInconnue(26))
         );
     }
 
@@ -1111,6 +1113,23 @@ mod tests {
         );
         let ecrite = serde_json::to_string(&format::depuis_partie(&relue)).unwrap();
         assert!(ecrite.contains("\"recu_de\":\"Ysolde\""), "{ecrite}");
+    }
+
+    #[test]
+    fn le_beherit_se_relit_depuis_la_version_25() {
+        let texte = texte_de_partie();
+        assert!(texte.contains("\"beherit\":\"eclipse-ouverte\""), "{texte}");
+        let relue = charger_texte(&texte).unwrap().unwrap();
+        assert_eq!(relue.beherit(), EtatDuBeherit::EclipseOuverte);
+        // Avant la version 25, pas de Béhérit (section 9.4).
+        let ancienne = texte.replacen("\"version\":25", "\"version\":24", 1);
+        let ancienne = charger_texte(&ancienne).unwrap().unwrap();
+        assert_eq!(ancienne.beherit(), EtatDuBeherit::Aucun);
+        let inconnu = texte.replacen("eclipse-ouverte", "brise", 1);
+        assert!(matches!(
+            charger_texte(&inconnu),
+            Err(ErreurSauvegarde::Incoherente(_))
+        ));
     }
 
     #[test]
