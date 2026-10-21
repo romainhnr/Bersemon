@@ -979,3 +979,57 @@ Décidés le 20/10/2026, pour les étapes 83 à 86 (gamedesign.md, section 14.2)
 | Confirmation, rendre | Rendre {monstre} à Malvoise ? La location n'est pas remboursée. |
 | Écran du bot | Malvoise vend des monstres communs des zones que vous avez explorées, et loue des monstres rares pour 3 expéditions : un monstre loué ne fait que combattre, puis repart. Vous avez {argent}. |
 | Refus | Vous avez déjà un monstre loué. / Un monstre loué ne peut pas faire cela. / L'équipe et le camp sont pleins. / Malvoise ne propose pas ce monstre pour l'instant. / Vous n'avez pas de monstre loué. / Malvoise n'a encore aucun monstre à vendre : menez une expédition au bout. / Malvoise n'a encore aucun monstre à louer. |
+
+## 23. Béhérit pourpre, Éclipse et Démiurge
+
+Décidés le 21/10/2026, pour les étapes 88 à 92 (gamedesign.md, section 9.4), contenu proposé par Claude et validé par l'utilisateur.
+
+Le Démiurge a deux formes, au niveau 42, à valeurs internes fixes de 31 ; la seconde se relève quand la première tombe KO. Une rareté à part, "Démiurge" ; elles n'ont pas de ressource et ne se capturent pas. Au codex, elles viennent après les stades 3.
+
+| Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP | Habiletés | Attaques apprises |
+|---|---|---|---|---|---|---|---|
+| demiurge | Démiurge | Obscur | offensif | 95 / 100 / 90 / 100 / 90 / 85 (560) | 320 | Férocité, Volonté | Étreinte obscure (1), Hurlement des abysses (10), Flagellation (20), Marque du sacrifice (40) |
+| demiurge-eveille | Démiurge éveillé | Obscur | offensif | 110 / 115 / 100 / 120 / 100 / 95 (640) | 380 | Sorcellerie, Carapace | Hurlement des abysses (1), Psaume impie (1), Marque du sacrifice (1), Soleil noir (1) |
+
+Attaques nouvelles :
+
+| Identifiant | Nom | Type | Cat. | Puissance | Précision | Effet |
+|---|---|---|---|---|---|---|
+| marque-du-sacrifice | Marque du sacrifice | Obscur | P | 95 | 95 | poison 30 % |
+| soleil-noir | Soleil noir | Obscur | S | 100 | 90 | paralysie 20 % |
+
+L'Éclipse (identifiant eclipse) : une expédition d'une seule étape, le Démiurge, ouverte par le Béhérit. Dans les menus : "Éclipse", avec "Niveau 42 : le Démiurge".
+
+Textes validés :
+
+> Malvoise dépose les trois âmes au creux de ses mains. Elles se tordent, se mêlent et durcissent en un œuf de pierre pourpre, où des yeux et une bouche s'ouvrent et se referment. "Le Béhérit pourpre. Il t'ouvrira la porte du Démiurge, mais il réclamera son dû."
+
+> Le Béhérit pourpre s'ouvre en un cri. {monstre} vous est arraché et disparaît dans une lumière rouge. Le ciel s'assombrit : l'Éclipse commence.
+
+Avant le combat :
+
+> Sous un soleil noir, la terre s'ouvre sur un abîme de chair. Une silhouette ailée descend lentement : le Démiurge, maître des Apôtres. Il n'y aura pas de fuite.
+
+Quand la première forme tombe :
+
+> Le Démiurge s'effondre, puis sa chair se déchire : sa forme véritable s'en arrache, immense.
+
+Épilogue :
+
+> Le Démiurge se disloque dans un hurlement qui fait trembler le ciel. Le soleil noir pâlit, et le jour revient sur le royaume. Votre vengeance est accomplie ; mais d'autres choses rôdent encore au bord des bois.
+
+> Dans les cendres du Démiurge luisent trois Éclats d'astre. Vous les ramassez.
+
+Textes proposés sans validation (gamedesign.md, Q99) :
+
+| Moment | Texte |
+|---|---|
+| Au camp, avec le Béhérit | Béhérit pourpre : il vous ouvre l'Éclipse. / ... : il attend son sacrifice. (avant l'invocation) |
+| Étal, menu des âmes | Âmes des Apôtres : forger le Béhérit pourpre |
+| Confirmation, Béhérit | Donner à Malvoise les âmes des trois Apôtres pour forger le Béhérit pourpre ? Elles seront perdues. |
+| Écran du sacrifice | Le Béhérit pourpre réclame un sacrifice pour ouvrir l'Éclipse : choisissez un de vos monstres de niveau 30 ou plus. Il sera perdu pour toujours. |
+| Confirmation, sacrifice | Sacrifier {monstre} au Béhérit pourpre ? Il sera perdu pour toujours. |
+| Codex | {nom} ({types}) : vaincu |
+| Libellés | Forger le Béhérit pourpre ; Sacrifier ; Partir vers l'Éclipse |
+| Refus | Il vous faut les âmes des trois Apôtres. / Le Béhérit réclame un monstre de niveau 30 ou plus. / Ce sacrifice laisserait votre équipe vide. / Le Béhérit n'a pas encore reçu son sacrifice. / L'Éclipse est refermée. |
+
