@@ -298,6 +298,12 @@ pub enum Attente<'a> {
     /// Le joueur poursuit par `Choix::Poursuivre`.
     Annonce(Annonce),
     Confirmation(&'a Confirmation),
+    /// En expédition en groupe, le combat commun, que mène l'expédition en
+    /// groupe (`groupe::ExpeditionEnGroupe`, section 15.5).
+    CombatDeGroupe,
+    /// En expédition en groupe, le joueur veut continuer et attend l'autre ;
+    /// il peut encore rentrer au camp.
+    AttenteDuGroupe,
 }
 
 /// Ce que le joueur doit confirmer avant que son choix s'applique.
@@ -688,6 +694,10 @@ pub enum ErreurChoix {
     Peche(ErreurPeche),
     Machine(ErreurMachine),
     Beherit(ErreurBeherit),
+    /// En groupe, c'est à l'autre joueur d'agir (section 15.5).
+    AuTourDeLAutre,
+    /// En groupe, l'autre joueur a encore le temps de jouer.
+    AttenteTropCourte,
 }
 
 impl fmt::Display for ErreurChoix {
@@ -718,6 +728,8 @@ impl fmt::Display for ErreurChoix {
             ErreurChoix::Equipement(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Peche(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Machine(erreur) => write!(f, "{erreur}"),
+            ErreurChoix::AuTourDeLAutre => write!(f, "c'est à l'autre joueur d'agir"),
+            ErreurChoix::AttenteTropCourte => write!(f, "l'autre joueur a encore le temps"),
         }
     }
 }
@@ -899,6 +911,130 @@ impl Deroulement {
             Etat::EnJeu(jeu) => jeu.expedition.as_ref().map(|en_cours| &en_cours.expedition),
             _ => None,
         }
+    }
+
+    fn en_jeu_mut(&mut self) -> Option<&mut EnJeu> {
+        match &mut self.etat {
+            Etat::EnJeu(jeu) => Some(jeu),
+            _ => None,
+        }
+    }
+
+    /// En groupe, au camp et sans question en attente : le départ dans la
+    /// Tour sans fond, sans étape ; l'expédition en groupe tire la première
+    /// (section 15.5).
+    pub(crate) fn partir_en_groupe(
+        &mut self,
+        expedition: Expedition,
+        evenements: &mut Vec<Evenement>,
+    ) -> Result<(), ErreurChoix> {
+        if self.attente() != Attente::Camp {
+            return Err(ErreurChoix::HorsDePropos);
+        }
+        let jeu = self.en_jeu_mut().ok_or(ErreurChoix::HorsDePropos)?;
+        evenements.push(Evenement::Depart(expedition.zone().nom().to_string()));
+        if let Some(tour) = expedition.tour() {
+            evenements.push(Evenement::EntreeDansLaTour(
+                tour.recit_de_l_entree().to_string(),
+            ));
+        }
+        jeu.expedition = Some(EnExpedition {
+            expedition,
+            moment: Moment::AttenteDuGroupe,
+            en_groupe: true,
+            ame: None,
+            pecheur: None,
+        });
+        Ok(())
+    }
+
+    /// L'expédition de ce joueur, que l'expédition en groupe fait avancer.
+    pub(crate) fn expedition_mut(&mut self) -> Option<&mut Expedition> {
+        let jeu = self.en_jeu_mut()?;
+        jeu.expedition
+            .as_mut()
+            .map(|en_cours| &mut en_cours.expedition)
+    }
+
+    /// En groupe : l'événement de l'étape, que l'hôte a tiré, avec le coffre
+    /// de ce joueur ; il attendait de continuer.
+    pub(crate) fn recevoir_l_etape(
+        &mut self,
+        evenement: EvenementExpedition,
+        contexte: &mut Contexte<'_>,
+    ) -> Vec<Evenement> {
+        let mut evenements = Vec::new();
+        let Some(jeu) = self.en_jeu_mut() else {
+            return evenements;
+        };
+        let Some(en_cours) = jeu
+            .expedition
+            .as_mut()
+            .filter(|en_cours| matches!(en_cours.moment, Moment::AttenteDuGroupe))
+        else {
+            return evenements;
+        };
+        let reponse =
+            en_cours.traiter_l_evenement(&mut jeu.partie, evenement, contexte, &mut evenements);
+        if reponse == Reponse::RetourAuCamp {
+            jeu.rentrer(contexte, &mut evenements);
+        }
+        evenements
+    }
+
+    /// En groupe : la part de ce joueur dans le bilan du combat commun,
+    /// lue comme après un combat seul (section 15.5).
+    pub(crate) fn recevoir_le_bilan(
+        &mut self,
+        bilan: BilanCombat,
+        contexte: &mut Contexte<'_>,
+    ) -> Vec<Evenement> {
+        let mut evenements = Vec::new();
+        let Some(jeu) = self.en_jeu_mut() else {
+            return evenements;
+        };
+        let Some(en_cours) = jeu.expedition.as_mut() else {
+            return evenements;
+        };
+        let Moment::CombatDeGroupe { contre_un_gardien } = en_cours.moment else {
+            return evenements;
+        };
+        let fin = FinDeCombat {
+            issue: bilan.issue,
+            contre_un_apotre: false,
+            contre_un_humain: false,
+            contre_un_gardien,
+            sac_perdu: Inventaire::default(),
+        };
+        let reponse =
+            en_cours.lire_le_bilan(&mut jeu.partie, bilan, fin, 0, contexte, &mut evenements);
+        if reponse == Reponse::RetourAuCamp {
+            jeu.rentrer(contexte, &mut evenements);
+        }
+        evenements
+    }
+
+    /// En groupe, le joueur attend l'autre pour continuer.
+    pub(crate) fn veut_continuer(&self) -> bool {
+        self.attente() == Attente::AttenteDuGroupe
+    }
+
+    /// En groupe, quand le groupe rentre : seulement entre deux étapes,
+    /// qu'il veuille continuer ou non. `None` s'il a encore à répondre.
+    pub(crate) fn rentrer_avec_le_groupe(
+        &mut self,
+        contexte: &mut Contexte<'_>,
+    ) -> Option<Vec<Evenement>> {
+        if !matches!(
+            self.attente(),
+            Attente::EntreDeuxEtapes | Attente::AttenteDuGroupe
+        ) {
+            return None;
+        }
+        let jeu = self.en_jeu_mut()?;
+        let mut evenements = Vec::new();
+        jeu.rentrer(contexte, &mut evenements);
+        Some(evenements)
     }
 
     pub fn attente(&self) -> Attente<'_> {
@@ -1939,6 +2075,7 @@ impl EnJeu {
         let mut en_cours = EnExpedition {
             expedition,
             moment: Moment::EntreDeuxEtapes,
+            en_groupe: false,
             ame: None,
             pecheur: None,
         };
@@ -1987,7 +2124,10 @@ impl EnJeu {
         evenements.push(Evenement::RetourAuCamp);
         if en_cours.expedition.est_sans_fin() {
             let franchies = en_cours.expedition.etapes_franchies();
-            if self.partie.noter_record_de_la_tour(franchies, false) {
+            if self
+                .partie
+                .noter_record_de_la_tour(franchies, en_cours.en_groupe)
+            {
                 evenements.push(Evenement::NouveauRecordDeLaTour(franchies));
             }
         }
@@ -2060,6 +2200,9 @@ fn gerer(
 struct EnExpedition {
     expedition: Expedition,
     moment: Moment,
+    /// Dans la Tour sans fond, à deux : les étapes et le combat viennent de
+    /// l'expédition en groupe (section 15.5).
+    en_groupe: bool,
     /// Le marchand mort dont le combat en cours peut recueillir l'âme.
     ame: Option<MarchandMort>,
     /// Ansgar, que le combat en cours peut sauver.
@@ -2078,6 +2221,12 @@ enum Moment {
     PlaceManquante(CaptureSansPlace),
     /// L'expédition est finie et révèle un indice au retour (section 9.2).
     AnnonceDIndice,
+    /// En groupe, le combat commun est en cours.
+    CombatDeGroupe {
+        contre_un_gardien: bool,
+    },
+    /// En groupe, le joueur veut continuer et attend l'autre.
+    AttenteDuGroupe,
 }
 
 /// Ce qui reste à régler une fois les suites d'un combat terminées.
@@ -2131,6 +2280,8 @@ impl EnExpedition {
             Moment::MonstreRare(monstre) => Attente::MonstreRare(monstre),
             Moment::AnnonceDeCombat(_) => Attente::Annonce(Annonce::Combat),
             Moment::AnnonceDIndice => Attente::Annonce(Annonce::Indice),
+            Moment::CombatDeGroupe { .. } => Attente::CombatDeGroupe,
+            Moment::AttenteDuGroupe => Attente::AttenteDuGroupe,
             Moment::Combat(combat) => match combat.phase() {
                 Phase::ChoixAction => Attente::ActionDeCombat(combat),
                 Phase::Remplacement => Attente::Remplacement(combat),
@@ -2187,6 +2338,18 @@ impl EnExpedition {
                 }
                 return Ok(Reponse::RetourAuCamp);
             }
+            // Le combat commun se joue dans l'expédition en groupe.
+            moment @ Moment::CombatDeGroupe { .. } => {
+                self.moment = moment;
+                return Err(ErreurChoix::HorsDePropos);
+            }
+            Moment::AttenteDuGroupe => {
+                if *choix != Choix::RentrerAuCamp {
+                    self.moment = Moment::AttenteDuGroupe;
+                    return Err(ErreurChoix::HorsDePropos);
+                }
+                return Ok(Reponse::RetourAuCamp);
+            }
         }?;
         Ok(self.annoncer_l_indice(partie, contexte.contenu.piste(), reponse))
     }
@@ -2218,6 +2381,11 @@ impl EnExpedition {
         evenements: &mut Vec<Evenement>,
     ) -> Result<Reponse, ErreurChoix> {
         match choix {
+            // En groupe, continuer attend l'accord de l'autre (section 15.5).
+            Choix::ContinuerLExpedition if self.en_groupe => {
+                self.moment = Moment::AttenteDuGroupe;
+                Ok(Reponse::Faite)
+            }
             Choix::ContinuerLExpedition => Ok(self.etape_suivante(partie, contexte, evenements)),
             Choix::UtiliserSoin(soin, index) => {
                 let equipe = partie.collection().equipe();
@@ -2725,10 +2893,26 @@ impl EnExpedition {
         let Some(evenement) = self.expedition.etape_suivante(&mut *contexte.aleatoire) else {
             return Reponse::RetourAuCamp;
         };
+        self.traiter_l_evenement(partie, evenement, contexte, evenements)
+    }
+
+    fn traiter_l_evenement(
+        &mut self,
+        partie: &mut Partie,
+        evenement: EvenementExpedition,
+        contexte: &mut Contexte<'_>,
+        evenements: &mut Vec<Evenement>,
+    ) -> Reponse {
         evenements.push(Evenement::Etape {
             numero: self.expedition.etapes_faites(),
             total: (!self.expedition.est_sans_fin()).then_some(self.expedition.nombre_etapes()),
         });
+        if self.en_groupe {
+            if let Some(reponse) = self.preparer_le_combat_de_groupe(partie, &evenement, evenements)
+            {
+                return reponse;
+            }
+        }
         let contenu = contexte.contenu;
         let limite = partie.limite_d_obeissance(contenu.zones(), contenu.piste());
         match evenement {
@@ -2864,6 +3048,39 @@ impl EnExpedition {
                 Reponse::Faite
             }
         }
+    }
+
+    /// En groupe, un combat attend l'expédition en groupe, qui le mène : le
+    /// joueur note ses adversaires au codex et voit le récit de la rencontre
+    /// (section 15.5). `None` pour un événement sans combat.
+    fn preparer_le_combat_de_groupe(
+        &mut self,
+        partie: &mut Partie,
+        evenement: &EvenementExpedition,
+        evenements: &mut Vec<Evenement>,
+    ) -> Option<Reponse> {
+        let (adversaires, contre_un_gardien) = match evenement {
+            EvenementExpedition::Combat(groupe) => (groupe.clone(), false),
+            EvenementExpedition::MonstreRare(rare) if !rare.pacifique => {
+                evenements.push(Evenement::MonstreRareHostile(rare.monstre.clone()));
+                (vec![rare.monstre.clone()], false)
+            }
+            EvenementExpedition::Gardien(gardien) => {
+                if let Some(tour) = self.expedition.tour() {
+                    evenements.push(Evenement::GardienDeLaTour(
+                        tour.recit_du_gardien(gardien.nom()),
+                    ));
+                }
+                (vec![gardien.clone()], true)
+            }
+            _ => return None,
+        };
+        for adversaire in &adversaires {
+            partie.noter_rencontre(adversaire);
+        }
+        montrer_conseil(partie, Conseil::PremierCombat, evenements);
+        self.moment = Moment::CombatDeGroupe { contre_un_gardien };
+        Some(Reponse::Faite)
     }
 
     fn engager(
@@ -4262,6 +4479,9 @@ mod tests {
             Attente::PlaceManquante(_) => Choix::RelacherLaCapture,
             Attente::Annonce(_) => Choix::Poursuivre,
             Attente::Confirmation(_) => Choix::Oui,
+            Attente::CombatDeGroupe | Attente::AttenteDuGroupe => {
+                panic!("l'expédition en groupe mène son combat et ses étapes")
+            }
         }
     }
 

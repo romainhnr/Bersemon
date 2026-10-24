@@ -18,7 +18,7 @@ use crate::capsule::{Capsule, ErreurApprentissage, attaques_a_apprendre};
 use crate::catalogue::Catalogue;
 use crate::codex::Codex;
 use crate::collection::{Collection, Emplacement, ErreurCollection, Placement};
-use crate::combat::{BilanCombat, Combat, Cote, ErreurCombat, Issue};
+use crate::combat::{BilanCombat, Combat, Cote, ErreurCombat, Issue, ReglesDuMembre};
 use crate::equipement::{ErreurEquipement, ObjetDEquipementId, PlaceDEquipement};
 use crate::espece::{Espece, EspeceId, Rarete};
 use crate::evolution::{
@@ -1724,6 +1724,43 @@ impl Partie {
             .avec_ordre(self.heros.classe().ordre())
             .avec_filets(self.forge.ameliorations().facteur_des_filets())
             .avec_soins(*self.sac.soins()))
+    }
+
+    /// Combat d'une expédition en groupe : l'équipe de l'hôte, puis celle de
+    /// l'invité, chacune avec le bonus, l'ordre, la limite d'obéissance, les
+    /// soins et les filets de son joueur (section 15.5). Le gardien de la
+    /// Tour se combat sans fuite, ni filet, ni capture (section 9.5).
+    pub(crate) fn preparer_combat_en_groupe(
+        hote: &Partie,
+        invite: &Partie,
+        groupe: Vec<Monstre>,
+        contre_un_gardien: bool,
+        zones: &[Zone],
+        piste: &Piste,
+    ) -> Result<Combat, ErreurCombat> {
+        let combat = Combat::en_groupe(
+            hote.collection.equipe().to_vec(),
+            invite.collection.equipe().to_vec(),
+            groupe,
+        )?
+        .avec_bonus_du_joueur(hote.heros.bonus_en_combat())
+        .avec_bonus_de_role_du_cote(Cote::Joueur)
+        .avec_ordre(hote.heros.classe().ordre())
+        .avec_filets(hote.forge.ameliorations().facteur_des_filets())
+        .avec_soins(*hote.sac.soins())
+        .avec_limite_d_obeissance(hote.limite_d_obeissance(zones, piste))
+        .avec_regles_de_l_invite(ReglesDuMembre {
+            bonus: invite.heros.bonus_en_combat(),
+            ordre: invite.heros.classe().ordre(),
+            limite_d_obeissance: invite.limite_d_obeissance(zones, piste),
+            soins: *invite.sac.soins(),
+            facteur_des_filets: invite.forge.ameliorations().facteur_des_filets(),
+        });
+        Ok(if contre_un_gardien {
+            combat.contre_un_gardien()
+        } else {
+            combat
+        })
     }
 
     /// Comme `preparer_combat`, sans fuite ni filet (section 9.4). Les

@@ -248,6 +248,8 @@ pub enum ErreurCombat {
     ReserveAuDuel,
     /// En groupe, chacun ne fait entrer que ses monstres (section 15.5).
     MonstreDeLAutreJoueur(usize),
+    /// Une interruption hors d'un combat en groupe.
+    ReserveAuGroupe,
 }
 
 impl fmt::Display for ErreurCombat {
@@ -270,6 +272,7 @@ impl fmt::Display for ErreurCombat {
             ErreurCombat::MonstreDeLAutreJoueur(index) => {
                 write!(f, "le monstre en position {index} est à l'autre joueur")
             }
+            ErreurCombat::ReserveAuGroupe => write!(f, "réservé au combat en groupe"),
             ErreurCombat::AttaqueInexistante(index) => {
                 write!(f, "aucune attaque en position {index}")
             }
@@ -344,6 +347,44 @@ pub struct BilanDeLInvite {
     pub soins: Soins,
 }
 
+impl BilanCombat {
+    /// En groupe, la part de l'hôte puis celle de l'invité, chacune comme le
+    /// bilan d'un combat seul : son équipe, son XP, ses captures et ses
+    /// soins. Les monstres sauvages vaincus vont aux deux, qui tirent
+    /// chacun leurs ressources (section 15.5). Hors groupe, le bilan entier
+    /// et `None`.
+    pub fn separer(mut self) -> (BilanCombat, Option<BilanCombat>) {
+        let Some(invite) = self.invite.take() else {
+            return (self, None);
+        };
+        let equipe = self.equipe.split_off(invite.debut);
+        let experience = self.experience.split_off(invite.debut);
+        let part_de_l_invite = BilanCombat {
+            issue: self.issue,
+            equipe,
+            captures: invite.captures,
+            vaincus_sauvages: self.vaincus_sauvages.clone(),
+            experience,
+            soins: invite.soins,
+            invite: None,
+        };
+        (self, Some(part_de_l_invite))
+    }
+}
+
+/// Ce qui vaut pour l'invité d'un combat en groupe : le bonus de la classe
+/// et de l'équipement de son héros, son ordre, la limite d'obéissance de
+/// ses monstres reçus, ses soins et ses filets (sections 4.2, 4.3, 13.4,
+/// 14.4 et 15.2).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReglesDuMembre {
+    pub bonus: BonusDeStats,
+    pub ordre: Ordre,
+    pub limite_d_obeissance: u8,
+    pub soins: Soins,
+    pub facteur_des_filets: (u64, u64),
+}
+
 /// Un des deux joueurs d'une expédition en groupe (section 15.5). Hors
 /// groupe, tous les monstres de l'équipe sont à l'hôte.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -369,6 +410,7 @@ struct EnGroupe {
     debut_de_l_invite: usize,
     regles: ReglesDuCote,
     soins: Soins,
+    facteur_des_filets: (u64, u64),
     /// Pour chaque capture, dans l'ordre de `captures`, qui l'a faite.
     capteurs: Vec<Membre>,
 }
@@ -501,28 +543,37 @@ impl Combat {
                 ..ReglesDuCote::default()
             },
             soins: Soins::default(),
+            facteur_des_filets: (1, 1),
             capteurs: Vec::new(),
         }));
         Ok(combat)
     }
 
-    /// Le bonus de la classe et de l'équipement de son héros, son ordre, la
-    /// limite d'obéissance de ses monstres reçus et ses soins. Sans effet
-    /// hors groupe.
-    pub fn avec_regles_de_l_invite(
-        mut self,
-        bonus: BonusDeStats,
-        ordre: Ordre,
-        limite_d_obeissance: u8,
-        soins: Soins,
-    ) -> Self {
+    /// Sans effet hors groupe.
+    pub fn avec_regles_de_l_invite(mut self, regles: ReglesDuMembre) -> Self {
         if let Some(groupe) = &mut self.groupe {
-            groupe.regles.bonus = bonus;
-            groupe.regles.ordre = Some(ordre);
-            groupe.regles.limite_d_obeissance = Some(limite_d_obeissance);
-            groupe.soins = soins;
+            groupe.regles.bonus = regles.bonus;
+            groupe.regles.ordre = Some(regles.ordre);
+            groupe.regles.limite_d_obeissance = Some(regles.limite_d_obeissance);
+            groupe.soins = regles.soins;
+            groupe.facteur_des_filets = regles.facteur_des_filets;
         }
         self
+    }
+
+    /// En groupe, quand l'autre joueur ne joue plus : le combat s'arrête
+    /// comme après une fuite réussie, sans attaque (section 15.5).
+    pub fn interrompre_par_une_fuite(&mut self) -> Result<Vec<Evenement>, ErreurCombat> {
+        if self.groupe.is_none() {
+            return Err(ErreurCombat::ReserveAuGroupe);
+        }
+        if let Phase::Termine(_) = self.phase {
+            return Err(ErreurCombat::CombatTermine);
+        }
+        self.regles[Cote::Joueur.position()].a_remplacer = false;
+        let mut evenements = vec![Evenement::Fuite];
+        self.terminer_avec(Issue::Fuite, &mut evenements);
+        Ok(evenements)
     }
 
     pub fn est_en_groupe(&self) -> bool {
@@ -880,12 +931,17 @@ impl Combat {
         }
     }
 
-    /// Chance, en pourcentage, de capturer le monstre adverse actif.
+    /// Chance, en pourcentage, de capturer le monstre adverse actif. En
+    /// groupe, avec les filets du propriétaire du monstre actif.
     pub fn chance_de_capture(&self) -> u32 {
+        let facteur = match (&self.groupe, self.membre_actif()) {
+            (Some(groupe), Membre::Invite) => groupe.facteur_des_filets,
+            _ => self.facteur_des_filets,
+        };
         calculer_chance_capture(
             self.monstre(self.actif(Cote::Joueur)),
             self.monstre(self.actif(Cote::Adversaire)),
-            self.facteur_des_filets,
+            facteur,
         )
     }
 
@@ -2662,7 +2718,13 @@ mod tests {
         let mut combat = Combat::en_groupe(vec![ko(lent())], vec![lent()], vec![lent()])
             .unwrap()
             .avec_ordre(Ordre::CriDeGuerre)
-            .avec_regles_de_l_invite(bonus, Ordre::Incantation, 100, soins_de_l_invite);
+            .avec_regles_de_l_invite(ReglesDuMembre {
+                bonus,
+                ordre: Ordre::Incantation,
+                limite_d_obeissance: 100,
+                soins: soins_de_l_invite,
+                facteur_des_filets: (1, 1),
+            });
         // Le monstre de l'hôte est KO : celui de l'invité commence.
         assert_eq!(combat.membre_actif(), Membre::Invite);
         // 10 d'Attaque au niveau 5, +50 % de bonus et +10 % de rôle offensif.
@@ -2700,9 +2762,38 @@ mod tests {
         combat.capturer_ko_pour(Membre::Invite, 0).unwrap();
         let bilan = terminer(combat, &[100]);
         assert!(bilan.captures.is_empty());
-        let invite = bilan.invite.unwrap();
+        let invite = bilan.invite.as_ref().unwrap();
         assert_eq!(invite.debut, 1);
         assert_eq!(invite.captures.len(), 1);
+        // Chacun sa part, comme après un combat seul.
+        let (hote, invite) = bilan.separer();
+        let invite = invite.unwrap();
+        assert_eq!((hote.equipe.len(), invite.equipe.len()), (1, 1));
+        assert_eq!((hote.captures.len(), invite.captures.len()), (0, 1));
+        assert_eq!(hote.experience.len(), 1);
+        assert!(hote.experience[0].is_some() && invite.experience[0].is_none());
+        assert_eq!(invite.issue, Some(Issue::Victoire));
+    }
+
+    /// Section 15.5 : l'absence de l'autre joueur arrête le combat comme une
+    /// fuite réussie.
+    #[test]
+    fn en_groupe_le_combat_s_interrompt_comme_une_fuite() {
+        let mut combat = Combat::en_groupe(vec![rapide()], vec![lent()], vec![lent()]).unwrap();
+        assert_eq!(
+            combat.interrompre_par_une_fuite().unwrap(),
+            vec![Evenement::Fuite, Evenement::FinDuCombat(Issue::Fuite)]
+        );
+        assert_eq!(combat.phase(), Phase::Termine(Issue::Fuite));
+        let mut seul = combat_simple();
+        assert_eq!(
+            seul.interrompre_par_une_fuite(),
+            Err(ErreurCombat::ReserveAuGroupe)
+        );
+    }
+
+    fn combat_simple() -> Combat {
+        combat(vec![rapide()], vec![lent()])
     }
 
     #[test]

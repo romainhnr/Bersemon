@@ -357,6 +357,20 @@ impl Expedition {
         Some(evenement)
     }
 
+    /// En groupe, l'expédition de l'invité suit celle de l'hôte, qui tire
+    /// les événements : elle passe à l'étape suivante sans tirage, avec la
+    /// zone de cette étape (section 15.5).
+    pub(crate) fn suivre_l_etape(&mut self) {
+        self.etapes_faites += 1;
+        if let Some(descente) = &self.descente {
+            self.zone = descente.tour.zone_de_l_etape(
+                self.etapes_faites,
+                descente.a_deux,
+                descente.capsules.clone(),
+            );
+        }
+    }
+
     /// Une âme à retrouver se rencontre à une étape tirée parmi celles qui
     /// précèdent la dernière, réservée aux combats de fin de zone (section
     /// 14.2), sans celle d'Ansgar.
@@ -392,7 +406,9 @@ impl Expedition {
         }
     }
 
-    fn tirer_un_coffre(&mut self, aleatoire: &mut dyn Aleatoire) -> EvenementExpedition {
+    /// En groupe, chacun tire aussi le sien quand l'étape de l'hôte donne
+    /// un coffre (section 15.5).
+    pub(crate) fn tirer_un_coffre(&mut self, aleatoire: &mut dyn Aleatoire) -> EvenementExpedition {
         let potions = aleatoire.tirer(POTIONS_MIN..=POTIONS_MAX);
         let fourchette = self.zone.coffre().argent();
         let argent = tirer_entre(*fourchette.start(), *fourchette.end(), aleatoire);

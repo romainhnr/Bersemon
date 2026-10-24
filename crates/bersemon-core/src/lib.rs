@@ -28,6 +28,7 @@ pub mod evolution;
 pub mod expedition;
 pub mod expedition_automatique;
 pub mod experience;
+pub mod groupe;
 pub mod habilete;
 pub mod heros;
 pub mod horodatage;

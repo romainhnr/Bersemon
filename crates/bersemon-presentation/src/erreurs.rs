@@ -64,6 +64,8 @@ pub fn erreur_de_choix(choix: &Choix, erreur: &ErreurChoix) -> String {
         ErreurChoix::Peche(erreur) => erreur_peche(erreur),
         ErreurChoix::Machine(erreur) => erreur_machine(erreur),
         ErreurChoix::Beherit(erreur) => erreur_beherit(erreur),
+        ErreurChoix::AuTourDeLAutre => "C'est à votre compagnon d'agir.".to_string(),
+        ErreurChoix::AttenteTropCourte => "Votre compagnon a encore le temps de jouer.".to_string(),
         autre => format!("Action impossible : {autre}."),
     }
 }

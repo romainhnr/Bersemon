@@ -238,6 +238,11 @@ fn question(session: &Session, contenu: &ContenuV1, maintenant: Horodatage) -> Q
         Attente::Evolution { monstre, vers } => ecran_combat::evolution(monstre, vers),
         Attente::Annonce(annonce) => ecran_expedition::annonce(annonce),
         Attente::Confirmation(confirmation) => confirmer(confirmation),
+        // L'expédition en groupe a ses écrans à partir de l'étape 102.
+        Attente::CombatDeGroupe | Attente::AttenteDuGroupe => Question {
+            texte: "Expédition en groupe.".to_string(),
+            rangees: Vec::new(),
+        },
     }
 }
 
