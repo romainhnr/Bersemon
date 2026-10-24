@@ -446,6 +446,20 @@ Décidé le 21/10/2026, pour les étapes 88 à 92 (choix de l'utilisateur, Q92 ;
 - Précisé aux étapes 88 à 90, en codant : le sacrifice est sauvegardé aussitôt, avant le départ qu'il déclenche ; l'Éclipse n'est pas parmi les zones de la carte, et ses paramètres d'expédition automatique et de coffre ne servent jamais. En combat, la seconde forme n'est pas comptée parmi les monstres en attente, et son entrée est racontée par le texte de la métamorphose.
 - Écrans, aux étapes 91 et 92 : dans la console, l'étal propose de forger le Béhérit après les âmes portées, dans "Donner une âme" ; la carte propose l'Éclipse après les zones, puis, avant le premier départ, la liste des monstres que le Béhérit accepte. Sur Discord, le menu "Donner une âme à Malvoise" propose "Âmes des Apôtres : forger le Béhérit pourpre" ; le menu "Partir en expédition" propose l'Éclipse, qui ouvre son écran : un menu des monstres à sacrifier, ou le bouton "Partir vers l'Éclipse". Le camp rappelle le Béhérit à la place des âmes d'Apôtres.
 
+### 9.5 Tour sans fond
+
+Décidé le 24/10/2026, pour les étapes 96 à 98 (choix de l'utilisateur) :
+
+- La Tour sans fond est un lieu à part, hors des zones de la carte, comme l'Éclipse : une tour engloutie dont les marches s'enfoncent sous terre, sans fin. Le but est d'y descendre le plus loin possible. C'est aussi le seul lieu de l'expédition en groupe (section 15.5). Textes dans docs/contenu-v1.md, section 25.
+- Elle se joue seul, dans la console comme sur Discord, et à deux sur Discord. Elle s'ouvre quand la Lisière est menée au bout pour la première fois ; à deux, il faut que les deux joueurs l'aient ouverte.
+- Les étapes n'ont pas de fin : le compteur montre l'étape sans total, "[Étape : 12]". Le joueur rentre quand il veut entre deux étapes, avec ses gains, comme dans une zone.
+- Difficulté : à l'étape n, les monstres sont au niveau 4 + 2 x n, 100 au plus (14 à l'étape 5, 24 à l'étape 10, 44 à l'étape 20, 100 dès l'étape 48). Les groupes comptent 1 à 3 monstres seul, 2 à 4 à deux. Les espèces sont les espèces communes des zones dont le niveau minimal est atteint (la Lisière dès l'étape 1, le Marais au niveau 8, la Vallée au niveau 14, l'Abbaye au niveau 21, le Col au niveau 28), et les monstres rares, ceux de ces zones, avec le Schnoz une fois sur 20, comme ailleurs.
+- Événements : combat 80 %, coffre 15 %, monstre rare 5 %, comme dans une zone ; ni âme de marchand, ni Ansgar, ni humain, ni Apôtre, ni indice.
+- Gardiens : aux étapes 10, 20, 30, et ainsi de suite, un gardien remplace l'événement, sans tirage de sa nature : un monstre rare hostile tiré parmi ceux des zones atteintes (Basilic, Vouivre, Chimère, Wyrm de givre), au niveau de l'étape + 3, 100 au plus, seul. Il est présenté par son texte et un bouton "Combattre", comme un humain de fin de zone. Ni fuite, ni filet, ni capture ; son IA est l'IA simple des humains (section 10.7). Une victoire est suivie d'un repos qui soigne tous les monstres, PV, statuts et KO compris. Une défaite est ordinaire.
+- Coffres : 1 à 2 potions, de 5 x n à 8 x n pièces d'argent (25 à 40 à l'étape 5, 150 à 240 à l'étape 30), une capsule d'attaque d'une zone que le joueur a menée au bout, avec la chance habituelle, et les mêmes chances de capsule d'habileté, de pierre et de booster que dans une zone (sections 9.2 et 14.3).
+- Pour le reste, la Tour suit les règles d'une expédition manuelle : fuite (sauf face au gardien), capture, ressources, sac, défaite (section 9.3). Elle compte une expédition pour un monstre loué (section 14.2) et pour le conseil du tutoriel. Elle n'est jamais explorée, ne joue pas sur l'obéissance (section 15.2), la cour d'entraînement ni les pièges (section 13.6), ne se fait pas en expédition automatique, et ne remplit aucune condition d'évolution par lieu (section 5.4).
+- Record : la dernière étape franchie, c'est-à-dire la plus haute étape dont l'événement est résolu sans défaite (victoire, fuite, coffre, monstre rare). Une défaite à l'étape 14 donne 13. Chaque joueur garde dans sa sauvegarde son record seul et son record à deux ; à deux, chacun garde le record du groupe. Le retour au camp annonce un nouveau record. Sur Discord, un classement des records, seul et à deux, comme celui des duels (section 15.4). Sauvegarde en version 26.
+
 ## 10. Combat
 
 ### 10.1 Principes
@@ -910,7 +924,7 @@ Repères : un Loup de niveau 5 se revend 28 pièces d'argent, un Feu follet de n
 
 - Combats contre d'autres vrais joueurs. Le vainqueur ne peut pas prendre de monstre à son adversaire. Depuis les étapes 59 à 61 : le duel en temps réel (section 15.3).
 - Échange et don de monstres entre joueurs : depuis les étapes 55 à 58 (section 15.1).
-- Expéditions en groupe avec un ami.
+- Expéditions en groupe avec un ami : décidées le 24/10/2026, dans la Tour sans fond seulement (sections 9.5 et 15.5).
 - Système d'amis : remplacé pour l'instant par la liste des joueurs du bot (section 15.1).
 
 ### 15.1 Don et échange de monstres
@@ -959,6 +973,21 @@ Décidé le 20/10/2026, pour les étapes 70 et 71 (choix de l'utilisateur) :
 - L'écran "Autres joueurs" montre en tête le palmarès du joueur, et propose un classement de tous les joueurs du bot qui ont livré au moins un duel, par victoires, puis par défaites, les moins nombreuses d'abord, puis par nom du héros (hypothèse retenue, Q94).
 - La console reste une partie seule : elle garde la liste d'amis et le palmarès dans la sauvegarde sans les montrer.
 - Précisé à l'étape 71, en codant : le palmarès est noté dans la sauvegarde de chaque joueur dès la fin du duel, une seule fois, sans attendre que chacun revienne au camp. Les boutons "Ajouter aux amis" ou "Retirer des amis" et le palmarès de l'autre joueur apparaissent une fois ce joueur choisi dans le menu ; comme le choix d'un joueur, ils ne sont donc pas proposés tant qu'une offre envoyée attend sa réponse. Le classement est un écran à part, ouvert par un bouton "Classement" de l'écran "Autres joueurs".
+
+### 15.5 Expédition en groupe
+
+Décidé le 24/10/2026, pour les étapes 99 à 102 (choix de l'utilisateur) :
+
+- Sur le bot Discord seulement, et uniquement dans la Tour sans fond (section 9.5).
+- Depuis l'écran "Autres joueurs", un joueur invite un autre joueur à descendre avec lui ; l'autre accepte ou refuse, et celui qui invite peut retirer l'invitation. Une invitation à la fois par joueur, envoyée ou reçue. Le bot prévient par message privé de l'invitation, puis de son acceptation ou de son refus. L'invitation s'accepte si les deux joueurs sont au camp, sans question en attente, ont ouvert la Tour et ont au moins un monstre dans l'équipe (hypothèse retenue, sur le modèle des défis, Q101).
+- Chacun descend avec ses vrais monstres et son propre sac : contrairement au duel, l'expédition en groupe change les parties, comme une expédition seul.
+- Combat à équipe commune : les deux équipes forment un seul camp, celle de l'hôte puis celle de l'invité, avec un monstre actif à la fois. Le propriétaire du monstre actif choisit l'action : attaquer, faire entrer un autre de ses monstres, soigner un monstre du groupe avec ses propres potions, lancer un filet (la capture lui revient) ou fuir (le groupe fuit). L'autre attend. Quand un monstre tombe, son propriétaire fait entrer un des siens ; s'il n'en a plus, l'autre joueur fait entrer un des siens. Chaque héros donne son ordre une fois par combat, à un de ses monstres actif. Chaque monstre a le bonus de classe, d'équipement et de rôle de son propriétaire, et obéit selon la limite de son propriétaire (sections 4.2, 4.3 et 15.2).
+- Chaque monstre gagne son XP comme d'habitude ; chacun règle les attaques à apprendre et les évolutions de ses monstres.
+- Butin : chacun le sien. Chaque coffre est tiré pour chacun et va dans son sac ; chaque monstre sauvage KO lâche sa ressource, avec un tirage pour chacun. Un monstre rare pacifique peut être pris par les deux, chacun son exemplaire.
+- Entre deux étapes, chacun peut soigner ses monstres et changer l'ordre de son équipe. Continuer exige l'accord des deux : si l'un choisit de rentrer, le groupe rentre au camp, chacun avec ses gains.
+- Défaite : quand tous les monstres des deux joueurs sont KO, chacun subit une défaite ordinaire et perd son sac (section 9.3).
+- Absence : 5 minutes après le moment où l'autre aurait dû jouer, celui qui attend peut ramener le groupe au camp, chacun gardant ses gains ; en combat, cela compte comme une fuite réussie.
+- Comme une expédition seul, l'expédition en groupe n'est pas sauvegardée en cours : si le bot redémarre, chacun reprend à sa dernière sauvegarde.
 
 ## 16. Questions ouvertes et valeurs à définir
 
@@ -1044,6 +1073,10 @@ Les questions Q99 et suivantes ont été relevées le 21/10/2026 lors de la conc
 Les questions Q100 et suivantes ont été relevées le 24/10/2026 lors de la conception des étapes 93 types Lumière et Son dans le noyau, 94 contenu de l'Abbaye des Cendres, 95 vérification des écrans de la console et du bot.
 
 - Q100. (Étapes 93 à 95) Hypothèses retenues, à confirmer : au codex, la Cloche hurlante et le Séraphin de vitrail viennent après les deux formes du Démiurge ; la Cloche lâche l'Éclat de bronze (5 pièces d'argent), qui entre aussi dans les pièges de l'Abbaye, et Malvoise la vend, comme les autres communes d'une zone menée au bout ; le Séraphin se loue comme les autres rares ; les trois rares de l'Abbaye sont tirés à parts égales, si bien que l'Ange déchu devient plus rare (1 monstre rare sur 3 au lieu de 1 sur 2) ; l'Inquisiteur garde son équipe ; la Cloche et le Séraphin n'évoluent pas. Pas de capsule Son ni Lumière, faute d'une deuxième espèce de chaque type. À vérifier en jouant : l'immunité du Spectre au Son (le Squelette et le Wendigo ne craignent rien de la Cloche), la Lumière contre les Apôtres (le Séraphin, comme l'Ange déchu, facilite le combat contre le Margrave et le Démiurge), et la Lance de lumière, attaque physique d'un monstre dont l'Attaque est faible. Aucun texte affiché n'est ajouté, en dehors des noms validés.
+
+Les questions Q101 et suivantes ont été relevées le 24/10/2026 lors de la conception des étapes 96 Tour sans fond dans le noyau, avec la sauvegarde en version 26, 97 écrans de la console, 98 bot Discord seul et classement des records, 99 combat à équipe commune, 100 expédition en groupe dans le noyau, 101 invitations sur le bot Discord, 102 écrans de l'expédition en groupe.
+
+- Q101. (Étapes 96 à 102) Hypothèses retenues, à confirmer : le gardien ne lâche pas de ressource, comme un humain ou un Apôtre ; les espèces de plusieurs zones ne comptent qu'une fois dans les tirages de la Tour ; le Warg et le Chevalier noir, communs du Col, y vivent dès le niveau 28 ; les capsules de la Tour sont celles des zones menées au bout par le joueur, au moment du départ ; l'invitation suit les règles des défis (au camp, sans question en attente, au moins un monstre dans l'équipe), et un joueur en expédition de groupe ne peut ni lancer ni recevoir de défi ou d'invitation. Équilibrage à vérifier en jouant : la montée de 2 niveaux par étape, les gardiens à +3 niveaux et les coffres. Textes proposés et validés : l'entrée, le gardien et le repos (docs/contenu-v1.md, section 25) ; textes proposés sans validation : le nouveau record et les libellés, listés dans la même section.
 
 - Q83. (Étapes 33 et 34) Hypothèses retenues, à confirmer : le gardien d'une âme à retrouver attaque à une étape tirée parmi celles qui précèdent la dernière ; le don d'une âme à Malvoise se fait sans confirmation ; une partie antérieure qui n'a pas recueilli l'âme de Bertrand le rencontre à l'étape 4 de sa prochaine expédition dans la Lisière, même avec Malvoise déjà au camp ; le texte du brigand de l'étape 5 ne change pas, même s'il a perdu son Loup à l'étape 4.
 
@@ -1464,3 +1497,11 @@ Les questions Q100 et suivantes ont été relevées le 24/10/2026 lors de la con
 - Choix de l'utilisateur, après avoir relevé que les capsules n'enseignent qu'aux monstres de leur type : pas de capsule Son ni Lumière ; le Séraphin apprend la Lance de lumière au niveau 18.
 - Pas de changement du format de sauvegarde : espèces et attaques y sont désignées par leur identifiant.
 - Hypothèses retenues, à confirmer : Q100.
+
+24/10/2026 (conception des étapes 96 à 102, Tour sans fond et expédition en groupe) :
+
+- Choix de l'utilisateur : l'expédition en groupe, uniquement dans une zone infinie où le but est d'aller le plus loin possible, la Tour sans fond, qu'on descend (sections 9.5 et 15.5).
+- Choix de l'utilisateur : la Tour se joue seul ou à deux, s'ouvre avec la Lisière menée au bout, monte de 2 niveaux par étape, a un gardien toutes les 10 étapes suivi d'un repos, des coffres selon la profondeur, un monstre de plus par groupe à deux, et un record avec classement (dernière étape franchie).
+- Choix de l'utilisateur : en groupe, une équipe commune où le propriétaire du monstre actif choisit l'action, chacun son butin, l'accord des deux pour continuer, et le retour du groupe au camp après 5 minutes d'absence.
+- Sauvegarde en version 26 pour les records.
+- Hypothèses retenues, à confirmer : Q101.

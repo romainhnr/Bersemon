@@ -1063,3 +1063,29 @@ Pas de capsule : une capsule n'enseigne qu'aux monstres de son type, et chaque t
 
 Ressource : Éclat de bronze (eclat-de-bronze), lâché par la Cloche hurlante, 5 pièces d'argent. Le Séraphin, pacifique, n'en a pas.
 
+## 25. Tour sans fond
+
+Décidée le 24/10/2026, pour les étapes 96 à 102 (gamedesign.md, sections 9.5 et 15.5).
+
+Lieu : la Tour sans fond (identifiant tour-sans-fond), hors des zones de la carte. Niveau des monstres à l'étape n : 4 + 2 x n, 100 au plus. Groupes de 1 à 3 monstres seul, de 2 à 4 à deux. Gardien aux étapes multiples de 10, au niveau de l'étape + 3. Coffres : 1 à 2 potions, de 5 x n à 8 x n pièces d'argent.
+
+Textes validés :
+
+> Au milieu des ruines se dresse le sommet d'une tour engloutie. Ses marches s'enfoncent dans la terre, et nul n'en a trouvé le fond ; plus on descend, plus les bêtes sont terribles.
+
+Gardien, avant le combat :
+
+> Les marches débouchent sur un palier plus large que les autres. Au centre, {monstre} garde l'escalier qui s'enfonce plus bas. Il n'y aura pas de fuite.
+
+Repos, après la victoire sur le gardien :
+
+> Derrière le gardien, une source claire coule entre les pierres. Vos monstres y boivent et reprennent toutes leurs forces.
+
+Textes proposés sans validation (gamedesign.md, Q101) :
+
+| Moment | Texte |
+|---|---|
+| Retour au camp, nouveau record | Nouveau record dans la Tour sans fond : étape {n}. |
+| Carte et menus | Tour sans fond ; Record : étape {n} |
+| Compteur | [Étape : {n}] |
+
