@@ -437,6 +437,7 @@ Décidé le 21/10/2026, pour les étapes 88 à 92 (choix de l'utilisateur, Q92 ;
 - Après la victoire : un épilogue, et le Démiurge laisse 3 Éclats d'astre, dans le sac. Il ne se capture pas et ne revient plus ; l'Éclipse se referme. Ses deux formes s'ouvrent au codex, dites "vaincu". Le joueur continue d'explorer ; d'autres Apôtres pourront venir plus tard.
 - Sauvegarde en version 25 : l'avancée du Béhérit (forgé, Éclipse ouverte, Démiurge vaincu).
 - Précisé aux étapes 88 à 90, en codant : le sacrifice est sauvegardé aussitôt, avant le départ qu'il déclenche ; l'Éclipse n'est pas parmi les zones de la carte, et ses paramètres d'expédition automatique et de coffre ne servent jamais. En combat, la seconde forme n'est pas comptée parmi les monstres en attente, et son entrée est racontée par le texte de la métamorphose.
+- Écrans, aux étapes 91 et 92 : dans la console, l'étal propose de forger le Béhérit après les âmes portées, dans "Donner une âme" ; la carte propose l'Éclipse après les zones, puis, avant le premier départ, la liste des monstres que le Béhérit accepte. Sur Discord, le menu "Donner une âme à Malvoise" propose "Âmes des Apôtres : forger le Béhérit pourpre" ; le menu "Partir en expédition" propose l'Éclipse, qui ouvre son écran : un menu des monstres à sacrifier, ou le bouton "Partir vers l'Éclipse". Le camp rappelle le Béhérit à la place des âmes d'Apôtres.
 
 ## 10. Combat
 

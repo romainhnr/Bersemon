@@ -33,6 +33,17 @@ pub fn destination_de_l_eclipse(partie: &Partie, contenu: &ContenuV1) -> Option<
     }
 }
 
+/// Sous le nom du lieu, dans le menu des expéditions du bot : "Niveau 42 :
+/// le Démiurge", avec le sacrifice à faire avant le premier départ.
+pub fn description_de_l_eclipse(partie: &Partie, contenu: &ContenuV1) -> Option<String> {
+    let niveau = contenu.invocation().demiurge().niveau().valeur();
+    match partie.beherit() {
+        EtatDuBeherit::Forge => Some(format!("Niveau {niveau} : le Démiurge, après un sacrifice")),
+        EtatDuBeherit::EclipseOuverte => Some(format!("Niveau {niveau} : le Démiurge")),
+        EtatDuBeherit::Aucun | EtatDuBeherit::DemiurgeVaincu => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

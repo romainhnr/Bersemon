@@ -10,6 +10,7 @@ use bersemon_core::marchand::{
 };
 use bersemon_core::partie::Partie;
 use bersemon_core::pierre::PierreDEvolution;
+use bersemon_presentation::beherit::{FORGER_LE_BEHERIT, peut_forger_le_beherit};
 use bersemon_presentation::marchand::{
     capsules_en_vente, etal as texte_de_l_etal, location_en_cours, offre_d_achat,
     offre_de_location, offre_de_rachat, offre_de_ressources, ressources_a_vendre,
@@ -18,7 +19,7 @@ use bersemon_presentation::monstres::decrire_attaque;
 use bersemon_presentation::partie::argent;
 use bersemon_presentation::soins::{le_soin, soins};
 
-use crate::composants::{Cle, Vue};
+use crate::composants::{BEHERIT, Cle, Vue};
 use crate::ecran_camp::{menus_de_monstres_decrits, retour};
 use crate::message::{
     DANGER, OptionDeMenu, PRINCIPAL, Question, Rangee, SECONDAIRE, bouton, menu, rangees,
@@ -60,8 +61,10 @@ pub fn etal(partie: &Partie, contenu: &ContenuV1) -> Question {
         "Acheter une capsule d'attaque",
         capsules,
     ));
-    // Au plus une âme par zone : le menu reste loin de ses 25 options.
-    let ames = partie
+    // Au plus une âme par zone : le menu reste loin de ses 25 options. Les
+    // âmes des Apôtres s'y donnent ensemble, pour forger le Béhérit (section
+    // 9.4).
+    let mut ames: Vec<OptionDeMenu> = partie
         .ames_portees()
         .iter()
         .map(|marchand| OptionDeMenu {
@@ -73,6 +76,13 @@ pub fn etal(partie: &Partie, contenu: &ContenuV1) -> Question {
             )),
         })
         .collect();
+    if peut_forger_le_beherit(partie, contenu) {
+        ames.push(OptionDeMenu {
+            libelle: FORGER_LE_BEHERIT.to_string(),
+            valeur: BEHERIT.to_string(),
+            description: Some("Les trois âmes seront perdues".to_string()),
+        });
+    }
     lignes.extend(menu(Cle::DonnerAme, "Donner une âme à Malvoise", ames));
     let libelle = format!(
         "Acheter une capsule d'habileté ({})",

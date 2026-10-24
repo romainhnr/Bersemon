@@ -56,6 +56,8 @@ pub enum Vue {
     Vente,
     /// Les monstres que Malvoise vend et loue (section 14.2).
     Achats,
+    /// L'Éclipse : le sacrifice à faire, ou le départ (section 9.4).
+    Eclipse,
     /// Les attaques que ce monstre connaît et celles qu'il peut apprendre
     /// au camp (section 13.10).
     Attaques(Emplacement),
@@ -216,6 +218,9 @@ pub enum Cle {
     Fiche(u8),
     /// Menu des monstres à gérer.
     Choisir(u8),
+    /// Menu numéroté des monstres que le Béhérit accepte (section 9.4).
+    Sacrifier(u8),
+    PartirVersLEclipse,
     Monter(usize),
     Descendre(usize),
     EnvoyerAuCamp(usize),
@@ -378,6 +383,13 @@ pub enum Cle {
 /// un identifiant d'objet n'a jamais de tiret seul.
 pub const RETIRER: &str = "-";
 
+/// La valeur de l'Éclipse dans le menu des expéditions : l'identifiant de
+/// ce lieu dans le contenu (section 9.4).
+pub const ECLIPSE: &str = "eclipse";
+
+/// La valeur qui forge le Béhérit dans le menu des âmes de l'étal.
+pub const BEHERIT: &str = "beherit";
+
 impl Cle {
     /// `valeur` est l'option choisie dans un menu, `texte` le texte saisi
     /// dans un formulaire. `None` si ce qu'il faut manque ou ne se lit pas.
@@ -393,7 +405,12 @@ impl Cle {
             Cle::NomSaisi => jouer(Choix::NomDuHeros(texte?.to_string())),
             Cle::Oui => jouer(Choix::Oui),
             Cle::Non => jouer(Choix::Non),
+            // L'Éclipse s'ouvre d'abord sur son écran : le sacrifice ou le
+            // départ (section 9.4).
+            Cle::Partir if valeur? == ECLIPSE => Some(Commande::Afficher(Vue::Eclipse)),
             Cle::Partir => jouer(Choix::PartirEnExpedition(ZoneId::new(valeur?))),
+            Cle::PartirVersLEclipse => jouer(Choix::PartirEnExpedition(ZoneId::new(ECLIPSE))),
+            Cle::Sacrifier(_) => jouer(Choix::Sacrifier(lire_emplacement(valeur?)?)),
             Cle::Afficher(vue) => Some(Commande::Afficher(*vue)),
             Cle::Fiche(_) => Some(Commande::Afficher(Vue::Codex(Some(position()?)))),
             Cle::Choisir(_) => Some(Commande::Afficher(Vue::Gestion(Some(lire_emplacement(
@@ -464,6 +481,9 @@ impl Cle {
             Cle::Rappeler(zone) => jouer(Choix::RappelerExpeditionAutomatique(zone.clone())),
             Cle::AcheterSoins(soin, nombre) => jouer(Choix::AcheterSoins(*soin, *nombre)),
             Cle::AcheterCapsule => jouer(Choix::AcheterCapsule(AttaqueId::new(valeur?))),
+            // Les âmes des Apôtres se donnent ensemble, depuis le même menu
+            // que celles des marchands (section 9.4).
+            Cle::DonnerAme if valeur? == BEHERIT => jouer(Choix::ForgerLeBeherit),
             Cle::DonnerAme => jouer(Choix::DonnerAme(MarchandId::new(valeur?))),
             Cle::Vendre(_) => jouer(Choix::Vendre(lire_emplacement(valeur?)?)),
             Cle::VendreCeMonstre(emplacement) => jouer(Choix::Vendre(*emplacement)),
@@ -575,6 +595,7 @@ impl Cle {
             Cle::Afficher(Vue::Marchand) => "vue:marchand".to_string(),
             Cle::Afficher(Vue::Vente) => "vue:vente".to_string(),
             Cle::Afficher(Vue::Achats) => "vue:achats".to_string(),
+            Cle::Afficher(Vue::Eclipse) => "vue:eclipse".to_string(),
             Cle::Afficher(Vue::Attaques(emplacement)) => {
                 format!("vue:attaques:{}", emplacement_en_texte(*emplacement))
             }
@@ -598,6 +619,8 @@ impl Cle {
             }) => format!("vue:echanges:{avec}:{}", emplacement_en_texte(*cede)),
             Cle::Fiche(numero) => format!("fiche:{numero}"),
             Cle::Choisir(numero) => format!("choisir:{numero}"),
+            Cle::Sacrifier(numero) => format!("sacrifier:{numero}"),
+            Cle::PartirVersLEclipse => "partir-vers-l-eclipse".to_string(),
             Cle::Monter(index) => format!("monter:{index}"),
             Cle::Descendre(index) => format!("descendre:{index}"),
             Cle::EnvoyerAuCamp(index) => format!("envoyer:{index}"),
@@ -751,6 +774,8 @@ impl Cle {
             "vue:marchand" => Cle::Afficher(Vue::Marchand),
             "vue:vente" => Cle::Afficher(Vue::Vente),
             "vue:achats" => Cle::Afficher(Vue::Achats),
+            "vue:eclipse" => Cle::Afficher(Vue::Eclipse),
+            "partir-vers-l-eclipse" => Cle::PartirVersLEclipse,
             "vue:coffre" => Cle::Afficher(Vue::Coffre),
             "vue:ressources" => Cle::Afficher(Vue::Ressources),
             "sortir-du-coffre" => Cle::SortirDuCoffre,
@@ -925,6 +950,7 @@ impl Cle {
                         }
                     }
                     "choisir" => Cle::Choisir(numero()?),
+                    "sacrifier" => Cle::Sacrifier(numero()?),
                     "monter" => Cle::Monter(position()?),
                     "descendre" => Cle::Descendre(position()?),
                     "envoyer" => Cle::EnvoyerAuCamp(position()?),
@@ -1159,6 +1185,9 @@ mod tests {
             Cle::Fiche(0),
             Cle::Fiche(1),
             Cle::Choisir(2),
+            Cle::Sacrifier(1),
+            Cle::PartirVersLEclipse,
+            Cle::Afficher(Vue::Eclipse),
             Cle::Monter(1),
             Cle::Descendre(0),
             Cle::EnvoyerAuCamp(2),

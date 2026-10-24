@@ -14,6 +14,7 @@ mod ecran_coffre;
 mod ecran_combat;
 mod ecran_duel;
 mod ecran_echanges;
+mod ecran_eclipse;
 mod ecran_expedition;
 mod ecran_expeditions_automatiques;
 mod ecran_marchand;

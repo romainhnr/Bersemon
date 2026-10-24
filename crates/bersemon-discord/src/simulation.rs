@@ -27,7 +27,7 @@ use bersemon_core::types::{Efficacite, efficacite};
 use bersemon_core::zone::ZoneId;
 use bersemon_presentation::marchand::ressources_a_vendre;
 
-use crate::composants::{Choisis, Cle, Commande, Composant, RETIRER, Vue};
+use crate::composants::{BEHERIT, Choisis, Cle, Commande, Composant, ECLIPSE, RETIRER, Vue};
 use crate::joueurs::{IdJoueur, Joueurs, Session};
 use crate::message::{
     BOUTONS_PAR_RANGEE, LONGUEUR_MAX, Message, OPTIONS_PAR_MENU, RANGEES_MAX, Rangee, message,
@@ -817,6 +817,165 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
 
 /// Une construction lancée depuis la forge, confirmée, annoncée par message
 /// privé à son heure, puis constatée (section 13.4).
+/// Les trois Apôtres vaincus : Malvoise forge le Béhérit depuis le menu des
+/// âmes, l'Éclipse se choisit dans le menu des expéditions, le Béhérit prend
+/// le Loup de niveau 30, puis le Démiurge tombe sous ses deux formes
+/// (section 9.4).
+#[test]
+fn le_demiurge_s_affronte_a_travers_les_ecrans_du_bot() {
+    use bersemon_core::beherit::EtatDuBeherit;
+    use bersemon_core::catalogue::Catalogue;
+    use bersemon_core::heros::Heros;
+    use bersemon_core::niveau::Niveau;
+    use bersemon_core::nom::Nom;
+    use bersemon_core::partie::Partie;
+    use bersemon_core::sauvegarde::SauvegardeRepository;
+    use bersemon_core::stats::ValeursInternes;
+    use bersemon_storage::FichierJson;
+
+    let contenu = ContenuV1::new();
+    // Les valeurs des menus désignent l'Éclipse du contenu, et le Béhérit
+    // n'est l'identifiant d'aucune zone ni d'aucun marchand mort.
+    assert_eq!(ECLIPSE, contenu.invocation().eclipse().id().as_str());
+    assert!(contenu.zones().iter().all(|zone| {
+        zone.id().as_str() != ECLIPSE
+            && zone
+                .marchand_mort()
+                .is_none_or(|marchand| marchand.id().as_str() != BEHERIT)
+    }));
+    let creer = |id: &str, niveau: u8| {
+        Monstre::creer(
+            contenu.espece(&EspeceId::new(id)).unwrap(),
+            Niveau::new(niveau).unwrap(),
+            ValeursInternes::default(),
+            false,
+        )
+        .unwrap()
+    };
+    let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Mage);
+    let mut partie = Partie::nouvelle(heros, creer("salamandre", 100));
+    partie.prendre_monstre_rare(creer("crapaud", 100));
+    partie.prendre_monstre_rare(creer("loup", 30));
+    partie.prendre_monstre_rare(creer("mandragore", 100));
+    let partie = Partie::restaurer(EtatPartie {
+        heros: partie.heros().clone(),
+        collection: partie.collection().clone(),
+        sac: Inventaire::default(),
+        coffre_du_camp: Inventaire::default(),
+        marchand_au_camp: true,
+        ames_donnees: Vec::new(),
+        ames_portees: Vec::new(),
+        ames_a_retrouver: Vec::new(),
+        codex: partie.codex().clone(),
+        zones_explorees: Vec::new(),
+        indices_trouves: 6,
+        apotres_vaincus: contenu
+            .piste()
+            .apotres()
+            .map(|apotre| apotre.espece().id().clone())
+            .collect(),
+        humains_vaincus: Vec::new(),
+        conseils_vus: Vec::new(),
+        expeditions_automatiques: Vec::new(),
+        attaques_a_choisir: Vec::new(),
+        peche: Default::default(),
+        forge: Default::default(),
+        relations: Default::default(),
+        machines: Default::default(),
+        beherit: Default::default(),
+    })
+    .unwrap();
+    let dossier = dossier_de_test().join("demiurge");
+    fs::create_dir_all(&dossier).unwrap();
+    FichierJson::new(dossier.join(format!("{JOUEUR}.json")))
+        .enregistrer(&partie)
+        .unwrap();
+    let mut joueurs = Joueurs::new(dossier.clone(), 2026);
+    let maintenant = Horodatage::depuis_secondes(0);
+    let afficher = |joueurs: &mut Joueurs| {
+        let session = joueurs.session(JOUEUR, &contenu);
+        let affiche = message(session, &[], None, &contenu, maintenant);
+        verifier_les_limites(&affiche);
+        affiche
+    };
+    let jouer = |joueurs: &mut Joueurs, clic: Clic| {
+        let version = joueurs.session(JOUEUR, &contenu).version;
+        match clic
+            .cle
+            .commande(clic.valeur.as_deref(), clic.texte.as_deref())
+            .expect("composant lisible")
+        {
+            Commande::Jouer(choix) => joueurs
+                .jouer(JOUEUR, version, choix, &contenu, maintenant)
+                .unwrap(),
+            Commande::Afficher(vue) => {
+                joueurs.afficher(JOUEUR, version, vue, &contenu).unwrap();
+                Vec::new()
+            }
+            commande => panic!("{commande:?}"),
+        }
+    };
+    let cliquer_sur = |joueurs: &mut Joueurs, cle: Cle| {
+        let affiche = afficher(joueurs);
+        let clic = cliquer(&affiche, |propose| *propose == cle);
+        jouer(joueurs, clic)
+    };
+    let choisir = |joueurs: &mut Joueurs, voulu: fn(&Cle) -> bool, valeur: &str| {
+        let affiche = afficher(joueurs);
+        let clic = choisir_dans(&affiche, voulu, valeur)
+            .unwrap_or_else(|| panic!("{valeur} absent : {}", affiche.texte));
+        jouer(joueurs, clic)
+    };
+    cliquer_sur(&mut joueurs, Cle::ReprendreLaPartie);
+    let camp = afficher(&mut joueurs);
+    assert!(
+        camp.texte
+            .contains("Âmes d'Apôtres : Baron pendu, Abbesse écorchée et Margrave de givre.")
+    );
+    assert!(choisir_dans(&camp, |cle| *cle == Cle::Partir, ECLIPSE).is_none());
+    cliquer_sur(&mut joueurs, Cle::Afficher(Vue::Marchand));
+    choisir(&mut joueurs, |cle| *cle == Cle::DonnerAme, BEHERIT);
+    let forge = cliquer_sur(&mut joueurs, Cle::Oui);
+    assert!(matches!(&forge[..], [Evenement::BeheritForge(_), ..]));
+    cliquer_sur(&mut joueurs, Cle::Afficher(Vue::Camp));
+    let camp = afficher(&mut joueurs);
+    assert!(
+        camp.texte
+            .contains("Béhérit pourpre : il attend son sacrifice.")
+    );
+    choisir(&mut joueurs, |cle| *cle == Cle::Partir, ECLIPSE);
+    let eclipse = afficher(&mut joueurs);
+    assert!(eclipse.texte.contains("réclame un sacrifice"));
+    // Seuls les monstres de niveau 30 ou plus, qui ne vident pas l'équipe.
+    assert!(choisir_dans(&eclipse, |cle| matches!(cle, Cle::Sacrifier(_)), "c0").is_some());
+    choisir(&mut joueurs, |cle| matches!(cle, Cle::Sacrifier(_)), "e2");
+    let mut vus = cliquer_sur(&mut joueurs, Cle::Oui);
+    let mut tour = TOUR_DU_CAMP;
+    for _ in 0..500 {
+        let session = joueurs.session(JOUEUR, &contenu);
+        if session.deroulement.attente() == Attente::Camp {
+            break;
+        }
+        let affiche = message(session, &vus, None, &contenu, maintenant);
+        verifier_les_limites(&affiche);
+        let clic = jouer_un_coup(session, &affiche, &mut tour, true, Visite::Faite);
+        vus.extend(jouer(&mut joueurs, clic));
+    }
+    assert!(matches!(&vus[..], [Evenement::Sacrifice(recit), ..] if recit.contains("Loup")));
+    assert!(vus.contains(&Evenement::RecompenseDuDemiurge));
+    let session = joueurs.session(JOUEUR, &contenu);
+    let partie = session.deroulement.partie().unwrap();
+    assert_eq!(partie.beherit(), EtatDuBeherit::DemiurgeVaincu);
+    assert_eq!(partie.sac().eclats_d_astre(), 3);
+    let camp = afficher(&mut joueurs);
+    assert!(
+        camp.texte
+            .contains("Béhérit pourpre : l'Éclipse s'est refermée.")
+    );
+    assert!(choisir_dans(&camp, |cle| *cle == Cle::Partir, ECLIPSE).is_none());
+    let _ = fs::remove_dir_all(dossier);
+}
+
 /// Malvoise vend un Loup, loue un Cerf blanc, puis le reprend, à travers
 /// l'écran "Acheter ou louer" ouvert depuis la vente (section 14.2). Toutes
 /// les zones explorées : les menus ont toutes leurs espèces.

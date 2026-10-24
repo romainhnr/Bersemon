@@ -371,6 +371,38 @@ mod tests {
         );
     }
 
+    /// La seconde forme du Démiurge reste cachée, puis son entrée se raconte
+    /// comme une métamorphose (section 9.4).
+    #[test]
+    fn la_seconde_forme_du_demiurge_reste_cachee_jusqu_a_son_entree() {
+        let contenu = ContenuV1::new();
+        let combat = Combat::new(
+            vec![creer(&contenu, "salamandre", 50)],
+            vec![
+                creer(&contenu, "demiurge", 42),
+                creer(&contenu, "demiurge-eveille", 42),
+            ],
+        )
+        .unwrap()
+        .contre_un_apotre()
+        .en_deux_phases();
+        let texte = rencontre(&combat);
+        assert!(
+            texte.contains("Démiurge") && !texte.contains("éveillé"),
+            "{texte}"
+        );
+        let etat = etat(&combat, &bersemon_core::codex::Codex::default());
+        assert!(!etat.contains("en attente"), "{etat}");
+        let seconde = Combattant {
+            cote: Cote::Adversaire,
+            index: 1,
+        };
+        assert_eq!(
+            evenement(&Evenement::Metamorphose(seconde), &combat),
+            important(METAMORPHOSE_DU_DEMIURGE)
+        );
+    }
+
     #[test]
     fn un_combat_sans_capture_ne_dit_pas_l_adversaire_sauvage() {
         let contenu = ContenuV1::new();

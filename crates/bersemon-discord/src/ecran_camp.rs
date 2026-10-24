@@ -18,6 +18,7 @@ use bersemon_core::marchand::prix_de_revente;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_core::stats::ValeursInternes;
+use bersemon_presentation::beherit::description_de_l_eclipse;
 use bersemon_presentation::boosters::{boosters, effet_du_booster};
 use bersemon_presentation::equipement::{
     decrire_bonus, etat_de_l_equipement, nom_de_place, objet_et_bonus,
@@ -35,14 +36,15 @@ use bersemon_presentation::partie::{
 };
 use bersemon_presentation::peche::ligne_prete;
 
-use crate::composants::{Cle, RETIRER, Vue, booster_en_texte, emplacement_en_texte};
+use crate::composants::{Cle, ECLIPSE, RETIRER, Vue, booster_en_texte, emplacement_en_texte};
 use crate::echanges::TableauDesEchanges;
 use crate::message::{
     Bouton, DANGER, OPTIONS_PAR_MENU, OptionDeMenu, PRINCIPAL, Question, Rangee, SECONDAIRE,
     SUCCES, bouton, menu, rangees,
 };
 use crate::{
-    ecran_coffre, ecran_echanges, ecran_expeditions_automatiques, ecran_marchand, ecran_peche,
+    ecran_coffre, ecran_echanges, ecran_eclipse, ecran_expeditions_automatiques, ecran_marchand,
+    ecran_peche,
 };
 
 pub fn question(
@@ -63,6 +65,7 @@ pub fn question(
         Vue::Marchand => ecran_marchand::etal(partie, contenu),
         Vue::Vente => ecran_marchand::vente(partie),
         Vue::Achats => ecran_marchand::achats(partie, contenu),
+        Vue::Eclipse => ecran_eclipse::eclipse(partie, contenu),
         Vue::Attaques(emplacement) => attaques(partie, emplacement, contenu),
         Vue::Coffre => ecran_coffre::coffre(partie),
         Vue::Ressources => ecran_coffre::ressources(partie),
@@ -96,7 +99,7 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
     if equipe.is_empty() {
         equipe.push("aucun monstre".to_string());
     }
-    let zones = partie
+    let mut zones: Vec<OptionDeMenu> = partie
         .zones_accessibles(contenu.zones(), contenu.piste())
         .into_iter()
         .map(|zone| {
@@ -117,6 +120,14 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
             }
         })
         .collect();
+    // Avec le Béhérit, l'Éclipse suit les zones (section 9.4).
+    if let Some(description) = description_de_l_eclipse(partie, contenu) {
+        zones.push(OptionDeMenu {
+            libelle: contenu.invocation().eclipse().nom().to_string(),
+            valeur: ECLIPSE.to_string(),
+            description: Some(description),
+        });
+    }
     let mut lignes: Vec<Rangee> = menu(Cle::Partir, "Partir en expédition", zones)
         .into_iter()
         .collect();

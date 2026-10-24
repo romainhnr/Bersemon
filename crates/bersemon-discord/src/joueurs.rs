@@ -728,6 +728,8 @@ fn vue_apres(vue: Vue, choix: &Choix) -> Vue {
         | (_, Choix::AccueillirExpeditionAutomatique(_)) => Vue::Expeditions,
         (Vue::Gestion(Some(_)), _) => Vue::Gestion(None),
         (Vue::Entrainement, _) => Vue::Machines,
+        // Le sacrifice est suivi du départ vers l'Éclipse (section 9.4).
+        (Vue::Eclipse, _) => Vue::Camp,
         (vue, _) => vue,
     }
 }
