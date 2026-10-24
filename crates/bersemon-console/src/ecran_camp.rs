@@ -25,6 +25,7 @@ use bersemon_presentation::partie::{
     ames_d_apotres, capsules_d_habilete, collection as liste_des_monstres, en_tete_du_camp,
 };
 use bersemon_presentation::peche::ligne_prete;
+use bersemon_presentation::tour::destination_de_la_tour;
 
 use crate::affichage;
 use crate::ecran_coffre;
@@ -184,25 +185,37 @@ fn choisir_une_option(entree: &mut Entree) -> Option<Option<Choix>> {
     Some((choix == 1).then_some(Choix::SeSuicider))
 }
 
-/// `Some(None)` si le joueur reste au camp. Avec le Béhérit, l'Éclipse suit
-/// les zones (section 9.4).
+/// `Some(None)` si le joueur reste au camp. La Tour sans fond suit les
+/// zones, une fois ouverte (section 9.5), puis l'Éclipse, avec le Béhérit
+/// (section 9.4).
 fn carte(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Option<Option<Choix>> {
     let accessibles = partie.zones_accessibles(contenu.zones(), contenu.piste());
     println!();
     println!("{}", affichage::carte(partie, &accessibles));
-    let eclipse = destination_de_l_eclipse(partie, contenu);
-    if let Some(ligne) = &eclipse {
-        println!("  {}. {ligne}", accessibles.len() + 1);
-    }
+    let mut dernier = accessibles.len();
+    let tour = destination_de_la_tour(partie, contenu).map(|ligne| {
+        dernier += 1;
+        println!("  {dernier}. {ligne}");
+        dernier
+    });
+    let eclipse = destination_de_l_eclipse(partie, contenu).map(|ligne| {
+        dernier += 1;
+        println!("  {dernier}. {ligne}");
+        dernier
+    });
     println!("  0. Rester au camp");
-    let dernier = accessibles.len() + usize::from(eclipse.is_some());
     let choix = entree.choix(0, dernier)?;
     match choix {
         0 => Some(None),
         numero if numero <= accessibles.len() => Some(Some(Choix::PartirEnExpedition(
             accessibles[numero - 1].id().clone(),
         ))),
-        _ if partie.beherit() == EtatDuBeherit::Forge => choisir_le_sacrifice(partie, entree),
+        numero if Some(numero) == tour => {
+            Some(Some(Choix::PartirEnExpedition(contenu.tour().id().clone())))
+        }
+        numero if Some(numero) == eclipse && partie.beherit() == EtatDuBeherit::Forge => {
+            choisir_le_sacrifice(partie, entree)
+        }
         _ => Some(Some(Choix::PartirEnExpedition(
             contenu.invocation().eclipse().id().clone(),
         ))),

@@ -23,3 +23,4 @@ pub mod partie;
 pub mod peche;
 pub mod recit;
 pub mod soins;
+pub mod tour;
