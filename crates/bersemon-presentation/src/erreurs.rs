@@ -143,6 +143,9 @@ pub fn erreur_de_combat(erreur: &ErreurCombat) -> String {
             format!("Le monstre numéro {} combat déjà.", index + 1)
         }
         ErreurCombat::AucunSoin(soin) => plus_aucun(*soin).to_string(),
+        ErreurCombat::MonstreDeLAutreJoueur(index) => {
+            format!("Le monstre numéro {} est à l'autre joueur.", index + 1)
+        }
         // Les autres erreurs ne viennent pas d'une saisie du joueur :
         // l'interface suit la phase du combat.
         autre => format!("Action impossible : {autre}."),

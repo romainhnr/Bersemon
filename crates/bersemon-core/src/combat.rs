@@ -246,6 +246,8 @@ pub enum ErreurCombat {
     InterditEnDuel,
     /// Abandon, forfait ou tour à deux hors d'un duel.
     ReserveAuDuel,
+    /// En groupe, chacun ne fait entrer que ses monstres (section 15.5).
+    MonstreDeLAutreJoueur(usize),
 }
 
 impl fmt::Display for ErreurCombat {
@@ -264,6 +266,9 @@ impl fmt::Display for ErreurCombat {
             }
             ErreurCombat::AucunRemplacementAttendu => {
                 write!(f, "aucun monstre n'est à remplacer")
+            }
+            ErreurCombat::MonstreDeLAutreJoueur(index) => {
+                write!(f, "le monstre en position {index} est à l'autre joueur")
             }
             ErreurCombat::AttaqueInexistante(index) => {
                 write!(f, "aucune attaque en position {index}")
@@ -324,6 +329,48 @@ pub struct BilanCombat {
     pub vaincus_sauvages: Vec<Monstre>,
     pub experience: Vec<Option<RapportExperience>>,
     pub soins: Soins,
+    /// En groupe, la part de l'invité : `captures` et `soins` sont alors
+    /// celles de l'hôte (section 15.5).
+    pub invite: Option<BilanDeLInvite>,
+}
+
+/// Dans le bilan d'un combat en groupe, ce qui revient à l'invité.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BilanDeLInvite {
+    /// Position, dans l'équipe du bilan, de son premier monstre : ceux qui
+    /// le précèdent sont à l'hôte.
+    pub debut: usize,
+    pub captures: Vec<Monstre>,
+    pub soins: Soins,
+}
+
+/// Un des deux joueurs d'une expédition en groupe (section 15.5). Hors
+/// groupe, tous les monstres de l'équipe sont à l'hôte.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Membre {
+    Hote,
+    Invite,
+}
+
+impl Membre {
+    pub fn autre(self) -> Membre {
+        match self {
+            Membre::Hote => Membre::Invite,
+            Membre::Invite => Membre::Hote,
+        }
+    }
+}
+
+/// Ce qui ne vaut que pour l'invité d'un combat en groupe ; ce qui vaut
+/// pour l'hôte reste dans les règles du côté du joueur.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct EnGroupe {
+    /// Position, dans l'équipe, du premier monstre de l'invité.
+    debut_de_l_invite: usize,
+    regles: ReglesDuCote,
+    soins: Soins,
+    /// Pour chaque capture, dans l'ordre de `captures`, qui l'a faite.
+    capteurs: Vec<Membre>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -364,6 +411,9 @@ pub struct Combat {
     /// Contre un autre joueur, qui choisit les actions de l'adversaire
     /// (section 15.3).
     duel: bool,
+    /// Les deux joueurs d'une expédition en groupe forment un seul côté
+    /// (section 15.5). En boîte, pour que le combat reste léger.
+    groupe: Option<Box<EnGroupe>>,
     /// En duel, le côté dont toute l'équipe est tombée la première pendant
     /// le tour : il perd, même si l'autre tombe aussi.
     premiere_equipe_tombee: Option<Cote>,
@@ -423,11 +473,132 @@ impl Combat {
             contre_un_gardien: false,
             ia: Ia::Hasard,
             duel: false,
+            groupe: None,
             premiere_equipe_tombee: None,
             phase: Phase::ChoixAction,
         };
         combat.noter_participation();
         Ok(combat)
+    }
+
+    /// Combat d'une expédition en groupe : l'équipe de l'hôte, puis celle
+    /// de l'invité, forment un seul côté, avec un monstre actif à la fois
+    /// (section 15.5). Les règles et les soins du côté du joueur sont ceux de
+    /// l'hôte ; ceux de l'invité se donnent par `avec_regles_de_l_invite`.
+    pub fn en_groupe(
+        hote: Vec<Monstre>,
+        invite: Vec<Monstre>,
+        adversaires: Vec<Monstre>,
+    ) -> Result<Self, ErreurCombat> {
+        let debut_de_l_invite = hote.len();
+        let mut equipe = hote;
+        equipe.extend(invite);
+        let mut combat = Combat::new(equipe, adversaires)?;
+        combat.groupe = Some(Box::new(EnGroupe {
+            debut_de_l_invite,
+            regles: ReglesDuCote {
+                bonus_de_role: true,
+                ..ReglesDuCote::default()
+            },
+            soins: Soins::default(),
+            capteurs: Vec::new(),
+        }));
+        Ok(combat)
+    }
+
+    /// Le bonus de la classe et de l'équipement de son héros, son ordre, la
+    /// limite d'obéissance de ses monstres reçus et ses soins. Sans effet
+    /// hors groupe.
+    pub fn avec_regles_de_l_invite(
+        mut self,
+        bonus: BonusDeStats,
+        ordre: Ordre,
+        limite_d_obeissance: u8,
+        soins: Soins,
+    ) -> Self {
+        if let Some(groupe) = &mut self.groupe {
+            groupe.regles.bonus = bonus;
+            groupe.regles.ordre = Some(ordre);
+            groupe.regles.limite_d_obeissance = Some(limite_d_obeissance);
+            groupe.soins = soins;
+        }
+        self
+    }
+
+    pub fn est_en_groupe(&self) -> bool {
+        self.groupe.is_some()
+    }
+
+    /// À qui est ce monstre de l'équipe : à l'hôte, hors groupe.
+    pub fn proprietaire(&self, index: usize) -> Membre {
+        match &self.groupe {
+            Some(groupe) if index >= groupe.debut_de_l_invite => Membre::Invite,
+            _ => Membre::Hote,
+        }
+    }
+
+    /// Celui qui choisit l'action : le propriétaire du monstre actif.
+    pub fn membre_actif(&self) -> Membre {
+        self.proprietaire(self.actif_joueur)
+    }
+
+    /// Celui qui fait entrer un monstre à la place du monstre actif KO :
+    /// son propriétaire, ou l'autre s'il n'a plus de monstre apte (section
+    /// 15.5). `None` hors remplacement.
+    pub fn membre_qui_remplace(&self) -> Option<Membre> {
+        if self.phase != Phase::Remplacement {
+            return None;
+        }
+        let proprietaire = self.membre_actif();
+        let a_un_monstre_apte = |membre: Membre| {
+            self.equipe
+                .iter()
+                .enumerate()
+                .any(|(index, monstre)| self.proprietaire(index) == membre && !monstre.est_ko())
+        };
+        Some(if a_un_monstre_apte(proprietaire) {
+            proprietaire
+        } else {
+            proprietaire.autre()
+        })
+    }
+
+    fn regles_du_membre(&self, membre: Membre) -> &ReglesDuCote {
+        match (&self.groupe, membre) {
+            (Some(groupe), Membre::Invite) => &groupe.regles,
+            _ => &self.regles[Cote::Joueur.position()],
+        }
+    }
+
+    fn regles_du_membre_mut(&mut self, membre: Membre) -> &mut ReglesDuCote {
+        match (&mut self.groupe, membre) {
+            (Some(groupe), Membre::Invite) => &mut groupe.regles,
+            _ => &mut self.regles[Cote::Joueur.position()],
+        }
+    }
+
+    /// Les règles qui valent pour ce monstre : celles de son côté, ou, en
+    /// groupe, celles de son propriétaire.
+    fn regles_de(&self, combattant: Combattant) -> &ReglesDuCote {
+        match combattant.cote {
+            Cote::Joueur => self.regles_du_membre(self.proprietaire(combattant.index)),
+            Cote::Adversaire => &self.regles[Cote::Adversaire.position()],
+        }
+    }
+
+    /// Les soins de ce joueur ; hors groupe, ceux du joueur.
+    pub fn soins_du_membre(&self, membre: Membre) -> &Soins {
+        match (&self.groupe, membre) {
+            (Some(groupe), Membre::Invite) => &groupe.soins,
+            _ => &self.soins,
+        }
+    }
+
+    fn soins_du_membre_mut(&mut self, membre: Membre) -> &mut Soins {
+        match (&mut self.groupe, membre) {
+            (Some(groupe), Membre::Invite) => &mut groupe.soins,
+            _ => &mut self.soins,
+        }
     }
 
     /// Duel entre deux joueurs (section 15.3), avec des équipes soignées :
@@ -474,8 +645,10 @@ impl Combat {
         self
     }
 
+    /// Ceux du joueur ; en groupe, ceux du propriétaire du monstre actif,
+    /// qui seul peut en utiliser (section 15.5).
     pub fn soins(&self) -> &Soins {
-        &self.soins
+        self.soins_du_membre(self.membre_actif())
     }
 
     /// Combat contre un Apôtre : ni fuite ni filet, et il ne se capture pas,
@@ -566,8 +739,9 @@ impl Combat {
         self.ordre_disponible_pour(Cote::Joueur)
     }
 
+    /// En groupe, l'ordre du héros du propriétaire du monstre actif.
     pub fn ordre_disponible_pour(&self, cote: Cote) -> Option<Ordre> {
-        let regles = &self.regles[cote.position()];
+        let regles = self.regles_de(self.actif(cote));
         regles
             .ordre
             .filter(|_| regles.ordre_donne.is_none() && self.phase == Phase::ChoixAction)
@@ -592,7 +766,13 @@ impl Combat {
             .ordre_disponible_pour(cote)
             .ok_or(ErreurCombat::OrdreImpossible)?;
         let actif = self.actif(cote);
-        self.regles[cote.position()].ordre_donne = Some(actif.index);
+        match cote {
+            Cote::Joueur => {
+                let membre = self.membre_actif();
+                self.regles_du_membre_mut(membre).ordre_donne = Some(actif.index);
+            }
+            Cote::Adversaire => self.regles[cote.position()].ordre_donne = Some(actif.index),
+        }
         Ok((ordre, actif))
     }
 
@@ -605,7 +785,7 @@ impl Combat {
     }
 
     fn a_recu_l_ordre_pour(&self, combattant: Combattant) -> bool {
-        self.regles[combattant.cote.position()].ordre_donne == Some(combattant.index)
+        self.regles_de(combattant).ordre_donne == Some(combattant.index)
     }
 
     pub fn avec_limite_d_obeissance(self, limite: u8) -> Self {
@@ -622,7 +802,7 @@ impl Combat {
     }
 
     fn chances_de_desobeir_pour(&self, combattant: Combattant) -> u32 {
-        let limite = self.regles[combattant.cote.position()].limite_d_obeissance;
+        let limite = self.regles_de(combattant).limite_d_obeissance;
         match (
             limite,
             self.equipe_du(combattant.cote).get(combattant.index),
@@ -655,7 +835,7 @@ impl Combat {
             .habilete()
             .map(Habilete::bonus_de_stats)
             .unwrap_or_default();
-        let regles = &self.regles[combattant.cote.position()];
+        let regles = self.regles_de(combattant);
         let bonus = cumuler_bonus(&habilete, &regles.bonus);
         let bonus = if regles.bonus_de_role {
             cumuler_bonus(&bonus, &monstre.espece().role().bonus_de_stats())
@@ -795,7 +975,8 @@ impl Combat {
                 }
             }
             Action::UtiliserSoin(soin, index) => {
-                self.soins.retirer(soin, 1);
+                let membre = self.membre_actif();
+                self.soins_du_membre_mut(membre).retirer(soin, 1);
                 let effet = appliquer_soin(soin, &mut self.equipe[index], aleatoire);
                 evenements.push(Evenement::SoinUtilise {
                     soin,
@@ -937,6 +1118,13 @@ impl Combat {
             return Err(ErreurCombat::AucunRemplacementAttendu);
         }
         self.verifier_remplacant_pour(cote, index)?;
+        if cote == Cote::Joueur
+            && self
+                .membre_qui_remplace()
+                .is_some_and(|membre| self.proprietaire(index) != membre)
+        {
+            return Err(ErreurCombat::MonstreDeLAutreJoueur(index));
+        }
         self.envoyer(cote, index);
         self.regles[cote.position()].a_remplacer = false;
         if !self.regles.iter().any(|regles| regles.a_remplacer) {
@@ -999,6 +1187,7 @@ impl Combat {
             contre_un_gardien: self.contre_un_gardien,
             ia: self.ia,
             duel: self.duel,
+            groupe: None,
             premiere_equipe_tombee: self.premiere_equipe_tombee.map(Cote::oppose),
             phase: match self.phase {
                 Phase::Termine(issue) => Phase::Termine(issue.miroir()),
@@ -1027,10 +1216,20 @@ impl Combat {
     /// Capture garantie d'un monstre adverse KO, après la victoire (section
     /// 11.2).
     pub fn capturer_ko(&mut self, index: usize) -> Result<Vec<Evenement>, ErreurCombat> {
+        self.capturer_ko_pour(Membre::Hote, index)
+    }
+
+    /// En groupe, le monstre capturé revient à celui qui le capture
+    /// (section 15.5).
+    pub fn capturer_ko_pour(
+        &mut self,
+        membre: Membre,
+        index: usize,
+    ) -> Result<Vec<Evenement>, ErreurCombat> {
         if !self.adversaires_capturables().contains(&index) {
             return Err(ErreurCombat::CaptureImpossible(index));
         }
-        self.captures.push(index);
+        self.noter_capture(index, membre);
         Ok(vec![Evenement::CaptureReussie(Combattant {
             cote: Cote::Adversaire,
             index,
@@ -1051,11 +1250,27 @@ impl Combat {
         };
         let mut adversaires: Vec<Option<Monstre>> =
             self.adversaires.into_iter().map(Some).collect();
-        let captures = self
-            .captures
-            .iter()
-            .filter_map(|&index| adversaires[index].take())
-            .collect();
+        // En groupe, chaque capture revient à celui qui l'a faite.
+        let mut captures = Vec::new();
+        let mut captures_de_l_invite = Vec::new();
+        for (rang, &index) in self.captures.iter().enumerate() {
+            let capteur = self
+                .groupe
+                .as_ref()
+                .and_then(|groupe| groupe.capteurs.get(rang).copied())
+                .unwrap_or(Membre::Hote);
+            if let Some(monstre) = adversaires[index].take() {
+                match capteur {
+                    Membre::Hote => captures.push(monstre),
+                    Membre::Invite => captures_de_l_invite.push(monstre),
+                }
+            }
+        }
+        let invite = self.groupe.map(|groupe| BilanDeLInvite {
+            debut: groupe.debut_de_l_invite,
+            captures: captures_de_l_invite,
+            soins: groupe.soins,
+        });
         let sauvages = !self.contre_un_apotre && !self.contre_un_humain && !self.sans_capture;
         let vaincus_sauvages = adversaires
             .into_iter()
@@ -1069,6 +1284,14 @@ impl Combat {
             vaincus_sauvages,
             experience,
             soins: self.soins,
+            invite,
+        }
+    }
+
+    fn noter_capture(&mut self, index: usize, membre: Membre) {
+        self.captures.push(index);
+        if let Some(groupe) = &mut self.groupe {
+            groupe.capteurs.push(membre);
         }
     }
 
@@ -1332,10 +1555,14 @@ impl Combat {
                 if index == self.actif_joueur {
                     return Err(ErreurCombat::MonstreDejaActif(index));
                 }
-                self.verifier_remplacant(index)
+                self.verifier_remplacant(index)?;
+                if index < self.equipe.len() && self.proprietaire(index) != self.membre_actif() {
+                    return Err(ErreurCombat::MonstreDeLAutreJoueur(index));
+                }
+                Ok(())
             }
             Action::UtiliserSoin(soin, index) => {
-                if self.soins.nombre(soin) == 0 {
+                if self.soins().nombre(soin) == 0 {
                     return Err(ErreurCombat::AucunSoin(soin));
                 }
                 let Some(monstre) = self.equipe.get(index) else {
@@ -1514,7 +1741,8 @@ impl Combat {
             _ => aleatoire.tirer(1..=100) <= chance,
         };
         if reussie {
-            self.captures.push(cible.index);
+            let membre = self.membre_actif();
+            self.noter_capture(cible.index, membre);
             evenements.push(Evenement::CaptureReussie(cible));
         } else {
             evenements.push(Evenement::CaptureRatee(cible));
@@ -2353,6 +2581,128 @@ mod tests {
             Some(&Evenement::FinDuCombat(Issue::Victoire))
         );
         assert_eq!(terminer(combat, &[100, 100]).captures.len(), 2);
+    }
+
+    fn ko(monstre: Monstre) -> Monstre {
+        affaibli(monstre, 0)
+    }
+
+    /// Section 15.5 : en groupe, le propriétaire du monstre actif ne fait
+    /// entrer que ses monstres.
+    #[test]
+    fn en_groupe_chacun_ne_fait_entrer_que_ses_monstres() {
+        let combat = Combat::en_groupe(vec![rapide(), lent()], vec![lent()], vec![lent()]).unwrap();
+        assert!(combat.est_en_groupe());
+        assert_eq!(
+            (0..3)
+                .map(|index| combat.proprietaire(index))
+                .collect::<Vec<_>>(),
+            vec![Membre::Hote, Membre::Hote, Membre::Invite]
+        );
+        assert_eq!(combat.membre_actif(), Membre::Hote);
+        assert_eq!(
+            combat.verifier_action(Cote::Joueur, Action::Changer(2)),
+            Err(ErreurCombat::MonstreDeLAutreJoueur(2))
+        );
+        assert_eq!(
+            combat.verifier_action(Cote::Joueur, Action::Changer(1)),
+            Ok(())
+        );
+        // Hors groupe, tout est à l'hôte.
+        assert_eq!(combat_simple_proprietaire(), Membre::Hote);
+    }
+
+    fn combat_simple_proprietaire() -> Membre {
+        combat(vec![rapide(), lent()], vec![lent()]).proprietaire(1)
+    }
+
+    /// Section 15.5 : le propriétaire du monstre KO le remplace, ou l'autre
+    /// joueur s'il n'a plus de monstre apte.
+    #[test]
+    fn en_groupe_l_autre_remplace_quand_le_proprietaire_n_a_plus_de_monstre() {
+        // L'adversaire, plus rapide, met KO le monstre de l'hôte : critique
+        // et pourcentage de dégâts.
+        let mut seul =
+            Combat::en_groupe(vec![affaibli(lent(), 1)], vec![lent()], vec![rapide()]).unwrap();
+        tour(&mut seul, Action::Attaquer(0), &[2, 100]);
+        assert_eq!(seul.phase(), Phase::Remplacement);
+        assert_eq!(seul.membre_qui_remplace(), Some(Membre::Invite));
+        assert_eq!(
+            seul.remplacer(1).unwrap(),
+            vec![Evenement::MonstreEnvoye(j(1))]
+        );
+        assert_eq!(seul.membre_actif(), Membre::Invite);
+        assert_eq!(seul.membre_qui_remplace(), None);
+
+        let mut avec_un_autre = Combat::en_groupe(
+            vec![affaibli(lent(), 1), lent()],
+            vec![lent()],
+            vec![rapide()],
+        )
+        .unwrap();
+        tour(&mut avec_un_autre, Action::Attaquer(0), &[2, 100]);
+        assert_eq!(avec_un_autre.membre_qui_remplace(), Some(Membre::Hote));
+        assert_eq!(
+            avec_un_autre.remplacer(2),
+            Err(ErreurCombat::MonstreDeLAutreJoueur(2))
+        );
+        assert!(avec_un_autre.remplacer(1).is_ok());
+    }
+
+    /// Section 15.5 : chaque monstre a le bonus de son propriétaire, et
+    /// celui-ci donne son ordre et utilise ses soins.
+    #[test]
+    fn en_groupe_bonus_ordre_et_soins_du_proprietaire() {
+        let mut soins_de_l_invite = Soins::default();
+        soins_de_l_invite.ajouter(Soin::Potion, 2);
+        let bonus = Stats {
+            attaque: 50,
+            ..BonusDeStats::default()
+        };
+        let mut combat = Combat::en_groupe(vec![ko(lent())], vec![lent()], vec![lent()])
+            .unwrap()
+            .avec_ordre(Ordre::CriDeGuerre)
+            .avec_regles_de_l_invite(bonus, Ordre::Incantation, 100, soins_de_l_invite);
+        // Le monstre de l'hôte est KO : celui de l'invité commence.
+        assert_eq!(combat.membre_actif(), Membre::Invite);
+        // 10 d'Attaque au niveau 5, +50 % de bonus et +10 % de rôle offensif.
+        assert_eq!(combat.stats_en_combat(j(1)).attaque, 16);
+        assert_eq!(combat.stats_en_combat(j(0)).attaque, 10);
+        assert_eq!(combat.soins().nombre(Soin::Potion), 2);
+        assert_eq!(combat.soins_du_membre(Membre::Hote).nombre(Soin::Potion), 0);
+        assert_eq!(combat.ordre_disponible(), Some(Ordre::Incantation));
+        assert_eq!(combat.donner_ordre(), Ok((Ordre::Incantation, j(1))));
+        assert!(combat.a_recu_l_ordre(1));
+        assert_eq!(combat.ordre_disponible(), None);
+        // L'invité soigne avec sa potion ; l'adversaire riposte (critique et
+        // pourcentage de dégâts).
+        let evenements = tour(
+            &mut combat,
+            Action::UtiliserSoin(Soin::Potion, 1),
+            &[2, 100],
+        );
+        assert!(matches!(
+            evenements[0],
+            Evenement::SoinUtilise { soin: Soin::Potion, cible, .. } if cible == j(1)
+        ));
+        assert_eq!(combat.soins().nombre(Soin::Potion), 1);
+        let bilan = terminer(combat, &[]);
+        assert_eq!(bilan.invite.unwrap().soins.nombre(Soin::Potion), 1);
+    }
+
+    /// Section 15.5 : une capture revient à celui qui la fait.
+    #[test]
+    fn en_groupe_la_capture_revient_a_celui_qui_la_fait() {
+        let mut combat =
+            Combat::en_groupe(vec![rapide()], vec![lent()], vec![affaibli(lent(), 1)]).unwrap();
+        tour(&mut combat, Action::Attaquer(0), &[2, 100]);
+        assert_eq!(combat.phase(), Phase::Termine(Issue::Victoire));
+        combat.capturer_ko_pour(Membre::Invite, 0).unwrap();
+        let bilan = terminer(combat, &[100]);
+        assert!(bilan.captures.is_empty());
+        let invite = bilan.invite.unwrap();
+        assert_eq!(invite.debut, 1);
+        assert_eq!(invite.captures.len(), 1);
     }
 
     #[test]
