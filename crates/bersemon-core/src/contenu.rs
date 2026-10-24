@@ -409,6 +409,7 @@ impl ContenuV1 {
                 trouver("gargouille"),
                 trouver("goule"),
                 trouver("chauve-souris-de-crypte"),
+                trouver("cloche-hurlante"),
             ],
             vec![
                 EspeceRare {
@@ -417,6 +418,10 @@ impl ContenuV1 {
                 },
                 EspeceRare {
                     espece: trouver("ange-dechu"),
+                    pacifique: true,
+                },
+                EspeceRare {
+                    espece: trouver("seraphin-de-vitrail"),
                     pacifique: true,
                 },
             ],
@@ -784,7 +789,7 @@ const fn avec_effet(fiche: FicheAttaque, statut: Statut, chance: u8) -> FicheAtt
 }
 
 /// Section 1 de docs/contenu-v1.md, dans le même ordre.
-const ATTAQUES: [FicheAttaque; 95] = [
+const ATTAQUES: [FicheAttaque; 101] = [
     fiche(
         "souffle-chaud",
         "Souffle chaud",
@@ -1446,6 +1451,49 @@ const ATTAQUES: [FicheAttaque; 95] = [
         Paralysie,
         20,
     ),
+    // Types Son et Lumière, dans l'Abbaye des Cendres (étape 94).
+    fiche("glas", "Glas", Type::Son, Speciale, 50, 100),
+    avec_effet(
+        fiche("tocsin", "Tocsin", Type::Son, Speciale, 75, 100),
+        Paralysie,
+        10,
+    ),
+    avec_effet(
+        fiche(
+            "carillon-funebre",
+            "Carillon funèbre",
+            Type::Son,
+            Speciale,
+            90,
+            85,
+        ),
+        Paralysie,
+        10,
+    ),
+    fiche(
+        "lueur-sacree",
+        "Lueur sacrée",
+        Type::Lumiere,
+        Speciale,
+        50,
+        100,
+    ),
+    fiche(
+        "lance-de-lumiere",
+        "Lance de lumière",
+        Type::Lumiere,
+        Physique,
+        80,
+        95,
+    ),
+    fiche(
+        "aube-eclatante",
+        "Aube éclatante",
+        Type::Lumiere,
+        Speciale,
+        90,
+        90,
+    ),
 ];
 
 struct FicheCapsule {
@@ -1626,7 +1674,7 @@ const MARCHAND_ZOMBIE: FicheEspece = FicheEspece {
 /// Section 2 de docs/contenu-v1.md, dans l'ordre du codex : les monstres de
 /// départ, les communs, les rares, l'Apôtre, le monstre caché, puis les
 /// formes évoluées de la section 8.
-const ESPECES: [FicheEspece; 54] = [
+const ESPECES: [FicheEspece; 56] = [
     FicheEspece {
         id: "salamandre",
         nom: "Salamandre",
@@ -2596,6 +2644,41 @@ const ESPECES: [FicheEspece; 54] = [
         ],
         evolution: None,
     },
+    // Types Son et Lumière, dans l'Abbaye des Cendres (étape 94).
+    FicheEspece {
+        id: "cloche-hurlante",
+        nom: "Cloche hurlante",
+        types: &[Type::Acier, Type::Son],
+        role: Role::Soutien,
+        stats_de_base: [65, 50, 80, 65, 75, 25],
+        rendement_experience: 108,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Carapace, Habilete::Volonte],
+        apprentissage: &[
+            (1, "coup-de-garde"),
+            (1, "glas"),
+            (16, "tocsin"),
+            (24, "carillon-funebre"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "seraphin-de-vitrail",
+        nom: "Séraphin de vitrail",
+        types: &[Type::Lumiere],
+        role: Role::Offensif,
+        stats_de_base: [65, 50, 60, 105, 80, 60],
+        rendement_experience: 180,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Sorcellerie, Habilete::Volonte],
+        apprentissage: &[
+            (1, "lueur-sacree"),
+            (12, "lumiere-d-aube"),
+            (18, "lance-de-lumiere"),
+            (24, "aube-eclatante"),
+        ],
+        evolution: None,
+    },
 ];
 
 /// Section 15 de docs/contenu-v1.md : la ligne est prête 2 h après avoir
@@ -2959,7 +3042,7 @@ const PRIX_D_UNE_RESSOURCE_RARE: u32 = 15;
 
 /// Espèce, identifiant et nom de chaque ressource : seules les espèces
 /// sauvages qui se combattent en ont une (section 14.3).
-const RESSOURCES: [(&str, &str, &str); 19] = [
+const RESSOURCES: [(&str, &str, &str); 20] = [
     ("loup", "croc-de-loup", "Croc de loup"),
     ("corbeau", "plume-de-corbeau", "Plume de corbeau"),
     ("vipere", "ecaille-de-vipere", "Écaille de vipère"),
@@ -2985,6 +3068,7 @@ const RESSOURCES: [(&str, &str, &str); 19] = [
     // (section 5.4).
     ("warg", "croc-de-loup", "Croc de loup"),
     ("chevalier-noir", "fragment-d-armure", "Fragment d'armure"),
+    ("cloche-hurlante", "eclat-de-bronze", "Éclat de bronze"),
 ];
 
 fn creer_attaque(id: &str) -> Attaque {
@@ -3200,7 +3284,7 @@ mod tests {
     #[test]
     fn contenu_conforme_aux_regles() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.especes().len(), 54);
+        assert_eq!(contenu.especes().len(), 56);
         assert_eq!(contenu.zones().len(), 5);
         assert_eq!(contenu.piste().indices().count(), 6);
         // Toute espèce rencontrée en zone se retrouve au chargement d'une
@@ -3215,6 +3299,30 @@ mod tests {
                 assert_eq!(contenu.espece(espece.id()).as_ref(), Some(espece));
             }
         }
+    }
+
+    /// Section 24 de docs/contenu-v1.md (étape 94).
+    #[test]
+    fn l_abbaye_accueille_les_types_son_et_lumiere() {
+        let contenu = ContenuV1::new();
+        let abbaye = &contenu.zones()[3];
+        let cloche = abbaye
+            .especes()
+            .iter()
+            .find(|espece| espece.id().as_str() == "cloche-hurlante")
+            .unwrap();
+        assert_eq!(cloche.types().liste(), &[Type::Acier, Type::Son]);
+        let seraphin = abbaye
+            .rares()
+            .iter()
+            .find(|rare| rare.espece.id().as_str() == "seraphin-de-vitrail")
+            .unwrap();
+        assert!(seraphin.pacifique);
+        assert_eq!(seraphin.espece.types().liste(), &[Type::Lumiere]);
+        assert_eq!(abbaye.rares().len(), 3);
+        let bronze = cloche.ressource().unwrap();
+        assert_eq!((bronze.nom(), bronze.prix()), ("Éclat de bronze", 5));
+        assert_eq!(seraphin.espece.ressource(), None);
     }
 
     #[test]

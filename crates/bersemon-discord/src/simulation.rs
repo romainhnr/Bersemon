@@ -1084,8 +1084,8 @@ fn malvoise_vend_et_loue_des_monstres_a_travers_les_ecrans_du_bot() {
             })
             .unwrap_or(0)
     };
-    assert_eq!(options(Cle::AcheterMonstre), 13);
-    assert_eq!(options(Cle::LouerMonstre), 8);
+    assert_eq!(options(Cle::AcheterMonstre), 14);
+    assert_eq!(options(Cle::LouerMonstre), 9);
     assert!(!propose(&affiche, |cle| *cle == Cle::RendreLeMonstreLoue));
     let clic = choisir_dans(&affiche, |cle| *cle == Cle::AcheterMonstre, "loup").unwrap();
     let achat = jouer(&mut joueurs, clic);

@@ -2,8 +2,8 @@
 
 use std::fmt;
 
-/// Types de la V1, puis le Stellaire, celui du seul Schnoz, et l'Obscur,
-/// celui des seuls Apôtres. Lumière et Son viendront plus tard (Q5).
+/// Types de la V1, puis le Stellaire, celui du seul Schnoz, l'Obscur, celui
+/// des seuls Apôtres, et la Lumière et le Son, ajoutés à l'étape 93.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Type {
     Normal,
@@ -26,10 +26,12 @@ pub enum Type {
     Feerique,
     Stellaire,
     Obscur,
+    Lumiere,
+    Son,
 }
 
 impl Type {
-    pub const TOUS: [Type; 20] = [
+    pub const TOUS: [Type; 22] = [
         Type::Normal,
         Type::Combat,
         Type::Vol,
@@ -50,6 +52,8 @@ impl Type {
         Type::Feerique,
         Type::Stellaire,
         Type::Obscur,
+        Type::Lumiere,
+        Type::Son,
     ];
 
     /// Nom du type tel qu'il s'écrit dans le jeu, commun à toutes les
@@ -76,6 +80,8 @@ impl Type {
             Type::Feerique => "Féérique",
             Type::Stellaire => "Stellaire",
             Type::Obscur => "Obscur",
+            Type::Lumiere => "Lumière",
+            Type::Son => "Son",
         }
     }
 }
@@ -187,8 +193,9 @@ enum Rapport {
 
 /// Table de Pokémon, avec une seule modification propre à Bersemon : le type
 /// Glace résiste au type Eau (section 5.2). S'y ajoutent l'Obscur, qui
-/// écrase presque tout et résiste à presque tout, et le Stellaire, son
-/// opposé, neutre envers les autres types.
+/// écrase presque tout et résiste à presque tout, le Stellaire, son
+/// opposé, neutre envers les autres types, puis la Lumière, autre opposé de
+/// l'Obscur, et le Son (section 5.2).
 fn rapport(attaque: Type, defense: Type) -> Rapport {
     use Type::*;
     let (super_efficace_contre, peu_efficace_contre, sans_effet_sur): (&[Type], &[Type], &[Type]) =
@@ -197,7 +204,7 @@ fn rapport(attaque: Type, defense: Type) -> Rapport {
             // Psychique, Stellaire et Obscur, qui leur sont très efficaces,
             // et aux types Ténèbres, Poison, Insecte, Dragon et Spectre,
             // neutres (section 5.2).
-            Normal => (&[], &[Roche, Acier, Obscur], &[Spectre]),
+            Normal => (&[], &[Roche, Acier, Obscur, Son], &[Spectre]),
             Combat => (
                 &[Normal, Roche, Acier, Glace, Tenebres],
                 &[Vol, Poison, Insecte, Psychique, Feerique, Obscur],
@@ -205,7 +212,7 @@ fn rapport(attaque: Type, defense: Type) -> Rapport {
             ),
             Vol => (
                 &[Combat, Insecte, Plante],
-                &[Roche, Acier, Electrique, Obscur],
+                &[Roche, Acier, Electrique, Obscur, Son],
                 &[],
             ),
             Poison => (
@@ -214,7 +221,7 @@ fn rapport(attaque: Type, defense: Type) -> Rapport {
                 &[Acier],
             ),
             Sol => (
-                &[Poison, Roche, Acier, Feu, Electrique],
+                &[Poison, Roche, Acier, Feu, Electrique, Son],
                 &[Insecte, Plante, Obscur],
                 &[Vol],
             ),
@@ -228,7 +235,7 @@ fn rapport(attaque: Type, defense: Type) -> Rapport {
                 &[Combat, Vol, Poison, Spectre, Acier, Feu, Feerique],
                 &[],
             ),
-            Spectre => (&[Spectre, Psychique], &[Tenebres], &[Normal]),
+            Spectre => (&[Spectre, Psychique, Lumiere], &[Tenebres], &[Normal]),
             Acier => (
                 &[Roche, Glace, Feerique],
                 &[Acier, Feu, Eau, Electrique, Obscur],
@@ -236,7 +243,7 @@ fn rapport(attaque: Type, defense: Type) -> Rapport {
             ),
             Feu => (
                 &[Insecte, Acier, Plante, Glace],
-                &[Roche, Feu, Eau, Dragon, Obscur],
+                &[Roche, Feu, Eau, Dragon, Obscur, Lumiere],
                 &[],
             ),
             Eau => (
@@ -249,7 +256,11 @@ fn rapport(attaque: Type, defense: Type) -> Rapport {
                 &[Vol, Poison, Insecte, Acier, Feu, Plante, Dragon, Obscur],
                 &[],
             ),
-            Electrique => (&[Vol, Eau], &[Plante, Electrique, Dragon, Obscur], &[Sol]),
+            Electrique => (
+                &[Vol, Eau, Son],
+                &[Plante, Electrique, Dragon, Obscur],
+                &[Sol],
+            ),
             Psychique => (&[Combat, Poison, Obscur], &[Acier, Psychique], &[Tenebres]),
             Glace => (
                 &[Vol, Sol, Plante, Dragon],
@@ -257,23 +268,32 @@ fn rapport(attaque: Type, defense: Type) -> Rapport {
                 &[],
             ),
             Dragon => (&[Dragon], &[Acier], &[Feerique]),
-            Tenebres => (&[Spectre, Psychique], &[Combat, Tenebres, Feerique], &[]),
+            Tenebres => (
+                &[Spectre, Psychique, Lumiere],
+                &[Combat, Tenebres, Feerique],
+                &[],
+            ),
             Feerique => (
                 &[Combat, Dragon, Tenebres, Obscur],
-                &[Poison, Acier, Feu],
+                &[Poison, Acier, Feu, Lumiere],
                 &[],
             ),
             Stellaire => (&[Obscur], &[], &[]),
             // Très efficace contre tout, sauf les types qui y résistent
-            // (Féérique, Stellaire) ou y sont neutres (section 5.2).
+            // (Féérique, Stellaire, Lumière) ou y sont neutres (section 5.2).
             Obscur => (
                 &[
                     Normal, Combat, Vol, Sol, Roche, Acier, Feu, Eau, Plante, Electrique, Glace,
-                    Obscur,
+                    Obscur, Son,
                 ],
-                &[Feerique, Stellaire],
+                &[Feerique, Stellaire, Lumiere],
                 &[],
             ),
+            // La lumière chasse les ténèbres, les spectres et les Apôtres.
+            Lumiere => (&[Tenebres, Spectre, Obscur], &[Feu, Acier, Lumiere], &[]),
+            // Le vacarme trouble l'esprit, brise la glace et désoriente ce
+            // qui vole ; un spectre n'a pas d'oreilles pour l'entendre.
+            Son => (&[Psychique, Glace, Vol], &[Sol, Son, Obscur], &[Spectre]),
         };
     if sans_effet_sur.contains(&defense) {
         Rapport::Immunite
@@ -339,7 +359,7 @@ mod tests {
     #[test]
     fn l_obscur_en_attaque_et_en_defense() {
         let neutres = [Psychique, Tenebres, Poison, Insecte, Dragon, Spectre];
-        let opposes = [Feerique, Stellaire];
+        let opposes = [Feerique, Stellaire, Lumiere];
         for autre in Type::TOUS {
             let en_attaque = if opposes.contains(&autre) {
                 Rapport::Resistance
@@ -353,7 +373,7 @@ mod tests {
                 en_attaque,
                 "Obscur contre {autre:?}"
             );
-            let en_defense = if [Feerique, Psychique, Stellaire, Obscur].contains(&autre) {
+            let en_defense = if [Feerique, Psychique, Stellaire, Obscur, Lumiere].contains(&autre) {
                 Rapport::Faiblesse
             } else if [Tenebres, Poison, Insecte, Dragon, Spectre].contains(&autre) {
                 Rapport::Neutre
@@ -366,6 +386,71 @@ mod tests {
                 "{autre:?} contre Obscur"
             );
         }
+    }
+
+    /// Section 5.2, décidée le 24/10/2026 pour l'étape 93.
+    #[test]
+    fn la_lumiere_en_attaque_et_en_defense() {
+        for autre in Type::TOUS {
+            let en_attaque = if [Tenebres, Spectre, Obscur].contains(&autre) {
+                Rapport::Faiblesse
+            } else if [Feu, Acier, Lumiere].contains(&autre) {
+                Rapport::Resistance
+            } else {
+                Rapport::Neutre
+            };
+            assert_eq!(
+                rapport(Lumiere, autre),
+                en_attaque,
+                "Lumière contre {autre:?}"
+            );
+            let en_defense = if [Tenebres, Spectre].contains(&autre) {
+                Rapport::Faiblesse
+            } else if [Feu, Feerique, Lumiere, Obscur].contains(&autre) {
+                Rapport::Resistance
+            } else {
+                Rapport::Neutre
+            };
+            assert_eq!(
+                rapport(autre, Lumiere),
+                en_defense,
+                "{autre:?} contre Lumière"
+            );
+        }
+    }
+
+    /// Section 5.2, décidée le 24/10/2026 pour l'étape 93.
+    #[test]
+    fn le_son_en_attaque_et_en_defense() {
+        for autre in Type::TOUS {
+            let en_attaque = if autre == Spectre {
+                Rapport::Immunite
+            } else if [Psychique, Glace, Vol].contains(&autre) {
+                Rapport::Faiblesse
+            } else if [Sol, Son, Obscur].contains(&autre) {
+                Rapport::Resistance
+            } else {
+                Rapport::Neutre
+            };
+            assert_eq!(rapport(Son, autre), en_attaque, "Son contre {autre:?}");
+            let en_defense = if [Sol, Electrique, Obscur].contains(&autre) {
+                Rapport::Faiblesse
+            } else if [Normal, Vol, Son].contains(&autre) {
+                Rapport::Resistance
+            } else {
+                Rapport::Neutre
+            };
+            assert_eq!(rapport(autre, Son), en_defense, "{autre:?} contre Son");
+        }
+    }
+
+    #[test]
+    fn le_son_n_a_pas_d_effet_sur_un_spectre() {
+        assert_eq!(efficacite(Son, &types(&[Spectre])), Efficacite::Nulle);
+        assert_eq!(
+            efficacite(Son, &types(&[Glace, Spectre])),
+            Efficacite::Nulle
+        );
     }
 
     #[test]

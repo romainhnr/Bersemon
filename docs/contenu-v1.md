@@ -610,6 +610,8 @@ Attaques nouvelles :
 
 Ressources : Éclat de gargouille, Dent de goule et Aile de chauve-souris (5 pièces d'argent chacune), Crin de chimère (15).
 
+Depuis l'étape 94 (24/10/2026), l'Abbaye accueille aussi la Cloche hurlante, commune, et le Séraphin de vitrail, rare et pacifique (section 24).
+
 L'Inquisiteur attend au bout de l'Abbaye avec une Gargouille de niveau 27, une Goule de niveau 27 et une Chimère de niveau 28 (valeurs internes à 15, première habileté de leur espèce). Victoire : 300 pièces d'argent, puis l'indice 4 au retour.
 
 Textes :
@@ -1032,4 +1034,32 @@ Textes proposés sans validation (gamedesign.md, Q99) :
 | Codex | {nom} ({types}) : vaincu |
 | Libellés | Forger le Béhérit pourpre ; Sacrifier ; Partir vers l'Éclipse |
 | Refus | Il vous faut les âmes des trois Apôtres. / Le Béhérit pourpre est déjà forgé. / Il vous faut le Béhérit pourpre. / Le Béhérit a déjà reçu son sacrifice. / Le Béhérit réclame un monstre de niveau 30 ou plus. / Ce sacrifice laisserait votre équipe vide. / L'Éclipse est fermée : le Béhérit n'a pas reçu son sacrifice, ou le Démiurge est vaincu. |
+
+## 24. Types Lumière et Son
+
+Décidés le 24/10/2026, pour les étapes 93 à 95 (gamedesign.md, sections 5.2 et 5.3), contenu proposé par Claude et validé par l'utilisateur. Le codex, la ressource et la place des espèces dans les tirages sont des hypothèses (gamedesign.md, Q100).
+
+Les deux espèces vivent dans l'Abbaye des Cendres (section 10) : la Cloche hurlante parmi les espèces communes, le Séraphin de vitrail parmi les monstres rares, avec la Chimère et l'Ange déchu. Au codex, elles viennent après les deux formes du Démiurge, dans l'ordre du tableau.
+
+Espèces (stats dans l'ordre PV / Attaque / Défense / Attaque spéciale / Défense spéciale / Vitesse) :
+
+| Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP | Rareté | Habiletés | Attaques apprises |
+|---|---|---|---|---|---|---|---|---|
+| cloche-hurlante | Cloche hurlante | Acier, Son | soutien | 65 / 50 / 80 / 65 / 75 / 25 (360) | 108 | commune | Carapace, Volonté | Coup de garde (1), Glas (1), Tocsin (16), Carillon funèbre (24) |
+| seraphin-de-vitrail | Séraphin de vitrail | Lumière | offensif | 65 / 50 / 60 / 105 / 80 / 60 (420) | 180 | rare, pacifique | Sorcellerie, Volonté | Lueur sacrée (1), Lumière d'aube (12), Lance de lumière (18), Aube éclatante (24) |
+
+Attaques nouvelles :
+
+| Identifiant | Nom | Type | Cat. | Puissance | Précision | Effet |
+|---|---|---|---|---|---|---|
+| glas | Glas | Son | S | 50 | 100 | |
+| tocsin | Tocsin | Son | S | 75 | 100 | paralysie 10 % |
+| carillon-funebre | Carillon funèbre | Son | S | 90 | 85 | paralysie 10 % |
+| lueur-sacree | Lueur sacrée | Lumière | S | 50 | 100 | |
+| lance-de-lumiere | Lance de lumière | Lumière | P | 80 | 95 | |
+| aube-eclatante | Aube éclatante | Lumière | S | 90 | 90 | |
+
+Pas de capsule : une capsule n'enseigne qu'aux monstres de son type, et chaque type n'a qu'une espèce, qui apprend déjà ces attaques. La Lance de lumière, d'abord prévue en capsule, est apprise par le Séraphin au niveau 18.
+
+Ressource : Éclat de bronze (eclat-de-bronze), lâché par la Cloche hurlante, 5 pièces d'argent. Le Séraphin, pacifique, n'en a pas.
 

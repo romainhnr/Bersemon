@@ -178,6 +178,11 @@ Chaque monstre possède :
   - Restent à définir : Obscur contre Obscur, les autres relations du Stellaire, et l'équilibrage du combat contre un Apôtre (Q76). L'Apôtre combat seul contre les 3 monstres du joueur : on l'équilibrera en jouant, s'il le faut.
   - Décidé le 19/10/2026, pour les étapes 44 à 47 : l'Ange déchu, rare et pacifique de l'Abbaye des Cendres, est le premier monstre de type Psychique ; il est très efficace contre les Apôtres (docs/contenu-v1.md, section 10).
   - Précisé le 19/10/2026, pour l'étape 30 : une attaque Obscur est très efficace contre un monstre Obscur ; les Apôtres se déchirent entre eux. Le Stellaire garde ses relations avec l'Obscur et reste neutre envers les autres types. Le Baron pendu devient le premier Apôtre de type Obscur (section 9.4).
+- Types Lumière et Son, décidés le 24/10/2026 pour les étapes 93 à 95 (choix de l'utilisateur) :
+  - Lumière, en attaque : très efficace contre Ténèbres, Spectre et Obscur ; peu efficace contre Feu, Acier et Lumière. En défense : faible face à Ténèbres et Spectre ; résiste à Feu, Féérique, Lumière et Obscur. C'est le troisième opposé de l'Obscur, avec le Féérique et le Stellaire : une attaque Obscur ne lui est que peu efficace, et la Lumière s'ajoute aux types très efficaces contre les Apôtres.
+  - Son, en attaque : très efficace contre Psychique, Glace et Vol ; peu efficace contre Sol et Son ; sans effet sur Spectre (un spectre n'a pas d'oreilles). En défense : faible face à Sol et Électrique ; résiste à Normal, Vol et Son. Envers l'Obscur, il suit la règle des types ordinaires : une attaque Obscur lui est très efficace, et l'Obscur résiste au Son.
+  - Le Stellaire reste neutre envers la Lumière et le Son, dans les deux sens.
+  - Ils arrivent par deux espèces nouvelles de l'Abbaye des Cendres (section 5.3) et cinq attaques nouvelles, sans capsule : les capsules n'enseignent qu'aux monstres de leur type (section 13.10), et chaque type n'a qu'une espèce. Les attaques existantes ne changent pas de type (docs/contenu-v1.md, section 24).
 
 ### 5.3 Bestiaire
 
@@ -192,6 +197,7 @@ Chaque monstre possède :
 - Monstre caché, depuis l'étape 27 (19/10/2026) : le Schnoz, seul monstre de type Stellaire, d'espèce rare. Il se rencontre très rarement, dans toute zone (section 9.2). Fiche dans docs/contenu-v1.md.
 - Décidé le 20/10/2026, pour les étapes 62 à 65 : quatre monstres aquatiques, qui ne se trouvent qu'à la pêche (section 13.8) : le Noyé, l'Anguille des tourbières et la Sangsue géante, communs, et le Kelpie, rare, de type Eau et Féérique. Au codex, ils viennent après la Reine des ronces. Fiches dans docs/contenu-v1.md, section 15.
 - Décidé le 20/10/2026, pour les étapes 79 à 82 (contenu validé par l'utilisateur) : le Col du Givre-Noir accueille le Wendigo, le Troll des cavernes et la Harpie des orages, communs, la Gargouille, et deux formes évoluées sauvages, le Warg et le Chevalier noir (section 5.4) ; le Wyrm de givre, rare et hostile, et la Sylphe des neiges, rare et pacifique, de type Glace et Féérique. Les types Glace, Sol et Électrique y apparaissent pour la première fois. Au codex, ces espèces viennent après les monstres aquatiques, puis les formes de stade 3. Fiches dans docs/contenu-v1.md, section 21.
+- Décidé le 24/10/2026, pour les étapes 93 à 95 (contenu validé par l'utilisateur) : l'Abbaye des Cendres accueille la Cloche hurlante, commune, de type Acier et Son, et le Séraphin de vitrail, rare et pacifique, de type Lumière, troisième monstre rare de l'Abbaye avec la Chimère et l'Ange déchu. Au codex, elles viennent après les deux formes du Démiurge (précisé en codant, hypothèse retenue, Q100). Fiches dans docs/contenu-v1.md, section 24.
 
 ### 5.4 Évolution
 
@@ -957,7 +963,7 @@ Décidé le 20/10/2026, pour les étapes 70 et 71 (choix de l'utilisateur) :
 
 Les numéros des questions résolues ne sont pas réattribués, pour que les références restent stables.
 
-- Q5. Types Stellaire, Obscur, Lumière et Son (après la V1) : relations d'efficacité, et différence entre les types Ténèbres et Obscur.
+- Q5. Types Stellaire, Obscur, Lumière et Son (après la V1) : relations d'efficacité, et différence entre les types Ténèbres et Obscur. L'Obscur, réservé aux Apôtres, est tranché depuis l'étape 30, la Lumière et le Son depuis le 24/10/2026 (section 5.2). Restent les autres relations du Stellaire (Q76).
 
 Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découpage de la V1 en étapes. Chacune indique l'étape de développement qui en a besoin : 1 fondations (types, stats, monstres), 2 combat 1 contre 1, 3 combat complet (changement, statuts, fuite, capture), 4 progression, 5 héros, équipe et camp, 6 expédition manuelle, 7 sauvegarde, 8 contenu et boucle de jeu complète.
 
@@ -1033,6 +1039,10 @@ Les questions Q97 et suivantes ont été relevées le 20/10/2026 lors de la conc
 Les questions Q99 et suivantes ont été relevées le 21/10/2026 lors de la conception des étapes 87 actions du monstre loué sur Discord, 88 Béhérit pourpre et sauvegarde en version 25, 89 Éclipse et sacrifice, 90 combat en deux phases contre le Démiurge, 91 console, 92 bot Discord.
 
 - Q99. (Étapes 88 à 92) Hypothèses retenues, à confirmer : le Béhérit se forge sans autre coût que les âmes ; le monstre sacrifié ne doit pas laisser l'équipe vide, et un monstre reçu d'un autre joueur peut être sacrifié ; une attaque qu'il attendait de choisir est oubliée ; la seconde forme n'entre au codex, comme rencontrée, qu'une fois apparue en combat ; le Démiurge a, comme un Apôtre, 1 chance sur 512 d'être shiny, forme par forme ; l'Éclipse n'est jamais explorée, ne compte pas pour l'obéissance ni pour la cour d'entraînement ; une sauvegarde antérieure n'a pas de Béhérit. Une rareté à part, "Démiurge", sert au codex ("vaincu"). Le nom "Béhérit" vient de Berserk, comme le Schnoz : à revoir si le bot devient public (Q79). L'équilibrage des deux formes est à vérifier en jouant.
+
+Les questions Q100 et suivantes ont été relevées le 24/10/2026 lors de la conception des étapes 93 types Lumière et Son dans le noyau, 94 contenu de l'Abbaye des Cendres, 95 vérification des écrans de la console et du bot.
+
+- Q100. (Étapes 93 à 95) Hypothèses retenues, à confirmer : au codex, la Cloche hurlante et le Séraphin de vitrail viennent après les deux formes du Démiurge ; la Cloche lâche l'Éclat de bronze (5 pièces d'argent), qui entre aussi dans les pièges de l'Abbaye, et Malvoise la vend, comme les autres communes d'une zone menée au bout ; le Séraphin se loue comme les autres rares ; les trois rares de l'Abbaye sont tirés à parts égales, si bien que l'Ange déchu devient plus rare (1 monstre rare sur 3 au lieu de 1 sur 2) ; l'Inquisiteur garde son équipe ; la Cloche et le Séraphin n'évoluent pas. Pas de capsule Son ni Lumière, faute d'une deuxième espèce de chaque type. À vérifier en jouant : l'immunité du Spectre au Son (le Squelette et le Wendigo ne craignent rien de la Cloche), la Lumière contre les Apôtres (le Séraphin, comme l'Ange déchu, facilite le combat contre le Margrave et le Démiurge), et la Lance de lumière, attaque physique d'un monstre dont l'Attaque est faible. Aucun texte affiché n'est ajouté, en dehors des noms validés.
 
 - Q83. (Étapes 33 et 34) Hypothèses retenues, à confirmer : le gardien d'une âme à retrouver attaque à une étape tirée parmi celles qui précèdent la dernière ; le don d'une âme à Malvoise se fait sans confirmation ; une partie antérieure qui n'a pas recueilli l'âme de Bertrand le rencontre à l'étape 4 de sa prochaine expédition dans la Lisière, même avec Malvoise déjà au camp ; le texte du brigand de l'étape 5 ne change pas, même s'il a perdu son Loup à l'étape 4.
 
@@ -1445,3 +1455,11 @@ Les questions Q99 et suivantes ont été relevées le 21/10/2026 lors de la conc
 - Contenu proposé accepté : les deux formes du Démiurge, deux attaques, l'Éclipse, les textes et 3 Éclats d'astre (docs/contenu-v1.md, section 23). Q78 est tranchée par le Béhérit.
 - Sauvegarde en version 25.
 - Hypothèses retenues, à confirmer : Q99.
+
+24/10/2026 (conception des étapes 93 à 95, types Lumière et Son) :
+
+- Choix de l'utilisateur : les types Lumière et Son. La Lumière est très efficace contre les Ténèbres, les Spectres et l'Obscur, dont elle est le troisième opposé ; le Son est très efficace contre les types Psychique, Glace et Vol, et sans effet sur le Spectre (section 5.2). Q5 est tranchée pour ces deux types.
+- Choix de l'utilisateur : deux espèces nouvelles dans l'Abbaye des Cendres, la Cloche hurlante (Acier et Son, commune) et le Séraphin de vitrail (Lumière, rare et pacifique), et des attaques nouvelles ; les attaques existantes ne changent pas (section 5.3, docs/contenu-v1.md, section 24).
+- Choix de l'utilisateur, après avoir relevé que les capsules n'enseignent qu'aux monstres de leur type : pas de capsule Son ni Lumière ; le Séraphin apprend la Lance de lumière au niveau 18.
+- Pas de changement du format de sauvegarde : espèces et attaques y sont désignées par leur identifiant.
+- Hypothèses retenues, à confirmer : Q100.
