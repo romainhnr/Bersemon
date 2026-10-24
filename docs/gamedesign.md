@@ -182,7 +182,8 @@ Chaque monstre possède :
   - Lumière, en attaque : très efficace contre Ténèbres, Spectre et Obscur ; peu efficace contre Feu, Acier et Lumière. En défense : faible face à Ténèbres et Spectre ; résiste à Feu, Féérique, Lumière et Obscur. C'est le troisième opposé de l'Obscur, avec le Féérique et le Stellaire : une attaque Obscur ne lui est que peu efficace, et la Lumière s'ajoute aux types très efficaces contre les Apôtres.
   - Son, en attaque : très efficace contre Psychique, Glace et Vol ; peu efficace contre Sol et Son ; sans effet sur Spectre (un spectre n'a pas d'oreilles). En défense : faible face à Sol et Électrique ; résiste à Normal, Vol et Son. Envers l'Obscur, il suit la règle des types ordinaires : une attaque Obscur lui est très efficace, et l'Obscur résiste au Son.
   - Le Stellaire reste neutre envers la Lumière et le Son, dans les deux sens.
-  - Ils arrivent par deux espèces nouvelles de l'Abbaye des Cendres (section 5.3) et cinq attaques nouvelles, sans capsule : les capsules n'enseignent qu'aux monstres de leur type (section 13.10), et chaque type n'a qu'une espèce. Les attaques existantes ne changent pas de type (docs/contenu-v1.md, section 24).
+  - Ils arrivent par deux espèces nouvelles de l'Abbaye des Cendres (section 5.3) et six attaques nouvelles, sans capsule : les capsules n'enseignent qu'aux monstres de leur type (section 13.10), et chaque type n'a qu'une espèce. Les attaques existantes ne changent pas de type (docs/contenu-v1.md, section 24).
+  - Précisé à l'étape 95, en vérifiant les écrans : la console et le bot Discord n'ont pas changé. Le codex de Discord, à 56 espèces, garde deux pages de 30 ; chez Malvoise, 14 espèces à acheter et 9 à louer quand toutes les zones sont menées au bout.
 
 ### 5.3 Bestiaire
 
