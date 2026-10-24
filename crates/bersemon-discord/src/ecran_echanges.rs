@@ -4,16 +4,19 @@
 //! le monstre à lui céder, et celui qu'on lui demande, ou aucun pour un
 //! don. Une fois le joueur choisi, il peut aussi être défié en duel, et
 //! ajouté aux amis ou retiré (section 15.4). Le palmarès du joueur est en
-//! tête, et le classement des duels s'ouvre d'un bouton.
+//! tête, et le classement des duels s'ouvre d'un bouton, comme celui des
+//! records de la Tour sans fond (section 9.5).
 
 use bersemon_core::collection::{Collection, Emplacement};
 use bersemon_core::espece::Rarete;
 use bersemon_core::partie::Partie;
 use bersemon_core::relations::Palmares;
+use bersemon_core::tour::RecordsDeLaTour;
 use bersemon_presentation::duels::{classement as texte_du_classement, duels_de, vos_duels};
 use bersemon_presentation::echanges::{
     decrire_offre_envoyee, decrire_offre_recue, joueur, nom_et_niveau,
 };
+use bersemon_presentation::tour::records_de_la_tour as texte_des_records;
 
 use crate::composants::{Cle, Vue};
 use crate::echanges::{AutreJoueur, TableauDesEchanges};
@@ -187,6 +190,48 @@ pub fn classement(tableau: &TableauDesEchanges) -> Question {
     Question {
         texte: texte_du_classement(&classes),
         rangees: rangees(vec![
+            bouton(
+                Cle::Afficher(Vue::RecordsDeLaTour),
+                "Records de la Tour",
+                SECONDAIRE,
+            ),
+            bouton(
+                Cle::Afficher(Vue::Echanges {
+                    avec: None,
+                    cede: None,
+                }),
+                "Retour aux autres joueurs",
+                SECONDAIRE,
+            ),
+            retour(),
+        ]),
+    }
+}
+
+/// Les 10 meilleurs records de la Tour sans fond, seul et à deux, sous ceux
+/// du joueur (section 9.5).
+pub fn records_de_la_tour(partie: &Partie, tableau: &TableauDesEchanges) -> Question {
+    let classes = |joueurs: &[AutreJoueur],
+                   record: fn(RecordsDeLaTour) -> u32|
+     -> Vec<(String, Option<String>, u32)> {
+        joueurs
+            .iter()
+            .map(|joueur| {
+                let heros = joueur.heros.clone();
+                (heros, joueur.pseudo.clone(), record(joueur.records))
+            })
+            .collect()
+    };
+    let seul = classes(&tableau.records_seul, |records| records.seul);
+    let a_deux = classes(&tableau.records_a_deux, |records| records.a_deux);
+    Question {
+        texte: texte_des_records(partie.records_de_la_tour(), &seul, &a_deux),
+        rangees: rangees(vec![
+            bouton(
+                Cle::Afficher(Vue::Classement),
+                "Classement des duels",
+                SECONDAIRE,
+            ),
             bouton(
                 Cle::Afficher(Vue::Echanges {
                     avec: None,

@@ -2479,6 +2479,74 @@ fn un_joueur_qui_ne_joue_pas_perd_par_forfait() {
     let _ = fs::remove_dir_all(dossier);
 }
 
+/// La Tour sans fond se propose avec les zones une fois la Lisière menée
+/// au bout, et ses records ont leur classement, seul et à deux (section
+/// 9.5).
+#[test]
+fn la_tour_sans_fond_et_le_classement_de_ses_records() {
+    let contenu = ContenuV1::new();
+    let (_, dossier) = deux_joueurs_au_camp(&contenu, "tour");
+    for (joueur, seul, a_deux) in [(JOUEUR, 9, 0), (YSOLDE, 15, 4)] {
+        let chemin = dossier.join(format!("{joueur}.json"));
+        let texte = fs::read_to_string(&chemin)
+            .unwrap()
+            .replace(
+                "\"zones_explorees\": []",
+                "\"zones_explorees\": [\"lisiere\"]",
+            )
+            .replace(
+                "\"record_seul_dans_la_tour\": 0",
+                &format!("\"record_seul_dans_la_tour\": {seul}"),
+            )
+            .replace(
+                "\"record_a_deux_dans_la_tour\": 0",
+                &format!("\"record_a_deux_dans_la_tour\": {a_deux}"),
+            );
+        fs::write(&chemin, texte).unwrap();
+    }
+    // Le bot redémarre et relit les sauvegardes.
+    let mut joueurs = Joueurs::new(dossier.clone(), 2026);
+    joueurs.noter_pseudo(YSOLDE, "ysolde_la_grise");
+    for joueur in [JOUEUR, YSOLDE] {
+        executer_le_clic(
+            &mut joueurs,
+            joueur,
+            bouton(Cle::ReprendreLaPartie),
+            &contenu,
+        );
+    }
+    let autres = Cle::Afficher(Vue::Echanges {
+        avec: None,
+        cede: None,
+    });
+    let affiche = executer_le_clic(&mut joueurs, YSOLDE, bouton(autres), &contenu);
+    let clic = cliquer(&affiche, |cle| *cle == Cle::Afficher(Vue::Classement));
+    let affiche = executer_le_clic(&mut joueurs, YSOLDE, clic, &contenu);
+    let clic = cliquer(&affiche, |cle| *cle == Cle::Afficher(Vue::RecordsDeLaTour));
+    let affiche = executer_le_clic(&mut joueurs, YSOLDE, clic, &contenu);
+    assert_eq!(
+        affiche.texte,
+        "Records de la Tour sans fond.\nVos records : seul, étape 15 ; à deux, étape 4.\n\nSeul :\n1\\. Ysolde (ysolde_la_grise) : étape 15\n2\\. Aldric : étape 9\n\nÀ deux :\n1\\. Ysolde (ysolde_la_grise) : étape 4"
+    );
+    assert!(propose(&affiche, |cle| *cle == Cle::Afficher(Vue::Classement)));
+    // Aldric descend dans la Tour depuis le menu des expéditions.
+    let camp = executer_le_clic(
+        &mut joueurs,
+        JOUEUR,
+        bouton(Cle::Afficher(Vue::Camp)),
+        &contenu,
+    );
+    let clic = choisir_dans(&camp, |cle| *cle == Cle::Partir, "tour-sans-fond").unwrap();
+    let affiche = executer_le_clic(&mut joueurs, JOUEUR, clic, &contenu);
+    assert!(affiche.texte.contains("[Étape : 1]"), "{}", affiche.texte);
+    assert!(
+        affiche.texte.contains("tour engloutie"),
+        "{}",
+        affiche.texte
+    );
+    let _ = fs::remove_dir_all(dossier);
+}
+
 /// Ysolde ajoute Aldric à ses amis : il passe en tête de sa liste des
 /// joueurs, marqué "Ami", et le reste après un redémarrage du bot (section
 /// 15.4).

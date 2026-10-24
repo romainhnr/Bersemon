@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 use bersemon_core::collection::{Collection, Emplacement};
 use bersemon_core::echange::{ErreurEchange, Offre};
 use bersemon_core::relations::Palmares;
+use bersemon_core::tour::RecordsDeLaTour;
 use bersemon_presentation::echanges::erreur_echange;
 
 use crate::joueurs::IdJoueur;
@@ -152,6 +153,8 @@ pub struct AutreJoueur {
     pub pseudo: Option<String>,
     /// Ses duels (section 15.4).
     pub palmares: Palmares,
+    /// Ses records de la Tour sans fond (section 9.5).
+    pub records: RecordsDeLaTour,
 }
 
 /// Ce que montre l'écran des échanges, préparé par `Joueurs` : l'écran n'a
@@ -171,6 +174,10 @@ pub struct TableauDesEchanges {
     /// Tous les joueurs du bot qui ont livré au moins un duel, le joueur
     /// compris, dans l'ordre du classement, 10 au plus (Q94).
     pub classement: Vec<AutreJoueur>,
+    /// Les meilleurs records de la Tour sans fond, seul puis à deux, le
+    /// joueur compris, 10 au plus chacun (section 9.5).
+    pub records_seul: Vec<AutreJoueur>,
+    pub records_a_deux: Vec<AutreJoueur>,
 }
 
 /// Un message privé à envoyer dès que possible.

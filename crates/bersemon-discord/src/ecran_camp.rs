@@ -35,6 +35,7 @@ use bersemon_presentation::partie::{
     ligne_du_codex,
 };
 use bersemon_presentation::peche::ligne_prete;
+use bersemon_presentation::tour::description_de_la_tour;
 
 use crate::composants::{Cle, ECLIPSE, RETIRER, Vue, booster_en_texte, emplacement_en_texte};
 use crate::echanges::TableauDesEchanges;
@@ -79,6 +80,9 @@ pub fn question(
             ecran_echanges::echanges(partie, &TableauDesEchanges::default(), avec, cede)
         }
         Vue::Classement => ecran_echanges::classement(&TableauDesEchanges::default()),
+        Vue::RecordsDeLaTour => {
+            ecran_echanges::records_de_la_tour(partie, &TableauDesEchanges::default())
+        }
         Vue::Machines => machines(partie, contenu, maintenant),
         Vue::Entrainement => entrainement(partie),
     }
@@ -120,7 +124,15 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
             }
         })
         .collect();
-    // Avec le Béhérit, l'Éclipse suit les zones (section 9.4).
+    // La Tour sans fond suit les zones, une fois ouverte (section 9.5),
+    // puis l'Éclipse, avec le Béhérit (section 9.4).
+    if let Some(description) = description_de_la_tour(partie, contenu) {
+        zones.push(OptionDeMenu {
+            libelle: contenu.tour().nom().to_string(),
+            valeur: contenu.tour().id().as_str().to_string(),
+            description: Some(description),
+        });
+    }
     if let Some(description) = description_de_l_eclipse(partie, contenu) {
         zones.push(OptionDeMenu {
             libelle: contenu.invocation().eclipse().nom().to_string(),

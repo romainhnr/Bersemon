@@ -81,6 +81,8 @@ pub enum Vue {
     },
     /// Le classement des duels de tous les joueurs du bot (section 15.4).
     Classement,
+    /// Le classement des records de la Tour sans fond (section 9.5).
+    RecordsDeLaTour,
     /// Les machines de Gunther, depuis sa forge (section 13.6).
     Machines,
     /// Le choix du monstre à mettre à l'entraînement.
@@ -607,6 +609,7 @@ impl Cle {
             Cle::Afficher(Vue::Peche) => "vue:peche".to_string(),
             Cle::Afficher(Vue::Echanges { avec: None, .. }) => "vue:echanges".to_string(),
             Cle::Afficher(Vue::Classement) => "vue:classement".to_string(),
+            Cle::Afficher(Vue::RecordsDeLaTour) => "vue:records-de-la-tour".to_string(),
             Cle::AjouterAmi(autre) => format!("ajouter-ami:{autre}"),
             Cle::RetirerAmi(autre) => format!("retirer-ami:{autre}"),
             Cle::Afficher(Vue::Echanges {
@@ -799,6 +802,7 @@ impl Cle {
             "garder-prise" => Cle::GarderLaPrise,
             "relacher-prise" => Cle::RelacherLaPrise,
             "vue:classement" => Cle::Afficher(Vue::Classement),
+            "vue:records-de-la-tour" => Cle::Afficher(Vue::RecordsDeLaTour),
             "vue:echanges" => Cle::Afficher(Vue::Echanges {
                 avec: None,
                 cede: None,
@@ -1240,6 +1244,7 @@ mod tests {
             Cle::AjouterAmi(123_456_789_012_345_678),
             Cle::RetirerAmi(7),
             Cle::Afficher(Vue::Classement),
+            Cle::Afficher(Vue::RecordsDeLaTour),
             Cle::AccepterDefi,
             Cle::RefuserDefi,
             Cle::RetirerDefi,

@@ -3,6 +3,9 @@
 
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::partie::Partie;
+use bersemon_core::tour::RecordsDeLaTour;
+
+use crate::echanges::joueur;
 
 /// Dans la carte de la console, après les zones, une fois la Tour ouverte :
 /// "Tour sans fond (sans fin) : record, étape 13".
@@ -19,6 +22,44 @@ pub fn description_de_la_tour(partie: &Partie, contenu: &ContenuV1) -> Option<St
     partie
         .tour_ouverte(contenu.tour())
         .then(|| format!("Sans fin ; {}", record(partie)))
+}
+
+/// Le classement des records, seul et à deux, sous ceux du joueur : les
+/// joueurs classés, avec leur héros, leur pseudo s'il est connu, et leur
+/// record.
+pub fn records_de_la_tour(
+    vos_records: RecordsDeLaTour,
+    seul: &[(String, Option<String>, u32)],
+    a_deux: &[(String, Option<String>, u32)],
+) -> String {
+    let etape = |record: u32| match record {
+        0 => "aucun".to_string(),
+        etape => format!("étape {etape}"),
+    };
+    let liste = |classes: &[(String, Option<String>, u32)]| -> String {
+        if classes.is_empty() {
+            return "Aucun record pour l'instant.".to_string();
+        }
+        classes
+            .iter()
+            .enumerate()
+            .map(|(rang, (heros, pseudo, record))| {
+                format!(
+                    "{}. {} : étape {record}",
+                    rang + 1,
+                    joueur(heros, pseudo.as_deref())
+                )
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    };
+    format!(
+        "Records de la Tour sans fond.\nVos records : seul, {} ; à deux, {}.\n\nSeul :\n{}\n\nÀ deux :\n{}",
+        etape(vos_records.seul),
+        etape(vos_records.a_deux),
+        liste(seul),
+        liste(a_deux)
+    )
 }
 
 fn record(partie: &Partie) -> String {
@@ -86,6 +127,25 @@ mod tests {
             },
         })
         .unwrap()
+    }
+
+    #[test]
+    fn records_classes_seul_et_a_deux() {
+        let seul = [
+            ("Aldric".to_string(), None, 23),
+            ("Ysolde".to_string(), Some("ysolde".to_string()), 12),
+        ];
+        assert_eq!(
+            records_de_la_tour(
+                RecordsDeLaTour {
+                    seul: 23,
+                    a_deux: 0
+                },
+                &seul,
+                &[]
+            ),
+            "Records de la Tour sans fond.\nVos records : seul, étape 23 ; à deux, aucun.\n\nSeul :\n1. Aldric : étape 23\n2. Ysolde (ysolde) : étape 12\n\nÀ deux :\nAucun record pour l'instant."
+        );
     }
 
     #[test]

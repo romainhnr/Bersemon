@@ -16,6 +16,7 @@ use bersemon_core::echange::{ErreurEchange, Offre};
 use bersemon_core::horodatage::Horodatage;
 use bersemon_core::partie::Partie;
 use bersemon_core::sauvegarde::SauvegardeRepository;
+use bersemon_core::tour::RecordsDeLaTour;
 use bersemon_presentation::duels::{defi_accepte, defi_recu, defi_refuse};
 use bersemon_presentation::echanges::{offre_acceptee, offre_recue, offre_refusee};
 use bersemon_storage::FichierJson;
@@ -134,7 +135,7 @@ impl Joueurs {
         let vue = self.charger(joueur, contenu).vue;
         let avec = match vue {
             Vue::Echanges { avec, .. } => Some(avec),
-            Vue::Classement => Some(None),
+            Vue::Classement | Vue::RecordsDeLaTour => Some(None),
             _ => None,
         };
         if let Some(avec) = avec {
@@ -181,11 +182,13 @@ impl Joueurs {
         let partie = partie_lisible(&self.charger(joueur, contenu).deroulement)?;
         let heros = partie.heros().nom().as_str().to_string();
         let palmares = partie.relations().palmares();
+        let records = partie.records_de_la_tour();
         Some(AutreJoueur {
             id: joueur,
             heros,
             pseudo: self.pseudos.pseudo(joueur).map(str::to_string),
             palmares,
+            records,
         })
     }
 
@@ -202,6 +205,8 @@ impl Joueurs {
             .filter_map(|(autre, _)| self.autre_joueur(autre, contenu))
             .collect();
         let classement = classer(&tous);
+        let records_seul = classer_les_records(&tous, |records| records.seul);
+        let records_a_deux = classer_les_records(&tous, |records| records.a_deux);
         let amis = partie_lisible(&self.charger(joueur, contenu).deroulement)
             .map(|partie| partie.relations().clone())
             .unwrap_or_default();
@@ -240,6 +245,8 @@ impl Joueurs {
             defi_recu,
             defi_envoye,
             classement,
+            records_seul,
+            records_a_deux,
         }
     }
 
@@ -750,6 +757,28 @@ fn classer(joueurs: &[AutreJoueur]) -> Vec<AutreJoueur> {
             .victoires
             .cmp(&a.palmares.victoires)
             .then(a.palmares.defaites.cmp(&b.palmares.defaites))
+            .then(a.heros.cmp(&b.heros))
+            .then(a.id.cmp(&b.id))
+    });
+    classes.truncate(PLACES_AU_CLASSEMENT);
+    classes
+}
+
+/// Ceux qui ont franchi au moins une étape de la Tour sans fond, du record
+/// le plus profond au moins profond, puis par nom du héros ; 10 au plus
+/// (section 9.5).
+fn classer_les_records(
+    joueurs: &[AutreJoueur],
+    record: impl Fn(RecordsDeLaTour) -> u32,
+) -> Vec<AutreJoueur> {
+    let mut classes: Vec<AutreJoueur> = joueurs
+        .iter()
+        .filter(|joueur| record(joueur.records) > 0)
+        .cloned()
+        .collect();
+    classes.sort_by(|a, b| {
+        record(b.records)
+            .cmp(&record(a.records))
             .then(a.heros.cmp(&b.heros))
             .then(a.id.cmp(&b.id))
     });

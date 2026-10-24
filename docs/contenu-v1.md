@@ -1086,6 +1086,8 @@ Textes proposés sans validation (gamedesign.md, Q101) :
 | Moment | Texte |
 |---|---|
 | Retour au camp, nouveau record | Nouveau record dans la Tour sans fond : étape {n}. |
-| Carte et menus | Tour sans fond ; Record : étape {n} |
-| Compteur | [Étape : {n}] |
+| Carte de la console | Tour sans fond (sans fin) : record, étape {n} / Tour sans fond (sans fin) : descendre le plus loin possible |
+| Menu des expéditions du bot | Sans fin ; record, étape {n} / Sans fin ; descendre le plus loin possible |
+| Compteur et récit | [Étape : {n}] ; Étape {n}. |
+| Classement des records | Records de la Tour sans fond. / Vos records : seul, étape {n} ; à deux, aucun. / Seul : / À deux : / Aucun record pour l'instant. ; boutons Records de la Tour, Classement des duels |
 
