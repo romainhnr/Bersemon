@@ -699,6 +699,7 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
             Commande::Ouvrir(formulaire) => panic!("formulaire {formulaire:?} non envoyé"),
             Commande::Echanger(action) => panic!("échange {action:?} sans autre joueur"),
             Commande::Duel(action) => panic!("duel {action:?} sans autre joueur"),
+            Commande::Groupe(action) => panic!("groupe {action:?} sans autre joueur"),
             Commande::Actualiser => Vec::new(),
         };
         for evenement in &evenements {
@@ -1231,6 +1232,7 @@ fn gunther_agrandit_l_enclos_a_travers_les_ecrans_du_bot() {
             Commande::Ouvrir(formulaire) => panic!("formulaire {formulaire:?}"),
             Commande::Echanger(action) => panic!("échange {action:?}"),
             Commande::Duel(action) => panic!("duel {action:?}"),
+            Commande::Groupe(action) => panic!("groupe {action:?}"),
             Commande::Actualiser => Vec::new(),
         }
     };
@@ -2038,12 +2040,17 @@ fn executer_le_clic_a(
         Commande::Duel(action) => joueurs
             .agir_en_duel(joueur, version, action, contenu, maintenant)
             .unwrap_or_else(|refus| panic!("{action:?} refusé : {refus:?}")),
+        Commande::Groupe(action) => joueurs
+            .agir_en_groupe(joueur, version, action, contenu, maintenant)
+            .unwrap_or_else(|refus| panic!("{action:?} refusé : {refus:?}")),
         Commande::Actualiser => Vec::new(),
         Commande::Ouvrir(formulaire) => panic!("formulaire {formulaire:?}"),
     };
+    let mut vus = joueurs.prendre_le_recit_du_groupe(joueur);
+    vus.extend(evenements);
     let affiche = message(
         joueurs.session(joueur, contenu),
-        &evenements,
+        &vus,
         None,
         contenu,
         maintenant,
@@ -2641,37 +2648,52 @@ fn coup_de_groupe(
     }
 }
 
-/// Aldric invite Ysolde dans la Tour ; elle accepte, ils descendent ensemble
-/// et Aldric ramène le groupe à l'étape 4 : chacun garde le record à deux
-/// (section 15.5).
+/// Aldric invite Ysolde dans la Tour depuis l'écran des autres joueurs ;
+/// elle accepte, ils descendent ensemble et Aldric ramène le groupe à
+/// l'étape 4 : chacun garde le record à deux. Chaque écran des deux joueurs
+/// tient dans les limites de Discord (section 15.5).
 #[test]
 fn une_invitation_acceptee_fait_descendre_le_groupe() {
-    use crate::groupes::ActionDeGroupe;
     use bersemon_core::combat::Membre;
     let contenu = ContenuV1::new();
     let (mut joueurs, dossier) = deux_joueurs_devant_la_tour(&contenu, "groupe");
-    let maintenant = Horodatage::depuis_secondes(0);
-    let version = joueurs.session(JOUEUR, &contenu).version;
-    joueurs
-        .agir_en_groupe(
-            JOUEUR,
-            version,
-            ActionDeGroupe::Inviter(YSOLDE),
-            &contenu,
-            maintenant,
-        )
-        .unwrap();
-    let version = joueurs.session(YSOLDE, &contenu).version;
-    let recit = joueurs
-        .agir_en_groupe(
-            YSOLDE,
-            version,
-            ActionDeGroupe::AccepterInvitation,
-            &contenu,
-            maintenant,
-        )
-        .unwrap();
-    assert!(matches!(recit[..], [Evenement::Depart(_), ..]), "{recit:?}");
+    let autres = Cle::Afficher(Vue::Echanges {
+        avec: None,
+        cede: None,
+    });
+    let affiche = executer_le_clic(&mut joueurs, JOUEUR, bouton(autres.clone()), &contenu);
+    let clic = choisir_dans(&affiche, |cle| *cle == Cle::ChoisirJoueur, "8").unwrap();
+    let affiche = executer_le_clic(&mut joueurs, JOUEUR, clic, &contenu);
+    let clic = cliquer(&affiche, |cle| *cle == Cle::Inviter(YSOLDE));
+    let affiche = executer_le_clic(&mut joueurs, JOUEUR, clic, &contenu);
+    assert!(
+        affiche
+            .texte
+            .contains("Vous avez invité Ysolde (ysolde_la_grise) dans la Tour sans fond."),
+        "{}",
+        affiche.texte
+    );
+    assert!(!propose(&affiche, |cle| matches!(cle, Cle::Defier(_))));
+    let affiche = executer_le_clic(&mut joueurs, YSOLDE, bouton(autres), &contenu);
+    assert!(
+        affiche
+            .texte
+            .contains("Aldric vous invite à descendre dans la Tour sans fond."),
+        "{}",
+        affiche.texte
+    );
+    let clic = cliquer(&affiche, |cle| *cle == Cle::AccepterInvitation);
+    let affiche = executer_le_clic(&mut joueurs, YSOLDE, clic, &contenu);
+    assert!(
+        affiche.texte.contains("Descente avec Aldric."),
+        "{}",
+        affiche.texte
+    );
+    assert!(
+        affiche.texte.contains("tour engloutie"),
+        "{}",
+        affiche.texte
+    );
     let messages: Vec<String> = joueurs
         .prendre_les_messages_prives()
         .into_iter()
@@ -2679,14 +2701,30 @@ fn une_invitation_acceptee_fait_descendre_le_groupe() {
         .collect();
     assert!(messages[0].contains("vous invite à descendre"));
     assert!(messages[1].contains("a accepté votre invitation"));
-    // L'hôte voit le départ à son prochain affichage, une seule fois.
-    let attendu = joueurs.prendre_le_recit_du_groupe(JOUEUR);
-    assert!(matches!(attendu[..], [Evenement::Depart(_), ..]));
-    assert!(joueurs.prendre_le_recit_du_groupe(JOUEUR).is_empty());
+    // L'hôte voit le départ en actualisant, une seule fois.
+    let affiche = executer_le_clic(&mut joueurs, JOUEUR, bouton(Cle::Actualiser), &contenu);
+    assert!(
+        affiche.texte.contains("tour engloutie"),
+        "{}",
+        affiche.texte
+    );
+    let affiche = executer_le_clic(&mut joueurs, JOUEUR, bouton(Cle::Actualiser), &contenu);
+    assert!(
+        !affiche.texte.contains("tour engloutie"),
+        "{}",
+        affiche.texte
+    );
+    let maintenant = Horodatage::depuis_secondes(0);
+    let mut attente_vue = false;
     for _ in 0..2_000 {
         let Some(vu) = joueurs.session(JOUEUR, &contenu).groupe.clone() else {
             break;
         };
+        for joueur in [JOUEUR, YSOLDE] {
+            let affiche = afficher_a(&mut joueurs, joueur, &contenu, 0);
+            attente_vue |=
+                affiche.texte.contains("En attente de") || affiche.texte.contains("vous attendez");
+        }
         let qui = match vu.attendus[0] {
             Membre::Hote => JOUEUR,
             Membre::Invite => YSOLDE,
@@ -2697,6 +2735,7 @@ fn une_invitation_acceptee_fait_descendre_le_groupe() {
             .jouer(qui, version, choix, &contenu, maintenant)
             .unwrap();
     }
+    assert!(attente_vue);
     for joueur in [JOUEUR, YSOLDE] {
         let session = joueurs.session(joueur, &contenu);
         assert!(session.groupe.is_none());
@@ -2709,6 +2748,98 @@ fn une_invitation_acceptee_fait_descendre_le_groupe() {
             "{texte}"
         );
     }
+    let _ = fs::remove_dir_all(dossier);
+}
+
+/// Un récit trop long perd ses plus anciens passages : la question reste
+/// entière (section 15.5).
+#[test]
+fn un_recit_trop_long_garde_la_question() {
+    let contenu = ContenuV1::new();
+    let (mut joueurs, dossier) = deux_joueurs_au_camp(&contenu, "recit-long");
+    let evenements: Vec<Evenement> = (1..=300)
+        .map(|numero| Evenement::Etape {
+            numero,
+            total: None,
+        })
+        .collect();
+    let affiche = message(
+        joueurs.session(JOUEUR, &contenu),
+        &evenements,
+        None,
+        &contenu,
+        Horodatage::depuis_secondes(0),
+    );
+    verifier_les_limites(&affiche);
+    assert!(affiche.texte.starts_with("..."), "{}", affiche.texte);
+    assert!(affiche.texte.contains("Étape 300."), "{}", affiche.texte);
+    assert!(!affiche.texte.ends_with("..."), "{}", affiche.texte);
+    let _ = fs::remove_dir_all(dossier);
+}
+
+/// Ysolde ne joue plus : 5 minutes après, Aldric ramène le groupe au camp
+/// depuis son écran d'attente (section 15.5).
+#[test]
+fn le_groupe_rentre_quand_le_compagnon_ne_joue_plus() {
+    use crate::groupes::ActionDeGroupe;
+    use bersemon_core::combat::Membre;
+    let contenu = ContenuV1::new();
+    let (mut joueurs, dossier) = deux_joueurs_devant_la_tour(&contenu, "absence");
+    let maintenant = Horodatage::depuis_secondes(1_000);
+    let version = joueurs.session(JOUEUR, &contenu).version;
+    joueurs
+        .agir_en_groupe(
+            JOUEUR,
+            version,
+            ActionDeGroupe::Inviter(YSOLDE),
+            &contenu,
+            maintenant,
+        )
+        .unwrap();
+    let version = joueurs.session(YSOLDE, &contenu).version;
+    joueurs
+        .agir_en_groupe(
+            YSOLDE,
+            version,
+            ActionDeGroupe::AccepterInvitation,
+            &contenu,
+            maintenant,
+        )
+        .unwrap();
+    // Aldric joue jusqu'à ce que le groupe n'attende plus qu'Ysolde.
+    loop {
+        let vu = joueurs.session(JOUEUR, &contenu).groupe.clone().unwrap();
+        if vu.attendus == vec![Membre::Invite] {
+            break;
+        }
+        let qui = match vu.attendus[0] {
+            Membre::Hote => JOUEUR,
+            Membre::Invite => YSOLDE,
+        };
+        let choix = coup_de_groupe(&mut joueurs, qui, &contenu, 99);
+        let version = joueurs.session(qui, &contenu).version;
+        joueurs
+            .jouer(qui, version, choix, &contenu, maintenant)
+            .unwrap();
+    }
+    let affiche = afficher_a(&mut joueurs, JOUEUR, &contenu, 1_299);
+    assert!(
+        !propose(&affiche, |cle| *cle == Cle::RamenerLeGroupe),
+        "{}",
+        affiche.texte
+    );
+    let affiche = afficher_a(&mut joueurs, JOUEUR, &contenu, 1_300);
+    let clic = cliquer(&affiche, |cle| *cle == Cle::RamenerLeGroupe);
+    let affiche = executer_le_clic_a(&mut joueurs, JOUEUR, clic, &contenu, 1_300);
+    assert!(
+        affiche.texte.contains("Retour au camp"),
+        "{}",
+        affiche.texte
+    );
+    assert_eq!(
+        joueurs.session(JOUEUR, &contenu).deroulement.attente(),
+        Attente::Camp
+    );
     let _ = fs::remove_dir_all(dossier);
 }
 

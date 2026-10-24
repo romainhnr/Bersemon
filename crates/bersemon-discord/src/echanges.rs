@@ -171,6 +171,9 @@ pub struct TableauDesEchanges {
     /// Les défis en duel en attente (section 15.3).
     pub defi_recu: Option<AutreJoueur>,
     pub defi_envoye: Option<AutreJoueur>,
+    /// Les invitations dans la Tour sans fond en attente (section 15.5).
+    pub invitation_recue: Option<AutreJoueur>,
+    pub invitation_envoyee: Option<AutreJoueur>,
     /// Tous les joueurs du bot qui ont livré au moins un duel, le joueur
     /// compris, dans l'ordre du classement, 10 au plus (Q94).
     pub classement: Vec<AutreJoueur>,

@@ -44,6 +44,11 @@ pub fn en_attente_du_compagnon(heros: &str) -> String {
     format!("En attente de {heros}.")
 }
 
+/// Entre deux étapes, quand le compagnon a déjà choisi de continuer.
+pub fn veut_continuer(heros: &str) -> String {
+    format!("{heros} veut continuer.")
+}
+
 pub fn vous_attendez(heros: &str) -> String {
     format!("Vous voulez continuer : vous attendez {heros}.")
 }

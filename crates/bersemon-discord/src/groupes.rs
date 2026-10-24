@@ -48,10 +48,11 @@ pub fn erreur_d_invitation(erreur: &ErreurDInvitation) -> String {
             "Ce joueur n'a pas de partie sur le bot.".to_string()
         }
         ErreurDInvitation::InvitationDejaEnCours => {
-            "Vous avez déjà une invitation en attente : une seule à la fois.".to_string()
+            "Vous avez déjà un défi ou une invitation en attente : un seul à la fois.".to_string()
         }
         ErreurDInvitation::AutreDejaInvite => {
-            "Ce joueur a déjà une invitation en attente : réessayez plus tard.".to_string()
+            "Ce joueur a déjà un défi ou une invitation en attente : réessayez plus tard."
+                .to_string()
         }
         ErreurDInvitation::AucuneInvitation => {
             "Cette invitation n'est plus en attente.".to_string()

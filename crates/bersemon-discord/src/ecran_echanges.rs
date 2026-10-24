@@ -16,6 +16,10 @@ use bersemon_presentation::duels::{classement as texte_du_classement, duels_de, 
 use bersemon_presentation::echanges::{
     decrire_offre_envoyee, decrire_offre_recue, joueur, nom_et_niveau,
 };
+use bersemon_presentation::groupe::{
+    ACCEPTER_L_INVITATION, INVITER_DANS_LA_TOUR, REFUSER_L_INVITATION, RETIRER_L_INVITATION,
+    invitation_envoyee, vous_invite,
+};
 use bersemon_presentation::tour::records_de_la_tour as texte_des_records;
 
 use crate::composants::{Cle, Vue};
@@ -60,8 +64,29 @@ pub fn echanges(
         ));
         boutons.push(bouton(Cle::RetirerDefi, "Retirer le défi", SECONDAIRE));
     }
-    // Un défi à la fois par joueur, envoyé ou reçu (section 15.3).
-    let peut_defier = tableau.defi_recu.is_none() && tableau.defi_envoye.is_none();
+    if let Some(autre) = &tableau.invitation_recue {
+        paragraphes.push(vous_invite(&qui(autre)));
+        boutons.push(bouton(
+            Cle::AccepterInvitation,
+            ACCEPTER_L_INVITATION,
+            SUCCES,
+        ));
+        boutons.push(bouton(Cle::RefuserInvitation, REFUSER_L_INVITATION, DANGER));
+    }
+    if let Some(autre) = &tableau.invitation_envoyee {
+        paragraphes.push(invitation_envoyee(&qui(autre)));
+        boutons.push(bouton(
+            Cle::RetirerInvitation,
+            RETIRER_L_INVITATION,
+            SECONDAIRE,
+        ));
+    }
+    // Un défi ou une invitation à la fois par joueur, envoyé ou reçu
+    // (sections 15.3 et 15.5).
+    let peut_defier = tableau.defi_recu.is_none()
+        && tableau.defi_envoye.is_none()
+        && tableau.invitation_recue.is_none()
+        && tableau.invitation_envoyee.is_none();
     if let Some((autre, offre)) = &tableau.recue {
         paragraphes.push(decrire_offre_recue(&qui(autre), offre));
         boutons.push(bouton(Cle::AccepterOffre, "Accepter l'offre", SUCCES));
@@ -110,6 +135,7 @@ pub fn echanges(
             paragraphes.push(duels_de(&autre.heros, autre.palmares));
             if peut_defier {
                 boutons.push(bouton(Cle::Defier(id), "Défier en duel", PRINCIPAL));
+                boutons.push(bouton(Cle::Inviter(id), INVITER_DANS_LA_TOUR, PRINCIPAL));
             }
             if partie.relations().est_ami(id) {
                 boutons.push(bouton(Cle::RetirerAmi(id), "Retirer des amis", SECONDAIRE));
@@ -162,7 +188,10 @@ pub fn echanges(
             ));
         }
     }
-    // Au plus 9 boutons : ils tiennent en deux rangées.
+    // Au plus 9 boutons : ils tiennent en deux rangées. Le défi ou
+    // l'invitation en attente en compte 2 au plus, l'offre reçue 2, le
+    // joueur choisi 5 sans défi ni invitation en attente, ou 3 avec, et le
+    // classement et le retour 2.
     boutons.push(bouton(
         Cle::Afficher(Vue::Classement),
         "Classement",

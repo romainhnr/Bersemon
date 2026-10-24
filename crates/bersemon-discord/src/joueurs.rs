@@ -288,6 +288,20 @@ impl Joueurs {
         let defi_recu = defi_recu.and_then(|defi| self.autre_joueur(defi.de, contenu));
         let defi_envoye = self.defis.iter().find(|defi| defi.de == joueur).copied();
         let defi_envoye = defi_envoye.and_then(|defi| self.autre_joueur(defi.a, contenu));
+        let invitation_recue = self
+            .invitations
+            .iter()
+            .find(|invitation| invitation.a == joueur)
+            .copied();
+        let invitation_recue =
+            invitation_recue.and_then(|invitation| self.autre_joueur(invitation.de, contenu));
+        let invitation_envoyee = self
+            .invitations
+            .iter()
+            .find(|invitation| invitation.de == joueur)
+            .copied();
+        let invitation_envoyee =
+            invitation_envoyee.and_then(|invitation| self.autre_joueur(invitation.a, contenu));
         TableauDesEchanges {
             joueurs,
             recue,
@@ -295,6 +309,8 @@ impl Joueurs {
             choisi,
             defi_recu,
             defi_envoye,
+            invitation_recue,
+            invitation_envoyee,
             classement,
             records_seul,
             records_a_deux,
@@ -399,11 +415,12 @@ impl Joueurs {
         if self.duel_de(joueur).is_some() || self.duel_de(a).is_some() {
             return Err(ErreurDeDefi::DejaEnDuel);
         }
-        let concerne = |defi: &Defi, qui: IdJoueur| defi.de == qui || defi.a == qui;
-        if self.defis.iter().any(|defi| concerne(defi, joueur)) {
+        // Un défi ou une invitation à la fois par joueur, pour que l'écran
+        // des autres joueurs tienne dans un message (section 15.5).
+        if self.a_un_defi_ou_une_invitation(joueur) {
             return Err(ErreurDeDefi::DefiDejaEnCours);
         }
-        if self.defis.iter().any(|defi| concerne(defi, a)) {
+        if self.a_un_defi_ou_une_invitation(a) {
             return Err(ErreurDeDefi::AutreDejaDefie);
         }
         self.autre_joueur(a, contenu)
@@ -604,20 +621,10 @@ impl Joueurs {
         if self.est_occupe(joueur) || self.est_occupe(a) {
             return Err(ErreurDInvitation::DejaOccupe);
         }
-        let concerne =
-            |invitation: &Invitation, qui: IdJoueur| invitation.de == qui || invitation.a == qui;
-        if self
-            .invitations
-            .iter()
-            .any(|invitation| concerne(invitation, joueur))
-        {
+        if self.a_un_defi_ou_une_invitation(joueur) {
             return Err(ErreurDInvitation::InvitationDejaEnCours);
         }
-        if self
-            .invitations
-            .iter()
-            .any(|invitation| concerne(invitation, a))
-        {
+        if self.a_un_defi_ou_une_invitation(a) {
             return Err(ErreurDInvitation::AutreDejaInvite);
         }
         self.autre_joueur(a, contenu)
@@ -631,6 +638,17 @@ impl Joueurs {
             texte: invitation_recue(&moi.heros, moi.pseudo.as_deref()),
         });
         Ok(())
+    }
+
+    /// Envoyé ou reçu, en attente de réponse.
+    fn a_un_defi_ou_une_invitation(&self, joueur: IdJoueur) -> bool {
+        self.defis
+            .iter()
+            .any(|defi| defi.de == joueur || defi.a == joueur)
+            || self
+                .invitations
+                .iter()
+                .any(|invitation| invitation.de == joueur || invitation.a == joueur)
     }
 
     /// En duel ou en expédition en groupe.

@@ -386,9 +386,8 @@ impl ExpeditionEnGroupe {
             contexte.contenu.piste(),
         )
         .expect("le groupe a au moins un monstre apte entre deux étapes");
-        for recit in recits.iter_mut() {
-            recit.push(Evenement::Rencontre(combat.clone()));
-        }
+        recits[0].extend(hote.engager_en_groupe(&combat));
+        recits[1].extend(invite.engager_en_groupe(&combat));
         self.combat = Some(combat);
     }
 }

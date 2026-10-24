@@ -20,7 +20,7 @@ use crate::groupes::erreur_d_invitation;
 use crate::joueurs::{Refus, Session};
 use crate::{
     ecran_accueil, ecran_camp, ecran_combat, ecran_duel, ecran_echanges, ecran_expedition,
-    ecran_peche,
+    ecran_groupe, ecran_peche,
 };
 
 pub const LONGUEUR_MAX: usize = 2000;
@@ -129,7 +129,9 @@ impl Message {
 }
 
 /// `maintenant` décide de ce que montrent les expéditions automatiques :
-/// rentrées ou encore en cours.
+/// rentrées ou encore en cours. Un récit trop long perd ses plus anciens
+/// passages, pour que la question reste entière : en groupe, celui des
+/// choix du compagnon peut s'allonger (section 15.5).
 pub fn message(
     session: &Session,
     evenements: &[Evenement],
@@ -137,31 +139,44 @@ pub fn message(
     contenu: &ContenuV1,
     maintenant: Horodatage,
 ) -> Message {
-    let mut texte = String::new();
-    for recit in raconter(evenements) {
-        if !texte.is_empty() {
-            texte.push_str(if recit.nouveau_paragraphe {
-                "\n\n"
-            } else {
-                "\n"
-            });
-        }
-        texte.push_str(&recit.texte);
-    }
-    if let Some(refus) = refus {
-        ajouter_paragraphe(&mut texte, &expliquer(refus));
-    }
+    let recits = raconter(evenements);
     let question = question(session, contenu, maintenant);
-    ajouter_paragraphe(&mut texte, &question.texte);
-    // En expédition, le compteur d'étapes est toujours en haut (section
-    // 9.2).
-    if let Some(expedition) = session.deroulement.expedition() {
-        texte = format!("{}\n\n{texte}", compteur_d_etapes(expedition));
+    let composer = |depuis: usize| {
+        let mut texte = String::new();
+        if depuis > 0 {
+            texte.push_str("...");
+        }
+        for recit in &recits[depuis..] {
+            if !texte.is_empty() {
+                texte.push_str(if recit.nouveau_paragraphe {
+                    "\n\n"
+                } else {
+                    "\n"
+                });
+            }
+            texte.push_str(&recit.texte);
+        }
+        if let Some(refus) = refus {
+            ajouter_paragraphe(&mut texte, &expliquer(refus));
+        }
+        ajouter_paragraphe(&mut texte, &question.texte);
+        // En expédition, le compteur d'étapes est toujours en haut
+        // (section 9.2).
+        if let Some(expedition) = session.deroulement.expedition() {
+            texte = format!("{}\n\n{texte}", compteur_d_etapes(expedition));
+        }
+        echapper_les_debuts_de_ligne(&texte)
+    };
+    let mut depuis = 0;
+    let mut texte = composer(depuis);
+    while texte.chars().count() > LONGUEUR_MAX && depuis < recits.len() {
+        depuis += 1;
+        texte = composer(depuis);
     }
     let mut rangees = question.rangees;
     rangees.truncate(RANGEES_MAX);
     Message {
-        texte: couper(&echapper_les_debuts_de_ligne(&texte), LONGUEUR_MAX),
+        texte: couper(&texte, LONGUEUR_MAX),
         rangees,
         version: session.version,
     }
@@ -213,6 +228,30 @@ fn question(session: &Session, contenu: &ContenuV1, maintenant: Horodatage) -> Q
     if let (Some(duel), Some(partie)) = (&session.duel, session.deroulement.partie()) {
         return ecran_duel::question(duel, partie, maintenant);
     }
+    // En groupe, le combat commun et l'attente du compagnon ont leurs
+    // écrans ; les autres questions sont celles d'une expédition seul, sous
+    // l'en-tête de la descente (section 15.5).
+    if let (Some(groupe), Some(partie)) = (&session.groupe, session.deroulement.partie()) {
+        let attente = session.deroulement.attente();
+        if let Some(question) = ecran_groupe::question(groupe, partie, attente, maintenant) {
+            return question;
+        }
+        let mut question = question_de_la_partie(session, contenu, maintenant);
+        question.texte = format!(
+            "{}\n\n{}",
+            ecran_groupe::entete(groupe, attente),
+            question.texte
+        );
+        return question;
+    }
+    question_de_la_partie(session, contenu, maintenant)
+}
+
+fn question_de_la_partie(
+    session: &Session,
+    contenu: &ContenuV1,
+    maintenant: Horodatage,
+) -> Question {
     let partie = || session.deroulement.partie().expect(PARTIE_EN_JEU);
     match session.deroulement.attente() {
         Attente::Reprise(partie) => ecran_accueil::reprise(partie),
@@ -240,10 +279,11 @@ fn question(session: &Session, contenu: &ContenuV1, maintenant: Horodatage) -> Q
         Attente::Evolution { monstre, vers } => ecran_combat::evolution(monstre, vers),
         Attente::Annonce(annonce) => ecran_expedition::annonce(annonce),
         Attente::Confirmation(confirmation) => confirmer(confirmation),
-        // L'expédition en groupe a ses écrans à partir de l'étape 102.
+        // Le combat commun et l'attente du compagnon passent par
+        // `ecran_groupe` ; sans expédition en groupe, rien à faire.
         Attente::CombatDeGroupe | Attente::AttenteDuGroupe => Question {
-            texte: "Expédition en groupe.".to_string(),
-            rangees: Vec::new(),
+            texte: String::new(),
+            rangees: rangees(vec![bouton(Cle::Actualiser, "Actualiser", PRINCIPAL)]),
         },
     }
 }

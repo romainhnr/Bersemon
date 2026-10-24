@@ -118,6 +118,12 @@ fn executer(
                 Err(refus) => (Vec::new(), Some(refus)),
             }
         }
+        Commande::Groupe(action) => {
+            match joueurs.agir_en_groupe(joueur, version, action, contenu, maintenant()) {
+                Ok(evenements) => (evenements, None),
+                Err(refus) => (Vec::new(), Some(refus)),
+            }
+        }
         Commande::Actualiser => (Vec::new(), None),
         Commande::Ouvrir(formulaire) => {
             if joueurs.est_a_jour(joueur, version, contenu) {
@@ -129,10 +135,14 @@ fn executer(
             (Vec::new(), Some(Refus::MessagePerime))
         }
     };
+    // En groupe, les suites des choix du compagnon passent avant (section
+    // 15.5).
+    let mut vus = joueurs.prendre_le_recit_du_groupe(joueur);
+    vus.extend(evenements);
     let session = joueurs.session(joueur, contenu);
     mise_a_jour(message::message(
         session,
-        &evenements,
+        &vus,
         refus.as_ref(),
         contenu,
         maintenant(),

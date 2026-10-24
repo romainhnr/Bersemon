@@ -1014,6 +1014,16 @@ impl Deroulement {
         evenements
     }
 
+    /// En groupe : la rencontre du combat commun, que l'expédition en
+    /// groupe vient de préparer, comme au début d'un combat seul.
+    pub(crate) fn engager_en_groupe(&mut self, combat: &Combat) -> Vec<Evenement> {
+        let mut evenements = vec![Evenement::Rencontre(combat.clone())];
+        if let Some(jeu) = self.en_jeu_mut() {
+            montrer_conseil(&mut jeu.partie, Conseil::PremierCombat, &mut evenements);
+        }
+        evenements
+    }
+
     /// En groupe, le joueur attend l'autre pour continuer.
     pub(crate) fn veut_continuer(&self) -> bool {
         self.attente() == Attente::AttenteDuGroupe
@@ -3078,7 +3088,6 @@ impl EnExpedition {
         for adversaire in &adversaires {
             partie.noter_rencontre(adversaire);
         }
-        montrer_conseil(partie, Conseil::PremierCombat, evenements);
         self.moment = Moment::CombatDeGroupe { contre_un_gardien };
         Some(Reponse::Faite)
     }

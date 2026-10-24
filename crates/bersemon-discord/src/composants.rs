@@ -26,6 +26,7 @@ use bersemon_core::zone::ZoneId;
 
 use crate::duels::ActionDeDuel;
 use crate::echanges::ActionDEchange;
+use crate::groupes::ActionDeGroupe;
 use crate::joueurs::IdJoueur;
 
 /// Distingue les composants de Bersemon de ceux d'autres usages éventuels.
@@ -195,8 +196,10 @@ pub enum Commande {
     Ouvrir(Formulaire),
     Echanger(ActionDEchange),
     Duel(ActionDeDuel),
+    Groupe(ActionDeGroupe),
     /// Remet le message à jour, sans rien changer : en duel, pour voir le
-    /// tour que l'autre joueur a fait jouer (section 15.3).
+    /// tour que l'autre joueur a fait jouer (section 15.3), et en groupe,
+    /// les choix du compagnon (section 15.5).
     Actualiser,
 }
 
@@ -379,6 +382,13 @@ pub enum Cle {
     /// Après la fin du duel.
     RevenirDuDuel,
     Actualiser,
+    /// Invite ce joueur à descendre dans la Tour sans fond (section 15.5).
+    Inviter(IdJoueur),
+    AccepterInvitation,
+    RefuserInvitation,
+    RetirerInvitation,
+    /// Après 5 minutes sans réponse du compagnon.
+    RamenerLeGroupe,
 }
 
 /// Valeur de l'option qui retire l'objet porté, dans le menu d'une place :
@@ -566,6 +576,11 @@ impl Cle {
             Cle::ReclamerLaVictoire => Some(Commande::Duel(ActionDeDuel::ReclamerLaVictoire)),
             Cle::RevenirDuDuel => Some(Commande::Duel(ActionDeDuel::RevenirAuCamp)),
             Cle::Actualiser => Some(Commande::Actualiser),
+            Cle::Inviter(a) => Some(Commande::Groupe(ActionDeGroupe::Inviter(*a))),
+            Cle::AccepterInvitation => Some(Commande::Groupe(ActionDeGroupe::AccepterInvitation)),
+            Cle::RefuserInvitation => Some(Commande::Groupe(ActionDeGroupe::RefuserInvitation)),
+            Cle::RetirerInvitation => Some(Commande::Groupe(ActionDeGroupe::RetirerInvitation)),
+            Cle::RamenerLeGroupe => Some(Commande::Groupe(ActionDeGroupe::RamenerLeGroupe)),
         }
     }
 
@@ -748,6 +763,11 @@ impl Cle {
             Cle::ReclamerLaVictoire => "reclamer-victoire".to_string(),
             Cle::RevenirDuDuel => "revenir-du-duel".to_string(),
             Cle::Actualiser => "actualiser".to_string(),
+            Cle::Inviter(a) => format!("inviter:{a}"),
+            Cle::AccepterInvitation => "accepter-invitation".to_string(),
+            Cle::RefuserInvitation => "refuser-invitation".to_string(),
+            Cle::RetirerInvitation => "retirer-invitation".to_string(),
+            Cle::RamenerLeGroupe => "ramener-le-groupe".to_string(),
         }
     }
 
@@ -818,6 +838,10 @@ impl Cle {
             "reclamer-victoire" => Cle::ReclamerLaVictoire,
             "revenir-du-duel" => Cle::RevenirDuDuel,
             "actualiser" => Cle::Actualiser,
+            "accepter-invitation" => Cle::AccepterInvitation,
+            "refuser-invitation" => Cle::RefuserInvitation,
+            "retirer-invitation" => Cle::RetirerInvitation,
+            "ramener-le-groupe" => Cle::RamenerLeGroupe,
             "fabriquer" => Cle::Fabriquer,
             "se-suicider" => Cle::SeSuicider,
             "acheter-capsule" => Cle::AcheterCapsule,
@@ -908,6 +932,7 @@ impl Cle {
                         }
                     }
                     "defier" => Cle::Defier(parametre.parse().ok()?),
+                    "inviter" => Cle::Inviter(parametre.parse().ok()?),
                     "ajouter-ami" => Cle::AjouterAmi(parametre.parse().ok()?),
                     "retirer-ami" => Cle::RetirerAmi(parametre.parse().ok()?),
                     "donner" => {
@@ -1252,6 +1277,11 @@ mod tests {
             Cle::ReclamerLaVictoire,
             Cle::RevenirDuDuel,
             Cle::Actualiser,
+            Cle::Inviter(123_456_789_012_345_678),
+            Cle::AccepterInvitation,
+            Cle::RefuserInvitation,
+            Cle::RetirerInvitation,
+            Cle::RamenerLeGroupe,
             Cle::Filet,
             Cle::Fuir,
             Cle::Changer,

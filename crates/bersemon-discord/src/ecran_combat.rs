@@ -19,7 +19,8 @@ use poise::serenity_prelude as serenity;
 
 use crate::composants::{Cle, soin_et_position_en_texte};
 use crate::message::{
-    DANGER, OptionDeMenu, PRINCIPAL, Question, SECONDAIRE, SUCCES, bouton, menu, rangees,
+    DANGER, OPTIONS_PAR_MENU, OptionDeMenu, PRINCIPAL, Question, SECONDAIRE, SUCCES, bouton, menu,
+    rangees,
 };
 
 /// Une rangée d'attaques, l'ordre du héros tant qu'il n'est pas donné
@@ -61,7 +62,10 @@ pub fn action(combat: &Combat, partie: &Partie) -> Question {
         autres.push(bouton(Cle::Fuir, "Fuir", SECONDAIRE));
     }
     lignes.extend(rangees(autres));
-    let remplacants = options_aptes(combat, |index| index != actif.index);
+    // En groupe, le joueur ne fait entrer que ses monstres (section 15.5).
+    let remplacants = options_aptes(combat, |index| {
+        index != actif.index && combat.proprietaire(index) == combat.membre_actif()
+    });
     lignes.extend(menu(Cle::Changer, "Changer de monstre", remplacants));
     lignes.extend(menu(
         Cle::SoinEnCombat,
@@ -93,7 +97,8 @@ fn style_d_attaque(apercu: ApercuAttaque) -> serenity::ButtonStyle {
 
 /// Chaque soin du sac avec chaque monstre à qui il peut servir : l'élixir
 /// aux monstres KO, les autres soins aux monstres debout. Au plus 4 soins
-/// pour 3 monstres : 12 options, sous la limite de Discord.
+/// pour 4 monstres : 16 options, sous la limite de Discord ; en groupe, avec
+/// jusqu'à 8 monstres, le menu s'arrête à la limite (section 15.5).
 pub fn options_de_soins(soins: &Soins, equipe: &[Monstre]) -> Vec<OptionDeMenu> {
     let mut options = Vec::new();
     for (soin, nombre) in soins.presents() {
@@ -112,6 +117,7 @@ pub fn options_de_soins(soins: &Soins, equipe: &[Monstre]) -> Vec<OptionDeMenu> 
             });
         }
     }
+    options.truncate(OPTIONS_PAR_MENU);
     options
 }
 
@@ -130,12 +136,17 @@ fn options_aptes(combat: &Combat, garder: impl Fn(usize) -> bool) -> Vec<OptionD
         .collect()
 }
 
+/// En groupe, seulement les monstres de celui qui remplace (section 15.5).
 pub fn remplacement(combat: &Combat, codex: &Codex) -> Question {
+    let qui_remplace = combat.membre_qui_remplace();
     let boutons = combat
         .equipe()
         .iter()
         .enumerate()
-        .filter(|(_, monstre)| !monstre.est_ko())
+        .filter(|(index, monstre)| {
+            !monstre.est_ko()
+                && qui_remplace.is_none_or(|membre| combat.proprietaire(*index) == membre)
+        })
         .map(|(index, monstre)| {
             bouton(
                 Cle::Remplacer(index),

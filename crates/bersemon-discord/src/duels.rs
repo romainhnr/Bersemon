@@ -49,10 +49,11 @@ pub fn erreur_de_defi(erreur: &ErreurDeDefi) -> String {
         ErreurDeDefi::AvecSoiMeme => "Vous ne pouvez pas vous défier vous-même.".to_string(),
         ErreurDeDefi::JoueurSansPartie => "Ce joueur n'a pas de partie sur le bot.".to_string(),
         ErreurDeDefi::DefiDejaEnCours => {
-            "Vous avez déjà un défi en attente : un seul à la fois.".to_string()
+            "Vous avez déjà un défi ou une invitation en attente : un seul à la fois.".to_string()
         }
         ErreurDeDefi::AutreDejaDefie => {
-            "Ce joueur a déjà un défi en attente : réessayez plus tard.".to_string()
+            "Ce joueur a déjà un défi ou une invitation en attente : réessayez plus tard."
+                .to_string()
         }
         ErreurDeDefi::AucunDefi => "Ce défi n'est plus en attente.".to_string(),
         ErreurDeDefi::DejaEnDuel => "Un des deux joueurs est déjà en duel.".to_string(),

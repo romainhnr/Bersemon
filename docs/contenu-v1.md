@@ -1090,4 +1090,9 @@ Textes proposés sans validation (gamedesign.md, Q101) :
 | Menu des expéditions du bot | Sans fin ; record, étape {n} / Sans fin ; descendre le plus loin possible |
 | Compteur et récit | [Étape : {n}] ; Étape {n}. |
 | Classement des records | Records de la Tour sans fond. / Vos records : seul, étape {n} ; à deux, aucun. / Seul : / À deux : / Aucun record pour l'instant. ; boutons Records de la Tour, Classement des duels |
+| Message privé, invitation reçue | {héros} ({pseudo}) vous invite à descendre dans la Tour sans fond. Ouvrez /bersemon, au camp, pour répondre. |
+| Message privé, invitation acceptée ou refusée | {héros} a accepté votre invitation : la descente commence. Ouvrez /bersemon. / {héros} a refusé votre invitation dans la Tour sans fond. |
+| Écran des autres joueurs | {héros} vous invite à descendre dans la Tour sans fond. / Vous avez invité {héros} dans la Tour sans fond. En attente de sa réponse. ; boutons Inviter dans la Tour, Accepter l'invitation, Refuser l'invitation, Retirer l'invitation |
+| Écrans de la descente | Descente avec {héros}. / En attente de {héros}. / Vous voulez continuer : vous attendez {héros}. / {héros} veut continuer. ; boutons Actualiser, Rentrer au camp, Ramener le groupe au camp |
+| Refus | Vous ne pouvez pas vous inviter vous-même. / Vous avez déjà un défi ou une invitation en attente : un seul à la fois. / Ce joueur a déjà un défi ou une invitation en attente : réessayez plus tard. / Cette invitation n'est plus en attente. / Un des deux joueurs est déjà en duel ou en expédition. / Les deux joueurs doivent être au camp pour descendre ensemble : réessayez plus tard. / Chacun doit avoir ouvert la Tour sans fond, en menant la Lisière au bout. / C'est à votre compagnon d'agir. / Pas encore : votre compagnon a 5 minutes pour jouer. |
 
