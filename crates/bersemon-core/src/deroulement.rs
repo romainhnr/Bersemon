@@ -360,11 +360,20 @@ pub enum Evenement {
     PartieCommencee(Monstre),
     /// Nom de la zone.
     Depart(String),
-    /// Numéro de l'étape et nombre d'étapes de l'expédition (section 9.2).
+    /// Numéro de l'étape et nombre d'étapes de l'expédition (section 9.2),
+    /// sans total dans la Tour sans fond (section 9.5).
     Etape {
         numero: u32,
-        total: u32,
+        total: Option<u32>,
     },
+    /// Le récit de l'entrée dans la Tour sans fond, au départ (section 9.5).
+    EntreeDansLaTour(String),
+    /// Le récit du gardien de la Tour, avant le combat annoncé.
+    GardienDeLaTour(String),
+    /// Après la victoire sur le gardien : tous les monstres sont soignés.
+    ReposDansLaTour(String),
+    /// Au retour au camp, la dernière étape franchie bat le record.
+    NouveauRecordDeLaTour(u32),
     /// L'argent et la capsule ne seront acquis qu'au retour au camp
     /// (section 9.3).
     Coffre {
@@ -1080,6 +1089,17 @@ impl EnJeu {
         match choix {
             Choix::PartirEnExpedition(id) if id == contexte.contenu.invocation().eclipse().id() => {
                 let expedition = self.partir_vers_l_eclipse(contexte)?;
+                self.lancer(expedition, contexte, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::PartirEnExpedition(id) if id == contexte.contenu.tour().id() => {
+                let expedition = self
+                    .partie
+                    .descendre_dans_la_tour(contexte.contenu.tour(), contexte.contenu.zones())
+                    .map_err(|erreur| match erreur {
+                        ErreurExpedition::ZoneFermee => ErreurChoix::ZoneFermee,
+                        ErreurExpedition::EquipeVide => ErreurChoix::EquipeVide,
+                    })?;
                 self.lancer(expedition, contexte, evenements);
                 Ok(Reponse::Faite)
             }
@@ -1911,6 +1931,11 @@ impl EnJeu {
         evenements: &mut Vec<Evenement>,
     ) {
         evenements.push(Evenement::Depart(expedition.zone().nom().to_string()));
+        if let Some(tour) = expedition.tour() {
+            evenements.push(Evenement::EntreeDansLaTour(
+                tour.recit_de_l_entree().to_string(),
+            ));
+        }
         let mut en_cours = EnExpedition {
             expedition,
             moment: Moment::EntreDeuxEtapes,
@@ -1960,6 +1985,12 @@ impl EnJeu {
             });
         }
         evenements.push(Evenement::RetourAuCamp);
+        if en_cours.expedition.est_sans_fin() {
+            let franchies = en_cours.expedition.etapes_franchies();
+            if self.partie.noter_record_de_la_tour(franchies, false) {
+                evenements.push(Evenement::NouveauRecordDeLaTour(franchies));
+            }
+        }
         if let Some(monstre) = location_finie {
             evenements.push(Evenement::LocationFinie(monstre));
         }
@@ -2055,6 +2086,7 @@ struct FinDeCombat {
     issue: Option<Issue>,
     contre_un_apotre: bool,
     contre_un_humain: bool,
+    contre_un_gardien: bool,
     /// Le contenu du sac, perdu après une défaite (section 9.3).
     sac_perdu: Inventaire,
 }
@@ -2326,6 +2358,7 @@ impl EnExpedition {
             issue: None,
             contre_un_apotre: combat.est_contre_un_apotre(),
             contre_un_humain: combat.est_contre_un_humain(),
+            contre_un_gardien: combat.est_contre_un_gardien(),
             sac_perdu: Inventaire::default(),
         };
         let bilan = combat.terminer(&mut *contexte.aleatoire);
@@ -2619,6 +2652,16 @@ impl EnExpedition {
                     evenements.push(Evenement::EclatDAstreRamasse);
                 }
             }
+            // Le repos qui suit le gardien de la Tour soigne tout (section
+            // 9.5).
+            if fin.contre_un_gardien && fin.issue == Some(Issue::Victoire) {
+                partie.collection_mut().soigner_tout();
+                if let Some(tour) = self.expedition.tour() {
+                    evenements.push(Evenement::ReposDansLaTour(
+                        tour.recit_du_repos().to_string(),
+                    ));
+                }
+            }
             let humain = self.expedition.humain().cloned();
             if let Some(humain) =
                 humain.filter(|_| fin.contre_un_humain && fin.issue == Some(Issue::Victoire))
@@ -2684,7 +2727,7 @@ impl EnExpedition {
         };
         evenements.push(Evenement::Etape {
             numero: self.expedition.etapes_faites(),
-            total: self.expedition.nombre_etapes(),
+            total: (!self.expedition.est_sans_fin()).then_some(self.expedition.nombre_etapes()),
         });
         let contenu = contexte.contenu;
         let limite = partie.limite_d_obeissance(contenu.zones(), contenu.piste());
@@ -2788,6 +2831,22 @@ impl EnExpedition {
                 let combat = partie
                     .preparer_combat_contre_apotre(formes)
                     .expect(EQUIPE_APTE)
+                    .avec_limite_d_obeissance(limite);
+                self.moment = Moment::AnnonceDeCombat(combat);
+                Reponse::Faite
+            }
+            EvenementExpedition::Gardien(gardien) => {
+                // Comme pour l'humain, son texte annonce la rencontre.
+                let recit = self
+                    .expedition
+                    .tour()
+                    .map(|tour| tour.recit_du_gardien(gardien.nom()))
+                    .unwrap_or_default();
+                evenements.push(Evenement::GardienDeLaTour(recit));
+                let combat = partie
+                    .preparer_combat(vec![gardien])
+                    .expect(EQUIPE_APTE)
+                    .contre_un_gardien()
                     .avec_limite_d_obeissance(limite);
                 self.moment = Moment::AnnonceDeCombat(combat);
                 Reponse::Faite
@@ -2968,6 +3027,7 @@ mod tests {
             relations: partie.relations().clone(),
             machines: partie.machines().clone(),
             beherit: partie.beherit(),
+            records_de_la_tour: partie.records_de_la_tour(),
         }
     }
 
@@ -3185,7 +3245,7 @@ mod tests {
                 Evenement::Depart("Lisière du Bois-Sombre".to_string()),
                 Evenement::Etape {
                     numero: 1,
-                    total: 5
+                    total: Some(5)
                 },
                 Evenement::Coffre {
                     potions: 1,
@@ -4881,6 +4941,103 @@ mod tests {
         );
     }
 
+    fn partie_pour_la_tour(contenu: &ContenuV1) -> Partie {
+        let mut partie = partie_de(salamandre(contenu, 40));
+        partie.prendre_monstre_rare(monstre_du_contenu(contenu, "crapaud", 40));
+        partie.prendre_monstre_rare(monstre_du_contenu(contenu, "mandragore", 40));
+        let mut etat = etat_de(&partie);
+        etat.zones_explorees = vec![ZoneId::new("lisiere")];
+        etat.sac.ajouter_potions(10);
+        Partie::restaurer(etat).unwrap()
+    }
+
+    /// Section 9.5 : la Tour s'ouvre avec la Lisière menée au bout.
+    #[test]
+    fn la_tour_reste_fermee_avant_la_lisiere_menee_au_bout() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut deroulement = au_camp(partie_de(salamandre(&contenu, 40)), &contenu, &depot);
+        assert_eq!(
+            repondre_sans_tirage(
+                &mut deroulement,
+                Choix::PartirEnExpedition(contenu.tour().id().clone()),
+                &contenu,
+                &depot
+            ),
+            Err(ErreurChoix::ZoneFermee)
+        );
+    }
+
+    /// Section 9.5 : des étapes sans fin, un gardien à l'étape 10 suivi d'un
+    /// repos, et le record de la dernière étape franchie au retour.
+    #[test]
+    fn une_descente_dans_la_tour_passe_le_gardien_et_bat_le_record() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let tour = contenu.tour().id().clone();
+        let mut deroulement = au_camp(partie_pour_la_tour(&contenu), &contenu, &depot);
+        let mut aleatoire = GenerateurAleatoire::new(5);
+        let mut vus = Vec::new();
+        let mut choix = Choix::PartirEnExpedition(tour.clone());
+        for _ in 0..5_000 {
+            let mut contexte = Contexte {
+                contenu: &contenu,
+                aleatoire: &mut aleatoire,
+                depot: &depot,
+                maintenant: Horodatage::depuis_secondes(0),
+            };
+            vus.extend(deroulement.repondre(choix, &mut contexte).unwrap());
+            if deroulement.attente() == Attente::Camp {
+                break;
+            }
+            if let Some(expedition) = deroulement.expedition() {
+                assert!(expedition.est_sans_fin());
+                assert_eq!(expedition.zone().id(), &tour);
+            }
+            choix = jouer_un_coup(&deroulement, &contenu);
+        }
+        assert_eq!(deroulement.attente(), Attente::Camp);
+        assert!(matches!(
+            &vus[..],
+            [Evenement::Depart(nom), Evenement::EntreeDansLaTour(_), Evenement::Etape { numero: 1, total: None }, ..]
+                if nom == "Tour sans fond"
+        ));
+        let derniere = vus
+            .iter()
+            .filter_map(|evenement| match evenement {
+                Evenement::Etape { numero, .. } => Some(*numero),
+                _ => None,
+            })
+            .max()
+            .unwrap();
+        assert!(derniere > 10, "descente arrêtée à l'étape {derniere}");
+        let gardien = vus
+            .iter()
+            .position(|evenement| matches!(evenement, Evenement::GardienDeLaTour(_)))
+            .expect("gardien à l'étape 10");
+        assert!(matches!(
+            &vus[gardien - 1],
+            Evenement::Etape { numero: 10, .. }
+        ));
+        assert!(
+            vus.iter()
+                .any(|evenement| matches!(evenement, Evenement::ReposDansLaTour(_)))
+        );
+        let defaite = vus
+            .iter()
+            .any(|evenement| matches!(evenement, Evenement::Defaite { .. }));
+        let franchies = derniere - u32::from(defaite);
+        assert!(vus.contains(&Evenement::NouveauRecordDeLaTour(franchies)));
+        assert!(
+            !vus.iter()
+                .any(|evenement| matches!(evenement, Evenement::ZoneExploree(_)))
+        );
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert_eq!(sauvegarde.records_de_la_tour().seul, franchies);
+        assert_eq!(sauvegarde.records_de_la_tour().a_deux, 0);
+        assert!(!sauvegarde.est_exploree(&tour));
+    }
+
     /// Au retour d'une expédition manuelle, quelle qu'en soit l'issue, la
     /// location d'un monstre se décompte ; à la dernière, il repart chez
     /// Malvoise (section 14.2).
@@ -5201,6 +5358,7 @@ mod tests {
             relations: Default::default(),
             machines: Default::default(),
             beherit: Default::default(),
+            records_de_la_tour: Default::default(),
         })
         .unwrap()
     }

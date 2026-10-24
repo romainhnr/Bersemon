@@ -14,6 +14,7 @@ use crate::humain::Humain;
 use crate::monstre::Monstre;
 use crate::peche::Pecheur;
 use crate::pierre::PierreDEvolution;
+use crate::tour::TourSansFond;
 use crate::traque::Apotre;
 use crate::zone::{MonstreRare, Zone, tirer_entre};
 
@@ -73,6 +74,9 @@ pub enum EvenementExpedition {
         booster: Option<Booster>,
     },
     MonstreRare(MonstreRare),
+    /// Combat, ni fuite ni filet ni capture, contre le gardien de la Tour
+    /// sans fond, toutes les 10 étapes (section 9.5).
+    Gardien(Monstre),
     /// Combat, sans fuite, contre l'Apôtre ; le Démiurge a deux formes, la
     /// seconde après la première (section 9.4).
     Apotre(Vec<Monstre>),
@@ -149,6 +153,17 @@ pub struct Expedition {
     capsules_possedees: Vec<AttaqueId>,
     /// Pour qu'un autre coffre de la même expédition ne la contienne pas.
     capsules_trouvees: Vec<Capsule>,
+    /// Dans la Tour sans fond, de quoi recréer la zone de chaque étape
+    /// (section 9.5). En boîte, pour que l'expédition reste légère.
+    descente: Option<Box<Descente>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct Descente {
+    tour: TourSansFond,
+    /// Celles des zones que le joueur a menées au bout.
+    capsules: Vec<Capsule>,
+    a_deux: bool,
 }
 
 impl Expedition {
@@ -167,7 +182,39 @@ impl Expedition {
             pecheur: None,
             capsules_possedees: Vec::new(),
             capsules_trouvees: Vec::new(),
+            descente: None,
         }
+    }
+
+    /// Dans la Tour sans fond, des étapes sans fin, chacune avec sa zone
+    /// (section 9.5). Le départ passe par `Partie::descendre_dans_la_tour`.
+    pub(crate) fn descendre(tour: TourSansFond, capsules: Vec<Capsule>, a_deux: bool) -> Self {
+        let zone = tour.zone_de_l_etape(1, a_deux, capsules.clone());
+        Self {
+            descente: Some(Box::new(Descente {
+                tour,
+                capsules,
+                a_deux,
+            })),
+            nombre_etapes: u32::MAX,
+            ..Self::partir(zone)
+        }
+    }
+
+    /// La Tour sans fond, si l'expédition y descend.
+    pub fn tour(&self) -> Option<&TourSansFond> {
+        self.descente.as_ref().map(|descente| &descente.tour)
+    }
+
+    /// Les étapes de la Tour sans fond n'ont pas de fin (section 9.5).
+    pub fn est_sans_fin(&self) -> bool {
+        self.descente.is_some()
+    }
+
+    /// Les étapes dont l'événement est résolu sans défaite : celle d'une
+    /// défaite n'est pas franchie (section 9.5).
+    pub fn etapes_franchies(&self) -> u32 {
+        self.etapes_faites.saturating_sub(u32::from(self.defaite))
     }
 
     /// L'Apôtre qui attend au bout de l'expédition, s'il y en a un.
@@ -213,7 +260,8 @@ impl Expedition {
         self.etapes_faites
     }
 
-    /// Celui de la zone, montré au joueur (section 9.2).
+    /// Celui de la zone, montré au joueur (section 9.2) ; sans fin dans la
+    /// Tour sans fond (`est_sans_fin`).
     pub fn nombre_etapes(&self) -> u32 {
         self.nombre_etapes
     }
@@ -224,9 +272,9 @@ impl Expedition {
     }
 
     /// Menée jusqu'à sa dernière étape sans défaite : la zone compte alors
-    /// comme explorée (sections 9.2 et 9.3).
+    /// comme explorée (sections 9.2 et 9.3). Jamais dans la Tour sans fond.
     pub fn est_reussie(&self) -> bool {
-        !self.defaite && self.etapes_faites >= self.nombre_etapes
+        !self.defaite && !self.est_sans_fin() && self.etapes_faites >= self.nombre_etapes
     }
 
     /// Une défaite renvoie au camp et met fin à l'expédition (section 9.3).
@@ -248,7 +296,9 @@ impl Expedition {
     /// remplace l'événement de la dernière étape, sans tirage de sa nature
     /// (Q57), comme l'humain de la zone, sans aucun tirage (section 10.7).
     /// Ansgar remplace celui de son étape, avant l'âme, avec les tirages de
-    /// son adversaire (section 9.2).
+    /// son adversaire (section 9.2). Dans la Tour sans fond, le gardien
+    /// remplace celui des étapes multiples de 10, avec ses seuls tirages
+    /// (section 9.5).
     pub fn etape_suivante(&mut self, aleatoire: &mut dyn Aleatoire) -> Option<EvenementExpedition> {
         if self.est_terminee() {
             return None;
@@ -257,6 +307,20 @@ impl Expedition {
             self.placer_l_ame_a_retrouver(aleatoire);
         }
         self.etapes_faites += 1;
+        // Dans la Tour, la zone suit la profondeur ; le gardien remplace
+        // l'événement, sans tirage de sa nature (section 9.5).
+        if let Some(descente) = &self.descente {
+            let etape = self.etapes_faites;
+            self.zone =
+                descente
+                    .tour
+                    .zone_de_l_etape(etape, descente.a_deux, descente.capsules.clone());
+            if TourSansFond::a_un_gardien(etape) {
+                return Some(EvenementExpedition::Gardien(
+                    descente.tour.generer_gardien(etape, aleatoire),
+                ));
+            }
+        }
         let derniere = self.etapes_faites == self.nombre_etapes;
         if let Some(apotre) = self.apotre.as_ref().filter(|_| derniere) {
             return Some(EvenementExpedition::Apotre(
@@ -446,6 +510,48 @@ mod tests {
             Some(EvenementExpedition::MonstreRare(rare)) if rare.pacifique
         ));
         assert_eq!(expedition.etapes_faites(), 3);
+    }
+
+    /// Section 9.5 : des étapes sans fin, le gardien à l'étape 10, et
+    /// l'étape d'une défaite qui n'est pas franchie.
+    #[test]
+    fn dans_la_tour_le_gardien_attend_a_l_etape_10() {
+        let tour = TourSansFond::new(
+            crate::zone::ZoneId::new("tour"),
+            "Tour",
+            &[zone(true)],
+            EspeceRare {
+                espece: espece("schnoz"),
+                pacifique: true,
+            },
+            "",
+            "",
+            "",
+        )
+        .unwrap();
+        let mut expedition = Expedition::descendre(tour, Vec::new(), false);
+        assert!(expedition.est_sans_fin());
+        assert_eq!(expedition.zone().id().as_str(), "tour");
+        for etape in 1..10 {
+            // Coffre : potions, argent (de 5 à 8 fois l'étape), puis le
+            // tirage des capsules d'habileté, pierres et boosters.
+            assert!(matches!(
+                expedition.etape_suivante(&mut AleatoireScripte::new([81, 1, 5 * etape, 100])),
+                Some(EvenementExpedition::Coffre { argent, .. }) if argent == 5 * etape
+            ));
+        }
+        // Sans rare hostile, une espèce commune : seuls son shiny et ses
+        // valeurs internes sont tirés.
+        assert!(matches!(
+            expedition.etape_suivante(&mut AleatoireScripte::new(MONSTRE)),
+            Some(EvenementExpedition::Gardien(gardien))
+                if gardien.espece().id().as_str() == "loup" && gardien.niveau().valeur() == 27
+        ));
+        assert!(!expedition.est_terminee());
+        assert_eq!(expedition.etapes_franchies(), 10);
+        expedition.noter_defaite();
+        assert!(expedition.est_terminee() && !expedition.est_reussie());
+        assert_eq!(expedition.etapes_franchies(), 9);
     }
 
     #[test]

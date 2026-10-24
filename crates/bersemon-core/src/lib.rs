@@ -48,6 +48,7 @@ pub mod sauvegarde;
 pub mod soin;
 pub mod stats;
 pub mod statut;
+pub mod tour;
 pub mod traque;
 pub mod tutoriel;
 pub mod types;

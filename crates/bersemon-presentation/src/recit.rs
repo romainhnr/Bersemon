@@ -75,7 +75,23 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             false,
         ),
         Evenement::Depart(zone) => (format!("Vous partez pour {zone}."), true),
-        Evenement::Etape { numero, total } => (format!("Étape {numero}/{total}."), true),
+        Evenement::Etape {
+            numero,
+            total: Some(total),
+        } => (format!("Étape {numero}/{total}."), true),
+        Evenement::Etape {
+            numero,
+            total: None,
+        } => (format!("Étape {numero}."), true),
+        Evenement::EntreeDansLaTour(recit) => (recit.clone(), false),
+        Evenement::GardienDeLaTour(recit) => (recit.clone(), false),
+        Evenement::ReposDansLaTour(recit) => (recit.clone(), true),
+        Evenement::NouveauRecordDeLaTour(etape) => (
+            important(&format!(
+                "Nouveau record dans la Tour sans fond : étape {etape}."
+            )),
+            false,
+        ),
         Evenement::Coffre {
             potions: nombre,
             argent: montant,

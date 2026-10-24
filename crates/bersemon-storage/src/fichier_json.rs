@@ -115,6 +115,7 @@ mod tests {
     use bersemon_core::soin::Soin;
     use bersemon_core::stats::{Stats, ValeursInternes};
     use bersemon_core::statut::Statut;
+    use bersemon_core::tour::RecordsDeLaTour;
     use bersemon_core::tutoriel::Conseil;
     use bersemon_core::types::{Type, TypesMonstre};
     use bersemon_core::zone::{Zone, ZoneId};
@@ -436,6 +437,10 @@ mod tests {
                 )],
             ),
             beherit: EtatDuBeherit::EclipseOuverte,
+            records_de_la_tour: RecordsDeLaTour {
+                seul: 23,
+                a_deux: 31,
+            },
         };
         let mut partie = Partie::restaurer(etat(&partie, Vec::new())).unwrap();
         // Croc apprend l'attaque de la capsule, hors de la liste de son
@@ -645,10 +650,10 @@ mod tests {
 
     #[test]
     fn version_inconnue() {
-        let texte = texte_de_partie().replacen("\"version\":25", "\"version\":26", 1);
+        let texte = texte_de_partie().replacen("\"version\":26", "\"version\":27", 1);
         assert_eq!(
             charger_texte(&texte),
-            Err(ErreurSauvegarde::VersionInconnue(26))
+            Err(ErreurSauvegarde::VersionInconnue(27))
         );
     }
 
@@ -1116,13 +1121,30 @@ mod tests {
     }
 
     #[test]
+    fn les_records_de_la_tour_se_relisent_depuis_la_version_26() {
+        let texte = texte_de_partie();
+        let relue = charger_texte(&texte).unwrap().unwrap();
+        assert_eq!(
+            relue.records_de_la_tour(),
+            RecordsDeLaTour {
+                seul: 23,
+                a_deux: 31
+            }
+        );
+        // Avant la version 26, pas de Tour sans fond (section 9.5).
+        let ancienne = texte.replacen("\"version\":26", "\"version\":25", 1);
+        let ancienne = charger_texte(&ancienne).unwrap().unwrap();
+        assert_eq!(ancienne.records_de_la_tour(), RecordsDeLaTour::default());
+    }
+
+    #[test]
     fn le_beherit_se_relit_depuis_la_version_25() {
         let texte = texte_de_partie();
         assert!(texte.contains("\"beherit\":\"eclipse-ouverte\""), "{texte}");
         let relue = charger_texte(&texte).unwrap().unwrap();
         assert_eq!(relue.beherit(), EtatDuBeherit::EclipseOuverte);
         // Avant la version 25, pas de Béhérit (section 9.4).
-        let ancienne = texte.replacen("\"version\":25", "\"version\":24", 1);
+        let ancienne = texte.replacen("\"version\":26", "\"version\":24", 1);
         let ancienne = charger_texte(&ancienne).unwrap().unwrap();
         assert_eq!(ancienne.beherit(), EtatDuBeherit::Aucun);
         let inconnu = texte.replacen("eclipse-ouverte", "brise", 1);

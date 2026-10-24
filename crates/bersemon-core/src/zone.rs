@@ -95,6 +95,8 @@ pub struct Zone {
     niveau_max: Niveau,
     /// Fixe et connu du joueur ; il suit la difficulté (section 9.2).
     etapes: u32,
+    /// 1, sauf à deux dans la Tour sans fond (section 9.5).
+    taille_min_groupe: u8,
     taille_max_groupe: u8,
     especes: Vec<Espece>,
     rares: Vec<EspeceRare>,
@@ -160,6 +162,7 @@ impl Zone {
             niveau_min,
             niveau_max,
             etapes,
+            taille_min_groupe: 1,
             taille_max_groupe,
             especes,
             rares,
@@ -180,6 +183,17 @@ impl Zone {
 
     pub fn est_un_lieu_d_invocation(&self) -> bool {
         self.lieu_d_invocation
+    }
+
+    /// Ramenée à la taille maximale si elle la dépasse.
+    pub(crate) fn avec_taille_min_groupe(mut self, taille: u8) -> Self {
+        self.taille_min_groupe = taille.clamp(1, self.taille_max_groupe);
+        self
+    }
+
+    /// Le plus petit et le plus grand groupe sauvage de la zone.
+    pub fn tailles_de_groupe(&self) -> (u8, u8) {
+        (self.taille_min_groupe, self.taille_max_groupe)
     }
 
     /// Comme les autres espèces, le monstre caché doit pouvoir être créé à
@@ -266,7 +280,11 @@ impl Zone {
     /// Tirages : taille du groupe, puis pour chaque monstre ceux de
     /// `generer_monstre`.
     pub fn generer_groupe(&self, aleatoire: &mut dyn Aleatoire) -> Vec<Monstre> {
-        let taille = tirer_entre(1, u32::from(self.taille_max_groupe), aleatoire);
+        let taille = tirer_entre(
+            u32::from(self.taille_min_groupe),
+            u32::from(self.taille_max_groupe),
+            aleatoire,
+        );
         (0..taille)
             .map(|_| {
                 let espece = &self.especes[tirer_position(self.especes.len(), aleatoire)];

@@ -357,6 +357,9 @@ pub struct Combat {
     /// Face à un marchand relevé d'entre les morts, ni filet ni capture
     /// (section 14.2).
     sans_capture: bool,
+    /// Face au gardien de la Tour sans fond, ni fuite, ni filet, ni capture
+    /// (section 9.5).
+    contre_un_gardien: bool,
     ia: Ia,
     /// Contre un autre joueur, qui choisit les actions de l'adversaire
     /// (section 15.3).
@@ -417,6 +420,7 @@ impl Combat {
             en_deux_phases: false,
             contre_un_humain: false,
             sans_capture: false,
+            contre_un_gardien: false,
             ia: Ia::Hasard,
             duel: false,
             premiere_equipe_tombee: None,
@@ -525,8 +529,21 @@ impl Combat {
         self.sans_capture
     }
 
+    /// Contre le gardien de la Tour sans fond : ni fuite, ni filet, ni
+    /// capture, et l'IA simple des humains (section 9.5).
+    pub fn contre_un_gardien(mut self) -> Self {
+        self.contre_un_gardien = true;
+        self.sans_capture = true;
+        self.ia = Ia::PlusForte;
+        self
+    }
+
+    pub fn est_contre_un_gardien(&self) -> bool {
+        self.contre_un_gardien
+    }
+
     pub fn fuite_possible(&self) -> bool {
-        !self.contre_un_apotre && !self.contre_un_humain && !self.duel
+        !self.contre_un_apotre && !self.contre_un_humain && !self.contre_un_gardien && !self.duel
     }
 
     pub fn filet_possible(&self) -> bool {
@@ -979,6 +996,7 @@ impl Combat {
             en_deux_phases: self.en_deux_phases,
             contre_un_humain: self.contre_un_humain,
             sans_capture: self.sans_capture,
+            contre_un_gardien: self.contre_un_gardien,
             ia: self.ia,
             duel: self.duel,
             premiere_equipe_tombee: self.premiere_equipe_tombee.map(Cote::oppose),
@@ -2078,6 +2096,22 @@ mod tests {
             Err(ErreurCombat::FiletImpossible)
         );
         assert_eq!(combat.phase(), Phase::ChoixAction);
+    }
+
+    /// Section 9.5 : ni fuite, ni filet, ni capture face au gardien.
+    #[test]
+    fn ni_fuite_ni_filet_face_au_gardien_de_la_tour() {
+        let mut combat = combat(vec![rapide()], vec![lent()]).contre_un_gardien();
+        assert!(combat.est_contre_un_gardien() && combat.est_sans_capture());
+        assert!(!combat.fuite_possible() && !combat.filet_possible());
+        assert_eq!(
+            combat.jouer_tour(Action::Fuir, &mut AleatoireScripte::new([])),
+            Err(ErreurCombat::FuiteImpossible)
+        );
+        assert_eq!(
+            combat.jouer_tour(Action::LancerFilet, &mut AleatoireScripte::new([])),
+            Err(ErreurCombat::FiletImpossible)
+        );
     }
 
     #[test]

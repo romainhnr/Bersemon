@@ -31,6 +31,7 @@ use crate::ressource::{Ressource, RessourceId};
 use crate::soin::Soin;
 use crate::stats::Stats;
 use crate::statut::Statut;
+use crate::tour::TourSansFond;
 use crate::traque::{Apotre, Chapitre, Indice, Piste};
 use crate::tutoriel::Conseil;
 use crate::types::{Type, TypesMonstre};
@@ -157,6 +158,11 @@ const AME_DU_MARGRAVE: &str =
 /// 90).
 const FORGE_DU_BEHERIT: &str = "Malvoise dépose les trois âmes au creux de ses mains. Elles se tordent, se mêlent et durcissent en un œuf de pierre pourpre, où des yeux et une bouche s'ouvrent et se referment. \"Le Béhérit pourpre. Il t'ouvrira la porte du Démiurge, mais il réclamera son dû.\"";
 
+// Tour sans fond, section 25 de docs/contenu-v1.md (étape 96).
+const ENTREE_DANS_LA_TOUR: &str = "Au milieu des ruines se dresse le sommet d'une tour engloutie. Ses marches s'enfoncent dans la terre, et nul n'en a trouvé le fond ; plus on descend, plus les bêtes sont terribles.";
+const AVANT_LE_GARDIEN: &str = "Les marches débouchent sur un palier plus large que les autres. Au centre, {monstre} garde l'escalier qui s'enfonce plus bas. Il n'y aura pas de fuite.";
+const REPOS_DANS_LA_TOUR: &str = "Derrière le gardien, une source claire coule entre les pierres. Vos monstres y boivent et reprennent toutes leurs forces.";
+
 const SACRIFICE: &str = "Le Béhérit pourpre s'ouvre en un cri. {monstre} vous est arraché et disparaît dans une lumière rouge. Le ciel s'assombrit : l'Éclipse commence.";
 
 const AVANT_LE_DEMIURGE: &str = "Sous un soleil noir, la terre s'ouvre sur un abîme de chair. Une silhouette ailée descend lentement : le Démiurge, maître des Apôtres. Il n'y aura pas de fuite.";
@@ -204,6 +210,7 @@ pub struct ContenuV1 {
     plan_du_charme: PlanDuCharme,
     peche: ParametresPeche,
     invocation: Invocation,
+    tour: TourSansFond,
 }
 
 impl ContenuV1 {
@@ -593,6 +600,16 @@ impl ContenuV1 {
         .expect("Démiurge conforme aux règles");
         let invocation = Invocation::new(eclipse, demiurge, FORGE_DU_BEHERIT, SACRIFICE);
         let zones = vec![lisiere, marais, vallee, abbaye, col];
+        let tour = TourSansFond::new(
+            ZoneId::new("tour-sans-fond"),
+            "Tour sans fond",
+            &zones,
+            schnoz(),
+            ENTREE_DANS_LA_TOUR,
+            AVANT_LE_GARDIEN,
+            REPOS_DANS_LA_TOUR,
+        )
+        .expect("Tour sans fond conforme aux règles");
         let peche = ParametresPeche::new(
             Duration::from_secs(HEURES_DE_PECHE * 3_600),
             ESPECES_PECHEES.iter().map(|id| trouver(id)).collect(),
@@ -618,7 +635,14 @@ impl ContenuV1 {
             plan_du_charme,
             peche,
             invocation,
+            tour,
         }
+    }
+
+    /// Le lieu hors de la carte où l'on descend le plus loin possible,
+    /// seul ou à deux (section 9.5).
+    pub fn tour(&self) -> &TourSansFond {
+        &self.tour
     }
 
     /// L'Éclipse et le Démiurge, que le Béhérit pourpre fait venir (section
@@ -3299,6 +3323,37 @@ mod tests {
                 assert_eq!(contenu.espece(espece.id()).as_ref(), Some(espece));
             }
         }
+    }
+
+    /// Section 25 de docs/contenu-v1.md (étape 96).
+    #[test]
+    fn la_tour_sans_fond_descend_par_les_zones_de_la_carte() {
+        let contenu = ContenuV1::new();
+        let tour = contenu.tour();
+        assert_eq!(tour.id().as_str(), "tour-sans-fond");
+        assert_eq!(tour.ouverte_par().as_str(), "lisiere");
+        assert!(contenu.zone(tour.id()).is_none());
+        let especes = |etape: u32| -> Vec<String> {
+            tour.zone_de_l_etape(etape, false, Vec::new())
+                .especes()
+                .iter()
+                .map(|espece| espece.id().as_str().to_string())
+                .collect()
+        };
+        assert_eq!(especes(1), vec!["loup", "corbeau", "vipere"]);
+        // Niveau 24 à l'étape 10 : jusqu'à l'Abbaye, sans le Col.
+        let etape_10 = especes(10);
+        assert!(etape_10.contains(&"cloche-hurlante".to_string()));
+        assert!(!etape_10.contains(&"wendigo".to_string()));
+        assert_eq!(
+            etape_10
+                .iter()
+                .filter(|id| id.as_str() == "squelette")
+                .count(),
+            1
+        );
+        assert!(especes(12).contains(&"warg".to_string()));
+        assert!(tour.recit_du_gardien("Basilic").contains("Basilic garde"));
     }
 
     /// Section 24 de docs/contenu-v1.md (étape 94).

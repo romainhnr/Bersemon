@@ -51,6 +51,7 @@ use crate::relations::Relations;
 use crate::ressource::{Ressource, RessourceId};
 use crate::soin::{EffetDuSoin, ErreurSoin, Soin};
 use crate::stats::ValeursInternes;
+use crate::tour::{RecordsDeLaTour, TourSansFond};
 use crate::traque::{Apotre, Indice, Piste};
 use crate::tutoriel::Conseil;
 use crate::zone::{Zone, ZoneId};
@@ -121,6 +122,8 @@ pub struct Partie {
     machines: Machines,
     /// Le Béhérit pourpre et l'Éclipse (section 9.4).
     beherit: EtatDuBeherit,
+    /// Dernières étapes franchies dans la Tour sans fond (section 9.5).
+    records_de_la_tour: RecordsDeLaTour,
 }
 
 /// Attaque qu'un monstre rentré d'expédition automatique veut apprendre en
@@ -167,6 +170,7 @@ pub struct EtatPartie {
     pub relations: Relations,
     pub machines: Machines,
     pub beherit: EtatDuBeherit,
+    pub records_de_la_tour: RecordsDeLaTour,
 }
 
 /// Sauvegarde lisible mais contraire aux règles des expéditions
@@ -255,6 +259,7 @@ impl Partie {
             relations: Relations::default(),
             machines: Machines::default(),
             beherit: EtatDuBeherit::Aucun,
+            records_de_la_tour: RecordsDeLaTour::default(),
             conseils_vus: Vec::new(),
             expeditions_automatiques: Vec::new(),
             attaques_a_choisir: Vec::new(),
@@ -1432,6 +1437,70 @@ impl Partie {
             .vers_l_antre(invocation.demiurge().clone()))
     }
 
+    /// La Tour sans fond s'ouvre quand la Lisière est menée au bout
+    /// (section 9.5).
+    pub fn tour_ouverte(&self, tour: &TourSansFond) -> bool {
+        self.est_exploree(tour.ouverte_par())
+    }
+
+    /// Une descente seul dans la Tour sans fond (section 9.5).
+    pub fn descendre_dans_la_tour(
+        &self,
+        tour: &TourSansFond,
+        zones: &[Zone],
+    ) -> Result<Expedition, ErreurExpedition> {
+        self.preparer_la_descente(tour, zones, false)
+    }
+
+    /// Les coffres de la Tour contiennent les capsules des zones que le
+    /// joueur a menées au bout, et qu'il n'a pas encore (section 9.5).
+    pub(crate) fn preparer_la_descente(
+        &self,
+        tour: &TourSansFond,
+        zones: &[Zone],
+        a_deux: bool,
+    ) -> Result<Expedition, ErreurExpedition> {
+        if !self.tour_ouverte(tour) {
+            return Err(ErreurExpedition::ZoneFermee);
+        }
+        if self.collection.equipe().is_empty() {
+            return Err(ErreurExpedition::EquipeVide);
+        }
+        let capsules = zones
+            .iter()
+            .filter(|zone| self.est_exploree(zone.id()))
+            .flat_map(|zone| zone.coffre().capsules().iter().cloned())
+            .collect();
+        let possedees = self
+            .capsules()
+            .map(|capsule| capsule.id().clone())
+            .collect();
+        Ok(
+            Expedition::descendre(tour.clone(), capsules, a_deux)
+                .avec_capsules_possedees(possedees),
+        )
+    }
+
+    pub fn records_de_la_tour(&self) -> RecordsDeLaTour {
+        self.records_de_la_tour
+    }
+
+    /// Garde la dernière étape franchie si elle bat le record, seul ou à
+    /// deux (section 9.5). Rend vrai pour un nouveau record.
+    pub(crate) fn noter_record_de_la_tour(&mut self, etapes: u32, a_deux: bool) -> bool {
+        let record = if a_deux {
+            &mut self.records_de_la_tour.a_deux
+        } else {
+            &mut self.records_de_la_tour.seul
+        };
+        if etapes > *record {
+            *record = etapes;
+            true
+        } else {
+            false
+        }
+    }
+
     /// Ses deux formes s'ouvrent au codex ; il laisse 3 Éclats d'astre dans
     /// le sac, et l'Éclipse se referme (section 9.4).
     pub(crate) fn noter_demiurge_vaincu(&mut self, demiurge: &Apotre) {
@@ -1551,6 +1620,7 @@ impl Partie {
             relations: etat.relations,
             machines: etat.machines,
             beherit: etat.beherit,
+            records_de_la_tour: etat.records_de_la_tour,
         })
     }
 
@@ -3193,6 +3263,7 @@ mod tests {
             relations: partie.relations().clone(),
             machines: partie.machines().clone(),
             beherit: partie.beherit(),
+            records_de_la_tour: partie.records_de_la_tour(),
         }
     }
 

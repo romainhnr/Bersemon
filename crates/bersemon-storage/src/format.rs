@@ -38,12 +38,13 @@ use bersemon_core::sauvegarde::ErreurSauvegarde;
 use bersemon_core::soin::Soin;
 use bersemon_core::stats::{Stats, ValeursInternes};
 use bersemon_core::statut::Statut;
+use bersemon_core::tour::RecordsDeLaTour;
 use bersemon_core::tutoriel::Conseil;
 use bersemon_core::zone::{Zone, ZoneId};
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 25;
+pub(crate) const VERSION: u64 = 26;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -78,6 +79,10 @@ const VERSION_DES_LOCATIONS: u64 = 24;
 /// La version de la sauvegarde où Malvoise forge le Béhérit pourpre (section
 /// 9.4).
 const VERSION_DU_BEHERIT: u64 = 25;
+
+/// La version de la sauvegarde qui garde les records de la Tour sans fond
+/// (section 9.5).
+const VERSION_DES_RECORDS: u64 = 26;
 
 /// Gunther est le prisonnier de cet humain : avant la version 14, une partie
 /// qui l'a vaincu a Gunther au camp (section 13.4, Q85).
@@ -186,6 +191,12 @@ pub(crate) struct SauvegardeV14 {
     /// "demiurge-vaincu", absent tant que le Béhérit n'est pas forgé.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     beherit: Option<String>,
+    /// Depuis la version 26 (section 9.5) : dernières étapes franchies
+    /// dans la Tour sans fond, seul et à deux.
+    #[serde(default)]
+    record_seul_dans_la_tour: u32,
+    #[serde(default)]
+    record_a_deux_dans_la_tour: u32,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -615,6 +626,8 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV14 {
             })
             .collect(),
         beherit: beherit_en_texte(partie.beherit()).map(str::to_string),
+        record_seul_dans_la_tour: partie.records_de_la_tour().seul,
+        record_a_deux_dans_la_tour: partie.records_de_la_tour().a_deux,
     }
 }
 
@@ -939,6 +952,15 @@ pub(crate) fn vers_partie(
     } else {
         lire_beherit(sauvegarde.beherit.as_deref())?
     };
+    // Avant la version 26, pas de Tour sans fond (section 9.5).
+    let records_de_la_tour = if sauvegarde.version < VERSION_DES_RECORDS {
+        RecordsDeLaTour::default()
+    } else {
+        RecordsDeLaTour {
+            seul: sauvegarde.record_seul_dans_la_tour,
+            a_deux: sauvegarde.record_a_deux_dans_la_tour,
+        }
+    };
     Partie::restaurer(EtatPartie {
         heros,
         collection,
@@ -967,6 +989,7 @@ pub(crate) fn vers_partie(
         ),
         machines,
         beherit,
+        records_de_la_tour,
     })
     .map_err(incoherente)
 }

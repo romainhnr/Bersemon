@@ -312,6 +312,7 @@ mod tests {
             relations: Default::default(),
             machines: Default::default(),
             beherit: Default::default(),
+            records_de_la_tour: Default::default(),
         })
         .unwrap()
     }

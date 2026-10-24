@@ -239,8 +239,12 @@ pub fn ligne_des_ames(partie: &Partie) -> String {
     }
 }
 
-/// En haut de chaque écran d'expédition (section 9.2).
+/// En haut de chaque écran d'expédition (section 9.2), sans total dans la
+/// Tour sans fond (section 9.5).
 pub fn compteur_d_etapes(expedition: &Expedition) -> String {
+    if expedition.est_sans_fin() {
+        return format!("[Étape : {}]", expedition.etapes_faites());
+    }
     format!(
         "[Étape : {}/{}]",
         expedition.etapes_faites(),
