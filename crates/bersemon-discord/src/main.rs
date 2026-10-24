@@ -20,6 +20,7 @@ mod ecran_expeditions_automatiques;
 mod ecran_marchand;
 mod ecran_peche;
 mod formulaires;
+mod groupes;
 mod horloge;
 mod interactions;
 mod joueurs;

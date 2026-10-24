@@ -8,17 +8,19 @@ use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
 use bersemon_core::aleatoire::{Aleatoire, GenerateurAleatoire};
-use bersemon_core::combat::Cote;
+use bersemon_core::combat::{Cote, Membre};
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::{Attente, Choix, Contexte, Deroulement, ErreurChoix, Evenement};
 use bersemon_core::duel::Duel;
 use bersemon_core::echange::{ErreurEchange, Offre};
+use bersemon_core::groupe::{ContexteDeGroupe, ExpeditionEnGroupe};
 use bersemon_core::horodatage::Horodatage;
 use bersemon_core::partie::Partie;
 use bersemon_core::sauvegarde::SauvegardeRepository;
 use bersemon_core::tour::RecordsDeLaTour;
 use bersemon_presentation::duels::{defi_accepte, defi_recu, defi_refuse};
 use bersemon_presentation::echanges::{offre_acceptee, offre_recue, offre_refusee};
+use bersemon_presentation::groupe::{invitation_acceptee, invitation_recue, invitation_refusee};
 use bersemon_storage::FichierJson;
 
 use crate::composants::Vue;
@@ -27,6 +29,7 @@ use crate::echanges::{
     ActionDEchange, AutreJoueur, Bourse, ErreurDOffre, MessagePrive, OffreEnAttente, Pseudos,
     TableauDesEchanges,
 };
+use crate::groupes::{ActionDeGroupe, ErreurDInvitation, GroupeEnCours, GroupeVu, Invitation};
 use crate::message::OPTIONS_PAR_MENU;
 use crate::messages_prives::{Annonces, Retour, parties};
 
@@ -49,6 +52,8 @@ pub struct Session {
     /// Le duel du joueur, préparé à chaque lecture de la session : il
     /// remplace le camp à l'écran (section 15.3).
     pub duel: Option<DuelVu>,
+    /// L'expédition en groupe du joueur, préparée de même (section 15.5).
+    pub groupe: Option<GroupeVu>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -62,6 +67,7 @@ pub enum Refus {
     },
     Echange(ErreurDOffre),
     Duel(ErreurDeDefi),
+    Groupe(ErreurDInvitation),
 }
 
 pub struct Joueurs {
@@ -79,6 +85,11 @@ pub struct Joueurs {
     messages_prives: Vec<MessagePrive>,
     defis: Vec<Defi>,
     duels: Vec<DuelEnCours>,
+    invitations: Vec<Invitation>,
+    groupes: Vec<GroupeEnCours>,
+    /// Ce que chaque joueur n'a pas encore vu des suites des choix de son
+    /// compagnon, même après la fin de l'expédition en groupe.
+    recits_en_attente: HashMap<IdJoueur, Vec<Evenement>>,
 }
 
 /// Un incident pendant le traitement d'un choix ne doit pas bloquer tous les
@@ -99,6 +110,9 @@ impl Joueurs {
             messages_prives: Vec::new(),
             defis: Vec::new(),
             duels: Vec::new(),
+            invitations: Vec::new(),
+            groupes: Vec::new(),
+            recits_en_attente: HashMap::new(),
         }
     }
 
@@ -128,6 +142,7 @@ impl Joueurs {
             vue: Vue::Camp,
             echanges: TableauDesEchanges::default(),
             duel: None,
+            groupe: None,
         })
     }
 
@@ -143,9 +158,45 @@ impl Joueurs {
             self.charger(joueur, contenu).echanges = tableau;
         }
         let duel = self.duel_vu(joueur, contenu);
+        let groupe = self.groupe_vu(joueur, contenu);
         let session = self.charger(joueur, contenu);
         session.duel = duel;
+        session.groupe = groupe;
         session
+    }
+
+    fn groupe_de(&self, joueur: IdJoueur) -> Option<(usize, Membre)> {
+        self.groupes
+            .iter()
+            .enumerate()
+            .find_map(|(position, groupe)| Some((position, groupe.membre_de(joueur)?)))
+    }
+
+    fn groupe_vu(&mut self, joueur: IdJoueur, contenu: &ContenuV1) -> Option<GroupeVu> {
+        let (position, membre) = self.groupe_de(joueur)?;
+        let autre = self.groupes[position].joueur(membre.autre());
+        let compagnon = self.autre_joueur(autre, contenu)?.heros;
+        let groupe = &self.groupes[position];
+        let [hote, invite] = groupe
+            .joueurs
+            .map(|qui| self.sessions.get(&qui).map(|session| &session.deroulement));
+        let attendus = match (hote, invite) {
+            (Some(hote), Some(invite)) => groupe.expedition.attendus([hote, invite]),
+            _ => Vec::new(),
+        };
+        Some(GroupeVu {
+            membre,
+            compagnon,
+            combat: groupe.expedition.combat().cloned(),
+            attendus,
+            derniere_action: groupe.expedition.derniere_action(),
+        })
+    }
+
+    /// Les suites des choix du compagnon, que le joueur n'a pas encore
+    /// vues ; elles ne se montrent qu'une fois.
+    pub fn prendre_le_recit_du_groupe(&mut self, joueur: IdJoueur) -> Vec<Evenement> {
+        self.recits_en_attente.remove(&joueur).unwrap_or_default()
     }
 
     fn duel_de(&self, joueur: IdJoueur) -> Option<(usize, Cote)> {
@@ -500,6 +551,287 @@ impl Joueurs {
         Ok(en_cours.joueurs.to_vec())
     }
 
+    /// Invite, retire ou répond à une invitation, ou ramène le groupe au
+    /// camp, si le message affichait la version en cours de la partie.
+    /// Chaque changement d'une expédition en groupe rend dépassés les
+    /// messages des deux joueurs (section 15.5).
+    pub fn agir_en_groupe(
+        &mut self,
+        joueur: IdJoueur,
+        version: u32,
+        action: ActionDeGroupe,
+        contenu: &ContenuV1,
+        maintenant: Horodatage,
+    ) -> Result<Vec<Evenement>, Refus> {
+        if !self.est_a_jour(joueur, version, contenu) {
+            return Err(Refus::MessagePerime);
+        }
+        let resultat = match action {
+            ActionDeGroupe::Inviter(a) => self.inviter(joueur, a, contenu).map(|()| Vec::new()),
+            ActionDeGroupe::RetirerInvitation => {
+                self.retirer_invitation(joueur).map(|()| Vec::new())
+            }
+            ActionDeGroupe::RefuserInvitation => self
+                .refuser_invitation(joueur, contenu)
+                .map(|()| Vec::new()),
+            ActionDeGroupe::AccepterInvitation => {
+                self.accepter_invitation(joueur, contenu, maintenant)
+            }
+            ActionDeGroupe::RamenerLeGroupe => self.dans_le_groupe(
+                joueur,
+                contenu,
+                maintenant,
+                |expedition, membre, deroulements, contexte| {
+                    expedition.ramener_au_camp(membre, deroulements, contexte)
+                },
+            ),
+        };
+        let evenements = resultat.map_err(Refus::Groupe)?;
+        let session = self.charger(joueur, contenu);
+        session.version = session.version.wrapping_add(1);
+        Ok(evenements)
+    }
+
+    fn inviter(
+        &mut self,
+        joueur: IdJoueur,
+        a: IdJoueur,
+        contenu: &ContenuV1,
+    ) -> Result<(), ErreurDInvitation> {
+        if a == joueur {
+            return Err(ErreurDInvitation::AvecSoiMeme);
+        }
+        if self.est_occupe(joueur) || self.est_occupe(a) {
+            return Err(ErreurDInvitation::DejaOccupe);
+        }
+        let concerne =
+            |invitation: &Invitation, qui: IdJoueur| invitation.de == qui || invitation.a == qui;
+        if self
+            .invitations
+            .iter()
+            .any(|invitation| concerne(invitation, joueur))
+        {
+            return Err(ErreurDInvitation::InvitationDejaEnCours);
+        }
+        if self
+            .invitations
+            .iter()
+            .any(|invitation| concerne(invitation, a))
+        {
+            return Err(ErreurDInvitation::AutreDejaInvite);
+        }
+        self.autre_joueur(a, contenu)
+            .ok_or(ErreurDInvitation::JoueurSansPartie)?;
+        let moi = self
+            .autre_joueur(joueur, contenu)
+            .ok_or(ErreurDInvitation::JoueurSansPartie)?;
+        self.invitations.push(Invitation { de: joueur, a });
+        self.messages_prives.push(MessagePrive {
+            joueur: a,
+            texte: invitation_recue(&moi.heros, moi.pseudo.as_deref()),
+        });
+        Ok(())
+    }
+
+    /// En duel ou en expédition en groupe.
+    fn est_occupe(&self, joueur: IdJoueur) -> bool {
+        self.duel_de(joueur).is_some() || self.groupe_de(joueur).is_some()
+    }
+
+    fn retirer_invitation(&mut self, joueur: IdJoueur) -> Result<(), ErreurDInvitation> {
+        let position = self
+            .invitations
+            .iter()
+            .position(|invitation| invitation.de == joueur)
+            .ok_or(ErreurDInvitation::AucuneInvitation)?;
+        self.invitations.remove(position);
+        Ok(())
+    }
+
+    fn refuser_invitation(
+        &mut self,
+        joueur: IdJoueur,
+        contenu: &ContenuV1,
+    ) -> Result<(), ErreurDInvitation> {
+        let position = self
+            .invitations
+            .iter()
+            .position(|invitation| invitation.a == joueur)
+            .ok_or(ErreurDInvitation::AucuneInvitation)?;
+        let invitation = self.invitations.remove(position);
+        if let Some(moi) = self.autre_joueur(joueur, contenu) {
+            self.messages_prives.push(MessagePrive {
+                joueur: invitation.de,
+                texte: invitation_refusee(&moi.heros),
+            });
+        }
+        Ok(())
+    }
+
+    /// La descente commence si les deux joueurs sont au camp, sans question
+    /// en attente, ont ouvert la Tour et ont au moins un monstre dans
+    /// l'équipe ; sinon l'invitation reste en attente.
+    fn accepter_invitation(
+        &mut self,
+        joueur: IdJoueur,
+        contenu: &ContenuV1,
+        maintenant: Horodatage,
+    ) -> Result<Vec<Evenement>, ErreurDInvitation> {
+        let invitation = *self
+            .invitations
+            .iter()
+            .find(|invitation| invitation.a == joueur)
+            .ok_or(ErreurDInvitation::AucuneInvitation)?;
+        if self.est_occupe(invitation.de) || self.est_occupe(joueur) {
+            return Err(ErreurDInvitation::DejaOccupe);
+        }
+        self.charger(invitation.de, contenu);
+        let au_camp = |qui: IdJoueur| {
+            self.sessions
+                .get(&qui)
+                .and_then(|session| session.deroulement.partie_au_camp())
+                .is_some()
+        };
+        if !au_camp(invitation.de) || !au_camp(joueur) {
+            return Err(ErreurDInvitation::PasAuCamp);
+        }
+        let mut hote = self
+            .sessions
+            .remove(&invitation.de)
+            .expect("session chargée juste avant");
+        let resultat = match self.sessions.get_mut(&joueur) {
+            Some(invite) => {
+                let depots = [
+                    depot(&self.dossier, invitation.de),
+                    depot(&self.dossier, joueur),
+                ];
+                let mut contexte = ContexteDeGroupe {
+                    contenu,
+                    aleatoire: &mut self.aleatoire,
+                    depots: [&depots[0], &depots[1]],
+                    maintenant,
+                };
+                let resultat = ExpeditionEnGroupe::partir(
+                    [&mut hote.deroulement, &mut invite.deroulement],
+                    &mut contexte,
+                );
+                if resultat.is_ok() {
+                    invite.vue = Vue::Camp;
+                }
+                resultat
+            }
+            None => Err(ErreurChoix::HorsDePropos),
+        };
+        if resultat.is_ok() {
+            hote.version = hote.version.wrapping_add(1);
+            hote.vue = Vue::Camp;
+        }
+        self.sessions.insert(invitation.de, hote);
+        let (expedition, [recit_de_l_hote, recit_de_l_invite]) =
+            resultat.map_err(ErreurDInvitation::Choix)?;
+        self.invitations.retain(|autre| *autre != invitation);
+        self.groupes.push(GroupeEnCours {
+            joueurs: [invitation.de, joueur],
+            expedition,
+        });
+        self.recits_en_attente
+            .entry(invitation.de)
+            .or_default()
+            .extend(recit_de_l_hote);
+        if let Some(moi) = self.autre_joueur(joueur, contenu) {
+            self.messages_prives.push(MessagePrive {
+                joueur: invitation.de,
+                texte: invitation_acceptee(&moi.heros),
+            });
+        }
+        Ok(recit_de_l_invite)
+    }
+
+    /// Applique à l'expédition en groupe du joueur ce qu'il y fait, avec
+    /// les deux déroulements ; rend ce que lui voit, garde pour l'autre ce
+    /// qu'il n'a pas encore vu, et oublie l'expédition une fois chacun
+    /// rentré au camp.
+    fn dans_le_groupe(
+        &mut self,
+        joueur: IdJoueur,
+        contenu: &ContenuV1,
+        maintenant: Horodatage,
+        agir: impl FnOnce(
+            &mut ExpeditionEnGroupe,
+            Membre,
+            [&mut Deroulement; 2],
+            &mut ContexteDeGroupe<'_>,
+        ) -> Result<[Vec<Evenement>; 2], ErreurChoix>,
+    ) -> Result<Vec<Evenement>, ErreurDInvitation> {
+        let (position, membre) = self
+            .groupe_de(joueur)
+            .ok_or(ErreurDInvitation::PasEnGroupe)?;
+        let joueurs = self.groupes[position].joueurs;
+        let autre = self.groupes[position].joueur(membre.autre());
+        self.charger(autre, contenu);
+        self.charger(joueur, contenu);
+        let mut session_de_l_autre = self
+            .sessions
+            .remove(&autre)
+            .expect("session chargée juste avant");
+        let session = self
+            .sessions
+            .get_mut(&joueur)
+            .expect("session chargée juste avant");
+        let depots = joueurs.map(|qui| depot(&self.dossier, qui));
+        let mut contexte = ContexteDeGroupe {
+            contenu,
+            aleatoire: &mut self.aleatoire,
+            depots: [&depots[0], &depots[1]],
+            maintenant,
+        };
+        let deroulements = match membre {
+            Membre::Hote => [
+                &mut session.deroulement,
+                &mut session_de_l_autre.deroulement,
+            ],
+            Membre::Invite => [
+                &mut session_de_l_autre.deroulement,
+                &mut session.deroulement,
+            ],
+        };
+        let resultat = agir(
+            &mut self.groupes[position].expedition,
+            membre,
+            deroulements,
+            &mut contexte,
+        );
+        let termine = self.groupes[position]
+            .expedition
+            .est_terminee([&session.deroulement, &session_de_l_autre.deroulement]);
+        if resultat.is_ok() {
+            session_de_l_autre.version = session_de_l_autre.version.wrapping_add(1);
+            if termine {
+                session.vue = Vue::Camp;
+                session_de_l_autre.vue = Vue::Camp;
+            }
+        }
+        self.sessions.insert(autre, session_de_l_autre);
+        let recits = resultat.map_err(ErreurDInvitation::Choix)?;
+        let [du_joueur, de_l_autre] = match membre {
+            Membre::Hote => recits,
+            Membre::Invite => {
+                let [hote, invite] = recits;
+                [invite, hote]
+            }
+        };
+        let mut vus = self.prendre_le_recit_du_groupe(joueur);
+        vus.extend(du_joueur);
+        self.recits_en_attente
+            .entry(autre)
+            .or_default()
+            .extend(de_l_autre);
+        if termine {
+            self.groupes.remove(position);
+        }
+        Ok(vus)
+    }
+
     /// Fait, retire, accepte ou refuse une offre, si le message affichait la
     /// version en cours de la partie. Le joueur reste sur l'écran des
     /// échanges, sans joueur choisi.
@@ -667,6 +999,28 @@ impl Joueurs {
     ) -> Result<Vec<Evenement>, Refus> {
         if !self.est_a_jour(joueur, version, contenu) {
             return Err(Refus::MessagePerime);
+        }
+        if self.groupe_de(joueur).is_some() {
+            let evenements = self
+                .dans_le_groupe(
+                    joueur,
+                    contenu,
+                    maintenant,
+                    |expedition, membre, deroulements, contexte| {
+                        expedition.repondre(membre, choix.clone(), deroulements, contexte)
+                    },
+                )
+                .map_err(|erreur| match erreur {
+                    ErreurDInvitation::Choix(erreur) => Refus::Choix {
+                        choix: choix.clone(),
+                        erreur,
+                    },
+                    autre => Refus::Groupe(autre),
+                })?;
+            let session = self.charger(joueur, contenu);
+            session.version = session.version.wrapping_add(1);
+            session.vue = vue_apres(session.vue, &choix);
+            return Ok(evenements);
         }
         if self.duel_de(joueur).is_some() {
             let concernes = self.jouer_en_duel(joueur, choix, maintenant)?;

@@ -2550,6 +2550,168 @@ fn la_tour_sans_fond_et_le_classement_de_ses_records() {
     let _ = fs::remove_dir_all(dossier);
 }
 
+/// Deux joueurs au camp, la Lisière menée au bout, avec des monstres de
+/// niveau 40 et 5 potions : le bot redémarre pour relire leurs sauvegardes.
+fn deux_joueurs_devant_la_tour(contenu: &ContenuV1, sous_dossier: &str) -> (Joueurs, PathBuf) {
+    let (_, dossier) = deux_joueurs_au_camp(contenu, sous_dossier);
+    for joueur in [JOUEUR, YSOLDE] {
+        let chemin = dossier.join(format!("{joueur}.json"));
+        let mut texte = fs::read_to_string(&chemin)
+            .unwrap()
+            .replace(
+                "\"zones_explorees\": []",
+                "\"zones_explorees\": [\"lisiere\"]",
+            )
+            .replace("\"niveau\": 8,", "\"niveau\": 40,")
+            .replacen("\"potions\": 0", "\"potions\": 5", 1);
+        let mut depuis = 0;
+        while let Some(trouve) = texte[depuis..].find("\"experience\": ") {
+            let debut = depuis + trouve;
+            let fin = debut + texte[debut..].find(',').unwrap();
+            texte.replace_range(debut..fin, "\"experience\": 64000");
+            depuis = debut + 1;
+        }
+        fs::write(&chemin, texte).unwrap();
+    }
+    let mut joueurs = Joueurs::new(dossier.clone(), 2026);
+    joueurs.noter_pseudo(YSOLDE, "ysolde_la_grise");
+    for joueur in [JOUEUR, YSOLDE] {
+        executer_le_clic(
+            &mut joueurs,
+            joueur,
+            bouton(Cle::ReprendreLaPartie),
+            contenu,
+        );
+    }
+    (joueurs, dossier)
+}
+
+/// Un joueur simple pour l'expédition en groupe : la meilleure attaque, le
+/// premier de ses monstres aptes, aucune capture ; l'hôte rentre à partir
+/// de l'étape `rentrer_a`.
+fn coup_de_groupe(
+    joueurs: &mut Joueurs,
+    joueur: IdJoueur,
+    contenu: &ContenuV1,
+    rentrer_a: u32,
+) -> bersemon_core::deroulement::Choix {
+    use bersemon_core::combat::{Action, Membre, Phase};
+    use bersemon_core::deroulement::Choix;
+    let session = joueurs.session(joueur, contenu);
+    let vu = session.groupe.as_ref().expect("en groupe");
+    if let Some(combat) = &vu.combat {
+        return match combat.phase() {
+            Phase::ChoixAction => {
+                let attaques = combat
+                    .monstre(combat.actif(Cote::Joueur))
+                    .attaques()
+                    .liste()
+                    .len();
+                let meilleure = (0..attaques)
+                    .max_by_key(|index| combat.apercu_attaque(*index).map_or(0, |a| a.degats_max))
+                    .unwrap_or(0);
+                Choix::Combat(Action::Attaquer(meilleure))
+            }
+            Phase::Remplacement => Choix::Remplacer(
+                (0..combat.equipe().len())
+                    .find(|index| {
+                        combat.proprietaire(*index) == vu.membre
+                            && !combat.equipe()[*index].est_ko()
+                    })
+                    .unwrap(),
+            ),
+            Phase::Termine(_) => Choix::NePlusCapturer,
+        };
+    }
+    let etape = session
+        .deroulement
+        .expedition()
+        .map_or(0, |expedition| expedition.etapes_faites());
+    match session.deroulement.attente() {
+        Attente::EntreDeuxEtapes if vu.membre == Membre::Hote && etape >= rentrer_a => {
+            Choix::RentrerAuCamp
+        }
+        Attente::EntreDeuxEtapes => Choix::ContinuerLExpedition,
+        Attente::MonstreRare(_) => Choix::LaisserLeMonstreRare,
+        Attente::OubliAttaque { .. } => Choix::RenoncerALAttaque,
+        Attente::Evolution { .. } => Choix::NePasEvoluer,
+        Attente::PlaceManquante(_) => Choix::RelacherLaCapture,
+        Attente::Confirmation(_) => Choix::Oui,
+        autre => panic!("{autre:?}"),
+    }
+}
+
+/// Aldric invite Ysolde dans la Tour ; elle accepte, ils descendent ensemble
+/// et Aldric ramène le groupe à l'étape 4 : chacun garde le record à deux
+/// (section 15.5).
+#[test]
+fn une_invitation_acceptee_fait_descendre_le_groupe() {
+    use crate::groupes::ActionDeGroupe;
+    use bersemon_core::combat::Membre;
+    let contenu = ContenuV1::new();
+    let (mut joueurs, dossier) = deux_joueurs_devant_la_tour(&contenu, "groupe");
+    let maintenant = Horodatage::depuis_secondes(0);
+    let version = joueurs.session(JOUEUR, &contenu).version;
+    joueurs
+        .agir_en_groupe(
+            JOUEUR,
+            version,
+            ActionDeGroupe::Inviter(YSOLDE),
+            &contenu,
+            maintenant,
+        )
+        .unwrap();
+    let version = joueurs.session(YSOLDE, &contenu).version;
+    let recit = joueurs
+        .agir_en_groupe(
+            YSOLDE,
+            version,
+            ActionDeGroupe::AccepterInvitation,
+            &contenu,
+            maintenant,
+        )
+        .unwrap();
+    assert!(matches!(recit[..], [Evenement::Depart(_), ..]), "{recit:?}");
+    let messages: Vec<String> = joueurs
+        .prendre_les_messages_prives()
+        .into_iter()
+        .map(|message| message.texte)
+        .collect();
+    assert!(messages[0].contains("vous invite à descendre"));
+    assert!(messages[1].contains("a accepté votre invitation"));
+    // L'hôte voit le départ à son prochain affichage, une seule fois.
+    let attendu = joueurs.prendre_le_recit_du_groupe(JOUEUR);
+    assert!(matches!(attendu[..], [Evenement::Depart(_), ..]));
+    assert!(joueurs.prendre_le_recit_du_groupe(JOUEUR).is_empty());
+    for _ in 0..2_000 {
+        let Some(vu) = joueurs.session(JOUEUR, &contenu).groupe.clone() else {
+            break;
+        };
+        let qui = match vu.attendus[0] {
+            Membre::Hote => JOUEUR,
+            Membre::Invite => YSOLDE,
+        };
+        let choix = coup_de_groupe(&mut joueurs, qui, &contenu, 4);
+        let version = joueurs.session(qui, &contenu).version;
+        joueurs
+            .jouer(qui, version, choix, &contenu, maintenant)
+            .unwrap();
+    }
+    for joueur in [JOUEUR, YSOLDE] {
+        let session = joueurs.session(joueur, &contenu);
+        assert!(session.groupe.is_none());
+        assert_eq!(session.deroulement.attente(), Attente::Camp);
+        let partie = session.deroulement.partie().unwrap();
+        assert_eq!(partie.records_de_la_tour().a_deux, 4);
+        let texte = fs::read_to_string(dossier.join(format!("{joueur}.json"))).unwrap();
+        assert!(
+            texte.contains("\"record_a_deux_dans_la_tour\": 4"),
+            "{texte}"
+        );
+    }
+    let _ = fs::remove_dir_all(dossier);
+}
+
 /// Ysolde ajoute Aldric à ses amis : il passe en tête de sa liste des
 /// joueurs, marqué "Ami", et le reste après un redémarrage du bot (section
 /// 15.4).

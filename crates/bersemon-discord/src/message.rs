@@ -16,6 +16,7 @@ use poise::serenity_prelude as serenity;
 use crate::composants::{Cle, Composant, Vue};
 use crate::duels::erreur_de_defi;
 use crate::echanges::erreur_d_offre;
+use crate::groupes::erreur_d_invitation;
 use crate::joueurs::{Refus, Session};
 use crate::{
     ecran_accueil, ecran_camp, ecran_combat, ecran_duel, ecran_echanges, ecran_expedition,
@@ -200,6 +201,7 @@ fn expliquer(refus: &Refus) -> String {
         Refus::Choix { choix, erreur } => erreur_de_choix(choix, erreur),
         Refus::Echange(erreur) => erreur_d_offre(erreur),
         Refus::Duel(erreur) => erreur_de_defi(erreur),
+        Refus::Groupe(erreur) => erreur_d_invitation(erreur),
     }
 }
 
