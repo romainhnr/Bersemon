@@ -1018,7 +1018,9 @@ impl Joueurs {
         if !self.est_a_jour(joueur, version, contenu) {
             return Err(Refus::MessagePerime);
         }
-        if self.groupe_de(joueur).is_some() {
+        if let Some((position, membre)) = self.groupe_de(joueur) {
+            // Noté avant : le groupe peut se défaire avec ce choix.
+            let compagnon = self.groupes[position].joueur(membre.autre());
             let evenements = self
                 .dans_le_groupe(
                     joueur,
@@ -1038,6 +1040,9 @@ impl Joueurs {
             let session = self.charger(joueur, contenu);
             session.version = session.version.wrapping_add(1);
             session.vue = vue_apres(session.vue, &choix);
+            for membre in [joueur, compagnon] {
+                self.actualiser_les_annonces(membre, contenu);
+            }
             return Ok(evenements);
         }
         if self.duel_de(joueur).is_some() {
@@ -1069,8 +1074,18 @@ impl Joueurs {
             })?;
         session.version = session.version.wrapping_add(1);
         session.vue = vue_apres(session.vue, &choix);
-        self.annonces.suivre(joueur, &evenements);
+        self.actualiser_les_annonces(joueur, contenu);
         Ok(evenements)
+    }
+
+    /// Ce qui est à annoncer au joueur, déduit de sa partie après chaque
+    /// action (section 2).
+    fn actualiser_les_annonces(&mut self, joueur: IdJoueur, contenu: &ContenuV1) {
+        let partie = self
+            .sessions
+            .get(&joueur)
+            .and_then(|session| session.deroulement.partie());
+        self.annonces.actualiser(joueur, partie, contenu);
     }
 
     /// Change ce que montre le camp, sans toucher à la partie ni à sa

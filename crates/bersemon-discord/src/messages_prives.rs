@@ -1,9 +1,12 @@
-//! Messages privés envoyés au retour des expéditions automatiques (section
-//! 12.7), à la fin des constructions de Gunther (section 13.4) et quand la
-//! ligne d'Ansgar est prête (section 13.8). Chaque
-//! retour n'est annoncé qu'une fois, même si le bot redémarre avant que le
-//! joueur l'accueille (Q65) : les retours annoncés sont notés, un par ligne,
-//! dans un fichier texte du dossier des parties.
+//! Messages privés envoyés dès que quelque chose se termine (section 2) : le
+//! retour d'une expédition automatique (section 12.7), un travail de Gunther
+//! (section 13.4), la ligne d'Ansgar prête (section 13.8), le Rite du sang
+//! mêlé achevé (section 13.11), les pièges pleins et un monstre de la cour
+//! d'entraînement à son plafond (section 13.6). Ce qui est à annoncer se
+//! déduit de la partie, à chaque action du joueur et au démarrage du bot.
+//! Chaque retour n'est annoncé qu'une fois, même si le bot redémarre avant
+//! que le joueur l'accueille (Q65) : les retours annoncés sont notés, un par
+//! ligne, dans un fichier texte du dossier des parties.
 
 use std::collections::HashSet;
 use std::fs::{self, OpenOptions};
@@ -13,13 +16,15 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use bersemon_core::amelioration::Chantier;
+use bersemon_core::combat::Cote;
 use bersemon_core::contenu::ContenuV1;
-use bersemon_core::deroulement::Evenement;
 use bersemon_core::expedition_automatique::ExpeditionAutomatique;
 use bersemon_core::horodatage::Horodatage;
+use bersemon_core::partie::Partie;
 use bersemon_core::sauvegarde::SauvegardeRepository;
 use bersemon_core::zone::ZoneId;
 use bersemon_presentation::forge::ouvrage;
+use bersemon_presentation::monstres::nom;
 use bersemon_storage::FichierJson;
 use poise::serenity_prelude as serenity;
 
@@ -36,13 +41,17 @@ const PERIODE: Duration = Duration::from_secs(60);
 /// zone ne porte comme identifiant.
 const CLE_DE_LA_FORGE: &str = "forge";
 
-/// De même pour la ligne d'Ansgar.
+/// De même pour la ligne d'Ansgar, le rite, les pièges et la cour.
 const CLE_DE_LA_PECHE: &str = "peche";
+const CLE_DU_RITE: &str = "rite";
+const CLE_DES_PIEGES: &str = "pieges";
+const CLE_DE_LA_COUR: &str = "cour";
 
 /// Une expédition se reconnaît à son joueur, sa zone et son heure de retour :
-/// une nouvelle expédition dans la même zone a une autre heure. Une
-/// construction, à son joueur, à la forge et à son heure de fin ; une ligne,
-/// à son joueur, à la pêche et à l'heure où elle est prête.
+/// une nouvelle expédition dans la même zone a une autre heure. Les autres
+/// retours, à leur joueur, à leur clé et à leur heure : la fin d'un travail
+/// ou d'un rite, l'heure où la ligne est prête, où les pièges sont pleins ou
+/// où un monstre de la cour atteint son plafond.
 type Reference = (IdJoueur, String, Horodatage);
 
 /// Ce qui est à annoncer.
@@ -57,6 +66,12 @@ pub enum Sujet {
         travail: String,
     },
     Peche,
+    Rite,
+    Pieges,
+    /// Le nom du monstre à son plafond.
+    Entrainement {
+        monstre: String,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -88,19 +103,14 @@ impl Retour {
         }
     }
 
-    fn de_la_peche(joueur: IdJoueur, prete: Horodatage) -> Self {
-        Self {
-            joueur,
-            sujet: Sujet::Peche,
-            heure: prete,
-        }
-    }
-
     fn cle(&self) -> &str {
         match &self.sujet {
             Sujet::Expedition { zone, .. } => zone.as_str(),
             Sujet::Forge { .. } => CLE_DE_LA_FORGE,
             Sujet::Peche => CLE_DE_LA_PECHE,
+            Sujet::Rite => CLE_DU_RITE,
+            Sujet::Pieges => CLE_DES_PIEGES,
+            Sujet::Entrainement { .. } => CLE_DE_LA_COUR,
         }
     }
 
@@ -121,8 +131,57 @@ impl Retour {
             Sujet::Peche => {
                 "La ligne d'Ansgar est prête. Ouvrez /bersemon pour la relever.".to_string()
             }
+            Sujet::Rite => "Le Rite du sang mêlé est achevé : le petit attend auprès de Malvoise. Ouvrez /bersemon pour l'accueillir.".to_string(),
+            Sujet::Pieges => {
+                "Les pièges de Gunther sont pleins. Ouvrez /bersemon pour les relever.".to_string()
+            }
+            Sujet::Entrainement { monstre } => format!(
+                "Entraînement terminé : {monstre} a atteint le plafond de la cour d'entraînement. Ouvrez /bersemon pour reprendre ce monstre."
+            ),
         }
     }
+}
+
+/// Tout ce qui finira dans cette partie, annoncé ou non : ses expéditions
+/// automatiques, le travail de Gunther, la ligne d'Ansgar, le rite, les
+/// pièges et chaque monstre de la cour qui n'est pas à son plafond.
+fn retours_de(joueur: IdJoueur, partie: &Partie, contenu: &ContenuV1) -> Vec<Retour> {
+    let retour = |sujet: Sujet, heure: Horodatage| Retour {
+        joueur,
+        sujet,
+        heure,
+    };
+    let mut retours: Vec<Retour> = partie
+        .expeditions_automatiques()
+        .iter()
+        .map(|expedition| Retour::de(joueur, expedition))
+        .collect();
+    retours.extend(
+        partie
+            .forge()
+            .chantier()
+            .map(|chantier| Retour::de_la_forge(joueur, chantier)),
+    );
+    retours.extend(
+        partie
+            .peche()
+            .ligne()
+            .map(|prete| retour(Sujet::Peche, prete)),
+    );
+    retours.extend(partie.rite().map(|rite| retour(Sujet::Rite, rite.fin())));
+    let ameliorations = partie.forge().ameliorations();
+    if let (Some(regles), Some(pieges)) = (ameliorations.pieges(), partie.machines().pieges()) {
+        retours.push(retour(Sujet::Pieges, pieges.pleins_a(&regles)));
+    }
+    if let Some(regles) = ameliorations.cour() {
+        let plafond = partie.plafond_d_entrainement(contenu.zones(), contenu.piste());
+        for entrainement in partie.machines().cour() {
+            let monstre = nom(entrainement.monstre(), Cote::Joueur);
+            let heure = entrainement.plafond_atteint_a(&regles, plafond);
+            retours.push(retour(Sujet::Entrainement { monstre }, heure));
+        }
+    }
+    retours
 }
 
 /// Les retours qui restent à annoncer, tenus sous le même verrou que les
@@ -131,6 +190,9 @@ impl Retour {
 pub struct Annonces {
     fichier: PathBuf,
     a_annoncer: Vec<Retour>,
+    /// Ceux du fichier : à ne plus annoncer, même s'ils se déduisent encore
+    /// de la partie.
+    deja_annonces: HashSet<Reference>,
 }
 
 impl Annonces {
@@ -138,12 +200,13 @@ impl Annonces {
         Self {
             fichier: dossier.join(FICHIER),
             a_annoncer: Vec::new(),
+            deja_annonces: HashSet::new(),
         }
     }
 
-    /// Au démarrage du bot : les expéditions de toutes les parties du
-    /// dossier, sauf celles déjà annoncées. Le fichier des retours annoncés
-    /// est récrit sans les expéditions qui n'existent plus.
+    /// Au démarrage du bot : les retours de toutes les parties du dossier,
+    /// sauf ceux déjà annoncés. Le fichier des retours annoncés est récrit
+    /// sans ceux qui ne se déduisent plus d'aucune partie.
     pub fn charger(&mut self, dossier: &Path, contenu: &ContenuV1) {
         let deja_annonces = lire_le_fichier(&self.fichier);
         let mut toujours_en_attente = Vec::new();
@@ -160,19 +223,7 @@ impl Annonces {
                     continue;
                 }
             };
-            let expeditions = partie
-                .expeditions_automatiques()
-                .iter()
-                .map(|expedition| Retour::de(joueur, expedition));
-            let chantier = partie
-                .forge()
-                .chantier()
-                .map(|chantier| Retour::de_la_forge(joueur, chantier));
-            let ligne = partie
-                .peche()
-                .ligne()
-                .map(|prete| Retour::de_la_peche(joueur, prete));
-            for retour in expeditions.chain(chantier).chain(ligne) {
+            for retour in retours_de(joueur, &partie, contenu) {
                 if deja_annonces.contains(&retour.reference()) {
                     toujours_en_attente.push(retour.reference());
                 } else {
@@ -183,45 +234,23 @@ impl Annonces {
         if let Err(erreur) = fs::write(&self.fichier, en_lignes(&toujours_en_attente)) {
             eprintln!("Retours annoncés impossibles à noter : {erreur}.");
         }
+        self.deja_annonces = toujours_en_attente.into_iter().collect();
     }
 
-    /// Ce que vient de faire le joueur : un départ, un rappel, un accueil,
-    /// une construction ou une fabrication lancée ou constatée, une ligne
-    /// lancée ou relevée, ou une nouvelle partie, qui remplace l'ancienne
-    /// avec ses expéditions, sa forge et sa ligne.
-    pub fn suivre(&mut self, joueur: IdJoueur, evenements: &[Evenement]) {
-        for evenement in evenements {
-            match evenement {
-                Evenement::ExpeditionAutomatiquePartie(expedition) => {
-                    self.a_annoncer.push(Retour::de(joueur, expedition));
-                }
-                Evenement::ExpeditionAutomatiqueRappelee { expedition, .. } => {
-                    self.oublier(joueur, Some(expedition.zone().id().as_str()));
-                }
-                Evenement::ExpeditionAutomatiqueRentree { bilan, .. } => {
-                    self.oublier(joueur, Some(bilan.zone.as_str()));
-                }
-                Evenement::AmeliorationLancee { chantier, .. }
-                | Evenement::FabricationLancee { chantier, .. } => {
-                    self.a_annoncer.push(Retour::de_la_forge(joueur, chantier));
-                }
-                Evenement::TravailConstate(_) => {
-                    self.oublier(joueur, Some(CLE_DE_LA_FORGE));
-                }
-                Evenement::LigneLancee { fin, .. } => {
-                    self.a_annoncer.push(Retour::de_la_peche(joueur, *fin));
-                }
-                Evenement::PrisePechee(_) => self.oublier(joueur, Some(CLE_DE_LA_PECHE)),
-                Evenement::PartieCommencee(_) | Evenement::Suicide => self.oublier(joueur, None),
-                _ => {}
+    /// Après chaque action du joueur : ce qui est à lui annoncer se déduit
+    /// de nouveau de sa partie, qu'il ait lancé, constaté, relevé, accueilli
+    /// ou rappelé quelque chose. Sans partie, par exemple après un suicide,
+    /// plus rien.
+    pub fn actualiser(&mut self, joueur: IdJoueur, partie: Option<&Partie>, contenu: &ContenuV1) {
+        self.a_annoncer.retain(|retour| retour.joueur != joueur);
+        let Some(partie) = partie else {
+            return;
+        };
+        for retour in retours_de(joueur, partie, contenu) {
+            if !self.deja_annonces.contains(&retour.reference()) {
+                self.a_annoncer.push(retour);
             }
         }
-    }
-
-    /// Tout ce qui est à annoncer au joueur quand `cle` vaut `None`.
-    fn oublier(&mut self, joueur: IdJoueur, cle: Option<&str>) {
-        self.a_annoncer
-            .retain(|retour| retour.joueur != joueur || cle.is_some_and(|cle| retour.cle() != cle));
     }
 
     pub fn echus(&self, maintenant: Horodatage) -> Vec<Retour> {
@@ -235,6 +264,7 @@ impl Annonces {
     /// Le retour ne sera plus annoncé, même après un redémarrage.
     pub fn noter_annonce(&mut self, retour: &Retour) {
         self.a_annoncer.retain(|autre| autre != retour);
+        self.deja_annonces.insert(retour.reference());
         let ajout = OpenOptions::new()
             .create(true)
             .append(true)
@@ -356,13 +386,12 @@ mod tests {
         .unwrap()
     }
 
-    /// Une partie sauvegardée dont un Loup est parti dans la Lisière à
-    /// l'heure 0, pour une heure.
-    fn sauvegarder_une_expedition(dossier: &Path, contenu: &ContenuV1) -> Partie {
+    /// Deux Loups, la Lisière explorée : rien n'y finit encore.
+    fn etat_de_depart(contenu: &ContenuV1) -> EtatPartie {
         let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Mage);
         let mut partie = Partie::nouvelle(heros, loup(contenu));
         partie.prendre_monstre_rare(loup(contenu));
-        let mut partie = Partie::restaurer(EtatPartie {
+        EtatPartie {
             heros: partie.heros().clone(),
             collection: partie.collection().clone(),
             sac: partie.sac().clone(),
@@ -386,8 +415,13 @@ mod tests {
             beherit: Default::default(),
             records_de_la_tour: Default::default(),
             rite: None,
-        })
-        .unwrap();
+        }
+    }
+
+    /// Une partie sauvegardée dont un Loup est parti dans la Lisière à
+    /// l'heure 0, pour une heure.
+    fn sauvegarder_une_expedition(dossier: &Path, contenu: &ContenuV1) -> Partie {
+        let mut partie = Partie::restaurer(etat_de_depart(contenu)).unwrap();
         partie
             .envoyer_en_expedition_automatique(
                 &contenu.zones()[0],
@@ -439,79 +473,91 @@ mod tests {
     fn un_retour_accueilli_ou_rappele_n_est_plus_a_annoncer() {
         let contenu = ContenuV1::new();
         let dossier = dossier_de_test();
-        let partie = sauvegarder_une_expedition(&dossier, &contenu);
-        let expedition = partie.expeditions_automatiques()[0].clone();
+        let mut partie = sauvegarder_une_expedition(&dossier, &contenu);
+        let heure = partie.expeditions_automatiques()[0].retour();
         let mut annonces = Annonces::new(&dossier);
-        annonces.suivre(
-            JOUEUR,
-            &[Evenement::ExpeditionAutomatiquePartie(expedition.clone())],
-        );
-        annonces.suivre(
-            7,
-            &[Evenement::ExpeditionAutomatiquePartie(expedition.clone())],
-        );
-        let heure = expedition.retour();
+        annonces.actualiser(JOUEUR, Some(&partie), &contenu);
+        annonces.actualiser(7, Some(&partie), &contenu);
         assert_eq!(annonces.echus(heure).len(), 2);
-        annonces.suivre(
-            JOUEUR,
-            &[Evenement::ExpeditionAutomatiqueRappelee {
-                expedition: expedition.clone(),
-                places: Vec::new(),
-            }],
-        );
+        partie
+            .rappeler_expedition_automatique(
+                &ZoneId::new("lisiere"),
+                Horodatage::depuis_secondes(60),
+            )
+            .unwrap();
+        annonces.actualiser(JOUEUR, Some(&partie), &contenu);
         let echus = annonces.echus(heure);
         assert_eq!(echus.len(), 1);
         assert_eq!(echus[0].joueur, 7);
-        // Une nouvelle partie remplace l'ancienne et ses expéditions.
-        annonces.suivre(7, &[Evenement::PartieCommencee(loup(&contenu))]);
+        // Sans partie, par exemple après un suicide, plus rien.
+        annonces.actualiser(7, None, &contenu);
         let _ = fs::remove_dir_all(&dossier);
         assert!(annonces.echus(heure).is_empty());
     }
 
     #[test]
-    fn la_fin_d_une_construction_est_annoncee_une_fois() {
-        use bersemon_core::amelioration::{Amelioration, Chantier};
-        use bersemon_core::contenu::ContenuV1;
+    fn tout_ce_qui_se_termine_est_annonce_une_fois() {
+        use bersemon_core::amelioration::{Ameliorations, Chantier, Forge, Ouvrage};
+        use bersemon_core::filet::Filet;
+        use bersemon_core::machines::{Entrainement, Machines, Pieges};
+        use bersemon_core::rite::Rite;
 
         let contenu = ContenuV1::new();
         let dossier = dossier_de_test();
-        let plan = contenu
-            .plan_d_amelioration(Amelioration::Filets, 1)
-            .unwrap()
-            .clone();
+        let a = Horodatage::depuis_secondes;
+        let mut etat = etat_de_depart(&contenu);
+        // Un lot de filets, que le suivi d'avant ne voyait pas.
         let chantier = Chantier {
-            ouvrage: bersemon_core::amelioration::Ouvrage::Amelioration {
-                amelioration: Amelioration::Filets,
-                niveau: 1,
+            ouvrage: Ouvrage::Filets {
+                filet: Filet::Leste,
+                nombre: 5,
             },
-            fin: Horodatage::depuis_secondes(3_600),
+            fin: a(3_600),
         };
+        let ameliorations = Ameliorations::new(0, 0, 0)
+            .unwrap()
+            .avec_machines(1, 1)
+            .unwrap();
+        etat.forge = Forge::restaurer(true, ameliorations, Some(chantier)).unwrap();
+        etat.rite = Some(Rite::new([loup(&contenu), loup(&contenu)], a(7_200)));
+        let entrainement = Entrainement::new(loup(&contenu), a(0));
+        etat.machines = Machines::restaurer(
+            Some(Pieges::new(ZoneId::new("lisiere"), a(0))),
+            vec![entrainement.clone()],
+        );
+        let partie = Partie::restaurer(etat).unwrap();
+        let plafond = partie.plafond_d_entrainement(contenu.zones(), contenu.piste());
+        let regles_de_la_cour = partie.forge().ameliorations().cour().unwrap();
+        let au_plafond = entrainement.plafond_atteint_a(&regles_de_la_cour, plafond);
         let mut annonces = Annonces::new(&dossier);
-        annonces.suivre(
-            JOUEUR,
-            &[Evenement::AmeliorationLancee {
-                plan: Box::new(plan),
-                chantier: chantier.clone(),
-            }],
-        );
-        assert!(
-            annonces
-                .echus(Horodatage::depuis_secondes(3_599))
-                .is_empty()
-        );
-        let echus = annonces.echus(Horodatage::depuis_secondes(3_600));
-        assert_eq!(echus.len(), 1);
+        annonces.actualiser(JOUEUR, Some(&partie), &contenu);
+        let textes = |heure: Horodatage| -> Vec<String> {
+            annonces.echus(heure).iter().map(Retour::texte).collect()
+        };
+        assert!(textes(a(3_599)).is_empty());
         assert_eq!(
-            echus[0].texte(),
-            "Gunther a fini : Filets, niveau 1 (chance de capture +10 %). Ouvrez /bersemon pour constater son travail."
+            textes(a(3_600)),
+            vec!["Gunther a fini : 5 filets lestés. Ouvrez /bersemon pour constater son travail."]
         );
-        // Constatée avant l'annonce : il n'y a plus rien à annoncer.
-        annonces.suivre(JOUEUR, &[Evenement::TravailConstate(chantier)]);
-        let _ = fs::remove_dir_all(&dossier);
+        assert!(textes(a(7_200)).contains(&"Le Rite du sang mêlé est achevé : le petit attend auprès de Malvoise. Ouvrez /bersemon pour l'accueillir.".to_string()));
+        // Les pièges du niveau 1 sont pleins au bout de 6 fois 2 heures.
         assert!(
-            annonces
-                .echus(Horodatage::depuis_secondes(3_600))
-                .is_empty()
+            !textes(a(43_199))
+                .iter()
+                .any(|texte| texte.contains("pièges"))
         );
+        assert!(textes(a(43_200)).contains(
+            &"Les pièges de Gunther sont pleins. Ouvrez /bersemon pour les relever.".to_string()
+        ));
+        assert!(textes(au_plafond).contains(&"Entraînement terminé : Loup a atteint le plafond de la cour d'entraînement. Ouvrez /bersemon pour reprendre ce monstre.".to_string()));
+        // Annoncés, ils ne reviennent pas avec l'action suivante.
+        let tous = annonces.echus(a(1_000_000));
+        assert_eq!(tous.len(), 4);
+        for retour in &tous {
+            annonces.noter_annonce(retour);
+        }
+        annonces.actualiser(JOUEUR, Some(&partie), &contenu);
+        let _ = fs::remove_dir_all(&dossier);
+        assert!(annonces.echus(a(1_000_000)).is_empty());
     }
 }

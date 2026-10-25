@@ -114,6 +114,13 @@ impl Pieges {
             .min(regles.stock_maximal)
     }
 
+    /// L'heure où ils seront pleins, et ne prendront plus rien : de quoi
+    /// prévenir le joueur (section 13.6).
+    pub fn pleins_a(&self, regles: &ReglesDesPieges) -> Horodatage {
+        self.depuis
+            .plus(regles.intervalle.saturating_mul(regles.stock_maximal))
+    }
+
     /// Le temps qu'il reste avant la prochaine ressource ; `None` quand les
     /// pièges sont pleins.
     pub fn prochaine(&self, regles: &ReglesDesPieges, maintenant: Horodatage) -> Option<Duration> {
@@ -176,6 +183,29 @@ impl Entrainement {
             brute
         };
         gain.min(reste_avant_le_plafond(&self.monstre, plafond))
+    }
+
+    /// La première seconde où il aura gagné tout ce que le plafond permet,
+    /// et ne gagnera plus rien : de quoi prévenir le joueur (section 13.6).
+    pub fn plafond_atteint_a(&self, regles: &ReglesDeLaCour, plafond: Niveau) -> Horodatage {
+        let reste = reste_avant_le_plafond(&self.monstre, plafond);
+        let apres = |secondes: u64| self.depuis.plus(Duration::from_secs(secondes));
+        // Sans Instinct, il y faut au plus ce temps ; avec, moins. L'XP ne
+        // fait que croître : la première seconde se cherche par dichotomie.
+        let par_heure = u64::from(regles.experience_par_heure.max(1));
+        let (mut bas, mut haut) = (
+            0,
+            (u64::from(reste) * SECONDES_PAR_HEURE).div_ceil(par_heure),
+        );
+        while bas < haut {
+            let milieu = bas + (haut - bas) / 2;
+            if self.experience(regles, plafond, apres(milieu)) >= reste {
+                haut = milieu;
+            } else {
+                bas = milieu + 1;
+            }
+        }
+        apres(bas)
     }
 }
 
@@ -372,6 +402,7 @@ mod tests {
         assert_eq!(pieges.stock(&regles, a(1_000 + 7_200 * 6)), 6);
         assert_eq!(pieges.stock(&regles, a(1_000 + 7_200 * 9)), 6);
         assert_eq!(pieges.prochaine(&regles, a(1_000 + 7_200 * 9)), None);
+        assert_eq!(pieges.pleins_a(&regles), a(1_000 + 7_200 * 6));
         // Une horloge reculée ne prend rien.
         assert_eq!(pieges.stock(&regles, a(0)), 0);
     }
@@ -476,6 +507,13 @@ mod tests {
             218
         );
         assert_eq!(reste_avant_le_plafond(&loup, Niveau::new(5).unwrap()), 0);
+        // 218 XP à 50 par heure : 15 696 secondes ; avec Instinct, 182 XP
+        // brutes suffisent, soit 13 104 secondes.
+        assert_eq!(entrainement.plafond_atteint_a(&regles, plafond), a(15_696));
+        assert_eq!(entrainement.experience(&regles, plafond, a(15_695)), 217);
+        let instinct = Entrainement::new(loup.avec_habilete(Habilete::Instinct), a(0));
+        assert_eq!(instinct.plafond_atteint_a(&regles, plafond), a(13_104));
+        assert_eq!(instinct.experience(&regles, plafond, a(13_103)), 217);
     }
 
     #[test]
