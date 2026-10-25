@@ -8,7 +8,7 @@ use bersemon_core::collection::Collection;
 use bersemon_core::combat::Cote;
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::{Annonce, Confirmation};
-use bersemon_core::espece::{Espece, Rarete};
+use bersemon_core::espece::Espece;
 use bersemon_core::evolution::ConditionEvolution;
 use bersemon_core::expedition::Expedition;
 use bersemon_core::habilete::Habilete;
@@ -17,6 +17,7 @@ use bersemon_core::inventaire::Inventaire;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_core::pierre::PierreDEvolution;
+use bersemon_core::recompenses_du_codex::compte_au_codex;
 use bersemon_core::ressource::Ressource;
 use bersemon_core::traque::Apotre;
 use bersemon_core::zone::Zone;
@@ -387,7 +388,7 @@ pub fn especes_du_codex(especes: &[Espece]) -> impl Iterator<Item = (usize, &Esp
     especes
         .iter()
         .enumerate()
-        .filter(|(_, espece)| !matches!(espece.rarete(), Rarete::Apotre | Rarete::Demiurge))
+        .filter(|(_, espece)| compte_au_codex(espece))
 }
 
 pub const TITRE_DU_CARNET: &str = "Carnet de traque :";

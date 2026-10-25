@@ -19,6 +19,7 @@ use crate::forge::erreur_amelioration;
 use crate::machines::erreur_machine;
 use crate::partie::argent;
 use crate::peche::erreur_peche;
+use crate::recompenses_du_codex::erreur_codex;
 use crate::rite::erreur_rite;
 use crate::soins::plus_aucun;
 
@@ -65,6 +66,7 @@ pub fn erreur_de_choix(choix: &Choix, erreur: &ErreurChoix) -> String {
         ErreurChoix::Peche(erreur) => erreur_peche(erreur),
         ErreurChoix::Machine(erreur) => erreur_machine(erreur),
         ErreurChoix::Rite(erreur) => erreur_rite(erreur),
+        ErreurChoix::Codex(erreur) => erreur_codex(erreur),
         ErreurChoix::Beherit(erreur) => erreur_beherit(erreur),
         ErreurChoix::AuTourDeLAutre => "C'est à votre compagnon d'agir.".to_string(),
         ErreurChoix::AttenteTropCourte => "Votre compagnon a encore le temps de jouer.".to_string(),

@@ -38,6 +38,7 @@ use bersemon_presentation::partie::{
     especes_du_codex, fiche_d_espece, ligne_du_codex,
 };
 use bersemon_presentation::peche::ligne_prete;
+use bersemon_presentation::recompenses_du_codex::{progression_du_codex, reclamer};
 use bersemon_presentation::rite::{rite_acheve, service_du_rite};
 use bersemon_presentation::tour::description_de_la_tour;
 
@@ -526,6 +527,7 @@ fn codex(partie: &Partie, fiche: Option<usize>, page: usize, contenu: &ContenuV1
         }
         None => {
             lignes.push("Codex :".to_string());
+            lignes.push(progression_du_codex(partie, contenu));
             for (numero, (_, espece)) in liste
                 .iter()
                 .enumerate()
@@ -569,6 +571,16 @@ fn codex(partie: &Partie, fiche: Option<usize>, page: usize, contenu: &ContenuV1
         })
         .collect();
     let mut boutons = Vec::new();
+    // Au plus 4 boutons : les deux pages, la récompense et le retour.
+    if let Some(a_reclamer) =
+        partie.recompense_a_reclamer(contenu.recompenses_du_codex(), contenu.especes())
+    {
+        boutons.push(bouton(
+            Cle::ReclamerRecompenseDuCodex,
+            &reclamer(a_reclamer),
+            SUCCES,
+        ));
+    }
     if ouverte.is_some() {
         boutons.push(bouton(
             Cle::Afficher(Vue::Codex(None)),

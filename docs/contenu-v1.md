@@ -1222,3 +1222,27 @@ Décidé le 25/10/2026, pour l'étape 113 (gamedesign.md, section 2). Les textes
 | Rite du sang mêlé | Le Rite du sang mêlé est achevé : le petit attend auprès de Malvoise. Ouvrez /bersemon pour l'accueillir. |
 | Pièges pleins | Les pièges de Gunther sont pleins. Ouvrez /bersemon pour les relever. |
 | Monstre de la cour à son plafond | Entraînement terminé : {monstre} a atteint le plafond de la cour d'entraînement. Ouvrez /bersemon pour reprendre ce monstre. |
+
+## 30. Récompenses du codex
+
+Décidé le 25/10/2026, pour l'étape 115 (gamedesign.md, section 5.6). Paliers, récompenses et talisman validés par l'utilisateur, à ajuster en jouant.
+
+| Palier | Récompense, au coffre |
+|---|---|
+| 10 espèces capturées | 10 filets lestés et 300 pièces d'argent |
+| 20 espèces capturées | 5 filets de chaînes et 500 pièces d'argent |
+| 30 espèces capturées | 1 Philtre chromatique |
+| 40 espèces capturées | 3 capsules d'habileté |
+| 50 espèces capturées | 1 booster de chaque sorte (6) |
+| Codex complet (51 espèces aujourd'hui) | 3 Philtres chromatiques, et le Sceau du bestiaire dans l'équipement du héros |
+
+Sceau du bestiaire (identifiant sceau-du-bestiaire) : talisman, +5 % à l'Attaque, la Défense, l'Attaque spéciale, la Défense spéciale et la Vitesse. Unique, il ne se fabrique pas.
+
+Textes proposés sans validation (gamedesign.md, Q106) :
+
+| Moment | Texte |
+|---|---|
+| Progression | Espèces capturées : {n} sur {total}. Récompense à réclamer pour 10 espèces capturées : {récompense}. / ... Prochaine récompense, à 20 espèces capturées : {récompense}. / ... Prochaine récompense, au codex complet : {récompense}. / ... Toutes les récompenses du codex sont réclamées. |
+| Action | Réclamer la récompense : 10 espèces capturées / Réclamer la récompense : le codex complet |
+| Récit | Récompense du codex, à 10 espèces capturées, au coffre : {objets}. / Récompense du codex complet, au coffre : {objets}. Le talisman {talisman} rejoint votre équipement. |
+| Refus | Aucune récompense du codex à réclamer pour l'instant. |

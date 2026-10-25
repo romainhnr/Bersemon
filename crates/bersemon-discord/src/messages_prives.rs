@@ -415,6 +415,7 @@ mod tests {
             beherit: Default::default(),
             records_de_la_tour: Default::default(),
             rite: None,
+            paliers_du_codex: Vec::new(),
         }
     }
 

@@ -16,6 +16,7 @@ use crate::amelioration::{
 };
 use crate::attaque::{Attaque, AttaqueId, Categorie, EffetSecondaire};
 use crate::beherit::Invocation;
+use crate::booster::Booster;
 use crate::capsule::Capsule;
 use crate::catalogue::Catalogue;
 use crate::equipement::{ObjetDEquipement, ObjetDEquipementId, SorteDObjet};
@@ -27,9 +28,11 @@ use crate::filet::Filet;
 use crate::habilete::Habilete;
 use crate::heros::Classe;
 use crate::humain::{Humain, HumainId, IaHumain};
+use crate::inventaire::Inventaire;
 use crate::niveau::Niveau;
 use crate::peche::{ParametresPeche, Pecheur};
 use crate::pierre::PierreDEvolution;
+use crate::recompenses_du_codex::{PalierDuCodex, RecompenseDuCodex};
 use crate::ressource::{Ressource, RessourceId};
 use crate::soin::Soin;
 use crate::stats::Stats;
@@ -221,6 +224,7 @@ pub struct ContenuV1 {
     peche: ParametresPeche,
     invocation: Invocation,
     tour: TourSansFond,
+    recompenses_du_codex: Vec<RecompenseDuCodex>,
 }
 
 impl ContenuV1 {
@@ -662,6 +666,7 @@ impl ContenuV1 {
             plans_de_fabrication,
             plan_du_charme,
             plans_des_filets,
+            recompenses_du_codex: creer_recompenses_du_codex(),
             peche,
             invocation,
             tour,
@@ -746,6 +751,11 @@ impl ContenuV1 {
         &self.plans_des_filets
     }
 
+    /// Dans l'ordre des paliers (section 5.6).
+    pub fn recompenses_du_codex(&self) -> &[RecompenseDuCodex] {
+        &self.recompenses_du_codex
+    }
+
     pub fn plan_des_filets(&self, filet: Filet) -> Option<&PlanDesFilets> {
         self.plans_des_filets
             .iter()
@@ -803,9 +813,17 @@ impl Catalogue for ContenuV1 {
             .cloned()
     }
 
+    /// Un objet fabriqué, ou un objet unique des récompenses du codex.
     fn objet_d_equipement(&self, id: &ObjetDEquipementId) -> Option<ObjetDEquipement> {
         self.plan_de_fabrication(id)
             .map(|plan| plan.objet().clone())
+            .or_else(|| {
+                self.recompenses_du_codex
+                    .iter()
+                    .filter_map(|recompense| recompense.objet_unique.as_ref())
+                    .find(|objet| objet.id() == id)
+                    .cloned()
+            })
     }
 
     fn marchand_mort(&self, id: &MarchandId) -> Option<MarchandMort> {
@@ -3365,6 +3383,56 @@ const PLANS_DE_FABRICATION: [FicheObjet; 14] = [
     },
 ];
 
+/// Section 30 de docs/contenu-v1.md : la récompense du codex complet, qui ne
+/// se fabrique pas.
+const SCEAU_DU_BESTIAIRE: FicheObjet = FicheObjet {
+    id: "sceau-du-bestiaire",
+    nom: "Sceau du bestiaire",
+    sorte: SorteDObjet::Talisman,
+    bonus: [5, 5, 5, 5, 5],
+    cout: &[],
+    heures: 0,
+};
+
+/// Section 30 de docs/contenu-v1.md : une récompense toutes les 10 espèces
+/// capturées, puis au codex complet.
+fn creer_recompenses_du_codex() -> Vec<RecompenseDuCodex> {
+    let recompense = |palier, objets| RecompenseDuCodex {
+        palier,
+        objets,
+        objet_unique: None,
+    };
+    let boosters = Booster::TOUS
+        .into_iter()
+        .fold(Inventaire::default(), |objets, booster| {
+            objets.avec_boosters(booster, 1)
+        });
+    vec![
+        recompense(
+            PalierDuCodex::Especes(10),
+            Inventaire::new(300, 0, Vec::new()).avec_filets(Filet::Leste, 10),
+        ),
+        recompense(
+            PalierDuCodex::Especes(20),
+            Inventaire::new(500, 0, Vec::new()).avec_filets(Filet::Chaines, 5),
+        ),
+        recompense(
+            PalierDuCodex::Especes(30),
+            Inventaire::default().avec_philtres_chromatiques(1),
+        ),
+        recompense(
+            PalierDuCodex::Especes(40),
+            Inventaire::default().avec_capsules_d_habilete(3),
+        ),
+        recompense(PalierDuCodex::Especes(50), boosters),
+        RecompenseDuCodex {
+            palier: PalierDuCodex::Complet,
+            objets: Inventaire::default().avec_philtres_chromatiques(3),
+            objet_unique: Some(creer_objet(&SCEAU_DU_BESTIAIRE)),
+        },
+    ]
+}
+
 fn creer_objet(fiche: &FicheObjet) -> ObjetDEquipement {
     let [
         attaque,
@@ -3681,6 +3749,26 @@ mod tests {
         uniques.dedup();
         assert_eq!(vues.len(), 32);
         assert_eq!(uniques.len(), 32);
+    }
+
+    #[test]
+    fn les_recompenses_du_codex_suivent_les_paliers_et_le_sceau_ne_se_fabrique_pas() {
+        use crate::recompenses_du_codex::{PalierDuCodex, especes_au_codex};
+
+        let contenu = ContenuV1::new();
+        let au_codex = especes_au_codex(contenu.especes());
+        assert_eq!(au_codex, 51);
+        let seuils: Vec<u32> = contenu
+            .recompenses_du_codex()
+            .iter()
+            .map(|recompense| recompense.palier.seuil(au_codex))
+            .collect();
+        assert_eq!(seuils, vec![10, 20, 30, 40, 50, 51]);
+        let complet = contenu.recompenses_du_codex().last().unwrap();
+        assert_eq!(complet.palier, PalierDuCodex::Complet);
+        let sceau = complet.objet_unique.as_ref().unwrap();
+        assert!(contenu.plan_de_fabrication(sceau.id()).is_none());
+        assert_eq!(contenu.objet_d_equipement(sceau.id()).as_ref(), Some(sceau));
     }
 
     #[test]

@@ -503,6 +503,7 @@ fn l_equipe_et_le_camp_pleins_tiennent_dans_les_limites() {
             beherit: Default::default(),
             records_de_la_tour: Default::default(),
             rite: None,
+            paliers_du_codex: Vec::new(),
         })
         .unwrap();
         let maintenant = Horodatage::depuis_secondes(0);
@@ -606,6 +607,7 @@ fn les_attaques_au_camp_se_choisissent_par_menu() {
         beherit: Default::default(),
         records_de_la_tour: Default::default(),
         rite: None,
+        paliers_du_codex: Vec::new(),
     })
     .unwrap();
     let menus = |emplacement: Emplacement| -> Vec<(Cle, Vec<String>)> {
@@ -894,6 +896,7 @@ fn le_demiurge_s_affronte_a_travers_les_ecrans_du_bot() {
         beherit: Default::default(),
         records_de_la_tour: Default::default(),
         rite: None,
+        paliers_du_codex: Vec::new(),
     })
     .unwrap();
     let dossier = dossier_de_test().join("demiurge");
@@ -1045,6 +1048,7 @@ fn malvoise_vend_et_loue_des_monstres_a_travers_les_ecrans_du_bot() {
         beherit: Default::default(),
         records_de_la_tour: Default::default(),
         rite: None,
+        paliers_du_codex: Vec::new(),
     })
     .unwrap();
     let dossier = dossier_de_test().join("achats");
@@ -1203,6 +1207,7 @@ fn gunther_agrandit_l_enclos_a_travers_les_ecrans_du_bot() {
         beherit: Default::default(),
         records_de_la_tour: Default::default(),
         rite: None,
+        paliers_du_codex: Vec::new(),
     })
     .unwrap();
     let dossier = dossier_de_test().join("forge");
@@ -1366,6 +1371,7 @@ fn ansgar_peche_a_travers_les_ecrans_du_bot() {
         beherit: Default::default(),
         records_de_la_tour: Default::default(),
         rite: None,
+        paliers_du_codex: Vec::new(),
     })
     .unwrap();
     let dossier = dossier_de_test().join("peche");
@@ -1518,6 +1524,7 @@ fn la_forge_et_l_equipement_tiennent_dans_les_limites() {
             beherit: Default::default(),
             records_de_la_tour: Default::default(),
             rite: None,
+            paliers_du_codex: Vec::new(),
         })
         .unwrap();
         let maintenant = Horodatage::depuis_secondes(0);
@@ -1569,6 +1576,7 @@ fn toute_l_equipe_se_prepare_d_un_bouton_s_il_y_a_de_la_place_au_camp() {
             beherit: Default::default(),
             records_de_la_tour: Default::default(),
             rite: None,
+            paliers_du_codex: Vec::new(),
         })
         .unwrap()
     };
@@ -1646,6 +1654,7 @@ fn toute_l_equipe_se_prepare_d_un_bouton_s_il_y_a_de_la_place_au_camp() {
         beherit: Default::default(),
         records_de_la_tour: Default::default(),
         rite: None,
+        paliers_du_codex: Vec::new(),
     })
     .unwrap();
     let choisis = [
@@ -1806,6 +1815,7 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         beherit: Default::default(),
         records_de_la_tour: Default::default(),
         rite: None,
+        paliers_du_codex: Vec::new(),
     };
     let afficher = |partie: &Partie, vue: Vue| {
         let question =
@@ -1925,9 +1935,12 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         for fiche in [None, Some(0), Some(dernier)] {
             afficher(&partie, Vue::Codex(fiche));
         }
-        // La liste du codex se lit en deux pages (étape 82).
+        // La liste du codex se lit en deux pages (étape 82). Toutes les
+        // espèces capturées : la récompense du premier palier se réclame
+        // d'ici (section 5.6).
         let cles = afficher(&partie, Vue::Codex(None));
         assert!(cles.contains(&Cle::Afficher(Vue::PageDuCodex(1))));
+        assert!(cles.contains(&Cle::ReclamerRecompenseDuCodex));
         let cles = afficher(&partie, Vue::PageDuCodex(1));
         assert!(cles.contains(&Cle::Afficher(Vue::Codex(None))));
         assert!(!cles.contains(&Cle::Afficher(Vue::PageDuCodex(2))));
@@ -2044,6 +2057,7 @@ fn les_machines_tiennent_dans_les_limites() {
         beherit: Default::default(),
         records_de_la_tour: Default::default(),
         rite: None,
+        paliers_du_codex: Vec::new(),
     };
     // L'enclos et l'équipe agrandis d'abord, pour une équipe de 4 et 57
     // monstres au camp, qui laissent leur place aux 3 de la cour.

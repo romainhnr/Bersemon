@@ -33,6 +33,7 @@ use bersemon_core::nom::Nom;
 use bersemon_core::partie::{AttaqueAChoisir, EtatPartie, Partie};
 use bersemon_core::peche::Peche;
 use bersemon_core::pierre::PierreDEvolution;
+use bersemon_core::recompenses_du_codex::PalierDuCodex;
 use bersemon_core::relations::{Palmares, Relations};
 use bersemon_core::ressource::RessourceId;
 use bersemon_core::rite::Rite;
@@ -46,7 +47,7 @@ use bersemon_core::zone::{Zone, ZoneId};
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 28;
+pub(crate) const VERSION: u64 = 29;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -94,6 +95,10 @@ const VERSION_DES_FILETS: u64 = 27;
 /// (section 13.11).
 const VERSION_DU_RITE: u64 = 28;
 
+/// La version de la sauvegarde qui garde les paliers du codex dont la
+/// récompense est réclamée (section 5.6).
+const VERSION_DES_PALIERS_DU_CODEX: u64 = 29;
+
 /// Ce que reçoit, au coffre, une partie qui reprend une sauvegarde
 /// antérieure aux filets (hypothèse retenue, Q102).
 const FILETS_DES_SAUVEGARDES_ANTERIEURES: u32 = 10;
@@ -123,7 +128,7 @@ const GEOLIER_DE_GUNTHER: &str = "bourreau";
 /// les protections des expéditions automatiques, la version 24 la location
 /// d'un monstre, la version 25 le Béhérit pourpre, la version 26 les records
 /// de la Tour sans fond, la version 27 les filets de capture, la version 28
-/// le Rite du sang mêlé. Une sauvegarde d'une version précédente se lit avec cette
+/// le Rite du sang mêlé, la version 29 les récompenses du codex réclamées. Une sauvegarde d'une version précédente se lit avec cette
 /// structure : les champs ajoutés y prennent leur valeur de début de
 /// partie.
 #[derive(Debug, Serialize, Deserialize)]
@@ -217,6 +222,9 @@ pub(crate) struct SauvegardeV14 {
     /// Malvoise, absent sans rite en cours.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     rite: Option<RiteV28>,
+    /// Depuis la version 29 (section 5.6) : "10", "20"... ou "complet".
+    #[serde(default)]
+    paliers_du_codex: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -692,6 +700,27 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV14 {
             parents: rite.parents().iter().map(depuis_monstre).collect(),
             fin: rite.fin().secondes(),
         }),
+        paliers_du_codex: partie
+            .paliers_du_codex()
+            .iter()
+            .map(|palier| palier_en_texte(*palier))
+            .collect(),
+    }
+}
+
+fn palier_en_texte(palier: PalierDuCodex) -> String {
+    match palier {
+        PalierDuCodex::Especes(nombre) => nombre.to_string(),
+        PalierDuCodex::Complet => "complet".to_string(),
+    }
+}
+
+fn lire_palier(texte: &str) -> Result<PalierDuCodex, ErreurSauvegarde> {
+    match texte {
+        "complet" => Ok(PalierDuCodex::Complet),
+        nombre => nombre.parse().map(PalierDuCodex::Especes).map_err(|_| {
+            ErreurSauvegarde::Incoherente(format!("palier du codex inconnu : {texte}"))
+        }),
     }
 }
 
@@ -1068,6 +1097,17 @@ pub(crate) fn vers_partie(
         }
         _ => None,
     };
+    // Avant la version 29, aucune récompense réclamée : les paliers déjà
+    // atteints se réclament à la reprise (section 5.6).
+    let paliers_du_codex = if sauvegarde.version < VERSION_DES_PALIERS_DU_CODEX {
+        Vec::new()
+    } else {
+        sauvegarde
+            .paliers_du_codex
+            .iter()
+            .map(|texte| lire_palier(texte))
+            .collect::<Result<Vec<_>, _>>()?
+    };
     Partie::restaurer(EtatPartie {
         heros,
         collection,
@@ -1098,6 +1138,7 @@ pub(crate) fn vers_partie(
         beherit,
         records_de_la_tour,
         rite,
+        paliers_du_codex,
     })
     .map_err(incoherente)
 }

@@ -47,6 +47,7 @@ use crate::nom::{ErreurNom, Nom};
 use crate::partie::{Partie, creer_monstre_de_depart};
 use crate::peche::{ErreurPeche, Pecheur, Prise};
 use crate::pierre::PierreDEvolution;
+use crate::recompenses_du_codex::{ErreurCodex, RecompenseDuCodex};
 use crate::relations::IdJoueur;
 use crate::ressource::{Ressource, RessourceId};
 use crate::rite::{ApercuDuRite, ErreurRite, NaissanceDuRite};
@@ -189,6 +190,9 @@ pub enum Choix {
     },
     /// Au camp, le rite fini : le petit naît, et ses parents reviennent.
     AccueillirLePetit,
+    /// Au camp, depuis le codex, sans confirmation : la récompense du
+    /// premier palier atteint et pas encore réclamé (section 5.6).
+    ReclamerRecompenseDuCodex,
     /// Au camp, sans confirmation : l'objet remplace celui de cette place
     /// (section 4.3).
     Equiper {
@@ -510,6 +514,8 @@ pub enum Evenement {
     RiteLance(Box<ApercuDuRite>),
     /// Le petit né du rite, et ses parents revenus.
     PetitNe(Box<NaissanceDuRite>),
+    /// Ce qu'un palier du codex a rapporté, rangé au coffre (section 5.6).
+    RecompenseDuCodex(Box<RecompenseDuCodex>),
     /// Suivi de l'XP gagnée, s'il en a gagné.
     SortieDeLEntrainement {
         monstre: Monstre,
@@ -733,6 +739,7 @@ pub enum ErreurChoix {
     Peche(ErreurPeche),
     Machine(ErreurMachine),
     Rite(ErreurRite),
+    Codex(ErreurCodex),
     Beherit(ErreurBeherit),
     /// En groupe, c'est à l'autre joueur d'agir (section 15.5).
     AuTourDeLAutre,
@@ -769,6 +776,7 @@ impl fmt::Display for ErreurChoix {
             ErreurChoix::Peche(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Machine(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Rite(erreur) => write!(f, "{erreur}"),
+            ErreurChoix::Codex(erreur) => write!(f, "{erreur}"),
             ErreurChoix::AuTourDeLAutre => write!(f, "c'est à l'autre joueur d'agir"),
             ErreurChoix::AttenteTropCourte => write!(f, "l'autre joueur a encore le temps"),
         }
@@ -2001,6 +2009,16 @@ impl EnJeu {
                 evenements.push(Evenement::PetitNe(Box::new(naissance)));
                 // Tout de suite, pour que quitter le jeu ne permette pas de
                 // tirer de nouveau le petit.
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::ReclamerRecompenseDuCodex => {
+                let contenu = contexte.contenu;
+                let recompense = self
+                    .partie
+                    .reclamer_recompense_du_codex(contenu.recompenses_du_codex(), contenu.especes())
+                    .map_err(ErreurChoix::Codex)?;
+                evenements.push(Evenement::RecompenseDuCodex(Box::new(recompense)));
                 sauvegarder(&self.partie, contexte.depot, evenements);
                 Ok(Reponse::Faite)
             }
@@ -3376,6 +3394,7 @@ mod tests {
             beherit: partie.beherit(),
             records_de_la_tour: partie.records_de_la_tour(),
             rite: partie.rite().cloned(),
+            paliers_du_codex: partie.paliers_du_codex().to_vec(),
         }
     }
 
@@ -5797,6 +5816,7 @@ mod tests {
             beherit: Default::default(),
             records_de_la_tour: Default::default(),
             rite: None,
+            paliers_du_codex: Vec::new(),
         })
         .unwrap()
     }
@@ -5910,6 +5930,42 @@ mod tests {
         let mut deroulement = Deroulement::demarrer(Ok(Some(partie)));
         repondre_sans_tirage(&mut deroulement, Choix::ReprendreLaPartie, contenu, depot).unwrap();
         deroulement
+    }
+
+    #[test]
+    fn reclamer_la_recompense_du_codex_la_range_au_coffre() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut etat = etat_de(&partie(&contenu));
+        etat.coffre_du_camp = Inventaire::default();
+        for espece in contenu.especes().iter().take(12) {
+            etat.codex.noter_capture(espece.id());
+        }
+        let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
+        let evenements = repondre_sans_tirage(
+            &mut deroulement,
+            Choix::ReclamerRecompenseDuCodex,
+            &contenu,
+            &depot,
+        )
+        .unwrap();
+        assert!(matches!(
+            &evenements[..],
+            [Evenement::RecompenseDuCodex(recompense)]
+                if recompense.palier == crate::recompenses_du_codex::PalierDuCodex::Especes(10)
+        ));
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert_eq!(sauvegarde.coffre_du_camp().argent(), 300);
+        assert_eq!(sauvegarde.paliers_du_codex().len(), 1);
+        assert_eq!(
+            repondre_sans_tirage(
+                &mut deroulement,
+                Choix::ReclamerRecompenseDuCodex,
+                &contenu,
+                &depot
+            ),
+            Err(ErreurChoix::Codex(ErreurCodex::AucuneRecompense))
+        );
     }
 
     #[test]

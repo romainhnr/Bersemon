@@ -48,6 +48,9 @@ use crate::nom::Nom;
 use crate::obeissance::limite_d_obeissance;
 use crate::peche::{ErreurPeche, ParametresPeche, Peche, Prise};
 use crate::pierre::PierreDEvolution;
+use crate::recompenses_du_codex::{
+    ErreurCodex, PalierDuCodex, RecompenseDuCodex, especes_au_codex, especes_capturees,
+};
 use crate::relations::Relations;
 use crate::ressource::{Ressource, RessourceId};
 use crate::rite::{
@@ -132,6 +135,8 @@ pub struct Partie {
     /// Les parents confiés à Malvoise pour le Rite du sang mêlé (section
     /// 13.11).
     rite: Option<Rite>,
+    /// Les paliers du codex dont la récompense est réclamée (section 5.6).
+    paliers_du_codex: Vec<PalierDuCodex>,
 }
 
 /// Attaque qu'un monstre rentré d'expédition automatique veut apprendre en
@@ -180,6 +185,7 @@ pub struct EtatPartie {
     pub beherit: EtatDuBeherit,
     pub records_de_la_tour: RecordsDeLaTour,
     pub rite: Option<Rite>,
+    pub paliers_du_codex: Vec<PalierDuCodex>,
 }
 
 /// Sauvegarde lisible mais contraire aux règles des expéditions
@@ -274,6 +280,7 @@ impl Partie {
             beherit: EtatDuBeherit::Aucun,
             records_de_la_tour: RecordsDeLaTour::default(),
             rite: None,
+            paliers_du_codex: Vec::new(),
             conseils_vus: Vec::new(),
             expeditions_automatiques: Vec::new(),
             attaques_a_choisir: Vec::new(),
@@ -500,6 +507,60 @@ impl Partie {
 
     pub fn rite(&self) -> Option<&Rite> {
         self.rite.as_ref()
+    }
+
+    pub fn paliers_du_codex(&self) -> &[PalierDuCodex] {
+        &self.paliers_du_codex
+    }
+
+    /// Le premier palier atteint dont la récompense n'est pas réclamée,
+    /// dans l'ordre du contenu (section 5.6).
+    pub fn recompense_a_reclamer<'a>(
+        &self,
+        recompenses: &'a [RecompenseDuCodex],
+        especes: &[Espece],
+    ) -> Option<&'a RecompenseDuCodex> {
+        let au_codex = especes_au_codex(especes);
+        let capturees = especes_capturees(&self.codex, especes);
+        recompenses.iter().find(|recompense| {
+            !self.paliers_du_codex.contains(&recompense.palier)
+                && recompense.palier.seuil(au_codex) <= capturees
+        })
+    }
+
+    /// Le premier palier qui reste à atteindre, pour dire au joueur ce qu'il
+    /// vise.
+    pub fn prochaine_recompense<'a>(
+        &self,
+        recompenses: &'a [RecompenseDuCodex],
+        especes: &[Espece],
+    ) -> Option<&'a RecompenseDuCodex> {
+        let au_codex = especes_au_codex(especes);
+        let capturees = especes_capturees(&self.codex, especes);
+        recompenses.iter().find(|recompense| {
+            !self.paliers_du_codex.contains(&recompense.palier)
+                && recompense.palier.seuil(au_codex) > capturees
+        })
+    }
+
+    /// Au camp, depuis le codex, sans confirmation : les objets vont dans le
+    /// coffre, l'objet unique rejoint l'équipement du héros, et le palier ne
+    /// se réclame plus. Un palier à la fois, dans l'ordre (section 5.6).
+    pub fn reclamer_recompense_du_codex(
+        &mut self,
+        recompenses: &[RecompenseDuCodex],
+        especes: &[Espece],
+    ) -> Result<RecompenseDuCodex, ErreurCodex> {
+        let recompense = self
+            .recompense_a_reclamer(recompenses, especes)
+            .ok_or(ErreurCodex::AucuneRecompense)?
+            .clone();
+        self.coffre_du_camp.ajouter(recompense.objets.clone());
+        if let Some(objet) = &recompense.objet_unique {
+            let _ = self.heros.equipement_mut().ajouter(objet.clone());
+        }
+        self.paliers_du_codex.push(recompense.palier);
+        Ok(recompense)
     }
 
     /// Les monstres qui peuvent former, avec celui de `premier`, le couple
@@ -1889,6 +1950,7 @@ impl Partie {
             beherit: etat.beherit,
             records_de_la_tour: etat.records_de_la_tour,
             rite: etat.rite,
+            paliers_du_codex: etat.paliers_du_codex,
         })
     }
 
@@ -3682,6 +3744,7 @@ mod tests {
             beherit: partie.beherit(),
             records_de_la_tour: partie.records_de_la_tour(),
             rite: partie.rite().cloned(),
+            paliers_du_codex: partie.paliers_du_codex().to_vec(),
         }
     }
 
@@ -3978,6 +4041,67 @@ mod tests {
             partie.preparer_le_rite(premier, second, especes),
             Err(ErreurRite::AucunePlacePourLePetit)
         );
+    }
+
+    #[test]
+    fn le_codex_se_recompense_toutes_les_10_especes_puis_complet() {
+        use crate::filet::Filet;
+        use crate::recompenses_du_codex::{ErreurCodex, PalierDuCodex, compte_au_codex};
+
+        let (mut partie, contenu) = chez_malvoise();
+        let especes = contenu.especes();
+        let recompenses = contenu.recompenses_du_codex();
+        partie.coffre_du_camp = Inventaire::default();
+        // Le crapaud de départ, et les Apôtres, qui ne comptent pas.
+        for apotre in contenu.piste().apotres() {
+            partie.codex.noter_capture(apotre.espece().id());
+        }
+        assert_eq!(
+            partie.reclamer_recompense_du_codex(recompenses, especes),
+            Err(ErreurCodex::AucuneRecompense)
+        );
+        assert_eq!(
+            partie
+                .prochaine_recompense(recompenses, especes)
+                .map(|recompense| recompense.palier),
+            Some(PalierDuCodex::Especes(10))
+        );
+        let au_codex: Vec<&Espece> = especes
+            .iter()
+            .filter(|espece| compte_au_codex(espece))
+            .collect();
+        for espece in &au_codex[..25] {
+            partie.codex.noter_capture(espece.id());
+        }
+        // Deux paliers atteints : ils se réclament l'un après l'autre.
+        let premiere = partie
+            .reclamer_recompense_du_codex(recompenses, especes)
+            .unwrap();
+        assert_eq!(premiere.palier, PalierDuCodex::Especes(10));
+        assert_eq!(partie.coffre_du_camp().argent(), 300);
+        assert_eq!(partie.coffre_du_camp().filets().nombre(Filet::Leste), 10);
+        let seconde = partie
+            .reclamer_recompense_du_codex(recompenses, especes)
+            .unwrap();
+        assert_eq!(seconde.palier, PalierDuCodex::Especes(20));
+        assert_eq!(
+            partie.reclamer_recompense_du_codex(recompenses, especes),
+            Err(ErreurCodex::AucuneRecompense)
+        );
+        // Le codex complet : tous les paliers restants, puis le Sceau.
+        for espece in &au_codex {
+            partie.codex.noter_capture(espece.id());
+        }
+        let mut derniere = None;
+        while let Ok(recompense) = partie.reclamer_recompense_du_codex(recompenses, especes) {
+            derniere = Some(recompense);
+        }
+        let derniere = derniere.unwrap();
+        assert_eq!(derniere.palier, PalierDuCodex::Complet);
+        let sceau = derniere.objet_unique.unwrap();
+        assert!(partie.heros().equipement().possede(sceau.id()));
+        assert_eq!(partie.paliers_du_codex().len(), 6);
+        assert_eq!(partie.prochaine_recompense(recompenses, especes), None);
     }
 
     #[test]

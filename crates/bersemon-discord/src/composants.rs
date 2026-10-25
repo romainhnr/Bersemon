@@ -371,6 +371,9 @@ pub enum Cle {
     },
     /// Le petit du rite achevé, depuis le camp.
     AccueillirLePetit,
+    /// La récompense du premier palier du codex atteint, depuis le codex
+    /// (section 5.6).
+    ReclamerRecompenseDuCodex,
     /// Menu de monstres numéroté : celui à céder à ce joueur.
     Ceder {
         menu: u8,
@@ -577,6 +580,7 @@ impl Cle {
                 second: lire_emplacement(valeur?)?,
             }),
             Cle::AccueillirLePetit => jouer(Choix::AccueillirLePetit),
+            Cle::ReclamerRecompenseDuCodex => jouer(Choix::ReclamerRecompenseDuCodex),
             Cle::Ceder { avec, .. } => Some(Commande::Afficher(Vue::Echanges {
                 avec: Some(*avec),
                 cede: Some(lire_emplacement(valeur?)?),
@@ -788,6 +792,7 @@ impl Cle {
                 format!("second-parent:{menu}:{}", emplacement_en_texte(*premier))
             }
             Cle::AccueillirLePetit => "accueillir-le-petit".to_string(),
+            Cle::ReclamerRecompenseDuCodex => "reclamer-codex".to_string(),
             Cle::Ceder { menu, avec } => format!("ceder:{menu}:{avec}"),
             Cle::Demander { menu, avec, cede } => {
                 format!("demander:{menu}:{avec}:{}", emplacement_en_texte(*cede))
@@ -887,6 +892,7 @@ impl Cle {
             "retirer-invitation" => Cle::RetirerInvitation,
             "ramener-le-groupe" => Cle::RamenerLeGroupe,
             "accueillir-le-petit" => Cle::AccueillirLePetit,
+            "reclamer-codex" => Cle::ReclamerRecompenseDuCodex,
             "fabriquer" => Cle::Fabriquer,
             "se-suicider" => Cle::SeSuicider,
             "acheter-capsule" => Cle::AcheterCapsule,
@@ -1437,6 +1443,7 @@ mod tests {
                 premier: Emplacement::Equipe(2),
             },
             Cle::AccueillirLePetit,
+            Cle::ReclamerRecompenseDuCodex,
             Cle::FabriquerCharme,
             Cle::FabriquerFilets,
             Cle::PoserLesPieges,

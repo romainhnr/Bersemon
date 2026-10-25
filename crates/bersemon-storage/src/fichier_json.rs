@@ -111,6 +111,7 @@ mod tests {
     use bersemon_core::partie::{AttaqueAChoisir, EtatPartie};
     use bersemon_core::peche::Peche;
     use bersemon_core::pierre::PierreDEvolution;
+    use bersemon_core::recompenses_du_codex::PalierDuCodex;
     use bersemon_core::relations::{Palmares, Relations};
     use bersemon_core::ressource::{Ressource, RessourceId};
     use bersemon_core::rite::{PLACES_DU_RITE, Rite};
@@ -448,6 +449,7 @@ mod tests {
                 [creer("loup", 5), creer("loup", 9)],
                 Horodatage::depuis_secondes(7_200),
             )),
+            paliers_du_codex: vec![PalierDuCodex::Especes(10), PalierDuCodex::Complet],
         };
         let mut partie = Partie::restaurer(etat(&partie, Vec::new())).unwrap();
         // Croc apprend l'attaque de la capsule, hors de la liste de son
@@ -670,10 +672,10 @@ mod tests {
 
     #[test]
     fn version_inconnue() {
-        let texte = texte_de_partie().replacen("\"version\":28", "\"version\":29", 1);
+        let texte = texte_de_partie().replacen("\"version\":29", "\"version\":30", 1);
         assert_eq!(
             charger_texte(&texte),
-            Err(ErreurSauvegarde::VersionInconnue(29))
+            Err(ErreurSauvegarde::VersionInconnue(30))
         );
     }
 
@@ -1228,6 +1230,34 @@ mod tests {
     }
 
     #[test]
+    fn les_paliers_du_codex_se_relisent_depuis_la_version_29() {
+        let texte = texte_de_partie();
+        assert!(
+            texte.contains("\"paliers_du_codex\":[\"10\",\"complet\"]"),
+            "{texte}"
+        );
+        let relue = charger_texte(&texte).unwrap().unwrap();
+        assert_eq!(
+            relue.paliers_du_codex(),
+            &[PalierDuCodex::Especes(10), PalierDuCodex::Complet]
+        );
+        // Avant la version 29, rien de réclamé (section 5.6).
+        let ancienne = texte.replacen("\"version\":29", "\"version\":28", 1);
+        assert!(
+            charger_texte(&ancienne)
+                .unwrap()
+                .unwrap()
+                .paliers_du_codex()
+                .is_empty()
+        );
+        let inconnu = texte.replacen("\"complet\"", "\"presque\"", 1);
+        assert!(matches!(
+            charger_texte(&inconnu),
+            Err(ErreurSauvegarde::Incoherente(_))
+        ));
+    }
+
+    #[test]
     fn le_rite_se_relit_depuis_la_version_28() {
         let texte = texte_de_partie();
         let relue = charger_texte(&texte).unwrap().unwrap();
@@ -1236,7 +1266,7 @@ mod tests {
         assert_eq!(rite.parents()[1].niveau().valeur(), 9);
         assert_eq!(relue, partie_complete());
         // Avant la version 28, pas de rite (section 13.11).
-        let ancienne = texte.replacen("\"version\":28", "\"version\":27", 1);
+        let ancienne = texte.replacen("\"version\":29", "\"version\":27", 1);
         assert!(charger_texte(&ancienne).unwrap().unwrap().rite().is_none());
         let mut valeur: serde_json::Value = serde_json::from_str(&texte).unwrap();
         let parents = valeur["rite"]["parents"].as_array_mut().unwrap();
@@ -1255,7 +1285,7 @@ mod tests {
         assert_eq!(relue.coffre_du_camp().filets().nombre(Filet::Chaines), 3);
         // Avant la version 27, les filets étaient illimités : la partie en
         // trouve 10 de chanvre au coffre, et rien d'autre (Q102).
-        let ancienne = texte.replacen("\"version\":28", "\"version\":26", 1);
+        let ancienne = texte.replacen("\"version\":29", "\"version\":26", 1);
         let ancienne = charger_texte(&ancienne).unwrap().unwrap();
         assert!(ancienne.sac().filets().est_vide());
         assert_eq!(
@@ -1285,7 +1315,7 @@ mod tests {
             }
         );
         // Avant la version 26, pas de Tour sans fond (section 9.5).
-        let ancienne = texte.replacen("\"version\":28", "\"version\":25", 1);
+        let ancienne = texte.replacen("\"version\":29", "\"version\":25", 1);
         let ancienne = charger_texte(&ancienne).unwrap().unwrap();
         assert_eq!(ancienne.records_de_la_tour(), RecordsDeLaTour::default());
     }
@@ -1297,7 +1327,7 @@ mod tests {
         let relue = charger_texte(&texte).unwrap().unwrap();
         assert_eq!(relue.beherit(), EtatDuBeherit::EclipseOuverte);
         // Avant la version 25, pas de Béhérit (section 9.4).
-        let ancienne = texte.replacen("\"version\":28", "\"version\":24", 1);
+        let ancienne = texte.replacen("\"version\":29", "\"version\":24", 1);
         let ancienne = charger_texte(&ancienne).unwrap().unwrap();
         assert_eq!(ancienne.beherit(), EtatDuBeherit::Aucun);
         let inconnu = texte.replacen("eclipse-ouverte", "brise", 1);

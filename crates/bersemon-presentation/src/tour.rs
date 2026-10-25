@@ -126,6 +126,7 @@ mod tests {
                 a_deux: 0,
             },
             rite: None,
+            paliers_du_codex: Vec::new(),
         })
         .unwrap()
     }

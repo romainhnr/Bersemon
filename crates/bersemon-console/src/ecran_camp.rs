@@ -25,6 +25,7 @@ use bersemon_presentation::partie::{
     ames_d_apotres, capsules_d_habilete, collection as liste_des_monstres, en_tete_du_camp,
 };
 use bersemon_presentation::peche::ligne_prete;
+use bersemon_presentation::recompenses_du_codex::{progression_du_codex, reclamer};
 use bersemon_presentation::rite::rite_acheve;
 use bersemon_presentation::tour::destination_de_la_tour;
 
@@ -162,10 +163,7 @@ pub fn choisir(
                 menu.ouvert = SousMenu::Coffre;
                 None
             }
-            EntreeDuCamp::Codex => {
-                println!("{}", affichage::codex(partie, contenu));
-                None
-            }
+            EntreeDuCamp::Codex => consulter_le_codex(partie, contenu, entree)?,
             EntreeDuCamp::Marchand => {
                 menu.ouvert = SousMenu::Marchand;
                 None
@@ -184,6 +182,25 @@ pub fn choisir(
             return choix;
         }
     }
+}
+
+/// `Some(None)` au retour vers le menu du camp. La récompense d'un palier
+/// atteint se réclame d'ici (section 5.6).
+fn consulter_le_codex(
+    partie: &Partie,
+    contenu: &ContenuV1,
+    entree: &mut Entree,
+) -> Option<Option<Choix>> {
+    println!("{}", affichage::codex(partie, contenu));
+    println!("{}", progression_du_codex(partie, contenu));
+    let recompenses = contenu.recompenses_du_codex();
+    let Some(a_reclamer) = partie.recompense_a_reclamer(recompenses, contenu.especes()) else {
+        return Some(None);
+    };
+    println!("  1. {}", reclamer(a_reclamer));
+    println!("  0. Retour au camp");
+    let choix = entree.choix(0, 1)?;
+    Some((choix == 1).then_some(Choix::ReclamerRecompenseDuCodex))
 }
 
 /// `Some(None)` au retour vers le menu du camp. Le déroulement demande

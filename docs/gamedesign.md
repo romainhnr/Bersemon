@@ -261,6 +261,12 @@ Le joueur peut :
   - Les Apôtres et le Démiurge quittent la liste des espèces, où ils apparaissaient en "???" tant qu'ils n'étaient pas vaincus, ce qui révélait leur nombre. Ils n'apparaissent plus qu'au carnet.
   - Le carnet n'apparaît qu'au premier Apôtre abattu. Chaque victoire y ajoute une entrée, dans l'ordre des victoires, comme si le héros écrivait le nom de ses ennemis abattus l'un après l'autre : "1. Baron pendu, abattu dans la Vallée des Brumes." Le Démiurge y a une seule entrée pour ses deux formes, après les trois Apôtres qu'il faut abattre avant lui. Ni les Apôtres qui restent ni leur nombre n'y figurent. Textes dans docs/contenu-v1.md, section 27.
   - La fiche d'un Apôtre abattu reste consultable : dans la console, sous son entrée du carnet (les deux fiches, sous leur nom, pour le Démiurge) ; sur Discord, par le menu des fiches, comme avant. Sur Discord, le carnet suit la liste, à sa dernière page (hypothèse retenue, Q103).
+- Décidé le 25/10/2026, pour l'étape 115 (choix de l'utilisateur) : la complétion du codex est récompensée.
+  - Paliers : toutes les 10 espèces capturées (10, 20, 30, 40 et 50), puis le codex complet, aujourd'hui 51 espèces. Seules comptent les espèces que le codex dit capturées (le monstre de départ, les captures, les achats, la pêche, les petits du rite) ; les Apôtres et le Démiurge, hors de la liste, ne comptent pas.
+  - Le joueur réclame chaque récompense depuis l'écran du codex, au camp, sans confirmation, un palier à la fois, dans l'ordre. Elle va dans le coffre ; le talisman du codex complet rejoint l'équipement du héros. Le codex montre le nombre d'espèces capturées sur le total, la récompense à réclamer ou celle du prochain palier.
+  - Récompenses : 10 filets lestés et 300 pièces d'argent ; 5 filets de chaînes et 500 pièces d'argent ; 1 Philtre chromatique ; 3 capsules d'habileté ; un booster de chaque sorte ; puis 3 Philtres chromatiques et le Sceau du bestiaire, talisman unique (+5 % à l'Attaque, la Défense, l'Attaque spéciale, la Défense spéciale et la Vitesse), qui ne se fabrique pas (docs/contenu-v1.md, section 30).
+  - Une sauvegarde antérieure n'a rien réclamé : les paliers qu'elle a déjà atteints se réclament à la reprise. Si des espèces s'ajoutent, le codex complet suit leur nombre, et une récompense reçue reste acquise (hypothèses retenues, Q106). Sauvegarde en version 29.
+  - Écrans : dans la console, après la liste du codex, la progression, puis "Réclamer la récompense : 10 espèces capturées" quand un palier attend ; sur Discord, la progression sous le titre de chaque page de la liste, et un bouton du même libellé.
 
 ### 5.7 KO (pas de mort définitive)
 
@@ -1123,6 +1129,10 @@ Les questions Q102 et suivantes ont été relevées le 25/10/2026 lors de la con
 
 Les questions Q103 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 107 carnet de traque du codex et 108 Philtre chromatique.
 
+Les questions Q106 et suivantes ont été relevées le 25/10/2026 lors de la conception de l'étape 115, récompenses du codex, avec la sauvegarde en version 29.
+
+- Q106. (Étape 115) Hypothèses retenues, à confirmer : les paliers atteints avant l'étape se réclament à la reprise ; une récompense se réclame un palier à la fois, dans l'ordre ; si des espèces s'ajoutent, le codex complet suit leur nombre et aucun palier au-delà de 50 n'est encore défini ; le Sceau du bestiaire ne se perd pas et ne se fabrique pas. Textes proposés sans validation : la progression, le libellé de la réclamation, le récit et le refus (docs/contenu-v1.md, section 30).
+
 Les questions Q105 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 110 Rite du sang mêlé dans le noyau, avec la sauvegarde en version 28, 111 écrans de la console, 112 bot Discord.
 
 - Q105. (Étapes 110 à 112) Hypothèses retenues, à confirmer : un seul rite à la fois ; les espèces rares peuvent se reproduire ; le petit a une place réservée au camp dès le lancement, et le rite est refusé s'il n'en reste aucune ; un rite lancé ne s'annule pas ; le petit ne garde ni surnom ni marque "reçu de", et ses parents ne gagnent rien. Pour l'attaque d'œuf (étape 114) : une attaque d'œuf oubliée ne se réapprend pas au camp ; si le petit connaissait déjà 4 attaques au niveau 1, elle prendrait la place de la plus ancienne (aucune forme de base ne l'atteint aujourd'hui) ; les familles du Feu follet, de l'Armure hantée et du Squelette gardent l'attaque de leur forme de base. Textes proposés sans validation : la confirmation, le lancement, l'état du rite, l'avis au camp, la naissance et les refus (docs/contenu-v1.md, section 28).
@@ -1602,5 +1612,12 @@ Les questions Q104 et suivantes ont été relevées le 25/10/2026 lors de la con
 - Demande de l'utilisateur : un parent shiny change les chances du petit, deux le garantissent ; une attaque d'œuf par espèce, de son type, obtenue seulement par reproduction, intéressante et assez puissante sans être abusive.
 - Choix de l'utilisateur : 1 chance sur 256 avec un parent shiny ; une attaque nouvelle par famille ; 1 chance sur 4, à coup sûr si un parent la connaît ; le tableau des attaques proposé par Claude (section 13.11, docs/contenu-v1.md, section 28).
 - Hypothèses retenues, à confirmer : Q105.
+
+25/10/2026 (étape 115, récompenses du codex) :
+
+- Demande de l'utilisateur : récompenser la complétion du codex, parmi les idées proposées par Claude.
+- Choix de l'utilisateur : une récompense toutes les 10 espèces capturées et au codex complet, à réclamer depuis le codex ; des objets rares et un talisman unique, le Sceau du bestiaire, selon la répartition proposée par Claude ; seules les espèces capturées comptent (section 5.6).
+- Sauvegarde en version 29.
+- Hypothèses retenues, à confirmer : Q106.
 - Hypothèses retenues, à confirmer : Q103.
 
