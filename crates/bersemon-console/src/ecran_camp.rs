@@ -224,7 +224,7 @@ fn carte(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Option<Op
     println!();
     // Le moment du départ est celui de toute l'expédition (section 9.6).
     println!("{}", moment_present(maintenant()));
-    println!("{}", affichage::carte(partie, &accessibles));
+    println!("{}", affichage::carte(partie, &accessibles, maintenant()));
     let mut dernier = accessibles.len();
     let tour = destination_de_la_tour(partie, contenu).map(|ligne| {
         dernier += 1;

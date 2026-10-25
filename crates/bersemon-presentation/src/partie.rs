@@ -29,6 +29,7 @@ use crate::forge::{
     question_de_fabrication, question_de_lancement, question_des_filets, question_du_charme,
 };
 use crate::jour_et_nuit;
+use crate::meteo;
 use crate::monstres::{
     decrire_attaque, decrire_stats, effet_d_habilete, ligne_monstre, nom, types_de,
 };
@@ -264,8 +265,9 @@ pub fn ligne_des_ames(partie: &Partie) -> String {
 }
 
 /// En haut de chaque écran d'expédition (section 9.2), sans total dans la
-/// Tour sans fond (section 9.5), suivi du moment de l'expédition dans une
-/// zone de la carte (section 9.6) : "[Étape : 2/5] Nuit".
+/// Tour sans fond (section 9.5), suivi du moment et de la météo de
+/// l'expédition dans une zone de la carte (sections 9.6 et 9.7) :
+/// "[Étape : 2/5] Nuit, pluie".
 pub fn compteur_d_etapes(expedition: &Expedition) -> String {
     let compteur = if expedition.est_sans_fin() {
         format!("[Étape : {}]", expedition.etapes_faites())
@@ -276,8 +278,12 @@ pub fn compteur_d_etapes(expedition: &Expedition) -> String {
             expedition.nombre_etapes()
         )
     };
-    match expedition.jour_ou_nuit() {
+    let compteur = match expedition.jour_ou_nuit() {
         Some(jour_ou_nuit) => format!("{compteur} {}", jour_et_nuit::nom(jour_ou_nuit)),
+        None => compteur,
+    };
+    match expedition.meteo() {
+        Some(meteo) => format!("{compteur}, {}", meteo::nom(meteo)),
         None => compteur,
     }
 }
@@ -645,9 +651,10 @@ mod tests {
     use bersemon_core::stats::ValeursInternes;
 
     /// Le compteur d'étapes dit le moment de l'expédition, partie ici à 2 h
-    /// UTC, de nuit (section 9.6).
+    /// UTC, de nuit, et sa météo s'il ne fait pas calme (sections 9.6 et
+    /// 9.7).
     #[test]
-    fn le_compteur_dit_le_moment_de_l_expedition() {
+    fn le_compteur_dit_le_moment_et_la_meteo_de_l_expedition() {
         use bersemon_core::aleatoire::GenerateurAleatoire;
         use bersemon_core::catalogue::Catalogue;
         use bersemon_core::deroulement::{Choix, Contexte, Deroulement};
@@ -691,7 +698,18 @@ mod tests {
             }
         }
         let expedition = deroulement.expedition().unwrap();
-        assert_eq!(compteur_d_etapes(expedition), "[Étape : 1/5] Nuit");
+        let attendu = match expedition.meteo() {
+            Some(meteo) => format!("[Étape : 1/5] Nuit, {}", meteo::nom(meteo)),
+            None => "[Étape : 1/5] Nuit".to_string(),
+        };
+        assert_eq!(compteur_d_etapes(expedition), attendu);
+        assert_eq!(
+            expedition.meteo(),
+            bersemon_core::meteo::Meteo::de_la_zone(
+                &contenu.zones()[0],
+                Horodatage::depuis_secondes(2 * 3_600)
+            )
+        );
     }
 
     #[test]

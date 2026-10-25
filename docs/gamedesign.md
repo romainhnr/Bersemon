@@ -508,6 +508,7 @@ Décidé le 25/10/2026, pour les étapes 121 à 123 (choix de l'utilisateur) :
 - Affichage : sur la carte des expéditions, la météo de chaque zone et le temps qu'elle va encore durer ; en expédition, la météo à côté du moment, après le compteur d'étapes, et un court texte au départ. Textes dans docs/contenu-v1.md, section 32.
 - La sauvegarde ne change pas.
 - Précisé à l'étape 121, en codant : le tirage d'un créneau se fait sur un générateur propre, dont la graine mêle le numéro du créneau et l'identifiant de la zone ; il ne touche pas aux tirages de la partie. Le temps restant regarde au plus une journée de créneaux en avant. Mesuré par l'outil d'équilibrage, l'effet de la météo sur la durée de la partie et sur les combats de fin de zone reste de l'ordre du bruit (docs/equilibrage.md, section 8).
+- Écrans, à l'étape 122 (console) : sur la carte, une zone sous une météo finit par ": pluie, encore 42 min" ; le compteur d'étapes devient "[Étape : 2/5] Nuit, pluie", sans météo par temps calme ; le texte de la météo suit celui du moment, au départ.
 
 ## 10. Combat
 

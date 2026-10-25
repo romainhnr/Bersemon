@@ -7,12 +7,14 @@ use bersemon_core::codex::EtatCodex;
 use bersemon_core::combat::{Combat, Combattant, Cote};
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::espece::Espece;
+use bersemon_core::horodatage::Horodatage;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_core::soin::Soins;
 use bersemon_core::zone::Zone;
 use bersemon_presentation::combat::{attaque_de_trop, attaque_en_combat, ordre_et_bonus};
 use bersemon_presentation::filets::liste_de_filets;
+use bersemon_presentation::meteo::meteo_de_la_zone;
 use bersemon_presentation::monstres::{decrire_attaque, ligne_monstre, nom_en_combat};
 use bersemon_presentation::partie::{
     TITRE_DU_CARNET, decrire_zone, entree_du_carnet, especes_du_codex, fiche_d_espece,
@@ -136,11 +138,16 @@ pub fn question_oubli(monstre: &Monstre, nouvelle: &Attaque) -> String {
     lignes.join("\n")
 }
 
-pub fn carte(partie: &Partie, accessibles: &[&Zone]) -> String {
+/// Chaque zone dit sa météo et le temps qu'elle va encore durer (section
+/// 9.7).
+pub fn carte(partie: &Partie, accessibles: &[&Zone], maintenant: Horodatage) -> String {
     let mut lignes = vec!["Carte :".to_string()];
     for (position, zone) in accessibles.iter().enumerate() {
+        let meteo = meteo_de_la_zone(zone, maintenant)
+            .map(|meteo| format!(" : {meteo}"))
+            .unwrap_or_default();
         lignes.push(format!(
-            "  {}. {}",
+            "  {}. {}{meteo}",
             position + 1,
             decrire_zone(partie, zone)
         ));
