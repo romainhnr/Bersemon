@@ -95,6 +95,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "bersemon-equilibrage"
+version = "0.1.0"
+dependencies = [
+ "bersemon-core",
+]
+
+[[package]]
 name = "bersemon-presentation"
 version = "0.1.0"
 dependencies = [

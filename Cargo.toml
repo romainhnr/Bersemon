@@ -6,6 +6,7 @@ members = [
     "crates/bersemon-presentation",
     "crates/bersemon-console",
     "crates/bersemon-discord",
+    "crates/bersemon-equilibrage",
 ]
 
 # rust-version suit le poste Windows 10 (Rust installé par MSI, sans rustup) :

@@ -67,6 +67,7 @@ L'objectif du jeu est de proposer des boucles de gameplay intéressantes et stim
 - Décidé le 25/10/2026, pour l'étape 113 (choix de l'utilisateur) : le bot prévient par message privé, systématiquement, de tout ce qui se termine. Le retour d'une expédition automatique, tout travail de Gunther (amélioration, objet, charme de garde ou lot de filets), la ligne d'Ansgar prête, le Rite du sang mêlé achevé, les pièges pleins, qui ne prennent plus rien, et chaque monstre de la cour d'entraînement arrivé à son plafond, qui ne gagne plus d'XP. Comme avant, chaque fin n'est annoncée qu'une fois, même si le bot redémarre (Q65), et le bot prévient à son démarrage de ce qui s'est terminé pendant qu'il était éteint. Ce qui est à annoncer se déduit de la partie après chaque action du joueur : un plafond relevé par une zone ouverte, ou une cour améliorée, déplace l'annonce. Précisé en codant : les charmes de garde et les lots de filets lancés pendant que le bot tournait n'étaient pas annoncés ; ils le sont désormais. Textes dans docs/contenu-v1.md, section 29.
 - Pour les tests, une option au lancement du bot rend /bersemon visible de tout le salon. Seul l'auteur d'un message peut alors se servir de ses boutons ; les autres joueurs ouvrent leur propre partie par /bersemon. Sans l'option, les réponses restent visibles du seul joueur.
 - Les informations importantes du combat sont mises en valeur sur Discord, en gras : coups critiques, statuts, efficacité des attaques, KO et captures. La console les affiche en texte simple.
+- Décidé le 25/10/2026, pour l'étape 116 (demande de l'utilisateur) : un outil d'équilibrage, hors de ce que joue le joueur, fait jouer des parties complètes par un joueur automatique, avec le noyau seul, de la création du héros à la chute du Margrave, et écrit leurs statistiques en Markdown : durée, défaites, combats de fin de zone, ressources. C'est un crate à part du workspace, bersemon-equilibrage, sans crate externe, dont ni la console ni le bot Discord ne dépendent. Méthode, limites du joueur automatique, résultats et réglages proposés dans docs/equilibrage.md (Q107).
 - Hébergement du bot : pour commencer, sur le PC de l'utilisateur, lancé à la main quand il veut que le bot soit en ligne. Le bot est privé : seul l'utilisateur peut l'inviter dans un serveur.
 - Multijoueur : après l'adaptation à Discord (section 15).
 - Hors périmètre pour le moment : version mobile et vrai jeu PC.
@@ -1129,6 +1130,10 @@ Les questions Q102 et suivantes ont été relevées le 25/10/2026 lors de la con
 
 Les questions Q103 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 107 carnet de traque du codex et 108 Philtre chromatique.
 
+Les questions Q107 et suivantes ont été relevées le 25/10/2026 lors de l'étape 116, équilibrage.
+
+- Q107. (Étape 116) À décider par l'utilisateur, d'après les mesures de docs/equilibrage.md : le niveau du Baron pendu (20, le maximum de la Vallée, proposé), ceux des monstres du Bourreau (13, 13 et 14 proposés), la Secousse au niveau 7 de la famille de la Mandragore à la place du Cri strident, et la chance des monstres rares de lâcher leur ressource. Aucune durée cible de partie n'est fixée : le joueur automatique abat le Margrave en 55 à 64 expéditions, sans expéditions automatiques ni cour d'entraînement. Hypothèse de l'outil, à confirmer : un choix par minute de temps réel, pauses comprises.
+
 Les questions Q106 et suivantes ont été relevées le 25/10/2026 lors de la conception de l'étape 115, récompenses du codex, avec la sauvegarde en version 29.
 
 - Q106. (Étape 115) Hypothèses retenues, à confirmer : les paliers atteints avant l'étape se réclament à la reprise ; une récompense se réclame un palier à la fois, dans l'ordre ; si des espèces s'ajoutent, le codex complet suit leur nombre et aucun palier au-delà de 50 n'est encore défini ; le Sceau du bestiaire ne se perd pas et ne se fabrique pas. Textes proposés sans validation : la progression, le libellé de la réclamation, le récit et le refus (docs/contenu-v1.md, section 30).
@@ -1587,6 +1592,7 @@ Les questions Q104 et suivantes ont été relevées le 25/10/2026 lors de la con
 - Choix de l'utilisateur : section à part, le carnet de traque, qui n'apparaît qu'au premier Apôtre abattu ; les Apôtres et le Démiurge quittent la liste des espèces ; le Démiurge y figure en dernier ; une ligne par victoire, "Baron pendu, abattu dans la Vallée des Brumes." (section 5.6).
 - Demande de l'utilisateur : un nom autour de l'ADN et de sa manipulation pour l'objet qui rend un monstre shiny, comme les animaux albinos. Claude a relevé que le mot ADN détonne dans un univers dark fantasy et proposé Brin d'albâtre, Hélice pâle, Germe albinos et Philtre de lignée.
 - Choix de l'utilisateur : le Philtre chromatique, avec des textes réécrits autour d'une fiole et d'une lignée altérée (section 14.3, docs/contenu-v1.md, section 17).
+- Hypothèses retenues, à confirmer : Q103.
 
 25/10/2026 (conception de l'étape 109, accès direct à la cour d'entraînement) :
 
@@ -1619,5 +1625,11 @@ Les questions Q104 et suivantes ont été relevées le 25/10/2026 lors de la con
 - Choix de l'utilisateur : une récompense toutes les 10 espèces capturées et au codex complet, à réclamer depuis le codex ; des objets rares et un talisman unique, le Sceau du bestiaire, selon la répartition proposée par Claude ; seules les espèces capturées comptent (section 5.6).
 - Sauvegarde en version 29.
 - Hypothèses retenues, à confirmer : Q106.
-- Hypothèses retenues, à confirmer : Q103.
+
+25/10/2026 (étape 116, équilibrage) :
+
+- Demande de l'utilisateur : réaliser l'équilibrage proposé par Claude.
+- Fait : l'outil d'équilibrage et son joueur automatique (section 2), mesurés sur 100 parties par classe, puis des variantes des valeurs qui posent problème (docs/equilibrage.md).
+- Constats : le Baron pendu est le mur de la partie, plus dur que les deux Apôtres suivants, surtout pour le Guerrier et le Mage ; le Bourreau est l'humain le plus dur ; le Templier est la classe la plus lente, à cause du Marais ; l'équipe de 4 et les objets des paliers 2 et 3 n'arrivent pas avant le Margrave, faute de ressources rares ; l'argent ne bloque pas.
+- Aucune valeur du jeu n'est changée sans l'accord de l'utilisateur : Q107.
 
