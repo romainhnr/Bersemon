@@ -12,10 +12,15 @@ use bersemon_presentation::partie::{
     annonce as texte_d_annonce, place_manquante as texte_de_place_manquante, sac_en_expedition,
 };
 
-use crate::composants::Cle;
+use bersemon_core::inventaire::Objet;
+use bersemon_presentation::sac::{question_du_sac_plein, sortes_a_jeter};
+
+use crate::composants::{Cle, objet_en_texte};
 use crate::ecran_camp::{liste_des_monstres, menus_de_monstres, options_d_equipe};
 use crate::ecran_combat::options_de_soins;
-use crate::message::{PRINCIPAL, Question, SECONDAIRE, bouton, menu, rangees};
+use crate::message::{
+    OPTIONS_PAR_MENU, OptionDeMenu, PRINCIPAL, Question, SECONDAIRE, bouton, menu, rangees,
+};
 
 /// Continuer, rentrer, soigner un monstre ou mettre un monstre en tête :
 /// c'est lui qui commencera le prochain combat (Q55). Le contenu du sac est
@@ -44,6 +49,43 @@ pub fn entre_deux_etapes(partie: &Partie) -> Question {
             sac_en_expedition(partie)
         ),
         rangees: rangees_de_l_etape,
+    }
+}
+
+/// À la fin d'une étape où le sac déborde : un menu de ce qu'il contient,
+/// un autre pour les ressources ; chaque choix jette un exemplaire, jusqu'à
+/// revenir à la capacité du sac (section 13.3). Au-delà de 25 sortes, les
+/// dernières attendent qu'un exemplaire des premières soit jeté.
+pub fn sac_plein(partie: &Partie) -> Question {
+    let (ressources, autres): (Vec<_>, Vec<_>) = sortes_a_jeter(partie.sac())
+        .into_iter()
+        .partition(|sorte| matches!(sorte.unite, Objet::Ressources(..)));
+    let options = |sortes: Vec<bersemon_presentation::sac::SorteAJeter>| -> Vec<OptionDeMenu> {
+        sortes
+            .into_iter()
+            .take(OPTIONS_PAR_MENU)
+            .map(|sorte| OptionDeMenu {
+                libelle: sorte.libelle,
+                valeur: objet_en_texte(&sorte.unite),
+                description: Some("En jeter un".to_string()),
+            })
+            .collect()
+    };
+    let mut lignes = Vec::new();
+    lignes.extend(menu(Cle::Jeter, "Jeter un objet", options(autres)));
+    lignes.extend(menu(
+        Cle::JeterUneRessource,
+        "Jeter une ressource",
+        options(ressources),
+    ));
+    Question {
+        texte: format!(
+            "{}
+{}",
+            question_du_sac_plein(partie),
+            sac_en_expedition(partie)
+        ),
+        rangees: lignes,
     }
 }
 

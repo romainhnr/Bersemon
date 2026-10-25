@@ -415,6 +415,21 @@ fn jouer_un_coup(
         Attente::CombatDeGroupe | Attente::AttenteDuGroupe => {
             panic!("la simulation joue seule")
         }
+        // Les ressources d'abord, puis le premier objet du menu (section
+        // 13.3).
+        Attente::SacPlein => [Cle::JeterUneRessource, Cle::Jeter]
+            .into_iter()
+            .find_map(|cle| {
+                message.rangees.iter().find_map(|rangee| match rangee {
+                    Rangee::Menu(menu) if menu.cle == cle => Some(Clic {
+                        cle: cle.clone(),
+                        valeur: Some(menu.options[0].valeur.clone()),
+                        texte: None,
+                    }),
+                    _ => None,
+                })
+            })
+            .expect("un objet à jeter"),
         Attente::Reprise(_) => cliquer(message, |cle| *cle == Cle::ReprendreLaPartie),
         Attente::SauvegardeIllisible(_) => cliquer(message, |cle| *cle == Cle::NouvellePartie),
     }
@@ -1855,6 +1870,28 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
             .collect();
         sortes.sort_unstable();
         sortes.dedup();
+        // Un sac aussi chargé déborde : les deux menus du sac plein restent
+        // dans les limites, les ressources à part (section 13.3).
+        let sac_plein = crate::ecran_expedition::sac_plein(&partie);
+        let menus: Vec<(&Cle, usize)> = sac_plein
+            .rangees
+            .iter()
+            .filter_map(|rangee| match rangee {
+                Rangee::Menu(menu) => Some((&menu.cle, menu.options.len())),
+                _ => None,
+            })
+            .collect();
+        // 4 soins, 3 filets, les capsules d'habileté, 2 pierres, 6
+        // boosters, les Philtres chromatiques et les charmes de garde.
+        assert_eq!(
+            menus,
+            vec![(&Cle::Jeter, 18), (&Cle::JeterUneRessource, sortes.len())]
+        );
+        verifier_les_limites(&Message {
+            texte: sac_plein.texte,
+            rangees: sac_plein.rangees,
+            version: 1,
+        });
         for (ecran, attendues) in [
             (
                 crate::ecran_coffre::coffre(&partie),

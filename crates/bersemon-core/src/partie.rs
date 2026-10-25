@@ -336,11 +336,49 @@ impl Partie {
         Ok(range)
     }
 
-    /// Du coffre vers le sac, au camp seulement (section 13.3).
+    /// Du coffre vers le sac, au camp seulement, sans faire déborder le sac
+    /// (section 13.3).
     pub fn sortir_du_coffre(&mut self, objet: &Objet) -> Result<Inventaire, ErreurObjet> {
+        let places_libres = self
+            .places_du_sac()
+            .saturating_sub(self.sac.places_prises());
+        if objet.places() > places_libres {
+            return Err(ErreurObjet::SacPlein { places_libres });
+        }
         let sorti = self.coffre_du_camp.retirer(objet)?;
         self.sac.ajouter(sorti.clone());
         Ok(sorti)
+    }
+
+    /// 30, puis 45, 60 et 80 avec l'amélioration de Gunther (section 13.3).
+    pub fn places_du_sac(&self) -> u32 {
+        self.forge.ameliorations().places_du_sac()
+    }
+
+    /// Ce que le sac a de trop : en expédition, le butin y entre même s'il
+    /// déborde, et le joueur jette le surplus à la fin de l'étape (section
+    /// 13.3).
+    pub fn exces_du_sac(&self) -> u32 {
+        self.sac
+            .places_prises()
+            .saturating_sub(self.places_du_sac())
+    }
+
+    /// Toute expédition manuelle part avec au moins un monstre (section
+    /// 13.2), et avec un sac qui ne déborde pas (section 13.3).
+    fn verifier_le_depart(&self) -> Result<(), ErreurExpedition> {
+        if self.collection.equipe().is_empty() {
+            return Err(ErreurExpedition::EquipeVide);
+        }
+        match self.exces_du_sac() {
+            0 => Ok(()),
+            exces => Err(ErreurExpedition::SacTropPlein { exces }),
+        }
+    }
+
+    /// Ce qui est jeté du sac est perdu (section 13.3).
+    pub(crate) fn jeter(&mut self, objet: &Objet) -> Result<Inventaire, ErreurObjet> {
+        self.sac.retirer(objet)
     }
 
     /// Tout le sac rejoint le coffre. Rend ce qui a été rangé.
@@ -1758,9 +1796,7 @@ impl Partie {
         if self.beherit != EtatDuBeherit::EclipseOuverte {
             return Err(ErreurExpedition::ZoneFermee);
         }
-        if self.collection.equipe().is_empty() {
-            return Err(ErreurExpedition::EquipeVide);
-        }
+        self.verifier_le_depart()?;
         Ok(Expedition::partir(invocation.eclipse().clone())
             .vers_l_antre(invocation.demiurge().clone()))
     }
@@ -1791,9 +1827,7 @@ impl Partie {
         if !self.tour_ouverte(tour) {
             return Err(ErreurExpedition::ZoneFermee);
         }
-        if self.collection.equipe().is_empty() {
-            return Err(ErreurExpedition::EquipeVide);
-        }
+        self.verifier_le_depart()?;
         let capsules = zones
             .iter()
             .filter(|zone| self.est_exploree(zone.id()))
@@ -1996,9 +2030,7 @@ impl Partie {
         if !piste.zone_ouverte(zone.id(), self.indices_trouves) {
             return Err(ErreurExpedition::ZoneFermee);
         }
-        if self.collection.equipe().is_empty() {
-            return Err(ErreurExpedition::EquipeVide);
-        }
+        self.verifier_le_depart()?;
         let possedees = self
             .capsules()
             .map(|capsule| capsule.id().clone())
@@ -3451,6 +3483,57 @@ mod tests {
 
     /// Le monstre de départ et un loup de niveau 5, de 20 PV chacun, avec
     /// le bois déjà exploré.
+    /// Chaque objet prend une place, l'argent aucune ; une sortie du coffre
+    /// qui ferait déborder le sac est refusée, comme le départ avec un sac
+    /// qui déborde (section 13.3).
+    #[test]
+    fn le_sac_a_30_places_au_depart() {
+        let (_, piste) = carte();
+        let mut partie = partie();
+        assert_eq!(partie.places_du_sac(), 30);
+        partie.sac.ajouter_filets(Filet::Chanvre, 10);
+        assert_eq!(partie.sac().places_prises(), 10);
+        partie.coffre_du_camp.ajouter_potions(25);
+        partie.coffre_du_camp.ajouter_argent(500);
+        assert_eq!(
+            partie.sortir_du_coffre(&Objet::Soins(Soin::Potion, 21)),
+            Err(ErreurObjet::SacPlein { places_libres: 20 })
+        );
+        partie
+            .sortir_du_coffre(&Objet::Soins(Soin::Potion, 20))
+            .unwrap();
+        partie.sortir_du_coffre(&Objet::Argent(500)).unwrap();
+        assert_eq!(partie.sac().places_prises(), 30);
+        assert_eq!(partie.exces_du_sac(), 0);
+        assert!(partie.partir_en_expedition(&zone("bois"), &piste).is_ok());
+        // Une ancienne sauvegarde peut déborder : rien ne se perd, mais le
+        // départ attend que le surplus soit rangé.
+        partie.sac.ajouter_potions(3);
+        assert_eq!(partie.exces_du_sac(), 3);
+        assert_eq!(
+            partie.partir_en_expedition(&zone("bois"), &piste),
+            Err(ErreurExpedition::SacTropPlein { exces: 3 })
+        );
+        partie
+            .ranger_au_coffre(&Objet::Soins(Soin::Potion, 3))
+            .unwrap();
+        assert!(partie.partir_en_expedition(&zone("bois"), &piste).is_ok());
+    }
+
+    #[test]
+    fn l_amelioration_du_sac_le_porte_a_80_places() {
+        let places = |niveau| {
+            crate::amelioration::Ameliorations::new(0, 0, 0)
+                .and_then(|ameliorations| ameliorations.avec_sac(niveau))
+                .map(|ameliorations| ameliorations.places_du_sac())
+        };
+        assert_eq!(places(0), Some(30));
+        assert_eq!(places(1), Some(45));
+        assert_eq!(places(2), Some(60));
+        assert_eq!(places(3), Some(80));
+        assert_eq!(places(4), None);
+    }
+
     fn partie_prete_pour_le_bois() -> Partie {
         let mut partie = partie();
         partie.collection_mut().accueillir_capture(creer("loup", 5));

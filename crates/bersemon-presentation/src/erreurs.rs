@@ -45,6 +45,9 @@ pub fn erreur_de_choix(choix: &Choix, erreur: &ErreurChoix) -> String {
         ErreurChoix::EquipeVide => {
             "Votre équipe est vide : faites venir des monstres du camp avant de partir.".to_string()
         }
+        ErreurChoix::SacTropPlein { exces } => {
+            format!("Votre sac déborde de {exces} objets : rangez-en au coffre avant de partir.")
+        }
         ErreurChoix::Objet(erreur) => erreur_objet(erreur),
         ErreurChoix::Apprentissage(erreur) => erreur_apprentissage(erreur),
         ErreurChoix::Habilete(erreur) => match erreur {
@@ -119,6 +122,12 @@ pub fn erreur_objet(erreur: &ErreurObjet) -> String {
         ErreurObjet::QuantiteNulle => "Choisissez au moins un objet.".to_string(),
         ErreurObjet::Insuffisant => "Il n'y en a pas autant.".to_string(),
         ErreurObjet::CapsuleAbsente => "Cette capsule n'est pas là.".to_string(),
+        ErreurObjet::SacPlein { places_libres: 0 } => {
+            "Le sac est plein : rangez des objets au coffre.".to_string()
+        }
+        ErreurObjet::SacPlein { places_libres } => {
+            format!("Le sac n'a plus que {places_libres} places libres.")
+        }
     }
 }
 

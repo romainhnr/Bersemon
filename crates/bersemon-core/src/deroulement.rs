@@ -228,6 +228,9 @@ pub enum Choix {
     /// deux étapes (section 14.4).
     UtiliserSoin(Soin, usize),
     RentrerAuCamp,
+    /// Quand le sac déborde, à la fin d'une étape : l'objet jeté est perdu
+    /// (section 13.3).
+    Jeter(Objet),
     PrendreLeMonstreRare,
     LaisserLeMonstreRare,
     Combat(Action),
@@ -328,6 +331,9 @@ pub enum Attente<'a> {
     /// En expédition en groupe, le joueur veut continuer et attend l'autre ;
     /// il peut encore rentrer au camp.
     AttenteDuGroupe,
+    /// À la fin d'une étape, le sac déborde de `Partie::exces_du_sac`
+    /// objets : le joueur en jette par `Choix::Jeter` (section 13.3).
+    SacPlein,
 }
 
 /// Ce que le joueur doit confirmer avant que son choix s'applique.
@@ -551,6 +557,8 @@ pub enum Evenement {
     },
     /// Nom de la zone menée jusqu'au bout.
     ZoneExploree(String),
+    /// Ce que le joueur a jeté de son sac, qui débordait (section 13.3).
+    ObjetsJetes(Inventaire),
     RetourAuCamp,
     Indice {
         numero: usize,
@@ -726,6 +734,10 @@ pub enum ErreurChoix {
     ZoneFermee,
     /// Pas d'expédition manuelle sans monstre dans l'équipe (section 13.2).
     EquipeVide,
+    /// Ni avec un sac qui déborde de tant d'objets (section 13.3).
+    SacTropPlein {
+        exces: u32,
+    },
     Objet(ErreurObjet),
     Collection(ErreurCollection),
     Soin(ErreurSoin),
@@ -762,6 +774,7 @@ impl fmt::Display for ErreurChoix {
             ErreurChoix::ZoneInconnue(zone) => write!(f, "zone inconnue : {}", zone.as_str()),
             ErreurChoix::ZoneFermee => write!(f, "cette zone n'est pas encore sur la carte"),
             ErreurChoix::EquipeVide => write!(f, "l'équipe est vide"),
+            ErreurChoix::SacTropPlein { exces } => write!(f, "le sac a {exces} objets de trop"),
             ErreurChoix::Objet(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Collection(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Soin(erreur) => write!(f, "{erreur}"),
@@ -1301,6 +1314,9 @@ impl EnJeu {
                     .map_err(|erreur| match erreur {
                         ErreurExpedition::ZoneFermee => ErreurChoix::ZoneFermee,
                         ErreurExpedition::EquipeVide => ErreurChoix::EquipeVide,
+                        ErreurExpedition::SacTropPlein { exces } => {
+                            ErreurChoix::SacTropPlein { exces }
+                        }
                     })?;
                 self.lancer(expedition, contexte, evenements);
                 Ok(Reponse::Faite)
@@ -1313,6 +1329,9 @@ impl EnJeu {
                     .map_err(|erreur| match erreur {
                         ErreurExpedition::ZoneFermee => ErreurChoix::ZoneFermee,
                         ErreurExpedition::EquipeVide => ErreurChoix::EquipeVide,
+                        ErreurExpedition::SacTropPlein { exces } => {
+                            ErreurChoix::SacTropPlein { exces }
+                        }
                     })?
                     .avec_jour_ou_nuit(JourOuNuit::a(contexte.maintenant))
                     .avec_meteo(Meteo::de_la_zone(zone, contexte.maintenant));
@@ -2252,6 +2271,7 @@ impl EnJeu {
             .map_err(|erreur| match erreur {
                 ErreurExpedition::ZoneFermee => ErreurChoix::Beherit(ErreurBeherit::EclipseFermee),
                 ErreurExpedition::EquipeVide => ErreurChoix::EquipeVide,
+                ErreurExpedition::SacTropPlein { exces } => ErreurChoix::SacTropPlein { exces },
             })
     }
 
@@ -2386,6 +2406,12 @@ enum Moment {
     },
     /// En groupe, le joueur veut continuer et attend l'autre.
     AttenteDuGroupe,
+    /// À la fin de l'étape, le sac déborde : le joueur jette des objets
+    /// avant de continuer, ou de rentrer après la dernière étape (section
+    /// 13.3).
+    SacPlein {
+        puis_rentrer: bool,
+    },
 }
 
 /// Ce qui reste à régler une fois les suites d'un combat terminées.
@@ -2441,6 +2467,7 @@ impl EnExpedition {
             Moment::AnnonceDIndice => Attente::Annonce(Annonce::Indice),
             Moment::CombatDeGroupe { .. } => Attente::CombatDeGroupe,
             Moment::AttenteDuGroupe => Attente::AttenteDuGroupe,
+            Moment::SacPlein { .. } => Attente::SacPlein,
             Moment::Combat(combat) => match combat.phase() {
                 Phase::ChoixAction => Attente::ActionDeCombat(combat),
                 Phase::Remplacement => Attente::Remplacement(combat),
@@ -2509,6 +2536,9 @@ impl EnExpedition {
                 }
                 return Ok(Reponse::RetourAuCamp);
             }
+            Moment::SacPlein { puis_rentrer } => {
+                self.vider_le_sac(partie, puis_rentrer, choix, evenements)
+            }
         }?;
         Ok(self.annoncer_l_indice(partie, contexte.contenu.piste(), reponse))
     }
@@ -2573,6 +2603,26 @@ impl EnExpedition {
             Choix::RentrerAuCamp => Ok(Reponse::RetourAuCamp),
             _ => Err(ErreurChoix::HorsDePropos),
         }
+    }
+
+    /// L'argent ne prend pas de place : il ne se jette pas.
+    fn vider_le_sac(
+        &mut self,
+        partie: &mut Partie,
+        puis_rentrer: bool,
+        choix: &Choix,
+        evenements: &mut Vec<Evenement>,
+    ) -> Result<Reponse, ErreurChoix> {
+        self.moment = Moment::SacPlein { puis_rentrer };
+        let Choix::Jeter(objet) = choix else {
+            return Err(ErreurChoix::HorsDePropos);
+        };
+        if matches!(objet, Objet::Argent(_)) {
+            return Err(ErreurChoix::HorsDePropos);
+        }
+        let jete = partie.jeter(objet).map_err(ErreurChoix::Objet)?;
+        evenements.push(Evenement::ObjetsJetes(jete));
+        Ok(self.apres_l_etape(partie, evenements))
     }
 
     fn monstre_rare(
@@ -3038,8 +3088,18 @@ impl EnExpedition {
         self.apres_l_etape(partie, evenements)
     }
 
+    /// Un sac qui déborde se vide d'abord : le joueur jette des objets
+    /// jusqu'à revenir à sa capacité (section 13.3). Après une défaite, le
+    /// sac est perdu, et rien ne déborde.
     fn apres_l_etape(&mut self, partie: &mut Partie, evenements: &mut Vec<Evenement>) -> Reponse {
-        if self.expedition.est_terminee() {
+        let terminee = self.expedition.est_terminee();
+        if partie.exces_du_sac() > 0 {
+            self.moment = Moment::SacPlein {
+                puis_rentrer: terminee,
+            };
+            return Reponse::Faite;
+        }
+        if terminee {
             return Reponse::RetourAuCamp;
         }
         self.moment = Moment::EntreDeuxEtapes;
@@ -4597,6 +4657,36 @@ mod tests {
         u32::from(attaque.puissance()) * u32::from(attaque.precision()) * facteur
     }
 
+    /// Quand le sac déborde : les ressources d'abord, puis les filets, puis
+    /// les potions, un par un.
+    fn objet_a_jeter(sac: &Inventaire) -> Objet {
+        if let Some((ressource, _)) = sac.ressources().first() {
+            return Objet::Ressources(ressource.id().clone(), 1);
+        }
+        if let Some((filet, _)) = sac.filets().presents().next() {
+            return Objet::Filets(filet, 1);
+        }
+        if let Some((soin, _)) = sac.soins().presents().next() {
+            return Objet::Soins(soin, 1);
+        }
+        if let Some((pierre, _)) = sac.pierres().first() {
+            return Objet::Pierres(*pierre, 1);
+        }
+        if let Some((booster, _)) = sac.boosters().first() {
+            return Objet::Boosters(*booster, 1);
+        }
+        if sac.capsules_d_habilete() > 0 {
+            return Objet::CapsulesDHabilete(1);
+        }
+        if sac.philtres_chromatiques() > 0 {
+            return Objet::PhiltresChromatiques(1);
+        }
+        match sac.capsules().first() {
+            Some(capsule) => Objet::Capsule(capsule.id().clone()),
+            None => Objet::CharmesDeGarde(1),
+        }
+    }
+
     /// Joueur simple : la meilleure attaque, une potion sous la moitié des
     /// PV, retour au camp en mauvaise posture, le Marais à partir du niveau
     /// 12, la Vallée à partir du niveau 24, l'Abbaye à partir du niveau 34,
@@ -4681,6 +4771,7 @@ mod tests {
             Attente::CombatDeGroupe | Attente::AttenteDuGroupe => {
                 panic!("l'expédition en groupe mène son combat et ses étapes")
             }
+            Attente::SacPlein => Choix::Jeter(objet_a_jeter(partie.unwrap().sac())),
         }
     }
 
@@ -6390,6 +6481,59 @@ mod tests {
             deroulement.expedition().unwrap().jour_ou_nuit(),
             Some(JourOuNuit::Nuit)
         );
+    }
+
+    /// Un coffre fait déborder le sac plein : à la fin de l'étape, le joueur
+    /// jette ce qu'il veut, sauf l'argent, qui ne prend pas de place, puis
+    /// l'expédition reprend (section 13.3).
+    #[test]
+    fn un_sac_qui_deborde_se_vide_a_la_fin_de_l_etape() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut etat = etat_de(&partie(&contenu));
+        etat.sac = Inventaire::default().avec_filets(Filet::Chanvre, 30);
+        let mut deroulement = Deroulement::demarrer(Ok(Some(Partie::restaurer(etat).unwrap())));
+        repondre_sans_tirage(&mut deroulement, Choix::ReprendreLaPartie, &contenu, &depot).unwrap();
+        // Un coffre d'une potion et de 12 pièces d'argent, sans capsule.
+        repondre_avec_tirages(
+            &mut deroulement,
+            Choix::PartirEnExpedition(ZoneId::new("lisiere")),
+            &contenu,
+            &depot,
+            Horodatage::depuis_secondes(0),
+            vec![81, 1, 12, 21, 100],
+        )
+        .unwrap();
+        assert_eq!(deroulement.attente(), Attente::SacPlein);
+        assert_eq!(deroulement.partie().unwrap().exces_du_sac(), 1);
+        for refuse in [Choix::Jeter(Objet::Argent(12)), Choix::ContinuerLExpedition] {
+            assert_eq!(
+                repondre_sans_tirage(&mut deroulement, refuse, &contenu, &depot),
+                Err(ErreurChoix::HorsDePropos)
+            );
+        }
+        assert_eq!(
+            repondre_sans_tirage(
+                &mut deroulement,
+                Choix::Jeter(Objet::Soins(Soin::Potion, 2)),
+                &contenu,
+                &depot
+            ),
+            Err(ErreurChoix::Objet(ErreurObjet::Insuffisant))
+        );
+        let evenements = repondre_sans_tirage(
+            &mut deroulement,
+            Choix::Jeter(Objet::Filets(Filet::Chanvre, 1)),
+            &contenu,
+            &depot,
+        )
+        .unwrap();
+        assert!(matches!(
+            &evenements[0],
+            Evenement::ObjetsJetes(jete) if jete.filets().nombre(Filet::Chanvre) == 1
+        ));
+        assert_eq!(deroulement.attente(), Attente::EntreDeuxEtapes);
+        assert_eq!(deroulement.partie().unwrap().sac().places_prises(), 30);
     }
 
     /// Partie sous une météo, l'expédition la garde jusqu'au retour et le

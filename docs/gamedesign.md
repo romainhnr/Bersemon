@@ -757,6 +757,9 @@ Repères, avec des valeurs internes de 15 : dans la Lisière, une Salamandre de 
   - En expédition, le butin entre dans le sac même s'il déborde. À la fin de l'étape, avant de continuer ou de rentrer au camp, le joueur jette des objets de son choix, parmi tout le sac, jusqu'à revenir à sa capacité ; ce qu'il jette est perdu. Après une défaite, le sac est perdu, et il n'y a rien à choisir.
   - Au camp, une sortie du coffre qui ferait déborder le sac est refusée. Les achats chez Malvoise vont au coffre (voir plus haut) et ne sont pas limités.
   - Le départ en expédition est refusé tant que le sac déborde : une sauvegarde antérieure dont le sac dépasse sa capacité ne perd rien, et le joueur range le surplus au coffre.
+  - Sauvegarde en version 30 : le niveau de l'amélioration du sac ; une sauvegarde antérieure l'a à 0.
+  - Précisé en codant : l'argent ne se jette pas ; dans la Tour à deux, chaque joueur vide son propre sac avant que le groupe continue ; le joueur automatique de l'outil d'équilibrage range son butin au coffre à chaque retour, et jette ce qu'il n'emploie pas d'abord.
+  - Écrans, aux étapes 125 à 127 : le camp et l'écran entre deux étapes disent les places du sac, "Sac (18/30) : ...". À la fin d'une étape où le sac déborde, la question dit "Votre sac déborde : 32 objets pour 30 places. Jetez-en 2 pour poursuivre ; ce que vous jetez est perdu." Dans la console, le joueur choisit une sorte d'objet, puis combien en jeter ; sur Discord, un menu "Jeter un objet" et un menu "Jeter une ressource" jettent un exemplaire par choix. Le récit dit "Vous jetez 2 potions." La forge propose "Améliorer : Sac", dont l'effet est "sac de 45 places".
 
 ### 13.4 Améliorations
 
@@ -1176,7 +1179,7 @@ Les questions Q103 et suivantes ont été relevées le 25/10/2026 lors de la con
 
 Les questions Q111 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 124, évolutions selon la météo, et 125 à 127, capacité du sac.
 
-- Q111. (Étapes 124 à 127) Hypothèses retenues, à confirmer : une Fée noire, une Fée-sorcière ou un Basilic qui a déjà passé son niveau d'évolution attend la bonne météo, comme le Loup, le Corbeau et la Vipère attendent le bon moment ; la fin d'une étape est l'arrêt entre deux étapes, ou le retour au camp après la dernière ; dans la Tour à deux, chaque joueur jette dans son propre sac ; les filets lancés et les soins utilisés en combat libèrent leur place aussitôt. Textes proposés sans validation (docs/contenu-v1.md, sections 9 et 32).
+- Q111. (Étapes 124 à 127) Hypothèses retenues, à confirmer : une Fée noire, une Fée-sorcière ou un Basilic qui a déjà passé son niveau d'évolution attend la bonne météo, comme le Loup, le Corbeau et la Vipère attendent le bon moment ; la fin d'une étape est l'arrêt entre deux étapes, ou le retour au camp après la dernière ; dans la Tour à deux, chaque joueur jette dans son propre sac ; les filets lancés et les soins utilisés en combat libèrent leur place aussitôt ; une capsule d'attaque prend une place, comme tout objet. Textes proposés sans validation (docs/contenu-v1.md, sections 32 et 33).
 
 Les questions Q110 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 121 à 123, météo.
 

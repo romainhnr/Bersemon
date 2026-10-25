@@ -128,6 +128,11 @@ pub enum ErreurExpedition {
     /// Toute l'équipe est partie en expédition automatique, ou le joueur l'a
     /// vidée (section 13.2).
     EquipeVide,
+    /// Le sac a ces objets de trop : le joueur les range d'abord au coffre
+    /// (section 13.3).
+    SacTropPlein {
+        exces: u32,
+    },
 }
 
 impl fmt::Display for ErreurExpedition {
@@ -135,6 +140,9 @@ impl fmt::Display for ErreurExpedition {
         match self {
             ErreurExpedition::ZoneFermee => write!(f, "cette zone n'est pas encore sur la carte"),
             ErreurExpedition::EquipeVide => write!(f, "l'équipe est vide"),
+            ErreurExpedition::SacTropPlein { exces } => {
+                write!(f, "le sac a {exces} objets de trop")
+            }
         }
     }
 }

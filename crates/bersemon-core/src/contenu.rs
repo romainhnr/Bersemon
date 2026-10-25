@@ -3181,7 +3181,7 @@ fn creer_evolution(fiche: &FicheEvolution) -> Evolution {
 type FichePlan = (Amelioration, u8, &'static [(&'static str, u32)], u64);
 
 /// Section 9 de docs/contenu-v1.md, puis les machines de la section 19.
-const PLANS_D_AMELIORATION: [FichePlan; 13] = [
+const PLANS_D_AMELIORATION: [FichePlan; 16] = [
     (
         Amelioration::Enclos,
         1,
@@ -3232,6 +3232,24 @@ const PLANS_D_AMELIORATION: [FichePlan; 13] = [
             ("aile-de-fee-noire", 8),
         ],
         8,
+    ),
+    (
+        Amelioration::Sac,
+        1,
+        &[("plume-de-corbeau", 6), ("ecaille-de-vipere", 6)],
+        1,
+    ),
+    (
+        Amelioration::Sac,
+        2,
+        &[("cendre-de-feu-follet", 6), ("fragment-d-armure", 6)],
+        3,
+    ),
+    (
+        Amelioration::Sac,
+        3,
+        &[("aile-de-fee-noire", 6), ("os-de-squelette", 6)],
+        6,
     ),
     (
         Amelioration::Pieges,
@@ -4040,7 +4058,7 @@ mod tests {
                 }
             }
         }
-        assert_eq!(contenu.plans_d_amelioration().len(), 13);
+        assert_eq!(contenu.plans_d_amelioration().len(), 16);
     }
 
     #[test]

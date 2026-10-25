@@ -456,6 +456,10 @@ fn choisir(
         Attente::CombatDeGroupe | Attente::AttenteDuGroupe => {
             unreachable!("le joueur automatique joue seul")
         }
+        Attente::SacPlein => {
+            let partie = deroulement.partie().expect("partie en expédition");
+            Choix::Jeter(objet_a_jeter(partie))
+        }
     }
 }
 
@@ -483,11 +487,17 @@ fn au_camp(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Choi
     if let Some(gestion) = meilleure_equipe(partie, contenu) {
         return Choix::Gerer(gestion);
     }
-    if partie.sac().argent() > 0 {
-        return Choix::RangerAuCoffre(Objet::Argent(partie.sac().argent()));
-    }
-    if let Some((ressource, nombre)) = partie.sac().ressources().first() {
-        return Choix::RangerAuCoffre(Objet::Ressources(ressource.id().clone(), *nombre));
+    // Le butin rejoint le coffre : le sac, limité, ne repart qu'avec les
+    // potions et les filets (section 13.3).
+    let sac = partie.sac();
+    let potions = sac.soins().nombre(Soin::Potion);
+    let filets: u32 = sac.filets().presents().map(|(_, nombre)| nombre).sum();
+    if sac.argent() > 0
+        || sac.places_prises() > potions + filets
+        || potions > POTIONS_EMPORTEES
+        || filets > FILETS_EMPORTES
+    {
+        return Choix::ToutRangerAuCoffre;
     }
     if let Some(choix) = remplir_le_sac(partie) {
         return choix;
@@ -609,6 +619,43 @@ fn meilleure_equipe(partie: &Partie, contenu: &ContenuV1) -> Option<ActionDeGest
         .enumerate()
         .max_by(|(_, un), (_, autre)| valeur(un).total_cmp(&valeur(autre)))?;
     (tete != 0).then_some(ActionDeGestion::ChangerLOrdre { de: tete, vers: 0 })
+}
+
+/// Quand le sac déborde : ce que ce joueur n'emploie pas d'abord (pierres,
+/// boosters, capsules, Philtres, charmes), puis les ressources, les filets
+/// et les potions, un par un.
+fn objet_a_jeter(partie: &Partie) -> Objet {
+    let sac = partie.sac();
+    if let Some((pierre, _)) = sac.pierres().first() {
+        return Objet::Pierres(*pierre, 1);
+    }
+    if let Some((booster, _)) = sac.boosters().first() {
+        return Objet::Boosters(*booster, 1);
+    }
+    if let Some(capsule) = sac.capsules().first() {
+        return Objet::Capsule(capsule.id().clone());
+    }
+    if sac.capsules_d_habilete() > 0 {
+        return Objet::CapsulesDHabilete(1);
+    }
+    if sac.philtres_chromatiques() > 0 {
+        return Objet::PhiltresChromatiques(1);
+    }
+    if sac.charmes_de_garde() > 0 {
+        return Objet::CharmesDeGarde(1);
+    }
+    if let Some((ressource, _)) = sac.ressources().first() {
+        return Objet::Ressources(ressource.id().clone(), 1);
+    }
+    if let Some((filet, _)) = sac.filets().presents().next() {
+        return Objet::Filets(filet, 1);
+    }
+    let (soin, _) = sac
+        .soins()
+        .presents()
+        .next()
+        .expect("un sac qui déborde a un objet");
+    Objet::Soins(soin, 1)
 }
 
 fn remplir_le_sac(partie: &Partie) -> Option<Choix> {

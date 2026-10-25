@@ -47,7 +47,7 @@ use bersemon_core::zone::{Zone, ZoneId};
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 29;
+pub(crate) const VERSION: u64 = 30;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -99,6 +99,10 @@ const VERSION_DU_RITE: u64 = 28;
 /// récompense est réclamée (section 5.6).
 const VERSION_DES_PALIERS_DU_CODEX: u64 = 29;
 
+/// La version de la sauvegarde où le sac s'améliore chez Gunther (section
+/// 13.3).
+const VERSION_DU_SAC: u64 = 30;
+
 /// Ce que reçoit, au coffre, une partie qui reprend une sauvegarde
 /// antérieure aux filets (hypothèse retenue, Q102).
 const FILETS_DES_SAUVEGARDES_ANTERIEURES: u32 = 10;
@@ -128,7 +132,8 @@ const GEOLIER_DE_GUNTHER: &str = "bourreau";
 /// les protections des expéditions automatiques, la version 24 la location
 /// d'un monstre, la version 25 le Béhérit pourpre, la version 26 les records
 /// de la Tour sans fond, la version 27 les filets de capture, la version 28
-/// le Rite du sang mêlé, la version 29 les récompenses du codex réclamées. Une sauvegarde d'une version précédente se lit avec cette
+/// le Rite du sang mêlé, la version 29 les récompenses du codex réclamées,
+/// la version 30 l'amélioration du sac. Une sauvegarde d'une version précédente se lit avec cette
 /// structure : les champs ajoutés y prennent leur valeur de début de
 /// partie.
 #[derive(Debug, Serialize, Deserialize)]
@@ -248,6 +253,10 @@ struct AmeliorationsV14 {
     pieges: u8,
     #[serde(default)]
     cour: u8,
+    /// Depuis la version 30 (section 13.3) : avant, le sac n'était pas
+    /// amélioré.
+    #[serde(default)]
+    sac: u8,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -291,6 +300,7 @@ fn amelioration_en_texte(amelioration: Amelioration) -> &'static str {
         Amelioration::Enclos => "enclos",
         Amelioration::Filets => "filets",
         Amelioration::Equipe => "equipe",
+        Amelioration::Sac => "sac",
         Amelioration::Pieges => "pieges",
         Amelioration::Cour => "cour",
     }
@@ -630,6 +640,7 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV14 {
             equipe: partie.forge().ameliorations().niveau(Amelioration::Equipe),
             pieges: partie.forge().ameliorations().niveau(Amelioration::Pieges),
             cour: partie.forge().ameliorations().niveau(Amelioration::Cour),
+            sac: partie.forge().ameliorations().niveau(Amelioration::Sac),
         },
         chantier: partie
             .forge()
@@ -877,6 +888,9 @@ pub(crate) fn vers_partie(
         })
         .collect::<Result<Vec<_>, _>>()?;
     // Avant la version 22, ni pièges ni cour d'entraînement (section 13.6).
+    if sauvegarde.version < VERSION_DU_SAC {
+        sauvegarde.ameliorations.sac = 0;
+    }
     if sauvegarde.version < VERSION_DES_MACHINES {
         sauvegarde.ameliorations.pieges = 0;
         sauvegarde.ameliorations.cour = 0;
@@ -905,6 +919,7 @@ pub(crate) fn vers_partie(
             sauvegarde.ameliorations.cour,
         )
     })
+    .and_then(|ameliorations| ameliorations.avec_sac(sauvegarde.ameliorations.sac))
     .ok_or_else(|| {
         ErreurSauvegarde::Incoherente("niveau d'amélioration hors limites".to_string())
     })?;

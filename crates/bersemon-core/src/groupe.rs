@@ -84,6 +84,7 @@ impl ExpeditionEnGroupe {
                 .map_err(|erreur| match erreur {
                     ErreurExpedition::ZoneFermee => ErreurChoix::ZoneFermee,
                     ErreurExpedition::EquipeVide => ErreurChoix::EquipeVide,
+                    ErreurExpedition::SacTropPlein { exces } => ErreurChoix::SacTropPlein { exces },
                 })?;
             expeditions.push(expedition);
         }
@@ -433,10 +434,12 @@ mod tests {
     use crate::combat::Action;
     use crate::espece::EspeceId;
     use crate::heros::{Classe, Heros};
+    use crate::inventaire::Objet;
     use crate::niveau::Niveau;
     use crate::nom::Nom;
     use crate::partie::EtatPartie;
     use crate::sauvegarde::ErreurSauvegarde;
+    use crate::soin::Soin;
     use crate::stats::ValeursInternes;
     use crate::zone::ZoneId;
     use std::cell::RefCell;
@@ -662,6 +665,18 @@ mod tests {
             Attente::Evolution { .. } => Choix::NePasEvoluer,
             Attente::PlaceManquante(_) => Choix::RelacherLaCapture,
             Attente::Confirmation(_) => Choix::Oui,
+            // Chacun jette dans son propre sac, en commençant par les
+            // ressources (section 13.3).
+            Attente::SacPlein => {
+                let sac = deroulement.partie().unwrap().sac();
+                match (sac.ressources().first(), sac.filets().presents().next()) {
+                    (Some((ressource, _)), _) => {
+                        Choix::Jeter(Objet::Ressources(ressource.id().clone(), 1))
+                    }
+                    (None, Some((filet, _))) => Choix::Jeter(Objet::Filets(filet, 1)),
+                    (None, None) => Choix::Jeter(Objet::Soins(Soin::Potion, 1)),
+                }
+            }
             autre => panic!("{autre:?}"),
         }
     }

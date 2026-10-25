@@ -241,7 +241,11 @@ pub fn sac_en_expedition(partie: &Partie) -> String {
     let sac = if sac.est_vide() {
         "Sac : vide.".to_string()
     } else {
-        format!("Sac : {}. Une défaite le ferait perdre.", contenu(sac))
+        format!(
+            "Sac ({}) : {}. Une défaite le ferait perdre.",
+            crate::sac::places(partie),
+            contenu(sac)
+        )
     };
     format!("{sac}{}", ligne_des_ames(partie))
 }
@@ -344,9 +348,10 @@ pub fn partie_en_cours(partie: &Partie) -> String {
 /// Le sac, que le joueur emporte, et le coffre, à l'abri (section 13.3).
 pub fn en_tete_du_camp(partie: &Partie) -> String {
     format!(
-        "Camp de base ({}, {}).\nSac : {}. Coffre du camp : {}.{}",
+        "Camp de base ({}, {}).\nSac ({}) : {}. Coffre du camp : {}.{}",
         partie.heros().nom().as_str(),
         partie.heros().classe().nom(),
+        crate::sac::places(partie),
         contenu(partie.sac()),
         contenu(partie.coffre_du_camp()),
         ligne_des_ames(partie)
@@ -358,9 +363,10 @@ pub fn en_tete_du_camp(partie: &Partie) -> String {
 /// détail est à l'écran du coffre.
 pub fn en_tete_abrege_du_camp(partie: &Partie) -> String {
     format!(
-        "Camp de base ({}, {}).\nSac : {}. Coffre du camp : {}.{}",
+        "Camp de base ({}, {}).\nSac ({}) : {}. Coffre du camp : {}.{}",
         partie.heros().nom().as_str(),
         partie.heros().classe().nom(),
+        crate::sac::places(partie),
         contenu_detaille(partie.sac(), false),
         contenu_detaille(partie.coffre_du_camp(), false),
         ligne_des_ames(partie)

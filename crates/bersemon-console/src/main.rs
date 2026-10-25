@@ -113,6 +113,10 @@ fn demander(
         Attente::Prise(monstre) => ecran_peche::prise(monstre, entree),
         Attente::Annonce(annonce) => ecran_expedition::annonce(annonce, entree),
         Attente::Confirmation(confirmation) => confirmer(confirmation, entree),
+        Attente::SacPlein => {
+            let partie = deroulement.partie().expect(PARTIE_EN_JEU);
+            ecran_expedition::sac_plein(partie, entree)
+        }
         // La console reste une partie seule : l'expédition en groupe ne se
         // joue que sur Discord (section 15.5).
         Attente::CombatDeGroupe | Attente::AttenteDuGroupe => None,

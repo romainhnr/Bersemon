@@ -30,6 +30,7 @@ use crate::partie::{
 use crate::peche;
 use crate::recompenses_du_codex::recompense_reclamee;
 use crate::rite::{naissance as texte_de_la_naissance, rite_lance};
+use crate::sac;
 use crate::soins::{le_soin, soin_utilise, soins};
 
 /// La forme évoluée apprend d'autres attaques que son attaque d'évolution
@@ -86,6 +87,7 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             (jour_et_nuit::au_depart(*jour_ou_nuit).to_string(), false)
         }
         Evenement::MeteoAuDepart(meteo) => (meteo::au_depart(*meteo).to_string(), false),
+        Evenement::ObjetsJetes(jete) => (sac::objets_jetes(jete), false),
         Evenement::Etape {
             numero,
             total: Some(total),

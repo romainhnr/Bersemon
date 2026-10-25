@@ -58,6 +58,25 @@ pub enum Objet {
     Filets(Filet, u32),
 }
 
+impl Objet {
+    /// Chaque objet prend une place dans le sac, l'argent aucune (section
+    /// 13.3).
+    pub fn places(&self) -> u32 {
+        match self {
+            Objet::Argent(_) => 0,
+            Objet::Capsule(_) => 1,
+            Objet::Soins(_, nombre)
+            | Objet::CapsulesDHabilete(nombre)
+            | Objet::Ressources(_, nombre)
+            | Objet::Pierres(_, nombre)
+            | Objet::Boosters(_, nombre)
+            | Objet::PhiltresChromatiques(nombre)
+            | Objet::CharmesDeGarde(nombre)
+            | Objet::Filets(_, nombre) => *nombre,
+        }
+    }
+}
+
 impl Inventaire {
     /// Reprise d'une sauvegarde ; les capsules en double ne sont gardées
     /// qu'une fois. Les autres soins que la potion s'ajoutent avec
@@ -315,6 +334,27 @@ impl Inventaire {
             && self.filets.est_vide()
     }
 
+    /// Les places prises dans le sac : chaque objet en prend une, l'argent
+    /// aucune (section 13.3).
+    pub fn places_prises(&self) -> u32 {
+        let sommes = |nombres: &mut dyn Iterator<Item = u32>| -> u32 {
+            nombres.fold(0, u32::saturating_add)
+        };
+        [
+            sommes(&mut self.soins.presents().map(|(_, nombre)| nombre)),
+            self.capsules.len() as u32,
+            self.capsules_d_habilete,
+            sommes(&mut self.ressources.iter().map(|(_, nombre)| *nombre)),
+            sommes(&mut self.pierres.iter().map(|(_, nombre)| *nombre)),
+            sommes(&mut self.boosters.iter().map(|(_, nombre)| *nombre)),
+            self.philtres_chromatiques,
+            self.charmes_de_garde,
+            sommes(&mut self.filets.presents().map(|(_, nombre)| nombre)),
+        ]
+        .into_iter()
+        .fold(0, u32::saturating_add)
+    }
+
     pub fn contient_capsule(&self, id: &AttaqueId) -> bool {
         self.capsules.iter().any(|capsule| capsule.id() == id)
     }
@@ -518,6 +558,10 @@ pub enum ErreurObjet {
     /// Il n'y en a pas assez là d'où on veut les prendre.
     Insuffisant,
     CapsuleAbsente,
+    /// Le sac n'a plus que ces places (section 13.3).
+    SacPlein {
+        places_libres: u32,
+    },
 }
 
 impl fmt::Display for ErreurObjet {
@@ -526,6 +570,9 @@ impl fmt::Display for ErreurObjet {
             ErreurObjet::QuantiteNulle => write!(f, "il faut déplacer au moins un objet"),
             ErreurObjet::Insuffisant => write!(f, "il n'y en a pas autant"),
             ErreurObjet::CapsuleAbsente => write!(f, "cette capsule n'est pas là"),
+            ErreurObjet::SacPlein { places_libres } => {
+                write!(f, "le sac n'a plus que {places_libres} places libres")
+            }
         }
     }
 }

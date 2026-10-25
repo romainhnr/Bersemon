@@ -1,6 +1,6 @@
 //! Questions posées en expédition (section 9.2) : entre deux étapes, devant
-//! un monstre rare pacifique, quand une capture ne trouve pas de place, et
-//! pour une annonce.
+//! un monstre rare pacifique, quand une capture ne trouve pas de place, quand
+//! le sac déborde, et pour une annonce.
 
 use bersemon_core::collection::{Collection, Emplacement};
 use bersemon_core::deroulement::{ActionDeGestion, Annonce, Choix};
@@ -10,10 +10,30 @@ use bersemon_presentation::partie::{
     annonce as texte_d_annonce, collection as liste_des_monstres,
     place_manquante as place_manquante_texte,
 };
+use bersemon_presentation::sac::{question_du_sac_plein, sortes_a_jeter};
 
 use crate::affichage;
 use crate::ecran_combat::choisir_soin;
 use crate::saisie::Entree;
+
+/// À la fin d'une étape où le sac déborde : une sorte d'objet, puis combien
+/// en jeter (section 13.3). Rend `None` si l'entrée est fermée.
+pub fn sac_plein(partie: &Partie, entree: &mut Entree) -> Option<Choix> {
+    let sortes = sortes_a_jeter(partie.sac());
+    println!();
+    println!("{}", question_du_sac_plein(partie));
+    for (position, sorte) in sortes.iter().enumerate() {
+        println!("  {}. {}", position + 1, sorte.libelle);
+    }
+    let sorte = &sortes[entree.choix(1, sortes.len())? - 1];
+    let nombre = if sorte.nombre > 1 {
+        println!("Combien en jeter ?");
+        entree.choix(1, sorte.nombre as usize)? as u32
+    } else {
+        1
+    };
+    Some(Choix::Jeter(sorte.objet(nombre)))
+}
 
 /// Rend `None` si l'entrée est fermée. Le contenu du sac est rappelé : une
 /// défaite le ferait perdre (section 9.3).

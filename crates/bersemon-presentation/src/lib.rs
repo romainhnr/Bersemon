@@ -28,5 +28,6 @@ pub mod peche;
 pub mod recit;
 pub mod recompenses_du_codex;
 pub mod rite;
+pub mod sac;
 pub mod soins;
 pub mod tour;

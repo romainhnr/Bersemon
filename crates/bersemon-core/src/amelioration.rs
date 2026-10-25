@@ -22,12 +22,17 @@ const PLACES_PAR_NIVEAU_D_ENCLOS: usize = 10;
 /// Chaque niveau de filets ajoute 10 % à la chance de capture, gardée en
 /// fraction pour rester en calcul entier.
 const DIXIEMES_PAR_NIVEAU_DE_FILETS: u64 = 1;
+/// Places du sac au départ, puis à chaque niveau de son amélioration
+/// (section 13.3).
+const PLACES_DU_SAC: [u32; 4] = [30, 45, 60, 80];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Amelioration {
     Enclos,
     Filets,
     Equipe,
+    /// Les places du sac (section 13.3).
+    Sac,
     /// Les machines (section 13.6).
     Pieges,
     Cour,
@@ -36,10 +41,11 @@ pub enum Amelioration {
 impl Amelioration {
     /// Dans l'ordre de docs/contenu-v1.md, sections 9 puis 19, qui est aussi
     /// celui des affichages.
-    pub const TOUTES: [Amelioration; 5] = [
+    pub const TOUTES: [Amelioration; 6] = [
         Amelioration::Enclos,
         Amelioration::Filets,
         Amelioration::Equipe,
+        Amelioration::Sac,
         Amelioration::Pieges,
         Amelioration::Cour,
     ];
@@ -49,6 +55,7 @@ impl Amelioration {
             Amelioration::Enclos => "Enclos",
             Amelioration::Filets => "Filets",
             Amelioration::Equipe => "Équipe",
+            Amelioration::Sac => "Sac",
             Amelioration::Pieges => "Pièges",
             Amelioration::Cour => "Cour d'entraînement",
         }
@@ -58,6 +65,7 @@ impl Amelioration {
         match self {
             Amelioration::Enclos
             | Amelioration::Filets
+            | Amelioration::Sac
             | Amelioration::Pieges
             | Amelioration::Cour => 3,
             Amelioration::Equipe => 1,
@@ -74,6 +82,7 @@ impl Amelioration {
             Amelioration::Equipe => {
                 EffetDAmelioration::PlacesDansLEquipe(places_dans_l_equipe(niveau))
             }
+            Amelioration::Sac => EffetDAmelioration::PlacesDansLeSac(places_du_sac(niveau)),
             Amelioration::Pieges => EffetDAmelioration::Pieges(
                 regles_des_pieges(niveau).expect("un niveau construit est au moins 1"),
             ),
@@ -88,6 +97,10 @@ fn places_dans_l_equipe(niveau_d_equipe: u8) -> usize {
     Tailles::DE_DEPART.equipe + usize::from(niveau_d_equipe)
 }
 
+fn places_du_sac(niveau_du_sac: u8) -> u32 {
+    PLACES_DU_SAC[usize::from(niveau_du_sac).min(PLACES_DU_SAC.len() - 1)]
+}
+
 fn places_au_camp(niveau_d_enclos: u8) -> usize {
     Tailles::DE_DEPART.camp + usize::from(niveau_d_enclos) * PLACES_PAR_NIVEAU_D_ENCLOS
 }
@@ -96,6 +109,7 @@ fn places_au_camp(niveau_d_enclos: u8) -> usize {
 pub enum EffetDAmelioration {
     PlacesAuCamp(usize),
     PlacesDansLEquipe(usize),
+    PlacesDansLeSac(u32),
     /// En pourcentage de la chance de capture.
     ChanceDeCaptureEnPlus(u32),
     Pieges(ReglesDesPieges),
@@ -108,6 +122,7 @@ pub struct Ameliorations {
     enclos: u8,
     filets: u8,
     equipe: u8,
+    sac: u8,
     pieges: u8,
     cour: u8,
 }
@@ -119,10 +134,18 @@ impl Ameliorations {
             enclos,
             filets,
             equipe,
+            sac: 0,
             pieges: 0,
             cour: 0,
         };
         ameliorations.verifier()
+    }
+
+    /// Reprise d'une sauvegarde : le niveau du sac s'ajoute à ceux de `new`.
+    /// `None` au-delà du maximum.
+    pub fn avec_sac(mut self, sac: u8) -> Option<Self> {
+        self.sac = sac;
+        self.verifier()
     }
 
     /// Reprise d'une sauvegarde : les niveaux des machines s'ajoutent à
@@ -145,6 +168,7 @@ impl Ameliorations {
             Amelioration::Enclos => self.enclos,
             Amelioration::Filets => self.filets,
             Amelioration::Equipe => self.equipe,
+            Amelioration::Sac => self.sac,
             Amelioration::Pieges => self.pieges,
             Amelioration::Cour => self.cour,
         }
@@ -163,6 +187,7 @@ impl Ameliorations {
             Amelioration::Enclos => &mut self.enclos,
             Amelioration::Filets => &mut self.filets,
             Amelioration::Equipe => &mut self.equipe,
+            Amelioration::Sac => &mut self.sac,
             Amelioration::Pieges => &mut self.pieges,
             Amelioration::Cour => &mut self.cour,
         };
@@ -177,6 +202,11 @@ impl Ameliorations {
             equipe: places_dans_l_equipe(self.equipe),
             camp: places_au_camp(self.enclos),
         }
+    }
+
+    /// 30 places, puis 45, 60 et 80 (section 13.3).
+    pub fn places_du_sac(&self) -> u32 {
+        places_du_sac(self.sac)
     }
 
     /// Multiplie la chance de capture : x1, puis x1,1, x1,2 et x1,3 (section

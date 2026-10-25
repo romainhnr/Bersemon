@@ -333,6 +333,11 @@ pub enum Cle {
     /// Menu des ressources que Malvoise rachète, toutes celles d'une sorte.
     VendreRessources,
     ToutRanger,
+    /// Quand le sac déborde, menus de ce qu'il contient, un exemplaire à la
+    /// fois : les ressources à part, pour rester sous les 25 options
+    /// (section 13.3).
+    Jeter,
+    JeterUneRessource,
     SeSuicider,
     /// Gunther construit le niveau suivant (section 13.4).
     Ameliorer(Amelioration),
@@ -550,6 +555,7 @@ impl Cle {
             Cle::RangerRessourcesAuCoffre => jouer(Choix::RangerAuCoffre(lire_objet(valeur?)?)),
             Cle::VendreRessources => jouer(Choix::VendreRessources(RessourceId::new(valeur?))),
             Cle::ToutRanger => jouer(Choix::ToutRangerAuCoffre),
+            Cle::Jeter | Cle::JeterUneRessource => jouer(Choix::Jeter(lire_objet(valeur?)?)),
             Cle::SeSuicider => jouer(Choix::SeSuicider),
             Cle::Ameliorer(amelioration) => jouer(Choix::LancerAmelioration(*amelioration)),
             Cle::Constater => jouer(Choix::ConstaterTravail),
@@ -766,6 +772,8 @@ impl Cle {
             Cle::RangerRessourcesAuCoffre => "ranger-ressources".to_string(),
             Cle::VendreRessources => "vendre-ressources".to_string(),
             Cle::ToutRanger => "tout-ranger".to_string(),
+            Cle::Jeter => "jeter".to_string(),
+            Cle::JeterUneRessource => "jeter-ressource".to_string(),
             Cle::SeSuicider => "se-suicider".to_string(),
             Cle::Ameliorer(amelioration) => {
                 format!("ameliorer:{}", amelioration_en_texte(*amelioration))
@@ -853,6 +861,8 @@ impl Cle {
             "ranger-ressources" => Cle::RangerRessourcesAuCoffre,
             "vendre-ressources" => Cle::VendreRessources,
             "tout-ranger" => Cle::ToutRanger,
+            "jeter" => Cle::Jeter,
+            "jeter-ressource" => Cle::JeterUneRessource,
             "vue:options" => Cle::Afficher(Vue::Options),
             "vue:forge" => Cle::Afficher(Vue::Forge),
             "constater" => Cle::Constater,
@@ -1086,6 +1096,7 @@ fn amelioration_en_texte(amelioration: Amelioration) -> &'static str {
         Amelioration::Enclos => "enclos",
         Amelioration::Filets => "filets",
         Amelioration::Equipe => "equipe",
+        Amelioration::Sac => "sac",
         Amelioration::Pieges => "pieges",
         Amelioration::Cour => "cour",
     }
@@ -1426,12 +1437,15 @@ mod tests {
             Cle::RangerRessourcesAuCoffre,
             Cle::VendreRessources,
             Cle::ToutRanger,
+            Cle::Jeter,
+            Cle::JeterUneRessource,
             Cle::Afficher(Vue::Options),
             Cle::SeSuicider,
             Cle::Afficher(Vue::Forge),
             Cle::Ameliorer(Amelioration::Enclos),
             Cle::Ameliorer(Amelioration::Filets),
             Cle::Ameliorer(Amelioration::Equipe),
+            Cle::Ameliorer(Amelioration::Sac),
             Cle::Constater,
             Cle::Afficher(Vue::Machines),
             Cle::Afficher(Vue::Entrainement),

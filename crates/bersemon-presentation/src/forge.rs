@@ -21,6 +21,7 @@ pub fn effet(amelioration: Amelioration, niveau: u8) -> String {
     match amelioration.effet(niveau) {
         EffetDAmelioration::PlacesAuCamp(places) => format!("camp de {places} places"),
         EffetDAmelioration::PlacesDansLEquipe(places) => format!("équipe de {places} monstres"),
+        EffetDAmelioration::PlacesDansLeSac(places) => format!("sac de {places} places"),
         EffetDAmelioration::ChanceDeCaptureEnPlus(pour_cent) => {
             format!("chance de capture +{pour_cent} %")
         }

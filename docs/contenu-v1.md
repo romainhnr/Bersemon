@@ -1309,3 +1309,20 @@ Textes :
 | Carte, console | Lisière du Bois-Sombre (niveaux 3 à 7), explorée : pluie, encore 42 min |
 | Carte, Discord, description de la zone | Niveaux 3 à 7, explorée ; pluie, encore 42 min |
 | Compteur d'étapes | [Étape : 2/5] Nuit, pluie |
+
+## 33. Capacité du sac
+
+Décidé le 25/10/2026, pour les étapes 125 à 127 (gamedesign.md, section 13.3). Valeurs choisies par l'utilisateur ; coûts de l'amélioration dans la section 9 ; textes proposés sans validation (gamedesign.md, Q111).
+
+Places : 30 au départ, puis 45, 60 et 80 avec l'amélioration du sac. Chaque objet prend une place, l'argent aucune.
+
+| Moment | Texte |
+|---|---|
+| Camp et étape | Sac (18/30) : {contenu}. |
+| Sac qui déborde | Votre sac déborde : {objets} objets pour {places} places. Jetez-en {surplus} pour poursuivre ; ce que vous jetez est perdu. |
+| Console, quantité | Combien en jeter ? |
+| Discord, menus | Jeter un objet / Jeter une ressource ; chaque option : "En jeter un" |
+| Récit | Vous jetez {objets}. |
+| Refus de sortie du coffre | Le sac est plein : rangez des objets au coffre. / Le sac n'a plus que {n} places libres. |
+| Refus de départ | Votre sac déborde de {surplus} objets : rangez-en au coffre avant de partir. |
+| Forge, effet | sac de 45 places |
