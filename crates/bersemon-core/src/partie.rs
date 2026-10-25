@@ -7,7 +7,7 @@ use crate::aleatoire::Aleatoire;
 use crate::ame::{MarchandId, MarchandMort};
 use crate::amelioration::{
     Chantier, ErreurAmelioration, Forge, Ouvrage, PlanDAmelioration, PlanDeFabrication,
-    PlanDuCharme,
+    PlanDesFilets, PlanDuCharme,
 };
 use crate::attaque::{Attaque, AttaqueId, ErreurAttaquesMonstre};
 use crate::beherit::{
@@ -29,7 +29,7 @@ use crate::expedition_automatique::{
     BilanExpeditionAutomatique, ErreurExpeditionAutomatique, Estimation, ExpeditionAutomatique,
     MONSTRES_MAX, MONSTRES_MIN, Protection, verifier_protection,
 };
-use crate::filet::Filet;
+use crate::filet::{Filet, Filets};
 use crate::habilete::{
     BONUS_DU_PILLARD, CHANCES_DU_FOUINEUR, ErreurChangementDHabilete, Habilete, autre_habilete,
 };
@@ -40,7 +40,7 @@ use crate::inventaire::{ErreurObjet, Inventaire, Objet};
 use crate::machines::{ErreurMachine, Machines, reste_avant_le_plafond};
 use crate::marchand::{
     EXPEDITIONS_DE_LOCATION, ErreurMarchand, OffreDeMonstre, PRIX_CAPSULE_D_HABILETE,
-    PRIX_PIERRE_D_EVOLUTION, prix_de_revente, prix_du_soin,
+    PRIX_PIERRE_D_EVOLUTION, prix_de_revente, prix_du_filet, prix_du_soin,
 };
 use crate::monstre::{Monstre, RapportExperience, tirer_shiny, tirer_valeurs_internes};
 use crate::niveau::Niveau;
@@ -662,6 +662,37 @@ impl Partie {
         Ok(())
     }
 
+    /// Au camp, après confirmation : un lot de filets, aussi souvent que le
+    /// joueur le veut, un travail à la fois (section 13.5).
+    pub fn lancer_filets(
+        &mut self,
+        plan: &PlanDesFilets,
+        maintenant: Horodatage,
+    ) -> Result<Chantier, ErreurAmelioration> {
+        self.verifier_filets(plan)?;
+        self.payer_ressources(plan.cout());
+        Ok(self.forge.lancer_filets(plan, maintenant))
+    }
+
+    /// Refuse ce que refuserait `lancer_filets`, sans rien changer.
+    pub fn verifier_filets(&self, plan: &PlanDesFilets) -> Result<(), ErreurAmelioration> {
+        self.forge.verifier_filets()?;
+        let manquantes = self.ressources_manquantes(plan.cout());
+        if !manquantes.is_empty() {
+            return Err(ErreurAmelioration::RessourcesManquantes(manquantes));
+        }
+        Ok(())
+    }
+
+    /// Ceux du sac et du coffre, de chaque qualité.
+    pub fn filets(&self) -> Filets {
+        let mut filets = *self.sac.filets();
+        for (filet, nombre) in self.coffre_du_camp.filets().presents() {
+            filets.ajouter(filet, nombre);
+        }
+        filets
+    }
+
     /// Ceux du sac et du coffre : au camp, ils servent tous (section 12.5).
     pub fn charmes_de_garde(&self) -> u32 {
         self.sac
@@ -700,6 +731,9 @@ impl Partie {
             }
             // Comme tout ce qui est gagné au camp (section 13.3).
             Ouvrage::CharmeDeGarde => self.coffre_du_camp.ajouter_charmes_de_garde(1),
+            Ouvrage::Filets { filet, nombre } => {
+                self.coffre_du_camp.ajouter_filets(*filet, *nombre)
+            }
         }
         Ok(chantier)
     }
@@ -782,6 +816,31 @@ impl Partie {
                         .any(|marchand| marchand.soin() == *soin)
             })
             .collect()
+    }
+
+    /// Malvoise vend le filet de chanvre et le filet lesté (section 14.2).
+    pub fn filets_en_vente(&self) -> Vec<Filet> {
+        if !self.marchand_au_camp {
+            return Vec::new();
+        }
+        Filet::TOUS
+            .into_iter()
+            .filter(|filet| prix_du_filet(*filet).is_some())
+            .collect()
+    }
+
+    /// Au camp, sans confirmation ; les filets vont dans le coffre, comme
+    /// les soins (sections 13.3 et 14.2). Rend le prix payé.
+    pub fn acheter_filets(&mut self, filet: Filet, nombre: u32) -> Result<u32, ErreurMarchand> {
+        self.verifier_marchand()?;
+        let prix = prix_du_filet(filet).ok_or(ErreurMarchand::FiletIndisponible(filet))?;
+        if nombre == 0 {
+            return Err(ErreurMarchand::QuantiteNulle);
+        }
+        let prix = nombre.saturating_mul(prix);
+        self.payer(prix)?;
+        self.coffre_du_camp.ajouter_filets(filet, nombre);
+        Ok(prix)
     }
 
     /// Au camp, sans confirmation ; les soins vont dans le coffre (sections
@@ -2777,6 +2836,43 @@ mod tests {
     }
 
     #[test]
+    fn malvoise_vend_les_filets_de_chanvre_et_lestes_qui_vont_au_coffre() {
+        let mut partie = partie();
+        assert!(partie.filets_en_vente().is_empty());
+        assert_eq!(
+            partie.acheter_filets(Filet::Chanvre, 1),
+            Err(ErreurMarchand::AucunMarchand)
+        );
+        let mut partie = partie_chez_le_marchand();
+        assert_eq!(partie.filets_en_vente(), vec![Filet::Chanvre, Filet::Leste]);
+        assert_eq!(
+            partie.acheter_filets(Filet::Chaines, 1),
+            Err(ErreurMarchand::FiletIndisponible(Filet::Chaines))
+        );
+        assert_eq!(
+            partie.acheter_filets(Filet::Leste, 0),
+            Err(ErreurMarchand::QuantiteNulle)
+        );
+        assert_eq!(
+            partie.acheter_filets(Filet::Leste, 2),
+            Err(ErreurMarchand::ArgentInsuffisant {
+                prix: 60,
+                argent: 50
+            })
+        );
+        partie.ouvrir_coffre(0, 15, None);
+        assert_eq!(partie.acheter_filets(Filet::Chanvre, 2), Ok(20));
+        assert_eq!(partie.acheter_filets(Filet::Leste, 1), Ok(30));
+        // Le sac paie d'abord, comme pour les soins.
+        assert_eq!(partie.sac().argent(), 0);
+        assert_eq!(partie.coffre_du_camp().argent(), 15);
+        assert!(partie.sac().filets().est_vide());
+        assert_eq!(partie.coffre_du_camp().filets().nombre(Filet::Chanvre), 2);
+        assert_eq!(partie.coffre_du_camp().filets().nombre(Filet::Leste), 1);
+        assert_eq!(partie.filets().nombre(Filet::Leste), 1);
+    }
+
+    #[test]
     fn le_sac_paie_avant_le_coffre_et_les_gains_vont_au_coffre() {
         let mut partie = partie_chez_le_marchand();
         partie.ouvrir_coffre(0, 15, None);
@@ -3166,6 +3262,54 @@ mod tests {
         assert_eq!(partie.coffre_du_camp().charmes_de_garde(), 1);
         // Il se forge aussi souvent que le joueur le veut.
         assert!(partie.lancer_charme(&plan, a(2_000)).is_ok());
+    }
+
+    #[test]
+    fn gunther_forge_un_lot_de_filets_qui_va_au_coffre() {
+        let ressource = |id: &str| Ressource::new(RessourceId::new(id), id, 5);
+        let plan = PlanDesFilets::new(
+            Filet::Chaines,
+            5,
+            vec![(ressource("fer"), 4)],
+            Duration::from_secs(3_600),
+        )
+        .unwrap();
+        let mut partie = partie();
+        assert_eq!(
+            partie.verifier_filets(&plan),
+            Err(ErreurAmelioration::AucunArtisan)
+        );
+        partie.forge.accueillir_gunther();
+        assert!(matches!(
+            partie.verifier_filets(&plan),
+            Err(ErreurAmelioration::RessourcesManquantes(_))
+        ));
+        partie
+            .coffre_du_camp
+            .ajouter_ressources(ressource("fer"), 9);
+        let chantier = partie.lancer_filets(&plan, a(0)).unwrap();
+        assert_eq!(
+            chantier.ouvrage,
+            Ouvrage::Filets {
+                filet: Filet::Chaines,
+                nombre: 5
+            }
+        );
+        assert_eq!(chantier.fin, a(3_600));
+        assert_eq!(
+            partie
+                .coffre_du_camp()
+                .nombre_de_ressources(&RessourceId::new("fer")),
+            5
+        );
+        // Un travail à la fois.
+        assert_eq!(
+            partie.verifier_filets(&plan),
+            Err(ErreurAmelioration::ChantierEnCours)
+        );
+        partie.constater_travail(a(3_600)).unwrap();
+        assert_eq!(partie.coffre_du_camp().filets().nombre(Filet::Chaines), 5);
+        assert!(partie.lancer_filets(&plan, a(4_000)).is_ok());
     }
 
     #[test]

@@ -85,6 +85,9 @@ pub fn erreur_marchand(erreur: &ErreurMarchand) -> String {
         ),
         ErreurMarchand::QuantiteNulle => "Choisissez au moins un objet.".to_string(),
         ErreurMarchand::SoinIndisponible(_) => "Ce soin n'est pas encore en vente.".to_string(),
+        ErreurMarchand::FiletIndisponible(_) => {
+            "Malvoise ne vend pas ce filet : seul Gunther le forge.".to_string()
+        }
         ErreurMarchand::CapsuleDejaPossedee => {
             "Vous avez déjà cette capsule : elle sert sans s'user.".to_string()
         }

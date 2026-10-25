@@ -17,7 +17,8 @@ use std::time::Duration;
 use crate::aleatoire::Aleatoire;
 use crate::ame::{Gardien, MarchandId, MarchandMort};
 use crate::amelioration::{
-    Amelioration, Chantier, ErreurAmelioration, PlanDAmelioration, PlanDeFabrication, PlanDuCharme,
+    Amelioration, Chantier, ErreurAmelioration, PlanDAmelioration, PlanDeFabrication,
+    PlanDesFilets, PlanDuCharme,
 };
 use crate::attaque::{Attaque, AttaqueId, ErreurAttaquesMonstre};
 use crate::beherit::ErreurBeherit;
@@ -96,6 +97,9 @@ pub enum Choix {
     /// Au camp, chez le marchand, sans confirmation : un soin de
     /// `Partie::soins_en_vente` (section 14.2).
     AcheterSoins(Soin, u32),
+    /// Au camp, chez Malvoise, sans confirmation : un filet de
+    /// `Partie::filets_en_vente` (section 14.2).
+    AcheterFilets(Filet, u32),
     /// Au camp, chez le marchand, après confirmation, comme un relâcher
     /// (section 14.2).
     Vendre(Emplacement),
@@ -151,6 +155,9 @@ pub enum Choix {
     /// Au camp, après confirmation : Gunther forge un charme de garde
     /// (section 13.5).
     FabriquerCharme,
+    /// Au camp, après confirmation : Gunther forge un lot de filets de
+    /// cette qualité (section 13.5).
+    FabriquerFilets(Filet),
     /// Au camp : le joueur constate le travail fini de Gunther.
     ConstaterTravail,
     /// Au camp, sans confirmation : Ansgar tend une ligne (section 13.8).
@@ -340,6 +347,7 @@ pub enum Confirmation {
     LancerFabrication(Box<PlanDeFabrication>),
     /// Les ressources du charme seront prises (section 13.5).
     FabriquerCharme(Box<PlanDuCharme>),
+    FabriquerFilets(Box<PlanDesFilets>),
     /// L'évolution est définitive, et consomme la pierre éventuelle (section
     /// 5.4).
     Evoluer {
@@ -564,6 +572,10 @@ pub enum Evenement {
         plan: Box<PlanDuCharme>,
         chantier: Chantier,
     },
+    FiletsLances {
+        plan: Box<PlanDesFilets>,
+        chantier: Chantier,
+    },
     /// Le niveau construit compte désormais, ou l'objet forgé rejoint
     /// l'équipement du héros.
     TravailConstate(Chantier),
@@ -610,6 +622,12 @@ pub enum Evenement {
     /// Prix payé, en pièces d'argent.
     SoinsAchetes {
         soin: Soin,
+        nombre: u32,
+        prix: u32,
+    },
+    /// Prix payé, en pièces d'argent.
+    FiletsAchetes {
+        filet: Filet,
         nombre: u32,
         prix: u32,
     },
@@ -1390,6 +1408,19 @@ impl EnJeu {
                 sauvegarder(&self.partie, contexte.depot, evenements);
                 Ok(Reponse::Faite)
             }
+            Choix::AcheterFilets(filet, nombre) => {
+                let prix = self
+                    .partie
+                    .acheter_filets(*filet, *nombre)
+                    .map_err(ErreurChoix::Marchand)?;
+                evenements.push(Evenement::FiletsAchetes {
+                    filet: *filet,
+                    nombre: *nombre,
+                    prix,
+                });
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
             Choix::AcheterSoins(soin, nombre) => {
                 let prix = self
                     .partie
@@ -1684,6 +1715,32 @@ impl EnJeu {
                     .lancer_fabrication(plan, contexte.maintenant)
                     .map_err(ErreurChoix::Amelioration)?;
                 evenements.push(Evenement::FabricationLancee {
+                    plan: Box::new(plan.clone()),
+                    chantier,
+                });
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::FabriquerFilets(filet) => {
+                let plan = contexte
+                    .contenu
+                    .plan_des_filets(*filet)
+                    .ok_or(ErreurChoix::PlanInconnu)?;
+                if !confirme {
+                    // Un travail impossible est refusé sans demander de
+                    // confirmation.
+                    self.partie
+                        .verifier_filets(plan)
+                        .map_err(ErreurChoix::Amelioration)?;
+                    return Ok(Reponse::a_confirmer(Confirmation::FabriquerFilets(
+                        Box::new(plan.clone()),
+                    )));
+                }
+                let chantier = self
+                    .partie
+                    .lancer_filets(plan, contexte.maintenant)
+                    .map_err(ErreurChoix::Amelioration)?;
+                evenements.push(Evenement::FiletsLances {
                     plan: Box::new(plan.clone()),
                     chantier,
                 });
@@ -4682,6 +4739,90 @@ mod tests {
         assert_eq!(partie.forge().chantier(), None);
         let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
         assert_eq!(sauvegarde.collection().tailles().camp, 40);
+    }
+
+    #[test]
+    fn acheter_des_filets_puis_en_faire_forger_un_lot() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let ressource = |id: &str| contenu.ressource(&RessourceId::new(id)).unwrap();
+        let mut etat = etat_de(&partie(&contenu));
+        etat.sac = Inventaire::default();
+        etat.marchand_au_camp = true;
+        etat.forge = Forge::restaurer(true, Default::default(), None).unwrap();
+        etat.coffre_du_camp = Inventaire::new(40, 0, Vec::new())
+            .avec_ressources(ressource("croc-de-loup"), 3)
+            .avec_ressources(ressource("plume-de-corbeau"), 4);
+        let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
+        let evenements = repondre_a_l_heure(
+            &mut deroulement,
+            Choix::AcheterFilets(Filet::Leste, 1),
+            &contenu,
+            &depot,
+            a(1_000),
+        )
+        .unwrap();
+        assert_eq!(
+            evenements,
+            vec![Evenement::FiletsAchetes {
+                filet: Filet::Leste,
+                nombre: 1,
+                prix: 30
+            }]
+        );
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert_eq!(sauvegarde.argent(), 10);
+        assert_eq!(sauvegarde.coffre_du_camp().filets().nombre(Filet::Leste), 1);
+        // Gunther forge le chanvre : 3 crocs de loup et 3 plumes de corbeau,
+        // 30 minutes, après confirmation.
+        let forger = Choix::FabriquerFilets(Filet::Chanvre);
+        repondre_a_l_heure(&mut deroulement, forger, &contenu, &depot, a(1_000)).unwrap();
+        assert!(matches!(
+            deroulement.attente(),
+            Attente::Confirmation(Confirmation::FabriquerFilets(plan))
+                if plan.filet() == Filet::Chanvre && plan.nombre() == 5
+        ));
+        let evenements =
+            repondre_a_l_heure(&mut deroulement, Choix::Oui, &contenu, &depot, a(1_000)).unwrap();
+        assert!(matches!(
+            &evenements[..],
+            [Evenement::FiletsLances { chantier, .. }] if chantier.fin == a(2_800)
+        ));
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        let restants: Vec<(&str, u32)> = sauvegarde
+            .coffre_du_camp()
+            .ressources()
+            .iter()
+            .map(|(ressource, nombre)| (ressource.id().as_str(), *nombre))
+            .collect();
+        assert_eq!(restants, vec![("plume-de-corbeau", 1)]);
+        let evenements = repondre_a_l_heure(
+            &mut deroulement,
+            Choix::ConstaterTravail,
+            &contenu,
+            &depot,
+            a(2_800),
+        )
+        .unwrap();
+        assert!(matches!(&evenements[..], [Evenement::TravailConstate(_)]));
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert_eq!(
+            sauvegarde.coffre_du_camp().filets().nombre(Filet::Chanvre),
+            5
+        );
+        // Plus assez de ressources pour un autre lot : refus sans confirmation.
+        assert!(matches!(
+            repondre_a_l_heure(
+                &mut deroulement,
+                Choix::FabriquerFilets(Filet::Chanvre),
+                &contenu,
+                &depot,
+                a(3_000)
+            ),
+            Err(ErreurChoix::Amelioration(
+                ErreurAmelioration::RessourcesManquantes(_)
+            ))
+        ));
     }
 
     #[test]

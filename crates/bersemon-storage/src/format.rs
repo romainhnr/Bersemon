@@ -253,6 +253,9 @@ struct ChantierV14 {
     /// objet (section 13.5).
     #[serde(default)]
     charme: bool,
+    /// Depuis la version 27 : un lot de filets (section 13.5).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    filets: Option<FiletV27>,
     /// Secondes depuis le 1er janvier 1970 (UTC).
     fin: u64,
 }
@@ -612,6 +615,7 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV14 {
                     niveau: *niveau,
                     objet: None,
                     charme: false,
+                    filets: None,
                     fin: chantier.fin.secondes(),
                 },
                 Ouvrage::Objet(objet) => ChantierV14 {
@@ -619,6 +623,7 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV14 {
                     niveau: 0,
                     objet: Some(objet.id().as_str().to_string()),
                     charme: false,
+                    filets: None,
                     fin: chantier.fin.secondes(),
                 },
                 Ouvrage::CharmeDeGarde => ChantierV14 {
@@ -626,6 +631,18 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV14 {
                     niveau: 0,
                     objet: None,
                     charme: true,
+                    filets: None,
+                    fin: chantier.fin.secondes(),
+                },
+                Ouvrage::Filets { filet, nombre } => ChantierV14 {
+                    amelioration: None,
+                    niveau: 0,
+                    objet: None,
+                    charme: false,
+                    filets: Some(FiletV27 {
+                        filet: filet.id().to_string(),
+                        nombre: *nombre,
+                    }),
                     fin: chantier.fin.secondes(),
                 },
             }),
@@ -841,13 +858,22 @@ pub(crate) fn vers_partie(
     let chantier = sauvegarde
         .chantier
         .map(|chantier| {
-            let ouvrage = match (chantier.amelioration, chantier.objet, chantier.charme) {
-                (Some(amelioration), None, false) => Ouvrage::Amelioration {
+            let ouvrage = match (
+                chantier.amelioration,
+                chantier.objet,
+                chantier.charme,
+                chantier.filets,
+            ) {
+                (Some(amelioration), None, false, None) => Ouvrage::Amelioration {
                     amelioration: lire_amelioration(&amelioration)?,
                     niveau: chantier.niveau,
                 },
-                (None, Some(objet), false) => Ouvrage::Objet(vers_objet(&objet, catalogue)?),
-                (None, None, true) => Ouvrage::CharmeDeGarde,
+                (None, Some(objet), false, None) => Ouvrage::Objet(vers_objet(&objet, catalogue)?),
+                (None, None, true, None) => Ouvrage::CharmeDeGarde,
+                (None, None, false, Some(lot)) if lot.nombre > 0 => Ouvrage::Filets {
+                    filet: lire_filet(&lot.filet)?,
+                    nombre: lot.nombre,
+                },
                 _ => {
                     return Err(ErreurSauvegarde::Incoherente(
                         "travail de Gunther sans ouvrage, ou double".to_string(),

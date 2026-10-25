@@ -1119,4 +1119,9 @@ Textes proposés sans validation (gamedesign.md, Q102) :
 | Combat, Discord | Filet de chanvre x10 (45 %) |
 | Sac et coffre | 10 filets de chanvre, 1 filet lesté, 2 filets de chaînes |
 | Refus | Plus aucun filet de ce genre. / Vous n'avez plus de filet pour capturer. |
+| Achat chez Malvoise | Vous achetez 2 filets de chanvre pour {prix}. Ils vont dans le coffre. |
+| Refus d'achat | Malvoise ne vend pas ce filet : seul Gunther le forge. |
+| Forge, question | Faire forger 5 filets lestés (chance de capture x1,5) ? Gunther prendra {coût}, et aura fini dans {durée}. Un travail lancé ne s'annule pas. |
+| Forge, lancement | Vous remettez à Gunther {coût}. Il se met à forger 5 filets lestés. Il aura fini dans {durée}. |
+| Forge, constat | Gunther a fini : 5 filets lestés. Ils vont dans le coffre. |
 

@@ -11,7 +11,9 @@ use std::ops::RangeInclusive;
 use std::time::Duration;
 
 use crate::ame::{Gardien, MarchandId, MarchandMort};
-use crate::amelioration::{Amelioration, PlanDAmelioration, PlanDeFabrication, PlanDuCharme};
+use crate::amelioration::{
+    Amelioration, PlanDAmelioration, PlanDeFabrication, PlanDesFilets, PlanDuCharme,
+};
 use crate::attaque::{Attaque, AttaqueId, Categorie, EffetSecondaire};
 use crate::beherit::Invocation;
 use crate::capsule::Capsule;
@@ -21,6 +23,7 @@ use crate::espece::{AttaqueApprise, Espece, EspeceId, Rarete, Role};
 use crate::evolution::{ConditionEvolution, Evolution};
 use crate::expedition::ParametresCoffre;
 use crate::expedition_automatique::ParametresExpeditionAutomatique;
+use crate::filet::Filet;
 use crate::habilete::Habilete;
 use crate::heros::Classe;
 use crate::humain::{Humain, HumainId, IaHumain};
@@ -208,6 +211,7 @@ pub struct ContenuV1 {
     plans_d_amelioration: Vec<PlanDAmelioration>,
     plans_de_fabrication: Vec<PlanDeFabrication>,
     plan_du_charme: PlanDuCharme,
+    plans_des_filets: Vec<PlanDesFilets>,
     peche: ParametresPeche,
     invocation: Invocation,
     tour: TourSansFond,
@@ -625,6 +629,20 @@ impl ContenuV1 {
             Duration::from_secs(MINUTES_DU_CHARME * 60),
         )
         .expect("plan du charme conforme aux règles");
+        let plans_des_filets = PLANS_DES_FILETS
+            .iter()
+            .map(|(filet, cout, minutes)| {
+                PlanDesFilets::new(
+                    *filet,
+                    FILETS_PAR_LOT,
+                    cout.iter()
+                        .map(|(id, nombre)| (ressource(id), *nombre))
+                        .collect(),
+                    Duration::from_secs(minutes * 60),
+                )
+                .expect("plan des filets conforme aux règles")
+            })
+            .collect();
         Self {
             especes,
             zones,
@@ -633,6 +651,7 @@ impl ContenuV1 {
             plans_d_amelioration,
             plans_de_fabrication,
             plan_du_charme,
+            plans_des_filets,
             peche,
             invocation,
             tour,
@@ -709,6 +728,18 @@ impl ContenuV1 {
     /// Le charme de garde, que Gunther forge à l'unité (section 13.5).
     pub fn plan_du_charme(&self) -> &PlanDuCharme {
         &self.plan_du_charme
+    }
+
+    /// Les lots de filets que Gunther forge, du plus simple au plus
+    /// efficace (section 13.5).
+    pub fn plans_des_filets(&self) -> &[PlanDesFilets] {
+        &self.plans_des_filets
+    }
+
+    pub fn plan_des_filets(&self, filet: Filet) -> Option<&PlanDesFilets> {
+        self.plans_des_filets
+            .iter()
+            .find(|plan| plan.filet() == filet)
     }
 
     pub fn plan_de_fabrication(&self, objet: &ObjetDEquipementId) -> Option<&PlanDeFabrication> {
@@ -2884,6 +2915,28 @@ const PLANS_D_AMELIORATION: [FichePlan; 13] = [
 /// Section 20 de docs/contenu-v1.md : le charme de garde, un par travail.
 const COUT_DU_CHARME: [(&str, u32); 2] = [("os-de-squelette", 3), ("fragment-d-armure", 3)];
 const MINUTES_DU_CHARME: u64 = 30;
+
+/// Section 26 de docs/contenu-v1.md : chaque lot de 5 filets, son coût et
+/// sa durée en minutes.
+const FILETS_PAR_LOT: u32 = 5;
+type FicheDesFilets = (Filet, &'static [(&'static str, u32)], u64);
+const PLANS_DES_FILETS: [FicheDesFilets; 3] = [
+    (
+        Filet::Chanvre,
+        &[("croc-de-loup", 3), ("plume-de-corbeau", 3)],
+        30,
+    ),
+    (
+        Filet::Leste,
+        &[("fragment-d-armure", 3), ("os-de-squelette", 3)],
+        60,
+    ),
+    (
+        Filet::Chaines,
+        &[("eclat-de-gargouille", 3), ("pierre-de-troll", 2)],
+        120,
+    ),
+];
 
 /// Section 11 de docs/contenu-v1.md. Les bonus sont en pourcentage, dans
 /// l'ordre Attaque, Défense, Attaque spéciale, Défense spéciale, Vitesse :

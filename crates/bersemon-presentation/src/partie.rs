@@ -23,7 +23,9 @@ use bersemon_core::zone::Zone;
 use crate::boosters::{boosters, eclats_d_astre, question_shiny};
 use crate::expeditions_automatiques::question_de_rappel;
 use crate::filets::liste_de_filets;
-use crate::forge::{question_de_fabrication, question_de_lancement, question_du_charme};
+use crate::forge::{
+    question_de_fabrication, question_de_lancement, question_des_filets, question_du_charme,
+};
 use crate::monstres::{decrire_stats, effet_d_habilete, ligne_monstre, nom, types_de};
 use crate::soins::{liste_de_soins, question_du_soin_perdu};
 
@@ -494,6 +496,7 @@ pub fn question_de_confirmation(confirmation: &Confirmation) -> String {
         ),
         Confirmation::LancerAmelioration(plan) => question_de_lancement(plan),
         Confirmation::LancerFabrication(plan) => question_de_fabrication(plan),
+        Confirmation::FabriquerFilets(plan) => question_des_filets(plan),
         Confirmation::Evoluer {
             monstre,
             vers,

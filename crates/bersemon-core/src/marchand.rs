@@ -6,6 +6,7 @@ use std::fmt;
 
 use crate::collection::ErreurCollection;
 use crate::espece::{Espece, Rarete};
+use crate::filet::Filet;
 use crate::monstre::Monstre;
 use crate::niveau::Niveau;
 use crate::soin::Soin;
@@ -17,6 +18,16 @@ pub fn prix_du_soin(soin: Soin) -> u32 {
         Soin::Remede => 25,
         Soin::GrandePotion => 60,
         Soin::Elixir => 150,
+    }
+}
+
+/// En pièces d'argent ; le filet de chaînes ne s'achète pas
+/// (docs/contenu-v1.md, section 26).
+pub fn prix_du_filet(filet: Filet) -> Option<u32> {
+    match filet {
+        Filet::Chanvre => Some(10),
+        Filet::Leste => Some(30),
+        Filet::Chaines => None,
     }
 }
 
@@ -106,6 +117,8 @@ pub enum ErreurMarchand {
     /// Le marchand ne vend ce soin qu'une fois l'âme de son marchand
     /// recueillie (section 14.2).
     SoinIndisponible(Soin),
+    /// Malvoise ne vend pas le filet de chaînes (section 14.2).
+    FiletIndisponible(Filet),
     /// Une capsule sert sans s'user : en racheter une ne sert à rien.
     CapsuleDejaPossedee,
     /// Le joueur ne porte pas l'âme de ce marchand (section 14.2).
@@ -139,6 +152,9 @@ impl fmt::Display for ErreurMarchand {
             ErreurMarchand::QuantiteNulle => write!(f, "il faut acheter au moins un objet"),
             ErreurMarchand::SoinIndisponible(soin) => {
                 write!(f, "le marchand ne vend pas encore ce soin : {soin:?}")
+            }
+            ErreurMarchand::FiletIndisponible(filet) => {
+                write!(f, "le marchand ne vend pas ce filet : {filet:?}")
             }
             ErreurMarchand::CapsuleDejaPossedee => write!(f, "cette capsule est déjà obtenue"),
             ErreurMarchand::AmeNonPortee => write!(f, "le joueur ne porte pas cette âme"),

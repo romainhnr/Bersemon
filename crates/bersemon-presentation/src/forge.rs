@@ -3,7 +3,7 @@
 
 use bersemon_core::amelioration::{
     Amelioration, Chantier, EffetDAmelioration, ErreurAmelioration, Ouvrage, PlanDAmelioration,
-    PlanDeFabrication, PlanDuCharme,
+    PlanDeFabrication, PlanDesFilets, PlanDuCharme,
 };
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::expedition_automatique::PROTECTION_DU_CHARME;
@@ -13,6 +13,7 @@ use bersemon_core::ressource::Ressource;
 
 use crate::equipement::objet_et_bonus;
 use crate::expeditions_automatiques::duree;
+use crate::filets::{effet_du_filet, filets};
 use crate::machines::{effet_de_la_cour, effet_des_pieges};
 use crate::partie::{enumerer, ressources};
 
@@ -46,6 +47,7 @@ pub fn ouvrage(ouvrage: &Ouvrage) -> String {
         } => niveau_d_amelioration(*amelioration, *niveau),
         Ouvrage::Objet(objet) => objet_et_bonus(objet),
         Ouvrage::CharmeDeGarde => "Charme de garde".to_string(),
+        Ouvrage::Filets { filet, nombre } => filets(*filet, *nombre),
     }
 }
 
@@ -105,7 +107,38 @@ pub fn constat(chantier: &Chantier) -> String {
         Ouvrage::CharmeDeGarde => {
             "Gunther a fini : un charme de garde. Il va dans le coffre.".to_string()
         }
+        Ouvrage::Filets { filet, nombre } => format!(
+            "Gunther a fini : {}. Ils vont dans le coffre.",
+            filets(*filet, *nombre)
+        ),
     }
+}
+
+/// "5 filets lestés (chance de capture x1,5)".
+pub fn lot_de_filets(plan: &PlanDesFilets) -> String {
+    format!(
+        "{} ({})",
+        filets(plan.filet(), plan.nombre()),
+        effet_du_filet(plan.filet())
+    )
+}
+
+pub fn question_des_filets(plan: &PlanDesFilets) -> String {
+    format!(
+        "Faire forger {} ? Gunther prendra {}, et aura fini dans {}. Un travail lancé ne s'annule pas.",
+        lot_de_filets(plan),
+        cout(plan.cout()),
+        duree(plan.duree())
+    )
+}
+
+pub fn lancement_des_filets(plan: &PlanDesFilets) -> String {
+    format!(
+        "Vous remettez à Gunther {}. Il se met à forger {}. Il aura fini dans {}.",
+        cout(plan.cout()),
+        filets(plan.filet(), plan.nombre()),
+        duree(plan.duree())
+    )
 }
 
 /// "Charme de garde : 50 % de protection au monstre protégé d'une
@@ -235,6 +268,7 @@ pub fn erreur_amelioration(erreur: &ErreurAmelioration) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bersemon_core::filet::Filet;
 
     #[test]
     fn la_question_dit_le_cout_la_duree_et_l_effet() {
@@ -252,6 +286,31 @@ mod tests {
         assert_eq!(
             niveau_d_amelioration(filets.amelioration(), filets.niveau()),
             "Filets, niveau 3 (chance de capture +30 %)"
+        );
+    }
+
+    #[test]
+    fn un_lot_de_filets_se_demande_se_lance_et_se_constate() {
+        let contenu = ContenuV1::new();
+        let plan = contenu.plan_des_filets(Filet::Leste).unwrap();
+        assert_eq!(
+            question_des_filets(plan),
+            "Faire forger 5 filets lestés (chance de capture x1,5) ? Gunther prendra Fragment d'armure (3) et Os de squelette (3), et aura fini dans 1 h. Un travail lancé ne s'annule pas."
+        );
+        assert_eq!(
+            lancement_des_filets(plan),
+            "Vous remettez à Gunther Fragment d'armure (3) et Os de squelette (3). Il se met à forger 5 filets lestés. Il aura fini dans 1 h."
+        );
+        let chantier = Chantier {
+            ouvrage: Ouvrage::Filets {
+                filet: Filet::Leste,
+                nombre: 5,
+            },
+            fin: Horodatage::depuis_secondes(3_600),
+        };
+        assert_eq!(
+            constat(&chantier),
+            "Gunther a fini : 5 filets lestés. Ils vont dans le coffre."
         );
     }
 

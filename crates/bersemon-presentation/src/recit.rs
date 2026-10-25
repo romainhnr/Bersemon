@@ -15,7 +15,9 @@ use crate::equipement::{nom_de_place, objet_et_bonus};
 use crate::erreurs::erreur_sauvegarde;
 use crate::expeditions_automatiques;
 use crate::filets::filets;
-use crate::forge::{constat, lancement, lancement_de_fabrication, lancement_du_charme};
+use crate::forge::{
+    constat, lancement, lancement_de_fabrication, lancement_des_filets, lancement_du_charme,
+};
 use crate::machines;
 use crate::mise_en_valeur::important;
 use crate::monstres::{effet_d_habilete, nom_en_valeur, nom_sauvage};
@@ -345,6 +347,18 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             format!("Vous achetez {} pour {}.", soins(*soin, *nombre), argent(*prix)),
             false,
         ),
+        Evenement::FiletsAchetes {
+            filet,
+            nombre,
+            prix,
+        } => (
+            format!(
+                "Vous achetez {} pour {}. Ils vont dans le coffre.",
+                filets(*filet, *nombre),
+                argent(*prix)
+            ),
+            false,
+        ),
         Evenement::MonstreVendu { monstre, prix } => (
             format!(
                 "Vous vendez {} à Malvoise pour {}.",
@@ -461,6 +475,7 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
         Evenement::PriseRelachee(monstre) => (peche::prise_relachee(monstre), false),
         Evenement::FabricationLancee { plan, .. } => (lancement_de_fabrication(plan), false),
         Evenement::CharmeLance { plan, .. } => (lancement_du_charme(plan), false),
+        Evenement::FiletsLances { plan, .. } => (lancement_des_filets(plan), false),
         Evenement::ObjetEquipe {
             place,
             objet,

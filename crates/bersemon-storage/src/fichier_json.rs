@@ -660,6 +660,43 @@ mod tests {
     }
 
     #[test]
+    fn un_lot_de_filets_en_fabrication_se_relit() {
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        valeur["chantier"] = serde_json::json!({
+            "filets": {"filet": "filet-de-chaines", "nombre": 5},
+            "fin": 9_000
+        });
+        let partie = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        assert_eq!(
+            partie.forge().chantier().map(|chantier| &chantier.ouvrage),
+            Some(&Ouvrage::Filets {
+                filet: Filet::Chaines,
+                nombre: 5
+            })
+        );
+        let relue = charger_texte(&serde_json::to_string(&format::depuis_partie(&partie)).unwrap())
+            .unwrap()
+            .unwrap();
+        assert_eq!(relue, partie);
+        // Un lot vide, un filet inconnu ou un lot avec un charme : refusés.
+        for chantier in [
+            serde_json::json!({"filets": {"filet": "filet-leste", "nombre": 0}, "fin": 1}),
+            serde_json::json!({"filets": {"filet": "filet-d-or", "nombre": 5}, "fin": 1}),
+            serde_json::json!({
+                "filets": {"filet": "filet-leste", "nombre": 5},
+                "charme": true,
+                "fin": 1
+            }),
+        ] {
+            valeur["chantier"] = chantier;
+            assert!(matches!(
+                charger_texte(&valeur.to_string()),
+                Err(ErreurSauvegarde::Incoherente(_))
+            ));
+        }
+    }
+
+    #[test]
     fn un_charme_en_fabrication_se_relit() {
         let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
         valeur["chantier"] = serde_json::json!({"charme": true, "fin": 9_000});
