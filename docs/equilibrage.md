@@ -1,6 +1,6 @@
 # Équilibrage de Bersemon
 
-Ce document décrit l'outil d'équilibrage, la stratégie du joueur automatique et ses limites, puis les résultats mesurés le 25/10/2026 (étape 116), les constats qu'on en tire et les réglages proposés. Les décisions qui en découlent sont reportées dans docs/gamedesign.md (section 16, Q107, et section 17).
+Ce document décrit l'outil d'équilibrage, la stratégie du joueur automatique et ses limites, puis les résultats mesurés le 25/10/2026 (étape 116), les constats qu'on en tire, les variantes mesurées et les réglages retenus à l'étape 117. Les décisions sont reportées dans docs/gamedesign.md (sections 5.3, 9.4 et 10.7, Q107 et Q108, section 17).
 
 ## 1. L'outil
 
@@ -24,7 +24,7 @@ Il n'emploie pas les expéditions automatiques, la cour d'entraînement, les pi�
 
 ## 3. Constats
 
-Mesurés sur 100 parties par classe ; le rapport complet est à la section 6.
+Mesurés sur 100 parties par classe à l'étape 116, avant les réglages de l'étape 117 ; le rapport de ce moment est dans l'historique git du document, celui d'après les réglages à la section 6.
 
 1. Durée : il faut une médiane de 55 à 64 expéditions pour abattre le Margrave (Guerrier 55, Assassin 58, Mage 61, Templier 64), avec 9 à 13 défaites par partie, presque toutes contre les combats de fin de zone. Aucune durée cible n'est fixée (Q107).
 2. Progression : l'équipe entre dans chaque zone vers le premier tiers de ses niveaux et bat chaque Apôtre à peu près à son niveau. Les zones demandent toutes 11 à 13 expéditions : la courbe d'expérience suit la difficulté.
@@ -51,16 +51,18 @@ Chaque variante change une valeur du noyau, le temps de la mesure, sur 100 parti
 
 Avec les trois réglages réunis, l'Abbesse demande 2,5 tentatives (53 % au premier essai) et le Margrave 2,0 (63 %) : les trois Apôtres se valent, et les classes vont de 54 à 61 expéditions. Avec des rares qui lâchent toujours leur ressource, 70 % des parties trouvent un Croc de basilic, 41 % une Écaille de vouivre et 33 % un Crin de chimère, contre 32 %, 20 % et 14 %.
 
-## 5. Réglages proposés
+## 5. Réglages retenus (étape 117)
 
-En attente de la décision de l'utilisateur (Q107) :
+Choix de l'utilisateur :
 
-- le Baron pendu au niveau 20, le maximum de la Vallée, les Apôtres suivants restant 2 niveaux au-dessus du maximum de leur zone ;
+- le Baron pendu au niveau 20, le maximum de la Vallée, les Apôtres suivants restant 2 niveaux au-dessus du maximum de leur zone. À ce niveau, il ne connaît qu'une attaque Obscur, Étreinte obscure : Hurlement des abysses vient au niveau 21. C'est de là que vient l'essentiel du gain : au niveau 20 avec ses deux attaques Obscur (Hurlement des abysses au niveau 20), il demandait encore 3,8 tentatives, 22 % au premier essai ;
 - les monstres du Bourreau aux niveaux 13, 13 et 14, comme ceux des autres humains de fin de zone ;
-- la Secousse (Sol, physique, 60, précision 100) au niveau 7 de la famille de la Mandragore, à la place du Cri strident ;
-- les ressources rares : les laisser lentes à réunir, ou faire lâcher leur ressource aux monstres rares à chaque victoire.
+- Secousse (Sol, physique, 60, précision 100) au niveau 7 de la famille de la Mandragore, à la place du Cri strident ;
+- les ressources rares inchangées : l'équipe de 4 et les objets des paliers 2 et 3 restent des objectifs à farmer.
 
-## 6. Rapport de référence
+Résultat, mesuré sur 100 parties par classe : 54 à 61 expéditions selon la classe (Guerrier 54, Assassin 56, Mage 58, Templier 61), 7 à 10 défaites par partie ; le Baron demande 2,6 tentatives (36 % au premier essai), l'Abbesse 2,5 (53 %), le Margrave 2,0 (63 %), le Bourreau 2,0 (38 %). Les chiffres sont ceux de la dernière ligne de la section 4 : le code retenu rejoue exactement la variante mesurée.
+
+## 6. Rapport de référence, après l'étape 117
 
 100 parties par classe, du héros à la chute du Margrave de givre, jouées par le joueur automatique (crates/bersemon-equilibrage). Le niveau de l'équipe est la moyenne des monstres de plus haut niveau, équipe et camp réunis, autant qu'en compte l'équipe.
 
@@ -68,10 +70,10 @@ En attente de la décision de l'utilisateur (Q107) :
 
 | Classe | Terminées | Expéditions (médiane) | Défaites (moyenne) | Niveau final de l'équipe | Achats chez Malvoise | Argent à la fin | Équipe de 4 dès l'expédition | Objets forgés | Choix refusés |
 |---|---|---|---|---|---|---|---|---|---|
-| Guerrier | 100/100 | 55 | 11.5 | 37.8 | 2074 | 1674 | jamais | 2.0 | 0.0 |
-| Mage | 100/100 | 61 | 13.4 | 38.3 | 2313 | 1575 | jamais | 2.4 | 0.0 |
-| Templier | 100/100 | 64 | 10.0 | 37.5 | 1908 | 1920 | jamais | 2.1 | 0.0 |
-| Assassin | 100/100 | 58 | 8.8 | 38.0 | 2051 | 1883 | jamais | 2.5 | 0.0 |
+| Guerrier | 100/100 | 54 | 7.9 | 37.7 | 1925 | 1816 | jamais | 2.6 | 0.0 |
+| Mage | 100/100 | 58 | 10.3 | 38.2 | 2238 | 1549 | jamais | 2.7 | 0.0 |
+| Templier | 100/100 | 61 | 7.6 | 37.8 | 1988 | 1935 | jamais | 2.5 | 0.0 |
+| Assassin | 100/100 | 56 | 7.1 | 37.8 | 1876 | 1985 | jamais | 2.7 | 0.0 |
 
 ### Zones
 
@@ -79,11 +81,11 @@ Moyennes par expédition, sauf mention. L'argent, les filets et les potions sont
 
 | Zone (niveaux) | Expéditions par partie | Menées au bout | Défaites | Rentrées | Niveau à la première | Niveaux gagnés | Argent | Filets | Potions | Nouvelles espèces |
 |---|---|---|---|---|---|---|---|---|---|---|
-| Lisière du Bois-Sombre (3 à 7) | 13.3 | 36 % | 4 % | 60 % | 5.0 | 0.31 | 13 | 0.33 | -0.43 | 0.30 |
-| Marais des Pendus (8 à 13) | 12.0 | 45 % | 17 % | 38 % | 9.1 | 0.60 | 30 | 0.46 | 0.65 | 0.36 |
-| Vallée des Brumes (14 à 20) | 11.8 | 44 % | 33 % | 23 % | 16.3 | 0.58 | 30 | 1.55 | 1.71 | 0.32 |
-| Abbaye des Cendres (21 à 27) | 11.8 | 30 % | 18 % | 52 % | 23.1 | 0.62 | 78 | 1.40 | 1.89 | 0.51 |
-| Col du Givre-Noir (28 à 36) | 11.6 | 17 % | 20 % | 63 % | 30.5 | 0.64 | 107 | 2.20 | 2.28 | 0.58 |
+| Lisière du Bois-Sombre (3 à 7) | 13.4 | 37 % | 4 % | 59 % | 5.0 | 0.31 | 13 | 0.33 | -0.45 | 0.30 |
+| Marais des Pendus (8 à 13) | 11.3 | 56 % | 12 % | 32 % | 9.1 | 0.62 | 32 | 0.42 | 0.49 | 0.39 |
+| Vallée des Brumes (14 à 20) | 11.3 | 69 % | 15 % | 17 % | 16.1 | 0.62 | 41 | 1.01 | 1.03 | 0.34 |
+| Abbaye des Cendres (21 à 27) | 11.0 | 29 % | 22 % | 49 % | 23.1 | 0.69 | 77 | 2.22 | 2.58 | 0.57 |
+| Col du Givre-Noir (28 à 36) | 11.5 | 17 % | 20 % | 63 % | 30.7 | 0.63 | 102 | 2.26 | 2.36 | 0.59 |
 
 ### Zones par classe
 
@@ -91,22 +93,22 @@ Expéditions par partie, et entre parenthèses les défaites par partie.
 
 | Classe | Lisière du Bois-Sombre | Marais des Pendus | Vallée des Brumes | Abbaye des Cendres | Col du Givre-Noir |
 |---|---|---|---|---|---|
-| Guerrier | 12.4 (0.2) | 10.2 (1.7) | 12.1 (5.3) | 10.8 (2.0) | 10.7 (2.3) |
-| Mage | 13.4 (0.4) | 11.4 (1.5) | 11.6 (5.5) | 12.1 (2.8) | 13.1 (3.2) |
-| Templier | 14.8 (0.6) | 15.3 (3.2) | 11.4 (2.6) | 13.1 (2.1) | 10.2 (1.4) |
-| Assassin | 12.7 (0.7) | 11.0 (1.8) | 11.9 (2.0) | 11.2 (1.9) | 12.3 (2.4) |
+| Guerrier | 12.4 (0.2) | 10.3 (1.2) | 11.4 (2.3) | 10.6 (2.1) | 10.6 (2.0) |
+| Mage | 13.4 (0.4) | 11.5 (1.2) | 11.3 (2.7) | 10.5 (3.1) | 12.4 (2.9) |
+| Templier | 15.0 (0.7) | 12.4 (1.7) | 11.8 (0.9) | 11.3 (2.3) | 11.6 (2.0) |
+| Assassin | 12.7 (0.7) | 11.1 (1.3) | 10.8 (0.7) | 11.5 (2.2) | 11.2 (2.2) |
 
 ### Combats de fin de zone
 
 | Combat | Niveau maximal de la zone | Tentatives par partie | Victoires au premier essai | Niveau de l'équipe à la victoire |
 |---|---|---|---|---|
-| Lisière du Bois-Sombre : humain | 7 | 1.3 | 71 % | 7.5 |
-| Marais des Pendus : humain | 13 | 2.6 | 21 % | 13.8 |
-| Vallée des Brumes : Apôtre | 20 | 4.8 | 12 % | 20.8 |
-| Abbaye des Cendres : Apôtre | 27 | 2.2 | 57 % | 29.5 |
+| Lisière du Bois-Sombre : humain | 7 | 1.4 | 70 % | 7.4 |
+| Marais des Pendus : humain | 13 | 2.0 | 38 % | 13.1 |
+| Vallée des Brumes : Apôtre | 20 | 2.6 | 36 % | 19.4 |
+| Abbaye des Cendres : Apôtre | 27 | 2.5 | 53 % | 29.8 |
 | Abbaye des Cendres : humain | 27 | 1.8 | 52 % | 27.0 |
-| Col du Givre-Noir : Apôtre | 36 | 2.0 | 65 % | 37.6 |
-| Col du Givre-Noir : humain | 36 | 2.0 | 49 % | 35.4 |
+| Col du Givre-Noir : Apôtre | 36 | 2.0 | 63 % | 37.6 |
+| Col du Givre-Noir : humain | 36 | 1.9 | 53 % | 35.2 |
 
 ### Victoires selon le niveau de l'équipe
 
@@ -114,13 +116,13 @@ Part des tentatives gagnées, selon l'écart entre le niveau moyen de l'équipe 
 
 | Combat | -4 ou moins | -3 à -2 | -1 à 0 | +1 à +2 | +3 ou plus |
 |---|---|---|---|---|---|
-| Lisière du Bois-Sombre : humain | - | 32 % (74) | 74 % (311) | 97 % (147) | 100 % (5) |
-| Marais des Pendus : humain | 16 % (121) | 25 % (156) | 38 % (406) | 47 % (266) | 58 % (108) |
-| Vallée des Brumes : Apôtre | 3 % (216) | 10 % (309) | 19 % (768) | 33 % (566) | 51 % (59) |
-| Abbaye des Cendres : Apôtre | 0 % (6) | 12 % (17) | 40 % (131) | 45 % (396) | 52 % (324) |
-| Abbaye des Cendres : humain | 43 % (152) | 40 % (97) | 56 % (261) | 66 % (174) | 87 % (39) |
-| Col du Givre-Noir : Apôtre | 25 % (12) | 26 % (23) | 55 % (211) | 52 % (397) | 50 % (142) |
-| Col du Givre-Noir : humain | 38 % (141) | 42 % (195) | 55 % (310) | 58 % (118) | 52 % (48) |
+| Lisière du Bois-Sombre : humain | - | 31 % (74) | 73 % (332) | 99 % (136) | 100 % (2) |
+| Marais des Pendus : humain | 25 % (125) | 31 % (147) | 52 % (366) | 77 % (151) | 93 % (15) |
+| Vallée des Brumes : Apôtre | 20 % (249) | 31 % (197) | 46 % (455) | 57 % (134) | 100 % (2) |
+| Abbaye des Cendres : Apôtre | 100 % (1) | 33 % (6) | 34 % (71) | 38 % (473) | 44 % (437) |
+| Abbaye des Cendres : humain | 41 % (176) | 40 % (53) | 54 % (259) | 66 % (212) | 76 % (33) |
+| Col du Givre-Noir : Apôtre | 0 % (5) | 47 % (17) | 49 % (234) | 50 % (414) | 51 % (137) |
+| Col du Givre-Noir : humain | 45 % (141) | 39 % (180) | 59 % (303) | 61 % (109) | 50 % (38) |
 
 ### Ressources trouvées
 
@@ -128,22 +130,22 @@ Moyenne par partie, perdues ou non dans une défaite, et part des parties qui en
 
 | Ressource | Par partie | Parties |
 |---|---|---|
-| Aile de chauve-souris | 4.0 | 94 % |
-| Aile de fée noire | 8.0 | 100 % |
-| Cendre de feu follet | 5.1 | 98 % |
-| Crin de chimère | 0.1 | 14 % |
-| Croc de basilic | 0.4 | 32 % |
-| Croc de loup | 7.8 | 100 % |
-| Dent de goule | 4.0 | 97 % |
-| Fragment d'armure | 16.3 | 100 % |
-| Os de squelette | 12.6 | 100 % |
-| Pierre de troll | 2.8 | 85 % |
-| Plume de corbeau | 10.1 | 100 % |
-| Plume de harpie | 3.1 | 88 % |
-| Poil de wendigo | 2.9 | 88 % |
-| Écaille de vipère | 10.3 | 100 % |
-| Écaille de vouivre | 0.2 | 20 % |
-| Écaille de wyrm | 0.2 | 17 % |
-| Éclat de bronze | 3.9 | 96 % |
-| Éclat de gargouille | 7.3 | 99 % |
+| Aile de chauve-souris | 3.9 | 94 % |
+| Aile de fée noire | 8.5 | 100 % |
+| Cendre de feu follet | 5.2 | 98 % |
+| Crin de chimère | 0.1 | 13 % |
+| Croc de basilic | 0.6 | 44 % |
+| Croc de loup | 7.7 | 100 % |
+| Dent de goule | 3.9 | 95 % |
+| Fragment d'armure | 16.5 | 100 % |
+| Os de squelette | 12.4 | 100 % |
+| Pierre de troll | 2.7 | 81 % |
+| Plume de corbeau | 9.9 | 100 % |
+| Plume de harpie | 2.8 | 82 % |
+| Poil de wendigo | 2.7 | 84 % |
+| Écaille de vipère | 10.4 | 100 % |
+| Écaille de vouivre | 0.3 | 23 % |
+| Écaille de wyrm | 0.2 | 15 % |
+| Éclat de bronze | 3.6 | 94 % |
+| Éclat de gargouille | 7.2 | 99 % |
 

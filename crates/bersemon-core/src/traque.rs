@@ -10,8 +10,8 @@ use crate::niveau::Niveau;
 use crate::stats::ValeursInternes;
 use crate::zone::{Zone, ZoneId};
 
-/// Un Apôtre combat 2 niveaux au-dessus du niveau maximal de sa zone (section
-/// 9.4).
+/// Un Apôtre combat 2 niveaux au-dessus du niveau maximal de sa zone, sauf
+/// le premier (section 9.4).
 const NIVEAUX_AU_DESSUS_DE_LA_ZONE: u8 = 2;
 
 /// Indice trouvé au bout d'une expédition menée jusqu'à sa dernière étape
@@ -108,6 +108,21 @@ impl Apotre {
         )
         .map_err(|_| ErreurTraque::EspeceInvalide(espece.id().clone()))?;
         self.seconde_forme = Some(Box::new(espece));
+        Ok(self)
+    }
+
+    /// Le premier Apôtre combat au niveau maximal de sa zone, sans les 2
+    /// niveaux de plus des suivants, pour que la difficulté monte d'un
+    /// Apôtre à l'autre (section 9.4). Vérifie, comme `new`, que ses formes
+    /// peuvent être créées à ce niveau.
+    pub fn au_niveau_maximal_de_sa_zone(mut self, zone: &Zone) -> Result<Self, ErreurTraque> {
+        debug_assert_eq!(zone.id(), &self.zone, "la zone de l'Apôtre");
+        let (_, niveau) = zone.niveaux();
+        for espece in std::iter::once(&self.espece).chain(self.seconde_forme.as_deref()) {
+            Monstre::creer(espece.clone(), niveau, ValeursInternes::default(), false)
+                .map_err(|_| ErreurTraque::EspeceInvalide(espece.id().clone()))?;
+        }
+        self.niveau = niveau;
         Ok(self)
     }
 
@@ -362,6 +377,18 @@ mod tests {
         assert_eq!(monstre.valeurs_internes(), &ValeursInternes::maximales());
         assert!(monstre.est_shiny());
         assert_eq!(monstre.espece().id().as_str(), "baron");
+    }
+
+    #[test]
+    fn le_premier_apotre_peut_combattre_au_niveau_maximal_de_sa_zone() {
+        let marais = zone("marais", 13);
+        let apotre = Apotre::new(espece("baron"), &marais, "", "")
+            .and_then(|apotre| apotre.au_niveau_maximal_de_sa_zone(&marais))
+            .unwrap();
+        assert_eq!(apotre.niveau(), Niveau::new(13).unwrap());
+        let monstre = apotre.generer(&mut AleatoireScripte::new([2]));
+        assert_eq!(monstre.niveau(), Niveau::new(13).unwrap());
+        assert_eq!(monstre.valeurs_internes(), &ValeursInternes::maximales());
     }
 
     #[test]

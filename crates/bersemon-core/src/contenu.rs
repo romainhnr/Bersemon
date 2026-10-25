@@ -275,9 +275,9 @@ impl ContenuV1 {
             HumainId::new("bourreau"),
             "Bourreau",
             vec![
-                (trouver("armure-hantee"), niveau(14)),
-                (trouver("feu-follet"), niveau(14)),
-                (trouver("basilic"), niveau(15)),
+                (trouver("armure-hantee"), niveau(13)),
+                (trouver("feu-follet"), niveau(13)),
+                (trouver("basilic"), niveau(14)),
             ],
             150,
             AVANT_LE_BOURREAU,
@@ -500,8 +500,11 @@ impl ContenuV1 {
         .map(|zone| zone.avec_humain(porte_etendard))
         .expect("Col conforme aux règles");
         // Le Baron pendu attend au fond de la Vallée, que le second indice,
-        // donné par le Bourreau, ouvre (section 9.4).
+        // donné par le Bourreau, ouvre. Premier Apôtre, il combat au niveau
+        // maximal de la Vallée, 20, et ne connaît qu'une attaque Obscur
+        // (section 9.4, étape 117).
         let baron = Apotre::new(trouver("baron-pendu"), &vallee, AVANT_LE_BARON, EPILOGUE)
+            .and_then(|baron| baron.au_niveau_maximal_de_sa_zone(&vallee))
             .expect("Baron pendu conforme aux règles")
             .avec_recit_de_l_ame(AME_DU_BARON)
             .avec_ligne_du_carnet(CARNET_DU_BARON);
@@ -2067,7 +2070,7 @@ const ESPECES: [FicheEspece; 56] = [
         apprentissage: &[
             (1, "coup-de-racine"),
             (3, "feuille-tranchante"),
-            (7, "cri-strident"),
+            (7, "secousse"),
             (10, "ronces"),
             (14, "spores-putrides"),
         ],
@@ -2353,7 +2356,7 @@ const ESPECES: [FicheEspece; 56] = [
         apprentissage: &[
             (1, "coup-de-racine"),
             (3, "feuille-tranchante"),
-            (7, "cri-strident"),
+            (7, "secousse"),
             (10, "ronces"),
             (14, "spores-putrides"),
             (16, "hurlement-de-mandragore"),
@@ -2900,7 +2903,7 @@ const ESPECES: [FicheEspece; 56] = [
         apprentissage: &[
             (1, "coup-de-racine"),
             (3, "feuille-tranchante"),
-            (7, "cri-strident"),
+            (7, "secousse"),
             (10, "ronces"),
             (14, "spores-putrides"),
             (16, "hurlement-de-mandragore"),
@@ -4172,10 +4175,32 @@ mod tests {
             .iter()
             .map(|monstre| monstre.niveau().valeur())
             .collect();
-        assert_eq!(niveaux, vec![14, 14, 15]);
+        // Le maximum du Marais et un niveau de plus, comme les humains
+        // suivants (étape 117).
+        assert_eq!(niveaux, vec![13, 13, 14]);
         assert_eq!(brigand.ia(), IaHumain::Simple);
         assert_eq!(bourreau.ia(), IaHumain::Relevee);
         assert!(contenu.zones()[2].humain().is_none());
+    }
+
+    /// Toutes les espèces du Marais résistent à la Plante ou la frappent
+    /// fort : la famille de la Mandragore apprend une attaque Sol au niveau
+    /// 7 (étape 117).
+    #[test]
+    fn la_famille_de_la_mandragore_apprend_secousse_au_niveau_7() {
+        let contenu = ContenuV1::new();
+        for id in ["mandragore", "mandragore-ancienne", "arbre-pendu"] {
+            let espece = contenu.espece(&EspeceId::new(id)).unwrap();
+            let au_niveau_7: Vec<&str> = espece
+                .apprentissage()
+                .iter()
+                .filter(|apprise| apprise.niveau == niveau(7))
+                .map(|apprise| apprise.attaque.id().as_str())
+                .collect();
+            assert_eq!(au_niveau_7, vec!["secousse"], "{id}");
+        }
+        let mandragore = creer(&contenu, "mandragore", 7);
+        assert!(mandragore.attaques().connait(&AttaqueId::new("secousse")));
     }
 
     #[test]
@@ -4216,14 +4241,15 @@ mod tests {
     }
 
     #[test]
-    fn le_baron_pendu_obscur_attend_au_bout_de_la_vallee_au_niveau_22() {
+    fn le_baron_pendu_obscur_attend_au_bout_de_la_vallee_au_niveau_20() {
         let contenu = ContenuV1::new();
         let apotre = contenu.piste().apotres().next().unwrap();
-        assert_eq!(apotre.niveau(), niveau(22));
+        assert_eq!(apotre.niveau(), niveau(20));
         assert_eq!(apotre.zone().as_str(), "vallee");
         assert_eq!(apotre.espece().types().liste(), &[Type::Obscur]);
-        // Les quatre dernières de sa liste, dont ses deux attaques Obscur.
-        let baron = creer(&contenu, "baron-pendu", 22);
+        // Les quatre dernières de sa liste jusqu'au niveau 20, dont une seule
+        // attaque Obscur : Hurlement des abysses vient au niveau 21.
+        let baron = creer(&contenu, "baron-pendu", 20);
         let ids: Vec<&str> = baron
             .attaques()
             .liste()
@@ -4233,10 +4259,10 @@ mod tests {
         assert_eq!(
             ids,
             vec![
+                "lamentation",
                 "sentence",
                 "trappe-du-gibet",
-                "etreinte-obscure",
-                "hurlement-des-abysses"
+                "etreinte-obscure"
             ]
         );
     }

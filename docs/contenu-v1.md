@@ -113,7 +113,7 @@ Attaques apprises :
 
 - Salamandre, uniquement des attaques spéciales : Souffle chaud (niv. 1), Crachat de braises (niv. 3), Souffle draconique (niv. 7), Flamme vive (niv. 10), Fournaise (niv. 14).
 - Crapaud, uniquement des attaques physiques : Charge gluante (niv. 1), Plongeon (niv. 3), Coup de langue (niv. 7), Langue venimeuse (niv. 10), Lame de fond (niv. 14).
-- Mandragore, des attaques des deux catégories et deux effets de statut, pour user l'adversaire : Coup de racine (niv. 1), Feuille tranchante (niv. 3), Cri strident (niv. 7), Ronces (niv. 10), Spores putrides (niv. 14).
+- Mandragore, des attaques des deux catégories et deux effets de statut, pour user l'adversaire : Coup de racine (niv. 1), Feuille tranchante (niv. 3), Secousse (niv. 7), Ronces (niv. 10), Spores putrides (niv. 14). Depuis l'étape 117 (gamedesign.md, section 5.3), Secousse remplace le Cri strident au niveau 7, pour la Mandragore comme pour la Mandragore ancienne et l'Arbre-pendu, qui suivent cette liste.
 - Chat noir, surtout des attaques physiques : Griffure (niv. 1), Coup sournois (niv. 3), Feulement (niv. 7), Morsure (niv. 10), Coup de grâce (niv. 14). Griffure et Morsure sont aussi celles du Loup.
 
 Au niveau 5, chaque monstre de départ connaît 2 attaques : une de type Normal et une de son type. La Mandragore est le départ le plus exigeant (section 5), ce qui est assumé.
@@ -165,9 +165,9 @@ Attaques apprises :
 
 | Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP | Niveau |
 |---|---|---|---|---|---|---|
-| baron-pendu | Baron pendu | Obscur | offensif | 85 / 85 / 75 / 90 / 80 / 65 (480) | 250 | 22, soit 2 de plus que le maximum de la Vallée des Brumes |
+| baron-pendu | Baron pendu | Obscur | offensif | 85 / 85 / 75 / 90 / 80 / 65 (480) | 250 | 20, le maximum de la Vallée des Brumes, depuis l'étape 117 ; 22 avant |
 
-Attaques apprises : Corde du gibet (niv. 1), Lamentation (niv. 5), Sentence (niv. 10), Trappe du gibet (niv. 15), Étreinte obscure (niv. 18), Hurlement des abysses (niv. 21). Au niveau 22, il connaît les quatre dernières. Ses valeurs internes sont fixes, à 31 pour chaque stat (section 9.4).
+Attaques apprises : Corde du gibet (niv. 1), Lamentation (niv. 5), Sentence (niv. 10), Trappe du gibet (niv. 15), Étreinte obscure (niv. 18), Hurlement des abysses (niv. 21). Au niveau 20, il connaît Lamentation, Sentence, Trappe du gibet et Étreinte obscure : depuis l'étape 117, Hurlement des abysses ne lui sert plus (gamedesign.md, section 9.4). Ses valeurs internes sont fixes, à 31 pour chaque stat (section 9.4).
 
 Autrefois seigneur des terres du Marais, il a livré son propre fief au gibet pour devenir un Apôtre ; il s'est retiré au fond de la Vallée des Brumes. Depuis l'étape 30, il est de type Obscur seul : il résiste à la plupart des types, et seuls Féérique, Psychique, Stellaire et Obscur lui sont très efficaces. Jusqu'à l'étape 29, il était Ténèbres et Spectre, au niveau 15, au bout du Marais, et ne connaissait que ses quatre premières attaques.
 
@@ -283,7 +283,7 @@ Après la victoire :
 
 ### Combat contre le Bourreau
 
-Ajouté à l'étape 30, le 19/10/2026 (gamedesign.md, section 10.7). Le Bourreau attend au bout du Marais, avec une Armure hantée de niveau 14, un Feu follet de niveau 14 et un Basilic de niveau 15 (valeurs internes à 15, première habileté de leur espèce). Victoire : 150 pièces d'argent, puis l'indice 2 au retour.
+Ajouté à l'étape 30, le 19/10/2026 (gamedesign.md, section 10.7). Le Bourreau attend au bout du Marais, avec une Armure hantée de niveau 13, un Feu follet de niveau 13 et un Basilic de niveau 14 (valeurs internes à 15, première habileté de leur espèce) ; jusqu'à l'étape 117, aux niveaux 14, 14 et 15. Victoire : 150 pièces d'argent, puis l'indice 2 au retour.
 
 Avant le combat :
 
