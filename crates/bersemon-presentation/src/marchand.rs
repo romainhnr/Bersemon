@@ -10,6 +10,7 @@ use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_core::ressource::Ressource;
 
+use crate::filets::offre_de_filet;
 use crate::monstres::{decrire_attaque, expeditions, nom};
 use crate::partie::{argent, ligne_des_ames, ressources};
 use crate::soins::offre_de_soin;
@@ -22,13 +23,20 @@ pub fn etal(partie: &Partie) -> String {
         .into_iter()
         .map(|soin| format!("  {}", offre_de_soin(soin)))
         .collect();
+    let filets: Vec<String> = partie
+        .filets_en_vente()
+        .into_iter()
+        .filter_map(offre_de_filet)
+        .map(|offre| format!("  {offre}"))
+        .collect();
     let location = location_en_cours(partie)
         .map(|ligne| format!("\n{ligne}"))
         .unwrap_or_default();
     format!(
-        "Malvoise vous attend près du feu. Vous avez {}, entre votre sac et le coffre ; vos achats iront dans le coffre.\nSoins en vente :\n{}\n{}{}{location}",
+        "Malvoise vous attend près du feu. Vous avez {}, entre votre sac et le coffre ; vos achats iront dans le coffre.\nSoins en vente :\n{}\nFilets en vente :\n{}\n{}{}{location}",
         argent(partie.argent()),
         soins.join("\n"),
+        filets.join("\n"),
         capsules_obtenues(partie),
         ligne_des_ames(partie)
     )

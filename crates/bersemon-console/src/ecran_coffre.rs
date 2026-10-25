@@ -5,6 +5,7 @@ use bersemon_core::deroulement::Choix;
 use bersemon_core::inventaire::{Inventaire, Objet};
 use bersemon_core::partie::Partie;
 use bersemon_presentation::boosters::boosters as texte_des_boosters;
+use bersemon_presentation::filets::filets as texte_des_filets;
 use bersemon_presentation::monstres::decrire_attaque;
 use bersemon_presentation::partie::{
     coffre_du_camp, pierres as texte_des_pierres, ressources as texte_des_ressources,
@@ -22,51 +23,55 @@ pub fn choisir(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
         println!("{}", coffre_du_camp(partie));
         println!("  1. Prendre des soins");
         println!("  2. Ranger des soins");
-        println!("  3. Prendre de l'argent");
-        println!("  4. Ranger de l'argent");
-        println!("  5. Prendre une capsule d'attaque");
-        println!("  6. Ranger une capsule d'attaque");
-        println!("  7. Prendre des capsules d'habileté");
-        println!("  8. Ranger des capsules d'habileté");
-        println!("  9. Prendre des ressources");
-        println!("  10. Ranger des ressources");
-        println!("  11. Prendre des pierres d'évolution");
-        println!("  12. Ranger des pierres d'évolution");
-        println!("  13. Prendre des boosters");
-        println!("  14. Ranger des boosters");
-        println!("  15. Prendre des Éclats d'astre");
-        println!("  16. Ranger des Éclats d'astre");
-        println!("  17. Prendre des charmes de garde");
-        println!("  18. Ranger des charmes de garde");
-        println!("  19. Tout ranger dans le coffre");
+        println!("  3. Prendre des filets");
+        println!("  4. Ranger des filets");
+        println!("  5. Prendre de l'argent");
+        println!("  6. Ranger de l'argent");
+        println!("  7. Prendre une capsule d'attaque");
+        println!("  8. Ranger une capsule d'attaque");
+        println!("  9. Prendre des capsules d'habileté");
+        println!("  10. Ranger des capsules d'habileté");
+        println!("  11. Prendre des ressources");
+        println!("  12. Ranger des ressources");
+        println!("  13. Prendre des pierres d'évolution");
+        println!("  14. Ranger des pierres d'évolution");
+        println!("  15. Prendre des boosters");
+        println!("  16. Ranger des boosters");
+        println!("  17. Prendre des Éclats d'astre");
+        println!("  18. Ranger des Éclats d'astre");
+        println!("  19. Prendre des charmes de garde");
+        println!("  20. Ranger des charmes de garde");
+        println!("  21. Tout ranger dans le coffre");
         println!("  0. Retour au camp");
-        let choix = match entree.choix(0, 19)? {
+        let choix = match entree.choix(0, 21)? {
             0 => return Some(None),
             1 => soins(coffre, entree)?.map(Choix::SortirDuCoffre),
             2 => soins(sac, entree)?.map(Choix::RangerAuCoffre),
-            3 => quantite(coffre.argent(), "pièces d'argent", entree)?
+            3 => filets(coffre, entree)?.map(Choix::SortirDuCoffre),
+            4 => filets(sac, entree)?.map(Choix::RangerAuCoffre),
+            5 => quantite(coffre.argent(), "pièces d'argent", entree)?
                 .map(|montant| Choix::SortirDuCoffre(Objet::Argent(montant))),
-            4 => quantite(sac.argent(), "pièces d'argent", entree)?
+            6 => quantite(sac.argent(), "pièces d'argent", entree)?
                 .map(|montant| Choix::RangerAuCoffre(Objet::Argent(montant))),
-            5 => capsule(coffre, entree)?.map(Choix::SortirDuCoffre),
-            6 => capsule(sac, entree)?.map(Choix::RangerAuCoffre),
-            7 => quantite(coffre.capsules_d_habilete(), "capsules d'habileté", entree)?
+            7 => capsule(coffre, entree)?.map(Choix::SortirDuCoffre),
+            8 => capsule(sac, entree)?.map(Choix::RangerAuCoffre),
+            9 => quantite(coffre.capsules_d_habilete(), "capsules d'habileté", entree)?
                 .map(|nombre| Choix::SortirDuCoffre(Objet::CapsulesDHabilete(nombre))),
-            8 => quantite(sac.capsules_d_habilete(), "capsules d'habileté", entree)?
+            10 => quantite(sac.capsules_d_habilete(), "capsules d'habileté", entree)?
                 .map(|nombre| Choix::RangerAuCoffre(Objet::CapsulesDHabilete(nombre))),
-            9 => ressources(coffre, entree)?.map(Choix::SortirDuCoffre),
-            10 => ressources(sac, entree)?.map(Choix::RangerAuCoffre),
-            11 => pierres(coffre, entree)?.map(Choix::SortirDuCoffre),
-            12 => pierres(sac, entree)?.map(Choix::RangerAuCoffre),
-            13 => boosters(coffre, entree)?.map(Choix::SortirDuCoffre),
-            14 => boosters(sac, entree)?.map(Choix::RangerAuCoffre),
-            15 => quantite(coffre.eclats_d_astre(), "Éclats d'astre", entree)?
+            11 => ressources(coffre, entree)?.map(Choix::SortirDuCoffre),
+            12 => ressources(sac, entree)?.map(Choix::RangerAuCoffre),
+            13 => pierres(coffre, entree)?.map(Choix::SortirDuCoffre),
+            14 => pierres(sac, entree)?.map(Choix::RangerAuCoffre),
+            15 => boosters(coffre, entree)?.map(Choix::SortirDuCoffre),
+            16 => boosters(sac, entree)?.map(Choix::RangerAuCoffre),
+            17 => quantite(coffre.eclats_d_astre(), "Éclats d'astre", entree)?
                 .map(|nombre| Choix::SortirDuCoffre(Objet::EclatsDAstre(nombre))),
-            16 => quantite(sac.eclats_d_astre(), "Éclats d'astre", entree)?
+            18 => quantite(sac.eclats_d_astre(), "Éclats d'astre", entree)?
                 .map(|nombre| Choix::RangerAuCoffre(Objet::EclatsDAstre(nombre))),
-            17 => quantite(coffre.charmes_de_garde(), "charmes de garde", entree)?
+            19 => quantite(coffre.charmes_de_garde(), "charmes de garde", entree)?
                 .map(|nombre| Choix::SortirDuCoffre(Objet::CharmesDeGarde(nombre))),
-            18 => quantite(sac.charmes_de_garde(), "charmes de garde", entree)?
+            20 => quantite(sac.charmes_de_garde(), "charmes de garde", entree)?
                 .map(|nombre| Choix::RangerAuCoffre(Objet::CharmesDeGarde(nombre))),
             _ => Some(Choix::ToutRangerAuCoffre),
         };
@@ -94,6 +99,25 @@ fn soins(inventaire: &Inventaire, entree: &mut Entree) -> Option<Option<Objet>> 
     };
     let nombre = quantite(inventaire.soins().nombre(soin), "soins", entree)?;
     Some(nombre.map(|nombre| Objet::Soins(soin, nombre)))
+}
+
+fn filets(inventaire: &Inventaire, entree: &mut Entree) -> Option<Option<Objet>> {
+    let presents: Vec<_> = inventaire.filets().presents().collect();
+    if presents.is_empty() {
+        println!("Il n'y a aucun filet.");
+        return Some(None);
+    }
+    for (position, (filet, nombre)) in presents.iter().enumerate() {
+        println!("  {}. {}", position + 1, texte_des_filets(*filet, *nombre));
+    }
+    println!("Lequel ? (0 pour annuler)");
+    let choix = entree.choix(0, presents.len())?;
+    if choix == 0 {
+        return Some(None);
+    }
+    let (filet, disponible) = presents[choix - 1];
+    let nombre = quantite(disponible, "filets", entree)?;
+    Some(nombre.map(|nombre| Objet::Filets(filet, nombre)))
 }
 
 fn ressources(inventaire: &Inventaire, entree: &mut Entree) -> Option<Option<Objet>> {

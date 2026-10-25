@@ -3,6 +3,9 @@
 //! docs/contenu-v1.md, section 26.
 
 use bersemon_core::filet::{Filet, Filets};
+use bersemon_core::marchand::prix_du_filet;
+
+use crate::partie::argent;
 
 /// "Filet de chanvre", en tête d'un libellé.
 pub fn nom_du_filet(filet: Filet) -> &'static str {
@@ -44,6 +47,19 @@ pub fn effet_du_filet(filet: Filet) -> &'static str {
     }
 }
 
+/// "Filet lesté (chance de capture x1,5) : 30 pièces d'argent", pour
+/// ceux que vend Malvoise (section 14.2).
+pub fn offre_de_filet(filet: Filet) -> Option<String> {
+    prix_du_filet(filet).map(|prix| {
+        format!(
+            "{} ({}) : {}",
+            nom_du_filet(filet),
+            effet_du_filet(filet),
+            argent(prix)
+        )
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -59,5 +75,14 @@ mod tests {
             liste_de_filets(&reserve),
             vec!["10 filets de chanvre", "2 filets de chaînes"]
         );
+    }
+
+    #[test]
+    fn malvoise_ne_vend_pas_le_filet_de_chaines() {
+        assert_eq!(
+            offre_de_filet(Filet::Leste).as_deref(),
+            Some("Filet lesté (chance de capture x1,5) : 30 pièces d'argent")
+        );
+        assert_eq!(offre_de_filet(Filet::Chaines), None);
     }
 }

@@ -123,6 +123,17 @@ pub fn lot_de_filets(plan: &PlanDesFilets) -> String {
     )
 }
 
+/// "5 filets lestés (chance de capture x1,5) : Fragment d'armure (3) et Os
+/// de squelette (3), 1 h".
+pub fn plan_des_filets(plan: &PlanDesFilets) -> String {
+    format!(
+        "{} : {}, {}",
+        lot_de_filets(plan),
+        cout(plan.cout()),
+        duree(plan.duree())
+    )
+}
+
 pub fn question_des_filets(plan: &PlanDesFilets) -> String {
     format!(
         "Faire forger {} ? Gunther prendra {}, et aura fini dans {}. Un travail lancé ne s'annule pas.",

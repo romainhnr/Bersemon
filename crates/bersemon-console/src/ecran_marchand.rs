@@ -1,4 +1,4 @@
-//! Malvoise, le nécromancien du camp (section 14.2) : soins, capsules,
+//! Malvoise, le nécromancien du camp (section 14.2) : soins, filets, capsules,
 //! pierres d'évolution, rachat des monstres et des ressources, don des
 //! âmes, monstre rendu shiny contre un Éclat d'astre, achat et location de
 //! monstres. Les achats se font sans confirmation ; la vente, le service
@@ -6,11 +6,14 @@
 
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::Choix;
-use bersemon_core::marchand::{PRIX_CAPSULE_D_HABILETE, PRIX_PIERRE_D_EVOLUTION, prix_du_soin};
+use bersemon_core::marchand::{
+    PRIX_CAPSULE_D_HABILETE, PRIX_PIERRE_D_EVOLUTION, prix_du_filet, prix_du_soin,
+};
 use bersemon_core::partie::Partie;
 use bersemon_core::pierre::PierreDEvolution;
 use bersemon_presentation::beherit::{FORGER_LE_BEHERIT, peut_forger_le_beherit};
 use bersemon_presentation::boosters::SERVICE_SHINY;
+use bersemon_presentation::filets::{liste_de_filets, offre_de_filet};
 use bersemon_presentation::marchand::{
     capsules_en_vente, etal, offre_d_achat, offre_de_capsule, offre_de_location,
     offre_de_ressources, ressources_a_vendre,
@@ -27,44 +30,46 @@ pub fn choisir(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Opt
         println!();
         println!("{}", etal(partie));
         println!("  1. Acheter des soins");
-        println!("  2. Acheter une capsule d'attaque");
-        println!("  3. Vendre un monstre");
-        println!("  4. Donner une âme");
+        println!("  2. Acheter des filets");
+        println!("  3. Acheter une capsule d'attaque");
+        println!("  4. Vendre un monstre");
+        println!("  5. Donner une âme");
         println!(
-            "  5. Acheter des capsules d'habileté ({} l'une)",
+            "  6. Acheter des capsules d'habileté ({} l'une)",
             argent(PRIX_CAPSULE_D_HABILETE)
         );
-        println!("  6. Vendre des ressources");
+        println!("  7. Vendre des ressources");
         println!(
-            "  7. Acheter des pierres d'évolution ({} l'une)",
+            "  8. Acheter des pierres d'évolution ({} l'une)",
             argent(PRIX_PIERRE_D_EVOLUTION)
         );
         println!(
-            "  8. {SERVICE_SHINY} : vous en avez {}",
+            "  9. {SERVICE_SHINY} : vous en avez {}",
             partie.eclats_d_astre()
         );
-        println!("  9. Acheter un monstre");
-        println!("  10. Louer un monstre");
+        println!("  10. Acheter un monstre");
+        println!("  11. Louer un monstre");
         // Le retour d'un monstre loué n'est proposé que s'il y en a un.
         let loue = partie.collection().monstre_loue();
         if let Some((_, monstre)) = loue {
-            println!("  11. Rendre {} à Malvoise", monstre.nom());
+            println!("  12. Rendre {} à Malvoise", monstre.nom());
         }
         println!("  0. Retour au camp");
-        let dernier = if loue.is_some() { 11 } else { 10 };
+        let dernier = if loue.is_some() { 12 } else { 11 };
         let choix = match entree.choix(0, dernier)? {
             0 => return Some(None),
             1 => acheter_soins(partie, entree)?,
-            2 => acheter_capsule(partie, contenu, entree)?,
-            3 => vendre(partie.collection(), entree)?,
-            4 => donner_ame(partie, contenu, entree)?,
-            5 => acheter_capsules_d_habilete(partie, entree)?,
-            6 => vendre_ressources(partie, entree)?,
-            7 => acheter_pierres(partie, entree)?,
-            8 => designer(partie.collection(), entree, "Quel monstre rendre shiny ?")?
+            2 => acheter_filets(partie, entree)?,
+            3 => acheter_capsule(partie, contenu, entree)?,
+            4 => vendre(partie.collection(), entree)?,
+            5 => donner_ame(partie, contenu, entree)?,
+            6 => acheter_capsules_d_habilete(partie, entree)?,
+            7 => vendre_ressources(partie, entree)?,
+            8 => acheter_pierres(partie, entree)?,
+            9 => designer(partie.collection(), entree, "Quel monstre rendre shiny ?")?
                 .map(Choix::RendreShiny),
-            9 => acheter_monstre(partie, contenu, entree)?,
-            10 => louer_monstre(partie, contenu, entree)?,
+            10 => acheter_monstre(partie, contenu, entree)?,
+            11 => louer_monstre(partie, contenu, entree)?,
             _ => Some(Choix::RendreLeMonstreLoue),
         };
         if choix.is_some() {
@@ -94,6 +99,45 @@ fn acheter_soins(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> 
     println!("Combien en acheter ? (0 pour annuler)");
     let nombre = entree.choix(0, au_plus as usize)?;
     Some((nombre > 0).then_some(Choix::AcheterSoins(soin, nombre as u32)))
+}
+
+/// Le filet de chanvre et le filet lesté ; le joueur ne choisit que ce
+/// qu'il peut payer (section 14.2).
+fn acheter_filets(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
+    let en_vente = partie.filets_en_vente();
+    println!(
+        "Filets en vente (vous en avez {}) :",
+        liste_des_filets(partie)
+    );
+    for (position, filet) in en_vente.iter().enumerate() {
+        let offre = offre_de_filet(*filet).unwrap_or_default();
+        println!("  {}. {offre}", position + 1);
+    }
+    println!("Lequel acheter ? (0 pour annuler)");
+    let choix = entree.choix(0, en_vente.len())?;
+    if choix == 0 {
+        return Some(None);
+    }
+    let filet = en_vente[choix - 1];
+    let au_plus = prix_du_filet(filet).map_or(0, |prix| partie.argent() / prix);
+    if au_plus == 0 {
+        println!("Vous n'avez pas assez d'argent pour ce filet.");
+        return Some(None);
+    }
+    println!("Combien en acheter ? (0 pour annuler)");
+    let nombre = entree.choix(0, au_plus as usize)?;
+    Some((nombre > 0).then_some(Choix::AcheterFilets(filet, nombre as u32)))
+}
+
+/// "10 filets de chanvre, 2 filets lestés", du sac et du coffre, ou
+/// "aucun".
+fn liste_des_filets(partie: &Partie) -> String {
+    let liste = liste_de_filets(&partie.filets());
+    if liste.is_empty() {
+        "aucun".to_string()
+    } else {
+        liste.join(", ")
+    }
 }
 
 fn acheter_capsule(

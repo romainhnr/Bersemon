@@ -1124,4 +1124,7 @@ Textes proposés sans validation (gamedesign.md, Q102) :
 | Forge, question | Faire forger 5 filets lestés (chance de capture x1,5) ? Gunther prendra {coût}, et aura fini dans {durée}. Un travail lancé ne s'annule pas. |
 | Forge, lancement | Vous remettez à Gunther {coût}. Il se met à forger 5 filets lestés. Il aura fini dans {durée}. |
 | Forge, constat | Gunther a fini : 5 filets lestés. Ils vont dans le coffre. |
+| Étal de Malvoise | Filets en vente : Filet lesté (chance de capture x1,5) : 30 pièces d'argent ; Acheter des filets ; Filets en vente (vous en avez 10 filets de chanvre) : |
+| Forge, menu | Fabriquer des filets ; Vous avez 13 filets de chanvre, 2 filets lestés, entre votre sac et le coffre. ; 5 filets lestés (chance de capture x1,5) : {coût}, 1 h |
+| Coffre | Prendre des filets ; Ranger des filets ; Il n'y a aucun filet. |
 
