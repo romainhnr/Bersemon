@@ -508,6 +508,7 @@ Décidé le 25/10/2026, pour les étapes 121 à 123 (choix de l'utilisateur) :
 - Affichage : sur la carte des expéditions, la météo de chaque zone et le temps qu'elle va encore durer ; en expédition, la météo à côté du moment, après le compteur d'étapes, et un court texte au départ. Textes dans docs/contenu-v1.md, section 32.
 - La sauvegarde ne change pas.
 - Précisé à l'étape 121, en codant : le tirage d'un créneau se fait sur un générateur propre, dont la graine mêle le numéro du créneau et l'identifiant de la zone ; il ne touche pas aux tirages de la partie. Le temps restant regarde au plus une journée de créneaux en avant. Mesuré par l'outil d'équilibrage, l'effet de la météo sur la durée de la partie et sur les combats de fin de zone reste de l'ordre du bruit (docs/equilibrage.md, section 8).
+- Décidé le 25/10/2026, pour l'étape 124 (choix de l'utilisateur, parmi les évolutions proposées par Claude) : trois évolutions selon la météo. La Fée noire évolue en Fée-sorcière au niveau 12, sous la tempête ; la Fée-sorcière en Reine des ronces au niveau 25, sous la pluie ; le Basilic en Basilic royal au niveau 22, sous la canicule. Comme celles du moment du jour (section 9.6), elles se proposent après un combat d'une expédition partie sous cette météo, jamais au camp ni dans la Tour. La fiche dit "Basilic royal dès le niveau 22, après un combat sous la canicule".
 - Écrans, à l'étape 122 (console) : sur la carte, une zone sous une météo finit par ": pluie, encore 42 min" ; le compteur d'étapes devient "[Étape : 2/5] Nuit, pluie", sans météo par temps calme ; le texte de la météo suit celui du moment, au départ.
 - Écrans, à l'étape 123 (Discord) : dans le menu "Partir en expédition" du camp, la description d'une zone sous une météo finit par "; pluie, encore 42 min" ; le départ et le compteur d'étapes sont ceux de la console.
 
@@ -750,6 +751,12 @@ Repères, avec des valeurs internes de 15 : dans la Lisière, une Salamandre de 
   - Au camp, l'écran du coffre montre le sac et le coffre ; on y prend ou range des potions, de l'argent et des capsules, ou l'on range tout le sac d'un coup. Le camp rappelle le contenu des deux.
   - Depuis les étapes 35 et 36, le sac et le coffre gardent aussi les capsules d'habileté et les ressources, qui se déplacent par lots comme les potions. Les âmes des marchands n'y sont pas : elles restent avec le joueur, que rien ne lui fait perdre (section 14.2).
   - Précisé à l'étape 82, en codant : sur Discord, avec les ressources du Col du Givre-Noir, les ressources ne tiennent plus dans le menu des autres objets du coffre (pierres, boosters, Philtres chromatiques) : un bouton "Ressources" du coffre ouvre leur écran, avec un menu pour en prendre et un pour en ranger. Dans les textes du sac et du coffre, plusieurs capsules d'attaque se regroupent : "les capsules d'attaque (Brasier, Déferlante)", pour que le camp tienne dans un message quand le joueur les a toutes.
+- Décidé le 25/10/2026, pour les étapes 125 à 127 (choix de l'utilisateur) : le sac a une capacité.
+  - Chaque objet y prend une place : potion et autre soin, filet, ressource, capsule d'attaque ou d'habileté, pierre, booster, Philtre chromatique, charme de garde. L'argent n'en prend pas. Les monstres, les âmes et le Béhérit n'y sont pas.
+  - 30 places au départ ; l'amélioration du sac, chez Gunther, les porte à 45, 60 puis 80 (section 13.4). Le coffre du camp n'a pas de limite.
+  - En expédition, le butin entre dans le sac même s'il déborde. À la fin de l'étape, avant de continuer ou de rentrer au camp, le joueur jette des objets de son choix, parmi tout le sac, jusqu'à revenir à sa capacité ; ce qu'il jette est perdu. Après une défaite, le sac est perdu, et il n'y a rien à choisir.
+  - Au camp, une sortie du coffre qui ferait déborder le sac est refusée. Les achats chez Malvoise vont au coffre (voir plus haut) et ne sont pas limités.
+  - Le départ en expédition est refusé tant que le sac déborde : une sauvegarde antérieure dont le sac dépasse sa capacité ne perd rien, et le joueur range le surplus au coffre.
 
 ### 13.4 Améliorations
 
@@ -1166,6 +1173,10 @@ Les questions Q101 et suivantes ont été relevées le 24/10/2026 lors de la con
 Les questions Q102 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 103 filets dans le noyau, avec la sauvegarde en version 27, 104 vente par Malvoise et fabrication par Gunther, 105 écrans de la console, 106 écrans du bot Discord.
 
 Les questions Q103 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 107 carnet de traque du codex et 108 Philtre chromatique.
+
+Les questions Q111 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 124, évolutions selon la météo, et 125 à 127, capacité du sac.
+
+- Q111. (Étapes 124 à 127) Hypothèses retenues, à confirmer : une Fée noire, une Fée-sorcière ou un Basilic qui a déjà passé son niveau d'évolution attend la bonne météo, comme le Loup, le Corbeau et la Vipère attendent le bon moment ; la fin d'une étape est l'arrêt entre deux étapes, ou le retour au camp après la dernière ; dans la Tour à deux, chaque joueur jette dans son propre sac ; les filets lancés et les soins utilisés en combat libèrent leur place aussitôt. Textes proposés sans validation (docs/contenu-v1.md, sections 9 et 32).
 
 Les questions Q110 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 121 à 123, météo.
 
@@ -1699,4 +1710,10 @@ Les questions Q104 et suivantes ont été relevées le 25/10/2026 lors de la con
 - Claude a relevé que le jeu n'a ni zone de mer ni désert. Choix de l'utilisateur : le cyclone et la tempête de sable sont réservés à ces zones futures.
 - Choix de l'utilisateur : une météo par zone, la même pour tous les joueurs, une chance sur 3 par créneau de 30 minutes ; fixée au départ de l'expédition ; deux types renforcés de 20 % par météo, selon la répartition proposée par Claude, en se multipliant au bonus du moment ; les météos de chaque zone proposées par Claude ; la météo joue aussi contre les humains et les Apôtres de fin de zone (section 9.7).
 - Hypothèses retenues, à confirmer : Q110.
+25/10/2026 (conception de l'étape 124, évolutions selon la météo, et des étapes 125 à 127, capacité du sac) :
+
+- Demande de l'utilisateur : des évolutions selon la météo. Choix de l'utilisateur, parmi celles proposées par Claude : la Fée noire sous la tempête, la Fée-sorcière sous la pluie, le Basilic sous la canicule (section 9.7).
+- Demande de l'utilisateur : une limite au sac, améliorable avec des ressources. Choix de l'utilisateur : chaque objet prend une place, sauf l'argent ; 30 places, puis 45, 60 et 80 avec l'amélioration de Gunther, aux coûts proposés par Claude ; le joueur choisit quoi jeter à la fin de l'étape où le sac déborde ; au camp, une sortie du coffre qui ferait déborder le sac est refusée ; le départ est refusé tant que le sac déborde (sections 13.3 et 13.4).
+- Claude a relevé que les achats chez Malvoise vont au coffre : seule la sortie du coffre est limitée au camp.
+- Hypothèses retenues, à confirmer : Q111.
 

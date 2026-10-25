@@ -559,6 +559,11 @@ pub fn condition_d_evolution(condition: &ConditionEvolution, catalogue: &dyn Cat
             niveau.valeur(),
             jour_et_nuit::complement(*jour_ou_nuit)
         ),
+        ConditionEvolution::Meteo { meteo, niveau } => format!(
+            "dès le niveau {}, après un combat {}",
+            niveau.valeur(),
+            meteo::sous(*meteo)
+        ),
     }
 }
 

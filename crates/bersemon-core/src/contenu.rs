@@ -1982,6 +1982,8 @@ enum FicheCondition {
     ApotreVaincu(&'static str, u8),
     /// Niveau, de jour ou de nuit (section 9.6).
     Moment(JourOuNuit, u8),
+    /// Niveau, sous une météo (section 9.7).
+    Meteo(Meteo, u8),
 }
 
 const fn par_pierre(
@@ -2016,6 +2018,19 @@ const fn par_niveau(
     Some(FicheEvolution {
         vers,
         condition: FicheCondition::Niveau(niveau),
+        attaque,
+    })
+}
+
+const fn par_niveau_sous_la_meteo(
+    vers: &'static str,
+    niveau: u8,
+    meteo: Meteo,
+    attaque: &'static str,
+) -> Option<FicheEvolution> {
+    Some(FicheEvolution {
+        vers,
+        condition: FicheCondition::Meteo(meteo, niveau),
         attaque,
     })
 }
@@ -2219,7 +2234,7 @@ const ESPECES: [FicheEspece; 56] = [
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Sorcellerie, Habilete::Celerite],
         apprentissage: &[(1, "bourdonnement"), (4, "regard-funeste"), (8, "malefice")],
-        evolution: par_niveau("fee-sorciere", 12, "nuee"),
+        evolution: par_niveau_sous_la_meteo("fee-sorciere", 12, Meteo::Tempete, "nuee"),
     },
     FicheEspece {
         id: "squelette",
@@ -2268,7 +2283,7 @@ const ESPECES: [FicheEspece; 56] = [
             (10, "souffle-putride"),
             (13, "croc-de-venin"),
         ],
-        evolution: par_niveau("basilic-royal", 22, "regard-de-mort"),
+        evolution: par_niveau_sous_la_meteo("basilic-royal", 22, Meteo::Canicule, "regard-de-mort"),
     },
     FicheEspece {
         id: "elfe",
@@ -2488,7 +2503,12 @@ const ESPECES: [FicheEspece; 56] = [
             (12, "nuee"),
             (12, "sentence"),
         ],
-        evolution: par_niveau("reine-des-ronces", 25, "ronces-maudites"),
+        evolution: par_niveau_sous_la_meteo(
+            "reine-des-ronces",
+            25,
+            Meteo::Pluie,
+            "ronces-maudites",
+        ),
     },
     FicheEspece {
         id: "basilic-royal",
@@ -3142,6 +3162,10 @@ fn creer_evolution(fiche: &FicheEvolution) -> Evolution {
         },
         FicheCondition::Moment(jour_ou_nuit, valeur) => ConditionEvolution::Moment {
             jour_ou_nuit,
+            niveau: niveau(valeur),
+        },
+        FicheCondition::Meteo(meteo, valeur) => ConditionEvolution::Meteo {
+            meteo,
             niveau: niveau(valeur),
         },
     };

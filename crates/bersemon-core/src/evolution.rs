@@ -12,6 +12,7 @@ use crate::catalogue::Catalogue;
 use crate::collection::ErreurCollection;
 use crate::espece::{Espece, EspeceId};
 use crate::jour_et_nuit::JourOuNuit;
+use crate::meteo::Meteo;
 use crate::monstre::Monstre;
 use crate::niveau::Niveau;
 use crate::pierre::PierreDEvolution;
@@ -35,6 +36,9 @@ pub enum ConditionEvolution {
         jour_ou_nuit: JourOuNuit,
         niveau: Niveau,
     },
+    /// Avoir atteint ce niveau, après un combat d'une expédition partie sous
+    /// cette météo (section 9.7).
+    Meteo { meteo: Meteo, niveau: Niveau },
 }
 
 /// Où en est le monstre quand on se demande s'il peut évoluer.
@@ -46,6 +50,9 @@ pub struct Circonstances<'a> {
     /// Le moment de l'expédition en cours ; `None` au camp et hors du cycle,
     /// dans la Tour sans fond (section 9.6).
     pub jour_ou_nuit: Option<JourOuNuit>,
+    /// La météo de l'expédition en cours ; `None` au camp, par temps calme
+    /// et hors des zones de la carte (section 9.7).
+    pub meteo: Option<Meteo>,
 }
 
 /// L'évolution d'une espèce vers une autre, désignée par son identifiant :
@@ -87,15 +94,16 @@ impl Evolution {
             ConditionEvolution::Niveau(_)
             | ConditionEvolution::Lieu { .. }
             | ConditionEvolution::ApotreVaincu { .. }
-            | ConditionEvolution::Moment { .. } => None,
+            | ConditionEvolution::Moment { .. }
+            | ConditionEvolution::Meteo { .. } => None,
         }
     }
 
     /// Une condition de niveau ou d'Apôtre vaincu se remplit au camp comme
     /// après un combat, une condition de lieu seulement après un combat dans
-    /// sa zone, une condition de moment seulement après un combat d'une
-    /// expédition partie à ce moment ; une pierre ne se donne qu'au camp, sur
-    /// demande du joueur.
+    /// sa zone, une condition de moment ou de météo seulement après un combat
+    /// d'une expédition partie à ce moment ou sous cette météo ; une pierre
+    /// ne se donne qu'au camp, sur demande du joueur.
     fn est_remplie(&self, monstre: &Monstre, circonstances: &Circonstances<'_>) -> bool {
         match &self.condition {
             ConditionEvolution::Niveau(niveau) => monstre.niveau() >= *niveau,
@@ -110,6 +118,9 @@ impl Evolution {
                 jour_ou_nuit,
                 niveau,
             } => circonstances.jour_ou_nuit == Some(*jour_ou_nuit) && monstre.niveau() >= *niveau,
+            ConditionEvolution::Meteo { meteo, niveau } => {
+                circonstances.meteo == Some(*meteo) && monstre.niveau() >= *niveau
+            }
         }
     }
 }
@@ -204,6 +215,7 @@ mod tests {
         zone: None,
         apotres_vaincus: &[],
         jour_ou_nuit: None,
+        meteo: None,
     };
 
     fn niveau(valeur: u8) -> Niveau {
@@ -364,6 +376,7 @@ mod tests {
             zone: Some(zone),
             apotres_vaincus: &[],
             jour_ou_nuit: None,
+            meteo: None,
         };
         let armure = creer(&contenu, "armure-hantee", 18);
         let vers = evolution_possible(&armure, &dans(&vallee), &contenu).unwrap();
@@ -382,6 +395,7 @@ mod tests {
             zone: None,
             apotres_vaincus: &baron,
             jour_ou_nuit: None,
+            meteo: None,
         };
         let squelette = creer(&contenu, "squelette", 20);
         assert_eq!(evolution_possible(&squelette, &AU_CAMP, &contenu), None);
@@ -401,6 +415,7 @@ mod tests {
             zone: Some(&lisiere),
             apotres_vaincus: &[],
             jour_ou_nuit: Some(jour_ou_nuit),
+            meteo: None,
         };
         let loup = creer(&contenu, "loup", 16);
         assert_eq!(evolution_possible(&loup, &AU_CAMP, &contenu), None);
@@ -439,18 +454,62 @@ mod tests {
         );
     }
 
+    /// La Fée noire évolue sous la tempête au niveau 12, la Fée-sorcière
+    /// sous la pluie au niveau 25 ; jamais au camp (section 9.7).
     #[test]
     fn la_fee_sorciere_evolue_une_deuxieme_fois_au_niveau_25() {
         let contenu = ContenuV1::new();
+        let vallee = ZoneId::new("vallee");
+        let sous = |meteo| Circonstances {
+            zone: Some(&vallee),
+            apotres_vaincus: &[],
+            jour_ou_nuit: Some(JourOuNuit::Nuit),
+            meteo: Some(meteo),
+        };
         let mut fee = creer(&contenu, "fee-noire", 25);
-        let vers = evolution_possible(&fee, &AU_CAMP, &contenu).unwrap();
+        assert_eq!(evolution_possible(&fee, &AU_CAMP, &contenu), None);
+        assert_eq!(
+            evolution_possible(&fee, &sous(Meteo::Pluie), &contenu),
+            None
+        );
+        let vers = evolution_possible(&fee, &sous(Meteo::Tempete), &contenu).unwrap();
         faire_evoluer(&mut fee, vers);
         assert_eq!(fee.espece().id().as_str(), "fee-sorciere");
-        let vers = evolution_possible(&fee, &AU_CAMP, &contenu).unwrap();
+        assert_eq!(
+            evolution_possible(&fee, &sous(Meteo::Tempete), &contenu),
+            None
+        );
+        let vers = evolution_possible(&fee, &sous(Meteo::Pluie), &contenu).unwrap();
         assert_eq!(vers.id().as_str(), "reine-des-ronces");
         faire_evoluer(&mut fee, vers);
-        assert_eq!(evolution_possible(&fee, &AU_CAMP, &contenu), None);
+        assert_eq!(
+            evolution_possible(&fee, &sous(Meteo::Pluie), &contenu),
+            None
+        );
         let fee_sorciere = creer(&contenu, "fee-sorciere", 24);
-        assert_eq!(evolution_possible(&fee_sorciere, &AU_CAMP, &contenu), None);
+        assert_eq!(
+            evolution_possible(&fee_sorciere, &sous(Meteo::Pluie), &contenu),
+            None
+        );
+    }
+
+    #[test]
+    fn le_basilic_evolue_sous_la_canicule() {
+        let contenu = ContenuV1::new();
+        let marais = ZoneId::new("marais");
+        let sous = |meteo| Circonstances {
+            zone: Some(&marais),
+            apotres_vaincus: &[],
+            jour_ou_nuit: Some(JourOuNuit::Jour),
+            meteo,
+        };
+        let basilic = creer(&contenu, "basilic", 22);
+        assert_eq!(evolution_possible(&basilic, &sous(None), &contenu), None);
+        assert_eq!(
+            evolution_possible(&basilic, &sous(Some(Meteo::Pluie)), &contenu),
+            None
+        );
+        let vers = evolution_possible(&basilic, &sous(Some(Meteo::Canicule)), &contenu).unwrap();
+        assert_eq!(vers.id().as_str(), "basilic-royal");
     }
 }

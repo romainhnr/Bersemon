@@ -18,6 +18,18 @@ pub fn nom(meteo: Meteo) -> &'static str {
     }
 }
 
+/// "sous la pluie", "dans le cyclone".
+pub fn sous(meteo: Meteo) -> &'static str {
+    match meteo {
+        Meteo::Pluie => "sous la pluie",
+        Meteo::Tempete => "sous la tempête",
+        Meteo::Grele => "sous la grêle",
+        Meteo::TempeteDeSable => "sous la tempête de sable",
+        Meteo::Cyclone => "dans le cyclone",
+        Meteo::Canicule => "sous la canicule",
+    }
+}
+
 /// Après le départ, et le texte du moment du jour.
 pub fn au_depart(meteo: Meteo) -> &'static str {
     match meteo {

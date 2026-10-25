@@ -1285,6 +1285,7 @@ impl Partie {
                     zone: None,
                     apotres_vaincus: &self.apotres_vaincus,
                     jour_ou_nuit: None,
+                    meteo: None,
                 };
                 evolution_possible(monstre, &au_camp, catalogue)
             }

@@ -498,6 +498,15 @@ mod tests {
         );
         // Le Loup ne sort que la nuit (section 9.6).
         assert_eq!(espece[6], "Ne sort que la nuit.");
+        let basilic = contenu.espece(&EspeceId::new("basilic")).unwrap();
+        let fiche_du_basilic = crate::partie::fiche_d_espece(&basilic, &contenu);
+        assert!(
+            fiche_du_basilic.contains(
+                &"Évolution : Basilic royal dès le niveau 22, après un combat sous la canicule"
+                    .to_string()
+            ),
+            "{fiche_du_basilic:?}"
+        );
         let fiche = |id: &str| {
             let espece = contenu.espece(&EspeceId::new(id)).unwrap();
             crate::partie::fiche_d_espece(&espece, &contenu)

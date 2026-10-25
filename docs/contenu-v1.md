@@ -565,6 +565,9 @@ Libération de Gunther, après le texte de la victoire sur le Bourreau :
 | | | 2 | x1,2 | 5 Cendre de feu follet, 5 Fragment d'armure | 3 h |
 | | | 3 | x1,3 | 5 Aile de fée noire, 5 Os de squelette | 6 h |
 | Équipe | equipe | 1 | équipe de 3 à 4 monstres (étape 43) | 1 Croc de basilic, 1 Écaille de vouivre, 8 Os de squelette, 8 Aile de fée noire | 8 h |
+| Sac | sac | 1 | sac de 30 à 45 places (étape 125) | 6 Plume de corbeau, 6 Écaille de vipère | 1 h |
+| | | 2 | de 45 à 60 places | 6 Cendre de feu follet, 6 Fragment d'armure | 3 h |
+| | | 3 | de 60 à 80 places | 6 Aile de fée noire, 6 Os de squelette | 6 h |
 
 Les ressources rares sont lentes à réunir : une expédition dans le Marais rapporte un Croc de basilic environ une fois sur 12. Elles ne sont demandées qu'à la dernière amélioration.
 
@@ -1296,6 +1299,8 @@ Décidé le 25/10/2026, pour les étapes 121 à 123 (gamedesign.md, section 9.7)
 | Canicule | canicule | Feu, Sol | Lisière, Marais, Abbaye, désert à venir | Une chaleur écrasante pèse sur la terre. |
 
 Chaque zone a 1 chance sur 3, par créneau de 30 minutes, d'avoir une de ses météos ; sinon, temps calme.
+
+Évolutions selon la météo (étape 124) : Fée noire en Fée-sorcière au niveau 12, sous la tempête ; Fée-sorcière en Reine des ronces au niveau 25, sous la pluie ; Basilic en Basilic royal au niveau 22, sous la canicule. À la fiche : "Basilic royal dès le niveau 22, après un combat sous la canicule" ("dans le cyclone" pour le cyclone).
 
 Textes :
 

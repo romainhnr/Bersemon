@@ -2732,6 +2732,7 @@ impl EnExpedition {
                 zone: Some(self.expedition.zone().id()),
                 apotres_vaincus: partie.apotres_vaincus(),
                 jour_ou_nuit: self.expedition.jour_ou_nuit(),
+                meteo: self.expedition.meteo(),
             };
             if let Some(vers) = evolution_a_proposer(&bilan, index, &circonstances, contexte) {
                 self.moment = Moment::Evolution(EvolutionEnCours {
@@ -2806,6 +2807,7 @@ impl EnExpedition {
                 zone: Some(self.expedition.zone().id()),
                 apotres_vaincus: partie.apotres_vaincus(),
                 jour_ou_nuit: self.expedition.jour_ou_nuit(),
+                meteo: self.expedition.meteo(),
             };
             let vers = evolution_a_proposer(&oubli.bilan, oubli.monstre, &circonstances, contexte);
             if let Some(vers) = vers {
