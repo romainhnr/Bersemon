@@ -3084,3 +3084,64 @@ fn le_camp_dit_le_jour_ou_la_nuit() {
         assert!(affiche.texte.contains(attendu), "{}", affiche.texte);
     }
 }
+
+/// Le menu des expéditions dit la météo de chaque zone et sa durée (section
+/// 9.7).
+#[test]
+fn le_menu_des_expeditions_dit_la_meteo() {
+    use bersemon_core::catalogue::Catalogue;
+    use bersemon_core::heros::Heros;
+    use bersemon_core::meteo::Meteo;
+    use bersemon_core::niveau::Niveau;
+    use bersemon_core::nom::Nom;
+    use bersemon_core::partie::Partie;
+    use bersemon_core::stats::ValeursInternes;
+
+    let contenu = ContenuV1::new();
+    let salamandre = Monstre::creer(
+        contenu.espece(&EspeceId::new("salamandre")).unwrap(),
+        Niveau::new(5).unwrap(),
+        ValeursInternes::default(),
+        false,
+    )
+    .unwrap();
+    let partie = Partie::nouvelle(
+        Heros::new(Nom::new("Aldric").unwrap(), Classe::Mage),
+        salamandre,
+    );
+    let lisiere = &contenu.zones()[0];
+    let description = |maintenant| {
+        let question = crate::ecran_camp::question(&partie, Vue::Camp, &contenu, maintenant);
+        let affiche = Message {
+            texte: question.texte,
+            rangees: question.rangees,
+            version: 1,
+        };
+        verifier_les_limites(&affiche);
+        affiche
+            .rangees
+            .iter()
+            .find_map(|rangee| match rangee {
+                Rangee::Menu(menu) if menu.cle == Cle::Partir => menu
+                    .options
+                    .iter()
+                    .find(|option| option.valeur == "lisiere")
+                    .and_then(|option| option.description.clone()),
+                _ => None,
+            })
+            .unwrap()
+    };
+    let a = |creneau: u64| Horodatage::depuis_secondes(creneau * 30 * 60);
+    let sous_la_meteo = (0..)
+        .map(a)
+        .find(|maintenant| Meteo::de_la_zone(lisiere, *maintenant).is_some())
+        .unwrap();
+    let texte = description(sous_la_meteo);
+    assert!(texte.starts_with("Niveaux 3 à 7 ; "), "{texte}");
+    assert!(texte.contains(", encore "), "{texte}");
+    let au_calme = (0..)
+        .map(a)
+        .find(|maintenant| Meteo::de_la_zone(lisiere, *maintenant).is_none())
+        .unwrap();
+    assert_eq!(description(au_calme), "Niveaux 3 à 7");
+}

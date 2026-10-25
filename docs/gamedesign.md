@@ -509,6 +509,7 @@ Décidé le 25/10/2026, pour les étapes 121 à 123 (choix de l'utilisateur) :
 - La sauvegarde ne change pas.
 - Précisé à l'étape 121, en codant : le tirage d'un créneau se fait sur un générateur propre, dont la graine mêle le numéro du créneau et l'identifiant de la zone ; il ne touche pas aux tirages de la partie. Le temps restant regarde au plus une journée de créneaux en avant. Mesuré par l'outil d'équilibrage, l'effet de la météo sur la durée de la partie et sur les combats de fin de zone reste de l'ordre du bruit (docs/equilibrage.md, section 8).
 - Écrans, à l'étape 122 (console) : sur la carte, une zone sous une météo finit par ": pluie, encore 42 min" ; le compteur d'étapes devient "[Étape : 2/5] Nuit, pluie", sans météo par temps calme ; le texte de la météo suit celui du moment, au départ.
+- Écrans, à l'étape 123 (Discord) : dans le menu "Partir en expédition" du camp, la description d'une zone sous une météo finit par "; pluie, encore 42 min" ; le départ et le compteur d'étapes sont ceux de la console.
 
 ## 10. Combat
 

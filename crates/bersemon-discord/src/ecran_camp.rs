@@ -31,6 +31,7 @@ use bersemon_presentation::jour_et_nuit::moment_present;
 use bersemon_presentation::machines::{
     avis_des_pieges, etat_de_la_cour, machines as texte_des_machines,
 };
+use bersemon_presentation::meteo::meteo_de_la_zone;
 use bersemon_presentation::monstres::{
     attaques_connues, decrire_attaque, fiche_du_monstre, ligne_monstre, nom, provenance,
 };
@@ -122,11 +123,16 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
             } else {
                 ""
             };
+            // La météo du départ est celle de toute l'expédition (section
+            // 9.7).
+            let meteo = meteo_de_la_zone(zone, maintenant)
+                .map(|meteo| format!(" ; {meteo}"))
+                .unwrap_or_default();
             OptionDeMenu {
                 libelle: zone.nom().to_string(),
                 valeur: zone.id().as_str().to_string(),
                 description: Some(format!(
-                    "Niveaux {} à {}{exploree}",
+                    "Niveaux {} à {}{exploree}{meteo}",
                     minimum.valeur(),
                     maximum.valeur()
                 )),
