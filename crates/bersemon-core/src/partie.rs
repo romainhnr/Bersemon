@@ -18,7 +18,7 @@ use crate::capsule::{Capsule, ErreurApprentissage, attaques_a_apprendre};
 use crate::catalogue::Catalogue;
 use crate::codex::Codex;
 use crate::collection::{Collection, Emplacement, ErreurCollection, Placement};
-use crate::combat::{BilanCombat, Combat, Cote, ErreurCombat, Issue, ReglesDuMembre};
+use crate::combat::{BilanCombat, Combat, Cote, ErreurCombat, Issue, Membre, ReglesDuMembre};
 use crate::equipement::{ErreurEquipement, ObjetDEquipementId, PlaceDEquipement};
 use crate::espece::{Espece, EspeceId, Rarete};
 use crate::evolution::{
@@ -285,6 +285,12 @@ impl Partie {
             expeditions_automatiques: Vec::new(),
             attaques_a_choisir: Vec::new(),
         }
+    }
+
+    /// Après la victoire sur un gardien de la Tour, la source le soigne
+    /// avec ses monstres (section 9.5).
+    pub(crate) fn soigner_le_heros(&mut self) {
+        self.heros.soigner();
     }
 
     pub fn heros(&self) -> &Heros {
@@ -2095,14 +2101,20 @@ impl Partie {
         Ok(combat)
     }
 
+    /// Le héros suit l'équipe et combat quand tous ses monstres sont KO
+    /// (section 4.4).
     fn combat_contre(&self, groupe: Vec<Monstre>) -> Result<Combat, ErreurCombat> {
-        Ok(Combat::new(self.collection.equipe().to_vec(), groupe)?
-            .avec_bonus_du_joueur(self.heros.bonus_en_combat())
-            .avec_bonus_de_role_du_cote(Cote::Joueur)
-            .avec_ordre(self.heros.classe().ordre())
-            .avec_filets(self.forge.ameliorations().facteur_des_filets())
-            .avec_soins(*self.sac.soins())
-            .avec_reserve_de_filets(*self.sac.filets()))
+        Ok(Combat::avec_le_heros(
+            self.collection.equipe().to_vec(),
+            self.heros.combattant(),
+            groupe,
+        )?
+        .avec_bonus_du_joueur(self.heros.bonus_en_combat())
+        .avec_bonus_de_role_du_cote(Cote::Joueur)
+        .avec_ordre(self.heros.classe().ordre())
+        .avec_filets(self.forge.ameliorations().facteur_des_filets())
+        .avec_soins(*self.sac.soins())
+        .avec_reserve_de_filets(*self.sac.filets()))
     }
 
     /// Combat d'une expédition en groupe : l'équipe de l'hôte, puis celle de
@@ -2117,9 +2129,13 @@ impl Partie {
         zones: &[Zone],
         piste: &Piste,
     ) -> Result<Combat, ErreurCombat> {
-        let combat = Combat::en_groupe(
+        let combat = Combat::en_groupe_avec_les_heros(
             hote.collection.equipe().to_vec(),
             invite.collection.equipe().to_vec(),
+            vec![
+                (hote.heros.combattant(), Membre::Hote),
+                (invite.heros.combattant(), Membre::Invite),
+            ],
             groupe,
         )?
         .avec_bonus_du_joueur(hote.heros.bonus_en_combat())
@@ -2170,13 +2186,17 @@ impl Partie {
         &mut self,
         groupe: Vec<Monstre>,
     ) -> Result<Combat, ErreurCombat> {
-        Ok(Combat::new(self.collection.equipe().to_vec(), groupe)?
-            .avec_bonus_du_joueur(self.heros.bonus_en_combat())
-            .avec_bonus_de_role_du_cote(Cote::Joueur)
-            .avec_ordre(self.heros.classe().ordre())
-            .avec_soins(*self.sac.soins())
-            .avec_reserve_de_filets(*self.sac.filets())
-            .sans_capture())
+        Ok(Combat::avec_le_heros(
+            self.collection.equipe().to_vec(),
+            self.heros.combattant(),
+            groupe,
+        )?
+        .avec_bonus_du_joueur(self.heros.bonus_en_combat())
+        .avec_bonus_de_role_du_cote(Cote::Joueur)
+        .avec_ordre(self.heros.classe().ordre())
+        .avec_soins(*self.sac.soins())
+        .avec_reserve_de_filets(*self.sac.filets())
+        .sans_capture())
     }
 
     /// Ni fuite ni filet contre un humain (section 10.7). Ses monstres entrent
@@ -2222,7 +2242,7 @@ impl Partie {
         true
     }
 
-    /// Reprend l'équipe et les soins à la fin du combat, inscrit les
+    /// Reprend l'équipe, le héros et les soins à la fin du combat, inscrit les
     /// captures au codex et les rend, à placer ensuite avec
     /// `Collection::accueillir_capture`. Une défaite fait perdre tout le sac,
     /// rendu à côté des captures (section 9.3). Les choix d'attaques en
@@ -2232,6 +2252,9 @@ impl Partie {
         bilan: BilanCombat,
     ) -> Result<(Vec<Monstre>, Inventaire), ErreurCollection> {
         self.collection.actualiser_equipe(bilan.equipe)?;
+        if let Some(heros) = &bilan.heros {
+            self.heros.garder_l_etat_de(heros);
+        }
         self.sac.definir_soins(bilan.soins);
         self.sac.definir_filets(bilan.filets);
         let perdu = if bilan.issue == Some(Issue::Defaite) {
@@ -2353,17 +2376,35 @@ impl Partie {
 
     /// Soin du sac, utilisé entre deux étapes d'une expédition (section
     /// 14.4).
+    /// La position qui suit l'équipe désigne le héros, comme en combat
+    /// (section 4.4).
     pub fn utiliser_soin(
         &mut self,
         soin: Soin,
         index_equipe: usize,
         aleatoire: &mut dyn Aleatoire,
     ) -> Result<EffetDuSoin, ErreurSoin> {
+        if index_equipe == self.collection.equipe().len() {
+            let mut heros = self.heros.combattant();
+            let effet = self.sac.utiliser_soin(soin, &mut heros, aleatoire)?;
+            self.heros.garder_l_etat_de(&heros);
+            return Ok(effet);
+        }
         let monstre = self
             .collection
             .membre_de_l_equipe_mut(index_equipe)
             .ok_or(ErreurSoin::MonstreInexistant)?;
         self.sac.utiliser_soin(soin, monstre, aleatoire)
+    }
+
+    /// Le monstre de l'équipe ou, juste après elle, le héros qu'un soin
+    /// viserait.
+    pub fn cible_du_soin(&self, index_equipe: usize) -> Option<Monstre> {
+        let equipe = self.collection.equipe();
+        match equipe.get(index_equipe) {
+            Some(monstre) => Some(monstre.clone()),
+            None => (index_equipe == equipe.len()).then(|| self.heros.combattant()),
+        }
     }
 
     pub fn expeditions_automatiques(&self) -> &[ExpeditionAutomatique] {
@@ -2560,7 +2601,7 @@ impl Partie {
             .ok_or(ErreurExpeditionAutomatique::Inexistante)
     }
 
-    /// Tous les monstres sont soignés (section 13.1) ; ce qui a été trouvé
+    /// Tous les monstres et le héros sont soignés (section 13.1) ; ce qui a été trouvé
     /// reste dans le sac. Une expédition menée jusqu'au bout sans défaite
     /// rend la zone explorée et, si l'indice suivant de la piste se trouve
     /// dans cette zone, le révèle et le rend (section 9.4).
@@ -2570,6 +2611,7 @@ impl Partie {
         piste: &'p Piste,
     ) -> Option<&'p Indice> {
         self.collection.soigner_tout();
+        self.heros.soigner();
         // L'Éclipse ne compte jamais comme explorée (section 9.4).
         if !expedition.est_reussie() || expedition.zone().est_un_lieu_d_invocation() {
             return None;
@@ -3447,6 +3489,43 @@ mod tests {
         );
         assert!(partie.sac().est_vide());
         assert_eq!(partie.coffre_du_camp().argent(), 100);
+    }
+
+    /// Section 4.4 : le héros combat quand l'équipe est KO, garde ses
+    /// blessures après le combat, se soigne entre deux étapes, et guérit au
+    /// camp.
+    #[test]
+    fn le_heros_garde_ses_blessures_jusqu_au_camp() {
+        let mut partie = partie();
+        partie.collection.soigner_tout();
+        let depart = partie.collection.membre_de_l_equipe_mut(0).unwrap();
+        depart.subir_degats(depart.stats().pv);
+        let combat = partie.preparer_combat(vec![creer("loup", 5)]).unwrap();
+        assert_eq!(combat.actif(Cote::Joueur).index, 1);
+        let mut bilan = combat.terminer(&mut AleatoireScripte::new([]));
+        let mut heros = bilan.heros.take().unwrap();
+        heros.subir_degats(9);
+        bilan.heros = Some(heros);
+        partie.conclure_combat(bilan).unwrap();
+        assert_eq!(partie.heros().pv_perdus(), 9);
+        partie.ouvrir_coffre(1, 0, None);
+        let cible = partie.cible_du_soin(1).unwrap();
+        assert_eq!(cible.nom(), "Aldric");
+        // Potion à 40 % des 24 PV du héros : 9 PV.
+        assert_eq!(
+            partie.utiliser_soin(Soin::Potion, 1, &mut AleatoireScripte::new([40])),
+            Ok(EffetDuSoin::PvRendus(9))
+        );
+        assert_eq!(partie.heros().pv_perdus(), 0);
+        partie.heros.garder_l_etat_de(&{
+            let mut blesse = partie.heros().combattant();
+            blesse.subir_degats(3);
+            blesse
+        });
+        let (zones, piste) = carte();
+        let expedition = expedition_complete(&partie, &zones[0], &piste);
+        partie.rentrer_au_camp(&expedition, &piste);
+        assert_eq!(partie.heros().pv_perdus(), 0);
     }
 
     #[test]

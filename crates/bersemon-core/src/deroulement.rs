@@ -2577,9 +2577,9 @@ impl EnExpedition {
             }
             Choix::ContinuerLExpedition => Ok(self.etape_suivante(partie, contexte, evenements)),
             Choix::UtiliserSoin(soin, index) => {
-                let equipe = partie.collection().equipe();
+                let cible = partie.cible_du_soin(*index);
                 if let Some(confirmation) =
-                    soin_a_confirmer(*soin, partie.sac().soins(), equipe, *index, confirme)
+                    soin_a_confirmer(*soin, partie.sac().soins(), cible.as_ref(), confirme)
                 {
                     return Ok(Reponse::a_confirmer(confirmation));
                 }
@@ -2588,7 +2588,9 @@ impl EnExpedition {
                     .map_err(ErreurChoix::Soin)?;
                 evenements.push(Evenement::SoinUtilise {
                     soin: *soin,
-                    monstre: partie.collection().equipe()[*index].clone(),
+                    monstre: partie
+                        .cible_du_soin(*index)
+                        .expect("la cible vient d'être soignée"),
                     effet,
                 });
                 Ok(Reponse::Faite)
@@ -2686,8 +2688,12 @@ impl EnExpedition {
         let resultat = match (combat.phase(), choix) {
             (Phase::ChoixAction, Choix::Combat(action)) => {
                 if let Action::UtiliserSoin(soin, index) = *action {
-                    let confirmation =
-                        soin_a_confirmer(soin, combat.soins(), combat.equipe(), index, confirme);
+                    let confirmation = soin_a_confirmer(
+                        soin,
+                        combat.soins(),
+                        combat.combattant_du_joueur(index),
+                        confirme,
+                    );
                     if let Some(confirmation) = confirmation {
                         self.moment = Moment::Combat(combat);
                         return Ok(Reponse::a_confirmer(confirmation));
@@ -3037,6 +3043,7 @@ impl EnExpedition {
             // 9.5).
             if fin.contre_un_gardien && fin.issue == Some(Issue::Victoire) {
                 partie.collection_mut().soigner_tout();
+                partie.soigner_le_heros();
                 if let Some(tour) = self.expedition.tour() {
                     evenements.push(Evenement::ReposDansLaTour(
                         tour.recit_du_repos().to_string(),
@@ -3354,11 +3361,10 @@ impl EnExpedition {
 fn soin_a_confirmer(
     soin: Soin,
     soins: &Soins,
-    equipe: &[Monstre],
-    index: usize,
+    cible: Option<&Monstre>,
     confirme: bool,
 ) -> Option<Confirmation> {
-    let monstre = equipe.get(index)?;
+    let monstre = cible?;
     let perdu = !confirme
         && soins.nombre(soin) > 0
         && verifier_cible(soin, monstre).is_ok()

@@ -47,7 +47,7 @@ use bersemon_core::zone::{Zone, ZoneId};
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 30;
+pub(crate) const VERSION: u64 = 31;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -456,6 +456,13 @@ struct HerosV1 {
     objets: Vec<String>,
     #[serde(default)]
     equipement_porte: EquipementPorteV16,
+    /// Depuis la version 31 : les PV que le héros a perdus en combat et son
+    /// statut, qui durent toute l'expédition (section 4.4). Avant, il n'a
+    /// jamais combattu.
+    #[serde(default)]
+    pv_perdus: u32,
+    #[serde(default)]
+    statut: Option<String>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -577,6 +584,11 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV14 {
             classe: nom_de_classe(partie.heros().classe()).to_string(),
             objets,
             equipement_porte,
+            pv_perdus: partie.heros().pv_perdus(),
+            statut: partie
+                .heros()
+                .statut()
+                .map(|statut| nom_de_statut(statut).to_string()),
         },
         equipe: collection.equipe().iter().map(depuis_monstre).collect(),
         camp: collection.camp().iter().map(depuis_monstre).collect(),
@@ -858,13 +870,17 @@ pub(crate) fn vers_partie(
     catalogue: &dyn Catalogue,
 ) -> Result<Partie, ErreurSauvegarde> {
     let classe_du_heros = classe(&sauvegarde.heros.classe)?;
-    let heros =
-        Heros::new(nom(&sauvegarde.heros.nom)?, classe_du_heros).avec_equipement(vers_equipement(
+    let heros = Heros::new(nom(&sauvegarde.heros.nom)?, classe_du_heros)
+        .avec_equipement(vers_equipement(
             &sauvegarde.heros.objets,
             std::mem::take(&mut sauvegarde.heros.equipement_porte),
             classe_du_heros,
             catalogue,
-        )?);
+        )?)
+        .avec_blessures(
+            sauvegarde.heros.pv_perdus,
+            sauvegarde.heros.statut.as_deref().map(statut).transpose()?,
+        );
     // Avant la version 24, aucun monstre n'est loué (section 14.2).
     if sauvegarde.version < VERSION_DES_LOCATIONS {
         for monstre in sauvegarde.equipe.iter_mut().chain(&mut sauvegarde.camp) {

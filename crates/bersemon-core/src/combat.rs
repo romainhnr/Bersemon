@@ -2,6 +2,11 @@
 //! sauvages (section 10) : un monstre actif de chaque côté, les autres en
 //! réserve.
 //!
+//! Depuis l'étape 130, le héros de chaque côté combat en dernier : il entre
+//! de lui-même quand tous les monstres de son côté sont KO, et sa chute
+//! fait perdre le combat (section 4.4). Il suit les monstres de son côté :
+//! un `Combattant` dont la position dépasse l'équipe désigne un héros.
+//!
 //! Le combat ne fait aucun affichage : chaque étape rend la liste des
 //! événements survenus, que l'interface met en texte. Il ne bloque pas non
 //! plus en attendant le joueur, ce qui convient à la console comme à un bot
@@ -124,6 +129,14 @@ pub enum Action {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Evenement {
     MonstreEnvoye(Combattant),
+    /// Tous les monstres de son côté sont KO : le héros entre lui-même dans
+    /// le combat (section 4.4).
+    HerosEntre(Combattant),
+    /// Un monstre relevé pendant que le héros combattait reprend sa place.
+    HerosRecule {
+        heros: Combattant,
+        monstre: Combattant,
+    },
     /// Face au Démiurge, sa seconde forme se relève à la place de la
     /// première, tombée KO (section 9.4).
     Metamorphose(Combattant),
@@ -178,6 +191,11 @@ impl Evenement {
     pub fn miroir(&self) -> Evenement {
         match self.clone() {
             Evenement::MonstreEnvoye(combattant) => Evenement::MonstreEnvoye(combattant.miroir()),
+            Evenement::HerosEntre(combattant) => Evenement::HerosEntre(combattant.miroir()),
+            Evenement::HerosRecule { heros, monstre } => Evenement::HerosRecule {
+                heros: heros.miroir(),
+                monstre: monstre.miroir(),
+            },
             Evenement::Metamorphose(combattant) => Evenement::Metamorphose(combattant.miroir()),
             Evenement::AttaqueLancee { lanceur, attaque } => Evenement::AttaqueLancee {
                 lanceur: lanceur.miroir(),
@@ -264,6 +282,8 @@ pub enum ErreurCombat {
     AucunFilet(Filet),
     /// Plus aucun filet pour capturer un monstre KO.
     SansFilet,
+    /// Le héros n'entre qu'en dernier, de lui-même (section 4.4).
+    HerosEnDernier,
 }
 
 impl fmt::Display for ErreurCombat {
@@ -289,6 +309,9 @@ impl fmt::Display for ErreurCombat {
             ErreurCombat::ReserveAuGroupe => write!(f, "réservé au combat en groupe"),
             ErreurCombat::AucunFilet(filet) => write!(f, "plus aucun filet : {filet:?}"),
             ErreurCombat::SansFilet => write!(f, "plus aucun filet"),
+            ErreurCombat::HerosEnDernier => {
+                write!(f, "le héros n'entre qu'en dernier, de lui-même")
+            }
             ErreurCombat::AttaqueInexistante(index) => {
                 write!(f, "aucune attaque en position {index}")
             }
@@ -350,6 +373,9 @@ pub struct BilanCombat {
     pub soins: Soins,
     /// Ceux qui restent (section 11.2).
     pub filets: Filets,
+    /// Le héros du joueur, avec ses PV et son statut, s'il était du combat
+    /// (section 4.4) ; en groupe, celui de l'hôte.
+    pub heros: Option<Monstre>,
     /// En groupe, la part de l'invité : `captures`, `soins` et `filets`
     /// sont alors ceux de l'hôte (section 15.5).
     pub invite: Option<BilanDeLInvite>,
@@ -364,6 +390,7 @@ pub struct BilanDeLInvite {
     pub captures: Vec<Monstre>,
     pub soins: Soins,
     pub filets: Filets,
+    pub heros: Option<Monstre>,
 }
 
 impl BilanCombat {
@@ -386,6 +413,7 @@ impl BilanCombat {
             experience,
             soins: invite.soins,
             filets: invite.filets,
+            heros: invite.heros,
             invite: None,
         };
         (self, Some(part_de_l_invite))
@@ -443,6 +471,12 @@ pub struct Combat {
     actif_joueur: usize,
     adversaires: Vec<Monstre>,
     actif_adversaire: usize,
+    /// Les héros du joueur, puis celui de l'adversaire, qui suivent les
+    /// monstres de leur côté (section 4.4). En groupe, celui de l'hôte, puis
+    /// celui de l'invité.
+    heros: [Vec<Monstre>; 2],
+    /// Le joueur de chaque héros du côté du joueur, dans l'ordre.
+    membres_des_heros: Vec<Membre>,
     /// Positions des monstres adverses capturés, dans l'ordre des captures :
     /// ils restent dans la liste pour que les positions ne changent pas, mais
     /// ne combattent plus.
@@ -518,9 +552,33 @@ impl Combat {
     /// commencent le combat. `terminer` rend ensuite l'équipe avec ses PV et
     /// ses statuts.
     pub fn new(equipe: Vec<Monstre>, adversaires: Vec<Monstre>) -> Result<Self, ErreurCombat> {
+        Self::construire(equipe, Vec::new(), adversaires)
+    }
+
+    /// Avec le héros du joueur, qui suit son équipe : il commence le combat
+    /// si aucun monstre ne peut combattre (section 4.4).
+    pub fn avec_le_heros(
+        equipe: Vec<Monstre>,
+        heros: Monstre,
+        adversaires: Vec<Monstre>,
+    ) -> Result<Self, ErreurCombat> {
+        Self::construire(equipe, vec![(heros, Membre::Hote)], adversaires)
+    }
+
+    fn construire(
+        equipe: Vec<Monstre>,
+        heros: Vec<(Monstre, Membre)>,
+        adversaires: Vec<Monstre>,
+    ) -> Result<Self, ErreurCombat> {
         let actif_joueur = equipe
             .iter()
             .position(|monstre| !monstre.est_ko())
+            .or_else(|| {
+                heros
+                    .iter()
+                    .position(|(heros, _)| !heros.est_ko())
+                    .map(|position| equipe.len() + position)
+            })
             .ok_or(ErreurCombat::EquipeSansMonstreApte)?;
         if adversaires.is_empty() {
             return Err(ErreurCombat::AucunAdversaire);
@@ -528,12 +586,15 @@ impl Combat {
         if let Some(index) = adversaires.iter().position(Monstre::est_ko) {
             return Err(ErreurCombat::AdversaireKo(index));
         }
+        let (heros_du_joueur, membres_des_heros) = heros.into_iter().unzip();
         let mut combat = Self {
             equipe,
             actif_joueur,
             participants: vec![Vec::new(); adversaires.len()],
             adversaires,
             actif_adversaire: 0,
+            heros: [heros_du_joueur, Vec::new()],
+            membres_des_heros,
             captures: Vec::new(),
             regles: Default::default(),
             facteur_des_filets: (1, 1),
@@ -601,10 +662,22 @@ impl Combat {
         invite: Vec<Monstre>,
         adversaires: Vec<Monstre>,
     ) -> Result<Self, ErreurCombat> {
+        Self::en_groupe_avec_les_heros(hote, invite, Vec::new(), adversaires)
+    }
+
+    /// Avec les héros des deux joueurs, celui de l'hôte d'abord : ils
+    /// entrent quand tous les monstres des deux joueurs sont KO (section
+    /// 4.4).
+    pub fn en_groupe_avec_les_heros(
+        hote: Vec<Monstre>,
+        invite: Vec<Monstre>,
+        heros: Vec<(Monstre, Membre)>,
+        adversaires: Vec<Monstre>,
+    ) -> Result<Self, ErreurCombat> {
         let debut_de_l_invite = hote.len();
         let mut equipe = hote;
         equipe.extend(invite);
-        let mut combat = Combat::new(equipe, adversaires)?;
+        let mut combat = Combat::construire(equipe, heros, adversaires)?;
         combat.groupe = Some(Box::new(EnGroupe {
             debut_de_l_invite,
             regles: ReglesDuCote {
@@ -653,6 +726,13 @@ impl Combat {
 
     /// À qui est ce monstre de l'équipe : à l'hôte, hors groupe.
     pub fn proprietaire(&self, index: usize) -> Membre {
+        if let Some(position) = index.checked_sub(self.equipe.len()) {
+            return self
+                .membres_des_heros
+                .get(position)
+                .copied()
+                .unwrap_or(Membre::Hote);
+        }
         match &self.groupe {
             Some(groupe) if index >= groupe.debut_de_l_invite => Membre::Invite,
             _ => Membre::Hote,
@@ -735,6 +815,58 @@ impl Combat {
 
     pub fn est_un_duel(&self) -> bool {
         self.duel
+    }
+
+    /// Le héros de ce côté, qui suit ses monstres (section 4.4) : celui de
+    /// l'humain adverse, ou celui de chaque joueur d'un duel.
+    pub fn avec_heros(mut self, cote: Cote, heros: Monstre) -> Self {
+        if cote == Cote::Adversaire {
+            self.participants.push(Vec::new());
+        } else {
+            self.membres_des_heros.push(Membre::Hote);
+        }
+        self.heros[cote.position()].push(heros);
+        self
+    }
+
+    /// Ceux de ce côté, qu'ils combattent ou non : en groupe, celui de
+    /// l'hôte, puis celui de l'invité.
+    pub fn heros(&self, cote: Cote) -> &[Monstre] {
+        &self.heros[cote.position()]
+    }
+
+    pub fn est_heros(&self, combattant: Combattant) -> bool {
+        combattant.index >= self.equipe_du(combattant.cote).len()
+    }
+
+    /// Un monstre de l'équipe ou un héros du joueur, à la position donnée
+    /// pour un soin (section 14.4).
+    pub fn combattant_du_joueur(&self, index: usize) -> Option<&Monstre> {
+        let nombre = self.equipe.len();
+        self.equipe
+            .get(index)
+            .or_else(|| self.heros[0].get(index.checked_sub(nombre)?))
+    }
+
+    /// Tous les combattants de ce côté, ses monstres puis ses héros.
+    fn tous(&self, cote: Cote) -> impl Iterator<Item = &Monstre> {
+        self.equipe_du(cote)
+            .iter()
+            .chain(&self.heros[cote.position()])
+    }
+
+    /// Le premier monstre de ce côté qui peut entrer, ni KO ni capturé.
+    fn premier_monstre_apte(&self, cote: Cote) -> Option<usize> {
+        let capture = |index: &usize| cote == Cote::Adversaire && self.captures.contains(index);
+        (0..self.equipe_du(cote).len())
+            .find(|index| !self.equipe_du(cote)[*index].est_ko() && !capture(index))
+    }
+
+    fn premier_heros_apte(&self, cote: Cote) -> Option<usize> {
+        self.heros[cote.position()]
+            .iter()
+            .position(|heros| !heros.est_ko())
+            .map(|position| self.equipe_du(cote).len() + position)
     }
 
     /// Bonus de la classe et de l'équipement du héros de ce côté.
@@ -895,10 +1027,14 @@ impl Combat {
 
     /// En groupe, l'ordre du héros du propriétaire du monstre actif.
     pub fn ordre_disponible_pour(&self, cote: Cote) -> Option<Ordre> {
-        let regles = self.regles_de(self.actif(cote));
-        regles
-            .ordre
-            .filter(|_| regles.ordre_donne.is_none() && self.phase == Phase::ChoixAction)
+        let actif = self.actif(cote);
+        let regles = self.regles_de(actif);
+        // L'ordre va aux monstres, pas au héros (section 4.4).
+        regles.ordre.filter(|_| {
+            regles.ordre_donne.is_none()
+                && self.phase == Phase::ChoixAction
+                && !self.est_heros(actif)
+        })
     }
 
     /// Le monstre actif du joueur reçoit le bonus de l'ordre jusqu'à la fin
@@ -985,6 +1121,10 @@ impl Combat {
     /// habileté.
     pub fn stats_en_combat(&self, combattant: Combattant) -> Stats<u32> {
         let monstre = self.monstre(combattant);
+        // Les bonus renforcent les monstres, pas le héros (section 4.4).
+        if self.est_heros(combattant) {
+            return monstre.stats();
+        }
         let habilete = monstre
             .habilete()
             .map(Habilete::bonus_de_stats)
@@ -1026,11 +1166,13 @@ impl Combat {
         Combattant { cote, index }
     }
 
-    /// Panique si `combattant` ne désigne pas un monstre de ce combat.
+    /// Un monstre ou un héros. Panique si `combattant` ne désigne personne
+    /// dans ce combat.
     pub fn monstre(&self, combattant: Combattant) -> &Monstre {
-        match combattant.cote {
-            Cote::Joueur => &self.equipe[combattant.index],
-            Cote::Adversaire => &self.adversaires[combattant.index],
+        let monstres = self.equipe_du(combattant.cote);
+        match monstres.get(combattant.index) {
+            Some(monstre) => monstre,
+            None => &self.heros[combattant.cote.position()][combattant.index - monstres.len()],
         }
     }
 
@@ -1140,7 +1282,11 @@ impl Combat {
             Action::UtiliserSoin(soin, index) => {
                 let membre = self.membre_actif();
                 self.soins_du_membre_mut(membre).retirer(soin, 1);
-                let effet = appliquer_soin(soin, &mut self.equipe[index], aleatoire);
+                let cible = Combattant {
+                    cote: Cote::Joueur,
+                    index,
+                };
+                let effet = appliquer_soin(soin, self.monstre_mut(cible), aleatoire);
                 evenements.push(Evenement::SoinUtilise {
                     soin,
                     cible: Combattant {
@@ -1338,8 +1484,10 @@ impl Combat {
             actif_joueur: self.actif_adversaire,
             adversaires: self.equipe.clone(),
             actif_adversaire: self.actif_joueur,
+            heros: [self.heros[1].clone(), self.heros[0].clone()],
+            membres_des_heros: vec![Membre::Hote; self.heros[1].len()],
             captures: Vec::new(),
-            participants: vec![Vec::new(); self.equipe.len()],
+            participants: vec![Vec::new(); self.equipe.len() + self.heros[0].len()],
             regles,
             facteur_des_filets: self.facteur_des_filets,
             soins: Soins::default(),
@@ -1441,11 +1589,21 @@ impl Combat {
                 }
             }
         }
+        let [heros_du_joueur, _] = self.heros;
+        let mut heros_de_l_hote = None;
+        let mut heros_de_l_invite = None;
+        for (heros, membre) in heros_du_joueur.into_iter().zip(self.membres_des_heros) {
+            match membre {
+                Membre::Hote => heros_de_l_hote = Some(heros),
+                Membre::Invite => heros_de_l_invite = Some(heros),
+            }
+        }
         let invite = self.groupe.map(|groupe| BilanDeLInvite {
             debut: groupe.debut_de_l_invite,
             captures: captures_de_l_invite,
             soins: groupe.soins,
             filets: groupe.filets,
+            heros: heros_de_l_invite,
         });
         let sauvages = !self.contre_un_apotre && !self.contre_un_humain && !self.sans_capture;
         let vaincus_sauvages = adversaires
@@ -1461,6 +1619,7 @@ impl Combat {
             experience,
             soins: self.soins,
             filets: self.filets,
+            heros: heros_de_l_hote,
             invite,
         }
     }
@@ -1709,8 +1868,10 @@ impl Combat {
 
     /// Retient que le monstre actif du joueur affronte le monstre adverse
     /// actif. Un monstre KO, qui attend d'être remplacé, n'affronte personne.
+    /// Le héros n'en gagne pas (section 4.4) : il n'affronte personne.
     fn noter_participation(&mut self) {
-        if self.equipe[self.actif_joueur].est_ko() {
+        let actif = self.actif(Cote::Joueur);
+        if self.est_heros(actif) || self.monstre(actif).est_ko() {
             return;
         }
         let participants = &mut self.participants[self.actif_adversaire];
@@ -1747,7 +1908,7 @@ impl Combat {
                 if self.soins().nombre(soin) == 0 {
                     return Err(ErreurCombat::AucunSoin(soin));
                 }
-                let Some(monstre) = self.equipe.get(index) else {
+                let Some(monstre) = self.combattant_du_joueur(index) else {
                     return Err(ErreurCombat::MonstreInexistant(index));
                 };
                 verifier_cible(soin, monstre).map_err(|erreur| match erreur {
@@ -1770,6 +1931,10 @@ impl Combat {
     }
 
     fn verifier_remplacant_pour(&self, cote: Cote, index: usize) -> Result<(), ErreurCombat> {
+        let nombre = self.equipe_du(cote).len();
+        if (nombre..nombre + self.heros[cote.position()].len()).contains(&index) {
+            return Err(ErreurCombat::HerosEnDernier);
+        }
         match self.equipe_du(cote).get(index) {
             None => Err(ErreurCombat::MonstreInexistant(index)),
             Some(monstre) if monstre.est_ko() => Err(ErreurCombat::MonstreKo(index)),
@@ -1785,22 +1950,20 @@ impl Combat {
     }
 
     fn monstre_mut(&mut self, combattant: Combattant) -> &mut Monstre {
+        let [heros_du_joueur, heros_adverse] = &mut self.heros;
         match combattant.cote {
-            Cote::Joueur => &mut self.equipe[combattant.index],
-            Cote::Adversaire => &mut self.adversaires[combattant.index],
+            Cote::Joueur => choisir(&mut self.equipe, heros_du_joueur, combattant.index),
+            Cote::Adversaire => choisir(&mut self.adversaires, heros_adverse, combattant.index),
         }
     }
 
     fn attaquant_et_defenseur(&mut self, cote: Cote) -> (&Monstre, &mut Monstre) {
+        let [heros_du_joueur, heros_adverse] = &mut self.heros;
+        let joueur = choisir(&mut self.equipe, heros_du_joueur, self.actif_joueur);
+        let adversaire = choisir(&mut self.adversaires, heros_adverse, self.actif_adversaire);
         match cote {
-            Cote::Joueur => (
-                &self.equipe[self.actif_joueur],
-                &mut self.adversaires[self.actif_adversaire],
-            ),
-            Cote::Adversaire => (
-                &self.adversaires[self.actif_adversaire],
-                &mut self.equipe[self.actif_joueur],
-            ),
+            Cote::Joueur => (joueur, adversaire),
+            Cote::Adversaire => (adversaire, joueur),
         }
     }
 
@@ -1908,8 +2071,7 @@ impl Combat {
     /// Retient le côté dont toute l'équipe tombe la première (section
     /// 15.3).
     fn noter_chute(&mut self, cote: Cote) {
-        if self.premiere_equipe_tombee.is_none() && self.equipe_du(cote).iter().all(Monstre::est_ko)
-        {
+        if self.premiere_equipe_tombee.is_none() && self.tous(cote).all(Monstre::est_ko) {
             self.premiere_equipe_tombee = Some(cote);
         }
     }
@@ -1976,9 +2138,9 @@ impl Combat {
             return;
         }
 
-        // Une équipe entièrement KO perd, même si le dernier adversaire tombe
-        // au même tour (Q50, section 9.3).
-        if self.equipe.iter().all(Monstre::est_ko) {
+        // Un côté entièrement KO, héros compris, perd, même si le dernier
+        // adversaire tombe au même tour (Q50, section 9.3).
+        if self.tous(Cote::Joueur).all(Monstre::est_ko) {
             self.terminer_avec(Issue::Defaite, evenements);
             return;
         }
@@ -1988,7 +2150,9 @@ impl Combat {
                     self.actif_adversaire = index;
                     self.noter_participation();
                     let entree = self.actif(Cote::Adversaire);
-                    evenements.push(if self.en_deux_phases {
+                    evenements.push(if self.est_heros(entree) {
+                        Evenement::HerosEntre(entree)
+                    } else if self.en_deux_phases {
                         Evenement::Metamorphose(entree)
                     } else {
                         Evenement::MonstreEnvoye(entree)
@@ -2000,9 +2164,31 @@ impl Combat {
                 }
             }
         }
-        if !self.est_en_jeu(Cote::Joueur) {
-            self.regles[Cote::Joueur.position()].a_remplacer = true;
+        self.faire_entrer(Cote::Joueur, evenements);
+    }
+
+    /// Le héros entre de lui-même quand tous les monstres de son côté sont
+    /// KO, et un monstre relevé pendant qu'il combat reprend aussitôt sa
+    /// place (section 4.4). Sinon, un monstre actif KO attend que son joueur
+    /// le remplace.
+    fn faire_entrer(&mut self, cote: Cote, evenements: &mut Vec<Evenement>) {
+        let actif = self.actif(cote);
+        if self.est_en_jeu(cote) {
+            if let (true, Some(index)) = (self.est_heros(actif), self.premier_monstre_apte(cote)) {
+                self.envoyer(cote, index);
+                evenements.push(Evenement::HerosRecule {
+                    heros: actif,
+                    monstre: self.actif(cote),
+                });
+            }
+            return;
+        }
+        if self.premier_monstre_apte(cote).is_some() {
+            self.regles[cote.position()].a_remplacer = true;
             self.phase = Phase::Remplacement;
+        } else if let Some(index) = self.premier_heros_apte(cote) {
+            self.envoyer(cote, index);
+            evenements.push(Evenement::HerosEntre(self.actif(cote)));
         }
     }
 
@@ -2018,17 +2204,15 @@ impl Combat {
             return;
         }
         for cote in [Cote::Joueur, Cote::Adversaire] {
-            if !self.est_en_jeu(cote) {
-                self.regles[cote.position()].a_remplacer = true;
-                self.phase = Phase::Remplacement;
-            }
+            self.faire_entrer(cote, evenements);
         }
     }
 
-    /// Les monstres du groupe entrent dans l'ordre de la rencontre (Q49).
+    /// Les monstres du groupe entrent dans l'ordre de la rencontre (Q49),
+    /// puis le héros d'un humain (section 4.4).
     fn prochain_adversaire(&self) -> Option<usize> {
-        (0..self.adversaires.len())
-            .find(|index| !self.captures.contains(index) && !self.adversaires[*index].est_ko())
+        self.premier_monstre_apte(Cote::Adversaire)
+            .or_else(|| self.premier_heros_apte(Cote::Adversaire))
     }
 
     fn terminer_avec(&mut self, issue: Issue, evenements: &mut Vec<Evenement>) {
@@ -2045,6 +2229,20 @@ impl Combat {
         } else {
             vitesse
         }
+    }
+}
+
+/// Le monstre ou le héros à cette position d'un côté : ses héros suivent
+/// ses monstres.
+fn choisir<'a>(
+    monstres: &'a mut [Monstre],
+    heros: &'a mut [Monstre],
+    index: usize,
+) -> &'a mut Monstre {
+    let nombre = monstres.len();
+    match monstres.get_mut(index) {
+        Some(monstre) => monstre,
+        None => &mut heros[index - nombre],
     }
 }
 
@@ -2808,6 +3006,224 @@ mod tests {
 
     fn ko(monstre: Monstre) -> Monstre {
         affaibli(monstre, 0)
+    }
+
+    fn degats_forts(cible: Combattant, degats: u32) -> Evenement {
+        Evenement::Degats {
+            cible,
+            degats,
+            critique: false,
+            efficacite: Efficacite::Forte,
+        }
+    }
+
+    /// Un héros de test : 20 PV et 10 dans les autres stats, comme `lent`,
+    /// mais de type Humain, que le coup frappe à x2 (section 5.2).
+    fn heros() -> Monstre {
+        monstre(&[Type::Humain], stats_uniformes(50), 5, vec![coup()])
+    }
+
+    /// Section 4.4 : le héros entre de lui-même, et sa chute fait perdre.
+    #[test]
+    fn le_heros_entre_quand_toute_l_equipe_est_ko_et_sa_chute_fait_perdre() {
+        let mut combat =
+            Combat::avec_le_heros(vec![affaibli(lent(), 3)], heros(), vec![rapide()]).unwrap();
+        let evenements = tour(&mut combat, Action::Attaquer(0), &[2, 100]);
+        assert_eq!(
+            evenements,
+            vec![
+                lancee(a(0), coup()),
+                degats(j(0), 3),
+                Evenement::Ko(j(0)),
+                Evenement::HerosEntre(j(1)),
+            ]
+        );
+        assert_eq!(combat.actif(Cote::Joueur), j(1));
+        assert!(combat.est_heros(j(1)));
+        assert_eq!(combat.phase(), Phase::ChoixAction);
+        // Le coup le frappe à x2 ; son propre coup, sans bonus de type.
+        let evenements = tour(&mut combat, Action::Attaquer(0), &[2, 100, 2, 100]);
+        assert_eq!(evenements[1], degats_forts(j(1), 10));
+        assert_eq!(evenements[3], degats(a(0), 5));
+        let evenements = tour(&mut combat, Action::Attaquer(0), &[2, 100]);
+        assert_eq!(
+            evenements.last(),
+            Some(&Evenement::FinDuCombat(Issue::Defaite))
+        );
+        let bilan = terminer(combat, &[]);
+        assert!(bilan.heros.unwrap().est_ko());
+        assert_eq!(bilan.equipe.len(), 1);
+    }
+
+    #[test]
+    fn le_heros_commence_le_combat_si_aucun_monstre_ne_peut_combattre() {
+        let combat = Combat::avec_le_heros(vec![ko(lent())], heros(), vec![lent()]).unwrap();
+        assert_eq!(combat.actif(Cote::Joueur), j(1));
+        assert_eq!(combat.equipe().len(), 1);
+        assert_eq!(combat.heros(Cote::Joueur).len(), 1);
+        assert!(Combat::avec_le_heros(vec![ko(lent())], ko(heros()), vec![lent()]).is_err());
+    }
+
+    #[test]
+    fn le_heros_ne_s_envoie_pas_et_n_a_ni_bonus_ni_ordre() {
+        let bonus = Stats {
+            attaque: 50,
+            ..Stats::default()
+        };
+        let mut combat = Combat::avec_le_heros(
+            vec![affaibli(lent(), 3), affaibli(lent(), 3)],
+            heros(),
+            vec![rapide()],
+        )
+        .unwrap()
+        .avec_bonus_du_joueur(bonus)
+        .avec_ordre(Ordre::CriDeGuerre);
+        assert_eq!(
+            combat.jouer_tour(Action::Changer(2), &mut AleatoireScripte::new([])),
+            Err(ErreurCombat::HerosEnDernier)
+        );
+        tour(&mut combat, Action::Attaquer(0), &[2, 100]);
+        assert_eq!(combat.phase(), Phase::Remplacement);
+        assert_eq!(combat.remplacer(2), Err(ErreurCombat::HerosEnDernier));
+        combat.remplacer(1).unwrap();
+        tour(&mut combat, Action::Attaquer(0), &[2, 100]);
+        assert_eq!(combat.actif(Cote::Joueur), j(2));
+        assert_eq!(combat.stats_en_combat(j(2)), heros().stats());
+        assert_eq!(combat.ordre_disponible(), None);
+    }
+
+    /// Section 4.4 : le monstre relevé par un élixir reprend sa place.
+    #[test]
+    fn un_monstre_releve_reprend_la_place_du_heros() {
+        let mut soins = Soins::default();
+        soins.ajouter(Soin::Elixir, 1);
+        let mut combat = Combat::avec_le_heros(vec![affaibli(lent(), 3)], heros(), vec![rapide()])
+            .unwrap()
+            .avec_soins(soins);
+        tour(&mut combat, Action::Attaquer(0), &[2, 100]);
+        let evenements = tour(
+            &mut combat,
+            Action::UtiliserSoin(Soin::Elixir, 0),
+            &[2, 100],
+        );
+        assert_eq!(
+            evenements,
+            vec![
+                Evenement::SoinUtilise {
+                    soin: Soin::Elixir,
+                    cible: j(0),
+                    effet: EffetDuSoin::PvRendus(10),
+                },
+                lancee(a(0), coup()),
+                degats_forts(j(1), 10),
+                Evenement::HerosRecule {
+                    heros: j(1),
+                    monstre: j(0),
+                },
+            ]
+        );
+        assert_eq!(combat.actif(Cote::Joueur), j(0));
+    }
+
+    /// Le héros se soigne comme un monstre (section 4.4).
+    #[test]
+    fn une_potion_soigne_le_heros() {
+        let mut soins = Soins::default();
+        soins.ajouter(Soin::Potion, 1);
+        let mut combat =
+            Combat::avec_le_heros(vec![ko(lent())], affaibli(heros(), 5), vec![lent()])
+                .unwrap()
+                .avec_soins(soins);
+        // Potion à 50 % : 10 PV ; le monstre adverse, plus lent, frappe
+        // ensuite.
+        let evenements = tour(
+            &mut combat,
+            Action::UtiliserSoin(Soin::Potion, 1),
+            &[50, 2, 100],
+        );
+        assert_eq!(
+            evenements[0],
+            Evenement::SoinUtilise {
+                soin: Soin::Potion,
+                cible: j(1),
+                effet: EffetDuSoin::PvRendus(10),
+            }
+        );
+        assert_eq!(combat.monstre(j(1)).pv_actuels(), 5);
+    }
+
+    /// Section 10.7 : le héros de l'humain entre après ses monstres, ne se
+    /// prend pas et ne rapporte pas d'XP.
+    #[test]
+    fn le_heros_d_un_humain_entre_apres_ses_monstres() {
+        let mut combat = Combat::new(vec![rapide()], vec![affaibli(lent(), 3)])
+            .unwrap()
+            .contre_un_humain(IaHumain::Simple)
+            .avec_heros(Cote::Adversaire, heros())
+            .avec_reserve_de_filets(filets(10));
+        let evenements = tour(&mut combat, Action::Attaquer(0), &[2, 100]);
+        assert_eq!(evenements.last(), Some(&Evenement::HerosEntre(a(1))));
+        assert!(combat.est_heros(a(1)));
+        let evenements = tour(&mut combat, Action::Attaquer(0), &[2, 100, 2, 100]);
+        assert_eq!(evenements[1], degats_forts(a(1), 10));
+        let evenements = tour(&mut combat, Action::Attaquer(0), &[2, 100]);
+        assert_eq!(
+            evenements.last(),
+            Some(&Evenement::FinDuCombat(Issue::Victoire))
+        );
+        assert_eq!(combat.adversaires_capturables(), vec![0]);
+        // Un seul tirage d'XP : celui du monstre de l'humain.
+        let bilan = terminer(combat, &[100]);
+        assert!(xp_gagnee(&bilan, 0).is_some());
+    }
+
+    /// Section 15.3 : en duel, chaque héros entre quand son équipe est KO.
+    #[test]
+    fn en_duel_le_heros_entre_aussi() {
+        let mut combat = Combat::duel(vec![affaibli(lent(), 3)], vec![rapide()])
+            .unwrap()
+            .avec_heros(Cote::Joueur, heros())
+            .avec_heros(Cote::Adversaire, heros());
+        let evenements = combat
+            .jouer_tour_en_duel(
+                Action::Attaquer(0),
+                Action::Attaquer(0),
+                &mut AleatoireScripte::new([2, 100]),
+            )
+            .unwrap();
+        assert_eq!(evenements.last(), Some(&Evenement::HerosEntre(j(1))));
+        assert_eq!(combat.phase(), Phase::ChoixAction);
+        assert_eq!(
+            combat.miroir().actif(Cote::Adversaire),
+            Combattant {
+                cote: Cote::Adversaire,
+                index: 1
+            }
+        );
+    }
+
+    /// Section 4.4 : en groupe, le héros de l'hôte, puis celui de l'invité.
+    #[test]
+    fn en_groupe_les_deux_heros_entrent_l_un_apres_l_autre() {
+        let mut combat = Combat::en_groupe_avec_les_heros(
+            vec![ko(lent())],
+            vec![ko(lent())],
+            vec![
+                (affaibli(heros(), 5), Membre::Hote),
+                (heros(), Membre::Invite),
+            ],
+            vec![rapide()],
+        )
+        .unwrap();
+        assert_eq!(combat.actif(Cote::Joueur), j(2));
+        assert_eq!(combat.membre_actif(), Membre::Hote);
+        let evenements = tour(&mut combat, Action::Attaquer(0), &[2, 100]);
+        assert_eq!(evenements.last(), Some(&Evenement::HerosEntre(j(3))));
+        assert_eq!(combat.membre_actif(), Membre::Invite);
+        combat.interrompre_par_une_fuite().unwrap();
+        let (hote, invite) = terminer(combat, &[]).separer();
+        assert!(hote.heros.unwrap().est_ko());
+        assert_eq!(invite.unwrap().heros.unwrap().pv_actuels(), 20);
     }
 
     /// Section 15.5 : en groupe, le propriétaire du monstre actif ne fait

@@ -16,7 +16,7 @@ use crate::mise_en_valeur::important;
 use crate::monstres::{
     decrire_attaque, ligne_monstre, nom, nom_en_combat, nom_en_valeur, progression_d_experience,
 };
-use crate::partie::types_connus;
+use crate::partie::{enumerer, types_connus};
 use crate::soins::soin_utilise;
 
 /// La seconde forme du Démiurge reste cachée jusqu'à son entrée (section
@@ -140,6 +140,21 @@ pub fn evenement(evenement: &Evenement, combat: &Combat) -> String {
             Cote::Joueur => format!("Vous envoyez {}.", fort(*combattant)),
             Cote::Adversaire => format!("{} entre en combat.", fort(*combattant)),
         },
+        Evenement::HerosEntre(combattant) => important(&match combattant.cote {
+            Cote::Joueur => format!(
+                "Tous vos monstres sont à terre : {} entre lui-même dans le combat !",
+                nom_de(*combattant)
+            ),
+            Cote::Adversaire => format!(
+                "{} n'a plus de monstre debout : il entre lui-même dans le combat !",
+                nom_de(*combattant)
+            ),
+        }),
+        Evenement::HerosRecule { heros, monstre } => format!(
+            "{} se relève et reprend sa place : {} recule.",
+            fort(*monstre),
+            fort(*heros)
+        ),
         Evenement::Metamorphose(_) => important(METAMORPHOSE_DU_DEMIURGE),
         Evenement::AttaqueLancee { lanceur, attaque } => {
             format!("{} utilise {}.", fort(*lanceur), attaque.nom())
@@ -198,7 +213,7 @@ pub fn evenement(evenement: &Evenement, combat: &Combat) -> String {
         Evenement::SoinUtilise { soin, cible, effet } => soin_utilise(*soin, &fort(*cible), *effet),
         Evenement::Fuite => "Vous prenez la fuite.".to_string(),
         Evenement::FinDuCombat(Issue::Victoire) => "Victoire !".to_string(),
-        Evenement::FinDuCombat(Issue::Defaite) => important("Défaite : toute votre équipe est KO."),
+        Evenement::FinDuCombat(Issue::Defaite) => important(&defaite(combat)),
         Evenement::FinDuCombat(Issue::Fuite) => "Le combat est terminé.".to_string(),
         // Le récit d'un duel nomme le héros qui abandonne ou perd par
         // forfait (`duels::raconter`) : ces phrases ne servent qu'à défaut.
@@ -210,6 +225,21 @@ pub fn evenement(evenement: &Evenement, combat: &Combat) -> String {
             Cote::Joueur => "Vous perdez le duel par forfait.".to_string(),
             Cote::Adversaire => "Votre adversaire perd le duel par forfait.".to_string(),
         },
+    }
+}
+
+/// Le héros du joueur, qui combat en dernier, s'effondre (section 4.4) ;
+/// en groupe, les deux.
+fn defaite(combat: &Combat) -> String {
+    let noms: Vec<String> = combat
+        .heros(Cote::Joueur)
+        .iter()
+        .map(|heros| heros.nom().to_string())
+        .collect();
+    match noms.len() {
+        0 => "Défaite : toute votre équipe est KO.".to_string(),
+        1 => format!("Défaite : {} s'effondre.", noms[0]),
+        _ => format!("Défaite : {} s'effondrent.", enumerer(&noms)),
     }
 }
 

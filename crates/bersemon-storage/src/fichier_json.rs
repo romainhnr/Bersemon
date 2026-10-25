@@ -705,10 +705,14 @@ mod tests {
 
     #[test]
     fn version_inconnue() {
-        let texte = texte_de_partie().replacen("\"version\":30", "\"version\":31", 1);
+        let texte = texte_de_partie().replacen(
+            &format!("\"version\":{VERSION}"),
+            &format!("\"version\":{}", VERSION + 1),
+            1,
+        );
         assert_eq!(
             charger_texte(&texte),
-            Err(ErreurSauvegarde::VersionInconnue(31))
+            Err(ErreurSauvegarde::VersionInconnue(VERSION + 1))
         );
     }
 
@@ -1275,7 +1279,7 @@ mod tests {
             &[PalierDuCodex::Especes(10), PalierDuCodex::Complet]
         );
         // Avant la version 29, rien de réclamé (section 5.6).
-        let ancienne = texte.replacen("\"version\":30", "\"version\":28", 1);
+        let ancienne = texte.replacen(&format!("\"version\":{VERSION}"), "\"version\":28", 1);
         assert!(
             charger_texte(&ancienne)
                 .unwrap()
@@ -1299,7 +1303,7 @@ mod tests {
         assert_eq!(rite.parents()[1].niveau().valeur(), 9);
         assert_eq!(relue, partie_complete());
         // Avant la version 28, pas de rite (section 13.11).
-        let ancienne = texte.replacen("\"version\":30", "\"version\":27", 1);
+        let ancienne = texte.replacen(&format!("\"version\":{VERSION}"), "\"version\":27", 1);
         assert!(charger_texte(&ancienne).unwrap().unwrap().rite().is_none());
         let mut valeur: serde_json::Value = serde_json::from_str(&texte).unwrap();
         let parents = valeur["rite"]["parents"].as_array_mut().unwrap();
@@ -1318,7 +1322,7 @@ mod tests {
         assert_eq!(relue.coffre_du_camp().filets().nombre(Filet::Chaines), 3);
         // Avant la version 27, les filets étaient illimités : la partie en
         // trouve 10 de chanvre au coffre, et rien d'autre (Q102).
-        let ancienne = texte.replacen("\"version\":30", "\"version\":26", 1);
+        let ancienne = texte.replacen(&format!("\"version\":{VERSION}"), "\"version\":26", 1);
         let ancienne = charger_texte(&ancienne).unwrap().unwrap();
         assert!(ancienne.sac().filets().est_vide());
         assert_eq!(
@@ -1348,7 +1352,7 @@ mod tests {
             }
         );
         // Avant la version 26, pas de Tour sans fond (section 9.5).
-        let ancienne = texte.replacen("\"version\":30", "\"version\":25", 1);
+        let ancienne = texte.replacen(&format!("\"version\":{VERSION}"), "\"version\":25", 1);
         let ancienne = charger_texte(&ancienne).unwrap().unwrap();
         assert_eq!(ancienne.records_de_la_tour(), RecordsDeLaTour::default());
     }
@@ -1360,7 +1364,7 @@ mod tests {
         let relue = charger_texte(&texte).unwrap().unwrap();
         assert_eq!(relue.beherit(), EtatDuBeherit::EclipseOuverte);
         // Avant la version 25, pas de Béhérit (section 9.4).
-        let ancienne = texte.replacen("\"version\":30", "\"version\":24", 1);
+        let ancienne = texte.replacen(&format!("\"version\":{VERSION}"), "\"version\":24", 1);
         let ancienne = charger_texte(&ancienne).unwrap().unwrap();
         assert_eq!(ancienne.beherit(), EtatDuBeherit::Aucun);
         let inconnu = texte.replacen("eclipse-ouverte", "brise", 1);
@@ -1391,6 +1395,33 @@ mod tests {
             .insert("version".to_string(), 23.into());
         let ancienne = charger_texte(&valeur.to_string()).unwrap().unwrap();
         assert!(ancienne.collection().monstre_loue().is_none());
+    }
+
+    #[test]
+    fn les_blessures_du_heros_se_relisent_depuis_la_version_31() {
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        let heros = valeur["heros"].as_object_mut().unwrap();
+        heros.insert("pv_perdus".to_string(), 7.into());
+        heros.insert("statut".to_string(), "poison".into());
+        let relue = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        assert_eq!(relue.heros().pv_perdus(), 7);
+        assert_eq!(relue.heros().statut(), Some(Statut::Poison));
+        let texte = serde_json::to_string(&format::depuis_partie(&relue)).unwrap();
+        assert!(
+            texte.contains("\"pv_perdus\":7,\"statut\":\"poison\""),
+            "{texte}"
+        );
+        // Avant la version 31, le héros n'a jamais combattu.
+        let heros = valeur["heros"].as_object_mut().unwrap();
+        heros.remove("pv_perdus");
+        heros.remove("statut");
+        valeur
+            .as_object_mut()
+            .unwrap()
+            .insert("version".to_string(), 30.into());
+        let ancienne = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        assert_eq!(ancienne.heros().pv_perdus(), 0);
+        assert_eq!(ancienne.heros().statut(), None);
     }
 
     #[test]

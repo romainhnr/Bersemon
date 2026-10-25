@@ -1,9 +1,18 @@
 //! Héros du joueur (section 4) : un nom, une classe et son équipement. Il
-//! ne combat pas et n'a ni niveau ni stats, mais donne un ordre par combat.
+//! donne un ordre par combat et, depuis l'étape 130, combat lui-même quand
+//! tous ses monstres sont KO (section 4.4) : il n'a ni XP ni niveau propre,
+//! mais des stats tirées de sa classe et un niveau de combat tiré de son
+//! équipement.
 
-use crate::equipement::Equipement;
+use crate::attaque::{Attaque, AttaqueId, AttaquesMonstre, Categorie};
+use crate::equipement::{Equipement, ObjetDEquipement, PlaceDEquipement};
+use crate::espece::{Espece, EspeceId, Role};
+use crate::monstre::Monstre;
+use crate::niveau::Niveau;
 use crate::nom::Nom;
-use crate::stats::{BonusDeStats, Stats, cumuler_bonus};
+use crate::stats::{BonusDeStats, Stats, StatsDeBase, ValeursInternes, cumuler_bonus};
+use crate::statut::Statut;
+use crate::types::{Type, TypesMonstre};
 
 /// Guerrier et Mage dans la V1 (Q2), puis le Templier et l'Assassin
 /// (section 4.1).
@@ -64,6 +73,110 @@ impl Classe {
             Classe::Assassin => Ordre::PasDeLOmbre,
         }
     }
+
+    /// Celles du héros qui combat, comme celles d'une espèce
+    /// (docs/contenu-v1.md, section 34).
+    pub fn stats_de_base(self) -> StatsDeBase {
+        let [
+            pv,
+            attaque,
+            defense,
+            attaque_speciale,
+            defense_speciale,
+            vitesse,
+        ] = match self {
+            Classe::Guerrier => [90, 100, 85, 40, 65, 70],
+            Classe::Mage => [70, 40, 55, 110, 90, 85],
+            Classe::Templier => [95, 45, 100, 75, 95, 40],
+            Classe::Assassin => [70, 105, 55, 40, 60, 120],
+        };
+        Stats {
+            pv,
+            attaque,
+            defense,
+            attaque_speciale,
+            defense_speciale,
+            vitesse,
+        }
+    }
+}
+
+/// Niveau de combat d'un héros sans arme ni armure ; chaque palier de son
+/// arme et de son armure l'élève d'autant (section 4.4).
+const NIVEAU_DE_COMBAT_DE_BASE: u8 = 5;
+const NIVEAUX_PAR_PALIER: u8 = 5;
+
+/// Celles de tout héros qui combat, faute de les tirer au sort (section
+/// 4.4).
+const VALEURS_INTERNES_DU_HEROS: u8 = 15;
+
+/// L'attaque du héros sans arme (docs/contenu-v1.md, section 34).
+pub fn coup_de_poing() -> Attaque {
+    Attaque::new(
+        AttaqueId::new("coup-de-poing"),
+        "Coup de poing",
+        Type::Humain,
+        Categorie::Physique,
+        40,
+        100,
+    )
+    .expect("attaque du héros valide")
+}
+
+/// 5 sans rien, plus 5 par palier de l'arme et de l'armure.
+pub fn niveau_de_combat(
+    arme: Option<&ObjetDEquipement>,
+    armure: Option<&ObjetDEquipement>,
+) -> Niveau {
+    let paliers: u8 = [arme, armure]
+        .into_iter()
+        .flatten()
+        .map(ObjetDEquipement::palier)
+        .sum();
+    Niveau::new(NIVEAU_DE_COMBAT_DE_BASE + NIVEAUX_PAR_PALIER * paliers)
+        .expect("niveau de combat dans les bornes")
+}
+
+/// Un héros qui combat, celui du joueur comme celui d'un humain de l'IA :
+/// un monstre de type Humain, au nom du héros, aux stats de sa classe et
+/// au niveau de son équipement, avec les attaques de son arme et tous ses
+/// PV (section 4.4). Il n'a ni habileté, ni XP à gagner.
+pub fn creer_combattant(
+    nom: &str,
+    classe: Classe,
+    arme: Option<&ObjetDEquipement>,
+    armure: Option<&ObjetDEquipement>,
+) -> Monstre {
+    let espece = Espece::new(
+        EspeceId::new("heros"),
+        nom,
+        TypesMonstre::new(&[Type::Humain]).expect("un type"),
+        Role::Offensif,
+        classe.stats_de_base(),
+        0,
+        Vec::new(),
+    );
+    let attaques = match arme.map(ObjetDEquipement::attaques) {
+        Some(attaques) if !attaques.is_empty() => attaques.to_vec(),
+        _ => vec![coup_de_poing()],
+    };
+    let valeur = VALEURS_INTERNES_DU_HEROS;
+    let valeurs_internes = ValeursInternes::new(Stats {
+        pv: valeur,
+        attaque: valeur,
+        defense: valeur,
+        attaque_speciale: valeur,
+        defense_speciale: valeur,
+        vitesse: valeur,
+    })
+    .expect("valeurs internes valides");
+    Monstre::new(
+        espece,
+        niveau_de_combat(arme, armure),
+        valeurs_internes,
+        AttaquesMonstre::new(attaques).expect("attaques du héros valides"),
+        false,
+    )
 }
 
 /// Action de soutien que le héros donne en combat, une fois par combat, au
@@ -119,6 +232,10 @@ pub struct Heros {
     nom: Nom,
     classe: Classe,
     equipement: Equipement,
+    /// Les PV qu'il a perdus en combat : ils durent toute l'expédition,
+    /// comme ceux d'un monstre, et se soignent au camp (section 4.4).
+    pv_perdus: u32,
+    statut: Option<Statut>,
 }
 
 impl Heros {
@@ -127,7 +244,61 @@ impl Heros {
             nom,
             classe,
             equipement: Equipement::default(),
+            pv_perdus: 0,
+            statut: None,
         }
+    }
+
+    /// Reprise d'une sauvegarde : ses PV perdus et son statut. Il n'a jamais
+    /// moins de 1 PV : KO, il perd le combat et rentre au camp.
+    pub fn avec_blessures(mut self, pv_perdus: u32, statut: Option<Statut>) -> Self {
+        self.pv_perdus = pv_perdus;
+        self.statut = statut;
+        self
+    }
+
+    pub fn pv_perdus(&self) -> u32 {
+        self.pv_perdus
+    }
+
+    pub fn statut(&self) -> Option<Statut> {
+        self.statut
+    }
+
+    pub fn niveau_de_combat(&self) -> Niveau {
+        niveau_de_combat(
+            self.equipement.porte(PlaceDEquipement::Arme),
+            self.equipement.porte(PlaceDEquipement::Armure),
+        )
+    }
+
+    /// Le héros tel qu'il entre en combat : ses PV et son statut du moment.
+    pub fn combattant(&self) -> Monstre {
+        let mut combattant = creer_combattant(
+            self.nom.as_str(),
+            self.classe,
+            self.equipement.porte(PlaceDEquipement::Arme),
+            self.equipement.porte(PlaceDEquipement::Armure),
+        );
+        let pv_max = combattant.pv_actuels();
+        combattant.subir_degats(self.pv_perdus.min(pv_max.saturating_sub(1)));
+        if let Some(statut) = self.statut {
+            combattant.infliger_statut(statut);
+        }
+        combattant
+    }
+
+    /// Après un combat, ou un soin entre deux étapes, il garde les PV et le
+    /// statut de son combattant.
+    pub(crate) fn garder_l_etat_de(&mut self, combattant: &Monstre) {
+        self.pv_perdus = combattant.stats().pv - combattant.pv_actuels();
+        self.statut = combattant.statut();
+    }
+
+    /// Au camp, comme ses monstres (section 13.1).
+    pub(crate) fn soigner(&mut self) {
+        self.pv_perdus = 0;
+        self.statut = None;
     }
 
     /// Reprise d'une sauvegarde (section 13.9).
@@ -162,6 +333,60 @@ impl Heros {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::equipement::{ObjetDEquipementId, SorteDObjet};
+
+    fn objet(sorte: SorteDObjet, palier: u8, attaques: Vec<Attaque>) -> ObjetDEquipement {
+        ObjetDEquipement::new(
+            ObjetDEquipementId::new(format!("{sorte:?}-{palier}")),
+            "objet",
+            sorte,
+            BonusDeStats::default(),
+        )
+        .de_classe(Classe::Guerrier, palier)
+        .avec_attaques(attaques)
+    }
+
+    #[test]
+    fn le_niveau_de_combat_vient_de_l_arme_et_de_l_armure() {
+        let arme = objet(SorteDObjet::Arme, 2, Vec::new());
+        let armure = objet(SorteDObjet::Armure, 3, Vec::new());
+        assert_eq!(niveau_de_combat(None, None).valeur(), 5);
+        assert_eq!(niveau_de_combat(Some(&arme), None).valeur(), 15);
+        assert_eq!(niveau_de_combat(Some(&arme), Some(&armure)).valeur(), 30);
+    }
+
+    #[test]
+    fn sans_arme_le_heros_n_a_que_coup_de_poing() {
+        let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Guerrier);
+        let combattant = heros.combattant();
+        assert_eq!(combattant.nom(), "Aldric");
+        assert_eq!(combattant.espece().types().liste(), [Type::Humain]);
+        assert_eq!(combattant.niveau().valeur(), 5);
+        assert_eq!(combattant.attaques().liste(), [coup_de_poing()]);
+        assert_eq!(combattant.habilete(), None);
+        // Base 90 au niveau 5, valeurs internes à 15 : (180 + 15) x 5 / 100
+        // + 5 + 10.
+        assert_eq!(combattant.stats().pv, 24);
+    }
+
+    #[test]
+    fn les_blessures_du_heros_durent_jusqu_au_camp() {
+        let mut heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Mage);
+        let mut combattant = heros.combattant();
+        combattant.subir_degats(10);
+        combattant.infliger_statut(Statut::Poison);
+        heros.garder_l_etat_de(&combattant);
+        assert_eq!(heros.pv_perdus(), 10);
+        let repris = heros.combattant();
+        assert_eq!(repris.pv_actuels(), combattant.pv_actuels());
+        assert_eq!(repris.statut(), Some(Statut::Poison));
+        heros.soigner();
+        assert_eq!(
+            heros.combattant().pv_actuels(),
+            heros.combattant().stats().pv
+        );
+        assert_eq!(heros.statut(), None);
+    }
 
     #[test]
     fn chaque_classe_renforce_sa_stat() {
