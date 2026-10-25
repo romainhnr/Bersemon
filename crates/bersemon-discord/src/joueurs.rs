@@ -1107,6 +1107,7 @@ fn vue_apres(vue: Vue, choix: &Choix) -> Vue {
         | (_, Choix::AccueillirExpeditionAutomatique(_)) => Vue::Expeditions,
         (Vue::Gestion(Some(_)), _) => Vue::Gestion(None),
         (Vue::Entrainement, _) => Vue::Machines,
+        (Vue::EntrainementDepuisLaCour, _) => Vue::Cour,
         // Le sacrifice est suivi du départ vers l'Éclipse (section 9.4).
         (Vue::Eclipse, _) => Vue::Camp,
         (vue, _) => vue,
@@ -1596,6 +1597,15 @@ mod tests {
             Attente::Camp
         );
         let _ = fs::remove_dir_all(dossier);
+    }
+
+    #[test]
+    fn placer_un_monstre_depuis_la_cour_ramene_a_la_cour() {
+        let placer = Choix::MettreALEntrainement(Emplacement::Camp(0));
+        assert_eq!(vue_apres(Vue::EntrainementDepuisLaCour, &placer), Vue::Cour);
+        assert_eq!(vue_apres(Vue::Entrainement, &placer), Vue::Machines);
+        let reprendre = Choix::ReprendreDeLEntrainement(0);
+        assert_eq!(vue_apres(Vue::Cour, &reprendre), Vue::Cour);
     }
 
     #[test]

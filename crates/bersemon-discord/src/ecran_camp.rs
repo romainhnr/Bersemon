@@ -27,7 +27,9 @@ use bersemon_presentation::equipement::{
 use bersemon_presentation::expeditions_automatiques::duree;
 use bersemon_presentation::expeditions_automatiques::expeditions_rentrees;
 use bersemon_presentation::forge::{cout, etat_de_la_forge, lot_de_filets, travail_fini};
-use bersemon_presentation::machines::{avis_des_pieges, machines as texte_des_machines};
+use bersemon_presentation::machines::{
+    avis_des_pieges, etat_de_la_cour, machines as texte_des_machines,
+};
 use bersemon_presentation::monstres::{
     attaques_connues, decrire_attaque, fiche_du_monstre, ligne_monstre, nom, provenance,
 };
@@ -85,7 +87,9 @@ pub fn question(
             ecran_echanges::records_de_la_tour(partie, &TableauDesEchanges::default())
         }
         Vue::Machines => machines(partie, contenu, maintenant),
-        Vue::Entrainement => entrainement(partie),
+        Vue::Entrainement => entrainement(partie, Vue::Machines),
+        Vue::Cour => cour(partie, contenu, maintenant),
+        Vue::EntrainementDepuisLaCour => entrainement(partie, Vue::Cour),
     }
 }
 
@@ -316,20 +320,7 @@ fn machines(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Que
             zones,
         ));
     }
-    if let Some(regles) = ameliorations.cour() {
-        let cour = partie.machines().cour();
-        if cour.len() < regles.places {
-            boutons.push(bouton(
-                Cle::Afficher(Vue::Entrainement),
-                "Mettre un monstre à l'entraînement",
-                PRINCIPAL,
-            ));
-        }
-        for (position, entrainement) in cour.iter().enumerate() {
-            let libelle = format!("Reprendre {}", nom(entrainement.monstre(), Cote::Joueur));
-            boutons.push(bouton(Cle::Reprendre(position), &libelle, SECONDAIRE));
-        }
-    }
+    boutons.extend(boutons_de_la_cour(partie, Vue::Entrainement));
     lignes.extend(rangees(boutons));
     lignes.extend(rangees(vec![
         bouton(Cle::Afficher(Vue::Forge), "Retour à la forge", SECONDAIRE),
@@ -341,15 +332,68 @@ fn machines(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Que
     }
 }
 
-/// Les monstres de l'équipe et du camp, à mettre à l'entraînement.
-fn entrainement(partie: &Partie) -> Question {
-    let mut lignes = menus_de_monstres(partie.collection(), Cle::Entrainer, "Entraîner", |_| true);
-    lignes.extend(rangees(vec![
+/// "Mettre un monstre à l'entraînement" s'il reste une place, qui ouvre la
+/// vue `choix_du_monstre`, puis "Reprendre" pour chaque monstre de la cour :
+/// 4 boutons au plus. Rien si la cour n'est pas construite.
+fn boutons_de_la_cour(partie: &Partie, choix_du_monstre: Vue) -> Vec<Bouton> {
+    let mut boutons = Vec::new();
+    let Some(regles) = partie.forge().ameliorations().cour() else {
+        return boutons;
+    };
+    let cour = partie.machines().cour();
+    if cour.len() < regles.places {
+        boutons.push(bouton(
+            Cle::Afficher(choix_du_monstre),
+            "Mettre un monstre à l'entraînement",
+            PRINCIPAL,
+        ));
+    }
+    for (position, entrainement) in cour.iter().enumerate() {
+        let libelle = format!("Reprendre {}", nom(entrainement.monstre(), Cote::Joueur));
+        boutons.push(bouton(Cle::Reprendre(position), &libelle, SECONDAIRE));
+    }
+    boutons
+}
+
+/// La cour d'entraînement seule, depuis la gestion des monstres : un accès
+/// direct, en plus de celui des machines de la forge (section 13.6).
+fn cour(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Question {
+    let plafond = partie.plafond_d_entrainement(contenu.zones(), contenu.piste());
+    let retours = vec![
         bouton(
-            Cle::Afficher(Vue::Machines),
-            "Retour aux machines",
+            Cle::Afficher(Vue::Gestion(None)),
+            "Retour à la gestion",
             SECONDAIRE,
         ),
+        retour(),
+    ];
+    // Un bouton d'un ancien message peut mener ici avant la construction.
+    let Some(texte) = etat_de_la_cour(partie, plafond, maintenant) else {
+        return Question {
+            texte: "Gunther n'a pas encore construit de cour d'entraînement.".to_string(),
+            rangees: rangees(retours),
+        };
+    };
+    let mut lignes = rangees(boutons_de_la_cour(partie, Vue::EntrainementDepuisLaCour));
+    lignes.extend(rangees(retours));
+    Question {
+        texte,
+        rangees: lignes,
+    }
+}
+
+/// Les monstres de l'équipe et du camp, à mettre à l'entraînement ; le
+/// bouton de retour mène à la vue d'où le joueur vient, les machines ou la
+/// cour.
+fn entrainement(partie: &Partie, depuis: Vue) -> Question {
+    let mut lignes = menus_de_monstres(partie.collection(), Cle::Entrainer, "Entraîner", |_| true);
+    let libelle = if depuis == Vue::Cour {
+        "Retour à la cour"
+    } else {
+        "Retour aux machines"
+    };
+    lignes.extend(rangees(vec![
+        bouton(Cle::Afficher(depuis), libelle, SECONDAIRE),
         retour(),
     ]));
     Question {
@@ -579,6 +623,16 @@ fn gestion(partie: &Partie, choisi: Option<Emplacement>, contenu: &ContenuV1) ->
                 ),
                 bouton(Cle::Trier(TriDuCamp::Type), "Trier par type", SECONDAIRE),
             ]);
+        }
+        // Le camp a déjà ses deux rangées de boutons : la cour, une fois
+        // construite, s'ouvre d'ici, en plus des machines de la forge
+        // (section 13.6). 5 boutons au plus.
+        if partie.forge().ameliorations().cour().is_some() {
+            boutons.push(bouton(
+                Cle::Afficher(Vue::Cour),
+                "Cour d'entraînement",
+                PRINCIPAL,
+            ));
         }
         boutons.push(retour());
         lignes.extend(rangees(boutons));

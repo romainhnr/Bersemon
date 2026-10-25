@@ -761,6 +761,8 @@ Décidé le 20/10/2026, pour les étapes 72 à 74 (choix de l'utilisateur) :
 - Sur Discord, aucun message privé n'annonce des pièges pleins (hypothèse retenue, Q95).
 - Écrans, à l'étape 73 (console) : une fois une machine construite, la forge propose "Machines". L'écran montre les pièges (niveau, effet, zone, stock et temps avant la prochaine ressource) et la cour (niveau, effet, plafond, places occupées, puis chaque monstre avec l'XP gagnée et le temps passé). Il propose de relever les pièges s'ils ont un stock, de les poser dans chaque autre zone explorée, de mettre un monstre à l'entraînement s'il reste une place, puis de reprendre chaque monstre de la cour. Le camp signale des pièges pleins.
 - Écrans, à l'étape 74 (Discord) : la forge a un bouton "Machines", une fois une machine construite. L'écran des machines a le même texte que dans la console, un menu des autres zones explorées où poser les pièges, et une rangée de boutons : "Relever les pièges", "Mettre un monstre à l'entraînement", qui ouvre un écran des monstres de l'équipe et du camp en menus numérotés, et "Reprendre {monstre}" pour chaque monstre de la cour. Le camp signale des pièges pleins.
+- Décidé le 25/10/2026, pour l'étape 109 (choix de l'utilisateur, qui demandait un camp d'entraînement comme la pension de Pokémon, déjà couvert par la cour) : la cour, une fois construite, s'ouvre directement, en plus des machines de la forge, sans changement de règles. Dans la console, le menu du camp propose "Cour d'entraînement", avant "Options". Sur Discord, où le camp a déjà ses deux rangées de boutons, la gestion des monstres a un bouton "Cour d'entraînement", à côté des tris. L'écran de la cour n'en montre que l'état et propose de mettre un monstre à l'entraînement ou de le reprendre ; sur Discord, après le choix du monstre, le joueur revient à la cour, et l'écran a un bouton "Retour à la gestion" (hypothèses retenues, Q104).
+- Idée de l'utilisateur, à concevoir plus tard : un système de reproduction des monstres, à partir de la cour (Q104).
 
 ### 13.7 Services rares
 
@@ -1100,6 +1102,10 @@ Les questions Q101 et suivantes ont été relevées le 24/10/2026 lors de la con
 Les questions Q102 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 103 filets dans le noyau, avec la sauvegarde en version 27, 104 vente par Malvoise et fabrication par Gunther, 105 écrans de la console, 106 écrans du bot Discord.
 
 Les questions Q103 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 107 carnet de traque du codex et 108 Philtre chromatique.
+
+Les questions Q104 et suivantes ont été relevées le 25/10/2026 lors de la conception de l'étape 109, accès direct à la cour d'entraînement.
+
+- Q104. (Étape 109) Hypothèses retenues, à confirmer : l'accès direct n'apparaît qu'une fois la cour construite, comme Malvoise ou Gunther n'apparaissent qu'une fois au camp ; dans la console, l'entrée vient après celles des personnages, avant "Options", pour ne pas décaler les numéros des entrées courantes. À concevoir plus tard : la reproduction des monstres (idée de l'utilisateur), dont il faudra décider le lieu (la cour ou un nouveau bâtiment), les parents admis, ce qui se transmet (espèce, valeurs internes, attaques, shiny) et la durée.
 
 - Q103. (Étapes 107 et 108) Hypothèses retenues, à confirmer : sur Discord, le carnet de traque suit la liste du codex, à sa dernière page, plutôt que d'avoir son propre bouton ; le Démiurge est toujours la dernière entrée, car l'ordre des victoires n'est gardé que pour les Apôtres (un Apôtre ajouté plus tard et abattu après le Démiurge viendrait avant lui). Relevé sans être corrigé : la fiche d'une espèce dont l'évolution demande un Apôtre vaincu le nomme, même s'il n'est pas encore abattu ("une fois l'Apôtre Baron pendu vaincu").
 
@@ -1547,5 +1553,12 @@ Les questions Q103 et suivantes ont été relevées le 25/10/2026 lors de la con
 - Choix de l'utilisateur : section à part, le carnet de traque, qui n'apparaît qu'au premier Apôtre abattu ; les Apôtres et le Démiurge quittent la liste des espèces ; le Démiurge y figure en dernier ; une ligne par victoire, "Baron pendu, abattu dans la Vallée des Brumes." (section 5.6).
 - Demande de l'utilisateur : un nom autour de l'ADN et de sa manipulation pour l'objet qui rend un monstre shiny, comme les animaux albinos. Claude a relevé que le mot ADN détonne dans un univers dark fantasy et proposé Brin d'albâtre, Hélice pâle, Germe albinos et Philtre de lignée.
 - Choix de l'utilisateur : le Philtre chromatique, avec des textes réécrits autour d'une fiole et d'une lignée altérée (section 14.3, docs/contenu-v1.md, section 17).
+
+25/10/2026 (conception de l'étape 109, accès direct à la cour d'entraînement) :
+
+- Demande de l'utilisateur : un camp d'entraînement où les monstres gagnent de l'XP en attendant, comme la pension de Pokémon, avec plus tard un système de reproduction.
+- Claude a relevé que la cour d'entraînement de Gunther le fait déjà (section 13.6), mais qu'elle n'est accessible que par les machines de la forge.
+- Choix de l'utilisateur : la rendre plus visible, sans changer ses règles ; la reproduction reste à concevoir.
+- Hypothèses retenues, à confirmer : Q104.
 - Hypothèses retenues, à confirmer : Q103.
 

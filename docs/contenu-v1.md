@@ -848,6 +848,7 @@ Textes proposés sans validation (gamedesign.md, Q95) :
 | Monstre placé | {monstre} rejoint la cour d'entraînement. |
 | Monstre repris | {monstre} quitte la cour d'entraînement avec {xp} XP. |
 | Refus | Aucune zone explorée. / La cour est pleine. / Ce monstre est déjà à son plafond d'entraînement. |
+| Accès direct (étape 109) | Cour d'entraînement ; Retour à la gestion ; Retour à la cour ; Gunther n'a pas encore construit de cour d'entraînement. |
 
 ## 20. Rôle des monstres et protections
 

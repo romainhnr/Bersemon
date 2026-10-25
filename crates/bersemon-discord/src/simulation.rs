@@ -2048,6 +2048,22 @@ fn les_machines_tiennent_dans_les_limites() {
         )
         .count();
     assert_eq!(menus, 3);
+    // La cour s'ouvre aussi depuis la gestion des monstres, à côté des trois
+    // tris du camp : une rangée pleine.
+    let gestion = afficher(Vue::Gestion(None));
+    assert!(propose(&gestion, |cle| *cle == Cle::Afficher(Vue::Cour)));
+    assert!(propose(&gestion, |cle| *cle
+        == Cle::Trier(bersemon_core::collection::TriDuCamp::Type)));
+    let cour = afficher(Vue::Cour);
+    assert!(cour.texte.contains("3/3 places occupées"), "{}", cour.texte);
+    assert!(!cour.texte.contains("Pièges"), "{}", cour.texte);
+    assert!(propose(&cour, |cle| *cle == Cle::Reprendre(2)));
+    assert!(propose(&cour, |cle| *cle == Cle::Afficher(Vue::Gestion(None))));
+    assert!(!propose(&cour, |cle| {
+        *cle == Cle::Afficher(Vue::EntrainementDepuisLaCour)
+    }));
+    let depuis_la_cour = afficher(Vue::EntrainementDepuisLaCour);
+    assert!(propose(&depuis_la_cour, |cle| *cle == Cle::Afficher(Vue::Cour)));
 }
 
 /// Un clic d'un des joueurs, appliqué, puis le message qu'il reçoit en

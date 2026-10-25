@@ -32,6 +32,7 @@ use crate::ecran_coffre;
 use crate::ecran_equipement;
 use crate::ecran_expeditions_automatiques;
 use crate::ecran_forge;
+use crate::ecran_machines;
 use crate::ecran_marchand;
 use crate::ecran_peche;
 use crate::horloge::maintenant;
@@ -56,6 +57,7 @@ enum EntreeDuCamp {
     Forge,
     Equipement,
     Peche,
+    Cour,
     Options,
     Quitter,
 }
@@ -132,6 +134,11 @@ pub fn choisir(
         if partie.peche().pecheur_au_camp() {
             entrees.push((EntreeDuCamp::Peche, "Pêche d'Ansgar"));
         }
+        // Un accès direct, en plus de celui des machines de la forge, une
+        // fois la cour construite (section 13.6).
+        if partie.forge().ameliorations().cour().is_some() {
+            entrees.push((EntreeDuCamp::Cour, "Cour d'entraînement"));
+        }
         entrees.push((EntreeDuCamp::Options, "Options"));
         entrees.push((EntreeDuCamp::Quitter, "Quitter"));
         for (position, (_, libelle)) in entrees.iter().enumerate() {
@@ -165,6 +172,7 @@ pub fn choisir(
                 None
             }
             EntreeDuCamp::Peche => ecran_peche::choisir(partie, entree)?,
+            EntreeDuCamp::Cour => ecran_machines::choisir_dans_la_cour(partie, contenu, entree)?,
             EntreeDuCamp::Options => choisir_une_option(entree)?,
             EntreeDuCamp::Quitter => return None,
         };

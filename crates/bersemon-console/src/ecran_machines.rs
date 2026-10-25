@@ -1,12 +1,12 @@
 //! Les machines de Gunther (section 13.6), depuis sa forge : poser et
 //! relever les pièges, placer un monstre dans la cour d'entraînement ou l'en
-//! reprendre.
+//! reprendre. La cour a aussi son écran, depuis le menu du camp.
 
 use bersemon_core::combat::Cote;
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::Choix;
 use bersemon_core::partie::Partie;
-use bersemon_presentation::machines::machines;
+use bersemon_presentation::machines::{etat_de_la_cour, machines};
 use bersemon_presentation::mise_en_valeur::sans_marques;
 use bersemon_presentation::monstres::nom;
 
@@ -50,21 +50,56 @@ pub fn choisir(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Opt
             }
         }
     }
-    if let Some(regles) = ameliorations.cour() {
-        let cour = partie.machines().cour();
-        if cour.len() < regles.places {
-            actions.push((
-                Action::Entrainer,
-                "Mettre un monstre à l'entraînement".to_string(),
-            ));
-        }
-        for (position, entrainement) in cour.iter().enumerate() {
-            actions.push((
-                Action::Choix(Choix::ReprendreDeLEntrainement(position)),
-                format!("Reprendre {}", nom(entrainement.monstre(), Cote::Joueur)),
-            ));
-        }
+    actions.extend(actions_de_la_cour(partie));
+    executer(actions, partie, entree)
+}
+
+/// La cour seule, depuis le menu du camp. `Some(None)` au retour vers le
+/// menu du camp.
+pub fn choisir_dans_la_cour(
+    partie: &Partie,
+    contenu: &ContenuV1,
+    entree: &mut Entree,
+) -> Option<Option<Choix>> {
+    let plafond = partie.plafond_d_entrainement(contenu.zones(), contenu.piste());
+    let Some(etat) = etat_de_la_cour(partie, plafond, maintenant()) else {
+        return Some(None);
+    };
+    println!();
+    println!("{}", sans_marques(&etat));
+    executer(actions_de_la_cour(partie), partie, entree)
+}
+
+/// Mettre un monstre à l'entraînement s'il reste une place, puis reprendre
+/// chaque monstre de la cour ; rien si elle n'est pas construite.
+fn actions_de_la_cour(partie: &Partie) -> Vec<(Action, String)> {
+    let mut actions = Vec::new();
+    let Some(regles) = partie.forge().ameliorations().cour() else {
+        return actions;
+    };
+    let cour = partie.machines().cour();
+    if cour.len() < regles.places {
+        actions.push((
+            Action::Entrainer,
+            "Mettre un monstre à l'entraînement".to_string(),
+        ));
     }
+    for (position, entrainement) in cour.iter().enumerate() {
+        actions.push((
+            Action::Choix(Choix::ReprendreDeLEntrainement(position)),
+            format!("Reprendre {}", nom(entrainement.monstre(), Cote::Joueur)),
+        ));
+    }
+    actions
+}
+
+/// Numérote les actions, puis rend celle que choisit le joueur ;
+/// `Some(None)` au retour vers le menu du camp.
+fn executer(
+    mut actions: Vec<(Action, String)>,
+    partie: &Partie,
+    entree: &mut Entree,
+) -> Option<Option<Choix>> {
     for (position, (_, libelle)) in actions.iter().enumerate() {
         println!("  {}. {libelle}", position + 1);
     }

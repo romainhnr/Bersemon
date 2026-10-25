@@ -87,8 +87,12 @@ pub enum Vue {
     RecordsDeLaTour,
     /// Les machines de Gunther, depuis sa forge (section 13.6).
     Machines,
-    /// Le choix du monstre à mettre à l'entraînement.
+    /// Le choix du monstre à mettre à l'entraînement, depuis les machines.
     Entrainement,
+    /// La cour d'entraînement seule, depuis la gestion des monstres.
+    Cour,
+    /// Le choix du monstre à mettre à l'entraînement, depuis la cour.
+    EntrainementDepuisLaCour,
 }
 
 /// Monstres choisis pour une expédition automatique, dans l'ordre du choix
@@ -746,6 +750,8 @@ impl Cle {
             Cle::Constater => "constater".to_string(),
             Cle::Afficher(Vue::Machines) => "vue:machines".to_string(),
             Cle::Afficher(Vue::Entrainement) => "vue:entrainement".to_string(),
+            Cle::Afficher(Vue::Cour) => "vue:cour".to_string(),
+            Cle::Afficher(Vue::EntrainementDepuisLaCour) => "vue:entrainement-cour".to_string(),
             Cle::FabriquerCharme => "fabriquer-charme".to_string(),
             Cle::FabriquerFilets => "fabriquer-filets".to_string(),
             Cle::PoserLesPieges => "poser-pieges".to_string(),
@@ -824,6 +830,8 @@ impl Cle {
             "constater" => Cle::Constater,
             "vue:machines" => Cle::Afficher(Vue::Machines),
             "vue:entrainement" => Cle::Afficher(Vue::Entrainement),
+            "vue:cour" => Cle::Afficher(Vue::Cour),
+            "vue:entrainement-cour" => Cle::Afficher(Vue::EntrainementDepuisLaCour),
             "fabriquer-charme" => Cle::FabriquerCharme,
             "fabriquer-filets" => Cle::FabriquerFilets,
             "poser-pieges" => Cle::PoserLesPieges,
@@ -1389,6 +1397,8 @@ mod tests {
             Cle::Constater,
             Cle::Afficher(Vue::Machines),
             Cle::Afficher(Vue::Entrainement),
+            Cle::Afficher(Vue::Cour),
+            Cle::Afficher(Vue::EntrainementDepuisLaCour),
             Cle::FabriquerCharme,
             Cle::FabriquerFilets,
             Cle::PoserLesPieges,
