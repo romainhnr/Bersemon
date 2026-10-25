@@ -1246,3 +1246,38 @@ Textes proposés sans validation (gamedesign.md, Q106) :
 | Action | Réclamer la récompense : 10 espèces capturées / Réclamer la récompense : le codex complet |
 | Récit | Récompense du codex, à 10 espèces capturées, au coffre : {objets}. / Récompense du codex complet, au coffre : {objets}. Le talisman {talisman} rejoint votre équipement. |
 | Refus | Aucune récompense du codex à réclamer pour l'instant. |
+
+## 31. Cycle du jour et de la nuit
+
+Décidé le 25/10/2026, pour les étapes 118 à 120 (gamedesign.md, section 9.6). Valeurs choisies par l'utilisateur ; textes proposés sans validation (gamedesign.md, Q109).
+
+| Moment | Durée | Attaques renforcées (+20 %) | Espèces qui ne sortent qu'à ce moment |
+|---|---|---|---|
+| Jour | 2 h | Lumière, Feu, Plante | Vipère, Cloche hurlante, Harpie des orages |
+| Nuit | 1 h | Ténèbres, Spectre, Poison | Loup, Feu follet, Fée noire, Goule, Chauve-souris de crypte, Troll des cavernes, Wendigo, Warg |
+
+De nuit : monstres des groupes sauvages et monstres rares à 2 niveaux de plus, XP des monstres vaincus et argent des coffres à +25 %.
+
+Espèces par zone et par moment :
+
+| Zone | Jour | Nuit |
+|---|---|---|
+| Lisière du Bois-Sombre | Corbeau, Vipère | Loup, Corbeau |
+| Marais des Pendus | Armure hantée, Vipère, Corbeau | Feu follet, Armure hantée, Corbeau |
+| Vallée des Brumes | Squelette, Armure hantée | Fée noire, Squelette, Armure hantée |
+| Abbaye des Cendres | Squelette, Gargouille, Cloche hurlante | Squelette, Gargouille, Goule, Chauve-souris de crypte |
+| Col du Givre-Noir | Harpie des orages, Gargouille, Chevalier noir | Wendigo, Troll des cavernes, Gargouille, Warg, Chevalier noir |
+
+Évolutions selon le moment, au niveau 16 : Loup en Warg, de nuit ; Corbeau en Corbeau des gibets, de nuit ; Vipère en Aspic, de jour.
+
+Textes :
+
+| Moment | Texte |
+|---|---|
+| Camp et carte, de jour | Jour : la nuit tombe dans {durée}. |
+| Camp et carte, de nuit | Nuit : l'aube dans {durée}. |
+| Départ de jour | Il fait jour. Les créatures de la nuit se terrent. |
+| Départ de nuit | La nuit est tombée. Les bêtes rôdent plus fortes, et d'autres sortent de l'ombre. |
+| Compteur d'étapes | [Étape : 2/5] Jour / [Étape : 2/5] Nuit |
+| Condition d'évolution, à la fiche | Warg dès le niveau 16, après un combat de nuit / Aspic dès le niveau 16, après un combat de jour |
+| Fiche d'une espèce rencontrée | Ne sort que la nuit. / Ne sort que le jour. |

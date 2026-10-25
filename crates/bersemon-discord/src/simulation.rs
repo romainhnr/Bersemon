@@ -1713,7 +1713,9 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
     use bersemon_core::stats::ValeursInternes;
 
     let contenu = ContenuV1::new();
-    // Au niveau 16, chacun peut évoluer (section 5.4).
+    // Au niveau 16, chacun peut évoluer au camp (section 5.4) : ni le Loup,
+    // ni le Corbeau, ni la Vipère, qui évoluent selon le moment, en
+    // expédition (section 9.6).
     let creer = |id: &str| {
         Monstre::creer(
             contenu.espece(&EspeceId::new(id)).unwrap(),
@@ -1726,11 +1728,11 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
     let marchand = |id: &str| contenu.marchand_mort(&MarchandId::new(id)).unwrap();
     let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Mage);
     let mut partie = Partie::nouvelle(heros, creer("salamandre"));
-    for id in ["loup", "corbeau", "vipere", "feu-follet"] {
+    for id in ["chat-noir", "corbeau", "crapaud", "feu-follet"] {
         partie.prendre_monstre_rare(creer(id));
     }
     while partie.collection().camp().len() < 30 {
-        partie.prendre_monstre_rare(creer("loup"));
+        partie.prendre_monstre_rare(creer("chat-noir"));
     }
     // Tous les soins, toutes les capsules d'attaque, de l'argent, des
     // capsules d'habileté et toutes les ressources dans le coffre comme dans
@@ -1911,18 +1913,18 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
                     && menu.options.len() == Booster::TOUS.len()
             )));
         }
-        // Le Loup de l'équipe a d'autres Loups au camp : le rite s'ouvre
-        // depuis sa gestion, avec le plus de boutons (section 13.11).
-        let loup = Emplacement::Equipe(1);
-        let cles = afficher(&partie, Vue::Gestion(Some(loup)));
-        assert!(cles.contains(&Cle::Afficher(Vue::Rite(loup))));
+        // Le Chat noir de l'équipe a d'autres Chats noirs au camp : le rite
+        // s'ouvre depuis sa gestion, avec le plus de boutons (section 13.11).
+        let chat = Emplacement::Equipe(1);
+        let cles = afficher(&partie, Vue::Gestion(Some(chat)));
+        assert!(cles.contains(&Cle::Afficher(Vue::Rite(chat))));
         let rite = crate::ecran_camp::question(
             &partie,
-            Vue::Rite(loup),
+            Vue::Rite(chat),
             &contenu,
             Horodatage::depuis_secondes(0),
         );
-        afficher(&partie, Vue::Rite(loup));
+        afficher(&partie, Vue::Rite(chat));
         assert!(rite.rangees.iter().any(|rangee| matches!(
             rangee,
             Rangee::Menu(menu) if matches!(menu.cle, Cle::SecondParent { .. })

@@ -13,6 +13,7 @@ use crate::espece::{Espece, EspeceId};
 use crate::expedition::ParametresCoffre;
 use crate::expedition_automatique::ParametresExpeditionAutomatique;
 use crate::humain::Humain;
+use crate::jour_et_nuit::{JourOuNuit, NIVEAUX_DE_PLUS_LA_NUIT};
 use crate::monstre::{Monstre, tirer_shiny, tirer_valeurs_internes};
 use crate::niveau::Niveau;
 use crate::peche::Pecheur;
@@ -121,8 +122,8 @@ pub struct Zone {
 
 impl Zone {
     /// Vérifie que chaque espèce, rares comprises, peut être créée à chaque
-    /// niveau de la zone : la génération des monstres ne peut ensuite plus
-    /// échouer.
+    /// niveau de la zone, et jusqu'à 2 niveaux au-dessus pour la nuit : la
+    /// génération des monstres ne peut ensuite plus échouer.
     ///
     /// Tous les paramètres sont obligatoires, pour qu'aucune zone n'oublie
     /// une règle ; les regrouper ne servirait qu'à contourner la limite de
@@ -154,7 +155,7 @@ impl Zone {
         }
         let toutes = especes.iter().chain(rares.iter().map(|rare| &rare.espece));
         for espece in toutes {
-            verifier_espece(espece, niveau_min, niveau_max)?;
+            verifier_espece(espece, niveau_min, niveau_de_nuit(niveau_max))?;
         }
         Ok(Self {
             id,
@@ -197,9 +198,13 @@ impl Zone {
     }
 
     /// Comme les autres espèces, le monstre caché doit pouvoir être créé à
-    /// chaque niveau de la zone.
+    /// chaque niveau de la zone, nuit comprise.
     pub fn avec_monstre_cache(mut self, cache: EspeceRare) -> Result<Self, ErreurZone> {
-        verifier_espece(&cache.espece, self.niveau_min, self.niveau_max)?;
+        verifier_espece(
+            &cache.espece,
+            self.niveau_min,
+            niveau_de_nuit(self.niveau_max),
+        )?;
         self.cache = Some(cache);
         Ok(self)
     }
@@ -277,34 +282,70 @@ impl Zone {
         &self.coffre
     }
 
-    /// Tirages : taille du groupe, puis pour chaque monstre ceux de
-    /// `generer_monstre`.
-    pub fn generer_groupe(&self, aleatoire: &mut dyn Aleatoire) -> Vec<Monstre> {
+    /// `jour_ou_nuit` : le moment d'une expédition dans une zone de la
+    /// carte ; `None` hors du cycle, dans la Tour sans fond (section 9.6).
+    /// Tirages : taille du groupe, puis pour chaque monstre son espèce,
+    /// parmi celles qui sortent à ce moment, et ceux de `generer_monstre`.
+    pub fn generer_groupe(
+        &self,
+        jour_ou_nuit: Option<JourOuNuit>,
+        aleatoire: &mut dyn Aleatoire,
+    ) -> Vec<Monstre> {
         let taille = tirer_entre(
             u32::from(self.taille_min_groupe),
             u32::from(self.taille_max_groupe),
             aleatoire,
         );
+        let especes = self.especes_qui_sortent(jour_ou_nuit);
         (0..taille)
             .map(|_| {
-                let espece = &self.especes[tirer_position(self.especes.len(), aleatoire)];
-                self.generer_monstre(espece, aleatoire)
+                let espece = especes[tirer_position(especes.len(), aleatoire)];
+                self.generer_monstre_au_moment(espece, jour_ou_nuit, aleatoire)
             })
             .collect()
+    }
+
+    /// Une espèce nocturne ne sort que la nuit, une diurne que le jour ;
+    /// toutes sortent hors du cycle, et si aucune ne sortait à ce moment
+    /// (hypothèse retenue, Q109).
+    pub fn especes_qui_sortent(&self, jour_ou_nuit: Option<JourOuNuit>) -> Vec<&Espece> {
+        let Some(jour_ou_nuit) = jour_ou_nuit else {
+            return self.especes.iter().collect();
+        };
+        let sortent: Vec<&Espece> = self
+            .especes
+            .iter()
+            .filter(|espece| {
+                espece
+                    .activite()
+                    .is_none_or(|activite| activite.sort(jour_ou_nuit))
+            })
+            .collect();
+        if sortent.is_empty() {
+            self.especes.iter().collect()
+        } else {
+            sortent
+        }
     }
 
     /// `None` si la zone n'a pas de monstre rare, ou seulement un monstre
     /// caché que le tirage n'a pas donné. Tirages : la chance du monstre
     /// caché, si la zone en a un ; à défaut de lui, l'espèce rare ; puis ceux
     /// de `generer_monstre`.
-    pub fn generer_monstre_rare(&self, aleatoire: &mut dyn Aleatoire) -> Option<MonstreRare> {
+    /// De nuit, le monstre rare a 2 niveaux de plus, comme ceux des groupes
+    /// (section 9.6).
+    pub fn generer_monstre_rare(
+        &self,
+        jour_ou_nuit: Option<JourOuNuit>,
+        aleatoire: &mut dyn Aleatoire,
+    ) -> Option<MonstreRare> {
         let rare = match &self.cache {
             Some(cache) if aleatoire.tirer(1..=CHANCES_MONSTRE_CACHE) == 1 => cache,
             _ if self.rares.is_empty() => return None,
             _ => &self.rares[tirer_position(self.rares.len(), aleatoire)],
         };
         Some(MonstreRare {
-            monstre: self.generer_monstre(&rare.espece, aleatoire),
+            monstre: self.generer_monstre_au_moment(&rare.espece, jour_ou_nuit, aleatoire),
             pacifique: rare.pacifique,
         })
     }
@@ -324,6 +365,18 @@ impl Zone {
         espece: &Espece,
         aleatoire: &mut dyn Aleatoire,
     ) -> Monstre {
+        self.generer_monstre_au_moment(espece, None, aleatoire)
+    }
+
+    /// De nuit, 2 niveaux de plus que le niveau tiré, au-delà du maximum de
+    /// la zone s'il le faut (section 9.6). Mêmes tirages que
+    /// `generer_monstre`.
+    fn generer_monstre_au_moment(
+        &self,
+        espece: &Espece,
+        jour_ou_nuit: Option<JourOuNuit>,
+        aleatoire: &mut dyn Aleatoire,
+    ) -> Monstre {
         let valeur = tirer_entre(
             u32::from(self.niveau_min.valeur()),
             u32::from(self.niveau_max.valeur()),
@@ -331,12 +384,26 @@ impl Zone {
         );
         // Le tirage reste entre deux niveaux valides de la zone.
         let niveau = Niveau::new(valeur as u8).expect("niveau compris dans la zone");
+        let niveau = if jour_ou_nuit == Some(JourOuNuit::Nuit) {
+            niveau_de_nuit(niveau)
+        } else {
+            niveau
+        };
         creer_monstre_sauvage(espece, niveau, aleatoire)
     }
 }
 
-/// À un niveau de la zone de l'espèce. Tirages : shiny, valeurs internes
-/// s'il n'est pas shiny, puis habileté.
+/// 2 niveaux de plus, sans dépasser le niveau 100.
+fn niveau_de_nuit(niveau: Niveau) -> Niveau {
+    let valeur = niveau
+        .valeur()
+        .saturating_add(NIVEAUX_DE_PLUS_LA_NUIT)
+        .min(Niveau::MAX);
+    Niveau::new(valeur).expect("niveau borné au maximum")
+}
+
+/// À un niveau de la zone de l'espèce, nuit comprise. Tirages : shiny,
+/// valeurs internes s'il n'est pas shiny, puis habileté.
 pub(crate) fn creer_monstre_sauvage(
     espece: &Espece,
     niveau: Niveau,
@@ -390,6 +457,7 @@ mod tests {
         attaque, espece, parametres_coffre, parametres_expedition_automatique, stats_uniformes,
     };
     use crate::espece::{AttaqueApprise, Role};
+    use crate::jour_et_nuit::Activite;
     use crate::types::{Type, TypesMonstre};
 
     fn niveau(valeur: u8) -> Niveau {
@@ -423,7 +491,7 @@ mod tests {
             1, 4, 512, 0, 0, 0, 0, 0, 0, // vipère niveau 4, non shiny
             0, 6, 1, // loup niveau 6, shiny : 31 partout, sans tirage
         ]);
-        let groupe = zone.generer_groupe(&mut aleatoire);
+        let groupe = zone.generer_groupe(None, &mut aleatoire);
         assert_eq!(groupe.len(), 2);
         assert_eq!(groupe[0].espece().id().as_str(), "vipere");
         assert_eq!(groupe[0].niveau(), niveau(4));
@@ -440,7 +508,74 @@ mod tests {
         // shiny et les valeurs internes sont tirés.
         let zone = zone((5, 5), 1, vec![espece("loup")], vec![]).unwrap();
         let mut aleatoire = AleatoireScripte::new([2, 0, 0, 0, 0, 0, 0]);
-        assert_eq!(zone.generer_groupe(&mut aleatoire).len(), 1);
+        assert_eq!(zone.generer_groupe(None, &mut aleatoire).len(), 1);
+    }
+
+    /// De nuit, 2 niveaux de plus, au-delà du maximum de la zone, pour les
+    /// groupes comme pour les monstres rares (section 9.6).
+    #[test]
+    fn la_nuit_les_monstres_ont_deux_niveaux_de_plus() {
+        let rare = EspeceRare {
+            espece: espece("cerf-blanc"),
+            pacifique: true,
+        };
+        let zone = zone((5, 5), 1, vec![espece("loup")], vec![rare]).unwrap();
+        let tirages = [2, 0, 0, 0, 0, 0, 0];
+        let de_nuit = Some(JourOuNuit::Nuit);
+        let groupe = zone.generer_groupe(de_nuit, &mut AleatoireScripte::new(tirages));
+        assert_eq!(groupe[0].niveau(), niveau(7));
+        let de_jour =
+            zone.generer_groupe(Some(JourOuNuit::Jour), &mut AleatoireScripte::new(tirages));
+        assert_eq!(de_jour[0].niveau(), niveau(5));
+        let rare = zone
+            .generer_monstre_rare(de_nuit, &mut AleatoireScripte::new(tirages))
+            .unwrap();
+        assert_eq!(rare.monstre.niveau(), niveau(7));
+    }
+
+    #[test]
+    fn une_espece_nocturne_ne_sort_que_la_nuit() {
+        let loup = espece("loup").avec_activite(Activite::Nocturne);
+        let vipere = espece("vipere").avec_activite(Activite::Diurne);
+        let corbeau = espece("corbeau");
+        let zone = zone((5, 5), 1, vec![loup, vipere, corbeau], vec![]).unwrap();
+        let ids = |jour_ou_nuit| -> Vec<String> {
+            zone.especes_qui_sortent(jour_ou_nuit)
+                .iter()
+                .map(|espece| espece.id().as_str().to_string())
+                .collect()
+        };
+        assert_eq!(ids(Some(JourOuNuit::Nuit)), ["loup", "corbeau"]);
+        assert_eq!(ids(Some(JourOuNuit::Jour)), ["vipere", "corbeau"]);
+        assert_eq!(ids(None), ["loup", "vipere", "corbeau"]);
+        // Un seul candidat de nuit : aucun tirage d'espèce.
+        let seul = self::zone(
+            (5, 5),
+            1,
+            vec![
+                espece("loup").avec_activite(Activite::Nocturne),
+                espece("vipere").avec_activite(Activite::Diurne),
+            ],
+            vec![],
+        )
+        .unwrap();
+        let groupe = seul.generer_groupe(
+            Some(JourOuNuit::Nuit),
+            &mut AleatoireScripte::new([2, 0, 0, 0, 0, 0, 0]),
+        );
+        assert_eq!(groupe[0].espece().id().as_str(), "loup");
+    }
+
+    #[test]
+    fn sans_espece_a_ce_moment_toutes_sortent() {
+        let zone = zone(
+            (5, 5),
+            1,
+            vec![espece("loup").avec_activite(Activite::Nocturne)],
+            vec![],
+        )
+        .unwrap();
+        assert_eq!(zone.especes_qui_sortent(Some(JourOuNuit::Jour)).len(), 1);
     }
 
     #[test]
@@ -451,12 +586,12 @@ mod tests {
         };
         let zone = zone((5, 5), 1, vec![espece("loup")], vec![rare]).unwrap();
         let mut aleatoire = AleatoireScripte::new([2, 0, 0, 0, 0, 0, 0]);
-        let rare = zone.generer_monstre_rare(&mut aleatoire).unwrap();
+        let rare = zone.generer_monstre_rare(None, &mut aleatoire).unwrap();
         assert_eq!(rare.monstre.espece().id().as_str(), "cerf-blanc");
         assert!(rare.pacifique);
         let sans_rare = self::zone((5, 5), 1, vec![espece("loup")], vec![]).unwrap();
         assert_eq!(
-            sans_rare.generer_monstre_rare(&mut AleatoireScripte::new([])),
+            sans_rare.generer_monstre_rare(None, &mut AleatoireScripte::new([])),
             None
         );
     }
@@ -480,11 +615,11 @@ mod tests {
             .unwrap();
         // 1 sur 20 : le monstre caché, puis son shiny et ses valeurs internes.
         let mut aleatoire = AleatoireScripte::new([1, 2, 0, 0, 0, 0, 0, 0]);
-        let monstre = zone.generer_monstre_rare(&mut aleatoire).unwrap();
+        let monstre = zone.generer_monstre_rare(None, &mut aleatoire).unwrap();
         assert_eq!(monstre.monstre.espece().id().as_str(), "schnoz");
         // Au-delà, le seul monstre rare de la zone, sans tirage de position.
         let mut aleatoire = AleatoireScripte::new([2, 2, 0, 0, 0, 0, 0, 0]);
-        let monstre = zone.generer_monstre_rare(&mut aleatoire).unwrap();
+        let monstre = zone.generer_monstre_rare(None, &mut aleatoire).unwrap();
         assert_eq!(monstre.monstre.espece().id().as_str(), "cerf-blanc");
     }
 
@@ -495,11 +630,11 @@ mod tests {
             .avec_monstre_cache(cache())
             .unwrap();
         assert_eq!(
-            zone.generer_monstre_rare(&mut AleatoireScripte::new([20])),
+            zone.generer_monstre_rare(None, &mut AleatoireScripte::new([20])),
             None
         );
         let mut aleatoire = AleatoireScripte::new([1, 2, 0, 0, 0, 0, 0, 0]);
-        assert!(zone.generer_monstre_rare(&mut aleatoire).is_some());
+        assert!(zone.generer_monstre_rare(None, &mut aleatoire).is_some());
     }
 
     #[test]

@@ -40,6 +40,7 @@ use crate::habilete::{ErreurChangementDHabilete, Habilete};
 use crate::heros::{Classe, Heros, Ordre};
 use crate::horodatage::Horodatage;
 use crate::inventaire::{ErreurObjet, Inventaire, Objet};
+use crate::jour_et_nuit::JourOuNuit;
 use crate::machines::ErreurMachine;
 use crate::marchand::ErreurMarchand;
 use crate::monstre::{Monstre, RapportExperience};
@@ -392,6 +393,9 @@ pub enum Evenement {
     PartieCommencee(Monstre),
     /// Nom de la zone.
     Depart(String),
+    /// Le moment que garde une expédition dans une zone de la carte, dit
+    /// après le départ (section 9.6).
+    JourOuNuitAuDepart(JourOuNuit),
     /// Numéro de l'étape et nombre d'étapes de l'expédition (section 9.2),
     /// sans total dans la Tour sans fond (section 9.5).
     Etape {
@@ -1306,7 +1310,8 @@ impl EnJeu {
                     .map_err(|erreur| match erreur {
                         ErreurExpedition::ZoneFermee => ErreurChoix::ZoneFermee,
                         ErreurExpedition::EquipeVide => ErreurChoix::EquipeVide,
-                    })?;
+                    })?
+                    .avec_jour_ou_nuit(JourOuNuit::a(contexte.maintenant));
                 self.lancer(expedition, contexte, evenements);
                 Ok(Reponse::Faite)
             }
@@ -2211,6 +2216,9 @@ impl EnJeu {
         evenements: &mut Vec<Evenement>,
     ) {
         evenements.push(Evenement::Depart(expedition.zone().nom().to_string()));
+        if let Some(jour_ou_nuit) = expedition.jour_ou_nuit() {
+            evenements.push(Evenement::JourOuNuitAuDepart(jour_ou_nuit));
+        }
         if let Some(tour) = expedition.tour() {
             evenements.push(Evenement::EntreeDansLaTour(
                 tour.recit_de_l_entree().to_string(),
@@ -2716,6 +2724,7 @@ impl EnExpedition {
             let circonstances = Circonstances {
                 zone: Some(self.expedition.zone().id()),
                 apotres_vaincus: partie.apotres_vaincus(),
+                jour_ou_nuit: self.expedition.jour_ou_nuit(),
             };
             if let Some(vers) = evolution_a_proposer(&bilan, index, &circonstances, contexte) {
                 self.moment = Moment::Evolution(EvolutionEnCours {
@@ -2789,6 +2798,7 @@ impl EnExpedition {
             let circonstances = Circonstances {
                 zone: Some(self.expedition.zone().id()),
                 apotres_vaincus: partie.apotres_vaincus(),
+                jour_ou_nuit: self.expedition.jour_ou_nuit(),
             };
             let vers = evolution_a_proposer(&oubli.bilan, oubli.monstre, &circonstances, contexte);
             if let Some(vers) = vers {
@@ -3065,6 +3075,7 @@ impl EnExpedition {
                     .preparer_combat(groupe)
                     .expect(EQUIPE_APTE)
                     .avec_limite_d_obeissance(limite);
+                let combat = self.sous_le_cycle(combat);
                 evenements.push(Evenement::Rencontre(combat.clone()));
                 self.engager(partie, combat, evenements)
             }
@@ -3119,6 +3130,7 @@ impl EnExpedition {
                 }
                 .expect(EQUIPE_APTE)
                 .avec_limite_d_obeissance(limite);
+                let combat = self.sous_le_cycle(combat);
                 evenements.push(Evenement::Rencontre(combat.clone()));
                 self.ame = Some(*marchand);
                 self.engager(partie, combat, evenements)
@@ -3134,6 +3146,7 @@ impl EnExpedition {
                     .preparer_combat(vec![adversaire])
                     .expect(EQUIPE_APTE)
                     .avec_limite_d_obeissance(limite);
+                let combat = self.sous_le_cycle(combat);
                 evenements.push(Evenement::Rencontre(combat.clone()));
                 self.pecheur = Some(*pecheur);
                 self.engager(partie, combat, evenements)
@@ -3150,6 +3163,7 @@ impl EnExpedition {
                     .preparer_combat(vec![rare.monstre])
                     .expect(EQUIPE_APTE)
                     .avec_limite_d_obeissance(limite);
+                let combat = self.sous_le_cycle(combat);
                 evenements.push(Evenement::Rencontre(combat.clone()));
                 self.engager(partie, combat, evenements)
             }
@@ -3229,6 +3243,16 @@ impl EnExpedition {
         }
         self.moment = Moment::CombatDeGroupe { contre_un_gardien };
         Some(Reponse::Faite)
+    }
+
+    /// Les combats d'une expédition dans une zone de la carte suivent son
+    /// moment ; pas ceux de fin de zone, contre un humain ou un Apôtre
+    /// (section 9.6).
+    fn sous_le_cycle(&self, combat: Combat) -> Combat {
+        match self.expedition.jour_ou_nuit() {
+            Some(jour_ou_nuit) => combat.avec_jour_ou_nuit(jour_ou_nuit),
+            None => combat,
+        }
     }
 
     fn engager(
@@ -3610,6 +3634,8 @@ mod tests {
             evenements,
             vec![
                 Evenement::Depart("Lisière du Bois-Sombre".to_string()),
+                // Minuit UTC : le jour (section 9.6).
+                Evenement::JourOuNuitAuDepart(JourOuNuit::Jour),
                 Evenement::Etape {
                     numero: 1,
                     total: Some(5)
@@ -4317,7 +4343,7 @@ mod tests {
             )
             .unwrap();
         assert!(matches!(
-            &evenements[2],
+            &evenements[3],
             Evenement::Coffre { capsule: Some(capsule), .. } if capsule.id().as_str() == "brasier"
         ));
         // La capsule est aussitôt dans le sac, et y reste au retour.
@@ -5556,9 +5582,20 @@ mod tests {
         let mut deroulement = Deroulement::demarrer(depot.charger(&contenu));
         let mut vus = Vec::new();
         let mut annonces = Vec::new();
+        let mut combats_de_jour = 0;
         for _ in 0..200_000 {
             if let Attente::Annonce(annonce) = deroulement.attente() {
                 annonces.push(annonce);
+            }
+            // Les combats de fin de zone ne suivent pas le cycle ; les autres
+            // combats des zones, partis à minuit UTC, sont de jour (section
+            // 9.6).
+            if let Attente::ActionDeCombat(combat) = deroulement.attente() {
+                if combat.est_contre_un_humain() || combat.est_contre_un_apotre() {
+                    assert_eq!(combat.jour_ou_nuit(), None);
+                } else if combat.jour_ou_nuit() == Some(JourOuNuit::Jour) {
+                    combats_de_jour += 1;
+                }
             }
             let choix = jouer_un_coup(&deroulement, &contenu);
             let mut contexte = Contexte {
@@ -5580,6 +5617,7 @@ mod tests {
                 break;
             }
         }
+        assert!(combats_de_jour > 0);
         let indices = vus
             .iter()
             .filter(|evenement| matches!(evenement, Evenement::Indice { .. }))
@@ -6286,6 +6324,47 @@ mod tests {
             maintenant,
         };
         deroulement.repondre(choix, &mut contexte)
+    }
+
+    /// Partie à 2 h UTC, l'expédition est de nuit jusqu'au retour : la
+    /// Lisière n'y donne que des Loups et des Corbeaux, de 2 niveaux de
+    /// plus, et ses combats suivent la nuit (section 9.6).
+    #[test]
+    fn une_expedition_partie_de_nuit_le_reste() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut deroulement = Deroulement::demarrer(Ok(Some(partie(&contenu))));
+        repondre_sans_tirage(&mut deroulement, Choix::ReprendreLaPartie, &contenu, &depot).unwrap();
+        // Combat (1), un monstre (1), la première espèce de la nuit (0),
+        // niveau 5 (5), non shiny (2), valeurs internes, habileté (0).
+        let evenements = repondre_avec_tirages(
+            &mut deroulement,
+            Choix::PartirEnExpedition(ZoneId::new("lisiere")),
+            &contenu,
+            &depot,
+            Horodatage::depuis_secondes(2 * 3_600),
+            vec![1, 1, 0, 5, 2, 0, 0, 0, 0, 0, 0, 0],
+        )
+        .unwrap();
+        assert_eq!(
+            evenements[1],
+            Evenement::JourOuNuitAuDepart(JourOuNuit::Nuit)
+        );
+        let rencontre = evenements
+            .iter()
+            .find_map(|evenement| match evenement {
+                Evenement::Rencontre(combat) => Some(combat),
+                _ => None,
+            })
+            .unwrap();
+        assert_eq!(rencontre.jour_ou_nuit(), Some(JourOuNuit::Nuit));
+        let loup = &rencontre.adversaires()[0];
+        assert_eq!(loup.espece().id().as_str(), "loup");
+        assert_eq!(loup.niveau(), Niveau::new(7).unwrap());
+        assert_eq!(
+            deroulement.expedition().unwrap().jour_ou_nuit(),
+            Some(JourOuNuit::Nuit)
+        );
     }
 
     /// Ansgar au camp, avec la Salamandre et le Loup d'Aldric ; seule la

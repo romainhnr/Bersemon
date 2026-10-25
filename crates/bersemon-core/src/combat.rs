@@ -28,6 +28,7 @@ use crate::filet::{Filet, Filets};
 use crate::habilete::{BONUS_D_INSTINCT, Habilete, majorer};
 use crate::heros::Ordre;
 use crate::humain::IaHumain;
+use crate::jour_et_nuit::{BONUS_DE_LA_NUIT, JourOuNuit};
 use crate::monstre::{Monstre, RapportExperience};
 use crate::obeissance::chances_de_desobeir;
 use crate::soin::{EffetDuSoin, ErreurSoin, Soin, Soins, appliquer_soin, verifier_cible};
@@ -481,6 +482,9 @@ pub struct Combat {
     /// En duel, le côté dont toute l'équipe est tombée la première pendant
     /// le tour : il perd, même si l'autre tombe aussi.
     premiere_equipe_tombee: Option<Cote>,
+    /// Le moment d'un combat soumis au cycle, dans une expédition d'une zone
+    /// de la carte : il renforce des types et, de nuit, l'XP (section 9.6).
+    jour_ou_nuit: Option<JourOuNuit>,
     phase: Phase,
 }
 
@@ -540,10 +544,22 @@ impl Combat {
             duel: false,
             groupe: None,
             premiere_equipe_tombee: None,
+            jour_ou_nuit: None,
             phase: Phase::ChoixAction,
         };
         combat.noter_participation();
         Ok(combat)
+    }
+
+    /// Pas contre un humain ni un Apôtre, dont la difficulté ne suit pas le
+    /// cycle (section 9.6).
+    pub fn avec_jour_ou_nuit(mut self, jour_ou_nuit: JourOuNuit) -> Self {
+        self.jour_ou_nuit = Some(jour_ou_nuit);
+        self
+    }
+
+    pub fn jour_ou_nuit(&self) -> Option<JourOuNuit> {
+        self.jour_ou_nuit
     }
 
     /// Combat d'une expédition en groupe : l'équipe de l'hôte, puis celle
@@ -1019,6 +1035,7 @@ impl Combat {
             attaque,
             defenseur,
             &self.stats_en_combat(adversaire),
+            self.jour_ou_nuit,
         );
         Some(ApercuAttaque {
             degats_min,
@@ -1306,6 +1323,7 @@ impl Combat {
             duel: self.duel,
             groupe: None,
             premiere_equipe_tombee: self.premiere_equipe_tombee.map(Cote::oppose),
+            jour_ou_nuit: self.jour_ou_nuit,
             phase: match self.phase {
                 Phase::Termine(issue) => Phase::Termine(issue.miroir()),
                 autre => autre,
@@ -1424,8 +1442,9 @@ impl Combat {
     }
 
     /// Un monstre adverse KO ou capturé rapporte son XP, en entier, à chaque
-    /// monstre de l'équipe qui l'a affronté et n'est pas KO (section 7) ;
-    /// Instinct augmente le total du combat (section 5.9). Un tirage par
+    /// monstre de l'équipe qui l'a affronté et n'est pas KO (section 7),
+    /// 25 % de plus de nuit (section 9.6) ; Instinct augmente ensuite le
+    /// total du combat (section 5.9). Un tirage par
     /// monstre vaincu qui a au moins un bénéficiaire, dans l'ordre du
     /// groupe.
     fn verser_experience(
@@ -1445,11 +1464,14 @@ impl Combat {
             if beneficiaires.is_empty() {
                 continue;
             }
-            let gain = tirer_gain_experience(
+            let mut gain = tirer_gain_experience(
                 vaincu.espece().rendement_experience(),
                 vaincu.niveau(),
                 aleatoire,
             );
+            if self.jour_ou_nuit == Some(JourOuNuit::Nuit) {
+                gain = majorer(gain, BONUS_DE_LA_NUIT);
+            }
             for membre in beneficiaires {
                 gains[membre] = gains[membre].saturating_add(gain);
             }
@@ -1524,6 +1546,7 @@ impl Combat {
                     attaque,
                     self.monstre(cible),
                     &stats_cible,
+                    self.jour_ou_nuit,
                 )
             })
             .collect()
@@ -1798,6 +1821,7 @@ impl Combat {
 
         let stats_attaquant = self.stats_en_combat(lanceur);
         let stats_defenseur = self.stats_en_combat(cible);
+        let jour_ou_nuit = self.jour_ou_nuit;
         let (attaquant, defenseur) = self.attaquant_et_defenseur(cote);
         let attaque = attaquant.attaques().liste()[index_attaque].clone();
         let resultat = resoudre_attaque(
@@ -1806,6 +1830,7 @@ impl Combat {
             &attaque,
             defenseur,
             &stats_defenseur,
+            jour_ou_nuit,
             aleatoire,
         );
         let effet = attaque.effet();
@@ -3193,6 +3218,26 @@ mod tests {
         // 50 XP de base, 60 avec Instinct.
         let bilan = terminer(combat, &[100]);
         assert_eq!(xp_gagnee(&bilan, 0), Some(60));
+    }
+
+    #[test]
+    fn la_nuit_ajoute_25_pour_cent_a_l_xp_avant_l_instinct() {
+        let instinct = rapide().avec_habilete(Habilete::Instinct);
+        let mut combat =
+            combat(vec![instinct], vec![affaibli(lent(), 2)]).avec_jour_ou_nuit(JourOuNuit::Nuit);
+        tour(&mut combat, Action::LancerFilet(Filet::Chanvre), &[90]);
+        // 50 XP de base, 62 de nuit, 74 avec Instinct.
+        let bilan = terminer(combat, &[100]);
+        assert_eq!(xp_gagnee(&bilan, 0), Some(74));
+    }
+
+    #[test]
+    fn le_jour_ne_change_pas_l_xp() {
+        let mut combat =
+            combat(vec![rapide()], vec![affaibli(lent(), 2)]).avec_jour_ou_nuit(JourOuNuit::Jour);
+        tour(&mut combat, Action::LancerFilet(Filet::Chanvre), &[90]);
+        let bilan = terminer(combat, &[100]);
+        assert_eq!(xp_gagnee(&bilan, 0), Some(50));
     }
 
     #[test]

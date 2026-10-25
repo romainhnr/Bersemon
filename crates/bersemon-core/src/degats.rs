@@ -8,6 +8,7 @@
 use crate::aleatoire::Aleatoire;
 use crate::attaque::{Attaque, Categorie};
 use crate::habilete::{BONUS_D_AFFINITE, Habilete};
+use crate::jour_et_nuit::{BONUS_DES_TYPES_DU_MOMENT, JourOuNuit};
 use crate::monstre::Monstre;
 use crate::stats::Stats;
 use crate::types::{Efficacite, efficacite};
@@ -30,6 +31,7 @@ pub(crate) enum ResultatAttaque {
 }
 
 /// Les stats sont celles du combat, bonus de classe compris (section 4.2).
+/// `jour_ou_nuit` : le moment d'un combat soumis au cycle (section 9.6).
 /// Tirages, dans l'ordre : précision (seulement si elle est inférieure à
 /// 100 %), coup critique, pourcentage de dégâts.
 pub(crate) fn resoudre_attaque(
@@ -38,6 +40,7 @@ pub(crate) fn resoudre_attaque(
     attaque: &Attaque,
     defenseur: &Monstre,
     stats_defenseur: &Stats<u32>,
+    jour_ou_nuit: Option<JourOuNuit>,
     aleatoire: &mut dyn Aleatoire,
 ) -> ResultatAttaque {
     let efficacite = efficacite(attaque.type_attaque(), defenseur.espece().types());
@@ -58,6 +61,7 @@ pub(crate) fn resoudre_attaque(
         stats_attaquant,
         attaque,
         stats_defenseur,
+        jour_ou_nuit,
         critique,
         pourcentage,
         efficacite,
@@ -78,6 +82,7 @@ pub(crate) fn estimer_degats(
     attaque: &Attaque,
     defenseur: &Monstre,
     stats_defenseur: &Stats<u32>,
+    jour_ou_nuit: Option<JourOuNuit>,
 ) -> (u32, u32) {
     let efficacite = efficacite(attaque.type_attaque(), defenseur.espece().types());
     if efficacite == Efficacite::Nulle {
@@ -89,6 +94,7 @@ pub(crate) fn estimer_degats(
             stats_attaquant,
             attaque,
             stats_defenseur,
+            jour_ou_nuit,
             false,
             pourcentage,
             efficacite,
@@ -107,11 +113,13 @@ pub(crate) fn a_le_bonus_de_type(attaquant: &Monstre, attaque: &Attaque) -> bool
         .contains(&attaque.type_attaque())
 }
 
+#[allow(clippy::too_many_arguments)]
 fn parametres(
     attaquant: &Monstre,
     stats_attaquant: &Stats<u32>,
     attaque: &Attaque,
     stats_defenseur: &Stats<u32>,
+    jour_ou_nuit: Option<JourOuNuit>,
     critique: bool,
     pourcentage: u32,
     efficacite: Efficacite,
@@ -133,6 +141,8 @@ fn parametres(
         pourcentage,
         bonus_de_type,
         affinite: bonus_de_type && attaquant.a_l_habilete(Habilete::Affinite),
+        renforcee_par_le_moment: jour_ou_nuit
+            .is_some_and(|jour_ou_nuit| jour_ou_nuit.renforce(attaque.type_attaque())),
         efficacite,
     }
 }
@@ -149,6 +159,9 @@ struct ParametresDegats {
     /// L'habileté Affinité ne renforce que les attaques qui ont le bonus de
     /// type (section 5.9).
     affinite: bool,
+    /// Ténèbres, Spectre et Poison de nuit, Lumière, Feu et Plante de jour
+    /// (section 9.6).
+    renforcee_par_le_moment: bool,
     efficacite: Efficacite,
 }
 
@@ -173,6 +186,9 @@ fn calculer_degats(parametres: &ParametresDegats) -> u32 {
     }
     if parametres.affinite {
         degats = degats * (100 + BONUS_D_AFFINITE) / 100;
+    }
+    if parametres.renforcee_par_le_moment {
+        degats = degats * (100 + BONUS_DES_TYPES_DU_MOMENT) / 100;
     }
     degats = match parametres.efficacite {
         Efficacite::Nulle => return 0,
@@ -210,6 +226,7 @@ mod tests {
             pourcentage: 100,
             bonus_de_type: false,
             affinite: false,
+            renforcee_par_le_moment: false,
             efficacite: Efficacite::Normale,
         }
     }
@@ -238,10 +255,71 @@ mod tests {
         let (stats, stats_du_defenseur) = (attaquant.stats(), defenseur.stats());
         // Braise : 4 à 5, x1,5 pour le bonus de type, puis x1,2.
         let estimer = |attaque: &Attaque| {
-            estimer_degats(&attaquant, &stats, attaque, &defenseur, &stats_du_defenseur)
+            estimer_degats(
+                &attaquant,
+                &stats,
+                attaque,
+                &defenseur,
+                &stats_du_defenseur,
+                None,
+            )
         };
         assert_eq!(estimer(&braise), (7, 8));
         assert_eq!(estimer(&coup), (4, 5));
+    }
+
+    #[test]
+    fn le_moment_renforce_ses_types_apres_l_affinite_et_avant_l_efficacite() {
+        let mut p = parametres(5, 40, 10, 10);
+        p.bonus_de_type = true;
+        p.affinite = true;
+        assert_eq!(calculer_degats(&p), 8);
+        p.renforcee_par_le_moment = true;
+        // 8 x 1,2 = 9,6, arrondi à 9, puis doublé par l'efficacité.
+        assert_eq!(calculer_degats(&p), 9);
+        p.efficacite = Efficacite::Forte;
+        assert_eq!(calculer_degats(&p), 18);
+    }
+
+    #[test]
+    fn la_nuit_renforce_les_tenebres_et_le_jour_le_feu() {
+        let braise = attaque("braise", Type::Feu, Categorie::Speciale, 40, 100);
+        let morsure = attaque("morsure", Type::Tenebres, Categorie::Physique, 40, 100);
+        let attaquant = monstre(
+            &[Type::Normal],
+            stats_uniformes(50),
+            20,
+            vec![braise.clone(), morsure.clone()],
+        );
+        let defenseur = monstre(
+            &[Type::Normal],
+            stats_uniformes(50),
+            20,
+            vec![morsure.clone()],
+        );
+        let (stats, stats_du_defenseur) = (attaquant.stats(), defenseur.stats());
+        let estimer = |attaque: &Attaque, jour_ou_nuit| {
+            estimer_degats(
+                &attaquant,
+                &stats,
+                attaque,
+                &defenseur,
+                &stats_du_defenseur,
+                jour_ou_nuit,
+            )
+        };
+        let (_, hors_cycle) = estimer(&morsure, None);
+        let (_, de_nuit) = estimer(&morsure, Some(JourOuNuit::Nuit));
+        assert_eq!(de_nuit, hors_cycle * 6 / 5);
+        assert_eq!(estimer(&morsure, Some(JourOuNuit::Jour)).1, hors_cycle);
+        assert_eq!(
+            estimer(&braise, Some(JourOuNuit::Jour)).1,
+            estimer(&braise, None).1 * 6 / 5
+        );
+        assert_eq!(
+            estimer(&braise, Some(JourOuNuit::Nuit)),
+            estimer(&braise, None)
+        );
     }
 
     #[test]
@@ -319,6 +397,7 @@ mod tests {
             attaque,
             defenseur,
             &defenseur.stats(),
+            None,
             aleatoire,
         )
     }

@@ -149,3 +149,17 @@ Moyenne par partie, perdues ou non dans une défaite, et part des parties qui en
 | Éclat de bronze | 3.6 | 94 % |
 | Éclat de gargouille | 7.2 | 99 % |
 
+## 7. Effet du cycle du jour et de la nuit (étape 118)
+
+Le joueur automatique ne connaît pas le cycle : il part à toute heure, son horloge avançant d'une minute par choix. Mesuré sur 100 parties par classe, avant et après le cycle :
+
+| Mesure | Après l'étape 117 | Avec le cycle |
+|---|---|---|
+| Expéditions (médiane : Guerrier, Mage, Templier, Assassin) | 54, 58, 61, 56 | 50, 52, 58, 54 |
+| Défaites (moyenne) | 7,9, 10,3, 7,6, 7,1 | 9,3, 10,2, 6,8, 6,3 |
+| Baron pendu : tentatives, 1er essai | 2,6, 36 % | 2,6, 38 % |
+| Abbesse écorchée | 2,5, 53 % | 2,4, 52 % |
+| Margrave de givre | 2,0, 63 % | 2,0, 66 % |
+| Bourreau | 2,0, 38 % | 2,0, 37 % |
+
+La nuit profite à ce joueur : ses monstres plus forts rapportent plus d'XP, et le bonus de 25 % s'y ajoute, sans beaucoup plus de défaites, puisqu'il fuit les combats mal engagés. Les combats de fin de zone, hors du cycle, ne changent pas.

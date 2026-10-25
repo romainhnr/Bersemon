@@ -477,6 +477,20 @@ Décidé le 24/10/2026, pour les étapes 96 à 98 (choix de l'utilisateur) :
 - Écrans, à l'étape 97 : dans la console, la carte propose la Tour après les zones, une fois ouverte, avec le record seul : "Tour sans fond (sans fin) : record, étape 12", ou "descendre le plus loin possible" sans record. Le compteur montre "[Étape : 12]", le récit "Étape 12.". La console ne montre pas le record à deux.
 - Écrans, à l'étape 98 : sur Discord, le menu "Partir en expédition" propose la Tour après les zones, avant l'Éclipse, avec "Sans fin ; record, étape 12" ou "Sans fin ; descendre le plus loin possible". L'écran du classement des duels a un bouton "Records de la Tour", qui ouvre le classement des records : les records du joueur, puis les 10 meilleurs seul et les 10 meilleurs à deux, avec un bouton "Classement des duels" pour revenir. L'écran "Autres joueurs" ne change pas, pour garder de la place aux invitations (section 15.5).
 
+### 9.6 Cycle du jour et de la nuit
+
+Décidé le 25/10/2026, pour les étapes 118 à 120 (choix de l'utilisateur) :
+
+- Le monde alterne 2 heures de jour et 1 heure de nuit, en temps réel, jeu fermé ou bot éteint compris, les mêmes pour tous les joueurs, indépendamment de l'heure du jour réelle. Le cycle part de minuit UTC : la nuit tombe à 2 h, 5 h, 8 h, 11 h, 14 h, 17 h, 20 h et 23 h UTC, pour une heure (hypothèse retenue, Q109).
+- Le cycle ne joue que dans les expéditions manuelles des zones de la carte. Ni la Tour sans fond, ni l'Éclipse, ni les expéditions automatiques, ni les pièges, ni les duels n'en dépendent. Dans une zone, les combats de fin de zone (brigand, Bourreau, Inquisiteur, Porte-étendard, Apôtres) n'en dépendent pas non plus : leur difficulté reste celle réglée par l'outil d'équilibrage.
+- Une expédition est de jour ou de nuit selon l'heure de son départ, et le reste jusqu'au retour.
+- La nuit est plus dangereuse : les monstres des groupes sauvages et les monstres rares ont 2 niveaux de plus que ceux tirés pour la zone, au-delà de son niveau maximal s'il le faut. En échange, chaque monstre vaincu rapporte 25 % d'XP en plus, avant l'habileté Instinct, et l'argent des coffres augmente de 25 %, avant l'habileté Pillard.
+- Bonus de types : de nuit, les attaques Ténèbres, Spectre et Poison font 20 % de dégâts en plus ; de jour, les attaques Lumière, Feu et Plante. Le bonus vaut pour les deux camps, après celui de l'habileté Affinité et avant l'efficacité (section 10.4).
+- Espèces nocturnes et diurnes : dans les groupes sauvages, une espèce nocturne ne sort que la nuit, une diurne que le jour. Nocturnes : Loup, Feu follet, Fée noire, Goule, Chauve-souris de crypte, Troll des cavernes, Wendigo, Warg. Diurnes : Vipère, Cloche hurlante, Harpie des orages. Les autres espèces, dont les monstres rares, sortent à toute heure. Chaque zone garde au moins deux espèces à chaque moment. Les monstres des âmes de marchands et le Noyé d'Ansgar, fixés à l'avance, ne changent pas, mais le bonus de types et celui d'XP jouent contre eux.
+- Évolutions : le Loup évolue en Warg et le Corbeau en Corbeau des gibets au niveau 16, de nuit ; la Vipère en Aspic au niveau 16, de jour. Comme l'évolution par lieu (section 5.4), elle se propose après un combat d'une expédition dans une zone partie au bon moment ; jamais au camp ni dans la Tour.
+- Affichage : au camp et sur la carte des expéditions, le moment et le temps avant le suivant ; en expédition, le moment à côté du compteur d'étapes, et un court texte au départ. Textes dans docs/contenu-v1.md, section 31.
+- La sauvegarde ne change pas : le moment se déduit de l'heure, et une expédition en cours n'est pas sauvegardée.
+
 ## 10. Combat
 
 ### 10.1 Principes
@@ -1133,6 +1147,10 @@ Les questions Q102 et suivantes ont été relevées le 25/10/2026 lors de la con
 
 Les questions Q103 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 107 carnet de traque du codex et 108 Philtre chromatique.
 
+Les questions Q109 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 118 à 120, cycle du jour et de la nuit.
+
+- Q109. (Étapes 118 à 120) Hypothèses retenues, à confirmer : le cycle part de minuit UTC ; les monstres rares, même pacifiques, ont aussi leurs 2 niveaux de plus la nuit ; le bonus de types et celui d'XP jouent contre les monstres des âmes de marchands et le Noyé d'Ansgar, dont l'espèce et le niveau ne changent pas ; si une zone n'avait aucune espèce à un moment, toutes y sortiraient ; la fiche d'une espèce nocturne ou diurne le dit, une fois l'espèce rencontrée. Textes proposés sans validation (docs/contenu-v1.md, section 31).
+
 Les questions Q108 et suivantes ont été relevées le 25/10/2026 lors de l'étape 117, réglages issus de l'équilibrage.
 
 - Q108. (Étape 117) Hypothèses retenues, à confirmer : une Mandragore, une Mandragore ancienne ou un Arbre-pendu qui a déjà passé le niveau 7 garde le Cri strident s'il le connaît, et n'apprend pas Secousse, sauf à naître du rite ou à être capturé de nouveau ; la sauvegarde ne change pas de format, les niveaux du Baron et du Bourreau n'y étant pas gardés.
@@ -1645,4 +1663,10 @@ Les questions Q104 et suivantes ont été relevées le 25/10/2026 lors de la con
 - Claude a relevé qu'au niveau 20, le Baron perd Hurlement des abysses, appris au niveau 21, et que l'essentiel du gain mesuré en vient : s'il gardait ses deux attaques Obscur, il demanderait encore 3,8 tentatives. Choix de l'utilisateur : une seule attaque Obscur.
 - Mesuré après les réglages : 54 à 61 expéditions selon la classe, au lieu de 55 à 64 ; 2,6, 2,5 et 2,0 tentatives pour les trois Apôtres (docs/equilibrage.md).
 - Hypothèses retenues, à confirmer : Q108.
+25/10/2026 (conception des étapes 118 à 120, cycle du jour et de la nuit) :
+
+- Demande de l'utilisateur : ajouter le cycle jour/nuit.
+- Choix de l'utilisateur : un cycle accéléré en temps réel, 2 heures de jour puis 1 heure de nuit ; une expédition garde le moment de son départ ; le cycle ne joue que dans les zones, sans les combats de fin de zone ; de nuit, des monstres sauvages de 2 niveaux de plus, qui rapportent 25 % d'XP et d'argent des coffres en plus ; un bonus de 20 % aux attaques Ténèbres, Spectre et Poison de nuit, Lumière, Feu et Plante de jour ; des espèces exclusivement nocturnes ou diurnes, selon la liste ajustée par Claude ; trois évolutions selon le moment ; l'affichage au camp, sur la carte et en expédition (section 9.6).
+- Claude a relevé qu'avec des espèces exclusives, sa première liste laissait une seule espèce de jour dans la Vallée et l'Abbaye, et de nuit dans la Lisière ; la liste ajustée en garde au moins deux par zone et par moment.
+- Hypothèses retenues, à confirmer : Q109.
 

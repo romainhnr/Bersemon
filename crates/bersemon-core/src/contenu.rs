@@ -29,6 +29,7 @@ use crate::habilete::Habilete;
 use crate::heros::Classe;
 use crate::humain::{Humain, HumainId, IaHumain};
 use crate::inventaire::Inventaire;
+use crate::jour_et_nuit::{Activite, JourOuNuit};
 use crate::niveau::Niveau;
 use crate::peche::{ParametresPeche, Pecheur};
 use crate::pierre::PierreDEvolution;
@@ -1961,6 +1962,8 @@ enum FicheCondition {
     Lieu(&'static str, u8),
     /// Identifiant de l'Apôtre et niveau.
     ApotreVaincu(&'static str, u8),
+    /// Niveau, de jour ou de nuit (section 9.6).
+    Moment(JourOuNuit, u8),
 }
 
 const fn par_pierre(
@@ -1995,6 +1998,19 @@ const fn par_niveau(
     Some(FicheEvolution {
         vers,
         condition: FicheCondition::Niveau(niveau),
+        attaque,
+    })
+}
+
+const fn par_niveau_au_moment(
+    vers: &'static str,
+    niveau: u8,
+    jour_ou_nuit: JourOuNuit,
+    attaque: &'static str,
+) -> Option<FicheEvolution> {
+    Some(FicheEvolution {
+        vers,
+        condition: FicheCondition::Moment(jour_ou_nuit, niveau),
         attaque,
     })
 }
@@ -2104,7 +2120,7 @@ const ESPECES: [FicheEspece; 56] = [
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Traqueur, Habilete::Fouineur],
         apprentissage: &[(1, "griffure"), (4, "morsure"), (9, "curee")],
-        evolution: par_niveau("warg", 16, "croc-noir"),
+        evolution: par_niveau_au_moment("warg", 16, JourOuNuit::Nuit, "croc-noir"),
     },
     FicheEspece {
         id: "corbeau",
@@ -2116,7 +2132,7 @@ const ESPECES: [FicheEspece; 56] = [
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Pillard, Habilete::Eclaireur],
         apprentissage: &[(1, "coup-de-bec"), (4, "pique"), (8, "regard-funeste")],
-        evolution: par_niveau("corbeau-des-gibets", 16, "bec-funeste"),
+        evolution: par_niveau_au_moment("corbeau-des-gibets", 16, JourOuNuit::Nuit, "bec-funeste"),
     },
     FicheEspece {
         id: "vipere",
@@ -2132,7 +2148,7 @@ const ESPECES: [FicheEspece; 56] = [
             (3, "regard-petrifiant"),
             (9, "etreinte"),
         ],
-        evolution: par_niveau("aspic", 16, "venin-noir"),
+        evolution: par_niveau_au_moment("aspic", 16, JourOuNuit::Jour, "venin-noir"),
     },
     FicheEspece {
         id: "feu-follet",
@@ -3078,6 +3094,10 @@ fn creer_espece(fiche: &FicheEspece) -> Espece {
         Some((_, attaque)) => espece.avec_attaque_d_oeuf(creer_attaque(attaque)),
         None => espece,
     };
+    let espece = match ACTIVITES.iter().find(|(espece, _)| *espece == fiche.id) {
+        Some((_, activite)) => espece.avec_activite(*activite),
+        None => espece,
+    };
     match RESSOURCES.iter().find(|(espece, _, _)| *espece == fiche.id) {
         Some((_, id, nom)) => {
             let prix = match fiche.rarete {
@@ -3100,6 +3120,10 @@ fn creer_evolution(fiche: &FicheEvolution) -> Evolution {
         },
         FicheCondition::ApotreVaincu(apotre, valeur) => ConditionEvolution::ApotreVaincu {
             apotre: EspeceId::new(apotre),
+            niveau: niveau(valeur),
+        },
+        FicheCondition::Moment(jour_ou_nuit, valeur) => ConditionEvolution::Moment {
+            jour_ou_nuit,
             niveau: niveau(valeur),
         },
     };
@@ -3493,6 +3517,23 @@ const RESSOURCES: [(&str, &str, &str); 20] = [
     ("warg", "croc-de-loup", "Croc de loup"),
     ("chevalier-noir", "fragment-d-armure", "Fragment d'armure"),
     ("cloche-hurlante", "eclat-de-bronze", "Éclat de bronze"),
+];
+
+/// Section 31 de docs/contenu-v1.md : les espèces qui ne sortent, dans les
+/// groupes sauvages des zones, que la nuit ou que le jour (section 9.6).
+/// Chaque zone en garde au moins deux à chaque moment.
+const ACTIVITES: [(&str, Activite); 11] = [
+    ("loup", Activite::Nocturne),
+    ("feu-follet", Activite::Nocturne),
+    ("fee-noire", Activite::Nocturne),
+    ("goule", Activite::Nocturne),
+    ("chauve-souris-de-crypte", Activite::Nocturne),
+    ("troll-des-cavernes", Activite::Nocturne),
+    ("wendigo", Activite::Nocturne),
+    ("warg", Activite::Nocturne),
+    ("vipere", Activite::Diurne),
+    ("cloche-hurlante", Activite::Diurne),
+    ("harpie-des-orages", Activite::Diurne),
 ];
 
 /// Section 28 de docs/contenu-v1.md : l'attaque d'œuf de chaque famille
@@ -4201,6 +4242,72 @@ mod tests {
         }
         let mandragore = creer(&contenu, "mandragore", 7);
         assert!(mandragore.attaques().connait(&AttaqueId::new("secousse")));
+    }
+
+    /// Section 31 de docs/contenu-v1.md : chaque zone garde au moins deux
+    /// espèces à chaque moment (section 9.6).
+    #[test]
+    fn chaque_zone_a_ses_especes_de_jour_et_de_nuit() {
+        fn trier(mut ids: Vec<&str>) -> Vec<&str> {
+            ids.sort_unstable();
+            ids
+        }
+        let contenu = ContenuV1::new();
+        let attendu: [(&str, &[&str], &[&str]); 5] = [
+            ("lisiere", &["corbeau", "vipere"], &["loup", "corbeau"]),
+            (
+                "marais",
+                &["armure-hantee", "vipere", "corbeau"],
+                &["feu-follet", "armure-hantee", "corbeau"],
+            ),
+            (
+                "vallee",
+                &["squelette", "armure-hantee"],
+                &["fee-noire", "squelette", "armure-hantee"],
+            ),
+            (
+                "abbaye",
+                &["squelette", "gargouille", "cloche-hurlante"],
+                &[
+                    "squelette",
+                    "gargouille",
+                    "goule",
+                    "chauve-souris-de-crypte",
+                ],
+            ),
+            (
+                "col-du-givre-noir",
+                &["harpie-des-orages", "gargouille", "chevalier-noir"],
+                &[
+                    "wendigo",
+                    "troll-des-cavernes",
+                    "gargouille",
+                    "warg",
+                    "chevalier-noir",
+                ],
+            ),
+        ];
+        for (id, de_jour, de_nuit) in attendu {
+            let zone = contenu.zone(&ZoneId::new(id)).unwrap();
+            let ids = |jour_ou_nuit| -> Vec<&str> {
+                zone.especes_qui_sortent(Some(jour_ou_nuit))
+                    .iter()
+                    .map(|espece| espece.id().as_str())
+                    .collect()
+            };
+            let (jour, nuit) = (ids(JourOuNuit::Jour), ids(JourOuNuit::Nuit));
+            assert_eq!(
+                trier(jour.clone()),
+                trier(de_jour.to_vec()),
+                "{id}, de jour"
+            );
+            assert_eq!(
+                trier(nuit.clone()),
+                trier(de_nuit.to_vec()),
+                "{id}, de nuit"
+            );
+            assert!(jour.len() >= 2 && nuit.len() >= 2, "{id}");
+        }
     }
 
     #[test]

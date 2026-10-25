@@ -18,6 +18,7 @@ use crate::filets::filets;
 use crate::forge::{
     constat, lancement, lancement_de_fabrication, lancement_des_filets, lancement_du_charme,
 };
+use crate::jour_et_nuit;
 use crate::machines;
 use crate::mise_en_valeur::important;
 use crate::monstres::{effet_d_habilete, nom_en_valeur, nom_sauvage};
@@ -80,6 +81,9 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             false,
         ),
         Evenement::Depart(zone) => (format!("Vous partez pour {zone}."), true),
+        Evenement::JourOuNuitAuDepart(jour_ou_nuit) => {
+            (jour_et_nuit::au_depart(*jour_ou_nuit).to_string(), false)
+        }
         Evenement::Etape {
             numero,
             total: Some(total),

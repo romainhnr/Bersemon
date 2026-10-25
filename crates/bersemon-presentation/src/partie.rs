@@ -28,6 +28,7 @@ use crate::filets::liste_de_filets;
 use crate::forge::{
     question_de_fabrication, question_de_lancement, question_des_filets, question_du_charme,
 };
+use crate::jour_et_nuit;
 use crate::monstres::{
     decrire_attaque, decrire_stats, effet_d_habilete, ligne_monstre, nom, types_de,
 };
@@ -535,6 +536,14 @@ pub fn condition_d_evolution(condition: &ConditionEvolution, catalogue: &dyn Cat
                 niveau.valeur()
             )
         }
+        ConditionEvolution::Moment {
+            jour_ou_nuit,
+            niveau,
+        } => format!(
+            "dès le niveau {}, après un combat {}",
+            niveau.valeur(),
+            jour_et_nuit::complement(*jour_ou_nuit)
+        ),
     }
 }
 

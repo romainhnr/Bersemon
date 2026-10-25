@@ -1284,6 +1284,7 @@ impl Partie {
                 let au_camp = Circonstances {
                     zone: None,
                     apotres_vaincus: &self.apotres_vaincus,
+                    jour_ou_nuit: None,
                 };
                 evolution_possible(monstre, &au_camp, catalogue)
             }

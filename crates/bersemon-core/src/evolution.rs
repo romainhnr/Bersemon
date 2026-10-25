@@ -11,6 +11,7 @@ use crate::attaque::{Attaque, AttaqueId};
 use crate::catalogue::Catalogue;
 use crate::collection::ErreurCollection;
 use crate::espece::{Espece, EspeceId};
+use crate::jour_et_nuit::JourOuNuit;
 use crate::monstre::Monstre;
 use crate::niveau::Niveau;
 use crate::pierre::PierreDEvolution;
@@ -28,6 +29,12 @@ pub enum ConditionEvolution {
     Lieu { zone: ZoneId, niveau: Niveau },
     /// Avoir atteint ce niveau une fois cet Apôtre vaincu.
     ApotreVaincu { apotre: EspeceId, niveau: Niveau },
+    /// Avoir atteint ce niveau, après un combat d'une expédition dans une
+    /// zone de la carte, partie à ce moment (section 9.6).
+    Moment {
+        jour_ou_nuit: JourOuNuit,
+        niveau: Niveau,
+    },
 }
 
 /// Où en est le monstre quand on se demande s'il peut évoluer.
@@ -36,6 +43,9 @@ pub struct Circonstances<'a> {
     /// La zone de l'expédition manuelle en cours ; `None` au camp.
     pub zone: Option<&'a ZoneId>,
     pub apotres_vaincus: &'a [EspeceId],
+    /// Le moment de l'expédition en cours ; `None` au camp et hors du cycle,
+    /// dans la Tour sans fond (section 9.6).
+    pub jour_ou_nuit: Option<JourOuNuit>,
 }
 
 /// L'évolution d'une espèce vers une autre, désignée par son identifiant :
@@ -76,13 +86,16 @@ impl Evolution {
             ConditionEvolution::Pierre(pierre) => Some(pierre),
             ConditionEvolution::Niveau(_)
             | ConditionEvolution::Lieu { .. }
-            | ConditionEvolution::ApotreVaincu { .. } => None,
+            | ConditionEvolution::ApotreVaincu { .. }
+            | ConditionEvolution::Moment { .. } => None,
         }
     }
 
     /// Une condition de niveau ou d'Apôtre vaincu se remplit au camp comme
     /// après un combat, une condition de lieu seulement après un combat dans
-    /// sa zone ; une pierre ne se donne qu'au camp, sur demande du joueur.
+    /// sa zone, une condition de moment seulement après un combat d'une
+    /// expédition partie à ce moment ; une pierre ne se donne qu'au camp, sur
+    /// demande du joueur.
     fn est_remplie(&self, monstre: &Monstre, circonstances: &Circonstances<'_>) -> bool {
         match &self.condition {
             ConditionEvolution::Niveau(niveau) => monstre.niveau() >= *niveau,
@@ -93,6 +106,10 @@ impl Evolution {
             ConditionEvolution::ApotreVaincu { apotre, niveau } => {
                 circonstances.apotres_vaincus.contains(apotre) && monstre.niveau() >= *niveau
             }
+            ConditionEvolution::Moment {
+                jour_ou_nuit,
+                niveau,
+            } => circonstances.jour_ou_nuit == Some(*jour_ou_nuit) && monstre.niveau() >= *niveau,
         }
     }
 }
@@ -186,6 +203,7 @@ mod tests {
     const AU_CAMP: Circonstances<'static> = Circonstances {
         zone: None,
         apotres_vaincus: &[],
+        jour_ou_nuit: None,
     };
 
     fn niveau(valeur: u8) -> Niveau {
@@ -345,6 +363,7 @@ mod tests {
         let dans = |zone| Circonstances {
             zone: Some(zone),
             apotres_vaincus: &[],
+            jour_ou_nuit: None,
         };
         let armure = creer(&contenu, "armure-hantee", 18);
         let vers = evolution_possible(&armure, &dans(&vallee), &contenu).unwrap();
@@ -362,6 +381,7 @@ mod tests {
         let apres_le_baron = Circonstances {
             zone: None,
             apotres_vaincus: &baron,
+            jour_ou_nuit: None,
         };
         let squelette = creer(&contenu, "squelette", 20);
         assert_eq!(evolution_possible(&squelette, &AU_CAMP, &contenu), None);
@@ -369,6 +389,43 @@ mod tests {
         assert_eq!(vers.id().as_str(), "chevalier-squelette");
         let jeune = creer(&contenu, "squelette", 19);
         assert_eq!(evolution_possible(&jeune, &apres_le_baron, &contenu), None);
+    }
+
+    /// Le Loup évolue de nuit, la Vipère de jour, après un combat d'une
+    /// expédition partie à ce moment ; jamais au camp (section 9.6).
+    #[test]
+    fn une_evolution_de_nuit_attend_une_expedition_de_nuit() {
+        let contenu = ContenuV1::new();
+        let lisiere = ZoneId::new("lisiere");
+        let en_expedition = |jour_ou_nuit| Circonstances {
+            zone: Some(&lisiere),
+            apotres_vaincus: &[],
+            jour_ou_nuit: Some(jour_ou_nuit),
+        };
+        let loup = creer(&contenu, "loup", 16);
+        assert_eq!(evolution_possible(&loup, &AU_CAMP, &contenu), None);
+        assert_eq!(
+            evolution_possible(&loup, &en_expedition(JourOuNuit::Jour), &contenu),
+            None
+        );
+        let vers = evolution_possible(&loup, &en_expedition(JourOuNuit::Nuit), &contenu).unwrap();
+        assert_eq!(vers.id().as_str(), "warg");
+        let jeune = creer(&contenu, "loup", 15);
+        assert_eq!(
+            evolution_possible(&jeune, &en_expedition(JourOuNuit::Nuit), &contenu),
+            None
+        );
+        let corbeau = creer(&contenu, "corbeau", 16);
+        let vers =
+            evolution_possible(&corbeau, &en_expedition(JourOuNuit::Nuit), &contenu).unwrap();
+        assert_eq!(vers.id().as_str(), "corbeau-des-gibets");
+        let vipere = creer(&contenu, "vipere", 16);
+        assert_eq!(
+            evolution_possible(&vipere, &en_expedition(JourOuNuit::Nuit), &contenu),
+            None
+        );
+        let vers = evolution_possible(&vipere, &en_expedition(JourOuNuit::Jour), &contenu).unwrap();
+        assert_eq!(vers.id().as_str(), "aspic");
     }
 
     #[test]

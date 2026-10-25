@@ -35,6 +35,7 @@ pub mod heros;
 pub mod horodatage;
 pub mod humain;
 pub mod inventaire;
+pub mod jour_et_nuit;
 pub mod machines;
 pub mod marchand;
 pub mod monstre;

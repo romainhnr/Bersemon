@@ -12,6 +12,7 @@ use crate::capsule::Capsule;
 use crate::expedition_automatique::ErreurParametres;
 use crate::filet::Filet;
 use crate::humain::Humain;
+use crate::jour_et_nuit::{BONUS_DE_LA_NUIT, JourOuNuit};
 use crate::monstre::Monstre;
 use crate::peche::Pecheur;
 use crate::pierre::PierreDEvolution;
@@ -163,6 +164,9 @@ pub struct Expedition {
     /// Dans la Tour sans fond, de quoi recréer la zone de chaque étape
     /// (section 9.5). En boîte, pour que l'expédition reste légère.
     descente: Option<Box<Descente>>,
+    /// Le moment de son départ, qu'elle garde jusqu'au retour ; `None` hors
+    /// des zones de la carte, où le cycle ne joue pas (section 9.6).
+    jour_ou_nuit: Option<JourOuNuit>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -190,6 +194,7 @@ impl Expedition {
             capsules_possedees: Vec::new(),
             capsules_trouvees: Vec::new(),
             descente: None,
+            jour_ou_nuit: None,
         }
     }
 
@@ -252,6 +257,18 @@ impl Expedition {
     pub(crate) fn avec_pecheur(mut self, pecheur: Pecheur) -> Self {
         self.pecheur = Some(pecheur);
         self
+    }
+
+    /// Le départ dans une zone de la carte fixe le moment de toute
+    /// l'expédition (section 9.6).
+    pub(crate) fn avec_jour_ou_nuit(mut self, jour_ou_nuit: JourOuNuit) -> Self {
+        self.jour_ou_nuit = Some(jour_ou_nuit);
+        self
+    }
+
+    /// `None` dans la Tour sans fond et dans l'Éclipse, hors du cycle.
+    pub fn jour_ou_nuit(&self) -> Option<JourOuNuit> {
+        self.jour_ou_nuit
     }
 
     pub(crate) fn avec_capsules_possedees(mut self, capsules: Vec<AttaqueId>) -> Self {
@@ -354,11 +371,15 @@ impl Expedition {
         let tirable = matches!(&self.ame, Some((_, RencontreDeLAme::Tiree)));
         let evenement = match aleatoire.tirer(1..=100) {
             71..=80 if tirable => self.rencontrer_l_ame(aleatoire),
-            1..=80 => EvenementExpedition::Combat(self.zone.generer_groupe(aleatoire)),
+            1..=80 => {
+                EvenementExpedition::Combat(self.zone.generer_groupe(self.jour_ou_nuit, aleatoire))
+            }
             81..=95 => self.tirer_un_coffre(aleatoire),
-            _ => match self.zone.generer_monstre_rare(aleatoire) {
+            _ => match self.zone.generer_monstre_rare(self.jour_ou_nuit, aleatoire) {
                 Some(rare) => EvenementExpedition::MonstreRare(rare),
-                None => EvenementExpedition::Combat(self.zone.generer_groupe(aleatoire)),
+                None => EvenementExpedition::Combat(
+                    self.zone.generer_groupe(self.jour_ou_nuit, aleatoire),
+                ),
             },
         };
         Some(evenement)
@@ -418,7 +439,12 @@ impl Expedition {
     pub(crate) fn tirer_un_coffre(&mut self, aleatoire: &mut dyn Aleatoire) -> EvenementExpedition {
         let potions = aleatoire.tirer(POTIONS_MIN..=POTIONS_MAX);
         let fourchette = self.zone.coffre().argent();
-        let argent = tirer_entre(*fourchette.start(), *fourchette.end(), aleatoire);
+        let mut argent = tirer_entre(*fourchette.start(), *fourchette.end(), aleatoire);
+        // L'argent de la nuit, avant celui de l'habileté Pillard (section
+        // 9.6).
+        if self.jour_ou_nuit == Some(JourOuNuit::Nuit) {
+            argent = argent * (100 + BONUS_DE_LA_NUIT) / 100;
+        }
         let capsule = self.tirer_une_capsule(aleatoire);
         if let Some(capsule) = &capsule {
             self.capsules_trouvees.push(capsule.clone());
@@ -539,6 +565,31 @@ mod tests {
             Some(EvenementExpedition::MonstreRare(rare)) if rare.pacifique
         ));
         assert_eq!(expedition.etapes_faites(), 3);
+    }
+
+    /// De nuit, l'argent des coffres augmente de 25 %, et les monstres ont
+    /// 2 niveaux de plus (section 9.6).
+    #[test]
+    fn la_nuit_les_coffres_rapportent_plus_et_les_monstres_sont_plus_forts() {
+        let mut de_nuit = Expedition::partir(zone(true)).avec_jour_ou_nuit(JourOuNuit::Nuit);
+        assert_eq!(de_nuit.jour_ou_nuit(), Some(JourOuNuit::Nuit));
+        assert!(matches!(
+            de_nuit.etape_suivante(&mut AleatoireScripte::new([81, 2, 47])),
+            Some(EvenementExpedition::Coffre { argent: 12, .. })
+        ));
+        let mut combat = vec![80];
+        combat.extend(MONSTRE);
+        assert!(matches!(
+            de_nuit.etape_suivante(&mut AleatoireScripte::new(combat)),
+            Some(EvenementExpedition::Combat(groupe))
+                if groupe[0].niveau() == Niveau::new(7).unwrap()
+        ));
+        let mut de_jour = Expedition::partir(zone(true)).avec_jour_ou_nuit(JourOuNuit::Jour);
+        assert!(matches!(
+            de_jour.etape_suivante(&mut AleatoireScripte::new([81, 2, 47])),
+            Some(EvenementExpedition::Coffre { argent: 10, .. })
+        ));
+        assert_eq!(Expedition::partir(zone(true)).jour_ou_nuit(), None);
     }
 
     /// Section 9.5 : des étapes sans fin, le gardien à l'étape 10, et

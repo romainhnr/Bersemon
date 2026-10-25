@@ -488,7 +488,10 @@ mod tests {
         );
         let espece = crate::partie::fiche_d_espece(loup.espece(), &contenu);
         assert_eq!(espece[1], "Habiletés possibles : Traqueur et Fouineur");
-        assert_eq!(espece[4], "Évolution : Warg au niveau 16");
+        assert_eq!(
+            espece[4],
+            "Évolution : Warg dès le niveau 16, après un combat de nuit"
+        );
         assert_eq!(
             espece[5],
             "Attaque d'œuf (Rite du sang mêlé) : Assaut de meute (Normal, physique, puissance 80, précision 100 %)"

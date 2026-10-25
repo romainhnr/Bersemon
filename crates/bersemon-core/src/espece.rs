@@ -4,6 +4,7 @@
 use crate::attaque::{Attaque, AttaqueId};
 use crate::evolution::Evolution;
 use crate::habilete::Habilete;
+use crate::jour_et_nuit::Activite;
 use crate::niveau::Niveau;
 use crate::ressource::Ressource;
 use crate::stats::{BonusDeStats, Stats, StatsDeBase};
@@ -97,6 +98,9 @@ pub struct Espece {
     /// Celle de sa famille d'évolution, que seul le Rite du sang mêlé
     /// transmet (section 13.11). En boîte, pour la même raison.
     attaque_d_oeuf: Option<Box<Attaque>>,
+    /// Nocturne ou diurne, elle ne sort dans les groupes sauvages des zones
+    /// qu'à ce moment ; sinon, à toute heure (section 9.6).
+    activite: Option<Activite>,
 }
 
 impl Espece {
@@ -127,7 +131,18 @@ impl Espece {
             ressource: None,
             evolution: None,
             attaque_d_oeuf: None,
+            activite: None,
         }
+    }
+
+    pub fn avec_activite(mut self, activite: Activite) -> Self {
+        self.activite = Some(activite);
+        self
+    }
+
+    /// `None` pour une espèce qui sort à toute heure (section 9.6).
+    pub fn activite(&self) -> Option<Activite> {
+        self.activite
     }
 
     pub fn avec_attaque_d_oeuf(mut self, attaque: Attaque) -> Self {
