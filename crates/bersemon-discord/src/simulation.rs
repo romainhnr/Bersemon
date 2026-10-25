@@ -3041,3 +3041,46 @@ fn un_ami_passe_en_tete_de_la_liste_des_joueurs() {
     assert!(propose(&affiche, |cle| *cle == Cle::AjouterAmi(9)));
     let _ = fs::remove_dir_all(dossier);
 }
+
+/// Le camp, où se trouve le menu des expéditions, dit le moment et le
+/// temps avant le suivant (section 9.6).
+#[test]
+fn le_camp_dit_le_jour_ou_la_nuit() {
+    use bersemon_core::catalogue::Catalogue;
+    use bersemon_core::heros::Heros;
+    use bersemon_core::niveau::Niveau;
+    use bersemon_core::nom::Nom;
+    use bersemon_core::partie::Partie;
+    use bersemon_core::stats::ValeursInternes;
+
+    let contenu = ContenuV1::new();
+    let salamandre = Monstre::creer(
+        contenu.espece(&EspeceId::new("salamandre")).unwrap(),
+        Niveau::new(5).unwrap(),
+        ValeursInternes::default(),
+        false,
+    )
+    .unwrap();
+    let partie = Partie::nouvelle(
+        Heros::new(Nom::new("Aldric").unwrap(), Classe::Mage),
+        salamandre,
+    );
+    for (minutes, attendu) in [
+        (0, "Jour : la nuit tombe dans 2 h."),
+        (157, "Nuit : l'aube dans 23 min."),
+    ] {
+        let question = crate::ecran_camp::question(
+            &partie,
+            Vue::Camp,
+            &contenu,
+            Horodatage::depuis_secondes(minutes * 60),
+        );
+        let affiche = Message {
+            texte: question.texte,
+            rangees: question.rangees,
+            version: 1,
+        };
+        verifier_les_limites(&affiche);
+        assert!(affiche.texte.contains(attendu), "{}", affiche.texte);
+    }
+}

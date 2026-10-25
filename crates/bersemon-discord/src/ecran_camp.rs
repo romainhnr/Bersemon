@@ -27,6 +27,7 @@ use bersemon_presentation::equipement::{
 use bersemon_presentation::expeditions_automatiques::duree;
 use bersemon_presentation::expeditions_automatiques::expeditions_rentrees;
 use bersemon_presentation::forge::{cout, etat_de_la_forge, lot_de_filets, travail_fini};
+use bersemon_presentation::jour_et_nuit::moment_present;
 use bersemon_presentation::machines::{
     avis_des_pieges, etat_de_la_cour, machines as texte_des_machines,
 };
@@ -209,7 +210,9 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
             SUCCES,
         )]));
     }
-    let mut en_tete = vec![en_tete_abrege_du_camp(partie)];
+    // Le menu des expéditions est sur cet écran : le moment du départ est
+    // celui de toute l'expédition (section 9.6).
+    let mut en_tete = vec![en_tete_abrege_du_camp(partie), moment_present(maintenant)];
     en_tete.extend(ames_d_apotres(partie, contenu));
     en_tete.extend(expeditions_rentrees(partie, maintenant));
     en_tete.extend(travail_fini(partie, maintenant));

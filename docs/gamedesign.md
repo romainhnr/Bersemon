@@ -492,6 +492,7 @@ Décidé le 25/10/2026, pour les étapes 118 à 120 (choix de l'utilisateur) :
 - La sauvegarde ne change pas : le moment se déduit de l'heure, et une expédition en cours n'est pas sauvegardée.
 - Précisé à l'étape 118, en codant : les zones vérifient que leurs espèces se créent jusqu'à 2 niveaux au-dessus de leur maximum, pour la nuit ; le moment n'entre pas dans les combats de groupe, qui n'ont lieu que dans la Tour.
 - Écrans, à l'étape 119 (console) : au camp, sous l'en-tête, et en haut de la carte des expéditions, "Jour : la nuit tombe dans 1 h 12." ou "Nuit : l'aube dans 23 min." ; après "Vous partez pour ...", le texte du moment ; le compteur d'étapes devient "[Étape : 2/5] Nuit", sans moment dans la Tour ; la fiche d'une espèce capturée nocturne ou diurne finit par "Ne sort que la nuit." ou "Ne sort que le jour.", et la condition d'évolution dit "Warg dès le niveau 16, après un combat de nuit".
+- Écrans, à l'étape 120 (Discord) : le camp, qui porte le menu "Partir en expédition", dit le moment sous son en-tête ; le texte du départ, le compteur d'étapes et la fiche du codex sont ceux de la console.
 
 ## 10. Combat
 
