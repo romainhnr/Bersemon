@@ -3,7 +3,8 @@
 use std::fmt;
 
 /// Types de la V1, puis le Stellaire, celui du seul Schnoz, l'Obscur, celui
-/// des seuls Apôtres, et la Lumière et le Son, ajoutés à l'étape 93.
+/// des seuls Apôtres, la Lumière et le Son, ajoutés à l'étape 93, et
+/// l'Humain, celui des seuls héros, ajouté à l'étape 128.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Type {
     Normal,
@@ -28,10 +29,11 @@ pub enum Type {
     Obscur,
     Lumiere,
     Son,
+    Humain,
 }
 
 impl Type {
-    pub const TOUS: [Type; 22] = [
+    pub const TOUS: [Type; 23] = [
         Type::Normal,
         Type::Combat,
         Type::Vol,
@@ -54,6 +56,7 @@ impl Type {
         Type::Obscur,
         Type::Lumiere,
         Type::Son,
+        Type::Humain,
     ];
 
     /// Nom du type tel qu'il s'écrit dans le jeu, commun à toutes les
@@ -82,6 +85,7 @@ impl Type {
             Type::Obscur => "Obscur",
             Type::Lumiere => "Lumière",
             Type::Son => "Son",
+            Type::Humain => "Humain",
         }
     }
 }
@@ -195,9 +199,20 @@ enum Rapport {
 /// Glace résiste au type Eau (section 5.2). S'y ajoutent l'Obscur, qui
 /// écrase presque tout et résiste à presque tout, le Stellaire, son
 /// opposé, neutre envers les autres types, puis la Lumière, autre opposé de
-/// l'Obscur, et le Son (section 5.2).
+/// l'Obscur, le Son et l'Humain (section 5.2).
 fn rapport(attaque: Type, defense: Type) -> Rapport {
     use Type::*;
+    // Les humains sont des proies : presque tout les frappe fort, et leurs
+    // coups ne portent vraiment que contre un autre humain. Seuls les trois
+    // opposés de l'Obscur les épargnent.
+    match (attaque, defense) {
+        (Humain, Humain) => return Rapport::Neutre,
+        (Humain, Spectre) => return Rapport::Immunite,
+        (Humain, _) => return Rapport::Resistance,
+        (Lumiere | Feerique | Stellaire, Humain) => return Rapport::Resistance,
+        (_, Humain) => return Rapport::Faiblesse,
+        _ => {}
+    }
     let (super_efficace_contre, peu_efficace_contre, sans_effet_sur): (&[Type], &[Type], &[Type]) =
         match attaque {
             // Les monstres Obscur résistent à tout sauf aux types Féérique,
@@ -294,6 +309,8 @@ fn rapport(attaque: Type, defense: Type) -> Rapport {
             // Le vacarme trouble l'esprit, brise la glace et désoriente ce
             // qui vole ; un spectre n'a pas d'oreilles pour l'entendre.
             Son => (&[Psychique, Glace, Vol], &[Sol, Son, Obscur], &[Spectre]),
+            // Ses rapports sont réglés avant ce tableau.
+            Humain => (&[], &[], &[]),
         };
     if sans_effet_sur.contains(&defense) {
         Rapport::Immunite
@@ -338,15 +355,15 @@ mod tests {
     }
 
     #[test]
-    fn le_stellaire_n_est_pas_neutre_qu_envers_l_obscur() {
+    fn le_stellaire_n_est_neutre_qu_envers_les_types_autres_que_l_obscur_et_l_humain() {
         for autre in Type::TOUS {
-            let attendu = if autre == Obscur {
-                Rapport::Faiblesse
-            } else {
-                Rapport::Neutre
+            let attendu = match autre {
+                Obscur => Rapport::Faiblesse,
+                Humain => Rapport::Resistance,
+                _ => Rapport::Neutre,
             };
             assert_eq!(rapport(Stellaire, autre), attendu, "{autre:?}");
-            let attendu = if autre == Obscur {
+            let attendu = if [Obscur, Humain].contains(&autre) {
                 Rapport::Resistance
             } else {
                 Rapport::Neutre
@@ -394,7 +411,7 @@ mod tests {
         for autre in Type::TOUS {
             let en_attaque = if [Tenebres, Spectre, Obscur].contains(&autre) {
                 Rapport::Faiblesse
-            } else if [Feu, Acier, Lumiere].contains(&autre) {
+            } else if [Feu, Acier, Lumiere, Humain].contains(&autre) {
                 Rapport::Resistance
             } else {
                 Rapport::Neutre
@@ -406,7 +423,7 @@ mod tests {
             );
             let en_defense = if [Tenebres, Spectre].contains(&autre) {
                 Rapport::Faiblesse
-            } else if [Feu, Feerique, Lumiere, Obscur].contains(&autre) {
+            } else if [Feu, Feerique, Lumiere, Obscur, Humain].contains(&autre) {
                 Rapport::Resistance
             } else {
                 Rapport::Neutre
@@ -425,7 +442,7 @@ mod tests {
         for autre in Type::TOUS {
             let en_attaque = if autre == Spectre {
                 Rapport::Immunite
-            } else if [Psychique, Glace, Vol].contains(&autre) {
+            } else if [Psychique, Glace, Vol, Humain].contains(&autre) {
                 Rapport::Faiblesse
             } else if [Sol, Son, Obscur].contains(&autre) {
                 Rapport::Resistance
@@ -435,13 +452,42 @@ mod tests {
             assert_eq!(rapport(Son, autre), en_attaque, "Son contre {autre:?}");
             let en_defense = if [Sol, Electrique, Obscur].contains(&autre) {
                 Rapport::Faiblesse
-            } else if [Normal, Vol, Son].contains(&autre) {
+            } else if [Normal, Vol, Son, Humain].contains(&autre) {
                 Rapport::Resistance
             } else {
                 Rapport::Neutre
             };
             assert_eq!(rapport(autre, Son), en_defense, "{autre:?} contre Son");
         }
+    }
+
+    /// Section 5.2, décidée le 25/10/2026 pour l'étape 128.
+    #[test]
+    fn l_humain_en_attaque_et_en_defense() {
+        for autre in Type::TOUS {
+            let en_attaque = match autre {
+                Humain => Rapport::Neutre,
+                Spectre => Rapport::Immunite,
+                _ => Rapport::Resistance,
+            };
+            assert_eq!(
+                rapport(Humain, autre),
+                en_attaque,
+                "Humain contre {autre:?}"
+            );
+            let en_defense = match autre {
+                Humain => Rapport::Neutre,
+                Lumiere | Feerique | Stellaire => Rapport::Resistance,
+                _ => Rapport::Faiblesse,
+            };
+            assert_eq!(
+                rapport(autre, Humain),
+                en_defense,
+                "{autre:?} contre Humain"
+            );
+        }
+        assert_eq!(efficacite(Obscur, &types(&[Humain])), Efficacite::Forte);
+        assert_eq!(efficacite(Humain, &types(&[Spectre])), Efficacite::Nulle);
     }
 
     #[test]
