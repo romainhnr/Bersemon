@@ -1901,6 +1901,22 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
                     && menu.options.len() == Booster::TOUS.len()
             )));
         }
+        // Le Loup de l'équipe a d'autres Loups au camp : le rite s'ouvre
+        // depuis sa gestion, avec le plus de boutons (section 13.11).
+        let loup = Emplacement::Equipe(1);
+        let cles = afficher(&partie, Vue::Gestion(Some(loup)));
+        assert!(cles.contains(&Cle::Afficher(Vue::Rite(loup))));
+        let rite = crate::ecran_camp::question(
+            &partie,
+            Vue::Rite(loup),
+            &contenu,
+            Horodatage::depuis_secondes(0),
+        );
+        afficher(&partie, Vue::Rite(loup));
+        assert!(rite.rangees.iter().any(|rangee| matches!(
+            rangee,
+            Rangee::Menu(menu) if matches!(menu.cle, Cle::SecondParent { .. })
+        )));
         // Le Feu follet, deuxième du camp, évolue avec la Pierre de braise.
         let feu_follet = Emplacement::Camp(1);
         let cles = afficher(&partie, Vue::Gestion(Some(feu_follet)));
@@ -1916,6 +1932,28 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         assert!(cles.contains(&Cle::Afficher(Vue::Codex(None))));
         assert!(!cles.contains(&Cle::Afficher(Vue::PageDuCodex(2))));
     }
+    // Un rite achevé : le camp gagne la rangée qui accueille le petit, et
+    // l'étal en dit l'état (section 13.11).
+    let mut avec_rite = etat(vec![], vec![]);
+    avec_rite.rite = Some(bersemon_core::rite::Rite::new(
+        [creer("loup"), creer("loup")],
+        Horodatage::depuis_secondes(0),
+    ));
+    let partie = Partie::restaurer(avec_rite).unwrap();
+    let cles = afficher(&partie, Vue::Camp);
+    assert!(cles.contains(&Cle::AccueillirLePetit));
+    afficher(&partie, Vue::Marchand);
+    let etal = crate::ecran_camp::question(
+        &partie,
+        Vue::Marchand,
+        &contenu,
+        Horodatage::depuis_secondes(0),
+    );
+    assert!(
+        etal.texte.contains("achevé, le petit attend"),
+        "{}",
+        etal.texte
+    );
     // Les trois Apôtres et le Démiurge abattus : le carnet de traque suit la
     // liste, à sa dernière page, sans qu'aucun ne soit dans la liste.
     let mut abattus = etat(vec![], vec![]);

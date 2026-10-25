@@ -1168,5 +1168,6 @@ Textes proposés sans validation (gamedesign.md, Q105). {a} et {b} sont les pare
 | Au camp | Le Rite du sang mêlé est achevé : le petit attend auprès de Malvoise. |
 | Naissance | Le cercle de sang se referme et le petit en naît : {petit}, au niveau 1. {a} et {b} vous rejoignent. |
 | Console | Quel premier parent confier à Malvoise ? ; Second parent, de la même famille : ; Aucun autre de vos monstres n'est de sa famille d'évolution. |
+| Discord | Rite du sang mêlé (Malvoise) ; Choisissez le second parent, de la même famille d'évolution que {a}. ; Lui unir un monstre de l'équipe / du camp ; Retour au monstre ; Accueillir le petit (Malvoise) ; Choisissez d'abord un monstre dans la gestion. ; à l'étal : {service} : bouton "Rite du sang mêlé (Malvoise)" de la gestion des monstres. |
 | Liste des monstres | 1 place du camp est gardée, pour un monstre absent ou à naître. / {n} places du camp sont gardées, pour des monstres absents ou à naître. |
 | Refus | Malvoise accomplit déjà un rite : un seul à la fois. / Le rite n'unit que deux monstres d'une même famille d'évolution. / Il faut une place libre au camp pour le petit. / Il vous manque {ressources}. / Aucun rite n'est en cours. / Le rite n'est pas encore achevé. |

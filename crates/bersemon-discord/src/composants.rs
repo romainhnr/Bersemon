@@ -91,6 +91,9 @@ pub enum Vue {
     Entrainement,
     /// La cour d'entraînement seule, depuis la gestion des monstres.
     Cour,
+    /// Le choix du second parent du Rite du sang mêlé, le premier choisi
+    /// depuis la gestion des monstres (section 13.11).
+    Rite(Emplacement),
     /// Le choix du monstre à mettre à l'entraînement, depuis la cour.
     EntrainementDepuisLaCour,
 }
@@ -360,6 +363,14 @@ pub enum Cle {
     Equiper(PlaceDEquipement),
     /// Menu des autres joueurs, pour leur faire une offre (section 15.1).
     ChoisirJoueur,
+    /// Menu de monstres numéroté : le second parent du Rite du sang mêlé,
+    /// avec le premier (section 13.11).
+    SecondParent {
+        menu: u8,
+        premier: Emplacement,
+    },
+    /// Le petit du rite achevé, depuis le camp.
+    AccueillirLePetit,
     /// Menu de monstres numéroté : celui à céder à ce joueur.
     Ceder {
         menu: u8,
@@ -561,6 +572,11 @@ impl Cle {
                 avec: Some(valeur?.parse().ok()?),
                 cede: None,
             })),
+            Cle::SecondParent { premier, .. } => jouer(Choix::LancerLeRite {
+                premier: *premier,
+                second: lire_emplacement(valeur?)?,
+            }),
+            Cle::AccueillirLePetit => jouer(Choix::AccueillirLePetit),
             Cle::Ceder { avec, .. } => Some(Commande::Afficher(Vue::Echanges {
                 avec: Some(*avec),
                 cede: Some(lire_emplacement(valeur?)?),
@@ -627,6 +643,9 @@ impl Cle {
             Cle::Afficher(Vue::Eclipse) => "vue:eclipse".to_string(),
             Cle::Afficher(Vue::Attaques(emplacement)) => {
                 format!("vue:attaques:{}", emplacement_en_texte(*emplacement))
+            }
+            Cle::Afficher(Vue::Rite(premier)) => {
+                format!("vue:rite:{}", emplacement_en_texte(*premier))
             }
             Cle::Afficher(Vue::Coffre) => "vue:coffre".to_string(),
             Cle::Afficher(Vue::Ressources) => "vue:ressources".to_string(),
@@ -765,6 +784,10 @@ impl Cle {
             Cle::Fabriquer => "fabriquer".to_string(),
             Cle::Equiper(place) => format!("equiper:{}", place_en_texte(*place)),
             Cle::ChoisirJoueur => "choisir-joueur".to_string(),
+            Cle::SecondParent { menu, premier } => {
+                format!("second-parent:{menu}:{}", emplacement_en_texte(*premier))
+            }
+            Cle::AccueillirLePetit => "accueillir-le-petit".to_string(),
             Cle::Ceder { menu, avec } => format!("ceder:{menu}:{avec}"),
             Cle::Demander { menu, avec, cede } => {
                 format!("demander:{menu}:{avec}:{}", emplacement_en_texte(*cede))
@@ -863,6 +886,7 @@ impl Cle {
             "refuser-invitation" => Cle::RefuserInvitation,
             "retirer-invitation" => Cle::RetirerInvitation,
             "ramener-le-groupe" => Cle::RamenerLeGroupe,
+            "accueillir-le-petit" => Cle::AccueillirLePetit,
             "fabriquer" => Cle::Fabriquer,
             "se-suicider" => Cle::SeSuicider,
             "acheter-capsule" => Cle::AcheterCapsule,
@@ -908,6 +932,7 @@ impl Cle {
                             "attaques" => {
                                 Cle::Afficher(Vue::Attaques(lire_emplacement(parametre)?))
                             }
+                            "rite" => Cle::Afficher(Vue::Rite(lire_emplacement(parametre)?)),
                             "preparation" => {
                                 let (zone, choisis) = parametre.split_once(':')?;
                                 Cle::Afficher(Vue::Preparation {
@@ -941,6 +966,13 @@ impl Cle {
                         Cle::Ceder {
                             menu: menu.parse().ok()?,
                             avec: avec.parse().ok()?,
+                        }
+                    }
+                    "second-parent" => {
+                        let (menu, premier) = parametre.split_once(':')?;
+                        Cle::SecondParent {
+                            menu: menu.parse().ok()?,
+                            premier: lire_emplacement(premier)?,
                         }
                     }
                     "demander" => {
@@ -1399,6 +1431,12 @@ mod tests {
             Cle::Afficher(Vue::Entrainement),
             Cle::Afficher(Vue::Cour),
             Cle::Afficher(Vue::EntrainementDepuisLaCour),
+            Cle::Afficher(Vue::Rite(Emplacement::Camp(12))),
+            Cle::SecondParent {
+                menu: 1,
+                premier: Emplacement::Equipe(2),
+            },
+            Cle::AccueillirLePetit,
             Cle::FabriquerCharme,
             Cle::FabriquerFilets,
             Cle::PoserLesPieges,
@@ -1417,6 +1455,26 @@ mod tests {
             Cle::GarderLaPrise,
             Cle::RelacherLaPrise,
         ]
+    }
+
+    #[test]
+    fn le_second_parent_lance_le_rite() {
+        let cle = Cle::SecondParent {
+            menu: 0,
+            premier: Emplacement::Equipe(1),
+        };
+        let valeur = emplacement_en_texte(Emplacement::Camp(4));
+        assert_eq!(
+            cle.commande(Some(&valeur), None),
+            Some(Commande::Jouer(Choix::LancerLeRite {
+                premier: Emplacement::Equipe(1),
+                second: Emplacement::Camp(4),
+            }))
+        );
+        assert_eq!(
+            Cle::AccueillirLePetit.commande(None, None),
+            Some(Commande::Jouer(Choix::AccueillirLePetit))
+        );
     }
 
     #[test]

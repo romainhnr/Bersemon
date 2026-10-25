@@ -1,9 +1,10 @@
-//! Malvoise sur Discord (section 14.2) : son étal, où l'on achète
-//! soins, filets, capsules et pierres d'évolution, la vente des monstres, et leur
-//! achat ou leur location. Les achats se font sans confirmation ; la vente
+//! Malvoise sur Discord (section 14.2) : son étal, où l'on achète soins,
+//! filets, capsules et pierres d'évolution et où se lit l'état du Rite du
+//! sang mêlé, la vente des monstres, et leur achat ou leur location. Les achats se font sans confirmation ; la vente
 //! et le retour d'un monstre loué sont confirmés par le déroulement.
 
 use bersemon_core::contenu::ContenuV1;
+use bersemon_core::horodatage::Horodatage;
 use bersemon_core::marchand::{
     EXPEDITIONS_DE_LOCATION, OffreDeMonstre, PRIX_CAPSULE_D_HABILETE, PRIX_PIERRE_D_EVOLUTION,
     prix_du_filet, prix_du_soin,
@@ -18,6 +19,7 @@ use bersemon_presentation::marchand::{
 };
 use bersemon_presentation::monstres::decrire_attaque;
 use bersemon_presentation::partie::argent;
+use bersemon_presentation::rite::{etat_du_rite, service_du_rite};
 use bersemon_presentation::soins::{le_soin, soins};
 
 use crate::composants::{BEHERIT, Cle, Vue};
@@ -32,7 +34,7 @@ const LOTS_DE_SOINS: [u32; 2] = [1, 5];
 /// Filets achetés d'un bouton : le lot que forge Gunther (section 13.5).
 const LOT_DE_FILETS: u32 = 5;
 
-pub fn etal(partie: &Partie, contenu: &ContenuV1) -> Question {
+pub fn etal(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Question {
     if !partie.marchand_au_camp() {
         return sans_marchand();
     }
@@ -126,8 +128,16 @@ pub fn etal(partie: &Partie, contenu: &ContenuV1) -> Question {
     lignes.extend(rangees(boutons));
     // La dernière rangée est pleine : le service se rend depuis la gestion
     // des monstres (section 13.7).
+    // Le rite se lance aussi depuis la gestion des monstres ; l'étal en dit
+    // l'état (section 13.11).
+    let rite = etat_du_rite(partie, maintenant).unwrap_or_else(|| {
+        format!(
+            "{} : bouton \"Rite du sang mêlé (Malvoise)\" de la gestion des monstres.",
+            service_du_rite()
+        )
+    });
     let texte = format!(
-        "{}\nMalvoise rend un monstre shiny contre un Philtre chromatique (vous en avez {}) : bouton \"Rendre shiny (Malvoise)\" de la gestion des monstres.",
+        "{}\nMalvoise rend un monstre shiny contre un Philtre chromatique (vous en avez {}) : bouton \"Rendre shiny (Malvoise)\" de la gestion des monstres.\n{rite}",
         texte_de_l_etal(partie),
         partie.philtres_chromatiques()
     );

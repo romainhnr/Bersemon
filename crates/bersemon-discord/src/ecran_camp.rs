@@ -38,6 +38,7 @@ use bersemon_presentation::partie::{
     especes_du_codex, fiche_d_espece, ligne_du_codex,
 };
 use bersemon_presentation::peche::ligne_prete;
+use bersemon_presentation::rite::{rite_acheve, service_du_rite};
 use bersemon_presentation::tour::description_de_la_tour;
 
 use crate::composants::{Cle, ECLIPSE, RETIRER, Vue, booster_en_texte, emplacement_en_texte};
@@ -66,7 +67,7 @@ pub fn question(
         Vue::Preparation { zone, choisis } => {
             ecran_expeditions_automatiques::preparation(partie, contenu, zone, choisis, maintenant)
         }
-        Vue::Marchand => ecran_marchand::etal(partie, contenu),
+        Vue::Marchand => ecran_marchand::etal(partie, contenu, maintenant),
         Vue::Vente => ecran_marchand::vente(partie),
         Vue::Achats => ecran_marchand::achats(partie, contenu),
         Vue::Eclipse => ecran_eclipse::eclipse(partie, contenu),
@@ -89,6 +90,7 @@ pub fn question(
         Vue::Machines => machines(partie, contenu, maintenant),
         Vue::Entrainement => entrainement(partie, Vue::Machines),
         Vue::Cour => cour(partie, contenu, maintenant),
+        Vue::Rite(premier) => rite(partie, premier, contenu),
         Vue::EntrainementDepuisLaCour => entrainement(partie, Vue::Cour),
     }
 }
@@ -196,12 +198,23 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
     ));
     boutons.push(bouton(Cle::Afficher(Vue::Options), "Options", SECONDAIRE));
     lignes.extend(rangees(boutons));
+    // Une rangée de plus, le temps que le petit du rite attende (section
+    // 13.11) : le camp en a alors 4.
+    let rite_acheve = rite_acheve(partie, maintenant);
+    if rite_acheve.is_some() {
+        lignes.extend(rangees(vec![bouton(
+            Cle::AccueillirLePetit,
+            "Accueillir le petit (Malvoise)",
+            SUCCES,
+        )]));
+    }
     let mut en_tete = vec![en_tete_abrege_du_camp(partie)];
     en_tete.extend(ames_d_apotres(partie, contenu));
     en_tete.extend(expeditions_rentrees(partie, maintenant));
     en_tete.extend(travail_fini(partie, maintenant));
     en_tete.extend(ligne_prete(partie, maintenant));
     en_tete.extend(avis_des_pieges(partie, maintenant).map(str::to_string));
+    en_tete.extend(rite_acheve);
     Question {
         texte: format!(
             "{}\nVotre équipe :\n{}",
@@ -328,6 +341,44 @@ fn machines(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Que
     ]));
     Question {
         texte: texte_des_machines(partie, contenu.zones(), plafond, maintenant),
+        rangees: lignes,
+    }
+}
+
+/// Le second parent du Rite du sang mêlé, parmi les monstres de la même
+/// famille que le premier, en menus numérotés ; le déroulement fait
+/// confirmer (section 13.11).
+fn rite(partie: &Partie, premier: Emplacement, contenu: &ContenuV1) -> Question {
+    let collection = partie.collection();
+    let retours = vec![
+        bouton(
+            Cle::Afficher(Vue::Gestion(Some(premier))),
+            "Retour au monstre",
+            SECONDAIRE,
+        ),
+        retour(),
+    ];
+    // Un bouton d'un ancien message peut désigner une place vide.
+    let Some(monstre) = collection.monstre(premier) else {
+        return Question {
+            texte: "Choisissez d'abord un monstre dans la gestion.".to_string(),
+            rangees: rangees(retours),
+        };
+    };
+    let possibles = partie.seconds_parents_possibles(premier, contenu.especes());
+    let mut lignes = menus_de_monstres(
+        collection,
+        |menu| Cle::SecondParent { menu, premier },
+        "Lui unir",
+        |emplacement| possibles.contains(&emplacement),
+    );
+    lignes.extend(rangees(retours));
+    Question {
+        texte: format!(
+            "{}\nChoisissez le second parent, de la même famille d'évolution que {}.",
+            service_du_rite(),
+            nom(monstre, Cote::Joueur)
+        ),
         rangees: lignes,
     }
 }
@@ -715,6 +766,21 @@ fn gestion(partie: &Partie, choisi: Option<Emplacement>, contenu: &ContenuV1) ->
                 SECONDAIRE,
             ));
         }
+    }
+    // Au plus 11 boutons pour un monstre de l'équipe, qui n'a pas de menu
+    // d'échange : 5 rangées en tout (section 13.11).
+    if partie.marchand_au_camp()
+        && partie.rite().is_none()
+        && a_soi
+        && !partie
+            .seconds_parents_possibles(emplacement, contenu.especes())
+            .is_empty()
+    {
+        boutons.push(bouton(
+            Cle::Afficher(Vue::Rite(emplacement)),
+            "Rite du sang mêlé (Malvoise)",
+            PRINCIPAL,
+        ));
     }
     // Par niveau, ou par une pierre que le joueur a (section 5.4).
     if let Ok((_, vers, _)) = partie.estimer_evolution(emplacement, contenu) {

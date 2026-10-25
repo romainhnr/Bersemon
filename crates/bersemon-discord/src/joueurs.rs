@@ -1108,6 +1108,8 @@ fn vue_apres(vue: Vue, choix: &Choix) -> Vue {
         (Vue::Gestion(Some(_)), _) => Vue::Gestion(None),
         (Vue::Entrainement, _) => Vue::Machines,
         (Vue::EntrainementDepuisLaCour, _) => Vue::Cour,
+        // Les parents quittent la collection : leurs places ont changé.
+        (Vue::Rite(_), _) => Vue::Gestion(None),
         // Le sacrifice est suivi du départ vers l'Éclipse (section 9.4).
         (Vue::Eclipse, _) => Vue::Camp,
         (vue, _) => vue,
@@ -1606,6 +1608,9 @@ mod tests {
         assert_eq!(vue_apres(Vue::Entrainement, &placer), Vue::Machines);
         let reprendre = Choix::ReprendreDeLEntrainement(0);
         assert_eq!(vue_apres(Vue::Cour, &reprendre), Vue::Cour);
+        // Le rite lancé, les parents ont quitté leur place.
+        let rite = Vue::Rite(Emplacement::Equipe(1));
+        assert_eq!(vue_apres(rite, &Choix::Oui), Vue::Gestion(None));
     }
 
     #[test]

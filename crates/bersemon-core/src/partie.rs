@@ -502,6 +502,31 @@ impl Partie {
         self.rite.as_ref()
     }
 
+    /// Les monstres qui peuvent former, avec celui de `premier`, le couple
+    /// d'un Rite du sang mêlé : ceux du joueur, de la même famille
+    /// d'évolution, dans l'ordre de l'équipe puis du camp (section 13.11).
+    pub fn seconds_parents_possibles(
+        &self,
+        premier: Emplacement,
+        especes: &[Espece],
+    ) -> Vec<Emplacement> {
+        let Some(monstre) = self.collection.monstre(premier) else {
+            return Vec::new();
+        };
+        let famille = forme_de_base(monstre.espece(), especes).id();
+        let equipe = (0..self.collection.equipe().len()).map(Emplacement::Equipe);
+        let camp = (0..self.collection.camp().len()).map(Emplacement::Camp);
+        equipe
+            .chain(camp)
+            .filter(|emplacement| *emplacement != premier)
+            .filter(|emplacement| {
+                self.collection.monstre(*emplacement).is_some_and(|autre| {
+                    !autre.est_loue() && forme_de_base(autre.espece(), especes).id() == famille
+                })
+            })
+            .collect()
+    }
+
     /// Ce que demanderait et donnerait le Rite du sang mêlé de ces deux
     /// monstres, sans rien changer : de quoi demander confirmation. Refuse
     /// ce que refuserait `lancer_le_rite` (section 13.11).

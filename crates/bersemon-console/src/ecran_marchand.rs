@@ -5,7 +5,6 @@
 //! vente, le service shiny, le rite et le retour d'un monstre loué sont
 //! confirmés par le déroulement.
 
-use bersemon_core::collection::Emplacement;
 use bersemon_core::combat::Cote;
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::Choix;
@@ -14,7 +13,6 @@ use bersemon_core::marchand::{
 };
 use bersemon_core::partie::Partie;
 use bersemon_core::pierre::PierreDEvolution;
-use bersemon_core::rite::forme_de_base;
 use bersemon_presentation::beherit::{FORGER_LE_BEHERIT, peut_forger_le_beherit};
 use bersemon_presentation::boosters::SERVICE_SHINY;
 use bersemon_presentation::filets::{liste_de_filets, offre_de_filet};
@@ -249,22 +247,7 @@ fn rite(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Option<Opt
     let Some(premier) = designer(collection, entree, question)? else {
         return Some(None);
     };
-    let Some(monstre) = collection.monstre(premier) else {
-        return Some(None);
-    };
-    let especes = contenu.especes();
-    let famille = forme_de_base(monstre.espece(), especes).id();
-    let equipe = (0..collection.equipe().len()).map(Emplacement::Equipe);
-    let camp = (0..collection.camp().len()).map(Emplacement::Camp);
-    let compatibles: Vec<Emplacement> = equipe
-        .chain(camp)
-        .filter(|emplacement| *emplacement != premier)
-        .filter(|emplacement| {
-            collection.monstre(*emplacement).is_some_and(|autre| {
-                !autre.est_loue() && forme_de_base(autre.espece(), especes).id() == famille
-            })
-        })
-        .collect();
+    let compatibles = partie.seconds_parents_possibles(premier, contenu.especes());
     if compatibles.is_empty() {
         println!("Aucun autre de vos monstres n'est de sa famille d'évolution.");
         return Some(None);
