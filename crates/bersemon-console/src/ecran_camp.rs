@@ -16,6 +16,7 @@ use bersemon_presentation::beherit::{DEMANDE_DE_SACRIFICE, destination_de_l_ecli
 use bersemon_presentation::boosters::{boosters, effet_du_booster};
 use bersemon_presentation::expeditions_automatiques::expeditions_rentrees;
 use bersemon_presentation::forge::travail_fini;
+use bersemon_presentation::jour_et_nuit::moment_present;
 use bersemon_presentation::machines::avis_des_pieges;
 use bersemon_presentation::marchand::liste_de_rachat;
 use bersemon_presentation::monstres::{
@@ -99,6 +100,7 @@ pub fn choisir(
         }
         println!();
         println!("{}", en_tete_du_camp(partie));
+        println!("{}", moment_present(maintenant()));
         if let Some(ames) = ames_d_apotres(partie, contenu) {
             println!("{ames}");
         }
@@ -220,6 +222,8 @@ fn choisir_une_option(entree: &mut Entree) -> Option<Option<Choix>> {
 fn carte(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Option<Option<Choix>> {
     let accessibles = partie.zones_accessibles(contenu.zones(), contenu.piste());
     println!();
+    // Le moment du départ est celui de toute l'expédition (section 9.6).
+    println!("{}", moment_present(maintenant()));
     println!("{}", affichage::carte(partie, &accessibles));
     let mut dernier = accessibles.len();
     let tour = destination_de_la_tour(partie, contenu).map(|ligne| {

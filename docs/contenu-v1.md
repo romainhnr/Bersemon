@@ -1280,4 +1280,4 @@ Textes :
 | Départ de nuit | La nuit est tombée. Les bêtes rôdent plus fortes, et d'autres sortent de l'ombre. |
 | Compteur d'étapes | [Étape : 2/5] Jour / [Étape : 2/5] Nuit |
 | Condition d'évolution, à la fiche | Warg dès le niveau 16, après un combat de nuit / Aspic dès le niveau 16, après un combat de jour |
-| Fiche d'une espèce rencontrée | Ne sort que la nuit. / Ne sort que le jour. |
+| Fiche d'une espèce capturée | Ne sort que la nuit. / Ne sort que le jour. |

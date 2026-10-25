@@ -496,6 +496,8 @@ mod tests {
             espece[5],
             "Attaque d'œuf (Rite du sang mêlé) : Assaut de meute (Normal, physique, puissance 80, précision 100 %)"
         );
+        // Le Loup ne sort que la nuit (section 9.6).
+        assert_eq!(espece[6], "Ne sort que la nuit.");
         let fiche = |id: &str| {
             let espece = contenu.espece(&EspeceId::new(id)).unwrap();
             crate::partie::fiche_d_espece(&espece, &contenu)

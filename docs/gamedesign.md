@@ -490,6 +490,8 @@ Décidé le 25/10/2026, pour les étapes 118 à 120 (choix de l'utilisateur) :
 - Évolutions : le Loup évolue en Warg et le Corbeau en Corbeau des gibets au niveau 16, de nuit ; la Vipère en Aspic au niveau 16, de jour. Comme l'évolution par lieu (section 5.4), elle se propose après un combat d'une expédition dans une zone partie au bon moment ; jamais au camp ni dans la Tour.
 - Affichage : au camp et sur la carte des expéditions, le moment et le temps avant le suivant ; en expédition, le moment à côté du compteur d'étapes, et un court texte au départ. Textes dans docs/contenu-v1.md, section 31.
 - La sauvegarde ne change pas : le moment se déduit de l'heure, et une expédition en cours n'est pas sauvegardée.
+- Précisé à l'étape 118, en codant : les zones vérifient que leurs espèces se créent jusqu'à 2 niveaux au-dessus de leur maximum, pour la nuit ; le moment n'entre pas dans les combats de groupe, qui n'ont lieu que dans la Tour.
+- Écrans, à l'étape 119 (console) : au camp, sous l'en-tête, et en haut de la carte des expéditions, "Jour : la nuit tombe dans 1 h 12." ou "Nuit : l'aube dans 23 min." ; après "Vous partez pour ...", le texte du moment ; le compteur d'étapes devient "[Étape : 2/5] Nuit", sans moment dans la Tour ; la fiche d'une espèce capturée nocturne ou diurne finit par "Ne sort que la nuit." ou "Ne sort que le jour.", et la condition d'évolution dit "Warg dès le niveau 16, après un combat de nuit".
 
 ## 10. Combat
 
@@ -1149,7 +1151,7 @@ Les questions Q103 et suivantes ont été relevées le 25/10/2026 lors de la con
 
 Les questions Q109 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 118 à 120, cycle du jour et de la nuit.
 
-- Q109. (Étapes 118 à 120) Hypothèses retenues, à confirmer : le cycle part de minuit UTC ; les monstres rares, même pacifiques, ont aussi leurs 2 niveaux de plus la nuit ; le bonus de types et celui d'XP jouent contre les monstres des âmes de marchands et le Noyé d'Ansgar, dont l'espèce et le niveau ne changent pas ; si une zone n'avait aucune espèce à un moment, toutes y sortiraient ; la fiche d'une espèce nocturne ou diurne le dit, une fois l'espèce rencontrée. Textes proposés sans validation (docs/contenu-v1.md, section 31).
+- Q109. (Étapes 118 à 120) Hypothèses retenues, à confirmer : le cycle part de minuit UTC ; les monstres rares, même pacifiques, ont aussi leurs 2 niveaux de plus la nuit ; le bonus de types et celui d'XP jouent contre les monstres des âmes de marchands et le Noyé d'Ansgar, dont l'espèce et le niveau ne changent pas ; si une zone n'avait aucune espèce à un moment, toutes y sortiraient ; la fiche d'une espèce nocturne ou diurne le dit, comme toute fiche, une fois l'espèce capturée. Textes proposés sans validation (docs/contenu-v1.md, section 31).
 
 Les questions Q108 et suivantes ont été relevées le 25/10/2026 lors de l'étape 117, réglages issus de l'équilibrage.
 

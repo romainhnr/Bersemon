@@ -264,16 +264,22 @@ pub fn ligne_des_ames(partie: &Partie) -> String {
 }
 
 /// En haut de chaque écran d'expédition (section 9.2), sans total dans la
-/// Tour sans fond (section 9.5).
+/// Tour sans fond (section 9.5), suivi du moment de l'expédition dans une
+/// zone de la carte (section 9.6) : "[Étape : 2/5] Nuit".
 pub fn compteur_d_etapes(expedition: &Expedition) -> String {
-    if expedition.est_sans_fin() {
-        return format!("[Étape : {}]", expedition.etapes_faites());
+    let compteur = if expedition.est_sans_fin() {
+        format!("[Étape : {}]", expedition.etapes_faites())
+    } else {
+        format!(
+            "[Étape : {}/{}]",
+            expedition.etapes_faites(),
+            expedition.nombre_etapes()
+        )
+    };
+    match expedition.jour_ou_nuit() {
+        Some(jour_ou_nuit) => format!("{compteur} {}", jour_et_nuit::nom(jour_ou_nuit)),
+        None => compteur,
     }
-    format!(
-        "[Étape : {}/{}]",
-        expedition.etapes_faites(),
-        expedition.nombre_etapes()
-    )
 }
 
 /// Le texte et le bouton d'une annonce (section 9.2).
@@ -507,6 +513,9 @@ pub fn fiche_d_espece(espece: &Espece, catalogue: &dyn Catalogue) -> Vec<String>
             decrire_attaque(attaque)
         ));
     }
+    if let Some(activite) = espece.activite() {
+        fiche.push(jour_et_nuit::activite(activite).to_string());
+    }
     fiche
 }
 
@@ -634,6 +643,56 @@ mod tests {
     use bersemon_core::niveau::Niveau;
     use bersemon_core::nom::Nom;
     use bersemon_core::stats::ValeursInternes;
+
+    /// Le compteur d'étapes dit le moment de l'expédition, partie ici à 2 h
+    /// UTC, de nuit (section 9.6).
+    #[test]
+    fn le_compteur_dit_le_moment_de_l_expedition() {
+        use bersemon_core::aleatoire::GenerateurAleatoire;
+        use bersemon_core::catalogue::Catalogue;
+        use bersemon_core::deroulement::{Choix, Contexte, Deroulement};
+        use bersemon_core::heros::Classe;
+        use bersemon_core::horodatage::Horodatage;
+        use bersemon_core::sauvegarde::{ErreurSauvegarde, SauvegardeRepository};
+        use bersemon_core::zone::ZoneId;
+
+        struct DepotMuet;
+        impl SauvegardeRepository for DepotMuet {
+            fn charger(&self, _: &dyn Catalogue) -> Result<Option<Partie>, ErreurSauvegarde> {
+                Ok(None)
+            }
+            fn enregistrer(&self, _: &Partie) -> Result<(), ErreurSauvegarde> {
+                Ok(())
+            }
+            fn supprimer(&self) -> Result<(), ErreurSauvegarde> {
+                Ok(())
+            }
+        }
+
+        let contenu = ContenuV1::new();
+        let mut aleatoire = GenerateurAleatoire::new(1);
+        let mut deroulement = Deroulement::demarrer(Ok(None));
+        for choix in [
+            Choix::NomDuHeros("Aldric".to_string()),
+            Choix::Classe(Classe::Mage),
+            Choix::PartirEnExpedition(ZoneId::new("lisiere")),
+        ] {
+            let mut contexte = Contexte {
+                contenu: &contenu,
+                aleatoire: &mut aleatoire,
+                depot: &DepotMuet,
+                maintenant: Horodatage::depuis_secondes(2 * 3_600),
+            };
+            // L'introduction et les conseils attendent d'être lus.
+            while deroulement.repondre(choix.clone(), &mut contexte).is_err() {
+                deroulement
+                    .repondre(Choix::Poursuivre, &mut contexte)
+                    .unwrap();
+            }
+        }
+        let expedition = deroulement.expedition().unwrap();
+        assert_eq!(compteur_d_etapes(expedition), "[Étape : 1/5] Nuit");
+    }
 
     #[test]
     fn aucun_apotre_au_codex_avant_d_etre_abattu() {
