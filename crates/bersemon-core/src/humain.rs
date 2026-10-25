@@ -3,7 +3,9 @@
 
 use std::fmt;
 
+use crate::equipement::ObjetDEquipement;
 use crate::espece::{Espece, EspeceId};
+use crate::heros::{Classe, creer_combattant};
 use crate::monstre::Monstre;
 use crate::niveau::Niveau;
 use crate::stats::{Stats, ValeursInternes};
@@ -78,6 +80,16 @@ pub struct Humain {
     /// Le texte de la libération de Gunther, que sa défaite libère (section
     /// 13.4).
     liberation_de_gunther: Option<String>,
+    /// Sa classe, son arme et son armure : il combat après ses monstres
+    /// (section 10.7). En boîte, pour que l'humain reste léger.
+    heros: Option<Box<HerosDeLHumain>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct HerosDeLHumain {
+    classe: Classe,
+    arme: Option<ObjetDEquipement>,
+    armure: Option<ObjetDEquipement>,
 }
 
 impl Humain {
@@ -112,6 +124,40 @@ impl Humain {
             apres_victoire: apres_victoire.into(),
             ia: IaHumain::Simple,
             liberation_de_gunther: None,
+            heros: None,
+        })
+    }
+
+    /// Il combat lui-même après ses monstres, avec cette classe et cet
+    /// équipement (sections 4.4 et 10.7).
+    pub fn avec_heros(
+        mut self,
+        classe: Classe,
+        arme: Option<ObjetDEquipement>,
+        armure: Option<ObjetDEquipement>,
+    ) -> Self {
+        self.heros = Some(Box::new(HerosDeLHumain {
+            classe,
+            arme,
+            armure,
+        }));
+        self
+    }
+
+    pub fn classe(&self) -> Option<Classe> {
+        self.heros.as_ref().map(|heros| heros.classe)
+    }
+
+    /// Lui-même, prêt au combat, sans tirage : à son nom, aux stats de sa
+    /// classe et au niveau de son équipement.
+    pub fn generer_heros(&self) -> Option<Monstre> {
+        self.heros.as_ref().map(|heros| {
+            creer_combattant(
+                &self.nom,
+                heros.classe,
+                heros.arme.as_ref(),
+                heros.armure.as_ref(),
+            )
         })
     }
 

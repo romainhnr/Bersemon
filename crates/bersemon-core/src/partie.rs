@@ -2200,14 +2200,20 @@ impl Partie {
     }
 
     /// Ni fuite ni filet contre un humain (section 10.7). Ses monstres entrent
-    /// au codex comme rencontrés.
+    /// au codex comme rencontrés ; lui-même combat après eux (section 4.4).
     pub fn preparer_combat_contre_humain(
         &mut self,
         equipe: Vec<Monstre>,
+        heros: Option<Monstre>,
         ia: IaHumain,
     ) -> Result<Combat, ErreurCombat> {
-        self.preparer_combat(equipe)
-            .map(|combat| combat.contre_un_humain(ia))
+        self.preparer_combat(equipe).map(|combat| {
+            let combat = combat.contre_un_humain(ia);
+            match heros {
+                Some(heros) => combat.avec_heros(Cote::Adversaire, heros),
+                None => combat,
+            }
+        })
     }
 
     /// Un humain vaincu ne revient plus ; son argent va dans le sac (section

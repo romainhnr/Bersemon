@@ -107,7 +107,8 @@ impl Duel {
 
     /// Avec une copie soignée de l'équipe de chacun, le bonus et l'ordre de
     /// son héros et la limite d'obéissance de ses monstres reçus (sections
-    /// 4.2, 4.3 et 15.2). Échoue si une des équipes est vide.
+    /// 4.2, 4.3 et 15.2), et une copie soignée de son héros, qui combat en
+    /// dernier (section 4.4). Échoue si une des équipes est vide.
     pub fn entre(
         premier: &Partie,
         second: &Partie,
@@ -133,6 +134,9 @@ impl Duel {
                 .avec_bonus_de_role_du_cote(cote)
                 .avec_ordre_du_cote(cote, partie.heros().classe().ordre())
                 .avec_limite_du_cote(cote, partie.limite_d_obeissance(zones, piste));
+            let mut heros = partie.heros().combattant();
+            heros.soigner_completement();
+            combat = combat.avec_heros(cote, heros);
         }
         Duel::new(combat)
     }
@@ -569,6 +573,13 @@ mod tests {
         let combat = duel.vu_par(Cote::Joueur);
         let salamandre = &combat.equipe()[0];
         assert_eq!(salamandre.pv_actuels(), salamandre.stats().pv);
+        // Chaque héros combat en dernier, soigné (section 4.4).
+        let noms: Vec<&str> = [Cote::Joueur, Cote::Adversaire]
+            .iter()
+            .flat_map(|cote| combat.heros(*cote))
+            .map(|heros| heros.nom())
+            .collect();
+        assert_eq!(noms, ["Aldric", "Ysolde"]);
         assert!(aldric.collection().equipe()[0].pv_actuels() < salamandre.stats().pv);
         assert_eq!(
             combat.ordre_disponible_pour(Cote::Joueur),

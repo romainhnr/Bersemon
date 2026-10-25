@@ -3281,7 +3281,7 @@ impl EnExpedition {
                     humain.avant_combat().to_string(),
                 ));
                 let combat = partie
-                    .preparer_combat_contre_humain(equipe, humain.ia())
+                    .preparer_combat_contre_humain(equipe, humain.generer_heros(), humain.ia())
                     .expect(EQUIPE_APTE)
                     .avec_limite_d_obeissance(limite);
                 let combat = self.sous_la_meteo(combat);

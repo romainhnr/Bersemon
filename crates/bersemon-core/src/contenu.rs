@@ -272,7 +272,8 @@ impl ContenuV1 {
             AVANT_LE_BRIGAND,
             APRES_LE_BRIGAND,
         )
-        .expect("brigand conforme aux règles");
+        .expect("brigand conforme aux règles")
+        .avec_heros(Classe::Assassin, Some(objet("couteau-de-chasse")), None);
         // Au service du Baron pendu, il garde le Marais (section 10.7).
         let bourreau = Humain::new(
             HumainId::new("bourreau"),
@@ -287,6 +288,11 @@ impl ContenuV1 {
             APRES_LE_BOURREAU,
         )
         .expect("Bourreau conforme aux règles")
+        .avec_heros(
+            Classe::Guerrier,
+            Some(objet("lame-de-milicien")),
+            Some(objet("gambison")),
+        )
         .avec_ia(IaHumain::Relevee)
         .liberant_gunther(LIBERATION_DE_GUNTHER);
         // Un marchand mort par zone, dont le joueur donne l'âme à Malvoise
@@ -431,6 +437,11 @@ impl ContenuV1 {
             APRES_L_INQUISITEUR,
         )
         .expect("Inquisiteur conforme aux règles")
+        .avec_heros(
+            Classe::Mage,
+            Some(objet("grimoire-des-brumes")),
+            Some(objet("robe-des-brumes")),
+        )
         .avec_ia(IaHumain::Relevee);
         // Ouverte par l'indice que laisse le Baron pendu (section 9.4).
         let abbaye = Zone::new(
@@ -483,6 +494,11 @@ impl ContenuV1 {
             APRES_LE_PORTE_ETENDARD,
         )
         .expect("Porte-étendard conforme aux règles")
+        .avec_heros(
+            Classe::Templier,
+            Some(objet("encensoir-maudit")),
+            Some(objet("plates-consacrees")),
+        )
         .avec_ia(IaHumain::Relevee);
         // Ouvert par l'indice que laisse l'Abbesse ; ses neuf niveaux mènent
         // aux stades 3 du niveau 36 (sections 5.4 et 9.4).
@@ -3937,6 +3953,17 @@ fn creer_recompenses_du_codex() -> Vec<RecompenseDuCodex> {
     ]
 }
 
+/// Une arme ou une armure de docs/contenu-v1.md, section 34, comme celles
+/// des humains de l'IA (section 10.7).
+fn objet(id: &str) -> ObjetDEquipement {
+    PLANS_DE_FABRICATION
+        .iter()
+        .chain(&ARMES_DU_CHAMPION)
+        .find(|fiche| fiche.id == id)
+        .map(creer_objet)
+        .unwrap_or_else(|| panic!("objet {id} absent du contenu"))
+}
+
 fn creer_objet(fiche: &FicheObjet) -> ObjetDEquipement {
     let [
         attaque,
@@ -4738,6 +4765,49 @@ mod tests {
                 "{habilete:?} sans espèce"
             );
         }
+    }
+
+    /// Section 10.7, décidée le 25/10/2026 pour l'étape 131 : chaque humain
+    /// de fin de zone combat après ses monstres, au niveau de son équipement.
+    #[test]
+    fn les_humains_de_fin_de_zone_combattent_avec_leur_classe() {
+        let contenu = ContenuV1::new();
+        let heros: Vec<(&str, Classe, u8, Vec<String>)> = contenu
+            .zones()
+            .iter()
+            .filter_map(Zone::humain)
+            .map(|humain| {
+                let heros = humain.generer_heros().unwrap();
+                assert_eq!(heros.nom(), humain.nom());
+                assert_eq!(heros.espece().types().liste(), [Type::Humain]);
+                let attaques = heros
+                    .attaques()
+                    .liste()
+                    .iter()
+                    .map(|attaque| attaque.id().as_str().to_string())
+                    .collect();
+                (
+                    humain.id().as_str(),
+                    humain.classe().unwrap(),
+                    heros.niveau().valeur(),
+                    attaques,
+                )
+            })
+            .collect();
+        let niveaux: Vec<(&str, Classe, u8)> = heros
+            .iter()
+            .map(|(id, classe, niveau, _)| (*id, *classe, *niveau))
+            .collect();
+        assert_eq!(
+            niveaux,
+            vec![
+                ("brigand", Classe::Assassin, 10),
+                ("bourreau", Classe::Guerrier, 15),
+                ("inquisiteur", Classe::Mage, 25),
+                ("porte-etendard", Classe::Templier, 35),
+            ]
+        );
+        assert_eq!(heros[0].3, ["entaille", "lame-empoisonnee"]);
     }
 
     #[test]
