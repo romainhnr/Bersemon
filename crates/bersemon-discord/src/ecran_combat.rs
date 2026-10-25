@@ -12,6 +12,7 @@ use bersemon_core::partie::Partie;
 use bersemon_core::soin::{Soin, Soins};
 use bersemon_core::types::Efficacite;
 use bersemon_presentation::combat::{attaque_de_trop, attaque_en_combat, etat, ordre_et_bonus};
+use bersemon_presentation::filets::nom_du_filet;
 use bersemon_presentation::monstres::{decrire_attaque, ligne_monstre, nom, nom_en_combat};
 use bersemon_presentation::partie::{places_pour_une_capture, proposition_d_evolution};
 use bersemon_presentation::soins::nom_du_soin;
@@ -51,12 +52,17 @@ pub fn action(combat: &Combat, partie: &Partie) -> Question {
         let libelle = format!("Ordre : {}", ordre_et_bonus(ordre));
         autres.push(bouton(Cle::Ordre, &libelle, SECONDAIRE));
     }
+    // Un bouton par qualité de filet qui reste : avec l'ordre et la fuite,
+    // 5 au plus (section 11.2).
     if combat.filet_possible() {
-        let libelle = format!(
-            "Lancer un filet ({} % de chances)",
-            combat.chance_de_capture()
-        );
-        autres.push(bouton(Cle::Filet, &libelle, SECONDAIRE));
+        for (filet, nombre) in combat.filets().presents() {
+            let libelle = format!(
+                "{} x{nombre} ({} %)",
+                nom_du_filet(filet),
+                combat.chance_de_capture(filet)
+            );
+            autres.push(bouton(Cle::Filet(filet), &libelle, SECONDAIRE));
+        }
     }
     if combat.fuite_possible() {
         autres.push(bouton(Cle::Fuir, "Fuir", SECONDAIRE));

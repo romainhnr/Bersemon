@@ -22,6 +22,7 @@ use bersemon_core::zone::Zone;
 
 use crate::boosters::{boosters, eclats_d_astre, question_shiny};
 use crate::expeditions_automatiques::question_de_rappel;
+use crate::filets::liste_de_filets;
 use crate::forge::{question_de_fabrication, question_de_lancement, question_du_charme};
 use crate::monstres::{decrire_stats, effet_d_habilete, ligne_monstre, nom, types_de};
 use crate::soins::{liste_de_soins, question_du_soin_perdu};
@@ -150,6 +151,7 @@ pub fn pierres(pierre: PierreDEvolution, nombre: u32) -> String {
 /// « vide ».
 pub fn contenu(inventaire: &Inventaire) -> String {
     let mut elements = liste_de_soins(inventaire.soins());
+    elements.extend(liste_de_filets(inventaire.filets()));
     if inventaire.argent() > 0 {
         elements.push(argent(inventaire.argent()));
     }

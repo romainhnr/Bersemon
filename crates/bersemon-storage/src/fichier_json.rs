@@ -98,6 +98,7 @@ mod tests {
     use bersemon_core::espece::{AttaqueApprise, Espece, EspeceId, Rarete, Role};
     use bersemon_core::expedition::ParametresCoffre;
     use bersemon_core::expedition_automatique::ParametresExpeditionAutomatique;
+    use bersemon_core::filet::Filet;
     use bersemon_core::habilete::Habilete;
     use bersemon_core::heros::{Classe, Heros};
     use bersemon_core::horodatage::Horodatage;
@@ -385,7 +386,8 @@ mod tests {
                 .avec_boosters(Booster::CendreBenite, 2)
                 .avec_boosters(Booster::FioleDeSang, 1)
                 .avec_eclats_d_astre(1)
-                .avec_charmes_de_garde(2),
+                .avec_charmes_de_garde(2)
+                .avec_filets(Filet::Chaines, 3),
             marchand_au_camp: true,
             ames_donnees: vec![bertrand()],
             ames_portees: vec![grete()],
@@ -650,10 +652,10 @@ mod tests {
 
     #[test]
     fn version_inconnue() {
-        let texte = texte_de_partie().replacen("\"version\":26", "\"version\":27", 1);
+        let texte = texte_de_partie().replacen("\"version\":27", "\"version\":28", 1);
         assert_eq!(
             charger_texte(&texte),
-            Err(ErreurSauvegarde::VersionInconnue(27))
+            Err(ErreurSauvegarde::VersionInconnue(28))
         );
     }
 
@@ -759,7 +761,10 @@ mod tests {
         let rechargee = charger_texte(&valeur.to_string()).unwrap().unwrap();
         assert_eq!(rechargee.coffre_du_camp().eclats_d_astre(), 1);
         assert_eq!(rechargee.coffre_du_camp().boosters(), &[]);
-        assert_eq!(rechargee.sac(), partie.sac());
+        // Avant la version 27, les filets du sac sont oubliés (section
+        // 11.2).
+        assert_eq!(rechargee.sac().potions(), partie.sac().potions());
+        assert!(rechargee.sac().filets().est_vide());
         // En version 20, rien n'est ajouté.
         let relue = charger_texte(&texte_de_partie()).unwrap().unwrap();
         assert_eq!(relue.coffre_du_camp().eclats_d_astre(), 1);
@@ -1121,6 +1126,32 @@ mod tests {
     }
 
     #[test]
+    fn les_filets_se_relisent_depuis_la_version_27() {
+        let texte = texte_de_partie();
+        let relue = charger_texte(&texte).unwrap().unwrap();
+        assert_eq!(relue.sac().filets().nombre(Filet::Chanvre), 10);
+        assert_eq!(relue.coffre_du_camp().filets().nombre(Filet::Chaines), 3);
+        // Avant la version 27, les filets étaient illimités : la partie en
+        // trouve 10 de chanvre au coffre, et rien d'autre (Q102).
+        let ancienne = texte.replacen("\"version\":27", "\"version\":26", 1);
+        let ancienne = charger_texte(&ancienne).unwrap().unwrap();
+        assert!(ancienne.sac().filets().est_vide());
+        assert_eq!(
+            ancienne
+                .coffre_du_camp()
+                .filets()
+                .presents()
+                .collect::<Vec<_>>(),
+            vec![(Filet::Chanvre, 10)]
+        );
+        let inconnu = texte.replacen("filet-de-chaines", "filet-d-or", 1);
+        assert!(matches!(
+            charger_texte(&inconnu),
+            Err(ErreurSauvegarde::Incoherente(_))
+        ));
+    }
+
+    #[test]
     fn les_records_de_la_tour_se_relisent_depuis_la_version_26() {
         let texte = texte_de_partie();
         let relue = charger_texte(&texte).unwrap().unwrap();
@@ -1132,7 +1163,7 @@ mod tests {
             }
         );
         // Avant la version 26, pas de Tour sans fond (section 9.5).
-        let ancienne = texte.replacen("\"version\":26", "\"version\":25", 1);
+        let ancienne = texte.replacen("\"version\":27", "\"version\":25", 1);
         let ancienne = charger_texte(&ancienne).unwrap().unwrap();
         assert_eq!(ancienne.records_de_la_tour(), RecordsDeLaTour::default());
     }
@@ -1144,7 +1175,7 @@ mod tests {
         let relue = charger_texte(&texte).unwrap().unwrap();
         assert_eq!(relue.beherit(), EtatDuBeherit::EclipseOuverte);
         // Avant la version 25, pas de Béhérit (section 9.4).
-        let ancienne = texte.replacen("\"version\":26", "\"version\":24", 1);
+        let ancienne = texte.replacen("\"version\":27", "\"version\":24", 1);
         let ancienne = charger_texte(&ancienne).unwrap().unwrap();
         assert_eq!(ancienne.beherit(), EtatDuBeherit::Aucun);
         let inconnu = texte.replacen("eclipse-ouverte", "brise", 1);

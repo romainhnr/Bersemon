@@ -11,6 +11,7 @@ use bersemon_core::partie::Partie;
 use bersemon_core::soin::Soins;
 use bersemon_core::zone::Zone;
 use bersemon_presentation::combat::{attaque_de_trop, attaque_en_combat, ordre_et_bonus};
+use bersemon_presentation::filets::liste_de_filets;
 use bersemon_presentation::monstres::{decrire_attaque, ligne_monstre, nom_en_combat};
 use bersemon_presentation::partie::{
     decrire_zone, fiche_d_espece, ligne_du_codex, sac_en_expedition,
@@ -29,10 +30,14 @@ pub fn menu_action(combat: &Combat, commandes: &[Commande]) -> String {
                 Some(ordre) => format!("Ordre du héros : {}", ordre_et_bonus(ordre)),
                 None => "Ordre du héros".to_string(),
             },
-            Commande::LancerFilet => format!(
-                "Lancer un filet ({} % de chances)",
-                combat.chance_de_capture()
-            ),
+            Commande::LancerFilet => {
+                let filets = liste_de_filets(combat.filets());
+                if filets.is_empty() {
+                    "Lancer un filet (aucun)".to_string()
+                } else {
+                    format!("Lancer un filet ({})", filets.join(", "))
+                }
+            }
             Commande::UtiliserSoin => format!("Utiliser un soin ({})", sac(combat.soins())),
             Commande::Fuir => "Fuir".to_string(),
         };

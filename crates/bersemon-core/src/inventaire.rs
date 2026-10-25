@@ -1,8 +1,8 @@
 //! Objets du joueur, rangés dans le sac, qu'il emporte en expédition
 //! manuelle, ou dans le coffre du camp, où ils sont à l'abri (sections 13.3
 //! et 14.4) : argent, soins, capsules d'attaque, capsules d'habileté,
-//! ressources, pierres d'évolution, boosters, Éclats d'astre et charmes de
-//! garde.
+//! ressources, pierres d'évolution, boosters, Éclats d'astre, charmes de
+//! garde et filets de capture.
 
 use std::fmt;
 
@@ -10,6 +10,7 @@ use crate::aleatoire::Aleatoire;
 use crate::attaque::AttaqueId;
 use crate::booster::Booster;
 use crate::capsule::Capsule;
+use crate::filet::{Filet, Filets};
 use crate::monstre::Monstre;
 use crate::pierre::PierreDEvolution;
 use crate::ressource::{Ressource, RessourceId};
@@ -38,6 +39,8 @@ pub struct Inventaire {
     eclats_d_astre: u32,
     /// Pour protéger un monstre en expédition automatique (section 12.5).
     charmes_de_garde: u32,
+    /// Chaque capture en combat en consomme un (section 11.2).
+    filets: Filets,
 }
 
 /// Ce que le joueur déplace entre le sac et le coffre du camp.
@@ -52,6 +55,7 @@ pub enum Objet {
     Boosters(Booster, u32),
     EclatsDAstre(u32),
     CharmesDeGarde(u32),
+    Filets(Filet, u32),
 }
 
 impl Inventaire {
@@ -69,6 +73,7 @@ impl Inventaire {
             boosters: Vec::new(),
             eclats_d_astre: 0,
             charmes_de_garde: 0,
+            filets: Filets::default(),
         };
         inventaire.soins.ajouter(Soin::Potion, potions);
         for capsule in capsules {
@@ -206,6 +211,24 @@ impl Inventaire {
         self
     }
 
+    pub fn filets(&self) -> &Filets {
+        &self.filets
+    }
+
+    pub fn ajouter_filets(&mut self, filet: Filet, nombre: u32) {
+        self.filets.ajouter(filet, nombre);
+    }
+
+    pub fn avec_filets(mut self, filet: Filet, nombre: u32) -> Self {
+        self.ajouter_filets(filet, nombre);
+        self
+    }
+
+    /// Ceux qui restent après un combat (section 11.2).
+    pub(crate) fn definir_filets(&mut self, filets: Filets) {
+        self.filets = filets;
+    }
+
     /// Rend `false` sans rien changer s'il n'y en a pas.
     pub(crate) fn utiliser_charme_de_garde(&mut self) -> bool {
         self.retirer(&Objet::CharmesDeGarde(1)).is_ok()
@@ -289,6 +312,7 @@ impl Inventaire {
             && self.boosters.is_empty()
             && self.eclats_d_astre == 0
             && self.charmes_de_garde == 0
+            && self.filets.est_vide()
     }
 
     pub fn contient_capsule(&self, id: &AttaqueId) -> bool {
@@ -335,6 +359,9 @@ impl Inventaire {
         }
         self.ajouter_eclats_d_astre(autre.eclats_d_astre);
         self.ajouter_charmes_de_garde(autre.charmes_de_garde);
+        for (filet, nombre) in autre.filets.presents() {
+            self.filets.ajouter(filet, nombre);
+        }
     }
 
     /// Retire l'objet et le rend, seul dans un inventaire, sans rien changer
@@ -349,7 +376,8 @@ impl Inventaire {
             | Objet::Pierres(_, 0)
             | Objet::Boosters(_, 0)
             | Objet::EclatsDAstre(0)
-            | Objet::CharmesDeGarde(0) => {
+            | Objet::CharmesDeGarde(0)
+            | Objet::Filets(_, 0) => {
                 return Err(ErreurObjet::QuantiteNulle);
             }
             Objet::Argent(montant) => {
@@ -439,6 +467,12 @@ impl Inventaire {
                 }
                 self.charmes_de_garde -= nombre;
                 retire.charmes_de_garde = *nombre;
+            }
+            Objet::Filets(filet, nombre) => {
+                if !self.filets.retirer(*filet, *nombre) {
+                    return Err(ErreurObjet::Insuffisant);
+                }
+                retire.filets.ajouter(*filet, *nombre);
             }
         }
         Ok(retire)

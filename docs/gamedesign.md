@@ -376,6 +376,7 @@ Déroulement dans la V1 :
 - Un groupe sauvage compte de 1 à 2 monstres dans la zone facile, de 1 à 3 dans la zone difficile ; la taille est tirée à chaque combat.
 - Un coffre contient 1 à 2 potions (section 14.4). Après la V1, il contient aussi de l'argent, selon la zone, et, une fois sur 5, une capsule d'attaque de la zone que le joueur n'a pas encore (sections 13.10 et 14.5). Depuis l'étape 28, l'habileté Pillard augmente cet argent de 50 %, et l'habileté Fouineur peut trouver une potion après un combat gagné (section 5.9).
 - Depuis l'étape 35 (19/10/2026), un coffre contient aussi, une fois sur 10, une capsule d'habileté (section 5.9), tirée après la capsule d'attaque.
+- Depuis l'étape 103 (25/10/2026), le même tirage donne des filets une fois sur 5 : 2 filets de chanvre (15 %) ou un filet lesté (5 %), dans les zones comme dans la Tour sans fond (section 11.2).
 - Depuis l'étape 36 (19/10/2026), après un combat gagné, chaque monstre sauvage mis KO et non capturé lâche sa ressource 1 fois sur 3 ; elle va dans le sac (section 14.3).
 - Entre deux étapes, le joueur continue, rentre au camp en gardant ses gains, utilise des potions ou change l'ordre de son équipe ; les échanges avec le camp restent impossibles. Les PV et les statuts sont conservés d'une étape à l'autre.
 - Après la V1, l'écran entre deux étapes rappelle l'argent et les capsules trouvés pendant l'expédition, qu'une défaite ferait perdre (section 9.3). Avec le coffre du camp, il montre le contenu du sac (section 13.3).
@@ -560,6 +561,13 @@ Décidé le 19/10/2026, pour l'étape 30 (Q75) :
 - Lancer un filet sur le monstre adverse actif est l'action du tour : si la capture échoue, l'adversaire agit. Un monstre sauvage mis KO peut être capturé à la fin du combat, si le joueur l'emporte.
 - Plusieurs monstres peuvent être capturés au cours d'un même combat : chaque monstre d'un groupe sauvage peut l'être, au filet pendant le combat ou, s'il est KO, à la fin d'un combat gagné. Un Apôtre ne se capture que KO, à la fin du combat (section 9.4). Depuis l'étape 66, un Apôtre ne se capture plus : il laisse son âme (section 9.4).
 - Les filets de capture sont illimités dans la V1.
+- Remplacé le 25/10/2026, pour les étapes 103 à 106 (choix de l'utilisateur) : les filets s'épuisent. Trois qualités : le filet de chanvre (chance de capture normale), le filet lesté (x1,5) et le filet de chaînes (x2). Ce multiplicateur se multiplie avec l'amélioration des filets de Gunther (section 13.4) et l'habileté Traqueur, et la chance reste bornée à 100 %. Valeurs dans docs/contenu-v1.md, section 26.
+  - Toute capture en combat consomme un filet : un filet lancé est perdu, que la capture réussisse ou non ; capturer un monstre KO après la victoire, ou prendre le monstre d'un humain vaincu (section 11.3), en coûte un aussi. Sans filet, pas de capture. Le monstre rare pacifique, la pêche, l'achat et la location n'en demandent pas.
+  - En combat, le joueur choisit la qualité du filet qu'il lance, parmi celles du sac. La capture d'un monstre KO, garantie, prend le filet le plus simple qui reste (hypothèse retenue, Q102).
+  - Les filets se rangent dans le sac et le coffre, comme les potions (section 13.3) : seuls ceux du sac servent en expédition, et une défaite les fait perdre avec le sac. Ceux qu'on achète ou fabrique vont au coffre, ceux qu'on trouve au sac.
+  - Une nouvelle partie commence avec 10 filets de chanvre dans le sac. Une sauvegarde antérieure en trouve 10 au coffre (hypothèse retenue, Q102). Sauvegarde en version 27.
+  - Sources : Malvoise vend le filet de chanvre et le filet lesté (section 14.2) ; Gunther fabrique les trois qualités par lots de 5 (section 13.5) ; un coffre d'expédition sur 5 en contient (section 9.2). Le filet de chaînes ne s'achète pas.
+  - En expédition en groupe, chacun lance ses propres filets et en dépense un pour chaque capture ; un joueur sans filet ne capture plus (section 15.5).
 - Chaque monstre capturé rejoint l'équipe s'il y reste une place, sinon le camp. Si le camp est plein lui aussi, le joueur relâche un monstre de son choix, du camp ou de l'équipe, et la capture prend sa place ; il peut aussi relâcher la capture elle-même, ce qui revient à y renoncer.
 
 ### 11.3 Capture après un combat contre un humain contrôlé par l'IA
@@ -726,6 +734,7 @@ Décidé le 20/10/2026, pour les étapes 48 à 51 (choix de l'utilisateur) :
 - Gunther forge l'équipement du héros (section 4.3) dans le même atelier que les améliorations : un seul travail à la fois, amélioration ou objet. Comme une amélioration (section 13.4), un objet se paie en ressources seules, prises au lancement, du sac d'abord puis du coffre ; il demande une durée, de 1 h à 8 h, sur l'horloge réelle ; un travail lancé ne s'annule pas ; le joueur constate lui-même le travail fini, au camp, et l'objet rejoint alors son équipement. Sur Discord, le bot prévient par message privé de la fin d'une fabrication.
 - Chaque objet ne se fabrique qu'une fois : un objet possédé n'est plus proposé.
 - Les filets de capture restent une amélioration du camp (section 13.4) : ils ne se fabriquent pas à l'unité.
+- Remplacé le 25/10/2026, pour l'étape 104 (choix de l'utilisateur) : Gunther fabrique aussi les filets, par lots de 5, aussi souvent que le joueur le veut, chaque lot étant un travail ordinaire, comme le charme de garde : 5 filets de chanvre contre 3 Croc de loup et 3 Plume de corbeau, en 30 minutes ; 5 filets lestés contre 3 Fragment d'armure et 3 Os de squelette, en 1 h ; 5 filets de chaînes contre 3 Éclat de gargouille et 2 Pierre de troll, en 2 h. Les filets vont au coffre quand le joueur constate le travail. L'amélioration des filets (section 13.4) continue de jouer sur toutes les qualités.
 - Décidé le 20/10/2026, pour les étapes 76 à 78 (choix de l'utilisateur) : Gunther fabrique aussi le charme de garde, objet de protection des expéditions automatiques (section 12.5), un par travail, aussi souvent que le joueur le veut, contre 3 Os de squelette et 3 Fragment d'armure, en 30 minutes. C'est un travail ordinaire : un seul à la fois, avec les améliorations et l'équipement. Le charme va dans le coffre quand le joueur constate le travail. Il se range dans le sac et le coffre, se perd avec le sac et ne se revend pas.
 
 ### 13.6 Automatisation
@@ -820,7 +829,7 @@ Décidé le 20/10/2026, pour les étapes 62 à 65 (choix de l'utilisateur) :
 
 Les marchands sont rencontrés en expédition. Ils proposent :
 
-- à l'achat : des objets (ressources, soins, boosters de stats, filets de capture, talismans, armes, armures, etc.) ;
+- à l'achat : des objets (ressources, soins, boosters de stats, filets de capture, talismans, armes, armures, etc.). Depuis l'étape 104 (25/10/2026), Malvoise vend le filet de chanvre (10 pièces d'argent) et le filet lesté (30), sans confirmation, comme les soins ; ils vont au coffre. Il ne les rachète pas (hypothèse retenue, Q102) ;
 - à l'achat ou à la location : des monstres. Une location coûte un prix donné et vaut pour un nombre donné d'expéditions.
 
 Le joueur peut aussi vendre ses objets aux marchands contre de l'argent.
@@ -877,7 +886,7 @@ Premier marchand, après la V1 :
   - Ils se rangent dans le sac et le coffre, se déplacent par lots et se perdent avec le sac, comme les pierres d'évolution.
   - Au camp, depuis la gestion des monstres, le joueur donne un booster à un monstre de l'équipe ou du camp, sans confirmation (hypothèse retenue, Q93). Le booster est consommé, du sac d'abord, puis du coffre. Un booster sur une valeur interne déjà à 31 est refusé, sans être consommé ; une valeur à 28 passe à 31 et le surplus est perdu. Un shiny a déjà 31 partout : aucun booster ne lui sert. Les PV actuels augmentent d'autant que les PV max, sauf pour un monstre KO (hypothèse retenue, Q93).
 - Objets permettant d'ajuster les statistiques d'un monstre.
-- Filets de capture : achetables, fabricables, améliorables.
+- Filets de capture : achetables, fabricables, améliorables. Depuis les étapes 103 et 104, trois qualités qui s'épuisent (section 11.2).
 - Équipement du héros : armes, armures, talismans. Depuis les étapes 48 à 51, fabriqués par Gunther et gardés par le héros, hors du sac et du coffre (sections 4.3 et 13.5).
 - Depuis l'étape 36 (19/10/2026, Q71), une ressource par espèce sauvage qui peut être combattue, lâchée par un monstre sauvage mis KO et non capturé, après un combat gagné, 1 fois sur 3. Les monstres d'un humain, les Apôtres et le marchand zombie n'en lâchent pas, et les espèces pacifiques ne se combattent pas. Elle va dans le sac, se range au coffre, se perd avec le sac et se revend à Malvoise, à un prix fixe selon la rareté de l'espèce : 5 pièces d'argent pour une espèce commune, 15 pour une rare. Au camp, Malvoise rachète toutes les ressources d'une sorte d'un coup, celles du sac puis celles du coffre, sans confirmation. Liste dans docs/contenu-v1.md, section 6. Noms, taux et prix sont des hypothèses, à confirmer (Q82).
 - Écrans, à l'étape 36 : les ressources s'écrivent avec leur nombre entre parenthèses, "Croc de loup (3)". Après une victoire, le récit dit celles que le joueur ramasse. Dans la console, l'étal de Malvoise propose "Vendre des ressources", par sorte, et le coffre les déplace au nombre choisi. Sur Discord, la vente des monstres devient "Vendre monstres et ressources", avec un menu des ressources, et le coffre a deux menus à part pour elles, une ou toutes de chaque sorte.
@@ -1081,6 +1090,10 @@ Les questions Q100 et suivantes ont été relevées le 24/10/2026 lors de la con
 Les questions Q101 et suivantes ont été relevées le 24/10/2026 lors de la conception des étapes 96 Tour sans fond dans le noyau, avec la sauvegarde en version 26, 97 écrans de la console, 98 bot Discord seul et classement des records, 99 combat à équipe commune, 100 expédition en groupe dans le noyau, 101 invitations sur le bot Discord, 102 écrans de l'expédition en groupe.
 
 - Q101. (Étapes 96 à 102) Hypothèses retenues, à confirmer : le gardien ne lâche pas de ressource, comme un humain ou un Apôtre ; les espèces de plusieurs zones ne comptent qu'une fois dans les tirages de la Tour ; le Warg et le Chevalier noir, communs du Col, y vivent dès le niveau 28 ; les capsules de la Tour sont celles des zones menées au bout par le joueur, au moment du départ ; l'invitation suit les règles des défis (au camp, sans question en attente, au moins un monstre dans l'équipe), et un joueur en expédition de groupe ne peut ni lancer ni recevoir de défi ou d'invitation. Précisé en codant : voir la fin de la section 15.5 (tirage des étapes par l'hôte, rare pacifique en double, captures après la victoire, filets, gardien sans bouton, soin non confirmé, un défi ou une invitation à la fois). Un joueur en expédition en groupe peut recevoir un défi, mais ne l'accepte qu'une fois au camp. Équilibrage à vérifier en jouant : la montée de 2 niveaux par étape, les gardiens à +3 niveaux et les coffres. Textes proposés et validés : l'entrée, le gardien et le repos (docs/contenu-v1.md, section 25) ; textes proposés sans validation : le nouveau record, les libellés, le classement des records, les invitations et les écrans de la descente, listés dans la même section.
+
+Les questions Q102 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 103 filets dans le noyau, avec la sauvegarde en version 27, 104 vente par Malvoise et fabrication par Gunther, 105 écrans de la console, 106 écrans du bot Discord.
+
+- Q102. (Étapes 103 à 106) Hypothèses retenues, à confirmer : la capture garantie d'un monstre KO, après une victoire ou sur un humain vaincu, prend le filet le plus simple qui reste, sans demander lequel ; une sauvegarde antérieure reçoit 10 filets de chanvre au coffre ; Malvoise ne rachète pas les filets ; les filets trouvés dans un coffre ne dépendent pas de la zone. À vérifier en jouant : les prix, les recettes, les 10 filets du départ et la part des coffres. Noms et effets validés (docs/contenu-v1.md, section 26) ; textes proposés sans validation : le lancer ("Vous lancez un filet lesté sur ..."), les libellés et les refus, listés dans la même section.
 
 - Q83. (Étapes 33 et 34) Hypothèses retenues, à confirmer : le gardien d'une âme à retrouver attaque à une étape tirée parmi celles qui précèdent la dernière ; le don d'une âme à Malvoise se fait sans confirmation ; une partie antérieure qui n'a pas recueilli l'âme de Bertrand le rencontre à l'étape 4 de sa prochaine expédition dans la Lisière, même avec Malvoise déjà au camp ; le texte du brigand de l'étape 5 ne change pas, même s'il a perdu son Loup à l'étape 4.
 
@@ -1509,3 +1522,11 @@ Les questions Q101 et suivantes ont été relevées le 24/10/2026 lors de la con
 - Choix de l'utilisateur : en groupe, une équipe commune où le propriétaire du monstre actif choisit l'action, chacun son butin, l'accord des deux pour continuer, et le retour du groupe au camp après 5 minutes d'absence.
 - Sauvegarde en version 26 pour les records.
 - Hypothèses retenues, à confirmer : Q101.
+
+25/10/2026 (conception des étapes 103 à 106, filets de capture et leur fabrication) :
+
+- Demande de l'utilisateur : la fabrication, notamment des filets, pour qu'ils ne soient plus infinis.
+- Choix de l'utilisateur : trois qualités de filets, chanvre, lesté (x1,5) et chaînes (x2), rangées dans le sac et le coffre ; toute capture en combat consomme un filet ; 10 filets de chanvre au départ ; Malvoise vend le chanvre (10) et le lesté (30) ; Gunther fabrique les trois qualités par lots de 5 ; un coffre d'expédition sur 5 en contient (sections 9.2, 11.2, 13.5 et 14.2).
+- Sauvegarde en version 27.
+- Hypothèses retenues, à confirmer : Q102.
+

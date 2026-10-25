@@ -14,6 +14,7 @@ pub mod echanges;
 pub mod equipement;
 pub mod erreurs;
 pub mod expeditions_automatiques;
+pub mod filets;
 pub mod forge;
 pub mod groupe;
 pub mod machines;

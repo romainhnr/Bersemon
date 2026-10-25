@@ -1096,3 +1096,27 @@ Textes proposés sans validation (gamedesign.md, Q101) :
 | Écrans de la descente | Descente avec {héros}. / En attente de {héros}. / Vous voulez continuer : vous attendez {héros}. / {héros} veut continuer. ; boutons Actualiser, Rentrer au camp, Ramener le groupe au camp |
 | Refus | Vous ne pouvez pas vous inviter vous-même. / Vous avez déjà un défi ou une invitation en attente : un seul à la fois. / Ce joueur a déjà un défi ou une invitation en attente : réessayez plus tard. / Cette invitation n'est plus en attente. / Un des deux joueurs est déjà en duel ou en expédition. / Les deux joueurs doivent être au camp pour descendre ensemble : réessayez plus tard. / Chacun doit avoir ouvert la Tour sans fond, en menant la Lisière au bout. / C'est à votre compagnon d'agir. / Pas encore : votre compagnon a 5 minutes pour jouer. |
 
+## 26. Filets de capture
+
+Décidés le 25/10/2026, pour les étapes 103 à 106 (gamedesign.md, sections 9.2, 11.2, 13.5 et 14.2), valeurs proposées par Claude et validées par l'utilisateur, à ajuster en jouant.
+
+| Identifiant | Nom | Chance de capture | Prix chez Malvoise | Fabrication par Gunther, par lot de 5 | Durée |
+|---|---|---|---|---|---|
+| filet-de-chanvre | Filet de chanvre | normale (x1) | 10 | 3 Croc de loup, 3 Plume de corbeau | 30 min |
+| filet-leste | Filet lesté | x1,5 | 30 | 3 Fragment d'armure, 3 Os de squelette | 1 h |
+| filet-de-chaines | Filet de chaînes | x2 | ne s'achète pas | 3 Éclat de gargouille, 2 Pierre de troll | 2 h |
+
+Départ : 10 filets de chanvre dans le sac. Sauvegarde antérieure à la version 27 : 10 filets de chanvre au coffre.
+
+Coffres d'expédition : dans le tirage sur 100 qui décide de la capsule d'habileté, des pierres et des boosters, 27 à 41 donnent 2 filets de chanvre, 42 à 46 un filet lesté.
+
+Textes proposés sans validation (gamedesign.md, Q102) :
+
+| Moment | Texte |
+|---|---|
+| Lancer | Vous lancez un filet de chanvre sur {monstre} ({n} % de chances). |
+| Combat, console | Lancer un filet (10 filets de chanvre, 2 filets lestés) ; Quel filet lancer ? ; Filet de chanvre (10) : 45 % de chances ; Vous n'avez plus de filet. |
+| Combat, Discord | Filet de chanvre x10 (45 %) |
+| Sac et coffre | 10 filets de chanvre, 1 filet lesté, 2 filets de chaînes |
+| Refus | Plus aucun filet de ce genre. / Vous n'avez plus de filet pour capturer. |
+

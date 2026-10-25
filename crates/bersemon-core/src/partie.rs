@@ -29,6 +29,7 @@ use crate::expedition_automatique::{
     BilanExpeditionAutomatique, ErreurExpeditionAutomatique, Estimation, ExpeditionAutomatique,
     MONSTRES_MAX, MONSTRES_MIN, Protection, verifier_protection,
 };
+use crate::filet::Filet;
 use crate::habilete::{
     BONUS_DU_PILLARD, CHANCES_DU_FOUINEUR, ErreurChangementDHabilete, Habilete, autre_habilete,
 };
@@ -235,15 +236,19 @@ impl fmt::Display for ErreurRestaurationPartie {
 
 impl std::error::Error for ErreurRestaurationPartie {}
 
+/// Les filets de chanvre du héros au départ (section 11.2).
+const FILETS_DE_DEPART: u32 = 10;
+
 impl Partie {
     /// Le monstre de départ compte comme capturé dans le codex (Q54).
+    /// Le héros part avec 10 filets de chanvre dans le sac (section 11.2).
     pub fn nouvelle(heros: Heros, depart: Monstre) -> Self {
         let mut codex = Codex::default();
         codex.noter_capture(depart.espece().id());
         Self {
             heros,
             collection: Collection::new(depart),
-            sac: Inventaire::default(),
+            sac: Inventaire::default().avec_filets(Filet::Chanvre, FILETS_DE_DEPART),
             coffre_du_camp: Inventaire::default(),
             marchand_au_camp: false,
             ames_donnees: Vec::new(),
@@ -1723,7 +1728,8 @@ impl Partie {
             .avec_bonus_de_role_du_cote(Cote::Joueur)
             .avec_ordre(self.heros.classe().ordre())
             .avec_filets(self.forge.ameliorations().facteur_des_filets())
-            .avec_soins(*self.sac.soins()))
+            .avec_soins(*self.sac.soins())
+            .avec_reserve_de_filets(*self.sac.filets()))
     }
 
     /// Combat d'une expédition en groupe : l'équipe de l'hôte, puis celle de
@@ -1748,12 +1754,14 @@ impl Partie {
         .avec_ordre(hote.heros.classe().ordre())
         .avec_filets(hote.forge.ameliorations().facteur_des_filets())
         .avec_soins(*hote.sac.soins())
+        .avec_reserve_de_filets(*hote.sac.filets())
         .avec_limite_d_obeissance(hote.limite_d_obeissance(zones, piste))
         .avec_regles_de_l_invite(ReglesDuMembre {
             bonus: invite.heros.bonus_en_combat(),
             ordre: invite.heros.classe().ordre(),
             limite_d_obeissance: invite.limite_d_obeissance(zones, piste),
             soins: *invite.sac.soins(),
+            filets: *invite.sac.filets(),
             facteur_des_filets: invite.forge.ameliorations().facteur_des_filets(),
         });
         Ok(if contre_un_gardien {
@@ -1794,6 +1802,7 @@ impl Partie {
             .avec_bonus_de_role_du_cote(Cote::Joueur)
             .avec_ordre(self.heros.classe().ordre())
             .avec_soins(*self.sac.soins())
+            .avec_reserve_de_filets(*self.sac.filets())
             .sans_capture())
     }
 
@@ -1851,6 +1860,7 @@ impl Partie {
     ) -> Result<(Vec<Monstre>, Inventaire), ErreurCollection> {
         self.collection.actualiser_equipe(bilan.equipe)?;
         self.sac.definir_soins(bilan.soins);
+        self.sac.definir_filets(bilan.filets);
         let perdu = if bilan.issue == Some(Issue::Defaite) {
             self.sac.perdre_tout()
         } else {
@@ -1872,6 +1882,11 @@ impl Partie {
     pub fn prendre_monstre_rare(&mut self, monstre: Monstre) -> Placement {
         self.codex.noter_capture(monstre.espece().id());
         self.collection.accueillir_capture(monstre)
+    }
+
+    /// Des filets trouvés en expédition vont dans le sac (section 11.2).
+    pub(crate) fn trouver_filets(&mut self, filet: Filet, nombre: u32) {
+        self.sac.ajouter_filets(filet, nombre);
     }
 
     /// Ce que contient un coffre trouvé en expédition va dans le sac (section
@@ -2239,9 +2254,20 @@ mod tests {
         .unwrap()
     }
 
+    /// Sans les filets du départ, pour que le sac soit vide.
     fn partie() -> Partie {
         let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Guerrier);
-        Partie::nouvelle(heros, creer("depart", 5))
+        let mut partie = Partie::nouvelle(heros, creer("depart", 5));
+        partie.sac = Inventaire::default();
+        partie
+    }
+
+    #[test]
+    fn le_heros_part_avec_10_filets_de_chanvre() {
+        let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Guerrier);
+        let partie = Partie::nouvelle(heros, creer("depart", 5));
+        assert_eq!(partie.sac().filets().nombre(Filet::Chanvre), 10);
+        assert!(partie.coffre_du_camp().est_vide());
     }
 
     #[test]
@@ -2968,6 +2994,7 @@ mod tests {
     fn combat_note_les_rencontres_et_les_captures_et_rend_les_potions() {
         let mut partie = partie();
         partie.ouvrir_coffre(2, 0, None);
+        partie.trouver_filets(Filet::Chanvre, 10);
         let mut loup = creer("loup", 5);
         loup.subir_degats(loup.stats().pv - 2);
         let mut combat = partie.preparer_combat(vec![loup]).unwrap();
@@ -2977,12 +3004,17 @@ mod tests {
             EtatCodex::Rencontree
         );
         combat
-            .jouer_tour(Action::LancerFilet, &mut AleatoireScripte::new([90]))
+            .jouer_tour(
+                Action::LancerFilet(Filet::Chanvre),
+                &mut AleatoireScripte::new([90]),
+            )
             .unwrap();
         let bilan = combat.terminer(&mut AleatoireScripte::new([100]));
         let (captures, perdu) = partie.conclure_combat(bilan).unwrap();
         assert_eq!(captures.len(), 1);
         assert!(perdu.est_vide());
+        // Le filet lancé est consommé (section 11.2).
+        assert_eq!(partie.sac().filets().nombre(Filet::Chanvre), 9);
         assert_eq!(
             partie.codex().etat(&EspeceId::new("loup")),
             EtatCodex::Capturee

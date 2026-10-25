@@ -126,7 +126,7 @@ impl ExpeditionEnGroupe {
                 Phase::Remplacement => combat.membre_qui_remplace().into_iter().collect(),
                 Phase::Termine(_) => MEMBRES
                     .into_iter()
-                    .filter(|membre| !self.captures_finies[position(*membre)])
+                    .filter(|membre| self.capture_encore(combat, *membre))
                     .collect(),
             };
         }
@@ -280,8 +280,15 @@ impl ExpeditionEnGroupe {
         self.combat.as_ref().is_some_and(|combat| {
             matches!(combat.phase(), Phase::Termine(_))
                 && (combat.adversaires_capturables().is_empty()
-                    || self.captures_finies.iter().all(|finies| *finies))
+                    || !MEMBRES
+                        .into_iter()
+                        .any(|membre| self.capture_encore(combat, membre)))
         })
+    }
+
+    /// Un joueur sans filet ne capture plus (section 11.2).
+    fn capture_encore(&self, combat: &Combat, membre: Membre) -> bool {
+        !self.captures_finies[position(membre)] && combat.peut_capturer(membre)
     }
 
     /// Chacun lit sa part du bilan dans son déroulement : son XP, ses

@@ -17,6 +17,7 @@ use bersemon_core::equipement::{ObjetDEquipementId, PlaceDEquipement};
 use bersemon_core::espece::EspeceId;
 use bersemon_core::expedition_automatique::MONSTRES_MAX;
 use bersemon_core::expedition_automatique::Protection;
+use bersemon_core::filet::Filet;
 use bersemon_core::heros::Classe;
 use bersemon_core::inventaire::Objet;
 use bersemon_core::pierre::PierreDEvolution;
@@ -251,7 +252,8 @@ pub enum Cle {
     Attaquer(usize),
     /// L'ordre du héros, en combat (section 4.2).
     Ordre,
-    Filet,
+    /// Un filet de cette qualité (section 11.2).
+    Filet(Filet),
     Fuir,
     /// Menu de l'équipe, en combat.
     Changer,
@@ -465,7 +467,7 @@ impl Cle {
             Cle::RelacherLaCapture => jouer(Choix::RelacherLaCapture),
             Cle::Attaquer(index) => jouer(Choix::Combat(Action::Attaquer(*index))),
             Cle::Ordre => jouer(Choix::DonnerOrdre),
-            Cle::Filet => jouer(Choix::Combat(Action::LancerFilet)),
+            Cle::Filet(filet) => jouer(Choix::Combat(Action::LancerFilet(*filet))),
             Cle::Fuir => jouer(Choix::Combat(Action::Fuir)),
             Cle::Changer => jouer(Choix::Combat(Action::Changer(position()?))),
             Cle::SoinEnCombat => {
@@ -664,7 +666,7 @@ impl Cle {
             Cle::RelacherLaCapture => "relacher-capture".to_string(),
             Cle::Attaquer(index) => format!("attaque:{index}"),
             Cle::Ordre => "ordre".to_string(),
-            Cle::Filet => "filet".to_string(),
+            Cle::Filet(filet) => format!("filet:{}", filet.id()),
             Cle::Fuir => "fuir".to_string(),
             Cle::Changer => "changer".to_string(),
             Cle::SoinEnCombat => "soin-combat".to_string(),
@@ -863,7 +865,6 @@ impl Cle {
             "laisser" => Cle::Laisser,
             "relacher-capture" => Cle::RelacherLaCapture,
             "ordre" => Cle::Ordre,
-            "filet" => Cle::Filet,
             "fuir" => Cle::Fuir,
             "changer" => Cle::Changer,
             "soin-combat" => Cle::SoinEnCombat,
@@ -933,6 +934,7 @@ impl Cle {
                     }
                     "defier" => Cle::Defier(parametre.parse().ok()?),
                     "inviter" => Cle::Inviter(parametre.parse().ok()?),
+                    "filet" => Cle::Filet(Filet::depuis_id(parametre)?),
                     "ajouter-ami" => Cle::AjouterAmi(parametre.parse().ok()?),
                     "retirer-ami" => Cle::RetirerAmi(parametre.parse().ok()?),
                     "donner" => {
@@ -1113,7 +1115,7 @@ fn lire_soin_et_position(texte: &str) -> Option<(Soin, usize)> {
 /// l'attaque, `capsules-d-habilete:` suivi de la quantité, `pierres:`
 /// suivi de la pierre et de la quantité, `boosters:` suivi du booster et de
 /// la quantité, `eclats-d-astre:` ou `charmes-de-garde:` suivi de la
-/// quantité.
+/// quantité, `filets:` suivi du filet et de la quantité.
 pub fn objet_en_texte(objet: &Objet) -> String {
     match objet {
         Objet::Soins(soin, nombre) => format!("soins:{}:{nombre}", soin_en_texte(*soin)),
@@ -1127,6 +1129,7 @@ pub fn objet_en_texte(objet: &Objet) -> String {
         }
         Objet::EclatsDAstre(nombre) => format!("eclats-d-astre:{nombre}"),
         Objet::CharmesDeGarde(nombre) => format!("charmes-de-garde:{nombre}"),
+        Objet::Filets(filet, nombre) => format!("filets:{}:{nombre}", filet.id()),
     }
 }
 
@@ -1153,6 +1156,13 @@ fn lire_objet(texte: &str) -> Option<Objet> {
         }
         "eclats-d-astre" => Some(Objet::EclatsDAstre(parametre.parse().ok()?)),
         "charmes-de-garde" => Some(Objet::CharmesDeGarde(parametre.parse().ok()?)),
+        "filets" => {
+            let (filet, nombre) = parametre.split_once(':')?;
+            Some(Objet::Filets(
+                Filet::depuis_id(filet)?,
+                nombre.parse().ok()?,
+            ))
+        }
         "ressources" => {
             let (id, nombre) = parametre.rsplit_once(':')?;
             Some(Objet::Ressources(
@@ -1282,7 +1292,7 @@ mod tests {
             Cle::RefuserInvitation,
             Cle::RetirerInvitation,
             Cle::RamenerLeGroupe,
-            Cle::Filet,
+            Cle::Filet(Filet::Leste),
             Cle::Fuir,
             Cle::Changer,
             Cle::SoinEnCombat,

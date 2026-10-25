@@ -145,6 +145,8 @@ pub fn erreur_de_combat(erreur: &ErreurCombat) -> String {
             format!("Le monstre numéro {} combat déjà.", index + 1)
         }
         ErreurCombat::AucunSoin(soin) => plus_aucun(*soin).to_string(),
+        ErreurCombat::AucunFilet(_) => "Plus aucun filet de ce genre.".to_string(),
+        ErreurCombat::SansFilet => "Vous n'avez plus de filet pour capturer.".to_string(),
         ErreurCombat::MonstreDeLAutreJoueur(index) => {
             format!("Le monstre numéro {} est à l'autre joueur.", index + 1)
         }

@@ -11,6 +11,7 @@ use bersemon_core::statut::Statut;
 use bersemon_core::types::Efficacite;
 
 use crate::equipement::decrire_bonus;
+use crate::filets::nom_du_filet;
 use crate::mise_en_valeur::important;
 use crate::monstres::{
     decrire_attaque, ligne_monstre, nom, nom_en_combat, nom_en_valeur, progression_d_experience,
@@ -180,8 +181,13 @@ pub fn evenement(evenement: &Evenement, combat: &Combat) -> String {
             nom_de(*cible)
         )),
         Evenement::Ko(combattant) => important(&format!("{} est KO.", nom_de(*combattant))),
-        Evenement::FiletLance { cible, chance } => format!(
-            "Vous lancez un filet sur {} ({chance} % de chances).",
+        Evenement::FiletLance {
+            filet,
+            cible,
+            chance,
+        } => format!(
+            "Vous lancez un {} sur {} ({chance} % de chances).",
+            nom_du_filet(*filet).to_lowercase(),
             fort(*cible)
         ),
         Evenement::CaptureReussie(cible) => important(&format!(

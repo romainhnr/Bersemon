@@ -34,6 +34,7 @@ use crate::expedition::{ErreurExpedition, EvenementExpedition, Expedition};
 use crate::expedition_automatique::{
     BilanExpeditionAutomatique, ErreurExpeditionAutomatique, ExpeditionAutomatique, Protection,
 };
+use crate::filet::Filet;
 use crate::habilete::{ErreurChangementDHabilete, Habilete};
 use crate::heros::{Classe, Heros, Ordre};
 use crate::horodatage::Horodatage;
@@ -395,6 +396,8 @@ pub enum Evenement {
         pierre: Option<PierreDEvolution>,
         /// Il va dans le sac (section 14.3).
         booster: Option<Booster>,
+        /// Ils vont dans le sac (section 11.2).
+        filets: Option<(Filet, u32)>,
     },
     MonstreRarePacifique(Monstre),
     MonstreRareHostile(Monstre),
@@ -2941,8 +2944,12 @@ impl EnExpedition {
                 capsule_d_habilete,
                 pierre,
                 booster,
+                filets,
             } => {
                 let argent_du_pillard = partie.ouvrir_coffre(potions, argent, capsule.clone());
+                if let Some((filet, nombre)) = filets {
+                    partie.trouver_filets(filet, nombre);
+                }
                 if capsule_d_habilete {
                     partie.trouver_capsule_d_habilete();
                 }
@@ -2960,6 +2967,7 @@ impl EnExpedition {
                     capsule_d_habilete,
                     pierre,
                     booster,
+                    filets,
                 });
                 self.apres_l_etape(partie, evenements)
             }
@@ -3480,7 +3488,8 @@ mod tests {
                     capsule: None,
                     capsule_d_habilete: false,
                     pierre: None,
-                    booster: None
+                    booster: None,
+                    filets: None
                 },
                 Evenement::Conseil(Conseil::PremierArretEntreDeuxEtapes),
             ]
@@ -4114,6 +4123,7 @@ mod tests {
         let contenu = ContenuV1::new();
         let depot = DepotMemoire::default();
         let mut etat = etat_de(&partie(&contenu));
+        etat.sac = Inventaire::default();
         etat.coffre_du_camp = Inventaire::new(50, 3, Vec::new());
         let mut deroulement = Deroulement::demarrer(Ok(Some(Partie::restaurer(etat).unwrap())));
         repondre_sans_tirage(&mut deroulement, Choix::ReprendreLaPartie, &contenu, &depot).unwrap();
@@ -4862,7 +4872,7 @@ mod tests {
             .unwrap()
             .preparer_combat(vec![sauvage.clone()])
             .unwrap()
-            .chance_de_capture();
+            .chance_de_capture(Filet::Chanvre);
         etat.forge = Forge::restaurer(
             true,
             crate::amelioration::Ameliorations::new(0, 3, 0).unwrap(),
@@ -4873,7 +4883,7 @@ mod tests {
             .unwrap()
             .preparer_combat(vec![sauvage])
             .unwrap()
-            .chance_de_capture();
+            .chance_de_capture(Filet::Chanvre);
         // À niveau égal : PV perdus / PV max, puis x1,3 avec les filets du
         // niveau 3.
         assert_eq!(sans_filets, perdus * 100 / pv_max);

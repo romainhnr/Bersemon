@@ -10,6 +10,7 @@ use crate::attaque::AttaqueId;
 use crate::booster::Booster;
 use crate::capsule::Capsule;
 use crate::expedition_automatique::ErreurParametres;
+use crate::filet::Filet;
 use crate::humain::Humain;
 use crate::monstre::Monstre;
 use crate::peche::Pecheur;
@@ -31,6 +32,10 @@ const CHANCE_DE_CAPSULE: u32 = 20;
 const CHANCE_DE_CAPSULE_D_HABILETE: u32 = 10;
 const CHANCE_PAR_PIERRE: u32 = 5;
 const PREMIER_TIRAGE_DES_BOOSTERS: u32 = 21;
+/// Le même tirage donne des filets : 2 filets de chanvre de 27 à 41, un
+/// filet lesté de 42 à 46 (docs/contenu-v1.md, section 26).
+const TIRAGES_DES_FILETS: [(std::ops::RangeInclusive<u32>, Filet, u32); 2] =
+    [(27..=41, Filet::Chanvre, 2), (42..=46, Filet::Leste, 1)];
 
 /// Contenu des coffres propre à chaque zone (section 14.5).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -72,6 +77,8 @@ pub enum EvenementExpedition {
         capsule_d_habilete: bool,
         pierre: Option<PierreDEvolution>,
         booster: Option<Booster>,
+        /// Des filets de capture, et leur nombre (section 11.2).
+        filets: Option<(Filet, u32)>,
     },
     MonstreRare(MonstreRare),
     /// Combat, ni fuite ni filet ni capture, contre le gardien de la Tour
@@ -425,6 +432,10 @@ impl Expedition {
         let booster = tirage
             .checked_sub(PREMIER_TIRAGE_DES_BOOSTERS)
             .and_then(|rang| Booster::TOUS.get(rang as usize).copied());
+        let filets = TIRAGES_DES_FILETS
+            .iter()
+            .find(|(tirages, _, _)| tirages.contains(&tirage))
+            .map(|(_, filet, nombre)| (*filet, *nombre));
         EvenementExpedition::Coffre {
             potions,
             argent,
@@ -432,6 +443,7 @@ impl Expedition {
             capsule_d_habilete,
             pierre,
             booster,
+            filets,
         }
     }
 
@@ -509,14 +521,15 @@ mod tests {
             Some(EvenementExpedition::Combat(groupe)) if groupe.len() == 1
         ));
         assert_eq!(
-            expedition.etape_suivante(&mut AleatoireScripte::new([81, 2, 27])),
+            expedition.etape_suivante(&mut AleatoireScripte::new([81, 2, 47])),
             Some(EvenementExpedition::Coffre {
                 potions: 2,
                 argent: 10,
                 capsule: None,
                 capsule_d_habilete: false,
                 pierre: None,
-                booster: None
+                booster: None,
+                filets: None
             })
         );
         let mut rare = vec![96];
@@ -568,6 +581,25 @@ mod tests {
         expedition.noter_defaite();
         assert!(expedition.est_terminee() && !expedition.est_reussie());
         assert_eq!(expedition.etapes_franchies(), 9);
+    }
+
+    /// Docs/contenu-v1.md, section 26 : le tirage du coffre donne 2 filets
+    /// de chanvre de 27 à 41, un filet lesté de 42 à 46.
+    #[test]
+    fn un_coffre_sur_5_contient_des_filets() {
+        let filets = |tirage: u32| {
+            let mut expedition = Expedition::partir(zone(false));
+            match expedition.etape_suivante(&mut AleatoireScripte::new([81, 1, tirage])) {
+                Some(EvenementExpedition::Coffre { filets, .. }) => filets,
+                autre => panic!("{autre:?}"),
+            }
+        };
+        assert_eq!(filets(26), None);
+        assert_eq!(filets(27), Some((Filet::Chanvre, 2)));
+        assert_eq!(filets(41), Some((Filet::Chanvre, 2)));
+        assert_eq!(filets(42), Some((Filet::Leste, 1)));
+        assert_eq!(filets(46), Some((Filet::Leste, 1)));
+        assert_eq!(filets(47), None);
     }
 
     #[test]
@@ -677,7 +709,8 @@ mod tests {
                 capsule: None,
                 capsule_d_habilete: true,
                 pierre: None,
-                booster: None
+                booster: None,
+                filets: None
             })
         );
         // Le même tirage donne une pierre, de 11 à 20.

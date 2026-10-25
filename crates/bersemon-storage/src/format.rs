@@ -20,6 +20,7 @@ use bersemon_core::equipement::{
 };
 use bersemon_core::espece::{EspeceId, Rarete};
 use bersemon_core::expedition_automatique::{ExpeditionAutomatique, Protection};
+use bersemon_core::filet::Filet;
 use bersemon_core::habilete::Habilete;
 use bersemon_core::heros::{Classe, Heros};
 use bersemon_core::horodatage::Horodatage;
@@ -44,7 +45,7 @@ use bersemon_core::zone::{Zone, ZoneId};
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 26;
+pub(crate) const VERSION: u64 = 27;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -83,6 +84,14 @@ const VERSION_DU_BEHERIT: u64 = 25;
 /// La version de la sauvegarde qui garde les records de la Tour sans fond
 /// (section 9.5).
 const VERSION_DES_RECORDS: u64 = 26;
+
+/// La version de la sauvegarde où les filets de capture s'épuisent (section
+/// 11.2).
+const VERSION_DES_FILETS: u64 = 27;
+
+/// Ce que reçoit, au coffre, une partie qui reprend une sauvegarde
+/// antérieure aux filets (hypothèse retenue, Q102).
+const FILETS_DES_SAUVEGARDES_ANTERIEURES: u32 = 10;
 
 /// Gunther est le prisonnier de cet humain : avant la version 14, une partie
 /// qui l'a vaincu a Gunther au camp (section 13.4, Q85).
@@ -298,6 +307,20 @@ struct InventaireV7 {
     /// Depuis la version 23 (section 12.5).
     #[serde(default)]
     charmes_de_garde: u32,
+    /// Depuis la version 27 (section 11.2).
+    #[serde(default)]
+    filets: Vec<FiletV27>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct FiletV27 {
+    filet: String,
+    nombre: u32,
+}
+
+fn lire_filet(texte: &str) -> Result<Filet, ErreurSauvegarde> {
+    Filet::depuis_id(texte)
+        .ok_or_else(|| ErreurSauvegarde::Incoherente(format!("filet inconnu : {texte}")))
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -691,6 +714,14 @@ fn depuis_inventaire(inventaire: &Inventaire) -> InventaireV7 {
             .collect(),
         eclats_d_astre: inventaire.eclats_d_astre(),
         charmes_de_garde: inventaire.charmes_de_garde(),
+        filets: inventaire
+            .filets()
+            .presents()
+            .map(|(filet, nombre)| FiletV27 {
+                filet: filet.id().to_string(),
+                nombre,
+            })
+            .collect(),
     }
 }
 
@@ -727,6 +758,9 @@ fn vers_inventaire(
     }
     resultat.ajouter_eclats_d_astre(inventaire.eclats_d_astre);
     resultat.ajouter_charmes_de_garde(inventaire.charmes_de_garde);
+    for filet in inventaire.filets {
+        resultat.ajouter_filets(lire_filet(&filet.filet)?, filet.nombre);
+    }
     Ok(resultat)
 }
 
@@ -852,11 +886,22 @@ pub(crate) fn vers_partie(
         };
         (Inventaire::default(), vers_inventaire(ancien, catalogue)?)
     } else {
+        // Avant la version 27, les filets étaient illimités : rien n'en dit
+        // le nombre.
+        if sauvegarde.version < VERSION_DES_FILETS {
+            sauvegarde.sac.filets.clear();
+            sauvegarde.coffre_du_camp.filets.clear();
+        }
         (
-            vers_inventaire(sauvegarde.sac, catalogue)?,
-            vers_inventaire(sauvegarde.coffre_du_camp, catalogue)?,
+            vers_inventaire(std::mem::take(&mut sauvegarde.sac), catalogue)?,
+            vers_inventaire(std::mem::take(&mut sauvegarde.coffre_du_camp), catalogue)?,
         )
     };
+    // Une partie antérieure aux filets en trouve 10 au coffre (section
+    // 11.2, Q102).
+    if sauvegarde.version < VERSION_DES_FILETS {
+        coffre_du_camp.ajouter_filets(Filet::Chanvre, FILETS_DES_SAUVEGARDES_ANTERIEURES);
+    }
     let mut codex = Codex::default();
     for espece in &sauvegarde.codex.rencontrees {
         codex.noter_rencontre(&EspeceId::new(espece.as_str()));

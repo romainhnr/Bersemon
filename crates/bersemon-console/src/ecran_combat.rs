@@ -7,9 +7,11 @@ use bersemon_core::collection::Collection;
 use bersemon_core::combat::{Action, Combat, Cote};
 use bersemon_core::deroulement::Choix;
 use bersemon_core::espece::Espece;
+use bersemon_core::filet::Filet;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_core::soin::{Soin, Soins};
+use bersemon_presentation::filets::nom_du_filet;
 use bersemon_presentation::partie::{places_pour_une_capture, proposition_d_evolution};
 use bersemon_presentation::soins::{effet_du_soin, nom_du_soin};
 
@@ -74,7 +76,7 @@ pub fn choisir_action(combat: &Combat, partie: &Partie, entree: &mut Entree) -> 
             // L'ordre ne prend pas le tour : le déroulement redemande
             // l'action.
             Commande::DonnerOrdre => return Some(Choix::DonnerOrdre),
-            Commande::LancerFilet => Some(Action::LancerFilet),
+            Commande::LancerFilet => choisir_filet(combat, entree)?.map(Action::LancerFilet),
             // La confirmation d'un soin perdu est demandée par le
             // déroulement (Q53).
             Commande::UtiliserSoin => match choisir_soin(combat.soins(), entree)? {
@@ -92,6 +94,28 @@ pub fn choisir_action(combat: &Combat, partie: &Partie, entree: &mut Entree) -> 
             return Some(Choix::Combat(action));
         }
     }
+}
+
+/// Parmi ceux du sac, avec la chance de capture de chacun (section 11.2).
+/// `Some(None)` s'il n'y en a aucun ou si le joueur annule.
+fn choisir_filet(combat: &Combat, entree: &mut Entree) -> Option<Option<Filet>> {
+    let presents: Vec<(Filet, u32)> = combat.filets().presents().collect();
+    if presents.is_empty() {
+        println!("Vous n'avez plus de filet.");
+        return Some(None);
+    }
+    println!("Quel filet lancer ?");
+    for (position, (filet, nombre)) in presents.iter().enumerate() {
+        println!(
+            "  {}. {} ({nombre}) : {} % de chances",
+            position + 1,
+            nom_du_filet(*filet),
+            combat.chance_de_capture(*filet)
+        );
+    }
+    println!("  0. Retour");
+    let choix = entree.choix(0, presents.len())?;
+    Some((choix > 0).then(|| presents[choix - 1].0))
 }
 
 /// Parmi ceux du sac, en combat ou entre deux étapes. `Some(None)` s'il

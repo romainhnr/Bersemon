@@ -14,6 +14,7 @@ use crate::combat::{ordre_donne, rapport_experience, remplacement, renoncement};
 use crate::equipement::{nom_de_place, objet_et_bonus};
 use crate::erreurs::erreur_sauvegarde;
 use crate::expeditions_automatiques;
+use crate::filets::filets;
 use crate::forge::{constat, lancement, lancement_de_fabrication, lancement_du_charme};
 use crate::machines;
 use crate::mise_en_valeur::important;
@@ -100,6 +101,7 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             capsule_d_habilete,
             pierre,
             booster,
+            filets: filets_trouves,
         } => {
             let mut contenu = vec![potions(*nombre)];
             if *montant > 0 {
@@ -114,6 +116,9 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             }
             if let Some(booster) = booster {
                 contenu.push(boosters(*booster, 1));
+            }
+            if let Some((filet, nombre)) = filets_trouves {
+                contenu.push(filets(*filet, *nombre));
             }
             (
                 format!("Vous trouvez un coffre : {}.", enumerer(&contenu)),
@@ -624,6 +629,7 @@ mod tests {
             capsule_d_habilete: false,
             pierre: None,
             booster: None,
+            filets: None,
         }])[0];
         assert_eq!(
             recit.texte,
@@ -637,6 +643,7 @@ mod tests {
             capsule_d_habilete: false,
             pierre: None,
             booster: None,
+            filets: None,
         }])[0];
         assert_eq!(sans_argent.texte, "Vous trouvez un coffre : 1 potion.");
         let avec_capsule = &raconter(&[Evenement::Coffre {
@@ -647,6 +654,7 @@ mod tests {
             capsule_d_habilete: false,
             pierre: None,
             booster: None,
+            filets: None,
         }])[0];
         assert_eq!(
             avec_capsule.texte,
@@ -660,6 +668,7 @@ mod tests {
             capsule_d_habilete: false,
             pierre: None,
             booster: None,
+            filets: None,
         }])[0];
         assert_eq!(
             avec_pillard.texte,
@@ -673,6 +682,7 @@ mod tests {
             capsule_d_habilete: false,
             pierre: Some(bersemon_core::pierre::PierreDEvolution::Lune),
             booster: None,
+            filets: None,
         }])[0];
         assert_eq!(
             avec_pierre.texte,
@@ -686,6 +696,7 @@ mod tests {
             capsule_d_habilete: false,
             pierre: None,
             booster: Some(bersemon_core::booster::Booster::EcorceDeFer),
+            filets: None,
         }])[0];
         assert_eq!(
             avec_booster.texte,

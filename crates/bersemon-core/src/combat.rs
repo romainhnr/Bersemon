@@ -24,6 +24,7 @@ use crate::attaque::{Attaque, EffetSecondaire};
 use crate::capture::calculer_chance_capture;
 use crate::degats::{ResultatAttaque, a_le_bonus_de_type, estimer_degats, resoudre_attaque};
 use crate::experience::tirer_gain_experience;
+use crate::filet::{Filet, Filets};
 use crate::habilete::{BONUS_D_INSTINCT, Habilete, majorer};
 use crate::heros::Ordre;
 use crate::humain::IaHumain;
@@ -110,7 +111,8 @@ pub enum Action {
     Attaquer(usize),
     /// Position, dans l'équipe, du monstre à envoyer.
     Changer(usize),
-    LancerFilet,
+    /// Un filet de cette qualité, qui est consommé (section 11.2).
+    LancerFilet(Filet),
     /// Le soin et la position, dans l'équipe, du monstre à soigner (section
     /// 14.4).
     UtiliserSoin(Soin, usize),
@@ -150,6 +152,7 @@ pub enum Evenement {
     },
     Ko(Combattant),
     FiletLance {
+        filet: Filet,
         cible: Combattant,
         chance: u32,
     },
@@ -204,7 +207,12 @@ impl Evenement {
                 degats,
             },
             Evenement::Ko(combattant) => Evenement::Ko(combattant.miroir()),
-            Evenement::FiletLance { cible, chance } => Evenement::FiletLance {
+            Evenement::FiletLance {
+                filet,
+                cible,
+                chance,
+            } => Evenement::FiletLance {
+                filet,
                 cible: cible.miroir(),
                 chance,
             },
@@ -250,6 +258,10 @@ pub enum ErreurCombat {
     MonstreDeLAutreJoueur(usize),
     /// Une interruption hors d'un combat en groupe.
     ReserveAuGroupe,
+    /// Plus aucun filet de cette qualité (section 11.2).
+    AucunFilet(Filet),
+    /// Plus aucun filet pour capturer un monstre KO.
+    SansFilet,
 }
 
 impl fmt::Display for ErreurCombat {
@@ -273,6 +285,8 @@ impl fmt::Display for ErreurCombat {
                 write!(f, "le monstre en position {index} est à l'autre joueur")
             }
             ErreurCombat::ReserveAuGroupe => write!(f, "réservé au combat en groupe"),
+            ErreurCombat::AucunFilet(filet) => write!(f, "plus aucun filet : {filet:?}"),
+            ErreurCombat::SansFilet => write!(f, "plus aucun filet"),
             ErreurCombat::AttaqueInexistante(index) => {
                 write!(f, "aucune attaque en position {index}")
             }
@@ -332,8 +346,10 @@ pub struct BilanCombat {
     pub vaincus_sauvages: Vec<Monstre>,
     pub experience: Vec<Option<RapportExperience>>,
     pub soins: Soins,
-    /// En groupe, la part de l'invité : `captures` et `soins` sont alors
-    /// celles de l'hôte (section 15.5).
+    /// Ceux qui restent (section 11.2).
+    pub filets: Filets,
+    /// En groupe, la part de l'invité : `captures`, `soins` et `filets`
+    /// sont alors ceux de l'hôte (section 15.5).
     pub invite: Option<BilanDeLInvite>,
 }
 
@@ -345,6 +361,7 @@ pub struct BilanDeLInvite {
     pub debut: usize,
     pub captures: Vec<Monstre>,
     pub soins: Soins,
+    pub filets: Filets,
 }
 
 impl BilanCombat {
@@ -366,6 +383,7 @@ impl BilanCombat {
             vaincus_sauvages: self.vaincus_sauvages.clone(),
             experience,
             soins: invite.soins,
+            filets: invite.filets,
             invite: None,
         };
         (self, Some(part_de_l_invite))
@@ -382,6 +400,7 @@ pub struct ReglesDuMembre {
     pub ordre: Ordre,
     pub limite_d_obeissance: u8,
     pub soins: Soins,
+    pub filets: Filets,
     pub facteur_des_filets: (u64, u64),
 }
 
@@ -410,6 +429,7 @@ struct EnGroupe {
     debut_de_l_invite: usize,
     regles: ReglesDuCote,
     soins: Soins,
+    filets: Filets,
     facteur_des_filets: (u64, u64),
     /// Pour chaque capture, dans l'ordre de `captures`, qui l'a faite.
     capteurs: Vec<Membre>,
@@ -435,6 +455,8 @@ pub struct Combat {
     facteur_des_filets: (u64, u64),
     /// Soins que le joueur porte (section 14.4).
     soins: Soins,
+    /// Filets que le joueur porte (section 11.2).
+    filets: Filets,
     /// Face à un Apôtre, ni fuite ni filet (section 9.4).
     contre_un_apotre: bool,
     /// Face au Démiurge, ses formes se succèdent : la seconde n'est pas
@@ -508,6 +530,7 @@ impl Combat {
             regles: Default::default(),
             facteur_des_filets: (1, 1),
             soins: Soins::default(),
+            filets: Filets::default(),
             contre_un_apotre: false,
             en_deux_phases: false,
             contre_un_humain: false,
@@ -543,6 +566,7 @@ impl Combat {
                 ..ReglesDuCote::default()
             },
             soins: Soins::default(),
+            filets: Filets::default(),
             facteur_des_filets: (1, 1),
             capteurs: Vec::new(),
         }));
@@ -556,6 +580,7 @@ impl Combat {
             groupe.regles.ordre = Some(regles.ordre);
             groupe.regles.limite_d_obeissance = Some(regles.limite_d_obeissance);
             groupe.soins = regles.soins;
+            groupe.filets = regles.filets;
             groupe.facteur_des_filets = regles.facteur_des_filets;
         }
         self
@@ -694,6 +719,38 @@ impl Combat {
     pub fn avec_soins(mut self, soins: Soins) -> Self {
         self.soins = soins;
         self
+    }
+
+    /// Filets que le joueur emporte dans le combat ; le bilan rend ceux qui
+    /// restent (section 11.2).
+    pub fn avec_reserve_de_filets(mut self, filets: Filets) -> Self {
+        self.filets = filets;
+        self
+    }
+
+    /// Ceux de ce joueur ; hors groupe, ceux du joueur.
+    pub fn filets_du_membre(&self, membre: Membre) -> &Filets {
+        match (&self.groupe, membre) {
+            (Some(groupe), Membre::Invite) => &groupe.filets,
+            _ => &self.filets,
+        }
+    }
+
+    fn filets_du_membre_mut(&mut self, membre: Membre) -> &mut Filets {
+        match (&mut self.groupe, membre) {
+            (Some(groupe), Membre::Invite) => &mut groupe.filets,
+            _ => &mut self.filets,
+        }
+    }
+
+    /// Ceux du propriétaire du monstre actif, qui seul en lance.
+    pub fn filets(&self) -> &Filets {
+        self.filets_du_membre(self.membre_actif())
+    }
+
+    /// Ce joueur a encore un filet pour capturer (section 11.2).
+    pub fn peut_capturer(&self, membre: Membre) -> bool {
+        !self.filets_du_membre(membre).est_vide()
     }
 
     /// Ceux du joueur ; en groupe, ceux du propriétaire du monstre actif,
@@ -931,17 +988,20 @@ impl Combat {
         }
     }
 
-    /// Chance, en pourcentage, de capturer le monstre adverse actif. En
-    /// groupe, avec les filets du propriétaire du monstre actif.
-    pub fn chance_de_capture(&self) -> u32 {
-        let facteur = match (&self.groupe, self.membre_actif()) {
+    /// Chance, en pourcentage, de capturer le monstre adverse actif avec un
+    /// filet de cette qualité, multipliée par l'amélioration des filets de
+    /// Gunther (sections 11.2 et 13.4). En groupe, avec les améliorations du
+    /// propriétaire du monstre actif.
+    pub fn chance_de_capture(&self, filet: Filet) -> u32 {
+        let (amelioration, sur) = match (&self.groupe, self.membre_actif()) {
             (Some(groupe), Membre::Invite) => groupe.facteur_des_filets,
             _ => self.facteur_des_filets,
         };
+        let (qualite, sur_la_qualite) = filet.multiplicateur();
         calculer_chance_capture(
             self.monstre(self.actif(Cote::Joueur)),
             self.monstre(self.actif(Cote::Adversaire)),
-            facteur,
+            (amelioration * qualite, sur * sur_la_qualite),
         )
     }
 
@@ -1025,8 +1085,8 @@ impl Combat {
                 self.changer_d_adversaire(action_adversaire, &mut evenements);
                 self.riposter(attaque_adversaire, false, aleatoire, &mut evenements);
             }
-            Action::LancerFilet => {
-                if !self.lancer_filet(aleatoire, &mut evenements) {
+            Action::LancerFilet(filet) => {
+                if !self.lancer_filet(filet, aleatoire, &mut evenements) {
                     self.riposter(attaque_adversaire, false, aleatoire, &mut evenements);
                 }
             }
@@ -1141,7 +1201,7 @@ impl Combat {
                 }
                 self.verifier_remplacant_pour(cote, index)
             }
-            Action::LancerFilet | Action::UtiliserSoin(..) | Action::Fuir => {
+            Action::LancerFilet(_) | Action::UtiliserSoin(..) | Action::Fuir => {
                 Err(ErreurCombat::InterditEnDuel)
             }
         }
@@ -1236,6 +1296,7 @@ impl Combat {
             regles,
             facteur_des_filets: self.facteur_des_filets,
             soins: Soins::default(),
+            filets: Filets::default(),
             contre_un_apotre: self.contre_un_apotre,
             en_deux_phases: self.en_deux_phases,
             contre_un_humain: self.contre_un_humain,
@@ -1254,13 +1315,17 @@ impl Combat {
 
     /// Monstres adverses KO, pas encore capturés, qu'il est possible de
     /// capturer après une victoire (Q29) ; un seul pour un humain (section
-    /// 10.7), aucun dans un combat sans capture (section 14.2).
+    /// 10.7), aucun dans un combat sans capture (section 14.2), ni sans
+    /// filet (section 11.2).
     pub fn adversaires_capturables(&self) -> Vec<usize> {
+        let un_filet = self.peut_capturer(Membre::Hote)
+            || (self.groupe.is_some() && self.peut_capturer(Membre::Invite));
         if self.phase != Phase::Termine(Issue::Victoire)
             || self.sans_capture
             || self.contre_un_apotre
             || self.duel
             || (self.contre_un_humain && !self.captures.is_empty())
+            || !un_filet
         {
             return Vec::new();
         }
@@ -1269,8 +1334,8 @@ impl Combat {
             .collect()
     }
 
-    /// Capture garantie d'un monstre adverse KO, après la victoire (section
-    /// 11.2).
+    /// Capture garantie d'un monstre adverse KO, après la victoire, contre
+    /// le filet le plus simple qui reste (section 11.2).
     pub fn capturer_ko(&mut self, index: usize) -> Result<Vec<Evenement>, ErreurCombat> {
         self.capturer_ko_pour(Membre::Hote, index)
     }
@@ -1285,6 +1350,11 @@ impl Combat {
         if !self.adversaires_capturables().contains(&index) {
             return Err(ErreurCombat::CaptureImpossible(index));
         }
+        let filet = self
+            .filets_du_membre(membre)
+            .le_plus_simple()
+            .ok_or(ErreurCombat::SansFilet)?;
+        self.filets_du_membre_mut(membre).retirer(filet, 1);
         self.noter_capture(index, membre);
         Ok(vec![Evenement::CaptureReussie(Combattant {
             cote: Cote::Adversaire,
@@ -1326,6 +1396,7 @@ impl Combat {
             debut: groupe.debut_de_l_invite,
             captures: captures_de_l_invite,
             soins: groupe.soins,
+            filets: groupe.filets,
         });
         let sauvages = !self.contre_un_apotre && !self.contre_un_humain && !self.sans_capture;
         let vaincus_sauvages = adversaires
@@ -1340,6 +1411,7 @@ impl Combat {
             vaincus_sauvages,
             experience,
             soins: self.soins,
+            filets: self.filets,
             invite,
         }
     }
@@ -1631,8 +1703,11 @@ impl Combat {
                 })
             }
             Action::Fuir if !self.fuite_possible() => Err(ErreurCombat::FuiteImpossible),
-            Action::LancerFilet if !self.filet_possible() => Err(ErreurCombat::FiletImpossible),
-            Action::LancerFilet | Action::Fuir => Ok(()),
+            Action::LancerFilet(_) if !self.filet_possible() => Err(ErreurCombat::FiletImpossible),
+            Action::LancerFilet(filet) if self.filets().nombre(filet) == 0 => {
+                Err(ErreurCombat::AucunFilet(filet))
+            }
+            Action::LancerFilet(_) | Action::Fuir => Ok(()),
         }
     }
 
@@ -1782,15 +1857,23 @@ impl Combat {
         }
     }
 
-    /// Rend `true` si le monstre adverse actif est capturé.
+    /// Le filet est consommé, que la capture réussisse ou non. Rend `true`
+    /// si le monstre adverse actif est capturé.
     fn lancer_filet(
         &mut self,
+        filet: Filet,
         aleatoire: &mut dyn Aleatoire,
         evenements: &mut Vec<Evenement>,
     ) -> bool {
         let cible = self.actif(Cote::Adversaire);
-        let chance = self.chance_de_capture();
-        evenements.push(Evenement::FiletLance { cible, chance });
+        let chance = self.chance_de_capture(filet);
+        let membre = self.membre_actif();
+        self.filets_du_membre_mut(membre).retirer(filet, 1);
+        evenements.push(Evenement::FiletLance {
+            filet,
+            cible,
+            chance,
+        });
         let reussie = match chance {
             0 => false,
             100.. => true,
@@ -2019,8 +2102,17 @@ mod tests {
         monstre
     }
 
+    /// Avec 10 filets de chanvre (section 11.2).
     fn combat(equipe: Vec<Monstre>, adversaires: Vec<Monstre>) -> Combat {
-        Combat::new(equipe, adversaires).unwrap()
+        Combat::new(equipe, adversaires)
+            .unwrap()
+            .avec_reserve_de_filets(filets(10))
+    }
+
+    fn filets(nombre: u32) -> Filets {
+        let mut filets = Filets::default();
+        filets.ajouter(Filet::Chanvre, nombre);
+        filets
     }
 
     fn tour(combat: &mut Combat, action: Action, tirages: &[u32]) -> Vec<Evenement> {
@@ -2376,7 +2468,10 @@ mod tests {
             Err(ErreurCombat::FuiteImpossible)
         );
         assert_eq!(
-            combat.jouer_tour(Action::LancerFilet, &mut AleatoireScripte::new([])),
+            combat.jouer_tour(
+                Action::LancerFilet(Filet::Chanvre),
+                &mut AleatoireScripte::new([])
+            ),
             Err(ErreurCombat::FiletImpossible)
         );
         assert_eq!(combat.phase(), Phase::ChoixAction);
@@ -2393,7 +2488,10 @@ mod tests {
             Err(ErreurCombat::FuiteImpossible)
         );
         assert_eq!(
-            combat.jouer_tour(Action::LancerFilet, &mut AleatoireScripte::new([])),
+            combat.jouer_tour(
+                Action::LancerFilet(Filet::Chanvre),
+                &mut AleatoireScripte::new([])
+            ),
             Err(ErreurCombat::FiletImpossible)
         );
     }
@@ -2407,7 +2505,10 @@ mod tests {
             Err(ErreurCombat::FuiteImpossible)
         );
         assert_eq!(
-            combat.jouer_tour(Action::LancerFilet, &mut AleatoireScripte::new([])),
+            combat.jouer_tour(
+                Action::LancerFilet(Filet::Chanvre),
+                &mut AleatoireScripte::new([])
+            ),
             Err(ErreurCombat::FiletImpossible)
         );
     }
@@ -2541,7 +2642,10 @@ mod tests {
         let mut combat = combat(vec![rapide()], vec![affaibli(lent(), 1)]).sans_capture();
         assert!(combat.fuite_possible());
         assert_eq!(
-            combat.jouer_tour(Action::LancerFilet, &mut AleatoireScripte::new([])),
+            combat.jouer_tour(
+                Action::LancerFilet(Filet::Chanvre),
+                &mut AleatoireScripte::new([])
+            ),
             Err(ErreurCombat::FiletImpossible)
         );
         tour(&mut combat, Action::Attaquer(0), &[2, 100]);
@@ -2577,11 +2681,12 @@ mod tests {
     #[test]
     fn filet_sans_chance_puis_riposte() {
         let mut combat = combat(vec![rapide()], vec![lent()]);
-        let evenements = tour(&mut combat, Action::LancerFilet, &[2, 100]);
+        let evenements = tour(&mut combat, Action::LancerFilet(Filet::Chanvre), &[2, 100]);
         assert_eq!(
             evenements,
             vec![
                 Evenement::FiletLance {
+                    filet: Filet::Chanvre,
                     cible: a(0),
                     chance: 0,
                 },
@@ -2595,7 +2700,11 @@ mod tests {
     #[test]
     fn capture_ratee_puis_riposte() {
         let mut combat = combat(vec![rapide()], vec![affaibli(lent(), 2)]);
-        let evenements = tour(&mut combat, Action::LancerFilet, &[91, 2, 100]);
+        let evenements = tour(
+            &mut combat,
+            Action::LancerFilet(Filet::Chanvre),
+            &[91, 2, 100],
+        );
         assert_eq!(evenements[1], Evenement::CaptureRatee(a(0)));
         assert_eq!(evenements[2], lancee(a(0), coup()));
     }
@@ -2603,11 +2712,12 @@ mod tests {
     #[test]
     fn capture_du_dernier_sauvage_donne_la_victoire() {
         let mut combat = combat(vec![rapide()], vec![affaibli(lent(), 2)]);
-        let evenements = tour(&mut combat, Action::LancerFilet, &[90]);
+        let evenements = tour(&mut combat, Action::LancerFilet(Filet::Chanvre), &[90]);
         assert_eq!(
             evenements,
             vec![
                 Evenement::FiletLance {
+                    filet: Filet::Chanvre,
                     cible: a(0),
                     chance: 90,
                 },
@@ -2629,9 +2739,9 @@ mod tests {
             vec![rapide()],
             vec![affaibli(lent(), 2), affaibli(lent(), 2)],
         );
-        let evenements = tour(&mut combat, Action::LancerFilet, &[90]);
+        let evenements = tour(&mut combat, Action::LancerFilet(Filet::Chanvre), &[90]);
         assert_eq!(evenements.last(), Some(&Evenement::MonstreEnvoye(a(1))));
-        let evenements = tour(&mut combat, Action::LancerFilet, &[90]);
+        let evenements = tour(&mut combat, Action::LancerFilet(Filet::Chanvre), &[90]);
         assert_eq!(
             evenements.last(),
             Some(&Evenement::FinDuCombat(Issue::Victoire))
@@ -2723,6 +2833,7 @@ mod tests {
                 ordre: Ordre::Incantation,
                 limite_d_obeissance: 100,
                 soins: soins_de_l_invite,
+                filets: Filets::default(),
                 facteur_des_filets: (1, 1),
             });
         // Le monstre de l'hôte est KO : celui de l'invité commence.
@@ -2755,11 +2866,25 @@ mod tests {
     /// Section 15.5 : une capture revient à celui qui la fait.
     #[test]
     fn en_groupe_la_capture_revient_a_celui_qui_la_fait() {
-        let mut combat =
-            Combat::en_groupe(vec![rapide()], vec![lent()], vec![affaibli(lent(), 1)]).unwrap();
+        let mut combat = Combat::en_groupe(vec![rapide()], vec![lent()], vec![affaibli(lent(), 1)])
+            .unwrap()
+            .avec_regles_de_l_invite(ReglesDuMembre {
+                bonus: BonusDeStats::default(),
+                ordre: Ordre::Incantation,
+                limite_d_obeissance: 100,
+                soins: Soins::default(),
+                filets: filets(1),
+                facteur_des_filets: (1, 1),
+            });
         tour(&mut combat, Action::Attaquer(0), &[2, 100]);
         assert_eq!(combat.phase(), Phase::Termine(Issue::Victoire));
+        // L'hôte n'a pas de filet : il ne capture pas.
+        assert_eq!(
+            combat.capturer_ko_pour(Membre::Hote, 0),
+            Err(ErreurCombat::SansFilet)
+        );
         combat.capturer_ko_pour(Membre::Invite, 0).unwrap();
+        assert!(!combat.peut_capturer(Membre::Invite));
         let bilan = terminer(combat, &[100]);
         assert!(bilan.captures.is_empty());
         let invite = bilan.invite.as_ref().unwrap();
@@ -2830,7 +2955,7 @@ mod tests {
             vec![rapide()],
             vec![affaibli(lent(), 2), affaibli(lent(), 3)],
         );
-        tour(&mut combat, Action::LancerFilet, &[90]);
+        tour(&mut combat, Action::LancerFilet(Filet::Chanvre), &[90]);
         tour(&mut combat, Action::Attaquer(0), &[2, 100]);
         assert_eq!(combat.phase(), Phase::Termine(Issue::Victoire));
         assert_eq!(combat.adversaires_capturables(), vec![1]);
@@ -2925,7 +3050,7 @@ mod tests {
             vec![rapide()],
             vec![affaibli(lent(), 2), affaibli(lent(), 3)],
         );
-        tour(&mut combat, Action::LancerFilet, &[90]);
+        tour(&mut combat, Action::LancerFilet(Filet::Chanvre), &[90]);
         tour(&mut combat, Action::Attaquer(0), &[2, 100]);
         // 125 + 2 x 50 = 225 : le niveau 6 demande 216.
         let bilan = terminer(combat, &[100, 100]);
@@ -3064,7 +3189,7 @@ mod tests {
     fn instinct_ajoute_20_pour_cent_a_l_xp_du_combat() {
         let instinct = rapide().avec_habilete(Habilete::Instinct);
         let mut combat = combat(vec![instinct], vec![affaibli(lent(), 2)]);
-        tour(&mut combat, Action::LancerFilet, &[90]);
+        tour(&mut combat, Action::LancerFilet(Filet::Chanvre), &[90]);
         // 50 XP de base, 60 avec Instinct.
         let bilan = terminer(combat, &[100]);
         assert_eq!(xp_gagnee(&bilan, 0), Some(60));
