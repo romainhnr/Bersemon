@@ -58,15 +58,7 @@ pub fn ligne_monstre(monstre: &Monstre, cote: Cote) -> String {
 
 /// Avec un surnom, le nom de l'espèce reste visible entre parenthèses.
 pub fn ligne_monstre_nommee(monstre: &Monstre, nom: &str) -> String {
-    let etat = if monstre.est_ko() {
-        ", KO".to_string()
-    } else {
-        match monstre.statut() {
-            Some(Statut::Poison) => ", poison".to_string(),
-            Some(Statut::Paralysie) => ", paralysie".to_string(),
-            None => String::new(),
-        }
-    };
+    let etat = etat(monstre);
     let espece = if monstre.surnom().is_some() {
         format!("{}, ", monstre.espece().nom())
     } else {
@@ -78,6 +70,31 @@ pub fn ligne_monstre_nommee(monstre: &Monstre, nom: &str) -> String {
         monstre.pv_actuels(),
         monstre.stats().pv
     )
+}
+
+/// "Aldric (héros, niv. 15) : 40/54 PV" : le héros qui combat en dernier
+/// (section 4.4).
+pub fn ligne_du_heros(heros: &Monstre) -> String {
+    format!(
+        "{} (héros, niv. {}) : {}/{} PV{}",
+        heros.nom(),
+        heros.niveau().valeur(),
+        heros.pv_actuels(),
+        heros.stats().pv,
+        etat(heros)
+    )
+}
+
+/// KO ou statut, à la suite des PV.
+fn etat(monstre: &Monstre) -> &'static str {
+    if monstre.est_ko() {
+        return ", KO";
+    }
+    match monstre.statut() {
+        Some(Statut::Poison) => ", poison",
+        Some(Statut::Paralysie) => ", paralysie",
+        None => "",
+    }
 }
 
 pub fn decrire_attaque(attaque: &Attaque) -> String {

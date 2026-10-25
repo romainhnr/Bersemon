@@ -1427,7 +1427,13 @@ Textes proposés sans validation (gamedesign.md, Q112) :
 | Entrée du héros d'un humain | {humain} n'a plus de monstre debout : il entre lui-même dans le combat ! |
 | Retour d'un monstre relevé | {monstre} se relève et reprend sa place : {héros} recule. |
 | Défaite | {héros} s'effondre. |
-| Fiche du héros | {héros}, {classe}, Humain, niveau de combat {n}. PV {pv}/{max}. Attaques : {attaques}. |
+| Fiche du héros | {héros}, {classe}, Humain, niveau de combat {n} : {pv}/{max} PV. / Stats en combat : {stats}. / Attaques : {attaques} / Il combat quand tous vos monstres sont KO. Son niveau vaut 5, plus 5 par palier de son arme et de son armure. |
+| Ligne du héros, en combat et en expédition | {héros} (héros, niv. {n}) : {pv}/{max} PV |
+| Héros adverse en attente | puis {humain} lui-même, en dernier |
+| Forge, arme | ; attaques du héros : {attaques} |
+| Soin | Soigner qui ? |
+| Défaite, retour au camp | Votre héros et toute votre équipe sont KO : vous rentrez au camp, le sac vide. / ... et perdez tout votre sac : {objets}. |
+| Retour au camp | Retour au camp : votre héros et vos monstres sont soignés. |
 
 ## 35. Grand élixir
 

@@ -279,10 +279,10 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
         } => (machines::sortie_de_l_entrainement(monstre, *experience), false),
         Evenement::Defaite { sac_perdu } => {
             let texte = if sac_perdu.est_vide() {
-                "Toute votre équipe est KO : vous rentrez au camp, le sac vide.".to_string()
+                "Votre héros et toute votre équipe sont KO : vous rentrez au camp, le sac vide.".to_string()
             } else {
                 format!(
-                    "Toute votre équipe est KO : vous rentrez au camp et perdez tout votre sac : {}.",
+                    "Votre héros et toute votre équipe sont KO : vous rentrez au camp et perdez tout votre sac : {}.",
                     contenu(sac_perdu)
                 )
             };
@@ -309,7 +309,7 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             true,
         ),
         Evenement::RetourAuCamp => (
-            "Retour au camp : vos monstres sont soignés.".to_string(),
+            "Retour au camp : votre héros et vos monstres sont soignés.".to_string(),
             !matches!(precedent, Some(Evenement::ZoneExploree(_))),
         ),
 
@@ -599,7 +599,7 @@ mod tests {
                     nouveau_paragraphe: true,
                 },
                 Recit {
-                    texte: "Retour au camp : vos monstres sont soignés.".to_string(),
+                    texte: "Retour au camp : votre héros et vos monstres sont soignés.".to_string(),
                     nouveau_paragraphe: false,
                 },
             ]
@@ -778,14 +778,14 @@ mod tests {
         let recit = &raconter(&[Evenement::Defaite { sac_perdu: sac }])[0];
         assert_eq!(
             recit.texte,
-            "**Toute votre équipe est KO : vous rentrez au camp et perdez tout votre sac : 2 potions, 1 pièce d'argent et la capsule d'attaque Brasier.**"
+            "**Votre héros et toute votre équipe sont KO : vous rentrez au camp et perdez tout votre sac : 2 potions, 1 pièce d'argent et la capsule d'attaque Brasier.**"
         );
         let vide = Evenement::Defaite {
             sac_perdu: bersemon_core::inventaire::Inventaire::default(),
         };
         assert_eq!(
             raconter(&[vide])[0].texte,
-            "**Toute votre équipe est KO : vous rentrez au camp, le sac vide.**"
+            "**Votre héros et toute votre équipe sont KO : vous rentrez au camp, le sac vide.**"
         );
     }
 

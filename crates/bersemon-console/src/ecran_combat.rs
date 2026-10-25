@@ -30,9 +30,13 @@ pub enum Commande {
 }
 
 /// Face à un Apôtre, le filet et la fuite ne sont pas proposés (section 9.4),
-/// ni l'ordre du héros une fois donné (section 4.2).
+/// ni l'ordre du héros une fois donné (section 4.2), ni le changement quand
+/// le héros combat, faute de monstre debout (section 4.4).
 fn commandes(combat: &Combat) -> Vec<Commande> {
-    let mut commandes = vec![Commande::Attaquer, Commande::Changer];
+    let mut commandes = vec![Commande::Attaquer];
+    if !combat.est_heros(combat.actif(Cote::Joueur)) {
+        commandes.push(Commande::Changer);
+    }
     if combat.ordre_disponible().is_some() {
         commandes.push(Commande::DonnerOrdre);
     }
@@ -81,9 +85,10 @@ pub fn choisir_action(combat: &Combat, partie: &Partie, entree: &mut Entree) -> 
             // déroulement (Q53).
             Commande::UtiliserSoin => match choisir_soin(combat.soins(), entree)? {
                 Some(soin) => {
-                    println!("Soigner quel monstre ?");
-                    println!("{}", affichage::liste_equipe(combat, true));
-                    let choix = entree.choix(0, combat.equipe().len())?;
+                    println!("Soigner qui ?");
+                    println!("{}", affichage::liste_cibles_des_soins(combat));
+                    let cibles = combat.equipe().len() + combat.heros(Cote::Joueur).len();
+                    let choix = entree.choix(0, cibles)?;
                     (choix > 0).then(|| Action::UtiliserSoin(soin, choix - 1))
                 }
                 None => None,

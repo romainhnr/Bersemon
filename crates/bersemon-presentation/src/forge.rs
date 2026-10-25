@@ -11,7 +11,7 @@ use bersemon_core::horodatage::Horodatage;
 use bersemon_core::partie::Partie;
 use bersemon_core::ressource::Ressource;
 
-use crate::equipement::objet_et_bonus;
+use crate::equipement::{attaques_de_l_objet, objet_et_bonus};
 use crate::expeditions_automatiques::duree;
 use crate::filets::{effet_du_filet, filets};
 use crate::machines::{effet_de_la_cour, effet_des_pieges};
@@ -248,8 +248,11 @@ pub fn etat_des_fabrications(partie: &Partie, contenu: &ContenuV1) -> String {
         } else {
             format!("{}, {}", cout(plan.cout()), duree(plan.duree()))
         };
+        let attaques = attaques_de_l_objet(plan.objet())
+            .map(|attaques| format!(" ; attaques du héros : {attaques}"))
+            .unwrap_or_default();
         lignes.push(format!(
-            "  {} : {}, {detail}.",
+            "  {} : {}, {detail}{attaques}.",
             plan.objet().sorte().nom(),
             objet_et_bonus(plan.objet())
         ));

@@ -4,7 +4,9 @@
 use bersemon_core::deroulement::Choix;
 use bersemon_core::equipement::PlaceDEquipement;
 use bersemon_core::partie::Partie;
-use bersemon_presentation::equipement::{etat_de_l_equipement, nom_de_place, objet_et_bonus};
+use bersemon_presentation::equipement::{
+    etat_de_l_equipement, fiche_du_heros, nom_de_place, objet_et_bonus,
+};
 
 use crate::saisie::Entree;
 
@@ -13,6 +15,7 @@ pub fn choisir(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
     let equipement = partie.heros().equipement();
     loop {
         println!();
+        println!("{}", fiche_du_heros(partie.heros()));
         println!("{}", etat_de_l_equipement(equipement));
         for (position, place) in PlaceDEquipement::TOUTES.iter().enumerate() {
             println!("  {}. {}", position + 1, nom_de_place(*place));

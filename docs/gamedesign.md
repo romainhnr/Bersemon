@@ -172,6 +172,7 @@ Décidé le 25/10/2026, pour les étapes 128 à 133 (choix de l'utilisateur) :
 - Sa chute est une défaite ordinaire (section 9.3). Comme ses monstres, il ne meurt pas (section 5.7).
 - Les humains de l'IA combattent aussi en dernier, avec leur classe et leur équipement (section 10.7), comme les héros des autres joueurs en duel (section 15.3).
 - Écrans, à l'étape 132 (console) et 133 (Discord) : l'écran d'équipement du héros montre son niveau de combat, ses stats, ses PV et ses attaques ; en combat, le héros se montre comme un monstre, de type Humain ; les menus des soins le proposent avec les monstres.
+- Précisé à l'étape 132, en codant (console) : le héros suit l'équipe, sur une ligne "Aldric (héros, niv. 15) : 40/54 PV", en combat comme entre deux étapes ; face à un humain, une ligne annonce qu'il combattra en dernier ; le menu de combat ne propose plus de changer de monstre quand le héros combat ; la forge dit les attaques que chaque arme donne au héros ; le retour au camp dit que le héros est soigné. L'écran d'équipement, qui montre la fiche du héros, reste proposé une fois Gunther au camp ou un objet possédé.
 
 ## 5. Les monstres
 

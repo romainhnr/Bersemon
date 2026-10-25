@@ -14,7 +14,8 @@ use crate::equipement::decrire_bonus;
 use crate::filets::nom_du_filet;
 use crate::mise_en_valeur::important;
 use crate::monstres::{
-    decrire_attaque, ligne_monstre, nom, nom_en_combat, nom_en_valeur, progression_d_experience,
+    decrire_attaque, ligne_du_heros, ligne_monstre, nom, nom_en_combat, nom_en_valeur,
+    progression_d_experience, types_de,
 };
 use crate::partie::{enumerer, types_connus};
 use crate::soins::soin_utilise;
@@ -41,29 +42,41 @@ pub fn rencontre(combat: &Combat) -> String {
     format!("Des monstres surgissent : {}.", noms.join(", "))
 }
 
-/// L'équipe, avec un repère devant le monstre actif, puis le monstre adverse
-/// actif, avec ses types si son espèce est capturée (section 10.6), et ceux
-/// qui attendent.
+/// L'équipe et le héros, avec un repère devant celui qui combat, puis le
+/// monstre adverse actif, avec ses types si son espèce est capturée
+/// (section 10.6), toujours pour un héros, et ceux qui attendent.
 pub fn etat(combat: &Combat, codex: &Codex) -> String {
     let actif_joueur = combat.actif(Cote::Joueur);
-    let mut lignes = vec!["Votre équipe :".to_string()];
-    for (index, monstre) in combat.equipe().iter().enumerate() {
-        let repere = if index == actif_joueur.index {
+    let repere = |index: usize| {
+        if index == actif_joueur.index {
             ">"
         } else {
             " "
-        };
+        }
+    };
+    let mut lignes = vec!["Votre équipe :".to_string()];
+    for (index, monstre) in combat.equipe().iter().enumerate() {
         lignes.push(format!(
-            "  {repere} {}",
+            "  {} {}",
+            repere(index),
             ligne_monstre(monstre, Cote::Joueur)
         ));
     }
+    for (position, heros) in combat.heros(Cote::Joueur).iter().enumerate() {
+        let index = combat.equipe().len() + position;
+        lignes.push(format!("  {} {}", repere(index), ligne_du_heros(heros)));
+    }
     let adversaire = combat.actif(Cote::Adversaire);
     let monstre = combat.monstre(adversaire);
+    let types = if combat.est_heros(adversaire) {
+        types_de(monstre.espece())
+    } else {
+        types_connus(codex, monstre.espece())
+    };
     lignes.push(format!(
         "En face : {} ({}, niv. {}) : {}/{} PV{}",
         nom_en_combat(combat, adversaire),
-        types_connus(codex, monstre.espece()),
+        types,
         monstre.niveau().valeur(),
         monstre.pv_actuels(),
         monstre.stats().pv,
@@ -77,6 +90,13 @@ pub fn etat(combat: &Combat, codex: &Codex) -> String {
         .count();
     if en_attente > 0 && !combat.est_en_deux_phases() {
         lignes.push(format!("  et {en_attente} autre(s) monstre(s) en attente"));
+    }
+    if let Some(heros) = combat
+        .heros(Cote::Adversaire)
+        .iter()
+        .find(|heros| !combat.est_heros(adversaire) && !heros.est_ko())
+    {
+        lignes.push(format!("  puis {} lui-même, en dernier", heros.nom()));
     }
     lignes.join("\n")
 }
@@ -358,6 +378,47 @@ mod tests {
             location: None,
         })
         .unwrap()
+    }
+
+    /// Section 4.4 : le héros suit l'équipe, celui d'un humain est toujours
+    /// de type Humain, et sa chute est la défaite.
+    #[test]
+    fn le_heros_se_montre_avec_l_equipe_et_en_face() {
+        use bersemon_core::codex::Codex;
+        use bersemon_core::heros::{Classe, Heros};
+        use bersemon_core::humain::IaHumain;
+        use bersemon_core::nom::Nom;
+
+        let contenu = ContenuV1::new();
+        let aldric = Heros::new(Nom::new("Aldric").unwrap(), Classe::Guerrier).combattant();
+        let brigand = contenu.zones()[0].humain().unwrap();
+        let mut ko = creer(&contenu, "loup", 5);
+        ko.subir_degats(ko.stats().pv);
+        let combat = Combat::avec_le_heros(vec![ko], aldric, vec![creer(&contenu, "corbeau", 5)])
+            .unwrap()
+            .contre_un_humain(IaHumain::Simple)
+            .avec_heros(Cote::Adversaire, brigand.generer_heros().unwrap());
+        let texte = etat(&combat, &Codex::default());
+        assert!(
+            texte.contains("  > Aldric (héros, niv. 5) : 24/24 PV"),
+            "{texte}"
+        );
+        assert!(
+            texte.contains("puis Brigand lui-même, en dernier"),
+            "{texte}"
+        );
+        let entree = Combattant {
+            cote: Cote::Adversaire,
+            index: 1,
+        };
+        assert_eq!(
+            evenement(&Evenement::HerosEntre(entree), &combat),
+            "**Brigand n'a plus de monstre debout : il entre lui-même dans le combat !**"
+        );
+        assert_eq!(
+            evenement(&Evenement::FinDuCombat(Issue::Defaite), &combat),
+            "**Défaite : Aldric s'effondre.**"
+        );
     }
 
     #[test]

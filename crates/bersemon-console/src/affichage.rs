@@ -15,7 +15,9 @@ use bersemon_core::zone::Zone;
 use bersemon_presentation::combat::{attaque_de_trop, attaque_en_combat, ordre_et_bonus};
 use bersemon_presentation::filets::liste_de_filets;
 use bersemon_presentation::meteo::meteo_de_la_zone;
-use bersemon_presentation::monstres::{decrire_attaque, ligne_monstre, nom_en_combat};
+use bersemon_presentation::monstres::{
+    decrire_attaque, ligne_du_heros, ligne_monstre, nom_en_combat,
+};
 use bersemon_presentation::partie::{
     TITRE_DU_CARNET, decrire_zone, entree_du_carnet, especes_du_codex, fiche_d_espece,
     ligne_du_codex, sac_en_expedition,
@@ -104,6 +106,23 @@ pub fn liste_equipe(combat: &Combat, avec_retour: bool) -> String {
     lignes.join("\n")
 }
 
+/// L'équipe, puis le héros, qu'un soin peut viser (section 4.4).
+pub fn liste_cibles_des_soins(combat: &Combat) -> String {
+    let actif = combat.actif(Cote::Joueur).index;
+    let mut lignes = vec![liste_equipe(combat, false)];
+    for (position, heros) in combat.heros(Cote::Joueur).iter().enumerate() {
+        let index = combat.equipe().len() + position;
+        let au_combat = if index == actif { " (au combat)" } else { "" };
+        lignes.push(format!(
+            "  {}. {}{au_combat}",
+            index + 1,
+            ligne_du_heros(heros)
+        ));
+    }
+    lignes.push("  0. Retour".to_string());
+    lignes.join("\n")
+}
+
 pub fn liste_capturables(combat: &Combat, capturables: &[usize]) -> String {
     let mut lignes: Vec<String> = capturables
         .iter()
@@ -164,6 +183,12 @@ pub fn equipe_en_expedition(partie: &Partie) -> String {
             ligne_monstre(monstre, Cote::Joueur)
         ));
     }
+    // Le héros suit l'équipe : il combat quand elle est KO (section 4.4).
+    lignes.push(format!(
+        "  {}. {}",
+        partie.collection().equipe().len() + 1,
+        ligne_du_heros(&partie.heros().combattant())
+    ));
     lignes.push(sac_en_expedition(partie));
     lignes.join("\n")
 }

@@ -2,8 +2,10 @@
 //! qu'il porte.
 
 use bersemon_core::equipement::{Equipement, ErreurEquipement, ObjetDEquipement, PlaceDEquipement};
+use bersemon_core::heros::Heros;
 use bersemon_core::stats::BonusDeStats;
 
+use crate::monstres::{decrire_attaque, decrire_stats};
 use crate::partie::enumerer;
 
 /// "d'Attaque", "de Défense" : le nom de la stat, avec son article.
@@ -67,6 +69,43 @@ pub fn place_et_objet(equipement: &Equipement, place: PlaceDEquipement) -> Strin
         },
     };
     format!("{} : {objet}", nom_de_place(place))
+}
+
+/// Le héros quand il combat, après ses monstres (section 4.4) : sa classe,
+/// son type, son niveau de combat, ses PV, ses stats et les attaques de son
+/// arme.
+pub fn fiche_du_heros(heros: &Heros) -> String {
+    let combattant = heros.combattant();
+    let mut lignes = vec![
+        format!(
+            "{}, {}, Humain, niveau de combat {} : {}/{} PV.",
+            heros.nom().as_str(),
+            heros.classe().nom(),
+            combattant.niveau().valeur(),
+            combattant.pv_actuels(),
+            combattant.stats().pv
+        ),
+        format!("Stats en combat : {}.", decrire_stats(&combattant.stats())),
+        "Attaques :".to_string(),
+    ];
+    for attaque in combattant.attaques().liste() {
+        lignes.push(format!("  {}", decrire_attaque(attaque)));
+    }
+    lignes.push(
+        "Il combat quand tous vos monstres sont KO. Son niveau vaut 5, plus 5 par palier de son arme et de son armure.".to_string(),
+    );
+    lignes.join("\n")
+}
+
+/// "Taille, Frappe brutale" : celles qu'une arme donne au héros (section
+/// 4.4).
+pub fn attaques_de_l_objet(objet: &ObjetDEquipement) -> Option<String> {
+    let noms: Vec<String> = objet
+        .attaques()
+        .iter()
+        .map(|attaque| attaque.nom().to_string())
+        .collect();
+    (!noms.is_empty()).then(|| enumerer(&noms))
 }
 
 /// Ce que le héros porte, place par place, le bonus total des objets portés

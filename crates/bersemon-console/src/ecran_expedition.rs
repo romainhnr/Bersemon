@@ -53,8 +53,8 @@ pub fn entre_deux_etapes(partie: &Partie, entree: &mut Entree) -> Option<Choix> 
             1 => return Some(Choix::ContinuerLExpedition),
             2 => {
                 if let Some(soin) = choisir_soin(partie.sac().soins(), entree)? {
-                    println!("Soigner quel monstre ? (0 pour annuler)");
-                    let choix = entree.choix(0, partie.collection().equipe().len())?;
+                    println!("Soigner qui ? (0 pour annuler)");
+                    let choix = entree.choix(0, partie.collection().equipe().len() + 1)?;
                     if choix > 0 {
                         return Some(Choix::UtiliserSoin(soin, choix - 1));
                     }
