@@ -13,7 +13,7 @@ use crate::zone::Zone;
 pub const NIVEAU_MINIMAL_DU_SACRIFICE: u8 = 30;
 
 /// Ce que laisse le Démiurge vaincu, dans le sac (section 9.4).
-pub const ECLATS_DU_DEMIURGE: u32 = 3;
+pub const PHILTRES_DU_DEMIURGE: u32 = 3;
 
 /// L'avancée du joueur vers le Démiurge, dans l'ordre.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]

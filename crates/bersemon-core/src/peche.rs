@@ -17,8 +17,8 @@ use crate::zone::{Zone, creer_monstre_sauvage, tirer_entre};
 
 /// Bornes du tirage de la prise, sur 100 (docs/contenu-v1.md, sections 15
 /// et 17) : monstre commun 55 %, monstre rare 5 %, potion 14 %, bourse noyée
-/// 10 %, pierre d'évolution 5 %, capsule d'habileté 5 %, booster 5 %, Éclat
-/// d'astre 1 %.
+/// 10 %, pierre d'évolution 5 %, capsule d'habileté 5 %, booster 5 %,
+/// Philtre chromatique 1 %.
 const JUSQU_AU_MONSTRE_COMMUN: u32 = 55;
 const JUSQU_AU_MONSTRE_RARE: u32 = 60;
 const JUSQU_A_LA_POTION: u32 = 74;
@@ -142,7 +142,7 @@ impl ParametresPeche {
                 let dernier = (Booster::TOUS.len() - 1) as u32;
                 Prise::Booster(Booster::TOUS[tirer_entre(0, dernier, aleatoire) as usize])
             }
-            _ => Prise::EclatDAstre,
+            _ => Prise::PhiltreChromatique,
         }
     }
 }
@@ -217,7 +217,7 @@ pub enum Prise {
     Pierre(PierreDEvolution),
     CapsuleDHabilete,
     Booster(Booster),
-    EclatDAstre,
+    PhiltreChromatique,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -424,7 +424,7 @@ mod tests {
         );
         assert_eq!(
             parametres.tirer_prise(&marais, &mut AleatoireScripte::new([100])),
-            Prise::EclatDAstre
+            Prise::PhiltreChromatique
         );
     }
 

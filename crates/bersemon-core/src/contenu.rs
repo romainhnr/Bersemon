@@ -184,9 +184,8 @@ pub const METAMORPHOSE_DU_DEMIURGE: &str =
 
 const EPILOGUE_DU_DEMIURGE: &str = "Le Démiurge se disloque dans un hurlement qui fait trembler le ciel. Le soleil noir pâlit, et le jour revient sur le royaume. Votre vengeance est accomplie ; mais d'autres choses rôdent encore au bord des bois.";
 
-/// Les Éclats d'astre ramassés après l'épilogue du Démiurge.
-pub const RECOMPENSE_DU_DEMIURGE: &str =
-    "Dans les cendres du Démiurge luisent trois Éclats d'astre. Vous les ramassez.";
+/// Les Philtres chromatiques ramassés après l'épilogue du Démiurge.
+pub const RECOMPENSE_DU_DEMIURGE: &str = "Dans les cendres du Démiurge reposent trois Philtres chromatiques, aux reflets changeants. Vous les ramassez.";
 
 const AVANT_LE_BARON: &str = "Au fond de la Vallée, la brume se déchire sur un gibet dressé contre le ciel. Le Baron pendu, Apôtre du Démiurge, s'y balance encore, puis ouvre les yeux. Il n'y aura pas de fuite.";
 

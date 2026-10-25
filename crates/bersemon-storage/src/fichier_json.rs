@@ -385,7 +385,7 @@ mod tests {
                 .avec_pierres(PierreDEvolution::Braise, 1)
                 .avec_boosters(Booster::CendreBenite, 2)
                 .avec_boosters(Booster::FioleDeSang, 1)
-                .avec_eclats_d_astre(1)
+                .avec_philtres_chromatiques(1)
                 .avec_charmes_de_garde(2)
                 .avec_filets(Filet::Chaines, 3),
             marchand_au_camp: true,
@@ -651,6 +651,19 @@ mod tests {
     }
 
     #[test]
+    fn les_philtres_chromatiques_gardent_dans_le_fichier_le_nom_des_eclats_d_astre() {
+        let valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        assert_eq!(valeur["coffre_du_camp"]["eclats_d_astre"], 1);
+        assert!(
+            valeur["coffre_du_camp"]
+                .get("philtres_chromatiques")
+                .is_none()
+        );
+        let rechargee = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        assert_eq!(rechargee.coffre_du_camp().philtres_chromatiques(), 1);
+    }
+
+    #[test]
     fn version_inconnue() {
         let texte = texte_de_partie().replacen("\"version\":27", "\"version\":28", 1);
         assert_eq!(
@@ -785,7 +798,7 @@ mod tests {
     }
 
     #[test]
-    fn avant_la_version_20_chaque_apotre_vaincu_laisse_un_eclat_au_coffre() {
+    fn avant_la_version_20_chaque_apotre_vaincu_laisse_un_philtre_au_coffre() {
         let partie = partie_complete();
         assert_eq!(partie.apotres_vaincus().len(), 1);
         let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
@@ -796,7 +809,7 @@ mod tests {
             .remove("boosters");
         valeur["coffre_du_camp"]["eclats_d_astre"] = 0.into();
         let rechargee = charger_texte(&valeur.to_string()).unwrap().unwrap();
-        assert_eq!(rechargee.coffre_du_camp().eclats_d_astre(), 1);
+        assert_eq!(rechargee.coffre_du_camp().philtres_chromatiques(), 1);
         assert_eq!(rechargee.coffre_du_camp().boosters(), &[]);
         // Avant la version 27, les filets du sac sont oubliés (section
         // 11.2).
@@ -804,7 +817,7 @@ mod tests {
         assert!(rechargee.sac().filets().est_vide());
         // En version 20, rien n'est ajouté.
         let relue = charger_texte(&texte_de_partie()).unwrap().unwrap();
-        assert_eq!(relue.coffre_du_camp().eclats_d_astre(), 1);
+        assert_eq!(relue.coffre_du_camp().philtres_chromatiques(), 1);
     }
 
     #[test]

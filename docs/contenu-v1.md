@@ -764,7 +764,7 @@ Décidé le 20/10/2026, pour l'étape 66 (gamedesign.md, section 9.4), texte val
 
 Textes proposés sans validation (gamedesign.md, Q92) : au camp, "Âmes d'Apôtres : {noms}." (par exemple "Âmes d'Apôtres : Baron pendu et Abbesse écorchée."), et au codex, "{nom} ({types}) : Apôtre vaincu".
 
-## 17. Boosters et Éclat d'astre
+## 17. Boosters et Philtre chromatique
 
 Décidé le 20/10/2026, pour les étapes 67 à 69 (gamedesign.md, sections 5.8, 13.7 et 14.3). Noms et taux validés par l'utilisateur ; les identifiants, l'ordre des tirages et les textes sont des hypothèses (gamedesign.md, Q93).
 
@@ -781,11 +781,11 @@ Chaque booster ajoute 5 à la valeur interne de sa stat, sans dépasser 31, et s
 
 Le tirage sur 100 du coffre décide ainsi de la capsule d'habileté (1 à 10), de la Pierre de braise (11 à 15), de la Pierre de lune (16 à 20) et d'un booster (21 à 26) ; rien de plus au-delà.
 
-L'Éclat d'astre (identifiant eclat-d-astre) : chaque Apôtre vaincu en laisse un, et la pêche en remonte 1 fois sur 100. Malvoise s'en sert pour rendre un monstre shiny. Il ne s'achète pas et ne se revend pas.
+Le Philtre chromatique, appelé Éclat d'astre jusqu'au 25/10/2026 (nom choisi par l'utilisateur pour l'étape 108) : chaque Apôtre vaincu en laisse un, et la pêche en remonte 1 fois sur 100. Malvoise s'en sert pour rendre un monstre shiny. Il ne s'achète pas et ne se revend pas. Le fichier de sauvegarde et les menus Discord gardent son ancien nom (eclats_d_astre, eclats-d-astre).
 
-Pêche, depuis l'étape 67 (section 15) : monstre aquatique commun 55 %, Kelpie 5 %, potion 14 %, bourse noyée 10 %, pierre d'évolution 5 %, capsule d'habileté 5 %, booster 5 % (puis un tirage parmi les six, dans l'ordre du tableau), Éclat d'astre 1 %.
+Pêche, depuis l'étape 67 (section 15) : monstre aquatique commun 55 %, Kelpie 5 %, potion 14 %, bourse noyée 10 %, pierre d'évolution 5 %, capsule d'habileté 5 %, booster 5 % (puis un tirage parmi les six, dans l'ordre du tableau), Philtre chromatique 1 %.
 
-Textes proposés sans validation (gamedesign.md, Q93). {monstre} est le nom du monstre, {stat} le nom de la stat, {booster} celui du booster.
+Textes proposés sans validation (gamedesign.md, Q93), sauf ceux du Philtre chromatique, réécrits et validés par l'utilisateur le 25/10/2026. {monstre} est le nom du monstre, {stat} le nom de la stat, {booster} celui du booster.
 
 | Moment | Texte |
 |---|---|
@@ -793,12 +793,12 @@ Textes proposés sans validation (gamedesign.md, Q93). {monstre} est le nom du m
 | Booster donné | {monstre} : valeur interne de {stat} de {avant} à {après}. |
 | Refus, valeur déjà au maximum | La valeur interne de {stat} de {monstre} est déjà à 31. |
 | Refus, pas de booster | Vous n'avez pas de {booster}. |
-| Éclat laissé par un Apôtre, après son âme | Dans la poussière de sa dépouille luit un Éclat d'astre. Vous le ramassez. |
-| Objet pêché | Vous remontez une Fiole de sang. Vous la rangez dans le coffre. / Vous remontez un Éclat d'astre. Vous le rangez dans le coffre. |
-| Service, à l'étal | Rendre un monstre shiny (1 Éclat d'astre) |
-| Confirmation | Faire rendre {monstre} shiny par Malvoise contre un Éclat d'astre ? Ses valeurs internes passeront toutes à 31. |
-| Monstre rendu shiny | Malvoise broie l'Éclat d'astre au-dessus de {monstre}, dont la robe prend un reflet nouveau. {monstre} est désormais shiny. |
-| Refus, pas d'Éclat | Il vous faut un Éclat d'astre. |
+| Philtre laissé par un Apôtre, après son âme | Dans la poussière de sa dépouille roule une fiole aux reflets changeants : un Philtre chromatique. Vous le ramassez. |
+| Objet pêché | Vous remontez une Fiole de sang. Vous la rangez dans le coffre. / Vous remontez une fiole scellée : un Philtre chromatique. Vous le rangez dans le coffre. |
+| Service, à l'étal | Rendre un monstre shiny (1 Philtre chromatique) |
+| Confirmation | Faire rendre {monstre} shiny par Malvoise contre un Philtre chromatique ? Ses valeurs internes passeront toutes à 31. |
+| Monstre rendu shiny | Malvoise fait boire le Philtre chromatique à {monstre} ; sa lignée s'altère, et sa robe prend une couleur nouvelle. {monstre} est désormais shiny. |
+| Refus, pas de Philtre | Il vous faut un Philtre chromatique. |
 | Refus, déjà shiny | {monstre} est déjà shiny. |
 
 ## 18. Amis et palmarès des duels
@@ -1020,7 +1020,7 @@ Quand la première forme tombe :
 
 > Le Démiurge se disloque dans un hurlement qui fait trembler le ciel. Le soleil noir pâlit, et le jour revient sur le royaume. Votre vengeance est accomplie ; mais d'autres choses rôdent encore au bord des bois.
 
-> Dans les cendres du Démiurge luisent trois Éclats d'astre. Vous les ramassez.
+> Dans les cendres du Démiurge reposent trois Philtres chromatiques, aux reflets changeants. Vous les ramassez. (Réécrit le 25/10/2026, étape 108.)
 
 Textes proposés sans validation (gamedesign.md, Q99) :
 

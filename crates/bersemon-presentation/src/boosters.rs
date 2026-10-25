@@ -10,11 +10,10 @@ use crate::mise_en_valeur::important;
 use crate::monstres::nom_en_valeur;
 
 /// Après l'âme d'un Apôtre vaincu (section 9.4).
-pub const ECLAT_RAMASSE: &str =
-    "Dans la poussière de sa dépouille luit un Éclat d'astre. Vous le ramassez.";
+pub const PHILTRE_RAMASSE: &str = "Dans la poussière de sa dépouille roule une fiole aux reflets changeants : un Philtre chromatique. Vous le ramassez.";
 
 /// Le libellé du service, à l'étal de Malvoise.
-pub const SERVICE_SHINY: &str = "Rendre un monstre shiny (1 Éclat d'astre)";
+pub const SERVICE_SHINY: &str = "Rendre un monstre shiny (1 Philtre chromatique)";
 
 pub fn nom_de_stat(stat: Stat) -> &'static str {
     match stat {
@@ -57,12 +56,12 @@ pub fn boosters(booster: Booster, nombre: u32) -> String {
     }
 }
 
-/// "1 Éclat d'astre", "2 Éclats d'astre".
-pub fn eclats_d_astre(nombre: u32) -> String {
+/// "1 Philtre chromatique", "2 Philtres chromatiques".
+pub fn philtres_chromatiques(nombre: u32) -> String {
     if nombre > 1 {
-        format!("{nombre} Éclats d'astre")
+        format!("{nombre} Philtres chromatiques")
     } else {
-        format!("{nombre} Éclat d'astre")
+        format!("{nombre} Philtre chromatique")
     }
 }
 
@@ -100,17 +99,19 @@ pub fn refus_sans_booster(booster: Booster) -> String {
 
 pub fn question_shiny(monstre: &Monstre) -> String {
     format!(
-        "Faire rendre {} shiny par Malvoise contre un Éclat d'astre ? Ses valeurs internes passeront toutes à {}.",
+        "Faire rendre {} shiny par Malvoise contre un Philtre chromatique ? Ses valeurs internes passeront toutes à {}.",
         monstre.nom(),
         ValeursInternes::MAX
     )
 }
 
-/// Le nom seul : celui d'un shiny porte déjà la mention "(shiny)".
+/// Le nom seul : celui d'un shiny porte déjà la mention "(shiny)". Le
+/// philtre altère la lignée du monstre, d'où sa couleur nouvelle (section
+/// 13.7).
 pub fn monstre_rendu_shiny(monstre: &Monstre) -> String {
     let nom = important(monstre.nom());
     format!(
-        "Malvoise broie l'Éclat d'astre au-dessus de {nom}, dont la robe prend un reflet nouveau. {nom} est désormais shiny."
+        "Malvoise fait boire le Philtre chromatique à {nom} ; sa lignée s'altère, et sa robe prend une couleur nouvelle. {nom} est désormais shiny."
     )
 }
 
@@ -122,7 +123,7 @@ mod tests {
     fn noms_et_effets() {
         assert_eq!(boosters(Booster::CendreBenite, 2), "2 Cendres bénites");
         assert_eq!(boosters(Booster::FioleDeSang, 1), "1 Fiole de sang");
-        assert_eq!(eclats_d_astre(3), "3 Éclats d'astre");
+        assert_eq!(philtres_chromatiques(3), "3 Philtres chromatiques");
         assert_eq!(
             effet_du_booster(Booster::FioleDeSang),
             "+5 à la valeur interne de PV, 31 au plus."

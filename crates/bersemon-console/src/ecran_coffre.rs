@@ -37,8 +37,8 @@ pub fn choisir(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
         println!("  14. Ranger des pierres d'évolution");
         println!("  15. Prendre des boosters");
         println!("  16. Ranger des boosters");
-        println!("  17. Prendre des Éclats d'astre");
-        println!("  18. Ranger des Éclats d'astre");
+        println!("  17. Prendre des Philtres chromatiques");
+        println!("  18. Ranger des Philtres chromatiques");
         println!("  19. Prendre des charmes de garde");
         println!("  20. Ranger des charmes de garde");
         println!("  21. Tout ranger dans le coffre");
@@ -65,10 +65,14 @@ pub fn choisir(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
             14 => pierres(sac, entree)?.map(Choix::RangerAuCoffre),
             15 => boosters(coffre, entree)?.map(Choix::SortirDuCoffre),
             16 => boosters(sac, entree)?.map(Choix::RangerAuCoffre),
-            17 => quantite(coffre.eclats_d_astre(), "Éclats d'astre", entree)?
-                .map(|nombre| Choix::SortirDuCoffre(Objet::EclatsDAstre(nombre))),
-            18 => quantite(sac.eclats_d_astre(), "Éclats d'astre", entree)?
-                .map(|nombre| Choix::RangerAuCoffre(Objet::EclatsDAstre(nombre))),
+            17 => quantite(
+                coffre.philtres_chromatiques(),
+                "Philtres chromatiques",
+                entree,
+            )?
+            .map(|nombre| Choix::SortirDuCoffre(Objet::PhiltresChromatiques(nombre))),
+            18 => quantite(sac.philtres_chromatiques(), "Philtres chromatiques", entree)?
+                .map(|nombre| Choix::RangerAuCoffre(Objet::PhiltresChromatiques(nombre))),
             19 => quantite(coffre.charmes_de_garde(), "charmes de garde", entree)?
                 .map(|nombre| Choix::SortirDuCoffre(Objet::CharmesDeGarde(nombre))),
             20 => quantite(sac.charmes_de_garde(), "charmes de garde", entree)?

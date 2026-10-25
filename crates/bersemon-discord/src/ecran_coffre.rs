@@ -1,13 +1,13 @@
 //! Le coffre du camp sur Discord (section 13.3) : un menu pour prendre dans
 //! le coffre, un autre pour ranger ce que contient le sac, et de même pour
-//! les filets, les pierres d'évolution, les boosters et les Éclats d'astre. Les
+//! les filets, les pierres d'évolution, les boosters et les Philtres chromatiques. Les
 //! ressources ont leur propre écran : avec celles du Col du Givre-Noir, elles
 //! ne tiennent plus dans un menu avec ces objets (étape 82).
 
 use bersemon_core::inventaire::{Inventaire, Objet};
 use bersemon_core::partie::Partie;
 use bersemon_core::soin::Soin;
-use bersemon_presentation::boosters::{boosters, eclats_d_astre};
+use bersemon_presentation::boosters::{boosters, philtres_chromatiques};
 use bersemon_presentation::filets::filets;
 use bersemon_presentation::monstres::decrire_attaque;
 use bersemon_presentation::partie::{
@@ -182,7 +182,7 @@ pub fn ressources(partie: &Partie) -> Question {
 }
 
 /// Un lot de 5 ou tous pour chaque filet, une ou toutes pour chaque pierre,
-/// tous ceux d'une sorte pour chaque booster, et tous les Éclats d'astre :
+/// tous ceux d'une sorte pour chaque booster, et tous les Philtres chromatiques :
 /// avec les trois filets, les deux pierres et les six boosters du contenu,
 /// 17 options au plus (sections 5.4, 11.2, 13.7 et 14.3).
 fn options_d_objets(inventaire: &Inventaire) -> Vec<OptionDeMenu> {
@@ -208,11 +208,11 @@ fn options_d_objets(inventaire: &Inventaire) -> Vec<OptionDeMenu> {
             Some("Tout".to_string()),
         ));
     }
-    let eclats = inventaire.eclats_d_astre();
-    if eclats > 0 {
+    let philtres = inventaire.philtres_chromatiques();
+    if philtres > 0 {
         options.push(option(
-            Objet::EclatsDAstre(eclats),
-            eclats_d_astre(eclats),
+            Objet::PhiltresChromatiques(philtres),
+            philtres_chromatiques(philtres),
             Some("Tout".to_string()),
         ));
     }

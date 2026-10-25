@@ -974,7 +974,7 @@ fn le_demiurge_s_affronte_a_travers_les_ecrans_du_bot() {
     let session = joueurs.session(JOUEUR, &contenu);
     let partie = session.deroulement.partie().unwrap();
     assert_eq!(partie.beherit(), EtatDuBeherit::DemiurgeVaincu);
-    assert_eq!(partie.sac().eclats_d_astre(), 3);
+    assert_eq!(partie.sac().philtres_chromatiques(), 3);
     let camp = afficher(&mut joueurs);
     assert!(
         camp.texte
@@ -1729,7 +1729,7 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
             .avec_capsules_d_habilete(3)
             .avec_pierres(PierreDEvolution::Braise, 2)
             .avec_pierres(PierreDEvolution::Lune, 2)
-            .avec_eclats_d_astre(2)
+            .avec_philtres_chromatiques(2)
             .avec_charmes_de_garde(3);
         // Plus d'un lot de chaque qualité de filet : deux options chacune.
         for filet in Filet::TOUS {
@@ -1873,7 +1873,7 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         )));
         // Un monstre de l'équipe, qui peut monter et descendre, et un du
         // camp, qui peut s'échanger.
-        // Avec un Éclat d'astre et des boosters (sections 13.7 et 14.3).
+        // Avec un Philtre chromatique et des boosters (sections 13.7 et 14.3).
         for emplacement in [Emplacement::Equipe(1), Emplacement::Camp(0)] {
             let cles = afficher(&partie, Vue::Gestion(Some(emplacement)));
             assert!(cles.contains(&Cle::ChangerDHabilete(emplacement)));

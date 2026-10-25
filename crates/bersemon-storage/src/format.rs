@@ -66,9 +66,9 @@ const VERSION_DE_GUNTHER: u64 = 14;
 /// ils laissent leur âme (section 9.4).
 const VERSION_DES_AMES_D_APOTRES: u64 = 19;
 
-/// La version de la sauvegarde où chaque Apôtre vaincu laisse un Éclat
-/// d'astre (section 14.3).
-const VERSION_DES_ECLATS_D_ASTRE: u64 = 20;
+/// La version de la sauvegarde où chaque Apôtre vaincu laisse un Philtre
+/// chromatique, alors appelé Éclat d'astre (section 14.3).
+const VERSION_DES_PHILTRES_CHROMATIQUES: u64 = 20;
 
 /// La version de la sauvegarde où Gunther construit les machines du camp
 /// (section 13.6).
@@ -113,7 +113,7 @@ const GEOLIER_DE_GUNTHER: &str = "bourreau";
 /// marque des monstres reçus d'un autre joueur, la version 18 la pêche
 /// d'Ansgar ; avec la version 19, les Apôtres capturés deviennent leur âme,
 /// sans changer la structure ; la version 20 ajoute les boosters et les
-/// Éclats d'astre, la version 21 les amis et le palmarès des duels, la
+/// Philtres chromatiques, la version 21 les amis et le palmarès des duels, la
 /// version 22 les machines du camp, la version 23 les charmes de garde et
 /// les protections des expéditions automatiques, la version 24 la location
 /// d'un monstre, la version 25 le Béhérit pourpre. Une sauvegarde d'une version précédente se lit avec cette
@@ -305,8 +305,10 @@ struct InventaireV7 {
     /// Depuis la version 20 (section 14.3).
     #[serde(default)]
     boosters: Vec<BoosterV20>,
-    #[serde(default)]
-    eclats_d_astre: u32,
+    /// Les Philtres chromatiques, sous leur ancien nom d'Éclats d'astre,
+    /// gardé dans le fichier pour relire les sauvegardes existantes.
+    #[serde(default, rename = "eclats_d_astre")]
+    philtres_chromatiques: u32,
     /// Depuis la version 23 (section 12.5).
     #[serde(default)]
     charmes_de_garde: u32,
@@ -729,7 +731,7 @@ fn depuis_inventaire(inventaire: &Inventaire) -> InventaireV7 {
                 nombre: *nombre,
             })
             .collect(),
-        eclats_d_astre: inventaire.eclats_d_astre(),
+        philtres_chromatiques: inventaire.philtres_chromatiques(),
         charmes_de_garde: inventaire.charmes_de_garde(),
         filets: inventaire
             .filets()
@@ -773,7 +775,7 @@ fn vers_inventaire(
     for booster in inventaire.boosters {
         resultat.ajouter_boosters(lire_booster(&booster.booster)?, booster.nombre);
     }
-    resultat.ajouter_eclats_d_astre(inventaire.eclats_d_astre);
+    resultat.ajouter_philtres_chromatiques(inventaire.philtres_chromatiques);
     resultat.ajouter_charmes_de_garde(inventaire.charmes_de_garde);
     for filet in inventaire.filets {
         resultat.ajouter_filets(lire_filet(&filet.filet)?, filet.nombre);
@@ -956,10 +958,10 @@ pub(crate) fn vers_partie(
             None => Err(ErreurSauvegarde::EspeceInconnue(id)),
         })
         .collect::<Result<Vec<_>, _>>()?;
-    // Chaque Apôtre vaincu laisse désormais un Éclat d'astre : celui des
+    // Chaque Apôtre vaincu laisse désormais un Philtre chromatique : celui des
     // victoires passées attend dans le coffre (section 14.3, Q93).
-    if sauvegarde.version < VERSION_DES_ECLATS_D_ASTRE {
-        coffre_du_camp.ajouter_eclats_d_astre(apotres_vaincus.len() as u32);
+    if sauvegarde.version < VERSION_DES_PHILTRES_CHROMATIQUES {
+        coffre_du_camp.ajouter_philtres_chromatiques(apotres_vaincus.len() as u32);
     }
     // L'ancienne piste comptait trois indices : une partie qui en a trouvé
     // reprend au premier, qui ouvre le Marais ; il faut vaincre le Bourreau

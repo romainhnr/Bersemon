@@ -127,9 +127,9 @@ pub fn etal(partie: &Partie, contenu: &ContenuV1) -> Question {
     // La dernière rangée est pleine : le service se rend depuis la gestion
     // des monstres (section 13.7).
     let texte = format!(
-        "{}\nMalvoise rend un monstre shiny contre un Éclat d'astre (vous en avez {}) : bouton \"Rendre shiny (Malvoise)\" de la gestion des monstres.",
+        "{}\nMalvoise rend un monstre shiny contre un Philtre chromatique (vous en avez {}) : bouton \"Rendre shiny (Malvoise)\" de la gestion des monstres.",
         texte_de_l_etal(partie),
-        partie.eclats_d_astre()
+        partie.philtres_chromatiques()
     );
     Question {
         texte,

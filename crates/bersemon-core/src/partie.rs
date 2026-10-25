@@ -11,7 +11,7 @@ use crate::amelioration::{
 };
 use crate::attaque::{Attaque, AttaqueId, ErreurAttaquesMonstre};
 use crate::beherit::{
-    ECLATS_DU_DEMIURGE, ErreurBeherit, EtatDuBeherit, Invocation, NIVEAU_MINIMAL_DU_SACRIFICE,
+    ErreurBeherit, EtatDuBeherit, Invocation, NIVEAU_MINIMAL_DU_SACRIFICE, PHILTRES_DU_DEMIURGE,
 };
 use crate::booster::{Booster, ErreurBooster};
 use crate::capsule::{Capsule, ErreurApprentissage, attaques_a_apprendre};
@@ -544,7 +544,7 @@ impl Partie {
             Prise::Pierre(pierre) => self.coffre_du_camp.ajouter_pierres(*pierre, 1),
             Prise::CapsuleDHabilete => self.coffre_du_camp.ajouter_capsules_d_habilete(1),
             Prise::Booster(booster) => self.coffre_du_camp.ajouter_boosters(*booster, 1),
-            Prise::EclatDAstre => self.coffre_du_camp.ajouter_eclats_d_astre(1),
+            Prise::PhiltreChromatique => self.coffre_du_camp.ajouter_philtres_chromatiques(1),
         }
         Ok(prise)
     }
@@ -1118,10 +1118,10 @@ impl Partie {
     }
 
     /// Ceux du sac et du coffre : au camp, ils servent tous (section 13.7).
-    pub fn eclats_d_astre(&self) -> u32 {
+    pub fn philtres_chromatiques(&self) -> u32 {
         self.sac
-            .eclats_d_astre()
-            .saturating_add(self.coffre_du_camp.eclats_d_astre())
+            .philtres_chromatiques()
+            .saturating_add(self.coffre_du_camp.philtres_chromatiques())
     }
 
     /// Le monstre que Malvoise rendrait shiny, sans rien changer : de quoi
@@ -1135,19 +1135,19 @@ impl Partie {
         if monstre.est_shiny() {
             return Err(ErreurMarchand::DejaShiny);
         }
-        if self.eclats_d_astre() == 0 {
-            return Err(ErreurMarchand::AucunEclatDAstre);
+        if self.philtres_chromatiques() == 0 {
+            return Err(ErreurMarchand::AucunPhiltreChromatique);
         }
         Ok(monstre.clone())
     }
 
     /// Au camp, chez Malvoise, après confirmation (section 13.7) : le
-    /// monstre devient shiny, et un Éclat d'astre est consommé, du sac
+    /// monstre devient shiny, et un Philtre chromatique est consommé, du sac
     /// d'abord, puis du coffre. Rend le monstre d'avant.
     pub fn rendre_shiny(&mut self, emplacement: Emplacement) -> Result<Monstre, ErreurMarchand> {
         let monstre = self.estimer_shiny(emplacement)?;
-        if !self.sac.utiliser_eclat_d_astre() {
-            self.coffre_du_camp.utiliser_eclat_d_astre();
+        if !self.sac.utiliser_philtre_chromatique() {
+            self.coffre_du_camp.utiliser_philtre_chromatique();
         }
         self.collection
             .monstre_a_modifier(emplacement)
@@ -1584,12 +1584,12 @@ impl Partie {
         }
     }
 
-    /// Ses deux formes s'ouvrent au codex ; il laisse 3 Éclats d'astre dans
+    /// Ses deux formes s'ouvrent au codex ; il laisse 3 Philtres chromatiques dans
     /// le sac, et l'Éclipse se referme (section 9.4).
     pub(crate) fn noter_demiurge_vaincu(&mut self, demiurge: &Apotre) {
         if self.beherit != EtatDuBeherit::DemiurgeVaincu {
             self.beherit = EtatDuBeherit::DemiurgeVaincu;
-            self.sac.ajouter_eclats_d_astre(ECLATS_DU_DEMIURGE);
+            self.sac.ajouter_philtres_chromatiques(PHILTRES_DU_DEMIURGE);
         }
         self.codex.noter_capture(demiurge.espece().id());
         if let Some(seconde) = demiurge.seconde_forme() {
@@ -1907,12 +1907,12 @@ impl Partie {
 
     /// Après la victoire, l'Apôtre ne réapparaît plus ; il ne se capture
     /// pas, mais sa fiche s'ouvre au codex et le joueur garde son âme
-    /// (section 9.4). Il laisse aussi un Éclat d'astre, qui va dans le sac
+    /// (section 9.4). Il laisse aussi un Philtre chromatique, qui va dans le sac
     /// (section 14.3).
     pub fn noter_apotre_vaincu(&mut self, apotre: &Apotre) {
         if !self.est_vaincu(apotre) {
             self.apotres_vaincus.push(apotre.espece().id().clone());
-            self.sac.ajouter_eclats_d_astre(1);
+            self.sac.ajouter_philtres_chromatiques(1);
         }
         self.codex.noter_capture(apotre.espece().id());
     }
@@ -2500,7 +2500,7 @@ mod tests {
     }
 
     #[test]
-    fn malvoise_rend_un_monstre_shiny_contre_un_eclat_d_astre() {
+    fn malvoise_rend_un_monstre_shiny_contre_un_philtre_chromatique() {
         let mut partie = partie();
         partie.prendre_monstre_rare(loup_aux_valeurs(3));
         let loup = Emplacement::Equipe(1);
@@ -2511,11 +2511,11 @@ mod tests {
         partie.accueillir_malvoise();
         assert_eq!(
             partie.rendre_shiny(loup),
-            Err(ErreurMarchand::AucunEclatDAstre)
+            Err(ErreurMarchand::AucunPhiltreChromatique)
         );
-        partie.sac.ajouter_eclats_d_astre(1);
-        partie.coffre_du_camp.ajouter_eclats_d_astre(1);
-        assert_eq!(partie.eclats_d_astre(), 2);
+        partie.sac.ajouter_philtres_chromatiques(1);
+        partie.coffre_du_camp.ajouter_philtres_chromatiques(1);
+        assert_eq!(partie.philtres_chromatiques(), 2);
         let avant = partie.collection().monstre(loup).unwrap().clone();
         assert_eq!(partie.estimer_shiny(loup), Ok(avant.clone()));
         assert_eq!(partie.rendre_shiny(loup), Ok(avant.clone()));
@@ -2525,9 +2525,9 @@ mod tests {
         assert_eq!(apres.pv_actuels(), apres.stats().pv);
         assert_eq!(apres.niveau(), avant.niveau());
         // Le sac d'abord.
-        assert_eq!(partie.sac().eclats_d_astre(), 0);
+        assert_eq!(partie.sac().philtres_chromatiques(), 0);
         assert_eq!(partie.rendre_shiny(loup), Err(ErreurMarchand::DejaShiny));
-        assert_eq!(partie.eclats_d_astre(), 1);
+        assert_eq!(partie.philtres_chromatiques(), 1);
         // Un shiny n'a plus besoin de booster.
         partie.trouver_booster(Booster::PoudreDeVifArgent);
         assert_eq!(

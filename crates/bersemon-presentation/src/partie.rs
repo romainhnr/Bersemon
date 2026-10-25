@@ -21,7 +21,7 @@ use bersemon_core::ressource::Ressource;
 use bersemon_core::traque::Apotre;
 use bersemon_core::zone::Zone;
 
-use crate::boosters::{boosters, eclats_d_astre, question_shiny};
+use crate::boosters::{boosters, philtres_chromatiques, question_shiny};
 use crate::expeditions_automatiques::question_de_rappel;
 use crate::filets::liste_de_filets;
 use crate::forge::{
@@ -205,8 +205,8 @@ fn contenu_detaille(inventaire: &Inventaire, ressources_detaillees: bool) -> Str
             .iter()
             .map(|(booster, nombre)| boosters(*booster, *nombre)),
     );
-    if inventaire.eclats_d_astre() > 0 {
-        elements.push(eclats_d_astre(inventaire.eclats_d_astre()));
+    if inventaire.philtres_chromatiques() > 0 {
+        elements.push(philtres_chromatiques(inventaire.philtres_chromatiques()));
     }
     if inventaire.charmes_de_garde() > 0 {
         elements.push(charmes_de_garde(inventaire.charmes_de_garde()));

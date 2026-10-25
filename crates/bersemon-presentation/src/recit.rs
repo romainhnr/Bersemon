@@ -9,7 +9,7 @@ use bersemon_core::deroulement::Evenement;
 use bersemon_core::marchand::EXPEDITIONS_DE_LOCATION;
 use bersemon_core::ressource::Ressource;
 
-use crate::boosters::{ECLAT_RAMASSE, booster_donne, boosters, monstre_rendu_shiny};
+use crate::boosters::{PHILTRE_RAMASSE, booster_donne, boosters, monstre_rendu_shiny};
 use crate::combat::{ordre_donne, rapport_experience, remplacement, renoncement};
 use crate::equipement::{nom_de_place, objet_et_bonus};
 use crate::erreurs::erreur_sauvegarde;
@@ -253,7 +253,7 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
         ),
         Evenement::Epilogue(epilogue) => (epilogue.clone(), true),
         Evenement::AmeDApotreRecueillie(recit) => (recit.clone(), false),
-        Evenement::EclatDAstreRamasse => (ECLAT_RAMASSE.to_string(), false),
+        Evenement::PhiltreChromatiqueRamasse => (PHILTRE_RAMASSE.to_string(), false),
         Evenement::BeheritForge(recit) => (recit.clone(), true),
         Evenement::Sacrifice(recit) => (important(recit), true),
         Evenement::RecompenseDuDemiurge => (RECOMPENSE_DU_DEMIURGE.to_string(), false),

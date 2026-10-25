@@ -143,7 +143,7 @@ pub enum Choix {
         emplacement: Emplacement,
         booster: Booster,
     },
-    /// Au camp, chez Malvoise, après confirmation : un Éclat d'astre rend ce
+    /// Au camp, chez Malvoise, après confirmation : un Philtre chromatique rend ce
     /// monstre shiny (section 13.7).
     RendreShiny(Emplacement),
     /// Au camp, après confirmation : Gunther construit le niveau suivant de
@@ -355,7 +355,7 @@ pub enum Confirmation {
         vers: Espece,
         pierre: Option<PierreDEvolution>,
     },
-    /// Un Éclat d'astre serait consommé (section 13.7).
+    /// Un Philtre chromatique serait consommé (section 13.7).
     RendreShiny(Monstre),
     /// La location ne serait pas remboursée (section 14.2).
     RendreLeMonstreLoue(Monstre),
@@ -498,9 +498,9 @@ pub enum Evenement {
         experience: u32,
         emplacement: Emplacement,
     },
-    /// Après l'âme : l'Éclat d'astre que laisse l'Apôtre, qui va dans le sac
+    /// Après l'âme : le Philtre chromatique que laisse l'Apôtre, qui va dans le sac
     /// (section 14.3).
-    EclatDAstreRamasse,
+    PhiltreChromatiqueRamasse,
     /// Toute l'équipe est KO : retour au camp, tout le sac perdu (section
     /// 9.3).
     Defaite {
@@ -655,7 +655,7 @@ pub enum Evenement {
     BeheritForge(String),
     /// Le récit du sacrifice, qui ouvre l'Éclipse.
     Sacrifice(String),
-    /// Après l'épilogue du Démiurge, ses Éclats d'astre
+    /// Après l'épilogue du Démiurge, ses Philtres chromatiques
     /// (`contenu::RECOMPENSE_DU_DEMIURGE`).
     RecompenseDuDemiurge,
     /// À un autre joueur, par don ou échange ; `heros` est le nom de son
@@ -2877,7 +2877,7 @@ impl EnExpedition {
                     .expect("un combat contre un Apôtre suit l'antre de l'expédition")
                     .clone();
                 evenements.push(Evenement::Epilogue(apotre.epilogue().to_string()));
-                // Le Démiurge ne laisse pas d'âme, mais ses Éclats d'astre
+                // Le Démiurge ne laisse pas d'âme, mais ses Philtres chromatiques
                 // (section 9.4).
                 if self.expedition.zone().est_un_lieu_d_invocation() {
                     partie.noter_demiurge_vaincu(&apotre);
@@ -2887,7 +2887,7 @@ impl EnExpedition {
                     evenements.push(Evenement::AmeDApotreRecueillie(
                         apotre.recit_de_l_ame().to_string(),
                     ));
-                    evenements.push(Evenement::EclatDAstreRamasse);
+                    evenements.push(Evenement::PhiltreChromatiqueRamasse);
                 }
             }
             // Le repos qui suit le gardien de la Tour soigne tout (section
@@ -3881,7 +3881,7 @@ mod tests {
         let depot = DepotMemoire::default();
         let mut etat = etat_de(&partie_pour_les_expeditions(&contenu));
         etat.marchand_au_camp = true;
-        etat.coffre_du_camp = Inventaire::default().avec_eclats_d_astre(1);
+        etat.coffre_du_camp = Inventaire::default().avec_philtres_chromatiques(1);
         let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
         let avant = deroulement.partie().unwrap().collection().equipe()[0].clone();
         assert!(!avant.est_shiny());
@@ -3898,7 +3898,7 @@ mod tests {
             [Evenement::MonstreRenduShiny(monstre)] if monstre.est_shiny()
         ));
         let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
-        assert_eq!(sauvegarde.coffre_du_camp().eclats_d_astre(), 0);
+        assert_eq!(sauvegarde.coffre_du_camp().philtres_chromatiques(), 0);
         assert!(sauvegarde.collection().equipe()[0].est_shiny());
         // Déjà shiny : le refus vient sans confirmation.
         assert_eq!(
@@ -5292,7 +5292,7 @@ mod tests {
         )));
         let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
         assert_eq!(sauvegarde.beherit(), EtatDuBeherit::DemiurgeVaincu);
-        assert_eq!(sauvegarde.sac().eclats_d_astre(), 3);
+        assert_eq!(sauvegarde.sac().philtres_chromatiques(), 3);
         assert!(!sauvegarde.est_exploree(&eclipse));
         for forme in ["demiurge", "demiurge-eveille"] {
             assert_eq!(
@@ -5573,7 +5573,7 @@ mod tests {
             Evenement::AmeDApotreRecueillie(texte) if texte.contains("Baron pendu")
         ));
         assert_eq!(sauvegarde.ames_d_apotres(), sauvegarde.apotres_vaincus());
-        // Chacun laisse aussi un Éclat d'astre, juste après son âme (section
+        // Chacun laisse aussi un Philtre chromatique, juste après son âme (section
         // 14.3).
         let apres_les_ames: Vec<&Evenement> = vus
             .windows(2)
@@ -5583,9 +5583,9 @@ mod tests {
         assert_eq!(
             apres_les_ames,
             vec![
-                &Evenement::EclatDAstreRamasse,
-                &Evenement::EclatDAstreRamasse,
-                &Evenement::EclatDAstreRamasse
+                &Evenement::PhiltreChromatiqueRamasse,
+                &Evenement::PhiltreChromatiqueRamasse,
+                &Evenement::PhiltreChromatiqueRamasse
             ]
         );
         let collection = sauvegarde.collection();
@@ -6256,17 +6256,20 @@ mod tests {
         let evenements = pecher(&mut deroulement, vec![84, 25]);
         assert_eq!(evenements, vec![Evenement::PrisePechee(Prise::Argent(25))]);
         assert_eq!(deroulement.partie().unwrap().coffre_du_camp().argent(), 25);
-        // Un booster, puis un Éclat d'astre (section 14.3).
+        // Un booster, puis un Philtre chromatique (section 14.3).
         let evenements = pecher(&mut deroulement, vec![95, 2]);
         assert_eq!(
             evenements,
             vec![Evenement::PrisePechee(Prise::Booster(Booster::EcorceDeFer))]
         );
         let evenements = pecher(&mut deroulement, vec![100]);
-        assert_eq!(evenements, vec![Evenement::PrisePechee(Prise::EclatDAstre)]);
+        assert_eq!(
+            evenements,
+            vec![Evenement::PrisePechee(Prise::PhiltreChromatique)]
+        );
         let coffre = deroulement.partie().unwrap().coffre_du_camp();
         assert_eq!(coffre.nombre_de_boosters(Booster::EcorceDeFer), 1);
-        assert_eq!(coffre.eclats_d_astre(), 1);
+        assert_eq!(coffre.philtres_chromatiques(), 1);
     }
 
     #[test]

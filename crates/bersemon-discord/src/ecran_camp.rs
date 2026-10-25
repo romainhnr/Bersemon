@@ -641,7 +641,11 @@ fn gestion(partie: &Partie, choisi: Option<Emplacement>, contenu: &ContenuV1) ->
     }
     // Au plus 10 boutons : ils tiennent en deux rangées (sections 5.4, 5.9
     // et 13.7).
-    if partie.marchand_au_camp() && partie.eclats_d_astre() > 0 && !monstre.est_shiny() && a_soi {
+    if partie.marchand_au_camp()
+        && partie.philtres_chromatiques() > 0
+        && !monstre.est_shiny()
+        && a_soi
+    {
         boutons.push(bouton(
             Cle::RendreShiny(emplacement),
             "Rendre shiny (Malvoise)",

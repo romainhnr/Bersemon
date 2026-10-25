@@ -1129,8 +1129,9 @@ fn lire_soin_et_position(texte: &str) -> Option<(Soin, usize)> {
 /// quantité, `argent:` suivi de la quantité, `capsule:` suivi de
 /// l'attaque, `capsules-d-habilete:` suivi de la quantité, `pierres:`
 /// suivi de la pierre et de la quantité, `boosters:` suivi du booster et de
-/// la quantité, `eclats-d-astre:` ou `charmes-de-garde:` suivi de la
-/// quantité, `filets:` suivi du filet et de la quantité.
+/// la quantité, `eclats-d-astre:` (les Philtres chromatiques, sous leur
+/// ancien nom, que gardent les messages déjà envoyés) ou `charmes-de-garde:`
+/// suivi de la quantité, `filets:` suivi du filet et de la quantité.
 pub fn objet_en_texte(objet: &Objet) -> String {
     match objet {
         Objet::Soins(soin, nombre) => format!("soins:{}:{nombre}", soin_en_texte(*soin)),
@@ -1142,7 +1143,7 @@ pub fn objet_en_texte(objet: &Objet) -> String {
         Objet::Boosters(booster, nombre) => {
             format!("boosters:{}:{nombre}", booster_en_texte(*booster))
         }
-        Objet::EclatsDAstre(nombre) => format!("eclats-d-astre:{nombre}"),
+        Objet::PhiltresChromatiques(nombre) => format!("eclats-d-astre:{nombre}"),
         Objet::CharmesDeGarde(nombre) => format!("charmes-de-garde:{nombre}"),
         Objet::Filets(filet, nombre) => format!("filets:{}:{nombre}", filet.id()),
     }
@@ -1169,7 +1170,7 @@ fn lire_objet(texte: &str) -> Option<Objet> {
                 nombre.parse().ok()?,
             ))
         }
-        "eclats-d-astre" => Some(Objet::EclatsDAstre(parametre.parse().ok()?)),
+        "eclats-d-astre" => Some(Objet::PhiltresChromatiques(parametre.parse().ok()?)),
         "charmes-de-garde" => Some(Objet::CharmesDeGarde(parametre.parse().ok()?)),
         "filets" => {
             let (filet, nombre) = parametre.split_once(':')?;
@@ -1587,10 +1588,10 @@ mod tests {
         );
         assert_eq!(
             Cle::RangerRessourcesAuCoffre
-                .commande(Some(&objet_en_texte(&Objet::EclatsDAstre(1))), None),
-            Some(Commande::Jouer(Choix::RangerAuCoffre(Objet::EclatsDAstre(
-                1
-            ))))
+                .commande(Some(&objet_en_texte(&Objet::PhiltresChromatiques(1))), None),
+            Some(Commande::Jouer(Choix::RangerAuCoffre(
+                Objet::PhiltresChromatiques(1)
+            )))
         );
     }
 

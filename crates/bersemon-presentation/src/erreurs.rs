@@ -96,7 +96,9 @@ pub fn erreur_marchand(erreur: &ErreurMarchand) -> String {
             "Vous n'avez aucune ressource de cette sorte.".to_string()
         }
         ErreurMarchand::Collection(erreur) => erreur_collection(erreur),
-        ErreurMarchand::AucunEclatDAstre => "Il vous faut un Éclat d'astre.".to_string(),
+        ErreurMarchand::AucunPhiltreChromatique => {
+            "Il vous faut un Philtre chromatique.".to_string()
+        }
         ErreurMarchand::DejaShiny => "Ce monstre est déjà shiny.".to_string(),
         ErreurMarchand::MonstreIndisponible => {
             "Malvoise ne propose pas ce monstre pour l'instant.".to_string()

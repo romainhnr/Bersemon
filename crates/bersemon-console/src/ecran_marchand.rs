@@ -1,6 +1,6 @@
 //! Malvoise, le nécromancien du camp (section 14.2) : soins, filets, capsules,
 //! pierres d'évolution, rachat des monstres et des ressources, don des
-//! âmes, monstre rendu shiny contre un Éclat d'astre, achat et location de
+//! âmes, monstre rendu shiny contre un Philtre chromatique, achat et location de
 //! monstres. Les achats se font sans confirmation ; la vente, le service
 //! shiny et le retour d'un monstre loué sont confirmés par le déroulement.
 
@@ -45,7 +45,7 @@ pub fn choisir(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Opt
         );
         println!(
             "  9. {SERVICE_SHINY} : vous en avez {}",
-            partie.eclats_d_astre()
+            partie.philtres_chromatiques()
         );
         println!("  10. Acheter un monstre");
         println!("  11. Louer un monstre");
