@@ -13,6 +13,7 @@ pub fn nom_du_soin(soin: Soin) -> &'static str {
         Soin::Remede => "Remède",
         Soin::GrandePotion => "Grande potion",
         Soin::Elixir => "Élixir",
+        Soin::GrandElixir => "Grand élixir",
     }
 }
 
@@ -23,6 +24,7 @@ pub fn soins(soin: Soin, nombre: u32) -> String {
         Soin::Remede => ("remède", "remèdes"),
         Soin::GrandePotion => ("grande potion", "grandes potions"),
         Soin::Elixir => ("élixir", "élixirs"),
+        Soin::GrandElixir => ("grand élixir", "grands élixirs"),
     };
     if nombre > 1 {
         format!("{nombre} {pluriel}")
@@ -38,6 +40,7 @@ pub fn le_soin(soin: Soin) -> &'static str {
         Soin::Remede => "Le remède",
         Soin::GrandePotion => "La grande potion",
         Soin::Elixir => "L'élixir",
+        Soin::GrandElixir => "Le grand élixir",
     }
 }
 
@@ -47,6 +50,7 @@ pub fn effet_du_soin(soin: Soin) -> &'static str {
         Soin::Remede => "guérit le poison ou la paralysie",
         Soin::GrandePotion => "rend de 80 à 100 % des PV max",
         Soin::Elixir => "relève un monstre KO avec la moitié de ses PV max",
+        Soin::GrandElixir => "relève un monstre KO avec tous ses PV max",
     }
 }
 
@@ -74,6 +78,7 @@ pub fn plus_aucun(soin: Soin) -> &'static str {
         Soin::Remede => "Vous n'avez plus de remède.",
         Soin::GrandePotion => "Vous n'avez plus de grande potion.",
         Soin::Elixir => "Vous n'avez plus d'élixir.",
+        Soin::GrandElixir => "Vous n'avez plus de grand élixir.",
     }
 }
 
@@ -83,8 +88,8 @@ pub fn soin_utilise(soin: Soin, nom: &str, effet: EffetDuSoin) -> String {
         EffetDuSoin::PvRendus(0) | EffetDuSoin::StatutGueri(None) => {
             format!("{} est sans effet sur {nom}.", le_soin(soin))
         }
-        EffetDuSoin::PvRendus(pv) if soin == Soin::Elixir => {
-            format!("L'élixir relève {nom} avec {pv} PV.")
+        EffetDuSoin::PvRendus(pv) if soin.releve() => {
+            format!("{} relève {nom} avec {pv} PV.", le_soin(soin))
         }
         EffetDuSoin::PvRendus(pv) => format!("{nom} récupère {pv} PV."),
         EffetDuSoin::StatutGueri(Some(Statut::Poison)) => {
@@ -101,7 +106,7 @@ pub fn question_du_soin_perdu(soin: Soin, nom: &str) -> String {
     let raison = match soin {
         Soin::Potion | Soin::GrandePotion => format!("{nom} a déjà tous ses PV"),
         Soin::Remede => format!("{nom} n'a ni poison ni paralysie"),
-        Soin::Elixir => format!("{nom} n'est pas KO"),
+        Soin::Elixir | Soin::GrandElixir => format!("{nom} n'est pas KO"),
     };
     format!(
         "{raison} : {} serait perdu{}. L'utiliser quand même ?",

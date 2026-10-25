@@ -18,6 +18,7 @@ pub fn prix_du_soin(soin: Soin) -> u32 {
         Soin::Remede => 25,
         Soin::GrandePotion => 60,
         Soin::Elixir => 150,
+        Soin::GrandElixir => 400,
     }
 }
 

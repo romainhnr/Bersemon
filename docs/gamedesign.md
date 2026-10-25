@@ -1042,7 +1042,7 @@ Premier marchand, après la V1 :
   - la grande potion, 60 pièces d'argent : comme une potion, mais elle rend de 80 % à 100 % des PV max ;
   - l'élixir, 150 pièces d'argent : il relève un monstre KO avec la moitié de ses PV max, au moins 1.
 - Ces soins s'utilisent comme la potion : en combat, comme action du tour, ou entre deux étapes. Ils se rangent dans le sac et le coffre, se perdent avec le sac et ne se trouvent pas dans les coffres. Comme une potion sur un monstre qui a tous ses PV, un soin sans effet (un remède sur un monstre sans statut, un élixir sur un monstre qui n'est pas KO) demande confirmation et serait consommé pour rien. Une potion, une grande potion ou un remède ne relève pas un monstre KO.
-- Décidé le 25/10/2026, pour l'étape 134 (choix de l'utilisateur) : le grand élixir, 400 pièces d'argent, relève un monstre KO avec tous ses PV max, comme le Rappel max de Pokémon. Malvoise le vend avec l'élixir, une fois l'âme d'Ulrich recueillie ; il s'utilise comme lui.
+- Décidé le 25/10/2026, pour l'étape 134 (choix de l'utilisateur) : le grand élixir, 400 pièces d'argent, relève un monstre KO avec tous ses PV max, comme le Rappel max de Pokémon. Malvoise le vend avec l'élixir, une fois l'âme d'Ulrich recueillie ; il s'utilise comme lui. Précisé à l'étape 134, en codant : sauvegarde en version 32 ; sur Discord, l'élixir et le grand élixir s'achètent par 1 seulement, et non plus aussi par 5, pour que l'étal de Malvoise garde ses boutons sur deux rangées ; le menu des objets à jeter d'un sac plein gagne une option.
 - Depuis l'étape 130, les potions, grandes potions et remèdes servent aussi sur le héros quand il a perdu des PV ou subi un statut ; les élixirs ne servent que sur les monstres (section 4.4).
 
 ### 14.5 Montants (après la V1)

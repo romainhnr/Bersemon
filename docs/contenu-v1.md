@@ -1439,6 +1439,8 @@ Textes proposés sans validation (gamedesign.md, Q112) :
 
 Décidé le 25/10/2026, pour l'étape 134 (gamedesign.md, section 14.4) : grand élixir (identifiant grand-elixir), 400 pièces d'argent, relève un monstre KO avec tous ses PV max. Vendu par Malvoise une fois l'âme d'Ulrich recueillie, avec l'élixir.
 
+Textes proposés sans validation (gamedesign.md, Q112) : Grand élixir ; 1 grand élixir, 3 grands élixirs ; Le grand élixir ; relève un monstre KO avec tous ses PV max ; Le grand élixir relève {monstre} avec {pv} PV. ; Vous n'avez plus de grand élixir.
+
 ## 36. Fosse aux damnés
 
 Décidée le 25/10/2026, pour les étapes 135 à 137 (gamedesign.md, section 9.8), contenu proposé par Claude et validé par l'utilisateur.

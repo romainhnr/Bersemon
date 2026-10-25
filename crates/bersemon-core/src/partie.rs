@@ -1105,7 +1105,8 @@ impl Partie {
     }
 
     /// Ce que vend Malvoise, dans l'ordre de `Soin::TOUS` : la potion, puis
-    /// l'objet de chaque marchand dont l'âme lui est donnée (section 14.2).
+    /// l'objet de chaque marchand dont l'âme lui est donnée, et le grand
+    /// élixir avec l'élixir (sections 14.2 et 14.4).
     pub fn soins_en_vente(&self) -> Vec<Soin> {
         Soin::TOUS
             .into_iter()
@@ -1114,7 +1115,7 @@ impl Partie {
                     || self
                         .ames_donnees
                         .iter()
-                        .any(|marchand| marchand.soin() == *soin)
+                        .any(|marchand| marchand.soin() == soin.vendu_avec())
             })
             .collect()
     }
@@ -3111,6 +3112,22 @@ mod tests {
         assert_eq!(
             partie.donner_ame(&bertrand),
             Err(ErreurMarchand::AmeNonPortee)
+        );
+        // L'âme d'Ulrich ajoute l'élixir et le grand élixir (section 14.4).
+        let ulrich = MarchandMort::new(
+            MarchandId::new("ulrich"),
+            "Ulrich",
+            Soin::Elixir,
+            Gardien::MonstreDeLaZone,
+            "",
+            "",
+        )
+        .unwrap();
+        partie.recueillir_ame(ulrich);
+        partie.donner_ame(&MarchandId::new("ulrich")).unwrap();
+        assert_eq!(
+            partie.soins_en_vente(),
+            vec![Soin::Potion, Soin::Remede, Soin::Elixir, Soin::GrandElixir]
         );
     }
 

@@ -1,7 +1,8 @@
 //! Soins du joueur (section 14.4) : la potion de la V1, puis le remède, la
 //! grande potion et l'élixir, vendus par Malvoise une fois l'âme de leur
-//! marchand recueillie (section 14.2). Ils s'utilisent en combat, comme
-//! action du tour, ou entre deux étapes d'une expédition.
+//! marchand recueillie (section 14.2), et le grand élixir, ajouté à l'étape
+//! 134, avec l'élixir. Ils s'utilisent en combat, comme action du tour, ou
+//! entre deux étapes d'une expédition.
 
 use std::fmt;
 
@@ -23,10 +24,19 @@ pub enum Soin {
     GrandePotion,
     /// Relève un monstre KO.
     Elixir,
+    /// Relève un monstre KO avec tous ses PV, comme le Rappel max de Pokémon
+    /// (section 14.4).
+    GrandElixir,
 }
 
 impl Soin {
-    pub const TOUS: [Soin; 4] = [Soin::Potion, Soin::Remede, Soin::GrandePotion, Soin::Elixir];
+    pub const TOUS: [Soin; 5] = [
+        Soin::Potion,
+        Soin::Remede,
+        Soin::GrandePotion,
+        Soin::Elixir,
+        Soin::GrandElixir,
+    ];
 
     fn position(self) -> usize {
         match self {
@@ -34,13 +44,28 @@ impl Soin {
             Soin::Remede => 1,
             Soin::GrandePotion => 2,
             Soin::Elixir => 3,
+            Soin::GrandElixir => 4,
+        }
+    }
+
+    /// L'élixir et le grand élixir relèvent un monstre KO, et rien d'autre.
+    pub fn releve(self) -> bool {
+        matches!(self, Soin::Elixir | Soin::GrandElixir)
+    }
+
+    /// Le soin du marchand dont l'âme le met en vente chez Malvoise : celle
+    /// d'Ulrich ajoute le grand élixir à l'élixir (section 14.2).
+    pub fn vendu_avec(self) -> Soin {
+        match self {
+            Soin::GrandElixir => Soin::Elixir,
+            autre => autre,
         }
     }
 }
 
 /// Le nombre de chaque soin, dans le sac, le coffre du camp ou un combat.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub struct Soins([u32; 4]);
+pub struct Soins([u32; 5]);
 
 impl Soins {
     pub fn nombre(&self, soin: Soin) -> u32 {
@@ -88,7 +113,7 @@ pub enum EffetDuSoin {
 pub enum ErreurSoin {
     Aucun(Soin),
     MonstreInexistant,
-    /// Seul l'élixir relève un monstre KO.
+    /// Seuls l'élixir et le grand élixir relèvent un monstre KO.
     MonstreKo,
 }
 
@@ -108,7 +133,7 @@ impl std::error::Error for ErreurSoin {}
 /// effet est permis mais perdu : demander confirmation au joueur revient à
 /// l'interface (`soin_sans_effet`).
 pub fn verifier_cible(soin: Soin, monstre: &Monstre) -> Result<(), ErreurSoin> {
-    if monstre.est_ko() && soin != Soin::Elixir {
+    if monstre.est_ko() && !soin.releve() {
         Err(ErreurSoin::MonstreKo)
     } else {
         Ok(())
@@ -121,7 +146,7 @@ pub fn soin_sans_effet(soin: Soin, monstre: &Monstre) -> bool {
     match soin {
         Soin::Potion | Soin::GrandePotion => monstre.pv_actuels() >= monstre.stats().pv,
         Soin::Remede => monstre.statut().is_none(),
-        Soin::Elixir => !monstre.est_ko(),
+        Soin::Elixir | Soin::GrandElixir => !monstre.est_ko(),
     }
 }
 
@@ -136,7 +161,9 @@ pub(crate) fn appliquer_soin(
     if soin_sans_effet(soin, monstre) {
         return match soin {
             Soin::Remede => EffetDuSoin::StatutGueri(None),
-            Soin::Potion | Soin::GrandePotion | Soin::Elixir => EffetDuSoin::PvRendus(0),
+            Soin::Potion | Soin::GrandePotion | Soin::Elixir | Soin::GrandElixir => {
+                EffetDuSoin::PvRendus(0)
+            }
         };
     }
     match soin {
@@ -155,6 +182,7 @@ pub(crate) fn appliquer_soin(
             let pv = (monstre.stats().pv * POURCENTAGE_DE_L_ELIXIR / 100).max(1);
             EffetDuSoin::PvRendus(monstre.relever(pv))
         }
+        Soin::GrandElixir => EffetDuSoin::PvRendus(monstre.relever(monstre.stats().pv)),
     }
 }
 
@@ -190,6 +218,20 @@ mod tests {
             EffetDuSoin::PvRendus(16)
         );
         assert_eq!(monstre.pv_actuels(), 17);
+    }
+
+    /// Section 14.4, décidée le 25/10/2026 pour l'étape 134.
+    #[test]
+    fn un_grand_elixir_releve_avec_tous_les_pv() {
+        let mut monstre = blesse(1);
+        assert_eq!(verifier_cible(Soin::GrandElixir, &monstre), Ok(()));
+        assert!(soin_sans_effet(Soin::GrandElixir, &monstre));
+        monstre.subir_degats(1);
+        assert_eq!(
+            appliquer(Soin::GrandElixir, &mut monstre, &[]),
+            EffetDuSoin::PvRendus(20)
+        );
+        assert_eq!(Soin::GrandElixir.vendu_avec(), Soin::Elixir);
     }
 
     #[test]

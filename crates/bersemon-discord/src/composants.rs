@@ -1162,6 +1162,7 @@ pub fn soin_en_texte(soin: Soin) -> &'static str {
         Soin::Remede => "remede",
         Soin::GrandePotion => "grande-potion",
         Soin::Elixir => "elixir",
+        Soin::GrandElixir => "grand-elixir",
     }
 }
 

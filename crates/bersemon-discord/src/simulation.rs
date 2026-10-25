@@ -1773,7 +1773,12 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         for booster in Booster::TOUS {
             inventaire = inventaire.avec_boosters(booster, 2);
         }
-        for soin in [Soin::Remede, Soin::GrandePotion, Soin::Elixir] {
+        for soin in [
+            Soin::Remede,
+            Soin::GrandePotion,
+            Soin::Elixir,
+            Soin::GrandElixir,
+        ] {
             inventaire = inventaire.avec_soins(soin, 7);
         }
         for ressource in contenu
@@ -1881,11 +1886,11 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
                 _ => None,
             })
             .collect();
-        // 4 soins, 3 filets, les capsules d'habileté, 2 pierres, 6
+        // 5 soins, 3 filets, les capsules d'habileté, 2 pierres, 6
         // boosters, les Philtres chromatiques et les charmes de garde.
         assert_eq!(
             menus,
-            vec![(&Cle::Jeter, 18), (&Cle::JeterUneRessource, sortes.len())]
+            vec![(&Cle::Jeter, 19), (&Cle::JeterUneRessource, sortes.len())]
         );
         verifier_les_limites(&Message {
             texte: sac_plein.texte,

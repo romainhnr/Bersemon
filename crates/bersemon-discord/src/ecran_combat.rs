@@ -9,7 +9,7 @@ use bersemon_core::combat::{ApercuAttaque, Combat, Combattant, Cote};
 use bersemon_core::espece::Espece;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
-use bersemon_core::soin::{Soin, Soins};
+use bersemon_core::soin::Soins;
 use bersemon_core::types::Efficacite;
 use bersemon_presentation::combat::{attaque_de_trop, attaque_en_combat, etat, ordre_et_bonus};
 use bersemon_presentation::filets::nom_du_filet;
@@ -124,7 +124,7 @@ pub fn options_de_soins(
     let mut options = Vec::new();
     for (soin, nombre) in soins.presents() {
         for (index, monstre) in equipe.iter().enumerate() {
-            if monstre.est_ko() != (soin == Soin::Elixir) {
+            if monstre.est_ko() != soin.releve() {
                 continue;
             }
             options.push(OptionDeMenu {
@@ -137,7 +137,7 @@ pub fn options_de_soins(
                 description: Some(ligne_monstre(monstre, Cote::Joueur)),
             });
         }
-        if let Some((index, heros)) = heros.filter(|_| soin != Soin::Elixir) {
+        if let Some((index, heros)) = heros.filter(|_| !soin.releve()) {
             options.push(OptionDeMenu {
                 libelle: format!("{} ({nombre}) : {}", nom_du_soin(soin), heros.nom()),
                 valeur: soin_et_position_en_texte(soin, index),
@@ -262,6 +262,7 @@ mod tests {
     use super::*;
     use bersemon_core::heros::{Classe, Heros};
     use bersemon_core::nom::Nom;
+    use bersemon_core::soin::Soin;
 
     /// Section 4.4 : les soins servent au héros, sauf l'élixir.
     #[test]

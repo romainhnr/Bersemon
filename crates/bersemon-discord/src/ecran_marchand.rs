@@ -28,8 +28,9 @@ use crate::message::{
     DANGER, OptionDeMenu, PRINCIPAL, Question, Rangee, SECONDAIRE, bouton, menu, rangees,
 };
 
-/// Soins achetés d'un bouton : au plus 4 soins, soit 8 boutons, que
-/// complètent les 2 filets en vente pour remplir deux rangées.
+/// Soins achetés d'un bouton, par 1 ou par 5 ; l'élixir et le grand élixir,
+/// chers, par 1 seulement : au plus 8 boutons, que complètent les 2 filets
+/// en vente pour remplir deux rangées (section 14.4).
 const LOTS_DE_SOINS: [u32; 2] = [1, 5];
 /// Filets achetés d'un bouton : le lot que forge Gunther (section 13.5).
 const LOT_DE_FILETS: u32 = 5;
@@ -41,7 +42,14 @@ pub fn etal(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Que
     let mut achats: Vec<_> = partie
         .soins_en_vente()
         .into_iter()
-        .flat_map(|soin| LOTS_DE_SOINS.map(|nombre| (soin, nombre)))
+        .flat_map(|soin| {
+            let lots = if soin.releve() {
+                &LOTS_DE_SOINS[..1]
+            } else {
+                &LOTS_DE_SOINS[..]
+            };
+            lots.iter().map(move |nombre| (soin, *nombre))
+        })
         .map(|(soin, nombre)| {
             let libelle = format!(
                 "Acheter {} ({})",
