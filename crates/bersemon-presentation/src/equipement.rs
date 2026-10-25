@@ -122,6 +122,7 @@ pub fn erreur_equipement(erreur: &ErreurEquipement) -> String {
         ErreurEquipement::PlaceEnDouble(place) => {
             format!("Deux objets à la même place : {}.", nom_de_place(*place))
         }
+        ErreurEquipement::AutreClasse(_) => "Cet objet est réservé à une autre classe.".to_string(),
     }
 }
 

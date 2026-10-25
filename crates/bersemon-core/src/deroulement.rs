@@ -5047,15 +5047,27 @@ mod tests {
         let mut etat = etat_de(&partie_de(salamandre(&contenu, 40)));
         etat.forge = Forge::restaurer(true, Default::default(), None).unwrap();
         etat.coffre_du_camp = Inventaire::default()
-            .avec_ressources(ressource("croc-de-loup"), 7)
+            .avec_ressources(ressource("plume-de-corbeau"), 7)
             .avec_ressources(ressource("ecaille-de-vipere"), 4);
         let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
-        let couteau = ObjetDEquipementId::new("couteau-de-chasse");
+        let couteau = ObjetDEquipementId::new("baton-d-if");
         let equiper = Choix::Equiper {
             place: PlaceDEquipement::Arme,
             objet: couteau.clone(),
         };
         let lancer = Choix::LancerFabrication(couteau.clone());
+        // Le couteau de chasse est une arme d'Assassin : Gunther ne la forge
+        // pas pour un Mage (section 4.3).
+        assert_eq!(
+            repondre_a_l_heure(
+                &mut deroulement,
+                Choix::LancerFabrication(ObjetDEquipementId::new("couteau-de-chasse")),
+                &contenu,
+                &depot,
+                a(1_000)
+            ),
+            Err(ErreurChoix::Amelioration(ErreurAmelioration::AutreClasse))
+        );
         repondre_a_l_heure(&mut deroulement, lancer.clone(), &contenu, &depot, a(1_000)).unwrap();
         assert!(matches!(
             deroulement.attente(),
@@ -5075,7 +5087,7 @@ mod tests {
             .iter()
             .map(|(ressource, nombre)| (ressource.id().as_str(), *nombre))
             .collect();
-        assert_eq!(restants, vec![("croc-de-loup", 1)]);
+        assert_eq!(restants, vec![("plume-de-corbeau", 1)]);
         // Rien à porter avant le constat, et une amélioration attend la fin
         // de la fabrication.
         assert_eq!(
@@ -5149,18 +5161,18 @@ mod tests {
                 .porte(PlaceDEquipement::Arme)
                 .is_some()
         );
-        // En combat, +5 % d'Attaque pour ses monstres, en plus de la classe
-        // et du rôle de la Salamandre, offensive (+10 % d'Attaque et
-        // d'Attaque spéciale, section 4.2).
+        // En combat, +3 % d'Attaque et d'Attaque spéciale pour ses
+        // monstres, en plus de la classe et du rôle de la Salamandre,
+        // offensive (+10 % d'Attaque et d'Attaque spéciale, section 4.2).
         let mut partie = deroulement.partie().unwrap().clone();
         let monstre = partie.collection().equipe()[0].clone();
         let sauvage = salamandre(&contenu, 40);
         let combat = partie.preparer_combat(vec![sauvage]).unwrap();
         let stats = combat.stats_en_combat(combat.actif(crate::combat::Cote::Joueur));
-        assert_eq!(stats.attaque, monstre.stats().attaque * 115 / 100);
+        assert_eq!(stats.attaque, monstre.stats().attaque * 113 / 100);
         assert_eq!(
             stats.attaque_speciale,
-            monstre.stats().attaque_speciale * 120 / 100
+            monstre.stats().attaque_speciale * 123 / 100
         );
         // Le monstre sauvage n'a pas le bonus de son rôle.
         let adversaire = combat.actif(crate::combat::Cote::Adversaire);

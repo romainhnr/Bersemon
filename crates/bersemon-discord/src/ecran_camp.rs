@@ -275,8 +275,8 @@ fn forge(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Questi
     }
     boutons.push(retour());
     let objets: Vec<OptionDeMenu> = contenu
-        .plans_de_fabrication()
-        .iter()
+        .plans_de_fabrication_pour(partie.heros().classe())
+        .into_iter()
         .filter(|plan| !partie.heros().equipement().possede(plan.objet().id()))
         .map(|plan| OptionDeMenu {
             libelle: objet_et_bonus(plan.objet()),

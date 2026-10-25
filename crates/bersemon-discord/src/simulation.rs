@@ -1497,8 +1497,8 @@ fn la_forge_et_l_equipement_tiennent_dans_les_limites() {
     )
     .unwrap();
     let possedes: Vec<_> = contenu
-        .plans_de_fabrication()
-        .iter()
+        .plans_de_fabrication_pour(Classe::Guerrier)
+        .into_iter()
         .map(|plan| plan.objet().clone())
         .collect();
     let id = |nom: &str| bersemon_core::equipement::ObjetDEquipementId::new(nom);

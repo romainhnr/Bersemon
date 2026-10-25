@@ -498,9 +498,13 @@ fn vers_objet(id: &str, catalogue: &dyn Catalogue) -> Result<ObjetDEquipement, E
 
 /// Un objet disparu du jeu rend la sauvegarde illisible, comme une espèce
 /// disparue (section 13.9).
+///
+/// Une arme ou une armure d'une autre classe que celle du héros, d'une
+/// sauvegarde d'avant l'étape 129, devient celle de sa classe (section 4.3).
 fn vers_equipement(
     objets: &[String],
     portes: EquipementPorteV16,
+    classe: Classe,
     catalogue: &dyn Catalogue,
 ) -> Result<Equipement, ErreurSauvegarde> {
     let possedes = objets
@@ -516,6 +520,10 @@ fn vers_equipement(
     .into_iter()
     .filter_map(|(place, id)| id.map(|id| (place, ObjetDEquipementId::new(id))))
     .collect();
+    let (possedes, portes) =
+        Equipement::adapter_a_la_classe(possedes, portes, classe, |sorte, palier| {
+            catalogue.objet_de_classe(classe, sorte, palier)
+        });
     Equipement::restaurer(possedes, &portes).map_err(incoherente)
 }
 
@@ -849,15 +857,14 @@ pub(crate) fn vers_partie(
     mut sauvegarde: SauvegardeV14,
     catalogue: &dyn Catalogue,
 ) -> Result<Partie, ErreurSauvegarde> {
-    let heros = Heros::new(
-        nom(&sauvegarde.heros.nom)?,
-        classe(&sauvegarde.heros.classe)?,
-    )
-    .avec_equipement(vers_equipement(
-        &sauvegarde.heros.objets,
-        std::mem::take(&mut sauvegarde.heros.equipement_porte),
-        catalogue,
-    )?);
+    let classe_du_heros = classe(&sauvegarde.heros.classe)?;
+    let heros =
+        Heros::new(nom(&sauvegarde.heros.nom)?, classe_du_heros).avec_equipement(vers_equipement(
+            &sauvegarde.heros.objets,
+            std::mem::take(&mut sauvegarde.heros.equipement_porte),
+            classe_du_heros,
+            catalogue,
+        )?);
     // Avant la version 24, aucun monstre n'est loué (section 14.2).
     if sauvegarde.version < VERSION_DES_LOCATIONS {
         for monstre in sauvegarde.equipe.iter_mut().chain(&mut sauvegarde.camp) {

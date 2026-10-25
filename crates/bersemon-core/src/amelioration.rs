@@ -623,6 +623,9 @@ pub enum ErreurAmelioration {
     NiveauMaximal,
     /// Un objet ne se fabrique qu'une fois (section 13.5).
     DejaPossede,
+    /// Une arme ou une armure d'une autre classe que celle du héros
+    /// (section 4.3).
+    AutreClasse,
     /// Il manque ces ressources, avec le nombre qui manque.
     RessourcesManquantes(Vec<(Ressource, u32)>),
     AucunChantier,
@@ -636,6 +639,7 @@ impl fmt::Display for ErreurAmelioration {
             ErreurAmelioration::ChantierEnCours => write!(f, "une construction est en cours"),
             ErreurAmelioration::NiveauMaximal => write!(f, "niveau maximal déjà atteint"),
             ErreurAmelioration::DejaPossede => write!(f, "objet déjà possédé"),
+            ErreurAmelioration::AutreClasse => write!(f, "objet d'une autre classe"),
             ErreurAmelioration::RessourcesManquantes(manquantes) => {
                 let liste: Vec<String> = manquantes
                     .iter()

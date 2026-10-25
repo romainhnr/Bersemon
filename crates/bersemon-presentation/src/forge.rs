@@ -242,7 +242,7 @@ pub fn etat_de_la_forge(partie: &Partie, contenu: &ContenuV1, maintenant: Horoda
 /// qu'il est déjà possédé (section 13.5).
 pub fn etat_des_fabrications(partie: &Partie, contenu: &ContenuV1) -> String {
     let mut lignes = vec!["Objets que Gunther sait forger :".to_string()];
-    for plan in contenu.plans_de_fabrication() {
+    for plan in contenu.plans_de_fabrication_pour(partie.heros().classe()) {
         let detail = if partie.heros().equipement().possede(plan.objet().id()) {
             "possédé".to_string()
         } else {
@@ -269,6 +269,7 @@ pub fn erreur_amelioration(erreur: &ErreurAmelioration) -> String {
             "Cette amélioration est au niveau maximal.".to_string()
         }
         ErreurAmelioration::DejaPossede => "Vous possédez déjà cet objet.".to_string(),
+        ErreurAmelioration::AutreClasse => "Cet objet est réservé à une autre classe.".to_string(),
         ErreurAmelioration::RessourcesManquantes(manquantes) => {
             format!("Il vous manque {}.", cout(manquantes))
         }

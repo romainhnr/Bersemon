@@ -221,6 +221,7 @@ pub struct ContenuV1 {
     capsules: Vec<Capsule>,
     plans_d_amelioration: Vec<PlanDAmelioration>,
     plans_de_fabrication: Vec<PlanDeFabrication>,
+    armes_du_champion: Vec<ObjetDEquipement>,
     plan_du_charme: PlanDuCharme,
     plans_des_filets: Vec<PlanDesFilets>,
     peche: ParametresPeche,
@@ -686,6 +687,7 @@ impl ContenuV1 {
             capsules,
             plans_d_amelioration,
             plans_de_fabrication,
+            armes_du_champion: ARMES_DU_CHAMPION.iter().map(creer_objet).collect(),
             plan_du_charme,
             plans_des_filets,
             recompenses_du_codex: creer_recompenses_du_codex(),
@@ -756,10 +758,29 @@ impl ContenuV1 {
             .find(|plan| plan.amelioration() == amelioration && plan.niveau() == niveau)
     }
 
-    /// Les objets d'équipement que Gunther fabrique (section 13.5), dans
-    /// l'ordre de docs/contenu-v1.md, section 11.
+    /// Les objets d'équipement que Gunther fabrique (section 13.5) : les
+    /// armes, puis les armures de chaque classe, de docs/contenu-v1.md,
+    /// section 34, et les talismans de la section 11.
     pub fn plans_de_fabrication(&self) -> &[PlanDeFabrication] {
         &self.plans_de_fabrication
+    }
+
+    /// Ceux qu'il fabrique pour un héros de cette classe : ses armes, ses
+    /// armures et les talismans (section 4.3).
+    pub fn plans_de_fabrication_pour(&self, classe: Classe) -> Vec<&PlanDeFabrication> {
+        self.plans_de_fabrication
+            .iter()
+            .filter(|plan| plan.objet().convient_a(classe))
+            .collect()
+    }
+
+    /// L'arme du palier 4 de cette classe, que donne le dernier palier de la
+    /// Fosse aux damnés (section 9.8).
+    pub fn arme_du_champion(&self, classe: Classe) -> &ObjetDEquipement {
+        self.armes_du_champion
+            .iter()
+            .find(|arme| arme.classe() == Some(classe))
+            .expect("une arme du champion par classe")
     }
 
     /// Le charme de garde, que Gunther forge à l'unité (section 13.5).
@@ -835,7 +856,8 @@ impl Catalogue for ContenuV1 {
             .cloned()
     }
 
-    /// Un objet fabriqué, ou un objet unique des récompenses du codex.
+    /// Un objet fabriqué, un objet unique des récompenses du codex, ou une
+    /// arme du palier 4, récompense de la Fosse aux damnés.
     fn objet_d_equipement(&self, id: &ObjetDEquipementId) -> Option<ObjetDEquipement> {
         self.plan_de_fabrication(id)
             .map(|plan| plan.objet().clone())
@@ -843,9 +865,26 @@ impl Catalogue for ContenuV1 {
                 self.recompenses_du_codex
                     .iter()
                     .filter_map(|recompense| recompense.objet_unique.as_ref())
+                    .chain(&self.armes_du_champion)
                     .find(|objet| objet.id() == id)
                     .cloned()
             })
+    }
+
+    fn objet_de_classe(
+        &self,
+        classe: Classe,
+        sorte: SorteDObjet,
+        palier: u8,
+    ) -> Option<ObjetDEquipement> {
+        self.plans_de_fabrication
+            .iter()
+            .map(PlanDeFabrication::objet)
+            .chain(&self.armes_du_champion)
+            .find(|objet| {
+                objet.classe() == Some(classe) && objet.sorte() == sorte && objet.palier() == palier
+            })
+            .cloned()
     }
 
     fn marchand_mort(&self, id: &MarchandId) -> Option<MarchandMort> {
@@ -892,6 +931,114 @@ const fn avec_effet(fiche: FicheAttaque, statut: Statut, chance: u8) -> FicheAtt
         ..fiche
     }
 }
+
+/// Section 34 de docs/contenu-v1.md : les attaques que les armes donnent au
+/// héros, toutes de type Humain, classe par classe. Coup de poing, celle du
+/// héros sans arme, est dans le module du héros.
+const ATTAQUES_DES_HEROS: [FicheAttaque; 20] = [
+    fiche("taille", "Taille", Type::Humain, Physique, 40, 100),
+    fiche("estoc", "Estoc", Type::Humain, Physique, 50, 100),
+    fiche("pourfendre", "Pourfendre", Type::Humain, Physique, 60, 100),
+    fiche(
+        "coup-du-champion",
+        "Coup du champion",
+        Type::Humain,
+        Physique,
+        75,
+        100,
+    ),
+    fiche(
+        "frappe-brutale",
+        "Frappe brutale",
+        Type::Humain,
+        Physique,
+        70,
+        80,
+    ),
+    fiche("entaille", "Entaille", Type::Humain, Physique, 40, 100),
+    fiche("coup-bas", "Coup bas", Type::Humain, Physique, 50, 100),
+    fiche("egorgement", "Égorgement", Type::Humain, Physique, 60, 100),
+    fiche("execution", "Exécution", Type::Humain, Physique, 75, 100),
+    avec_effet(
+        fiche(
+            "lame-empoisonnee",
+            "Lame empoisonnée",
+            Type::Humain,
+            Physique,
+            30,
+            100,
+        ),
+        Statut::Poison,
+        50,
+    ),
+    fiche(
+        "trait-arcanique",
+        "Trait arcanique",
+        Type::Humain,
+        Speciale,
+        40,
+        100,
+    ),
+    fiche(
+        "fleche-occulte",
+        "Flèche occulte",
+        Type::Humain,
+        Speciale,
+        50,
+        100,
+    ),
+    fiche(
+        "rayon-occulte",
+        "Rayon occulte",
+        Type::Humain,
+        Speciale,
+        60,
+        100,
+    ),
+    fiche(
+        "tempete-occulte",
+        "Tempête occulte",
+        Type::Humain,
+        Speciale,
+        75,
+        100,
+    ),
+    avec_effet(
+        fiche(
+            "onde-engourdissante",
+            "Onde engourdissante",
+            Type::Humain,
+            Speciale,
+            30,
+            100,
+        ),
+        Statut::Paralysie,
+        40,
+    ),
+    fiche("chatiment", "Châtiment", Type::Humain, Speciale, 40, 100),
+    fiche("verdict", "Verdict", Type::Humain, Speciale, 50, 100),
+    fiche("anatheme", "Anathème", Type::Humain, Speciale, 60, 100),
+    fiche(
+        "courroux-sacre",
+        "Courroux sacré",
+        Type::Humain,
+        Speciale,
+        75,
+        100,
+    ),
+    avec_effet(
+        fiche(
+            "sceau-d-entrave",
+            "Sceau d'entrave",
+            Type::Humain,
+            Speciale,
+            30,
+            100,
+        ),
+        Statut::Paralysie,
+        30,
+    ),
+];
 
 /// Section 1 de docs/contenu-v1.md, dans le même ordre.
 const ATTAQUES: [FicheAttaque; 133] = [
@@ -3319,40 +3466,40 @@ const PLANS_DES_FILETS: [FicheDesFilets; 3] = [
     ),
 ];
 
-/// Section 11 de docs/contenu-v1.md. Les bonus sont en pourcentage, dans
-/// l'ordre Attaque, Défense, Attaque spéciale, Défense spéciale, Vitesse :
-/// l'équipement ne donne pas de PV, que le combat ne majore pas.
+/// Sections 11 et 34 de docs/contenu-v1.md. Les bonus sont en pourcentage,
+/// dans l'ordre Attaque, Défense, Attaque spéciale, Défense spéciale,
+/// Vitesse : l'équipement ne donne pas de PV, que le combat ne majore pas.
+/// Une arme ou une armure a sa classe et son palier ; une arme donne au
+/// héros ses attaques (section 4.4).
 struct FicheObjet {
     id: &'static str,
     nom: &'static str,
     sorte: SorteDObjet,
     bonus: [u8; 5],
+    classe: Option<(Classe, u8)>,
+    attaques: &'static [&'static str],
     cout: &'static [(&'static str, u32)],
     heures: u64,
 }
 
-const PLANS_DE_FABRICATION: [FicheObjet; 14] = [
+const PLANS_DE_FABRICATION: [FicheObjet; 29] = [
     FicheObjet {
-        id: "couteau-de-chasse",
-        nom: "Couteau de chasse",
+        id: "lame-de-milicien",
+        nom: "Lame de milicien",
         sorte: SorteDObjet::Arme,
-        bonus: [5, 0, 0, 0, 0],
+        bonus: [3, 0, 3, 0, 0],
+        classe: Some((Classe::Guerrier, 1)),
+        attaques: &["taille", "frappe-brutale"],
         cout: &[("croc-de-loup", 6), ("ecaille-de-vipere", 4)],
-        heures: 1,
-    },
-    FicheObjet {
-        id: "baton-d-if",
-        nom: "Bâton d'if",
-        sorte: SorteDObjet::Arme,
-        bonus: [0, 0, 5, 0, 0],
-        cout: &[("plume-de-corbeau", 6), ("ecaille-de-vipere", 4)],
         heures: 1,
     },
     FicheObjet {
         id: "epee-du-pendu",
         nom: "Épée du pendu",
         sorte: SorteDObjet::Arme,
-        bonus: [10, 0, 0, 0, 0],
+        bonus: [5, 0, 5, 0, 0],
+        classe: Some((Classe::Guerrier, 2)),
+        attaques: &["estoc", "frappe-brutale"],
         cout: &[
             ("fragment-d-armure", 6),
             ("os-de-squelette", 6),
@@ -3361,22 +3508,12 @@ const PLANS_DE_FABRICATION: [FicheObjet; 14] = [
         heures: 3,
     },
     FicheObjet {
-        id: "grimoire-des-brumes",
-        nom: "Grimoire des brumes",
-        sorte: SorteDObjet::Arme,
-        bonus: [0, 0, 10, 0, 0],
-        cout: &[
-            ("cendre-de-feu-follet", 6),
-            ("aile-de-fee-noire", 6),
-            ("croc-de-basilic", 1),
-        ],
-        heures: 3,
-    },
-    FicheObjet {
         id: "espadon-des-cendres",
         nom: "Espadon des cendres",
         sorte: SorteDObjet::Arme,
-        bonus: [15, 0, 0, 0, 0],
+        bonus: [8, 0, 8, 0, 0],
+        classe: Some((Classe::Guerrier, 3)),
+        attaques: &["pourfendre", "frappe-brutale"],
         cout: &[
             ("eclat-de-gargouille", 8),
             ("dent-de-goule", 6),
@@ -3385,10 +3522,74 @@ const PLANS_DE_FABRICATION: [FicheObjet; 14] = [
         heures: 6,
     },
     FicheObjet {
-        id: "encensoir-maudit",
-        nom: "Encensoir maudit",
+        id: "couteau-de-chasse",
+        nom: "Couteau de chasse",
         sorte: SorteDObjet::Arme,
-        bonus: [0, 0, 15, 0, 0],
+        bonus: [3, 0, 3, 0, 0],
+        classe: Some((Classe::Assassin, 1)),
+        attaques: &["entaille", "lame-empoisonnee"],
+        cout: &[("croc-de-loup", 6), ("ecaille-de-vipere", 4)],
+        heures: 1,
+    },
+    FicheObjet {
+        id: "dague-des-brumes",
+        nom: "Dague des brumes",
+        sorte: SorteDObjet::Arme,
+        bonus: [5, 0, 5, 0, 0],
+        classe: Some((Classe::Assassin, 2)),
+        attaques: &["coup-bas", "lame-empoisonnee"],
+        cout: &[
+            ("fragment-d-armure", 6),
+            ("os-de-squelette", 6),
+            ("croc-de-basilic", 1),
+        ],
+        heures: 3,
+    },
+    FicheObjet {
+        id: "lames-de-cendre",
+        nom: "Lames de cendre",
+        sorte: SorteDObjet::Arme,
+        bonus: [8, 0, 8, 0, 0],
+        classe: Some((Classe::Assassin, 3)),
+        attaques: &["egorgement", "lame-empoisonnee"],
+        cout: &[
+            ("eclat-de-gargouille", 8),
+            ("dent-de-goule", 6),
+            ("crin-de-chimere", 1),
+        ],
+        heures: 6,
+    },
+    FicheObjet {
+        id: "baton-d-if",
+        nom: "Bâton d'if",
+        sorte: SorteDObjet::Arme,
+        bonus: [3, 0, 3, 0, 0],
+        classe: Some((Classe::Mage, 1)),
+        attaques: &["trait-arcanique", "onde-engourdissante"],
+        cout: &[("plume-de-corbeau", 6), ("ecaille-de-vipere", 4)],
+        heures: 1,
+    },
+    FicheObjet {
+        id: "grimoire-des-brumes",
+        nom: "Grimoire des brumes",
+        sorte: SorteDObjet::Arme,
+        bonus: [5, 0, 5, 0, 0],
+        classe: Some((Classe::Mage, 2)),
+        attaques: &["fleche-occulte", "onde-engourdissante"],
+        cout: &[
+            ("cendre-de-feu-follet", 6),
+            ("aile-de-fee-noire", 6),
+            ("croc-de-basilic", 1),
+        ],
+        heures: 3,
+    },
+    FicheObjet {
+        id: "sceptre-des-cendres",
+        nom: "Sceptre des cendres",
+        sorte: SorteDObjet::Arme,
+        bonus: [8, 0, 8, 0, 0],
+        classe: Some((Classe::Mage, 3)),
+        attaques: &["rayon-occulte", "onde-engourdissante"],
         cout: &[
             ("aile-de-chauve-souris", 8),
             ("dent-de-goule", 6),
@@ -3397,10 +3598,50 @@ const PLANS_DE_FABRICATION: [FicheObjet; 14] = [
         heures: 6,
     },
     FicheObjet {
-        id: "brigandine-de-cuir",
-        nom: "Brigandine de cuir",
+        id: "masse-de-pelerin",
+        nom: "Masse de pèlerin",
+        sorte: SorteDObjet::Arme,
+        bonus: [3, 0, 3, 0, 0],
+        classe: Some((Classe::Templier, 1)),
+        attaques: &["chatiment", "sceau-d-entrave"],
+        cout: &[("plume-de-corbeau", 6), ("ecaille-de-vipere", 4)],
+        heures: 1,
+    },
+    FicheObjet {
+        id: "fleau-du-pendu",
+        nom: "Fléau du pendu",
+        sorte: SorteDObjet::Arme,
+        bonus: [5, 0, 5, 0, 0],
+        classe: Some((Classe::Templier, 2)),
+        attaques: &["verdict", "sceau-d-entrave"],
+        cout: &[
+            ("cendre-de-feu-follet", 6),
+            ("aile-de-fee-noire", 6),
+            ("croc-de-basilic", 1),
+        ],
+        heures: 3,
+    },
+    FicheObjet {
+        id: "encensoir-maudit",
+        nom: "Encensoir maudit",
+        sorte: SorteDObjet::Arme,
+        bonus: [8, 0, 8, 0, 0],
+        classe: Some((Classe::Templier, 3)),
+        attaques: &["anatheme", "sceau-d-entrave"],
+        cout: &[
+            ("aile-de-chauve-souris", 8),
+            ("dent-de-goule", 6),
+            ("crin-de-chimere", 1),
+        ],
+        heures: 6,
+    },
+    FicheObjet {
+        id: "gambison",
+        nom: "Gambison",
         sorte: SorteDObjet::Armure,
         bonus: [0, 5, 0, 5, 0],
+        classe: Some((Classe::Guerrier, 1)),
+        attaques: &[],
         cout: &[("croc-de-loup", 6), ("plume-de-corbeau", 6)],
         heures: 2,
     },
@@ -3409,6 +3650,8 @@ const PLANS_DE_FABRICATION: [FicheObjet; 14] = [
         nom: "Cotte de mailles",
         sorte: SorteDObjet::Armure,
         bonus: [0, 10, 0, 10, 0],
+        classe: Some((Classe::Guerrier, 2)),
+        attaques: &[],
         cout: &[
             ("fragment-d-armure", 8),
             ("os-de-squelette", 4),
@@ -3421,6 +3664,122 @@ const PLANS_DE_FABRICATION: [FicheObjet; 14] = [
         nom: "Plates de gargouille",
         sorte: SorteDObjet::Armure,
         bonus: [0, 15, 0, 15, 0],
+        classe: Some((Classe::Guerrier, 3)),
+        attaques: &[],
+        cout: &[
+            ("eclat-de-gargouille", 10),
+            ("os-de-squelette", 6),
+            ("crin-de-chimere", 1),
+        ],
+        heures: 8,
+    },
+    FicheObjet {
+        id: "brigandine-de-cuir",
+        nom: "Brigandine de cuir",
+        sorte: SorteDObjet::Armure,
+        bonus: [0, 5, 0, 5, 0],
+        classe: Some((Classe::Assassin, 1)),
+        attaques: &[],
+        cout: &[("croc-de-loup", 6), ("plume-de-corbeau", 6)],
+        heures: 2,
+    },
+    FicheObjet {
+        id: "cuir-des-brumes",
+        nom: "Cuir des brumes",
+        sorte: SorteDObjet::Armure,
+        bonus: [0, 10, 0, 10, 0],
+        classe: Some((Classe::Assassin, 2)),
+        attaques: &[],
+        cout: &[
+            ("fragment-d-armure", 8),
+            ("os-de-squelette", 4),
+            ("ecaille-de-vouivre", 1),
+        ],
+        heures: 4,
+    },
+    FicheObjet {
+        id: "manteau-de-cendre",
+        nom: "Manteau de cendre",
+        sorte: SorteDObjet::Armure,
+        bonus: [0, 15, 0, 15, 0],
+        classe: Some((Classe::Assassin, 3)),
+        attaques: &[],
+        cout: &[
+            ("eclat-de-gargouille", 10),
+            ("os-de-squelette", 6),
+            ("crin-de-chimere", 1),
+        ],
+        heures: 8,
+    },
+    FicheObjet {
+        id: "robe-de-lin",
+        nom: "Robe de lin",
+        sorte: SorteDObjet::Armure,
+        bonus: [0, 5, 0, 5, 0],
+        classe: Some((Classe::Mage, 1)),
+        attaques: &[],
+        cout: &[("croc-de-loup", 6), ("plume-de-corbeau", 6)],
+        heures: 2,
+    },
+    FicheObjet {
+        id: "robe-des-brumes",
+        nom: "Robe des brumes",
+        sorte: SorteDObjet::Armure,
+        bonus: [0, 10, 0, 10, 0],
+        classe: Some((Classe::Mage, 2)),
+        attaques: &[],
+        cout: &[
+            ("fragment-d-armure", 8),
+            ("os-de-squelette", 4),
+            ("ecaille-de-vouivre", 1),
+        ],
+        heures: 4,
+    },
+    FicheObjet {
+        id: "robe-des-cendres",
+        nom: "Robe des cendres",
+        sorte: SorteDObjet::Armure,
+        bonus: [0, 15, 0, 15, 0],
+        classe: Some((Classe::Mage, 3)),
+        attaques: &[],
+        cout: &[
+            ("eclat-de-gargouille", 10),
+            ("os-de-squelette", 6),
+            ("crin-de-chimere", 1),
+        ],
+        heures: 8,
+    },
+    FicheObjet {
+        id: "haubert-de-pelerin",
+        nom: "Haubert de pèlerin",
+        sorte: SorteDObjet::Armure,
+        bonus: [0, 5, 0, 5, 0],
+        classe: Some((Classe::Templier, 1)),
+        attaques: &[],
+        cout: &[("croc-de-loup", 6), ("plume-de-corbeau", 6)],
+        heures: 2,
+    },
+    FicheObjet {
+        id: "cotte-benie",
+        nom: "Cotte bénie",
+        sorte: SorteDObjet::Armure,
+        bonus: [0, 10, 0, 10, 0],
+        classe: Some((Classe::Templier, 2)),
+        attaques: &[],
+        cout: &[
+            ("fragment-d-armure", 8),
+            ("os-de-squelette", 4),
+            ("ecaille-de-vouivre", 1),
+        ],
+        heures: 4,
+    },
+    FicheObjet {
+        id: "plates-consacrees",
+        nom: "Plates consacrées",
+        sorte: SorteDObjet::Armure,
+        bonus: [0, 15, 0, 15, 0],
+        classe: Some((Classe::Templier, 3)),
+        attaques: &[],
         cout: &[
             ("eclat-de-gargouille", 10),
             ("os-de-squelette", 6),
@@ -3433,6 +3792,8 @@ const PLANS_DE_FABRICATION: [FicheObjet; 14] = [
         nom: "Croc tressé",
         sorte: SorteDObjet::Talisman,
         bonus: [5, 0, 0, 0, 0],
+        classe: None,
+        attaques: &[],
         cout: &[("croc-de-loup", 8)],
         heures: 1,
     },
@@ -3441,6 +3802,8 @@ const PLANS_DE_FABRICATION: [FicheObjet; 14] = [
         nom: "Plume de corbeau sertie",
         sorte: SorteDObjet::Talisman,
         bonus: [0, 0, 0, 0, 5],
+        classe: None,
+        attaques: &[],
         cout: &[("plume-de-corbeau", 8)],
         heures: 1,
     },
@@ -3449,6 +3812,8 @@ const PLANS_DE_FABRICATION: [FicheObjet; 14] = [
         nom: "Lanterne de feu follet",
         sorte: SorteDObjet::Talisman,
         bonus: [0, 0, 5, 0, 0],
+        classe: None,
+        attaques: &[],
         cout: &[("cendre-de-feu-follet", 8)],
         heures: 2,
     },
@@ -3457,6 +3822,8 @@ const PLANS_DE_FABRICATION: [FicheObjet; 14] = [
         nom: "Os gravé",
         sorte: SorteDObjet::Talisman,
         bonus: [0, 5, 0, 0, 0],
+        classe: None,
+        attaques: &[],
         cout: &[("os-de-squelette", 8)],
         heures: 2,
     },
@@ -3465,8 +3832,56 @@ const PLANS_DE_FABRICATION: [FicheObjet; 14] = [
         nom: "Aile de fée sertie",
         sorte: SorteDObjet::Talisman,
         bonus: [0, 0, 0, 5, 0],
+        classe: None,
+        attaques: &[],
         cout: &[("aile-de-fee-noire", 8)],
         heures: 2,
+    },
+];
+
+/// Section 34 de docs/contenu-v1.md : les armes du palier 4, récompense du
+/// dernier palier de la Fosse aux damnés, qui ne se fabriquent pas
+/// (section 9.8).
+const ARMES_DU_CHAMPION: [FicheObjet; 4] = [
+    FicheObjet {
+        id: "glaive-du-champion",
+        nom: "Glaive du champion",
+        sorte: SorteDObjet::Arme,
+        bonus: [10, 0, 10, 0, 0],
+        classe: Some((Classe::Guerrier, 4)),
+        attaques: &["coup-du-champion", "frappe-brutale"],
+        cout: &[],
+        heures: 0,
+    },
+    FicheObjet {
+        id: "crocs-du-champion",
+        nom: "Crocs du champion",
+        sorte: SorteDObjet::Arme,
+        bonus: [10, 0, 10, 0, 0],
+        classe: Some((Classe::Assassin, 4)),
+        attaques: &["execution", "lame-empoisonnee"],
+        cout: &[],
+        heures: 0,
+    },
+    FicheObjet {
+        id: "grimoire-du-champion",
+        nom: "Grimoire du champion",
+        sorte: SorteDObjet::Arme,
+        bonus: [10, 0, 10, 0, 0],
+        classe: Some((Classe::Mage, 4)),
+        attaques: &["tempete-occulte", "onde-engourdissante"],
+        cout: &[],
+        heures: 0,
+    },
+    FicheObjet {
+        id: "marteau-du-champion",
+        nom: "Marteau du champion",
+        sorte: SorteDObjet::Arme,
+        bonus: [10, 0, 10, 0, 0],
+        classe: Some((Classe::Templier, 4)),
+        attaques: &["courroux-sacre", "sceau-d-entrave"],
+        cout: &[],
+        heures: 0,
     },
 ];
 
@@ -3477,6 +3892,8 @@ const SCEAU_DU_BESTIAIRE: FicheObjet = FicheObjet {
     nom: "Sceau du bestiaire",
     sorte: SorteDObjet::Talisman,
     bonus: [5, 5, 5, 5, 5],
+    classe: None,
+    attaques: &[],
     cout: &[],
     heures: 0,
 };
@@ -3528,7 +3945,7 @@ fn creer_objet(fiche: &FicheObjet) -> ObjetDEquipement {
         defense_speciale,
         vitesse,
     ] = fiche.bonus;
-    ObjetDEquipement::new(
+    let objet = ObjetDEquipement::new(
         ObjetDEquipementId::new(fiche.id),
         fiche.nom,
         fiche.sorte,
@@ -3541,6 +3958,11 @@ fn creer_objet(fiche: &FicheObjet) -> ObjetDEquipement {
             vitesse,
         },
     )
+    .avec_attaques(fiche.attaques.iter().map(|id| creer_attaque(id)).collect());
+    match fiche.classe {
+        Some((classe, palier)) => objet.de_classe(classe, palier),
+        None => objet,
+    }
 }
 
 /// Ce que Malvoise donne d'une ressource, selon la rareté de son espèce
@@ -3656,6 +4078,7 @@ fn base_de_la_famille(id: &str) -> &str {
 fn creer_attaque(id: &str) -> Attaque {
     let fiche = ATTAQUES
         .iter()
+        .chain(&ATTAQUES_DES_HEROS)
         .find(|fiche| fiche.id == id)
         .unwrap_or_else(|| panic!("attaque {id} absente du contenu"));
     let attaque = Attaque::new(
@@ -4062,7 +4485,7 @@ mod tests {
     }
 
     #[test]
-    fn les_objets_d_equipement_suivent_la_section_11() {
+    fn les_objets_d_equipement_suivent_les_sections_11_et_34() {
         let contenu = ContenuV1::new();
         let plans = contenu.plans_de_fabrication();
         let par_sorte = |sorte| {
@@ -4077,11 +4500,14 @@ mod tests {
                 par_sorte(SorteDObjet::Armure),
                 par_sorte(SorteDObjet::Talisman)
             ),
-            (6, 3, 5)
+            (12, 12, 5)
         );
-        let ids: std::collections::HashSet<_> =
-            plans.iter().map(|plan| plan.objet().id()).collect();
-        assert_eq!(ids.len(), plans.len());
+        let ids: std::collections::HashSet<_> = plans
+            .iter()
+            .map(|plan| plan.objet().id())
+            .chain(contenu.armes_du_champion.iter().map(ObjetDEquipement::id))
+            .collect();
+        assert_eq!(ids.len(), plans.len() + 4);
         for plan in plans {
             let objet = plan.objet();
             // Pas de PV : le combat ne majore pas les PV (section 4.3).
@@ -4094,13 +4520,76 @@ mod tests {
             }
             assert_eq!(contenu.objet_d_equipement(objet.id()).as_ref(), Some(objet));
         }
+        // Pour chaque classe, une arme et une armure par palier, que la
+        // conversion des anciens objets retrouve ; une arme du palier 4.
+        for classe in Classe::TOUTES {
+            let siens = contenu.plans_de_fabrication_pour(classe);
+            assert_eq!(siens.len(), 11, "{}", classe.nom());
+            for palier in 1..=3 {
+                for sorte in [SorteDObjet::Arme, SorteDObjet::Armure] {
+                    let objet = contenu.objet_de_classe(classe, sorte, palier).unwrap();
+                    assert!(siens.iter().any(|plan| plan.objet() == &objet));
+                }
+            }
+            let champion = contenu.arme_du_champion(classe);
+            assert_eq!(champion.palier(), 4);
+            assert_eq!(
+                contenu.objet_d_equipement(champion.id()).as_ref(),
+                Some(champion)
+            );
+            assert_eq!(champion.bonus().attaque, 10);
+        }
         let couteau = contenu
             .plan_de_fabrication(&ObjetDEquipementId::new("couteau-de-chasse"))
+            .unwrap()
+            .objet();
+        assert_eq!(couteau.classe(), Some(Classe::Assassin));
+        assert_eq!(
+            (couteau.bonus().attaque, couteau.bonus().attaque_speciale),
+            (3, 3)
+        );
+        let attaques: Vec<_> = couteau
+            .attaques()
+            .iter()
+            .map(|attaque| attaque.id().as_str())
+            .collect();
+        assert_eq!(attaques, ["entaille", "lame-empoisonnee"]);
+        let plates = contenu
+            .plan_de_fabrication(&ObjetDEquipementId::new("plates-consacrees"))
             .unwrap();
-        assert_eq!(couteau.objet().bonus().attaque, 5);
-        assert_eq!(couteau.cout().len(), 2);
+        assert_eq!(plates.objet().bonus().defense_speciale, 15);
+        assert_eq!(plates.duree().as_secs(), 8 * 3_600);
     }
 
+    /// Section 34 de docs/contenu-v1.md : toutes Humain, l'attaque
+    /// principale de chaque palier, puis celle de la classe.
+    #[test]
+    fn les_attaques_des_heros_sont_de_type_humain() {
+        for fiche in &ATTAQUES_DES_HEROS {
+            assert_eq!(fiche.type_attaque, Type::Humain, "{}", fiche.id);
+            assert!(
+                ATTAQUES.iter().all(|autre| autre.id != fiche.id),
+                "{}",
+                fiche.id
+            );
+        }
+        let contenu = ContenuV1::new();
+        for classe in Classe::TOUTES {
+            let puissances: Vec<u16> = (1..=4)
+                .map(|palier| {
+                    let arme = match palier {
+                        4 => contenu.arme_du_champion(classe).clone(),
+                        _ => contenu
+                            .objet_de_classe(classe, SorteDObjet::Arme, palier)
+                            .unwrap(),
+                    };
+                    assert_eq!(arme.attaques().len(), 2);
+                    arme.attaques()[0].puissance()
+                })
+                .collect();
+            assert_eq!(puissances, [40, 50, 60, 75], "{}", classe.nom());
+        }
+    }
     #[test]
     fn chaque_evolution_mene_a_une_forme_conforme() {
         let contenu = ContenuV1::new();

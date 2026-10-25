@@ -1,12 +1,17 @@
 //! Équipement du héros (section 4.3) : une arme, une armure et deux
 //! talismans, fabriqués par Gunther. Chaque objet porté ajoute ses
 //! pourcentages aux stats des monstres du joueur en combat, comme la classe.
+//! Depuis l'étape 129, les armes et les armures sont propres à une classe :
+//! elles donnent aussi au héros son niveau de combat, et l'arme ses
+//! attaques (section 4.4).
 //!
 //! Le héros garde les objets qu'il possède : rien ne les lui fait perdre, et
 //! il ne les change qu'au camp.
 
 use std::fmt;
 
+use crate::attaque::Attaque;
+use crate::heros::Classe;
 use crate::stats::{BonusDeStats, cumuler_bonus};
 
 /// Identifiant stable d'un objet d'équipement, enregistré dans la sauvegarde.
@@ -46,6 +51,12 @@ pub struct ObjetDEquipement {
     nom: String,
     sorte: SorteDObjet,
     bonus: BonusDeStats,
+    /// Celle des armes et des armures ; un talisman va à toutes.
+    classe: Option<Classe>,
+    /// De 1 à 4 pour une arme ou une armure de classe, 0 pour un talisman.
+    palier: u8,
+    /// Celles que l'arme donne au héros quand il combat (section 4.4).
+    attaques: Vec<Attaque>,
 }
 
 impl ObjetDEquipement {
@@ -60,7 +71,22 @@ impl ObjetDEquipement {
             nom: nom.into(),
             sorte,
             bonus,
+            classe: None,
+            palier: 0,
+            attaques: Vec::new(),
         }
+    }
+
+    /// Une arme ou une armure réservée à une classe, de ce palier.
+    pub fn de_classe(mut self, classe: Classe, palier: u8) -> Self {
+        self.classe = Some(classe);
+        self.palier = palier;
+        self
+    }
+
+    pub fn avec_attaques(mut self, attaques: Vec<Attaque>) -> Self {
+        self.attaques = attaques;
+        self
     }
 
     pub fn id(&self) -> &ObjetDEquipementId {
@@ -78,6 +104,24 @@ impl ObjetDEquipement {
     /// Pourcentages ajoutés aux stats des monstres du joueur en combat.
     pub fn bonus(&self) -> BonusDeStats {
         self.bonus
+    }
+
+    pub fn classe(&self) -> Option<Classe> {
+        self.classe
+    }
+
+    pub fn palier(&self) -> u8 {
+        self.palier
+    }
+
+    pub fn attaques(&self) -> &[Attaque] {
+        &self.attaques
+    }
+
+    /// Un héros ne porte que les armes et les armures de sa classe, et tous
+    /// les talismans (section 4.3).
+    pub fn convient_a(&self, classe: Classe) -> bool {
+        self.classe.is_none_or(|sienne| sienne == classe)
     }
 }
 
@@ -212,6 +256,48 @@ impl Equipement {
             .ok_or(ErreurEquipement::PlaceVide(place))
     }
 
+    /// Reprise d'une sauvegarde d'avant les objets de classe (section 4.3) :
+    /// chaque arme ou armure d'une autre classe devient celle de la classe
+    /// du héros, de même sorte et de même palier, que donne `equivalent`, et
+    /// reste portée si l'ancienne l'était. Deux anciens objets du même palier
+    /// n'en donnent qu'un. Un objet sans équivalent est gardé tel quel.
+    pub fn adapter_a_la_classe(
+        possedes: Vec<ObjetDEquipement>,
+        portes: Vec<(PlaceDEquipement, ObjetDEquipementId)>,
+        classe: Classe,
+        equivalent: impl Fn(SorteDObjet, u8) -> Option<ObjetDEquipement>,
+    ) -> (
+        Vec<ObjetDEquipement>,
+        Vec<(PlaceDEquipement, ObjetDEquipementId)>,
+    ) {
+        let mut adaptes: Vec<ObjetDEquipement> = Vec::new();
+        let mut remplacements: Vec<(ObjetDEquipementId, ObjetDEquipementId)> = Vec::new();
+        for objet in possedes {
+            let adapte = if objet.convient_a(classe) {
+                objet.clone()
+            } else {
+                equivalent(objet.sorte(), objet.palier()).unwrap_or_else(|| objet.clone())
+            };
+            if adapte.id() != objet.id() {
+                remplacements.push((objet.id().clone(), adapte.id().clone()));
+            }
+            if !adaptes.iter().any(|deja| deja.id() == adapte.id()) {
+                adaptes.push(adapte);
+            }
+        }
+        let portes = portes
+            .into_iter()
+            .map(|(place, id)| {
+                let id = remplacements
+                    .iter()
+                    .find(|(ancien, _)| *ancien == id)
+                    .map_or(id, |(_, nouveau)| nouveau.clone());
+                (place, id)
+            })
+            .collect();
+        (adaptes, portes)
+    }
+
     /// Les pourcentages de tous les objets portés, additionnés.
     pub fn bonus(&self) -> BonusDeStats {
         PlaceDEquipement::TOUTES
@@ -238,6 +324,8 @@ pub enum ErreurEquipement {
     PlaceVide(PlaceDEquipement),
     /// Deux objets à la même place dans une sauvegarde.
     PlaceEnDouble(PlaceDEquipement),
+    /// Une arme ou une armure d'une autre classe que celle du héros.
+    AutreClasse(ObjetDEquipementId),
 }
 
 impl fmt::Display for ErreurEquipement {
@@ -254,6 +342,9 @@ impl fmt::Display for ErreurEquipement {
             ErreurEquipement::PlaceVide(place) => write!(f, "aucun objet porté ({place:?})"),
             ErreurEquipement::PlaceEnDouble(place) => {
                 write!(f, "deux objets à la même place ({place:?})")
+            }
+            ErreurEquipement::AutreClasse(id) => {
+                write!(f, "objet d'une autre classe : {}", id.as_str())
             }
         }
     }
@@ -400,5 +491,55 @@ mod tests {
             Err(ErreurEquipement::PlaceEnDouble(PlaceDEquipement::Arme))
         );
         assert!(Equipement::restaurer(vec![couteau(), couteau()], &[]).is_err());
+    }
+
+    fn arme(id: &str, classe: Classe, palier: u8) -> ObjetDEquipement {
+        objet(id, SorteDObjet::Arme, BonusDeStats::default()).de_classe(classe, palier)
+    }
+
+    #[test]
+    fn un_talisman_va_a_toutes_les_classes_une_arme_a_la_sienne() {
+        let arme = arme("lame", Classe::Guerrier, 1);
+        assert!(arme.convient_a(Classe::Guerrier));
+        assert!(!arme.convient_a(Classe::Mage));
+        assert!(
+            Classe::TOUTES
+                .iter()
+                .all(|classe| croc().convient_a(*classe))
+        );
+    }
+
+    #[test]
+    fn les_anciens_objets_deviennent_ceux_de_la_classe_du_heros() {
+        let equivalent = |sorte: SorteDObjet, palier: u8| match (sorte, palier) {
+            (SorteDObjet::Arme, 1) => Some(arme("baton", Classe::Mage, 1)),
+            _ => None,
+        };
+        let possedes = vec![
+            arme("lame", Classe::Guerrier, 1),
+            arme("couteau-de-classe", Classe::Assassin, 1),
+            arme("epee", Classe::Guerrier, 2),
+            croc(),
+        ];
+        let portes = vec![
+            (
+                PlaceDEquipement::Arme,
+                ObjetDEquipementId::new("couteau-de-classe"),
+            ),
+            (PlaceDEquipement::PremierTalisman, croc().id().clone()),
+        ];
+        let (possedes, portes) =
+            Equipement::adapter_a_la_classe(possedes, portes, Classe::Mage, equivalent);
+        let ids: Vec<_> = possedes.iter().map(|objet| objet.id().as_str()).collect();
+        // L'épée, sans équivalent, est gardée telle quelle.
+        assert_eq!(ids, ["baton", "epee", "croc"]);
+        assert_eq!(
+            portes[0],
+            (PlaceDEquipement::Arme, ObjetDEquipementId::new("baton"))
+        );
+        assert_eq!(
+            portes[1],
+            (PlaceDEquipement::PremierTalisman, croc().id().clone())
+        );
     }
 }

@@ -120,8 +120,8 @@ fn fabriquer_un_objet(
     println!();
     println!("{}", etat_des_fabrications(partie, contenu));
     let a_fabriquer: Vec<_> = contenu
-        .plans_de_fabrication()
-        .iter()
+        .plans_de_fabrication_pour(partie.heros().classe())
+        .into_iter()
         .filter(|plan| !partie.heros().equipement().possede(plan.objet().id()))
         .collect();
     for (position, plan) in a_fabriquer.iter().enumerate() {

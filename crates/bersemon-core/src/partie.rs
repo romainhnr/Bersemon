@@ -983,6 +983,9 @@ impl Partie {
 
     /// Refuse ce que refuserait `lancer_fabrication`, sans rien changer.
     pub fn verifier_fabrication(&self, plan: &PlanDeFabrication) -> Result<(), ErreurAmelioration> {
+        if !plan.objet().convient_a(self.heros.classe()) {
+            return Err(ErreurAmelioration::AutreClasse);
+        }
         self.forge
             .verifier_fabrication(plan, self.heros.equipement())?;
         let manquantes = self.ressources_manquantes(plan.cout());
@@ -1021,11 +1024,22 @@ impl Partie {
 
     /// Au camp seulement : l'objet remplace celui de cette place (section
     /// 4.3).
+    /// Une arme ou une armure d'une autre classe est refusée.
     pub fn equiper(
         &mut self,
         place: PlaceDEquipement,
         objet: &ObjetDEquipementId,
     ) -> Result<(), ErreurEquipement> {
+        let classe = self.heros.classe();
+        let d_une_autre_classe = self
+            .heros
+            .equipement()
+            .possedes()
+            .iter()
+            .any(|possede| possede.id() == objet && !possede.convient_a(classe));
+        if d_une_autre_classe {
+            return Err(ErreurEquipement::AutreClasse(objet.clone()));
+        }
         self.heros.equipement_mut().equiper(place, objet)
     }
 

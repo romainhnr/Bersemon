@@ -5,8 +5,9 @@
 use crate::ame::{MarchandId, MarchandMort};
 use crate::attaque::AttaqueId;
 use crate::capsule::Capsule;
-use crate::equipement::{ObjetDEquipement, ObjetDEquipementId};
+use crate::equipement::{ObjetDEquipement, ObjetDEquipementId, SorteDObjet};
 use crate::espece::{Espece, EspeceId};
+use crate::heros::Classe;
 use crate::ressource::{Ressource, RessourceId};
 use crate::zone::{Zone, ZoneId};
 
@@ -28,4 +29,13 @@ pub trait Catalogue {
 
     /// Pour l'équipement du héros et l'objet en fabrication (section 4.3).
     fn objet_d_equipement(&self, id: &ObjetDEquipementId) -> Option<ObjetDEquipement>;
+
+    /// L'arme ou l'armure de cette classe, de cette sorte et de ce palier :
+    /// celle que devient un ancien objet d'une autre classe (section 4.3).
+    fn objet_de_classe(
+        &self,
+        classe: Classe,
+        sorte: SorteDObjet,
+        palier: u8,
+    ) -> Option<ObjetDEquipement>;
 }

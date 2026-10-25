@@ -1354,7 +1354,7 @@ Attaques du héros, toutes de type Humain :
 | frappe-brutale | Frappe brutale | Guerrier, toute arme | P | 70 | 80 | |
 | entaille | Entaille | Assassin, palier 1 | P | 40 | 100 | |
 | coup-bas | Coup bas | Assassin, palier 2 | P | 50 | 100 | |
-| saignee | Saignée | Assassin, palier 3 | P | 60 | 100 | |
+| egorgement | Égorgement | Assassin, palier 3 | P | 60 | 100 | |
 | execution | Exécution | Assassin, palier 4 | P | 75 | 100 | |
 | lame-empoisonnee | Lame empoisonnée | Assassin, toute arme | P | 30 | 100 | poison 50 % |
 | trait-arcanique | Trait arcanique | Mage, palier 1 | S | 40 | 100 | |
@@ -1368,7 +1368,7 @@ Attaques du héros, toutes de type Humain :
 | courroux-sacre | Courroux sacré | Templier, palier 4 | S | 75 | 100 | |
 | sceau-d-entrave | Sceau d'entrave | Templier, toute arme | S | 30 | 100 | paralysie 30 % |
 
-Chaque arme donne l'attaque principale de son palier, puis l'attaque de sa classe.
+Chaque arme donne l'attaque principale de son palier, puis l'attaque de sa classe. Précisé à l'étape 129, en codant : Saignée, nom validé pour l'attaque du palier 3 de l'Assassin, est déjà celui d'une attaque Poison de la Sangsue géante ; elle devient Égorgement, nom proposé sans validation (gamedesign.md, Q112).
 
 Armes de classe. Bonus aux monstres : +3 %, +5 %, +8 % ou +10 % d'Attaque et d'Attaque spéciale selon le palier. Coûts et durées : ceux des anciennes armes d'Attaque pour le Guerrier et l'Assassin, d'Attaque spéciale pour le Mage et le Templier.
 

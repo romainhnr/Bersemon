@@ -163,10 +163,41 @@ mod tests {
         }
 
         fn objet_d_equipement(&self, id: &ObjetDEquipementId) -> Option<ObjetDEquipement> {
-            [couteau(), talisman()]
+            [couteau(), talisman(), epee(), baton()]
                 .into_iter()
                 .find(|objet| objet.id() == id)
         }
+
+        fn objet_de_classe(
+            &self,
+            classe: Classe,
+            sorte: SorteDObjet,
+            palier: u8,
+        ) -> Option<ObjetDEquipement> {
+            [epee(), baton()].into_iter().find(|objet| {
+                objet.classe() == Some(classe) && objet.sorte() == sorte && objet.palier() == palier
+            })
+        }
+    }
+
+    fn epee() -> ObjetDEquipement {
+        ObjetDEquipement::new(
+            ObjetDEquipementId::new("epee"),
+            "Épée",
+            SorteDObjet::Arme,
+            Stats::default(),
+        )
+        .de_classe(Classe::Guerrier, 1)
+    }
+
+    fn baton() -> ObjetDEquipement {
+        ObjetDEquipement::new(
+            ObjetDEquipementId::new("baton"),
+            "Bâton",
+            SorteDObjet::Arme,
+            Stats::default(),
+        )
+        .de_classe(Classe::Mage, 1)
     }
 
     fn couteau() -> ObjetDEquipement {
@@ -1360,6 +1391,24 @@ mod tests {
             .insert("version".to_string(), 23.into());
         let ancienne = charger_texte(&valeur.to_string()).unwrap().unwrap();
         assert!(ancienne.collection().monstre_loue().is_none());
+    }
+
+    #[test]
+    fn une_arme_d_une_autre_classe_devient_celle_de_la_classe_du_heros() {
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        let heros = valeur["heros"].as_object_mut().unwrap();
+        heros.insert(
+            "objets".to_string(),
+            serde_json::json!(["epee", "talisman"]),
+        );
+        heros.insert(
+            "equipement_porte".to_string(),
+            serde_json::json!({"arme": "epee", "armure": null, "premier_talisman": null, "second_talisman": "talisman"}),
+        );
+        let partie = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        let equipement = partie.heros().equipement();
+        assert_eq!(equipement.possedes(), [baton(), talisman()]);
+        assert_eq!(equipement.porte(PlaceDEquipement::Arme), Some(&baton()));
     }
 
     #[test]
