@@ -1906,6 +1906,37 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         assert!(cles.contains(&Cle::Afficher(Vue::Codex(None))));
         assert!(!cles.contains(&Cle::Afficher(Vue::PageDuCodex(2))));
     }
+    // Les trois Apôtres et le Démiurge abattus : le carnet de traque suit la
+    // liste, à sa dernière page, sans qu'aucun ne soit dans la liste.
+    let mut abattus = etat(vec![], vec![]);
+    abattus.apotres_vaincus = contenu
+        .piste()
+        .apotres()
+        .map(|apotre| apotre.espece().id().clone())
+        .collect();
+    abattus.beherit = bersemon_core::beherit::EtatDuBeherit::DemiurgeVaincu;
+    let partie = Partie::restaurer(abattus).unwrap();
+    afficher(&partie, Vue::PageDuCodex(1));
+    let derniere = crate::ecran_camp::question(
+        &partie,
+        Vue::PageDuCodex(1),
+        &contenu,
+        Horodatage::depuis_secondes(0),
+    );
+    assert!(derniere.texte.contains("Carnet de traque :"));
+    assert!(
+        derniere
+            .texte
+            .ends_with("  4. Démiurge, abattu dans l'Éclipse.")
+    );
+    assert!(!derniere.texte.contains("Apôtre vaincu"));
+    let premiere = crate::ecran_camp::question(
+        &partie,
+        Vue::Codex(None),
+        &contenu,
+        Horodatage::depuis_secondes(0),
+    );
+    assert!(!premiere.texte.contains("Carnet de traque"));
 }
 
 /// Les machines au plus haut : la forge, l'écran des machines avec la cour

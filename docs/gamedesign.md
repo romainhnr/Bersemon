@@ -256,6 +256,10 @@ Le joueur peut :
 - Depuis l'étape 66, un Apôtre ne se capture plus : sa victoire ouvre sa fiche, et la liste du codex le dit "Apôtre vaincu" au lieu de "capturée" (section 9.4).
 - Précisé à l'étape 65, en codant : avec les 41 espèces des monstres aquatiques, la liste du codex et une fiche ne tiennent plus ensemble dans un message Discord (2000 caractères). Sur Discord, une fiche ouverte remplace donc la liste, qu'un bouton "Liste du codex" rouvre ; la console garde la liste et la fiche.
 - Précisé à l'étape 82, en codant : avec les 52 espèces du Col du Givre-Noir, la liste du codex ne tient plus dans un message Discord ; elle s'y lit par pages de 30 espèces, avec les boutons "Page précédente" et "Page suivante".
+- Décidé le 25/10/2026, pour l'étape 107 (choix de l'utilisateur) : le codex a une section à part, le carnet de traque, pour ne rien dévoiler des Apôtres qui restent.
+  - Les Apôtres et le Démiurge quittent la liste des espèces, où ils apparaissaient en "???" tant qu'ils n'étaient pas vaincus, ce qui révélait leur nombre. Ils n'apparaissent plus qu'au carnet.
+  - Le carnet n'apparaît qu'au premier Apôtre abattu. Chaque victoire y ajoute une entrée, dans l'ordre des victoires, comme si le héros écrivait le nom de ses ennemis abattus l'un après l'autre : "1. Baron pendu, abattu dans la Vallée des Brumes." Le Démiurge y a une seule entrée pour ses deux formes, après les trois Apôtres qu'il faut abattre avant lui. Ni les Apôtres qui restent ni leur nombre n'y figurent. Textes dans docs/contenu-v1.md, section 27.
+  - La fiche d'un Apôtre abattu reste consultable : dans la console, sous son entrée du carnet (les deux fiches, sous leur nom, pour le Démiurge) ; sur Discord, par le menu des fiches, comme avant. Sur Discord, le carnet suit la liste, à sa dernière page (hypothèse retenue, Q103).
 
 ### 5.7 KO (pas de mort définitive)
 
@@ -410,7 +414,7 @@ Si tous les monstres du joueur sont KO pendant une expédition manuelle :
 - Décidé le 20/10/2026, pour l'étape 66 (choix de l'utilisateur) : les Apôtres ne se capturent plus, même KO après la victoire. Vaincu, un Apôtre laisse son âme : après l'épilogue, un court texte dit que le joueur la recueille (docs/contenu-v1.md, section 16). Il ne réapparaît plus, comme avant.
   - Une âme d'Apôtre est gardée à part, ni dans le sac ni dans le coffre, et rien ne la fait perdre. Elle ne se donne pas à Malvoise : son usage est différent de celui des âmes des marchands et sera défini plus tard (Q92). Idée de l'utilisateur : réunir les âmes de tous les Apôtres pour créer un Béhérit pourpre, qui permettra d'invoquer le Démiurge et de l'affronter.
   - Le camp rappelle les âmes d'Apôtres gardées, sur une ligne à part de celles des marchands.
-  - La victoire ouvre la fiche de l'Apôtre au codex, comme une capture ; la liste du codex le dit "Apôtre vaincu" (section 5.6).
+  - La victoire ouvre la fiche de l'Apôtre au codex, comme une capture ; la liste du codex le dit "Apôtre vaincu" (section 5.6). Remplacé le 25/10/2026, à l'étape 107 : l'Apôtre abattu n'est plus dans la liste, mais au carnet de traque (section 5.6).
   - Depuis l'étape 67 (choix de l'utilisateur), l'Apôtre vaincu laisse aussi un Éclat d'astre, après son âme, qui va dans le sac (section 14.3).
   - Choix de l'utilisateur pour les sauvegardes antérieures : un Apôtre déjà capturé quitte l'équipe, le camp ou son expédition automatique, et le joueur garde son âme, comme celle de tout Apôtre vaincu ; la fiche de chaque Apôtre vaincu s'ouvre au codex (section 13.9, hypothèses de Q92).
 - Décidé le 18/10/2026, pour l'étape 30 : un indice par zone, trouvé à la première expédition menée au bout dans cette zone. La première zone s'achève par un combat contre un humain et ses monstres (étape 29). La deuxième s'achève par un humain plus fort, au service de l'Apôtre, qui donne l'indice de la troisième zone ; l'Apôtre attend à la fin de la troisième. Les détails sont dans Q75.
@@ -1094,6 +1098,10 @@ Les questions Q101 et suivantes ont été relevées le 24/10/2026 lors de la con
 
 Les questions Q102 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 103 filets dans le noyau, avec la sauvegarde en version 27, 104 vente par Malvoise et fabrication par Gunther, 105 écrans de la console, 106 écrans du bot Discord.
 
+Les questions Q103 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 107 carnet de traque du codex et 108 Philtre chromatique.
+
+- Q103. (Étapes 107 et 108) Hypothèses retenues, à confirmer : sur Discord, le carnet de traque suit la liste du codex, à sa dernière page, plutôt que d'avoir son propre bouton ; le Démiurge est toujours la dernière entrée, car l'ordre des victoires n'est gardé que pour les Apôtres (un Apôtre ajouté plus tard et abattu après le Démiurge viendrait avant lui). Relevé sans être corrigé : la fiche d'une espèce dont l'évolution demande un Apôtre vaincu le nomme, même s'il n'est pas encore abattu ("une fois l'Apôtre Baron pendu vaincu").
+
 - Q102. (Étapes 103 à 106) Hypothèses retenues, à confirmer : la capture garantie d'un monstre KO, après une victoire ou sur un humain vaincu, prend le filet le plus simple qui reste, sans demander lequel ; une sauvegarde antérieure reçoit 10 filets de chanvre au coffre ; Malvoise ne rachète pas les filets ; les filets trouvés dans un coffre ne dépendent pas de la zone. Sur Discord, l'étal vend les filets par lots de 5, et l'en-tête du camp compte les ressources par sortes au lieu de les détailler (section 11.2). À vérifier en jouant : les prix, les recettes, les 10 filets du départ et la part des coffres. Noms et effets validés (docs/contenu-v1.md, section 26) ; textes proposés sans validation : le lancer ("Vous lancez un filet lesté sur ..."), l'achat, la fabrication, les libellés et les refus, listés dans la même section.
 
 - Q83. (Étapes 33 et 34) Hypothèses retenues, à confirmer : le gardien d'une âme à retrouver attaque à une étape tirée parmi celles qui précèdent la dernière ; le don d'une âme à Malvoise se fait sans confirmation ; une partie antérieure qui n'a pas recueilli l'âme de Bertrand le rencontre à l'étape 4 de sa prochaine expédition dans la Lisière, même avec Malvoise déjà au camp ; le texte du brigand de l'étape 5 ne change pas, même s'il a perdu son Loup à l'étape 4.
@@ -1531,4 +1539,10 @@ Les questions Q102 et suivantes ont été relevées le 25/10/2026 lors de la con
 - Sauvegarde en version 27.
 - Précisé en codant les étapes 105 et 106 : sur Discord, achat des filets par lots de 5 et en-tête du camp qui compte les ressources par sortes, pour rester sous les 2000 caractères (section 11.2).
 - Hypothèses retenues, à confirmer : Q102.
+
+25/10/2026 (conception des étapes 107 carnet de traque et 108 Philtre chromatique) :
+
+- Demande de l'utilisateur : une section du codex avec seulement les Apôtres de la traque, chacun ajouté une fois abattu, sans dévoiler ceux qui restent ni leur nombre.
+- Choix de l'utilisateur : section à part, le carnet de traque, qui n'apparaît qu'au premier Apôtre abattu ; les Apôtres et le Démiurge quittent la liste des espèces ; le Démiurge y figure en dernier ; une ligne par victoire, "Baron pendu, abattu dans la Vallée des Brumes." (section 5.6).
+- Hypothèses retenues, à confirmer : Q103.
 

@@ -152,7 +152,7 @@ pub fn choisir(
                 None
             }
             EntreeDuCamp::Codex => {
-                println!("{}", affichage::codex(partie.codex(), contenu));
+                println!("{}", affichage::codex(partie, contenu));
                 None
             }
             EntreeDuCamp::Marchand => {

@@ -12,6 +12,7 @@ use bersemon_core::collection::{Collection, Emplacement, TriDuCamp};
 use bersemon_core::combat::Cote;
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::equipement::PlaceDEquipement;
+use bersemon_core::espece::Espece;
 use bersemon_core::habilete::autre_habilete;
 use bersemon_core::horodatage::Horodatage;
 use bersemon_core::marchand::prix_de_revente;
@@ -31,8 +32,8 @@ use bersemon_presentation::monstres::{
     attaques_connues, decrire_attaque, fiche_du_monstre, ligne_monstre, nom, provenance,
 };
 use bersemon_presentation::partie::{
-    ames_d_apotres, argent, collection as liste_complete, en_tete_abrege_du_camp, fiche_d_espece,
-    ligne_du_codex,
+    ames_d_apotres, argent, carnet_de_traque, collection as liste_complete, en_tete_abrege_du_camp,
+    especes_du_codex, fiche_d_espece, ligne_du_codex,
 };
 use bersemon_presentation::peche::ligne_prete;
 use bersemon_presentation::tour::description_de_la_tour;
@@ -404,8 +405,9 @@ fn options() -> Question {
     }
 }
 
-/// Une ligne par espèce ; la fiche d'une espèce capturée s'ouvre par le menu
-/// (section 5.6).
+/// Une ligne par espèce ; la fiche d'une espèce capturée, ou d'un Apôtre
+/// abattu, s'ouvre par le menu. Le carnet de traque suit la liste, à sa
+/// dernière page (section 5.6).
 /// Avec plus de 40 espèces, la liste et une fiche ne tiennent plus ensemble
 /// dans un message : une fiche ouverte remplace la liste, qu'un bouton
 /// rouvre.
@@ -419,6 +421,8 @@ fn codex(partie: &Partie, fiche: Option<usize>, page: usize, contenu: &ContenuV1
     let ouverte = fiche
         .and_then(|position| especes.get(position))
         .filter(|espece| codex.etat(espece.id()) == EtatCodex::Capturee);
+    let liste: Vec<(usize, &Espece)> = especes_du_codex(especes).collect();
+    let pages = liste.len().div_ceil(ESPECES_PAR_PAGE);
     let mut lignes = Vec::new();
     match ouverte {
         Some(espece) => {
@@ -427,7 +431,7 @@ fn codex(partie: &Partie, fiche: Option<usize>, page: usize, contenu: &ContenuV1
         }
         None => {
             lignes.push("Codex :".to_string());
-            for (position, espece) in especes
+            for (numero, (_, espece)) in liste
                 .iter()
                 .enumerate()
                 .skip(page * ESPECES_PAR_PAGE)
@@ -435,13 +439,15 @@ fn codex(partie: &Partie, fiche: Option<usize>, page: usize, contenu: &ContenuV1
             {
                 lignes.push(format!(
                     "  {}. {}",
-                    position + 1,
+                    numero + 1,
                     ligne_du_codex(codex, espece)
                 ));
             }
+            if page + 1 >= pages {
+                lignes.extend(carnet_de_traque(partie, contenu));
+            }
         }
     }
-    let pages = especes.len().div_ceil(ESPECES_PAR_PAGE);
     let capturees: Vec<OptionDeMenu> = especes
         .iter()
         .enumerate()

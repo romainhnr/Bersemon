@@ -60,6 +60,9 @@ pub struct Apotre {
     /// Le récit de son âme, que le joueur recueille après la victoire
     /// (section 9.4).
     recit_de_l_ame: String,
+    /// Ce que le héros écrit dans son carnet de traque, au codex, une fois
+    /// l'Apôtre abattu (section 5.6).
+    ligne_du_carnet: String,
     /// Le Démiurge se relève sous cette forme quand la première tombe KO
     /// (section 9.4). En boîte, pour que l'Apôtre reste léger.
     seconde_forme: Option<Box<Espece>>,
@@ -89,6 +92,7 @@ impl Apotre {
             avant_combat: avant_combat.into(),
             epilogue: epilogue.into(),
             recit_de_l_ame: String::new(),
+            ligne_du_carnet: String::new(),
             seconde_forme: None,
         })
     }
@@ -118,6 +122,15 @@ impl Apotre {
 
     pub fn recit_de_l_ame(&self) -> &str {
         &self.recit_de_l_ame
+    }
+
+    pub fn avec_ligne_du_carnet(mut self, ligne: impl Into<String>) -> Self {
+        self.ligne_du_carnet = ligne.into();
+        self
+    }
+
+    pub fn ligne_du_carnet(&self) -> &str {
+        &self.ligne_du_carnet
     }
 
     pub fn espece(&self) -> &Espece {

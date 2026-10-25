@@ -1410,6 +1410,25 @@ impl Partie {
         self.beherit
     }
 
+    /// Le carnet de traque du codex : les Apôtres abattus, dans l'ordre des
+    /// victoires, puis le Démiurge une fois vaincu. Rien de ceux qui restent,
+    /// ni leur nombre (section 5.6).
+    pub fn carnet_de_traque<'a>(
+        &self,
+        piste: &'a Piste,
+        invocation: &'a Invocation,
+    ) -> Vec<&'a Apotre> {
+        let mut carnet: Vec<&Apotre> = self
+            .apotres_vaincus
+            .iter()
+            .filter_map(|id| piste.apotres().find(|apotre| apotre.espece().id() == id))
+            .collect();
+        if self.beherit == EtatDuBeherit::DemiurgeVaincu {
+            carnet.push(invocation.demiurge());
+        }
+        carnet
+    }
+
     /// Ce que refuserait `forger_le_beherit`, sans rien changer : de quoi
     /// demander confirmation.
     pub fn verifier_la_forge_du_beherit(&self, piste: &Piste) -> Result<(), ErreurBeherit> {
@@ -3572,6 +3591,38 @@ mod tests {
 
     /// Ni shiny, des valeurs internes de 1 à 6, la première habileté.
     const TIRAGES_D_UN_MONSTRE: [u32; 8] = [2, 1, 2, 3, 4, 5, 6, 0];
+
+    #[test]
+    fn le_carnet_de_traque_suit_l_ordre_des_victoires() {
+        let (mut partie, contenu) = chez_malvoise();
+        let piste = contenu.piste();
+        let invocation = contenu.invocation();
+        assert!(partie.carnet_de_traque(piste, invocation).is_empty());
+        let apotres: Vec<&Apotre> = piste.apotres().collect();
+        // Dans un autre ordre que celui de la piste, pour vérifier que le
+        // carnet suit les victoires.
+        partie.noter_apotre_vaincu(apotres[1]);
+        partie.noter_apotre_vaincu(apotres[0]);
+        let noms = |partie: &Partie| -> Vec<String> {
+            partie
+                .carnet_de_traque(piste, invocation)
+                .iter()
+                .map(|apotre| apotre.espece().nom().to_string())
+                .collect()
+        };
+        assert_eq!(noms(&partie), vec!["Abbesse écorchée", "Baron pendu"]);
+        partie.noter_apotre_vaincu(apotres[2]);
+        partie.noter_demiurge_vaincu(invocation.demiurge());
+        assert_eq!(
+            noms(&partie),
+            vec![
+                "Abbesse écorchée",
+                "Baron pendu",
+                "Margrave de givre",
+                "Démiurge"
+            ]
+        );
+    }
 
     #[test]
     fn malvoise_vend_les_communes_et_loue_les_rares_des_zones_explorees() {

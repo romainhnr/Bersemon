@@ -1131,3 +1131,15 @@ Textes proposés sans validation (gamedesign.md, Q102) :
 | Forge, Discord | Menu "Fabriquer des filets" : 5 filets lestés (chance de capture x1,5), avec en description {coût}, {durée} ; vous en avez {n} |
 | Camp, Discord | 17 sortes de ressources (à la place du détail des ressources du sac et du coffre) |
 
+## 27. Carnet de traque
+
+Décidé le 25/10/2026, pour l'étape 107 (gamedesign.md, section 5.6), textes validés par l'utilisateur.
+
+Titre : "Carnet de traque :". Une entrée numérotée par victoire, dans l'ordre des victoires :
+
+| Ennemi abattu | Entrée |
+|---|---|
+| Baron pendu | Baron pendu, abattu dans la Vallée des Brumes. |
+| Abbesse écorchée | Abbesse écorchée, abattue dans l'Abbaye des Cendres. |
+| Margrave de givre | Margrave de givre, abattu dans le Col du Givre-Noir. |
+| Démiurge (ses deux formes) | Démiurge, abattu dans l'Éclipse. |

@@ -3,9 +3,10 @@
 //! joueur commencent à 1, les positions du noyau à 0.
 
 use bersemon_core::attaque::Attaque;
-use bersemon_core::codex::{Codex, EtatCodex};
+use bersemon_core::codex::EtatCodex;
 use bersemon_core::combat::{Combat, Combattant, Cote};
 use bersemon_core::contenu::ContenuV1;
+use bersemon_core::espece::Espece;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_core::soin::Soins;
@@ -14,7 +15,8 @@ use bersemon_presentation::combat::{attaque_de_trop, attaque_en_combat, ordre_et
 use bersemon_presentation::filets::liste_de_filets;
 use bersemon_presentation::monstres::{decrire_attaque, ligne_monstre, nom_en_combat};
 use bersemon_presentation::partie::{
-    decrire_zone, fiche_d_espece, ligne_du_codex, sac_en_expedition,
+    TITRE_DU_CARNET, decrire_zone, entree_du_carnet, especes_du_codex, fiche_d_espece,
+    ligne_du_codex, sac_en_expedition,
 };
 use bersemon_presentation::soins::liste_de_soins;
 
@@ -160,17 +162,37 @@ pub fn equipe_en_expedition(partie: &Partie) -> String {
 }
 
 /// Une espèce capturée montre aussi ses stats de base et ses attaques
-/// (section 5.6).
-pub fn codex(codex: &Codex, contenu: &ContenuV1) -> String {
-    let especes = contenu.especes();
+/// (section 5.6). Les Apôtres abattus suivent, au carnet de traque, avec
+/// leur fiche.
+pub fn codex(partie: &Partie, contenu: &ContenuV1) -> String {
+    let codex = partie.codex();
     let mut lignes = vec!["Codex :".to_string()];
-    for (position, espece) in especes.iter().enumerate() {
+    for (numero, (_, espece)) in especes_du_codex(contenu.especes()).enumerate() {
         lignes.push(format!(
             "  {}. {}",
-            position + 1,
+            numero + 1,
             ligne_du_codex(codex, espece)
         ));
         if codex.etat(espece.id()) == EtatCodex::Capturee {
+            for ligne in fiche_d_espece(espece, contenu) {
+                lignes.push(format!("     {ligne}"));
+            }
+        }
+    }
+    let carnet = partie.carnet_de_traque(contenu.piste(), contenu.invocation());
+    if !carnet.is_empty() {
+        lignes.push(TITRE_DU_CARNET.to_string());
+    }
+    for (position, apotre) in carnet.iter().enumerate() {
+        lignes.push(format!("  {}", entree_du_carnet(position + 1, apotre)));
+        // Le Démiurge a deux formes : chacune a sa fiche, sous son nom.
+        let formes: Vec<&Espece> = std::iter::once(apotre.espece())
+            .chain(apotre.seconde_forme())
+            .collect();
+        for espece in &formes {
+            if formes.len() > 1 {
+                lignes.push(format!("     {} :", espece.nom()));
+            }
             for ligne in fiche_d_espece(espece, contenu) {
                 lignes.push(format!("     {ligne}"));
             }

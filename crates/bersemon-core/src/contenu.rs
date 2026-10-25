@@ -148,6 +148,13 @@ const EPILOGUE_DE_L_ABBESSE: &str = "L'Abbesse écorchée s'effondre sur l'autel
 
 /// Après l'épilogue, le joueur recueille l'âme de l'Apôtre vaincu (section
 /// 9.4).
+/// Le carnet de traque du codex : une ligne par Apôtre abattu, puis le
+/// Démiurge (section 5.6).
+const CARNET_DU_BARON: &str = "Baron pendu, abattu dans la Vallée des Brumes.";
+const CARNET_DE_L_ABBESSE: &str = "Abbesse écorchée, abattue dans l'Abbaye des Cendres.";
+const CARNET_DU_MARGRAVE: &str = "Margrave de givre, abattu dans le Col du Givre-Noir.";
+const CARNET_DU_DEMIURGE: &str = "Démiurge, abattu dans l'Éclipse.";
+
 const AME_DU_BARON: &str =
     "L'âme du Baron pendu s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.";
 
@@ -493,7 +500,8 @@ impl ContenuV1 {
         // donné par le Bourreau, ouvre (section 9.4).
         let baron = Apotre::new(trouver("baron-pendu"), &vallee, AVANT_LE_BARON, EPILOGUE)
             .expect("Baron pendu conforme aux règles")
-            .avec_recit_de_l_ame(AME_DU_BARON);
+            .avec_recit_de_l_ame(AME_DU_BARON)
+            .avec_ligne_du_carnet(CARNET_DU_BARON);
         let indice = |zone: &Zone, texte: &str| Indice {
             zone: zone.id().clone(),
             texte: texte.to_string(),
@@ -512,7 +520,8 @@ impl ContenuV1 {
             EPILOGUE_DE_L_ABBESSE,
         )
         .expect("Abbesse écorchée conforme aux règles")
-        .avec_recit_de_l_ame(AME_DE_L_ABBESSE);
+        .avec_recit_de_l_ame(AME_DE_L_ABBESSE)
+        .avec_ligne_du_carnet(CARNET_DE_L_ABBESSE);
         let chapitre_de_l_abbesse = Chapitre::new(
             vec![indice(&vallee, INDICE_3), indice(&abbaye, INDICE_4)],
             abbesse,
@@ -527,7 +536,8 @@ impl ContenuV1 {
             EPILOGUE_DU_MARGRAVE,
         )
         .expect("Margrave de givre conforme aux règles")
-        .avec_recit_de_l_ame(AME_DU_MARGRAVE);
+        .avec_recit_de_l_ame(AME_DU_MARGRAVE)
+        .avec_ligne_du_carnet(CARNET_DU_MARGRAVE);
         let chapitre_du_margrave = Chapitre::new(
             vec![indice(&abbaye, INDICE_5), indice(&col, INDICE_6)],
             margrave,
@@ -601,7 +611,8 @@ impl ContenuV1 {
             EPILOGUE_DU_DEMIURGE,
         )
         .and_then(|apotre| apotre.avec_seconde_forme(trouver("demiurge-eveille")))
-        .expect("Démiurge conforme aux règles");
+        .expect("Démiurge conforme aux règles")
+        .avec_ligne_du_carnet(CARNET_DU_DEMIURGE);
         let invocation = Invocation::new(eclipse, demiurge, FORGE_DU_BEHERIT, SACRIFICE);
         let zones = vec![lisiere, marais, vallee, abbaye, col];
         let tour = TourSansFond::new(
@@ -3851,6 +3862,22 @@ mod tests {
             wyverne.condition(),
             &ConditionEvolution::Niveau(col.niveaux().1)
         );
+    }
+
+    #[test]
+    fn chaque_apotre_et_le_demiurge_ont_leur_ligne_au_carnet() {
+        let contenu = ContenuV1::new();
+        for apotre in contenu
+            .piste()
+            .apotres()
+            .chain([contenu.invocation().demiurge()])
+        {
+            assert!(
+                apotre.ligne_du_carnet().starts_with(apotre.espece().nom()),
+                "{}",
+                apotre.espece().nom()
+            );
+        }
     }
 
     #[test]

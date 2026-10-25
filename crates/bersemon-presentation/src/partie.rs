@@ -18,6 +18,7 @@ use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_core::pierre::PierreDEvolution;
 use bersemon_core::ressource::Ressource;
+use bersemon_core::traque::Apotre;
 use bersemon_core::zone::Zone;
 
 use crate::boosters::{boosters, eclats_d_astre, question_shiny};
@@ -365,20 +366,48 @@ pub fn decrire_zone(partie: &Partie, zone: &Zone) -> String {
 }
 
 /// Une espèce inconnue reste masquée ; ses types n'apparaissent qu'à sa
-/// capture (section 5.6). Un Apôtre ne se capture pas : sa victoire ouvre sa
-/// fiche, et le codex le dit vaincu (section 9.4).
+/// capture (section 5.6).
 pub fn ligne_du_codex(codex: &Codex, espece: &Espece) -> String {
     match codex.etat(espece.id()) {
         EtatCodex::Inconnue => "???".to_string(),
         EtatCodex::Rencontree => format!("{} : rencontrée", espece.nom()),
-        EtatCodex::Capturee if espece.rarete() == Rarete::Apotre => {
-            format!("{} ({}) : Apôtre vaincu", espece.nom(), types_de(espece))
-        }
-        EtatCodex::Capturee if espece.rarete() == Rarete::Demiurge => {
-            format!("{} ({}) : vaincu", espece.nom(), types_de(espece))
-        }
         EtatCodex::Capturee => format!("{} ({}) : capturée", espece.nom(), types_de(espece)),
     }
+}
+
+/// Les espèces de la liste du codex, avec leur position dans le catalogue.
+/// Les Apôtres et le Démiurge n'y sont pas : ils n'apparaissent qu'au
+/// carnet de traque, une fois abattus, pour ne rien dévoiler de ceux qui
+/// restent ni de leur nombre (section 5.6).
+pub fn especes_du_codex(especes: &[Espece]) -> impl Iterator<Item = (usize, &Espece)> {
+    especes
+        .iter()
+        .enumerate()
+        .filter(|(_, espece)| !matches!(espece.rarete(), Rarete::Apotre | Rarete::Demiurge))
+}
+
+pub const TITRE_DU_CARNET: &str = "Carnet de traque :";
+
+/// "1. Baron pendu, abattu dans la Vallée des Brumes."
+pub fn entree_du_carnet(numero: usize, apotre: &Apotre) -> String {
+    format!("{numero}. {}", apotre.ligne_du_carnet())
+}
+
+/// Le carnet de traque, une entrée par victoire, comme le héros les écrit ;
+/// vide avant le premier Apôtre abattu (section 5.6).
+pub fn carnet_de_traque(partie: &Partie, contenu: &ContenuV1) -> Vec<String> {
+    let carnet = partie.carnet_de_traque(contenu.piste(), contenu.invocation());
+    if carnet.is_empty() {
+        return Vec::new();
+    }
+    let mut lignes = vec![TITRE_DU_CARNET.to_string()];
+    lignes.extend(
+        carnet
+            .iter()
+            .enumerate()
+            .map(|(position, apotre)| format!("  {}", entree_du_carnet(position + 1, apotre))),
+    );
+    lignes
 }
 
 /// Les âmes des Apôtres vaincus, au camp : rien ne les fait perdre (section
@@ -584,15 +613,8 @@ mod tests {
     use bersemon_core::stats::ValeursInternes;
 
     #[test]
-    fn un_apotre_vaincu_est_dit_vaincu_et_laisse_son_ame() {
+    fn aucun_apotre_au_codex_avant_d_etre_abattu() {
         let contenu = ContenuV1::new();
-        let baron = contenu.espece(&EspeceId::new("baron-pendu")).unwrap();
-        let mut codex = Codex::default();
-        codex.noter_capture(baron.id());
-        assert_eq!(
-            ligne_du_codex(&codex, &baron),
-            "Baron pendu (Obscur) : Apôtre vaincu"
-        );
         let salamandre = Monstre::creer(
             contenu.espece(&EspeceId::new("salamandre")).unwrap(),
             Niveau::new(5).unwrap(),
@@ -603,6 +625,33 @@ mod tests {
         let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Mage);
         let partie = Partie::nouvelle(heros, salamandre);
         assert_eq!(ames_d_apotres(&partie, &contenu), None);
+        assert!(carnet_de_traque(&partie, &contenu).is_empty());
+        let liste: Vec<&str> = especes_du_codex(contenu.especes())
+            .map(|(_, espece)| espece.id().as_str())
+            .collect();
+        for cache in [
+            "baron-pendu",
+            "abbesse-ecorchee",
+            "demiurge",
+            "demiurge-eveille",
+        ] {
+            assert!(!liste.contains(&cache), "{cache}");
+        }
+        assert!(liste.contains(&"salamandre"));
+        assert_eq!(
+            liste.len(),
+            contenu.especes().len() - contenu.piste().apotres().count() - 2
+        );
+        let mut partie = partie;
+        let baron = contenu.piste().apotres().next().unwrap();
+        partie.noter_apotre_vaincu(baron);
+        assert_eq!(
+            carnet_de_traque(&partie, &contenu),
+            vec![
+                "Carnet de traque :",
+                "  1. Baron pendu, abattu dans la Vallée des Brumes."
+            ]
+        );
     }
 
     #[test]
