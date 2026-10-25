@@ -13,7 +13,9 @@ use bersemon_core::soin::{Soin, Soins};
 use bersemon_core::types::Efficacite;
 use bersemon_presentation::combat::{attaque_de_trop, attaque_en_combat, etat, ordre_et_bonus};
 use bersemon_presentation::filets::nom_du_filet;
-use bersemon_presentation::monstres::{decrire_attaque, ligne_monstre, nom, nom_en_combat};
+use bersemon_presentation::monstres::{
+    decrire_attaque, ligne_du_heros, ligne_monstre, nom, nom_en_combat,
+};
 use bersemon_presentation::partie::{places_pour_une_capture, proposition_d_evolution};
 use bersemon_presentation::soins::nom_du_soin;
 use poise::serenity_prelude as serenity;
@@ -73,10 +75,17 @@ pub fn action(combat: &Combat, partie: &Partie) -> Question {
         index != actif.index && combat.proprietaire(index) == combat.membre_actif()
     });
     lignes.extend(menu(Cle::Changer, "Changer de monstre", remplacants));
+    // Le héros du joueur qui agit se soigne aussi (section 4.4).
+    let heros = combat
+        .heros(Cote::Joueur)
+        .iter()
+        .enumerate()
+        .map(|(position, heros)| (combat.equipe().len() + position, heros))
+        .find(|(index, _)| combat.proprietaire(*index) == combat.membre_actif());
     lignes.extend(menu(
         Cle::SoinEnCombat,
         "Utiliser un soin",
-        options_de_soins(combat.soins(), combat.equipe()),
+        options_de_soins(combat.soins(), combat.equipe(), heros),
     ));
     let mut texte = etat(combat, partie.codex());
     if combat.filet_possible() {
@@ -102,10 +111,16 @@ fn style_d_attaque(apercu: ApercuAttaque) -> serenity::ButtonStyle {
 }
 
 /// Chaque soin du sac avec chaque monstre à qui il peut servir : l'élixir
-/// aux monstres KO, les autres soins aux monstres debout. Au plus 4 soins
-/// pour 4 monstres : 16 options, sous la limite de Discord ; en groupe, avec
-/// jusqu'à 8 monstres, le menu s'arrête à la limite (section 15.5).
-pub fn options_de_soins(soins: &Soins, equipe: &[Monstre]) -> Vec<OptionDeMenu> {
+/// aux monstres KO, les autres soins aux monstres debout et au héros, à sa
+/// position, qui suit l'équipe (section 4.4). Au plus 4 soins pour 4
+/// monstres et le héros : 20 options, sous la limite de Discord ; en
+/// groupe, avec jusqu'à 8 monstres, le menu s'arrête à la limite (section
+/// 15.5).
+pub fn options_de_soins(
+    soins: &Soins,
+    equipe: &[Monstre],
+    heros: Option<(usize, &Monstre)>,
+) -> Vec<OptionDeMenu> {
     let mut options = Vec::new();
     for (soin, nombre) in soins.presents() {
         for (index, monstre) in equipe.iter().enumerate() {
@@ -120,6 +135,13 @@ pub fn options_de_soins(soins: &Soins, equipe: &[Monstre]) -> Vec<OptionDeMenu> 
                 ),
                 valeur: soin_et_position_en_texte(soin, index),
                 description: Some(ligne_monstre(monstre, Cote::Joueur)),
+            });
+        }
+        if let Some((index, heros)) = heros.filter(|_| soin != Soin::Elixir) {
+            options.push(OptionDeMenu {
+                libelle: format!("{} ({nombre}) : {}", nom_du_soin(soin), heros.nom()),
+                valeur: soin_et_position_en_texte(soin, index),
+                description: Some(ligne_du_heros(heros)),
             });
         }
     }
@@ -232,5 +254,31 @@ pub fn oubli(monstre: &Monstre, nouvelle: &Attaque) -> Question {
             lignes.join("\n")
         ),
         rangees: rangees(boutons),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bersemon_core::heros::{Classe, Heros};
+    use bersemon_core::nom::Nom;
+
+    /// Section 4.4 : les soins servent au héros, sauf l'élixir.
+    #[test]
+    fn les_soins_se_proposent_aussi_pour_le_heros() {
+        let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Guerrier).combattant();
+        let mut soins = Soins::default();
+        soins.ajouter(Soin::Potion, 2);
+        soins.ajouter(Soin::Elixir, 1);
+        let options = options_de_soins(&soins, &[], Some((0, &heros)));
+        let libelles: Vec<&str> = options
+            .iter()
+            .map(|option| option.libelle.as_str())
+            .collect();
+        assert_eq!(libelles, ["Potion (2) : Aldric"]);
+        assert_eq!(
+            options[0].description.as_deref(),
+            Some("Aldric (héros, niv. 5) : 24/24 PV")
+        );
     }
 }

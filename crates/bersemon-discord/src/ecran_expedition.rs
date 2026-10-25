@@ -7,7 +7,7 @@ use bersemon_core::combat::Cote;
 use bersemon_core::deroulement::Annonce;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
-use bersemon_presentation::monstres::ligne_monstre;
+use bersemon_presentation::monstres::{ligne_du_heros, ligne_monstre};
 use bersemon_presentation::partie::{
     annonce as texte_d_annonce, place_manquante as texte_de_place_manquante, sac_en_expedition,
 };
@@ -27,10 +27,13 @@ use crate::message::{
 /// rappelé : une défaite le ferait perdre (section 9.3).
 pub fn entre_deux_etapes(partie: &Partie) -> Question {
     let equipe = partie.collection().equipe();
-    let lignes: Vec<String> = equipe
+    let heros = partie.heros().combattant();
+    let mut lignes: Vec<String> = equipe
         .iter()
         .map(|monstre| ligne_monstre(monstre, Cote::Joueur))
         .collect();
+    // Le héros suit l'équipe : il combat quand elle est KO (section 4.4).
+    lignes.push(ligne_du_heros(&heros));
     let mut rangees_de_l_etape = rangees(vec![
         bouton(Cle::Continuer, "Continuer l'expédition", PRINCIPAL),
         bouton(Cle::Rentrer, "Rentrer au camp", SECONDAIRE),
@@ -38,7 +41,7 @@ pub fn entre_deux_etapes(partie: &Partie) -> Question {
     rangees_de_l_etape.extend(menu(
         Cle::Soin,
         "Utiliser un soin",
-        options_de_soins(partie.sac().soins(), equipe),
+        options_de_soins(partie.sac().soins(), equipe, Some((equipe.len(), &heros))),
     ));
     let suivants = options_d_equipe(equipe).into_iter().skip(1).collect();
     rangees_de_l_etape.extend(menu(Cle::EnTete, "Mettre en tête de l'équipe", suivants));

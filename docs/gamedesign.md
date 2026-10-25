@@ -173,6 +173,7 @@ Décidé le 25/10/2026, pour les étapes 128 à 133 (choix de l'utilisateur) :
 - Les humains de l'IA combattent aussi en dernier, avec leur classe et leur équipement (section 10.7), comme les héros des autres joueurs en duel (section 15.3).
 - Écrans, à l'étape 132 (console) et 133 (Discord) : l'écran d'équipement du héros montre son niveau de combat, ses stats, ses PV et ses attaques ; en combat, le héros se montre comme un monstre, de type Humain ; les menus des soins le proposent avec les monstres.
 - Précisé à l'étape 132, en codant (console) : le héros suit l'équipe, sur une ligne "Aldric (héros, niv. 15) : 40/54 PV", en combat comme entre deux étapes ; face à un humain, une ligne annonce qu'il combattra en dernier ; le menu de combat ne propose plus de changer de monstre quand le héros combat ; la forge dit les attaques que chaque arme donne au héros ; le retour au camp dit que le héros est soigné. L'écran d'équipement, qui montre la fiche du héros, reste proposé une fois Gunther au camp ou un objet possédé.
+- Précisé à l'étape 133, en codant (Discord) : l'écran du combat et celui entre deux étapes montrent la ligne du héros après l'équipe ; le menu des soins le propose après les monstres, pour chaque soin sauf l'élixir (en groupe, le héros du joueur qui agit) ; le menu "Changer de monstre" disparaît quand le héros combat, faute de monstre debout ; l'écran d'équipement montre la fiche du héros au-dessus de l'équipement. La forge ne dit pas les attaques des armes, faute de place dans la description d'une option.
 
 ## 5. Les monstres
 

@@ -22,7 +22,7 @@ use bersemon_core::stats::ValeursInternes;
 use bersemon_presentation::beherit::description_de_l_eclipse;
 use bersemon_presentation::boosters::{boosters, effet_du_booster};
 use bersemon_presentation::equipement::{
-    decrire_bonus, etat_de_l_equipement, nom_de_place, objet_et_bonus,
+    decrire_bonus, etat_de_l_equipement, fiche_du_heros, nom_de_place, objet_et_bonus,
 };
 use bersemon_presentation::expeditions_automatiques::duree;
 use bersemon_presentation::expeditions_automatiques::expeditions_rentrees;
@@ -494,7 +494,11 @@ fn equipement(partie: &Partie) -> Question {
         .collect();
     lignes.extend(rangees(vec![retour()]));
     Question {
-        texte: etat_de_l_equipement(equipement),
+        texte: format!(
+            "{}\n\n{}",
+            fiche_du_heros(partie.heros()),
+            etat_de_l_equipement(equipement)
+        ),
         rangees: lignes,
     }
 }
