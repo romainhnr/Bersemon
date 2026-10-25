@@ -167,3 +167,20 @@ La nuit profite à ce joueur : ses monstres plus forts rapportent plus d'XP, et 
 ## 8. Effet de la météo (étape 121)
 
 Mesuré sur 100 parties par classe, cycle du jour et météo compris : 51, 54, 55 et 54 expéditions (Guerrier, Mage, Templier, Assassin), 9,0, 11,6, 7,2 et 6,5 défaites ; le Baron pendu demande 2,7 tentatives (34 % au premier essai), l'Abbesse 2,4 (53 %), le Margrave 2,0 (68 %), le Bourreau 2,0 (35 %). Les écarts avec la section 7 sont de l'ordre du bruit : une météo touche un créneau sur 3, renforce deux types pour les deux camps, et le joueur automatique n'en tient pas compte.
+
+## 9. Effet du héros combattant et des armes de classe (étapes 128 à 134)
+
+Le joueur automatique ne change pas de stratégie : son héros entre de lui-même quand l'équipe tombe, et il l'y fait attaquer comme un monstre ; il forge les objets de sa classe qui renforcent le plus ses monstres ; il n'entre pas dans la Fosse aux damnés ni ne joue l'arène entre joueurs. Mesuré sur 100 parties par classe, après l'étape 138 :
+
+| Mesure | Section 8 (météo) | Avec le héros combattant |
+|---|---|---|
+| Expéditions (médiane : Guerrier, Mage, Templier, Assassin) | 51, 54, 55, 54 | 50, 54, 59, 54 |
+| Défaites (moyenne) | 9,0, 11,6, 7,2, 6,5 | 8,7, 11,4, 7,0, 7,0 |
+| Baron pendu : tentatives, 1er essai | 2,7, 34 % | 2,6, 36 % |
+| Abbesse écorchée | 2,4, 53 % | 2,2, 58 % |
+| Margrave de givre | 2,0, 68 % | 1,9, 69 % |
+| Bourreau | 2,0, 35 % | 2,1, 34 % |
+| Brigand, Inquisiteur, Porte-étendard | non mesurés | 1,5 et 63 %, 1,7 et 55 %, 2,0 et 50 % |
+| Objets forgés (moyenne) | 2,6 (section 6) | 1,7 |
+
+Le héros change peu la progression de ce joueur : au niveau de son équipement, il reste une proie face aux monstres des zones, comme voulu (section 4.4 de gamedesign.md), et ne sauve qu'une part des combats perdus. Les humains de fin de zone, qui combattent désormais après leurs monstres, restent dans les mêmes eaux ; le brigand, Assassin au niveau 10, est un peu plus dur qu'à l'étape 117 (63 % au premier essai au lieu de 70 %). Les armes de classe réduisent le choix de Gunther : 1,7 objet forgé par partie au lieu de 2,6. Le Templier, le plus lent, gagne quelques expéditions de plus, dans la marge du bruit d'une classe à l'autre.
