@@ -14,6 +14,8 @@ use crate::joueurs::IdJoueur;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ActionDeDuel {
     Defier(IdJoueur),
+    /// Défie ce joueur à l'arène, héros contre héros (section 15.6).
+    DefierALArene(IdJoueur),
     RetirerDefi,
     AccepterDefi,
     RefuserDefi,
@@ -78,11 +80,12 @@ pub fn erreur_de_defi(erreur: &ErreurDeDefi) -> String {
     }
 }
 
-/// Un défi en attente de réponse.
+/// Un défi en attente de réponse : en duel, ou à l'arène (section 15.6).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Defi {
     pub de: IdJoueur,
     pub a: IdJoueur,
+    pub arene: bool,
 }
 
 /// Le joueur qui a lancé le défi est le premier côté du combat (Q90).
@@ -96,6 +99,11 @@ pub struct DuelEnCours {
     /// L'issue est notée au palmarès des deux joueurs dès la fin du duel,
     /// une seule fois (section 15.4).
     pub palmares_note: bool,
+    /// Un combat d'arène, héros contre héros : sa fin change la cote des
+    /// deux joueurs, et non leur palmarès (section 15.6).
+    pub arene: bool,
+    /// Ce que le vainqueur a gagné et le perdant perdu, une fois noté.
+    pub gain: Option<u32>,
 }
 
 impl DuelEnCours {
@@ -126,4 +134,7 @@ pub struct DuelVu {
     /// Le nom du héros du joueur, puis celui de l'autre.
     pub heros: String,
     pub adversaire: String,
+    pub arene: bool,
+    /// Après un combat d'arène : le gain ou la perte, et la cote du joueur.
+    pub cote_d_arene: Option<(u32, u32)>,
 }

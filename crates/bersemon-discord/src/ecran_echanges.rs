@@ -12,7 +12,10 @@ use bersemon_core::espece::Rarete;
 use bersemon_core::partie::Partie;
 use bersemon_core::relations::Palmares;
 use bersemon_core::tour::RecordsDeLaTour;
-use bersemon_presentation::duels::{classement as texte_du_classement, duels_de, vos_duels};
+use bersemon_presentation::duels::{
+    classement as texte_du_classement, classement_de_l_arene as texte_de_l_arene, duels_de,
+    vos_duels,
+};
 use bersemon_presentation::echanges::{
     decrire_offre_envoyee, decrire_offre_recue, joueur, nom_et_niveau,
 };
@@ -52,14 +55,19 @@ pub fn echanges(
     let mut paragraphes = Vec::new();
     let mut lignes: Vec<Rangee> = Vec::new();
     let mut boutons = Vec::new();
+    let ou = if tableau.defi_a_l_arene {
+        "à l'arène"
+    } else {
+        "en duel"
+    };
     if let Some(autre) = &tableau.defi_recu {
-        paragraphes.push(format!("{} vous défie en duel.", qui(autre)));
+        paragraphes.push(format!("{} vous défie {ou}.", qui(autre)));
         boutons.push(bouton(Cle::AccepterDefi, "Accepter le défi", SUCCES));
         boutons.push(bouton(Cle::RefuserDefi, "Refuser le défi", DANGER));
     }
     if let Some(autre) = &tableau.defi_envoye {
         paragraphes.push(format!(
-            "Vous avez défié {} en duel. En attente de sa réponse.",
+            "Vous avez défié {} {ou}. En attente de sa réponse.",
             qui(autre)
         ));
         boutons.push(bouton(Cle::RetirerDefi, "Retirer le défi", SECONDAIRE));
@@ -135,6 +143,11 @@ pub fn echanges(
             paragraphes.push(duels_de(&autre.heros, autre.palmares));
             if peut_defier {
                 boutons.push(bouton(Cle::Defier(id), "Défier en duel", PRINCIPAL));
+                boutons.push(bouton(
+                    Cle::DefierALArene(id),
+                    "Défier à l'arène",
+                    PRINCIPAL,
+                ));
                 boutons.push(bouton(Cle::Inviter(id), INVITER_DANS_LA_TOUR, PRINCIPAL));
             }
             if partie.relations().est_ami(id) {
@@ -188,9 +201,9 @@ pub fn echanges(
             ));
         }
     }
-    // Au plus 9 boutons : ils tiennent en deux rangées. Le défi ou
+    // Au plus 10 boutons : ils tiennent en deux rangées. Le défi ou
     // l'invitation en attente en compte 2 au plus, l'offre reçue 2, le
-    // joueur choisi 5 sans défi ni invitation en attente, ou 3 avec, et le
+    // joueur choisi 6 sans défi ni invitation en attente, ou 3 avec, et le
     // classement et le retour 2.
     boutons.push(bouton(
         Cle::Afficher(Vue::Classement),
@@ -222,6 +235,11 @@ pub fn classement(tableau: &TableauDesEchanges) -> Question {
             bouton(
                 Cle::Afficher(Vue::RecordsDeLaTour),
                 "Records de la Tour",
+                SECONDAIRE,
+            ),
+            bouton(
+                Cle::Afficher(Vue::ClassementDeLArene),
+                "Classement de l'arène",
                 SECONDAIRE,
             ),
             bouton(
@@ -259,6 +277,51 @@ pub fn records_de_la_tour(partie: &Partie, tableau: &TableauDesEchanges) -> Ques
             bouton(
                 Cle::Afficher(Vue::Classement),
                 "Classement des duels",
+                SECONDAIRE,
+            ),
+            bouton(
+                Cle::Afficher(Vue::ClassementDeLArene),
+                "Classement de l'arène",
+                SECONDAIRE,
+            ),
+            bouton(
+                Cle::Afficher(Vue::Echanges {
+                    avec: None,
+                    cede: None,
+                }),
+                "Retour aux autres joueurs",
+                SECONDAIRE,
+            ),
+            retour(),
+        ]),
+    }
+}
+
+/// La cote du joueur, puis les 10 meilleures cotes de l'arène (section
+/// 15.6).
+pub fn classement_de_l_arene(partie: &Partie, tableau: &TableauDesEchanges) -> Question {
+    let classes: Vec<(String, Option<String>, u32)> = tableau
+        .classement_de_l_arene
+        .iter()
+        .map(|joueur| {
+            (
+                joueur.heros.clone(),
+                joueur.pseudo.clone(),
+                joueur.arene.cote,
+            )
+        })
+        .collect();
+    Question {
+        texte: texte_de_l_arene(partie.arene().cote, &classes),
+        rangees: rangees(vec![
+            bouton(
+                Cle::Afficher(Vue::Classement),
+                "Classement des duels",
+                SECONDAIRE,
+            ),
+            bouton(
+                Cle::Afficher(Vue::RecordsDeLaTour),
+                "Records de la Tour",
                 SECONDAIRE,
             ),
             bouton(

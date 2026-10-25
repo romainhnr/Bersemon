@@ -6,7 +6,7 @@ use bersemon_core::combat::Phase;
 use bersemon_core::horodatage::Horodatage;
 use bersemon_core::partie::Partie;
 use bersemon_presentation::combat::etat;
-use bersemon_presentation::duels::{en_attente, issue_du_duel, raconter};
+use bersemon_presentation::duels::{cote_apres_le_combat, en_attente, issue_du_duel, raconter};
 
 use crate::composants::Cle;
 use crate::duels::DuelVu;
@@ -15,7 +15,11 @@ use crate::message::{DANGER, PRINCIPAL, Question, SECONDAIRE, SUCCES, bouton, ra
 
 pub fn question(vu: &DuelVu, partie: &Partie, maintenant: Horodatage) -> Question {
     let combat = vu.duel.vu_par(vu.cote);
-    let mut paragraphes = vec![format!("Duel contre {}.", vu.adversaire)];
+    let mut paragraphes = vec![if vu.arene {
+        format!("Combat d'arène contre {}.", vu.adversaire)
+    } else {
+        format!("Duel contre {}.", vu.adversaire)
+    }];
     let recit = raconter(vu.duel.recit(vu.cote), &combat, &vu.heros, &vu.adversaire);
     if !recit.is_empty() {
         paragraphes.push(recit);
@@ -23,6 +27,10 @@ pub fn question(vu: &DuelVu, partie: &Partie, maintenant: Horodatage) -> Questio
     let abandonner = || bouton(Cle::Abandonner, "Abandonner", DANGER);
     if let Some(issue) = issue_du_duel(&combat, &vu.adversaire) {
         paragraphes.push(issue);
+        if let Some((gain, cote)) = vu.cote_d_arene {
+            let victoire = vu.duel.vainqueur() == Some(vu.cote);
+            paragraphes.push(cote_apres_le_combat(victoire, gain, cote));
+        }
         return Question {
             texte: paragraphes.join("\n\n"),
             rangees: rangees(vec![bouton(

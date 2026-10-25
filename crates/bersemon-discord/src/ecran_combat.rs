@@ -71,8 +71,9 @@ pub fn action(combat: &Combat, partie: &Partie) -> Question {
     if combat.fuite_possible() {
         autres.push(bouton(Cle::Fuir, "Fuir", SECONDAIRE));
     }
-    // Dans la Fosse aux damnés, attaquer ou jeter son arme (section 9.8).
-    if combat.est_dans_l_arene() {
+    // Dans la Fosse aux damnés, attaquer ou jeter son arme (section 9.8) ;
+    // en duel d'arène, l'écran du duel a son propre abandon.
+    if combat.est_dans_l_arene() && !combat.est_un_duel() {
         autres.push(bouton(Cle::AbandonnerLaFosse, "Abandonner", DANGER));
     }
     lignes.extend(rangees(autres));
@@ -285,8 +286,8 @@ mod tests {
     /// Section 9.8 : dans la Fosse, attaquer ou abandonner, rien d'autre.
     #[test]
     fn dans_la_fosse_le_heros_attaque_ou_abandonne() {
-        use bersemon_core::contenu::ContenuV1;
         use crate::message::Rangee;
+        use bersemon_core::contenu::ContenuV1;
 
         let contenu = ContenuV1::new();
         let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Guerrier);

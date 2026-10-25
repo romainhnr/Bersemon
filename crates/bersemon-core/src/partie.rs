@@ -577,6 +577,11 @@ impl Partie {
         self.arene
     }
 
+    /// Après un combat d'arène contre un autre joueur (section 15.6).
+    pub(crate) fn noter_combat_d_arene(&mut self, victoire: bool, gain: u32) {
+        self.arene.noter_combat(victoire, gain);
+    }
+
     /// Ouverte quand le brigand de la Lisière est vaincu (section 9.8).
     pub fn fosse_ouverte(&self, fosse: &FosseAuxDamnes) -> bool {
         self.humains_vaincus.contains(fosse.ouverte_par())

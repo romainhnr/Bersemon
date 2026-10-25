@@ -141,6 +141,17 @@ impl Duel {
         Duel::new(combat)
     }
 
+    /// Dans l'arène, héros contre héros, chacun avec une copie soignée de
+    /// son héros, sans monstres (section 15.6).
+    pub fn dans_l_arene(premier: &Partie, second: &Partie) -> Result<Duel, ErreurCombat> {
+        let heros = |partie: &Partie| {
+            let mut heros = partie.heros().combattant();
+            heros.soigner_completement();
+            heros
+        };
+        Duel::new(Combat::duel_dans_l_arene(heros(premier), heros(second))?)
+    }
+
     /// Le combat vu par ce côté : le second joueur y est le côté `Joueur`.
     pub fn vu_par(&self, cote: Cote) -> Combat {
         match cote {

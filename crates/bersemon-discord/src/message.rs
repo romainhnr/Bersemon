@@ -264,6 +264,9 @@ fn question_de_la_partie(
             }
             Vue::Classement => ecran_echanges::classement(&session.echanges),
             Vue::RecordsDeLaTour => ecran_echanges::records_de_la_tour(partie(), &session.echanges),
+            Vue::ClassementDeLArene => {
+                ecran_echanges::classement_de_l_arene(partie(), &session.echanges)
+            }
             vue => ecran_camp::question(partie(), vue, contenu, maintenant),
         },
         Attente::EntreDeuxEtapes => ecran_expedition::entre_deux_etapes(partie()),

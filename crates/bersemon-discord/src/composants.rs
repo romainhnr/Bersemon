@@ -85,6 +85,8 @@ pub enum Vue {
     Classement,
     /// Le classement des records de la Tour sans fond (section 9.5).
     RecordsDeLaTour,
+    /// Le classement de l'arène, par cote (section 15.6).
+    ClassementDeLArene,
     /// Les machines de Gunther, depuis sa forge (section 13.6).
     Machines,
     /// Le choix du monstre à mettre à l'entraînement, depuis les machines.
@@ -400,6 +402,8 @@ pub enum Cle {
     RetirerOffre,
     /// Défie ce joueur en duel (section 15.3).
     Defier(IdJoueur),
+    /// Défie ce joueur à l'arène (section 15.6).
+    DefierALArene(IdJoueur),
     /// La liste d'amis du joueur (section 15.4).
     AjouterAmi(IdJoueur),
     RetirerAmi(IdJoueur),
@@ -614,6 +618,7 @@ impl Cle {
             Cle::AjouterAmi(autre) => Some(Commande::Echanger(ActionDEchange::AjouterAmi(*autre))),
             Cle::RetirerAmi(autre) => Some(Commande::Echanger(ActionDEchange::RetirerAmi(*autre))),
             Cle::Defier(a) => Some(Commande::Duel(ActionDeDuel::Defier(*a))),
+            Cle::DefierALArene(a) => Some(Commande::Duel(ActionDeDuel::DefierALArene(*a))),
             Cle::AccepterDefi => Some(Commande::Duel(ActionDeDuel::AccepterDefi)),
             Cle::RefuserDefi => Some(Commande::Duel(ActionDeDuel::RefuserDefi)),
             Cle::RetirerDefi => Some(Commande::Duel(ActionDeDuel::RetirerDefi)),
@@ -674,6 +679,7 @@ impl Cle {
             Cle::Afficher(Vue::Echanges { avec: None, .. }) => "vue:echanges".to_string(),
             Cle::Afficher(Vue::Classement) => "vue:classement".to_string(),
             Cle::Afficher(Vue::RecordsDeLaTour) => "vue:records-de-la-tour".to_string(),
+            Cle::Afficher(Vue::ClassementDeLArene) => "vue:classement-arene".to_string(),
             Cle::AjouterAmi(autre) => format!("ajouter-ami:{autre}"),
             Cle::RetirerAmi(autre) => format!("retirer-ami:{autre}"),
             Cle::Afficher(Vue::Echanges {
@@ -818,6 +824,7 @@ impl Cle {
             Cle::RefuserOffre => "refuser-offre".to_string(),
             Cle::RetirerOffre => "retirer-offre".to_string(),
             Cle::Defier(a) => format!("defier:{a}"),
+            Cle::DefierALArene(a) => format!("defier-arene:{a}"),
             Cle::AccepterDefi => "accepter-defi".to_string(),
             Cle::RefuserDefi => "refuser-defi".to_string(),
             Cle::RetirerDefi => "retirer-defi".to_string(),
@@ -891,6 +898,7 @@ impl Cle {
             "relacher-prise" => Cle::RelacherLaPrise,
             "vue:classement" => Cle::Afficher(Vue::Classement),
             "vue:records-de-la-tour" => Cle::Afficher(Vue::RecordsDeLaTour),
+            "vue:classement-arene" => Cle::Afficher(Vue::ClassementDeLArene),
             "vue:echanges" => Cle::Afficher(Vue::Echanges {
                 avec: None,
                 cede: None,
@@ -1010,6 +1018,7 @@ impl Cle {
                         }
                     }
                     "defier" => Cle::Defier(parametre.parse().ok()?),
+                    "defier-arene" => Cle::DefierALArene(parametre.parse().ok()?),
                     "inviter" => Cle::Inviter(parametre.parse().ok()?),
                     "filet" => Cle::Filet(Filet::depuis_id(parametre)?),
                     "ajouter-ami" => Cle::AjouterAmi(parametre.parse().ok()?),
@@ -1364,6 +1373,8 @@ mod tests {
             Cle::RetirerAmi(7),
             Cle::Afficher(Vue::Classement),
             Cle::Afficher(Vue::RecordsDeLaTour),
+            Cle::Afficher(Vue::ClassementDeLArene),
+            Cle::DefierALArene(123_456_789_012_345_678),
             Cle::AccepterDefi,
             Cle::RefuserDefi,
             Cle::RetirerDefi,

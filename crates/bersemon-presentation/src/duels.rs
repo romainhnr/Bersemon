@@ -19,6 +19,45 @@ pub fn defi_recu(heros: &str, pseudo: Option<&str>) -> String {
     )
 }
 
+/// Le message privé qui prévient le joueur d'un défi à l'arène (section
+/// 15.6).
+pub fn defi_a_l_arene_recu(heros: &str, pseudo: Option<&str>) -> String {
+    format!(
+        "{} vous défie à l'arène. Ouvrez /bersemon, au camp, pour répondre.",
+        joueur(heros, pseudo)
+    )
+}
+
+/// La fin d'un combat d'arène, avec la cote qu'en garde le joueur (section
+/// 15.6).
+pub fn cote_apres_le_combat(victoire: bool, gain: u32, cote: u32) -> String {
+    if victoire {
+        format!("Vous remportez le combat d'arène : votre cote passe à {cote} (+{gain}).")
+    } else {
+        format!("Vous perdez le combat d'arène : votre cote passe à {cote} (-{gain}).")
+    }
+}
+
+/// Le classement de l'arène : la cote du joueur, puis les meilleures
+/// (section 15.6).
+pub fn classement_de_l_arene(cote: u32, classes: &[(String, Option<String>, u32)]) -> String {
+    let mut lignes = vec![
+        "Classement de l'arène.".to_string(),
+        format!("Votre cote : {cote}."),
+    ];
+    if classes.is_empty() {
+        lignes.push("Aucun combat d'arène pour l'instant.".to_string());
+    }
+    for (rang, (heros, pseudo, cote)) in classes.iter().enumerate() {
+        lignes.push(format!(
+            "{}. {} : {cote}",
+            rang + 1,
+            joueur(heros, pseudo.as_deref())
+        ));
+    }
+    lignes.join("\n")
+}
+
 /// "2 victoires, 1 défaite" (section 15.4).
 pub fn bilan(palmares: Palmares) -> String {
     let pluriel = |nombre: u32, mot: &str| {
@@ -79,12 +118,17 @@ pub fn en_attente(adversaire: &str) -> String {
 
 /// `None` tant que le duel n'est pas fini.
 pub fn issue_du_duel(combat: &Combat, adversaire: &str) -> Option<String> {
+    let quoi = if combat.est_dans_l_arene() {
+        "le combat d'arène"
+    } else {
+        "le duel"
+    };
     match combat.phase() {
         Phase::Termine(Issue::Victoire) => Some(important(&format!(
-            "Victoire : vous remportez le duel contre {adversaire}."
+            "Victoire : vous remportez {quoi} contre {adversaire}."
         ))),
         Phase::Termine(_) => Some(important(&format!(
-            "Défaite : {adversaire} remporte le duel."
+            "Défaite : {adversaire} remporte {quoi}."
         ))),
         _ => None,
     }
@@ -113,6 +157,11 @@ pub fn raconter(
             EvenementDeDuel::Combat(Evenement::FinDuCombat(_))
             | EvenementDeDuel::Combat(Evenement::Abandon(Cote::Joueur))
             | EvenementDeDuel::Combat(Evenement::Forfait(Cote::Joueur)) => None,
+            EvenementDeDuel::Combat(Evenement::Abandon(Cote::Adversaire))
+                if combat.est_dans_l_arene() =>
+            {
+                Some(format!("{adversaire} jette son arme sur le sable."))
+            }
             EvenementDeDuel::Combat(Evenement::Abandon(Cote::Adversaire)) => {
                 Some(format!("{adversaire} abandonne le duel."))
             }

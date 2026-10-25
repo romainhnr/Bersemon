@@ -1149,6 +1149,7 @@ Décidé le 25/10/2026, pour l'étape 138 (choix de l'utilisateur) :
 - Classement par cote, comme aux échecs (cote Elo) : chaque joueur part de 1000 points. À la fin du combat, le vainqueur gagne 32 x (1 - E) points, arrondis à l'entier le plus proche, où E = 1 / (1 + 10^((cote du perdant - cote du vainqueur) / 400)) est sa chance attendue de gagner, et le perdant perd autant. Battre un joueur mieux classé rapporte plus ; battre sans cesse un joueur moins bien classé ne rapporte presque rien. Un abandon ou un forfait compte comme une défaite.
 - La cote est gardée dans la sauvegarde de chaque joueur et notée dès la fin du combat, comme le palmarès des duels (section 15.4).
 - L'écran du classement des duels a un bouton "Classement de l'arène", comme celui des records de la Tour : la cote du joueur, puis les 10 meilleures cotes des joueurs qui ont livré au moins un combat d'arène.
+- Précisé à l'étape 138, en codant : le bouton "Défier à l'arène" suit "Défier en duel" une fois un joueur choisi ; le défi, son message privé et l'écran des autres joueurs disent "à l'arène" ; l'écran du combat s'intitule "Combat d'arène contre {héros}", et sa fin dit la nouvelle cote du joueur et son gain ou sa perte ; le gain se calcule sur les cotes des deux joueurs d'avant le combat, une seule fois, et s'applique aux deux ; le palmarès des duels ne change pas. Les écrans du classement des duels, des records de la Tour et de l'arène s'ouvrent l'un l'autre.
 
 ## 16. Questions ouvertes et valeurs à définir
 

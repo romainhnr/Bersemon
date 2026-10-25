@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
 use bersemon_core::aleatoire::{Aleatoire, GenerateurAleatoire};
+use bersemon_core::arene::{COTE_DE_DEPART, gain_de_cote};
 use bersemon_core::combat::{Cote, Membre};
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::{Attente, Choix, Contexte, Deroulement, ErreurChoix, Evenement};
@@ -18,7 +19,7 @@ use bersemon_core::horodatage::Horodatage;
 use bersemon_core::partie::Partie;
 use bersemon_core::sauvegarde::SauvegardeRepository;
 use bersemon_core::tour::RecordsDeLaTour;
-use bersemon_presentation::duels::{defi_accepte, defi_recu, defi_refuse};
+use bersemon_presentation::duels::{defi_a_l_arene_recu, defi_accepte, defi_recu, defi_refuse};
 use bersemon_presentation::echanges::{offre_acceptee, offre_recue, offre_refusee};
 use bersemon_presentation::groupe::{invitation_acceptee, invitation_recue, invitation_refusee};
 use bersemon_storage::FichierJson;
@@ -150,7 +151,7 @@ impl Joueurs {
         let vue = self.charger(joueur, contenu).vue;
         let avec = match vue {
             Vue::Echanges { avec, .. } => Some(avec),
-            Vue::Classement | Vue::RecordsDeLaTour => Some(None),
+            Vue::Classement | Vue::RecordsDeLaTour | Vue::ClassementDeLArene => Some(None),
             _ => None,
         };
         if let Some(avec) = avec {
@@ -209,13 +210,16 @@ impl Joueurs {
     fn duel_vu(&mut self, joueur: IdJoueur, contenu: &ContenuV1) -> Option<DuelVu> {
         let (position, cote) = self.duel_de(joueur)?;
         let autre = self.duels[position].autre(cote);
-        let heros = self.autre_joueur(joueur, contenu)?.heros;
+        let moi = self.autre_joueur(joueur, contenu)?;
         let adversaire = self.autre_joueur(autre, contenu)?.heros;
+        let en_cours = &self.duels[position];
         Some(DuelVu {
-            duel: self.duels[position].duel.clone(),
+            duel: en_cours.duel.clone(),
             cote,
-            heros,
+            heros: moi.heros,
             adversaire,
+            arene: en_cours.arene,
+            cote_d_arene: en_cours.gain.map(|gain| (gain, moi.arene.cote)),
         })
     }
 
@@ -234,12 +238,14 @@ impl Joueurs {
         let heros = partie.heros().nom().as_str().to_string();
         let palmares = partie.relations().palmares();
         let records = partie.records_de_la_tour();
+        let arene = partie.arene();
         Some(AutreJoueur {
             id: joueur,
             heros,
             pseudo: self.pseudos.pseudo(joueur).map(str::to_string),
             palmares,
             records,
+            arene,
         })
     }
 
@@ -258,6 +264,7 @@ impl Joueurs {
         let classement = classer(&tous);
         let records_seul = classer_les_records(&tous, |records| records.seul);
         let records_a_deux = classer_les_records(&tous, |records| records.a_deux);
+        let classement_de_l_arene = classer_l_arene(&tous);
         let amis = partie_lisible(&self.charger(joueur, contenu).deroulement)
             .map(|partie| partie.relations().clone())
             .unwrap_or_default();
@@ -284,6 +291,10 @@ impl Joueurs {
             let partie = partie_lisible(&self.sessions.get(&autre)?.deroulement)?;
             Some((qui, partie.collection().clone()))
         });
+        let defi_a_l_arene = self
+            .defis
+            .iter()
+            .any(|defi| (defi.a == joueur || defi.de == joueur) && defi.arene);
         let defi_recu = self.defis.iter().find(|defi| defi.a == joueur).copied();
         let defi_recu = defi_recu.and_then(|defi| self.autre_joueur(defi.de, contenu));
         let defi_envoye = self.defis.iter().find(|defi| defi.de == joueur).copied();
@@ -309,11 +320,13 @@ impl Joueurs {
             choisi,
             defi_recu,
             defi_envoye,
+            defi_a_l_arene,
             invitation_recue,
             invitation_envoyee,
             classement,
             records_seul,
             records_a_deux,
+            classement_de_l_arene,
         }
     }
 
@@ -341,7 +354,9 @@ impl Joueurs {
     }
 
     /// Une fois le duel fini, sa victoire ou sa défaite rejoint le palmarès
-    /// de chaque joueur, une seule fois (section 15.4).
+    /// de chaque joueur, une seule fois (section 15.4) ; un combat d'arène
+    /// change plutôt leur cote, du même gain, calculé sur leurs cotes
+    /// d'avant le combat (section 15.6).
     fn noter_la_fin_du_duel(&mut self, joueur: IdJoueur) {
         let Some((position, _)) = self.duel_de(joueur) else {
             return;
@@ -355,10 +370,36 @@ impl Joueurs {
         }
         en_cours.palmares_note = true;
         let joueurs = en_cours.joueurs;
+        let arene = en_cours.arene;
+        let cote_de = |qui: IdJoueur| {
+            self.sessions
+                .get(&qui)
+                .and_then(|session| partie_lisible(&session.deroulement))
+                .map_or(COTE_DE_DEPART, |partie| partie.arene().cote)
+        };
+        let gagnant = match vainqueur {
+            Cote::Joueur => joueurs[0],
+            Cote::Adversaire => joueurs[1],
+        };
+        let perdant = if gagnant == joueurs[0] {
+            joueurs[1]
+        } else {
+            joueurs[0]
+        };
+        let gain = gain_de_cote(cote_de(gagnant), cote_de(perdant));
+        if arene {
+            self.duels[position].gain = Some(gain);
+        }
         for (qui, cote) in joueurs.into_iter().zip([Cote::Joueur, Cote::Adversaire]) {
             let depot = depot(&self.dossier, qui);
             if let Some(session) = self.sessions.get_mut(&qui) {
-                session.deroulement.noter_duel(cote == vainqueur, &depot);
+                if arene {
+                    session
+                        .deroulement
+                        .noter_combat_d_arene(cote == vainqueur, gain, &depot);
+                } else {
+                    session.deroulement.noter_duel(cote == vainqueur, &depot);
+                }
             }
         }
     }
@@ -378,7 +419,12 @@ impl Joueurs {
             return Err(Refus::MessagePerime);
         }
         let concernes = match action {
-            ActionDeDuel::Defier(a) => self.defier(joueur, a, contenu).map(|()| vec![joueur]),
+            ActionDeDuel::Defier(a) => self
+                .defier(joueur, a, false, contenu)
+                .map(|()| vec![joueur]),
+            ActionDeDuel::DefierALArene(a) => {
+                self.defier(joueur, a, true, contenu).map(|()| vec![joueur])
+            }
             ActionDeDuel::RetirerDefi => self.retirer_defi(joueur).map(|()| vec![joueur]),
             ActionDeDuel::RefuserDefi => self.refuser_defi(joueur, contenu),
             ActionDeDuel::AccepterDefi => self.accepter_defi(joueur, contenu),
@@ -407,6 +453,7 @@ impl Joueurs {
         &mut self,
         joueur: IdJoueur,
         a: IdJoueur,
+        arene: bool,
         contenu: &ContenuV1,
     ) -> Result<(), ErreurDeDefi> {
         if a == joueur {
@@ -428,11 +475,17 @@ impl Joueurs {
         let moi = self
             .autre_joueur(joueur, contenu)
             .ok_or(ErreurDeDefi::JoueurSansPartie)?;
-        self.defis.push(Defi { de: joueur, a });
-        self.messages_prives.push(MessagePrive {
-            joueur: a,
-            texte: defi_recu(&moi.heros, moi.pseudo.as_deref()),
+        self.defis.push(Defi {
+            de: joueur,
+            a,
+            arene,
         });
+        let texte = if arene {
+            defi_a_l_arene_recu(&moi.heros, moi.pseudo.as_deref())
+        } else {
+            defi_recu(&moi.heros, moi.pseudo.as_deref())
+        };
+        self.messages_prives.push(MessagePrive { joueur: a, texte });
         Ok(())
     }
 
@@ -487,14 +540,22 @@ impl Joueurs {
         let (Some(premier), Some(second)) = (au_camp(defi.de), au_camp(joueur)) else {
             return Err(ErreurDeDefi::PasAuCamp);
         };
-        let duel = Duel::entre(premier, second, contenu.zones(), contenu.piste())
-            .map_err(|_| ErreurDeDefi::EquipeVide)?;
+        // Un combat d'arène se livre héros contre héros, sans monstres
+        // (section 15.6).
+        let duel = if defi.arene {
+            Duel::dans_l_arene(premier, second)
+        } else {
+            Duel::entre(premier, second, contenu.zones(), contenu.piste())
+        }
+        .map_err(|_| ErreurDeDefi::EquipeVide)?;
         self.defis.retain(|autre| *autre != defi);
         self.duels.push(DuelEnCours {
             joueurs: [defi.de, joueur],
             duel,
             revenus: [false; 2],
             palmares_note: false,
+            arene: defi.arene,
+            gain: None,
         });
         if let Some(moi) = self.autre_joueur(joueur, contenu) {
             self.messages_prives.push(MessagePrive {
@@ -1154,6 +1215,25 @@ fn classer(joueurs: &[AutreJoueur]) -> Vec<AutreJoueur> {
     classes
 }
 
+/// Ceux qui ont livré au moins un combat d'arène, de la meilleure cote à la
+/// moins bonne, puis par nom du héros ; 10 au plus (section 15.6).
+fn classer_l_arene(joueurs: &[AutreJoueur]) -> Vec<AutreJoueur> {
+    let mut classes: Vec<AutreJoueur> = joueurs
+        .iter()
+        .filter(|joueur| joueur.arene.combats_entre_joueurs > 0)
+        .cloned()
+        .collect();
+    classes.sort_by(|a, b| {
+        b.arene
+            .cote
+            .cmp(&a.arene.cote)
+            .then(a.heros.cmp(&b.heros))
+            .then(a.id.cmp(&b.id))
+    });
+    classes.truncate(PLACES_AU_CLASSEMENT);
+    classes
+}
+
 /// Ceux qui ont franchi au moins une étape de la Tour sans fond, du record
 /// le plus profond au moins profond, puis par nom du héros ; 10 au plus
 /// (section 9.5).
@@ -1613,6 +1693,67 @@ mod tests {
             joueurs.session(1, &contenu).deroulement.attente(),
             Attente::Camp
         );
+        let _ = fs::remove_dir_all(dossier);
+    }
+
+    /// Section 15.6 : le combat d'arène se livre héros contre héros ; sa
+    /// fin change la cote des deux joueurs, du même gain, et les classe.
+    #[test]
+    fn un_combat_d_arene_change_la_cote_des_deux_joueurs() {
+        let contenu = ContenuV1::new();
+        let (mut joueurs, dossier) = deux_joueurs(&contenu);
+        en_duel(&mut joueurs, 1, ActionDeDuel::DefierALArene(2), &contenu).unwrap();
+        assert_eq!(
+            joueurs.prendre_les_messages_prives()[0].texte,
+            "Aldric vous défie à l'arène. Ouvrez /bersemon, au camp, pour répondre."
+        );
+        joueurs.charger(2, &contenu).vue = Vue::Echanges {
+            avec: None,
+            cede: None,
+        };
+        assert!(joueurs.session(2, &contenu).echanges.defi_a_l_arene);
+        en_duel(&mut joueurs, 2, ActionDeDuel::AccepterDefi, &contenu).unwrap();
+        let vu = joueurs.session(1, &contenu).duel.clone().unwrap();
+        assert!(vu.arene);
+        let combat = vu.duel.vu_par(Cote::Joueur);
+        assert!(combat.est_dans_l_arene() && combat.equipe().is_empty());
+        assert_eq!(combat.monstre(combat.actif(Cote::Joueur)).nom(), "Aldric");
+        en_duel(&mut joueurs, 2, ActionDeDuel::Abandonner, &contenu).unwrap();
+        let vu = joueurs.session(1, &contenu).duel.clone().unwrap();
+        assert_eq!(vu.cote_d_arene, Some((16, 1016)));
+        let vu = joueurs.session(2, &contenu).duel.clone().unwrap();
+        assert_eq!(vu.cote_d_arene, Some((16, 984)));
+        for joueur in [1, 2] {
+            en_duel(&mut joueurs, joueur, ActionDeDuel::RevenirAuCamp, &contenu).unwrap();
+        }
+        let partie = |joueurs: &mut Joueurs, joueur| {
+            joueurs
+                .session(joueur, &contenu)
+                .deroulement
+                .partie()
+                .unwrap()
+                .arene()
+        };
+        assert_eq!(partie(&mut joueurs, 1).cote, 1016);
+        assert_eq!(partie(&mut joueurs, 2).combats_entre_joueurs, 1);
+        // Le palmarès des duels ne change pas.
+        let palmares = joueurs
+            .session(1, &contenu)
+            .deroulement
+            .partie()
+            .unwrap()
+            .relations()
+            .palmares();
+        assert_eq!(palmares.duels(), 0);
+        joueurs.charger(1, &contenu).vue = Vue::ClassementDeLArene;
+        let classes: Vec<u32> = joueurs
+            .session(1, &contenu)
+            .echanges
+            .classement_de_l_arene
+            .iter()
+            .map(|joueur| joueur.arene.cote)
+            .collect();
+        assert_eq!(classes, vec![1016, 984]);
         let _ = fs::remove_dir_all(dossier);
     }
 

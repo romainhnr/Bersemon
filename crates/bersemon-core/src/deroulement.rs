@@ -1002,6 +1002,22 @@ impl Deroulement {
         Some(evenements)
     }
 
+    /// À la fin d'un combat d'arène contre un autre joueur, livré depuis le
+    /// camp : la cote monte ou baisse du gain, puis la partie est
+    /// sauvegardée (section 15.6). `None` si le joueur n'est plus au camp.
+    pub fn noter_combat_d_arene(
+        &mut self,
+        victoire: bool,
+        gain: u32,
+        depot: &dyn SauvegardeRepository,
+    ) -> Option<Vec<Evenement>> {
+        let partie = self.partie_au_camp_mut()?;
+        partie.noter_combat_d_arene(victoire, gain);
+        let mut evenements = Vec::new();
+        sauvegarder(partie, depot, &mut evenements);
+        Some(evenements)
+    }
+
     /// `None` hors expédition.
     pub fn expedition(&self) -> Option<&Expedition> {
         match &self.etat {

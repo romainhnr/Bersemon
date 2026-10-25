@@ -93,6 +93,9 @@ pub fn question(
         Vue::RecordsDeLaTour => {
             ecran_echanges::records_de_la_tour(partie, &TableauDesEchanges::default())
         }
+        Vue::ClassementDeLArene => {
+            ecran_echanges::classement_de_l_arene(partie, &TableauDesEchanges::default())
+        }
         Vue::Machines => machines(partie, contenu, maintenant),
         Vue::Entrainement => entrainement(partie, Vue::Machines),
         Vue::Cour => cour(partie, contenu, maintenant),

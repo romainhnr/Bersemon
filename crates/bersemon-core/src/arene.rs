@@ -37,6 +37,31 @@ impl Default for EtatDeLArene {
     }
 }
 
+/// Le poids d'un combat dans la cote, comme aux échecs (section 15.6).
+const POIDS_D_UN_COMBAT: f64 = 32.0;
+
+/// Ce que le vainqueur gagne et que le perdant perd, selon leurs cotes
+/// avant le combat : 32 x (1 - E), arrondi à l'entier le plus proche, où E
+/// est la chance attendue du vainqueur (cote Elo, section 15.6).
+pub fn gain_de_cote(cote_du_vainqueur: u32, cote_du_perdant: u32) -> u32 {
+    let ecart = (f64::from(cote_du_perdant) - f64::from(cote_du_vainqueur)) / 400.0;
+    let attendue = 1.0 / (1.0 + 10f64.powf(ecart));
+    (POIDS_D_UN_COMBAT * (1.0 - attendue)).round() as u32
+}
+
+impl EtatDeLArene {
+    /// Après un combat contre un autre joueur : la cote monte ou baisse du
+    /// gain, sans descendre sous 0 (hypothèse retenue, Q112).
+    pub(crate) fn noter_combat(&mut self, victoire: bool, gain: u32) {
+        self.cote = if victoire {
+            self.cote.saturating_add(gain)
+        } else {
+            self.cote.saturating_sub(gain)
+        };
+        self.combats_entre_joueurs = self.combats_entre_joueurs.saturating_add(1);
+    }
+}
+
 /// Pourquoi la Fosse refuse le joueur.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ErreurArene {
@@ -232,6 +257,21 @@ mod tests {
         let heros = fosse.adversaire(3).unwrap().generer_heros();
         assert_eq!(heros.nom(), "Adversaire 3");
         assert_eq!(heros.niveau().valeur(), 5);
+    }
+
+    /// Section 15.6 : battre un joueur mieux classé rapporte plus.
+    #[test]
+    fn la_cote_suit_la_formule_d_elo() {
+        assert_eq!(gain_de_cote(1000, 1000), 16);
+        assert_eq!(gain_de_cote(1200, 1000), 8);
+        assert_eq!(gain_de_cote(1000, 1200), 24);
+        assert_eq!(gain_de_cote(1800, 1000), 0);
+        let mut etat = EtatDeLArene::default();
+        etat.noter_combat(true, 16);
+        assert_eq!((etat.cote, etat.combats_entre_joueurs), (1016, 1));
+        etat.cote = 10;
+        etat.noter_combat(false, 24);
+        assert_eq!((etat.cote, etat.combats_entre_joueurs), (0, 2));
     }
 
     #[test]

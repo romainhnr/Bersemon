@@ -1526,4 +1526,5 @@ Textes proposés sans validation (gamedesign.md, Q112) :
 | Écran des autres joueurs | Bouton Défier à l'arène. / {héros} vous défie à l'arène. / Vous avez défié {héros} à l'arène. En attente de sa réponse. |
 | Message privé, défi reçu | {héros} ({pseudo}) vous défie à l'arène. Ouvrez /bersemon, au camp, pour répondre. |
 | Fin du combat | Vous remportez le combat d'arène : votre cote passe à {cote} (+{gain}). / Vous perdez le combat d'arène : votre cote passe à {cote} (-{perte}). |
-| Classement de l'arène | Classement de l'arène. / Votre cote : {cote}. / Aucun combat d'arène pour l'instant. ; boutons Classement de l'arène, Classement des duels |
+| Classement de l'arène | Classement de l'arène. / Votre cote : {cote}. / Aucun combat d'arène pour l'instant. / {rang}. {héros} ({pseudo}) : {cote} ; boutons Classement de l'arène, Classement des duels, Records de la Tour |
+| Écran du combat | Combat d'arène contre {héros}. / Victoire : vous remportez le combat d'arène contre {héros}. / Défaite : {héros} remporte le combat d'arène. / {héros} jette son arme sur le sable. |

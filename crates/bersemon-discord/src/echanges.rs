@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use bersemon_core::arene::EtatDeLArene;
 use bersemon_core::collection::{Collection, Emplacement};
 use bersemon_core::echange::{ErreurEchange, Offre};
 use bersemon_core::relations::Palmares;
@@ -155,6 +156,9 @@ pub struct AutreJoueur {
     pub palmares: Palmares,
     /// Ses records de la Tour sans fond (section 9.5).
     pub records: RecordsDeLaTour,
+    /// Sa cote et ses combats d'arène contre d'autres joueurs (section
+    /// 15.6).
+    pub arene: EtatDeLArene,
 }
 
 /// Ce que montre l'écran des échanges, préparé par `Joueurs` : l'écran n'a
@@ -171,6 +175,8 @@ pub struct TableauDesEchanges {
     /// Les défis en duel en attente (section 15.3).
     pub defi_recu: Option<AutreJoueur>,
     pub defi_envoye: Option<AutreJoueur>,
+    /// Le défi en attente est à l'arène, et non en duel (section 15.6).
+    pub defi_a_l_arene: bool,
     /// Les invitations dans la Tour sans fond en attente (section 15.5).
     pub invitation_recue: Option<AutreJoueur>,
     pub invitation_envoyee: Option<AutreJoueur>,
@@ -181,6 +187,9 @@ pub struct TableauDesEchanges {
     /// joueur compris, 10 au plus chacun (section 9.5).
     pub records_seul: Vec<AutreJoueur>,
     pub records_a_deux: Vec<AutreJoueur>,
+    /// Les meilleures cotes de l'arène, des joueurs qui y ont combattu au
+    /// moins une fois, le joueur compris, 10 au plus (section 15.6).
+    pub classement_de_l_arene: Vec<AutreJoueur>,
 }
 
 /// Un message privé à envoyer dès que possible.
