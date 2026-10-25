@@ -1127,4 +1127,7 @@ Textes proposés sans validation (gamedesign.md, Q102) :
 | Étal de Malvoise | Filets en vente : Filet lesté (chance de capture x1,5) : 30 pièces d'argent ; Acheter des filets ; Filets en vente (vous en avez 10 filets de chanvre) : |
 | Forge, menu | Fabriquer des filets ; Vous avez 13 filets de chanvre, 2 filets lestés, entre votre sac et le coffre. ; 5 filets lestés (chance de capture x1,5) : {coût}, 1 h |
 | Coffre | Prendre des filets ; Ranger des filets ; Il n'y a aucun filet. |
+| Étal, Discord | Acheter 5 filets de chanvre (50 pièces d'argent) ; Acheter 5 filets lestés (150 pièces d'argent) |
+| Forge, Discord | Menu "Fabriquer des filets" : 5 filets lestés (chance de capture x1,5), avec en description {coût}, {durée} ; vous en avez {n} |
+| Camp, Discord | 17 sortes de ressources (à la place du détail des ressources du sac et du coffre) |
 

@@ -152,6 +152,12 @@ pub fn pierres(pierre: PierreDEvolution, nombre: u32) -> String {
 /// « 2 potions, 30 pièces d'argent et la capsule d'attaque Brasier », ou
 /// « vide ».
 pub fn contenu(inventaire: &Inventaire) -> String {
+    contenu_detaille(inventaire, true)
+}
+
+/// Les ressources se comptent par sortes quand `ressources_detaillees` est
+/// faux : "17 sortes de ressources".
+fn contenu_detaille(inventaire: &Inventaire, ressources_detaillees: bool) -> String {
     let mut elements = liste_de_soins(inventaire.soins());
     elements.extend(liste_de_filets(inventaire.filets()));
     if inventaire.argent() > 0 {
@@ -173,12 +179,19 @@ pub fn contenu(inventaire: &Inventaire) -> String {
     if inventaire.capsules_d_habilete() > 0 {
         elements.push(capsules_d_habilete(inventaire.capsules_d_habilete()));
     }
-    elements.extend(
-        inventaire
-            .ressources()
-            .iter()
-            .map(|(ressource, nombre)| ressources(ressource, *nombre)),
-    );
+    let sortes = inventaire.ressources().len();
+    if ressources_detaillees {
+        elements.extend(
+            inventaire
+                .ressources()
+                .iter()
+                .map(|(ressource, nombre)| ressources(ressource, *nombre)),
+        );
+    } else if sortes > 1 {
+        elements.push(format!("{sortes} sortes de ressources"));
+    } else if sortes == 1 {
+        elements.push("1 sorte de ressource".to_string());
+    }
     elements.extend(
         inventaire
             .pierres()
@@ -317,6 +330,20 @@ pub fn en_tete_du_camp(partie: &Partie) -> String {
         partie.heros().classe().nom(),
         contenu(partie.sac()),
         contenu(partie.coffre_du_camp()),
+        ligne_des_ames(partie)
+    )
+}
+
+/// Pour Discord : les ressources s'y comptent par sortes, pour que le camp
+/// tienne dans un message quand le joueur a de tout (section 13.3). Leur
+/// détail est à l'écran du coffre.
+pub fn en_tete_abrege_du_camp(partie: &Partie) -> String {
+    format!(
+        "Camp de base ({}, {}).\nSac : {}. Coffre du camp : {}.{}",
+        partie.heros().nom().as_str(),
+        partie.heros().classe().nom(),
+        contenu_detaille(partie.sac(), false),
+        contenu_detaille(partie.coffre_du_camp(), false),
         ligne_des_ames(partie)
     )
 }
@@ -576,5 +603,26 @@ mod tests {
         let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Mage);
         let partie = Partie::nouvelle(heros, salamandre);
         assert_eq!(ames_d_apotres(&partie, &contenu), None);
+    }
+
+    #[test]
+    fn l_en_tete_abrege_compte_les_ressources_par_sortes() {
+        use bersemon_core::filet::Filet;
+        use bersemon_core::ressource::{Ressource, RessourceId};
+        let ressource = |id: &str, nom: &str| Ressource::new(RessourceId::new(id), nom, 5);
+        let sac = Inventaire::default()
+            .avec_filets(Filet::Leste, 2)
+            .avec_ressources(ressource("os", "Os de squelette"), 3)
+            .avec_ressources(ressource("croc", "Croc de loup"), 1);
+        assert_eq!(
+            contenu(&sac),
+            "2 filets lestés, Os de squelette (3) et Croc de loup"
+        );
+        assert_eq!(
+            contenu_detaille(&sac, false),
+            "2 filets lestés et 2 sortes de ressources"
+        );
+        let une = Inventaire::default().avec_ressources(ressource("os", "Os de squelette"), 3);
+        assert_eq!(contenu_detaille(&une, false), "1 sorte de ressource");
     }
 }

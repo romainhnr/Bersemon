@@ -16,6 +16,7 @@ use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::{Attente, Evenement};
 use bersemon_core::equipement::PlaceDEquipement;
 use bersemon_core::espece::EspeceId;
+use bersemon_core::filet::Filet;
 use bersemon_core::heros::Classe;
 use bersemon_core::horodatage::Horodatage;
 use bersemon_core::inventaire::Inventaire;
@@ -1730,6 +1731,10 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
             .avec_pierres(PierreDEvolution::Lune, 2)
             .avec_eclats_d_astre(2)
             .avec_charmes_de_garde(3);
+        // Plus d'un lot de chaque qualité de filet : deux options chacune.
+        for filet in Filet::TOUS {
+            inventaire = inventaire.avec_filets(filet, 12);
+        }
         for booster in Booster::TOUS {
             inventaire = inventaire.avec_boosters(booster, 2);
         }
@@ -1812,6 +1817,8 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         let cles = afficher(&partie, Vue::Marchand);
         assert!(cles.contains(&Cle::AcheterCapsuleDHabilete));
         assert!(cles.contains(&Cle::AcheterPierre(PierreDEvolution::Lune)));
+        assert!(cles.contains(&Cle::AcheterFilets(Filet::Chanvre, 5)));
+        assert!(cles.contains(&Cle::AcheterFilets(Filet::Leste, 5)));
         let cles = afficher(&partie, Vue::Coffre);
         assert!(cles.contains(&Cle::Afficher(Vue::Ressources)));
         afficher(&partie, Vue::Ressources);
@@ -1829,7 +1836,7 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         for (ecran, attendues) in [
             (
                 crate::ecran_coffre::coffre(&partie),
-                4 + Booster::TOUS.len() + 1,
+                2 * Filet::TOUS.len() + 4 + Booster::TOUS.len() + 1,
             ),
             (crate::ecran_coffre::ressources(&partie), sortes.len()),
         ] {
@@ -1854,6 +1861,16 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         let cles = afficher(&partie, Vue::Forge);
         assert!(cles.contains(&Cle::Constater));
         assert!(cles.contains(&Cle::FabriquerCharme));
+        let forge = crate::ecran_camp::question(
+            &partie,
+            Vue::Forge,
+            &contenu,
+            Horodatage::depuis_secondes(0),
+        );
+        assert!(forge.rangees.iter().any(|rangee| matches!(
+            rangee,
+            Rangee::Menu(menu) if menu.cle == Cle::FabriquerFilets && menu.options.len() == 3
+        )));
         // Un monstre de l'équipe, qui peut monter et descendre, et un du
         // camp, qui peut s'échanger.
         // Avec un Éclat d'astre et des boosters (sections 13.7 et 14.3).

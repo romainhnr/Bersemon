@@ -1,16 +1,17 @@
 //! Malvoise sur Discord (section 14.2) : son étal, où l'on achète
-//! soins, capsules et pierres d'évolution, la vente des monstres, et leur
+//! soins, filets, capsules et pierres d'évolution, la vente des monstres, et leur
 //! achat ou leur location. Les achats se font sans confirmation ; la vente
 //! et le retour d'un monstre loué sont confirmés par le déroulement.
 
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::marchand::{
     EXPEDITIONS_DE_LOCATION, OffreDeMonstre, PRIX_CAPSULE_D_HABILETE, PRIX_PIERRE_D_EVOLUTION,
-    prix_du_soin,
+    prix_du_filet, prix_du_soin,
 };
 use bersemon_core::partie::Partie;
 use bersemon_core::pierre::PierreDEvolution;
 use bersemon_presentation::beherit::{FORGER_LE_BEHERIT, peut_forger_le_beherit};
+use bersemon_presentation::filets::filets;
 use bersemon_presentation::marchand::{
     capsules_en_vente, etal as texte_de_l_etal, location_en_cours, offre_d_achat,
     offre_de_location, offre_de_rachat, offre_de_ressources, ressources_a_vendre,
@@ -25,29 +26,45 @@ use crate::message::{
     DANGER, OptionDeMenu, PRINCIPAL, Question, Rangee, SECONDAIRE, bouton, menu, rangees,
 };
 
-/// Soins achetés d'un bouton : au plus 4 soins, soit 8 boutons sur deux
-/// rangées.
+/// Soins achetés d'un bouton : au plus 4 soins, soit 8 boutons, que
+/// complètent les 2 filets en vente pour remplir deux rangées.
 const LOTS_DE_SOINS: [u32; 2] = [1, 5];
+/// Filets achetés d'un bouton : le lot que forge Gunther (section 13.5).
+const LOT_DE_FILETS: u32 = 5;
 
 pub fn etal(partie: &Partie, contenu: &ContenuV1) -> Question {
     if !partie.marchand_au_camp() {
         return sans_marchand();
     }
-    let mut lignes: Vec<Rangee> = rangees(
-        partie
-            .soins_en_vente()
-            .into_iter()
-            .flat_map(|soin| LOTS_DE_SOINS.map(|nombre| (soin, nombre)))
-            .map(|(soin, nombre)| {
-                let libelle = format!(
-                    "Acheter {} ({})",
-                    soins(soin, nombre),
-                    argent(nombre * prix_du_soin(soin))
-                );
-                bouton(Cle::AcheterSoins(soin, nombre), &libelle, PRINCIPAL)
-            })
-            .collect(),
-    );
+    let mut achats: Vec<_> = partie
+        .soins_en_vente()
+        .into_iter()
+        .flat_map(|soin| LOTS_DE_SOINS.map(|nombre| (soin, nombre)))
+        .map(|(soin, nombre)| {
+            let libelle = format!(
+                "Acheter {} ({})",
+                soins(soin, nombre),
+                argent(nombre * prix_du_soin(soin))
+            );
+            bouton(Cle::AcheterSoins(soin, nombre), &libelle, PRINCIPAL)
+        })
+        .collect();
+    for filet in partie.filets_en_vente() {
+        let Some(prix) = prix_du_filet(filet) else {
+            continue;
+        };
+        let libelle = format!(
+            "Acheter {} ({})",
+            filets(filet, LOT_DE_FILETS),
+            argent(LOT_DE_FILETS * prix)
+        );
+        achats.push(bouton(
+            Cle::AcheterFilets(filet, LOT_DE_FILETS),
+            &libelle,
+            PRINCIPAL,
+        ));
+    }
+    let mut lignes: Vec<Rangee> = rangees(achats);
     let capsules = capsules_en_vente(partie, contenu.capsules())
         .into_iter()
         .map(|capsule| OptionDeMenu {

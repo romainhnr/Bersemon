@@ -1,6 +1,6 @@
 //! Le coffre du camp sur Discord (section 13.3) : un menu pour prendre dans
 //! le coffre, un autre pour ranger ce que contient le sac, et de même pour
-//! les pierres d'évolution, les boosters et les Éclats d'astre. Les
+//! les filets, les pierres d'évolution, les boosters et les Éclats d'astre. Les
 //! ressources ont leur propre écran : avec celles du Col du Givre-Noir, elles
 //! ne tiennent plus dans un menu avec ces objets (étape 82).
 
@@ -8,6 +8,7 @@ use bersemon_core::inventaire::{Inventaire, Objet};
 use bersemon_core::partie::Partie;
 use bersemon_core::soin::Soin;
 use bersemon_presentation::boosters::{boosters, eclats_d_astre};
+use bersemon_presentation::filets::filets;
 use bersemon_presentation::monstres::decrire_attaque;
 use bersemon_presentation::partie::{
     argent, capsules_d_habilete as capsules_d_habilete_en_texte, charmes_de_garde, coffre_du_camp,
@@ -27,6 +28,8 @@ use crate::message::{
 const LOTS_DE_POTIONS: [u32; 2] = [1, 5];
 const LOTS_D_AUTRES_SOINS: [u32; 1] = [1];
 const LOTS_D_ARGENT: [u32; 4] = [10, 50, 100, 500];
+/// Le lot que vend Malvoise et que forge Gunther.
+const LOT_DE_FILETS: u32 = 5;
 
 pub fn coffre(partie: &Partie) -> Question {
     let mut lignes: Vec<Rangee> = Vec::new();
@@ -178,11 +181,26 @@ pub fn ressources(partie: &Partie) -> Question {
     }
 }
 
-/// Une ou toutes pour chaque pierre, tous ceux d'une sorte pour chaque
-/// booster, et tous les Éclats d'astre : avec les deux pierres et les six
-/// boosters du contenu, 11 options au plus (sections 5.4, 13.7 et 14.3).
+/// Un lot de 5 ou tous pour chaque filet, une ou toutes pour chaque pierre,
+/// tous ceux d'une sorte pour chaque booster, et tous les Éclats d'astre :
+/// avec les trois filets, les deux pierres et les six boosters du contenu,
+/// 17 options au plus (sections 5.4, 11.2, 13.7 et 14.3).
 fn options_d_objets(inventaire: &Inventaire) -> Vec<OptionDeMenu> {
     let mut options = Vec::new();
+    for (filet, nombre) in inventaire.filets().presents() {
+        if nombre > LOT_DE_FILETS {
+            options.push(option(
+                Objet::Filets(filet, LOT_DE_FILETS),
+                filets(filet, LOT_DE_FILETS),
+                None,
+            ));
+        }
+        options.push(option(
+            Objet::Filets(filet, nombre),
+            filets(filet, nombre),
+            Some("Tout".to_string()),
+        ));
+    }
     for &(booster, nombre) in inventaire.boosters() {
         options.push(option(
             Objet::Boosters(booster, nombre),

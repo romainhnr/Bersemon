@@ -283,6 +283,8 @@ pub enum Cle {
     Accueillir(ZoneId),
     Rappeler(ZoneId),
     AcheterSoins(Soin, u32),
+    /// Un lot de filets, chez Malvoise (section 14.2).
+    AcheterFilets(Filet, u32),
     /// Menu des capsules en vente.
     AcheterCapsule,
     /// Menu des âmes portées, à donner à Malvoise (section 14.2).
@@ -331,6 +333,8 @@ pub enum Cle {
     Constater,
     /// Gunther forge un charme de garde (section 13.5).
     FabriquerCharme,
+    /// Menu des lots de filets que Gunther peut forger (section 13.5).
+    FabriquerFilets,
     /// Menu des zones explorées où poser les pièges (section 13.6).
     PoserLesPieges,
     ReleverLesPieges,
@@ -494,6 +498,7 @@ impl Cle {
             Cle::Accueillir(zone) => jouer(Choix::AccueillirExpeditionAutomatique(zone.clone())),
             Cle::Rappeler(zone) => jouer(Choix::RappelerExpeditionAutomatique(zone.clone())),
             Cle::AcheterSoins(soin, nombre) => jouer(Choix::AcheterSoins(*soin, *nombre)),
+            Cle::AcheterFilets(filet, nombre) => jouer(Choix::AcheterFilets(*filet, *nombre)),
             Cle::AcheterCapsule => jouer(Choix::AcheterCapsule(AttaqueId::new(valeur?))),
             // Les âmes des Apôtres se donnent ensemble, depuis le même menu
             // que celles des marchands (section 9.4).
@@ -531,6 +536,7 @@ impl Cle {
             Cle::Ameliorer(amelioration) => jouer(Choix::LancerAmelioration(*amelioration)),
             Cle::Constater => jouer(Choix::ConstaterTravail),
             Cle::FabriquerCharme => jouer(Choix::FabriquerCharme),
+            Cle::FabriquerFilets => jouer(Choix::FabriquerFilets(Filet::depuis_id(valeur?)?)),
             Cle::PoserLesPieges => jouer(Choix::PoserLesPieges(ZoneId::new(valeur?))),
             Cle::ReleverLesPieges => jouer(Choix::ReleverLesPieges),
             Cle::Entrainer(_) => jouer(Choix::MettreALEntrainement(lire_emplacement(valeur?)?)),
@@ -693,6 +699,9 @@ impl Cle {
             Cle::AcheterSoins(soin, nombre) => {
                 format!("acheter-soins:{}:{nombre}", soin_en_texte(*soin))
             }
+            Cle::AcheterFilets(filet, nombre) => {
+                format!("acheter-filets:{}:{nombre}", filet.id())
+            }
             Cle::AcheterCapsule => "acheter-capsule".to_string(),
             Cle::DonnerAme => "donner-ame".to_string(),
             Cle::Vendre(numero) => format!("vendre:{numero}"),
@@ -738,6 +747,7 @@ impl Cle {
             Cle::Afficher(Vue::Machines) => "vue:machines".to_string(),
             Cle::Afficher(Vue::Entrainement) => "vue:entrainement".to_string(),
             Cle::FabriquerCharme => "fabriquer-charme".to_string(),
+            Cle::FabriquerFilets => "fabriquer-filets".to_string(),
             Cle::PoserLesPieges => "poser-pieges".to_string(),
             Cle::ReleverLesPieges => "relever-pieges".to_string(),
             Cle::Entrainer(numero) => format!("entrainer:{numero}"),
@@ -815,6 +825,7 @@ impl Cle {
             "vue:machines" => Cle::Afficher(Vue::Machines),
             "vue:entrainement" => Cle::Afficher(Vue::Entrainement),
             "fabriquer-charme" => Cle::FabriquerCharme,
+            "fabriquer-filets" => Cle::FabriquerFilets,
             "poser-pieges" => Cle::PoserLesPieges,
             "relever-pieges" => Cle::ReleverLesPieges,
             "vue:equipement" => Cle::Afficher(Vue::Equipement),
@@ -956,6 +967,10 @@ impl Cle {
                     "acheter-soins" => {
                         let (soin, nombre) = parametre.split_once(':')?;
                         Cle::AcheterSoins(lire_soin(soin)?, nombre.parse().ok()?)
+                    }
+                    "acheter-filets" => {
+                        let (filet, nombre) = parametre.split_once(':')?;
+                        Cle::AcheterFilets(Filet::depuis_id(filet)?, nombre.parse().ok()?)
                     }
                     "vendre" => Cle::Vendre(numero()?),
                     "entrainer" => Cle::Entrainer(numero()?),
@@ -1329,6 +1344,8 @@ mod tests {
             Cle::Afficher(Vue::Attaques(Emplacement::Camp(29))),
             Cle::AcheterSoins(Soin::Potion, 5),
             Cle::AcheterSoins(Soin::GrandePotion, 1),
+            Cle::AcheterFilets(Filet::Chanvre, 5),
+            Cle::AcheterFilets(Filet::Leste, 5),
             Cle::AcheterCapsule,
             Cle::DonnerAme,
             Cle::Vendre(2),
@@ -1372,6 +1389,7 @@ mod tests {
             Cle::Afficher(Vue::Machines),
             Cle::Afficher(Vue::Entrainement),
             Cle::FabriquerCharme,
+            Cle::FabriquerFilets,
             Cle::PoserLesPieges,
             Cle::ReleverLesPieges,
             Cle::Entrainer(2),
@@ -1388,6 +1406,22 @@ mod tests {
             Cle::GarderLaPrise,
             Cle::RelacherLaPrise,
         ]
+    }
+
+    #[test]
+    fn les_filets_s_achetent_et_se_forgent() {
+        assert_eq!(
+            Cle::AcheterFilets(Filet::Leste, 5).commande(None, None),
+            Some(Commande::Jouer(Choix::AcheterFilets(Filet::Leste, 5)))
+        );
+        assert_eq!(
+            Cle::FabriquerFilets.commande(Some("filet-de-chaines"), None),
+            Some(Commande::Jouer(Choix::FabriquerFilets(Filet::Chaines)))
+        );
+        assert_eq!(
+            Cle::FabriquerFilets.commande(Some("filet-d-or"), None),
+            None
+        );
     }
 
     #[test]

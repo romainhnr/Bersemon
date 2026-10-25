@@ -25,13 +25,13 @@ use bersemon_presentation::equipement::{
 };
 use bersemon_presentation::expeditions_automatiques::duree;
 use bersemon_presentation::expeditions_automatiques::expeditions_rentrees;
-use bersemon_presentation::forge::{cout, etat_de_la_forge, travail_fini};
+use bersemon_presentation::forge::{cout, etat_de_la_forge, lot_de_filets, travail_fini};
 use bersemon_presentation::machines::{avis_des_pieges, machines as texte_des_machines};
 use bersemon_presentation::monstres::{
     attaques_connues, decrire_attaque, fiche_du_monstre, ligne_monstre, nom, provenance,
 };
 use bersemon_presentation::partie::{
-    ames_d_apotres, argent, collection as liste_complete, en_tete_du_camp, fiche_d_espece,
+    ames_d_apotres, argent, collection as liste_complete, en_tete_abrege_du_camp, fiche_d_espece,
     ligne_du_codex,
 };
 use bersemon_presentation::peche::ligne_prete;
@@ -191,7 +191,7 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
     ));
     boutons.push(bouton(Cle::Afficher(Vue::Options), "Options", SECONDAIRE));
     lignes.extend(rangees(boutons));
-    let mut en_tete = vec![en_tete_du_camp(partie)];
+    let mut en_tete = vec![en_tete_abrege_du_camp(partie)];
     en_tete.extend(ames_d_apotres(partie, contenu));
     en_tete.extend(expeditions_rentrees(partie, maintenant));
     en_tete.extend(travail_fini(partie, maintenant));
@@ -207,10 +207,10 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
     }
 }
 
-/// Un bouton par amélioration qui n'est pas au niveau maximal, et un menu
-/// des objets que le héros ne possède pas, même faute de ressources : le
-/// refus dit ce qui manque. Le déroulement fait confirmer le lancement
-/// (sections 13.4 et 13.5).
+/// Un bouton par amélioration qui n'est pas au niveau maximal, un menu des
+/// objets que le héros ne possède pas et un menu des lots de filets, même
+/// faute de ressources : le refus dit ce qui manque. Le déroulement fait
+/// confirmer le lancement (sections 13.4 et 13.5).
 fn forge(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Question {
     if !partie.forge().est_au_camp() {
         return Question {
@@ -259,6 +259,24 @@ fn forge(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Questi
     let mut lignes: Vec<Rangee> = menu(Cle::Fabriquer, "Fabriquer un objet", objets)
         .into_iter()
         .collect();
+    // Les boutons de la forge occupent déjà deux rangées : les filets ont
+    // leur menu, avec ce que le joueur en a déjà.
+    let reserve = partie.filets();
+    let filets: Vec<OptionDeMenu> = contenu
+        .plans_des_filets()
+        .iter()
+        .map(|plan| OptionDeMenu {
+            libelle: lot_de_filets(plan),
+            valeur: plan.filet().id().to_string(),
+            description: Some(format!(
+                "{}, {} ; vous en avez {}",
+                cout(plan.cout()),
+                duree(plan.duree()),
+                reserve.nombre(plan.filet())
+            )),
+        })
+        .collect();
+    lignes.extend(menu(Cle::FabriquerFilets, "Fabriquer des filets", filets));
     lignes.extend(rangees(boutons));
     Question {
         texte: etat_de_la_forge(partie, contenu, maintenant),
