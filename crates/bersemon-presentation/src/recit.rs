@@ -26,6 +26,7 @@ use crate::partie::{
     enumerer, pierres, potions, ressources,
 };
 use crate::peche;
+use crate::rite::{naissance as texte_de_la_naissance, rite_lance};
 use crate::soins::{le_soin, soin_utilise, soins};
 
 /// La forme évoluée apprend d'autres attaques que son attaque d'évolution
@@ -476,6 +477,8 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
         Evenement::FabricationLancee { plan, .. } => (lancement_de_fabrication(plan), false),
         Evenement::CharmeLance { plan, .. } => (lancement_du_charme(plan), false),
         Evenement::FiletsLances { plan, .. } => (lancement_des_filets(plan), false),
+        Evenement::RiteLance(apercu) => (rite_lance(apercu), false),
+        Evenement::PetitNe(naissance) => (texte_de_la_naissance(naissance), false),
         Evenement::ObjetEquipe {
             place,
             objet,

@@ -95,6 +95,7 @@ mod tests {
             machines: Default::default(),
             beherit,
             records_de_la_tour: Default::default(),
+            rite: None,
         })
         .unwrap()
     }

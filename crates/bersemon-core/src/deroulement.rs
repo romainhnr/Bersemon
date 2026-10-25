@@ -49,6 +49,7 @@ use crate::peche::{ErreurPeche, Pecheur, Prise};
 use crate::pierre::PierreDEvolution;
 use crate::relations::IdJoueur;
 use crate::ressource::{Ressource, RessourceId};
+use crate::rite::{ApercuDuRite, ErreurRite, NaissanceDuRite};
 use crate::sauvegarde::{ErreurSauvegarde, SauvegardeRepository};
 use crate::soin::{EffetDuSoin, ErreurSoin, Soin, Soins, soin_sans_effet, verifier_cible};
 use crate::traque::Piste;
@@ -179,6 +180,15 @@ pub enum Choix {
     /// Au camp : le monstre à cette position de la cour en sort, avec l'XP
     /// gagnée.
     ReprendreDeLEntrainement(usize),
+    /// Au camp, chez Malvoise, après confirmation : ces deux monstres d'une
+    /// même famille lui sont confiés pour le Rite du sang mêlé (section
+    /// 13.11).
+    LancerLeRite {
+        premier: Emplacement,
+        second: Emplacement,
+    },
+    /// Au camp, le rite fini : le petit naît, et ses parents reviennent.
+    AccueillirLePetit,
     /// Au camp, sans confirmation : l'objet remplace celui de cette place
     /// (section 4.3).
     Equiper {
@@ -348,6 +358,9 @@ pub enum Confirmation {
     /// Les ressources du charme seront prises (section 13.5).
     FabriquerCharme(Box<PlanDuCharme>),
     FabriquerFilets(Box<PlanDesFilets>),
+    /// Les ressources et l'argent du rite seraient pris, et les parents
+    /// resteraient auprès de Malvoise jusqu'à sa fin (section 13.11).
+    LancerLeRite(Box<ApercuDuRite>),
     /// L'évolution est définitive, et consomme la pierre éventuelle (section
     /// 5.4).
     Evoluer {
@@ -492,6 +505,11 @@ pub enum Evenement {
     /// Ce qu'ils avaient pris, rangé dans le coffre, par sorte.
     PiegesReleves(Vec<(Ressource, u32)>),
     EntreeALEntrainement(Monstre),
+    /// Les parents confiés à Malvoise, ce qu'ils ont coûté et le petit
+    /// attendu (section 13.11).
+    RiteLance(Box<ApercuDuRite>),
+    /// Le petit né du rite, et ses parents revenus.
+    PetitNe(Box<NaissanceDuRite>),
     /// Suivi de l'XP gagnée, s'il en a gagné.
     SortieDeLEntrainement {
         monstre: Monstre,
@@ -714,6 +732,7 @@ pub enum ErreurChoix {
     Equipement(ErreurEquipement),
     Peche(ErreurPeche),
     Machine(ErreurMachine),
+    Rite(ErreurRite),
     Beherit(ErreurBeherit),
     /// En groupe, c'est à l'autre joueur d'agir (section 15.5).
     AuTourDeLAutre,
@@ -749,6 +768,7 @@ impl fmt::Display for ErreurChoix {
             ErreurChoix::Equipement(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Peche(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Machine(erreur) => write!(f, "{erreur}"),
+            ErreurChoix::Rite(erreur) => write!(f, "{erreur}"),
             ErreurChoix::AuTourDeLAutre => write!(f, "c'est à l'autre joueur d'agir"),
             ErreurChoix::AttenteTropCourte => write!(f, "l'autre joueur a encore le temps"),
         }
@@ -1945,6 +1965,42 @@ impl EnJeu {
                         rapport: reprise.rapport,
                     });
                 }
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::LancerLeRite { premier, second } => {
+                let especes = contexte.contenu.especes();
+                if !confirme {
+                    // Un rite impossible est refusé sans demander de
+                    // confirmation.
+                    let apercu = self
+                        .partie
+                        .preparer_le_rite(*premier, *second, especes)
+                        .map_err(ErreurChoix::Rite)?;
+                    return Ok(Reponse::a_confirmer(Confirmation::LancerLeRite(Box::new(
+                        apercu,
+                    ))));
+                }
+                let apercu = self
+                    .partie
+                    .lancer_le_rite(*premier, *second, especes, contexte.maintenant)
+                    .map_err(ErreurChoix::Rite)?;
+                evenements.push(Evenement::RiteLance(Box::new(apercu)));
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::AccueillirLePetit => {
+                let naissance = self
+                    .partie
+                    .accueillir_le_petit(
+                        contexte.contenu.especes(),
+                        contexte.maintenant,
+                        &mut *contexte.aleatoire,
+                    )
+                    .map_err(ErreurChoix::Rite)?;
+                evenements.push(Evenement::PetitNe(Box::new(naissance)));
+                // Tout de suite, pour que quitter le jeu ne permette pas de
+                // tirer de nouveau le petit.
                 sauvegarder(&self.partie, contexte.depot, evenements);
                 Ok(Reponse::Faite)
             }
@@ -3319,6 +3375,7 @@ mod tests {
             machines: partie.machines().clone(),
             beherit: partie.beherit(),
             records_de_la_tour: partie.records_de_la_tour(),
+            rite: partie.rite().cloned(),
         }
     }
 
@@ -5739,6 +5796,7 @@ mod tests {
             machines: Default::default(),
             beherit: Default::default(),
             records_de_la_tour: Default::default(),
+            rite: None,
         })
         .unwrap()
     }
@@ -5852,6 +5910,79 @@ mod tests {
         let mut deroulement = Deroulement::demarrer(Ok(Some(partie)));
         repondre_sans_tirage(&mut deroulement, Choix::ReprendreLaPartie, contenu, depot).unwrap();
         deroulement
+    }
+
+    #[test]
+    fn le_rite_du_sang_mele_se_confirme_puis_donne_son_petit() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let ressource = |id: &str| contenu.ressource(&RessourceId::new(id)).unwrap();
+        let mut partie = partie_de(monstre_du_contenu(&contenu, "loup", 10));
+        partie
+            .collection_mut()
+            .accueillir_capture(monstre_du_contenu(&contenu, "warg", 20));
+        let mut etat = etat_de(&partie);
+        etat.marchand_au_camp = true;
+        etat.coffre_du_camp =
+            Inventaire::new(60, 0, Vec::new()).avec_ressources(ressource("croc-de-loup"), 3);
+        let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
+        let lancer = Choix::LancerLeRite {
+            premier: Emplacement::Equipe(0),
+            second: Emplacement::Equipe(1),
+        };
+        repondre_a(&mut deroulement, lancer, &contenu, &depot, 1_000, vec![]).unwrap();
+        assert!(matches!(
+            deroulement.attente(),
+            Attente::Confirmation(Confirmation::LancerLeRite(apercu))
+                if apercu.petit.id().as_str() == "loup"
+        ));
+        let evenements = repondre_a(
+            &mut deroulement,
+            Choix::Oui,
+            &contenu,
+            &depot,
+            1_000,
+            vec![],
+        )
+        .unwrap();
+        assert!(matches!(&evenements[..], [Evenement::RiteLance(_)]));
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert_eq!(sauvegarde.argent(), 10);
+        assert!(sauvegarde.collection().equipe().is_empty());
+        assert_eq!(
+            sauvegarde.rite().map(|rite| rite.fin()),
+            Some(Horodatage::depuis_secondes(8_200))
+        );
+        assert_eq!(
+            repondre_a(
+                &mut deroulement,
+                Choix::AccueillirLePetit,
+                &contenu,
+                &depot,
+                8_199,
+                vec![]
+            ),
+            Err(ErreurChoix::Rite(ErreurRite::PasEncoreFini(
+                Horodatage::depuis_secondes(8_200)
+            )))
+        );
+        // Pas shiny, puis la première habileté du Loup.
+        let evenements = repondre_a(
+            &mut deroulement,
+            Choix::AccueillirLePetit,
+            &contenu,
+            &depot,
+            8_200,
+            vec![2, 0],
+        )
+        .unwrap();
+        assert!(matches!(
+            &evenements[..],
+            [Evenement::PetitNe(naissance)] if naissance.petit.niveau().valeur() == 1
+        ));
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert!(sauvegarde.rite().is_none());
+        assert_eq!(sauvegarde.collection().equipe().len(), 3);
     }
 
     #[test]

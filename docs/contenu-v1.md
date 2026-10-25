@@ -1144,3 +1144,27 @@ Titre : "Carnet de traque :". Une entrée numérotée par victoire, dans l'ordre
 | Abbesse écorchée | Abbesse écorchée, abattue dans l'Abbaye des Cendres. |
 | Margrave de givre | Margrave de givre, abattu dans le Col du Givre-Noir. |
 | Démiurge (ses deux formes) | Démiurge, abattu dans l'Éclipse. |
+
+## 28. Rite du sang mêlé
+
+Décidé le 25/10/2026, pour les étapes 110 à 112 (gamedesign.md, section 13.11). Nom et valeurs choisis par l'utilisateur, à ajuster en jouant.
+
+| Valeur | |
+|---|---|
+| Durée | 2 h réelles |
+| Coût | 3 ressources de l'espèce du petit et 50 pièces d'argent (l'argent seul pour une espèce qui ne lâche pas de ressource) |
+| Niveau du petit | 1 |
+| Valeurs internes du petit | pour chaque stat, la plus haute des deux parents |
+| Shiny du petit | 1 chance sur 512, comme un monstre sauvage |
+
+Textes proposés sans validation (gamedesign.md, Q105). {a} et {b} sont les parents, {petit} le nom du petit, {espèce} son espèce, {coût} les ressources et l'argent, {durée} le temps restant.
+
+| Moment | Texte |
+|---|---|
+| Service, à l'étal | Rite du sang mêlé : 3 ressources de l'espèce du petit et 50 pièces d'argent, 2 h |
+| Confirmation | Confier {a} et {b} à Malvoise pour le Rite du sang mêlé ? Il prendra {coût}. Dans 2 h, le petit naîtra, de l'espèce {espèce}, au niveau 1, avec la meilleure valeur interne de ses parents pour chaque stat. D'ici là, les deux restent auprès de Malvoise. |
+| Rite lancé | Malvoise trace un cercle de sang autour de {a} et {b}, et entonne le Rite du sang mêlé. Le petit naîtra dans {durée}. |
+| État, à l'étal | Rite du sang mêlé : {a} et {b}, achevé dans {durée}. / ..., achevé, le petit attend. |
+| Au camp | Le Rite du sang mêlé est achevé : le petit attend auprès de Malvoise. |
+| Naissance | Le cercle de sang se referme et le petit en naît : {petit}, au niveau 1. {a} et {b} vous rejoignent. |
+| Refus | Malvoise accomplit déjà un rite : un seul à la fois. / Le rite n'unit que deux monstres d'une même famille d'évolution. / Il faut une place libre au camp pour le petit. / Il vous manque {ressources}. / Aucun rite n'est en cours. / Le rite n'est pas encore achevé. |

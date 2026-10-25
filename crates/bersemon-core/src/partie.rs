@@ -50,6 +50,10 @@ use crate::peche::{ErreurPeche, ParametresPeche, Peche, Prise};
 use crate::pierre::PierreDEvolution;
 use crate::relations::Relations;
 use crate::ressource::{Ressource, RessourceId};
+use crate::rite::{
+    ApercuDuRite, DUREE_DU_RITE, ErreurRite, NaissanceDuRite, PLACES_DU_RITE, PRIX_DU_RITE,
+    RESSOURCES_DU_RITE, Rite, forme_de_base,
+};
 use crate::soin::{EffetDuSoin, ErreurSoin, Soin};
 use crate::stats::ValeursInternes;
 use crate::tour::{RecordsDeLaTour, TourSansFond};
@@ -125,6 +129,9 @@ pub struct Partie {
     beherit: EtatDuBeherit,
     /// Dernières étapes franchies dans la Tour sans fond (section 9.5).
     records_de_la_tour: RecordsDeLaTour,
+    /// Les parents confiés à Malvoise pour le Rite du sang mêlé (section
+    /// 13.11).
+    rite: Option<Rite>,
 }
 
 /// Attaque qu'un monstre rentré d'expédition automatique veut apprendre en
@@ -172,6 +179,7 @@ pub struct EtatPartie {
     pub machines: Machines,
     pub beherit: EtatDuBeherit,
     pub records_de_la_tour: RecordsDeLaTour,
+    pub rite: Option<Rite>,
 }
 
 /// Sauvegarde lisible mais contraire aux règles des expéditions
@@ -265,6 +273,7 @@ impl Partie {
             machines: Machines::default(),
             beherit: EtatDuBeherit::Aucun,
             records_de_la_tour: RecordsDeLaTour::default(),
+            rite: None,
             conseils_vus: Vec::new(),
             expeditions_automatiques: Vec::new(),
             attaques_a_choisir: Vec::new(),
@@ -487,6 +496,133 @@ impl Partie {
             rapport,
             emplacement,
         })
+    }
+
+    pub fn rite(&self) -> Option<&Rite> {
+        self.rite.as_ref()
+    }
+
+    /// Ce que demanderait et donnerait le Rite du sang mêlé de ces deux
+    /// monstres, sans rien changer : de quoi demander confirmation. Refuse
+    /// ce que refuserait `lancer_le_rite` (section 13.11).
+    pub fn preparer_le_rite(
+        &self,
+        premier: Emplacement,
+        second: Emplacement,
+        especes: &[Espece],
+    ) -> Result<ApercuDuRite, ErreurRite> {
+        if !self.marchand_au_camp {
+            return Err(ErreurRite::AucunMarchand);
+        }
+        if self.rite.is_some() {
+            return Err(ErreurRite::RiteEnCours);
+        }
+        let emplacements = [premier, second];
+        self.collection
+            .verifier_depart(&emplacements)
+            .map_err(ErreurRite::Collection)?;
+        let parents = emplacements.map(|emplacement| {
+            self.collection
+                .monstre(emplacement)
+                .cloned()
+                .expect("monstre vérifié par verifier_depart")
+        });
+        let petit = forme_de_base(parents[0].espece(), especes).clone();
+        if forme_de_base(parents[1].espece(), especes).id() != petit.id() {
+            return Err(ErreurRite::FamillesDifferentes);
+        }
+        // Les parents venus de l'équipe prennent une place au camp, comme au
+        // départ d'une expédition ; le petit en demande une de plus.
+        let depuis_l_equipe = emplacements
+            .iter()
+            .filter(|emplacement| matches!(emplacement, Emplacement::Equipe(_)))
+            .count();
+        if self.collection.places_libres_au_camp() <= depuis_l_equipe {
+            return Err(ErreurRite::AucunePlacePourLePetit);
+        }
+        let ressources: Vec<(Ressource, u32)> = petit
+            .ressource()
+            .map(|ressource| vec![(ressource.clone(), RESSOURCES_DU_RITE)])
+            .unwrap_or_default();
+        let manquantes = self.ressources_manquantes(&ressources);
+        if !manquantes.is_empty() {
+            return Err(ErreurRite::RessourcesManquantes(manquantes));
+        }
+        let argent = self.argent();
+        if PRIX_DU_RITE > argent {
+            return Err(ErreurRite::ArgentInsuffisant {
+                prix: PRIX_DU_RITE,
+                argent,
+            });
+        }
+        Ok(ApercuDuRite {
+            parents,
+            petit,
+            ressources,
+            prix: PRIX_DU_RITE,
+            duree: DUREE_DU_RITE,
+        })
+    }
+
+    /// Au camp, après confirmation : les ressources et l'argent sont payés,
+    /// du sac d'abord, et les deux parents restent auprès de Malvoise jusqu'à
+    /// la fin du rite, en gardant leur place au camp (section 13.11).
+    pub fn lancer_le_rite(
+        &mut self,
+        premier: Emplacement,
+        second: Emplacement,
+        especes: &[Espece],
+        maintenant: Horodatage,
+    ) -> Result<ApercuDuRite, ErreurRite> {
+        let apercu = self.preparer_le_rite(premier, second, especes)?;
+        self.payer(apercu.prix)
+            .map_err(|_| ErreurRite::ArgentInsuffisant {
+                prix: apercu.prix,
+                argent: self.argent(),
+            })?;
+        self.payer_ressources(&apercu.ressources);
+        let mut parents = self
+            .collection
+            .retirer_pour_expedition(&[premier, second])
+            .map_err(ErreurRite::Collection)?;
+        self.collection
+            .reserver_une_place()
+            .map_err(ErreurRite::Collection)?;
+        let second_parent = parents.remove(1);
+        let premier_parent = parents.remove(0);
+        self.rite = Some(Rite::new(
+            [premier_parent, second_parent],
+            maintenant.plus(DUREE_DU_RITE),
+        ));
+        Ok(apercu)
+    }
+
+    /// Le rite fini, le petit naît et rejoint l'équipe s'il y reste une
+    /// place, sinon le camp, après ses parents, comme au retour d'une
+    /// expédition automatique. Son espèce s'ouvre au codex. Les tirages sont
+    /// ceux de `Rite::faire_naitre` (section 13.11).
+    pub fn accueillir_le_petit(
+        &mut self,
+        especes: &[Espece],
+        maintenant: Horodatage,
+        aleatoire: &mut dyn Aleatoire,
+    ) -> Result<NaissanceDuRite, ErreurRite> {
+        let rite = self.rite.as_ref().ok_or(ErreurRite::AucunRite)?;
+        if !rite.est_fini(maintenant) {
+            return Err(ErreurRite::PasEncoreFini(rite.fin()));
+        }
+        let base = forme_de_base(rite.parents()[0].espece(), especes).clone();
+        let petit = rite.faire_naitre(&base, aleatoire);
+        let parents = self
+            .rite
+            .take()
+            .expect("rite vérifié plus haut")
+            .rendre_les_parents();
+        self.codex.noter_capture(base.id());
+        let [premier, second] = parents.clone();
+        self.collection
+            .accueillir_retour(vec![premier, second, petit.clone()]);
+        Ok(NaissanceDuRite { petit, parents })
     }
 
     pub fn relations(&self) -> &Relations {
@@ -1639,13 +1775,15 @@ impl Partie {
             return Err(ErreurRestaurationPartie::MachinesIncoherentes);
         }
         // Un monstre à l'entraînement garde sa place au camp, comme un
-        // monstre parti (section 13.6).
+        // monstre parti (section 13.6) ; les parents du rite aussi, et le
+        // petit à naître a la sienne (section 13.11).
         let partis = etat
             .expeditions_automatiques
             .iter()
             .map(|expedition| expedition.monstres().len())
             .sum::<usize>()
-            + etat.machines.cour().len();
+            + etat.machines.cour().len()
+            + etat.rite.as_ref().map_or(0, |_| PLACES_DU_RITE);
         collection
             .definir_places_reservees(partis)
             .map_err(ErreurRestaurationPartie::Collection)?;
@@ -1704,6 +1842,7 @@ impl Partie {
             machines: etat.machines,
             beherit: etat.beherit,
             records_de_la_tour: etat.records_de_la_tour,
+            rite: etat.rite,
         })
     }
 
@@ -3496,6 +3635,7 @@ mod tests {
             machines: partie.machines().clone(),
             beherit: partie.beherit(),
             records_de_la_tour: partie.records_de_la_tour(),
+            rite: partie.rite().cloned(),
         }
     }
 
@@ -3591,6 +3731,148 @@ mod tests {
 
     /// Ni shiny, des valeurs internes de 1 à 6, la première habileté.
     const TIRAGES_D_UN_MONSTRE: [u32; 8] = [2, 1, 2, 3, 4, 5, 6, 0];
+
+    /// Un monstre de cette espèce au camp de `chez_malvoise`, avec ces
+    /// valeurs internes, dans l'ordre des stats.
+    fn accueillir(
+        partie: &mut Partie,
+        contenu: &crate::contenu::ContenuV1,
+        id: &str,
+        niveau: u8,
+        valeurs: [u8; 6],
+    ) {
+        let [
+            pv,
+            attaque,
+            defense,
+            attaque_speciale,
+            defense_speciale,
+            vitesse,
+        ] = valeurs;
+        let valeurs_internes = ValeursInternes::new(crate::stats::Stats {
+            pv,
+            attaque,
+            defense,
+            attaque_speciale,
+            defense_speciale,
+            vitesse,
+        })
+        .unwrap();
+        let monstre = Monstre::creer(
+            contenu.espece(&EspeceId::new(id)).unwrap(),
+            Niveau::new(niveau).unwrap(),
+            valeurs_internes,
+            false,
+        )
+        .unwrap();
+        partie.collection.accueillir_capture(monstre);
+    }
+
+    #[test]
+    fn le_rite_du_sang_mele_donne_un_petit_de_la_forme_de_base() {
+        let (mut partie, contenu) = chez_malvoise();
+        let especes = contenu.especes();
+        // Le crapaud de départ, puis un Loup et un Warg, de la même famille.
+        accueillir(&mut partie, &contenu, "loup", 10, [31, 2, 20, 0, 5, 9]);
+        accueillir(&mut partie, &contenu, "warg", 20, [4, 30, 6, 12, 5, 28]);
+        let (loup, warg) = (Emplacement::Equipe(1), Emplacement::Equipe(2));
+        assert_eq!(
+            partie.preparer_le_rite(Emplacement::Equipe(0), loup, especes),
+            Err(ErreurRite::FamillesDifferentes)
+        );
+        assert!(matches!(
+            partie.preparer_le_rite(loup, warg, especes),
+            Err(ErreurRite::RessourcesManquantes(_))
+        ));
+        let croc = contenu
+            .espece(&EspeceId::new("loup"))
+            .unwrap()
+            .ressource()
+            .unwrap()
+            .clone();
+        partie.coffre_du_camp.ajouter_ressources(croc.clone(), 4);
+        let argent = partie.argent();
+        let apercu = partie.lancer_le_rite(loup, warg, especes, a(0)).unwrap();
+        assert_eq!(apercu.petit.id().as_str(), "loup");
+        assert_eq!(apercu.ressources, vec![(croc.clone(), 3)]);
+        assert_eq!(partie.argent(), argent - 50);
+        assert_eq!(partie.coffre_du_camp().nombre_de_ressources(croc.id()), 1);
+        // Les parents gardent leur place, et le petit a la sienne.
+        assert_eq!(partie.collection().equipe().len(), 1);
+        assert_eq!(partie.collection().places_reservees(), 3);
+        assert_eq!(
+            partie.preparer_le_rite(Emplacement::Equipe(0), Emplacement::Equipe(0), especes),
+            Err(ErreurRite::RiteEnCours)
+        );
+        let mut aucun_tirage = AleatoireScripte::new([]);
+        assert_eq!(
+            partie.accueillir_le_petit(especes, a(7_199), &mut aucun_tirage),
+            Err(ErreurRite::PasEncoreFini(a(7_200)))
+        );
+        // Pas shiny, puis la seconde habileté du Loup.
+        let naissance = partie
+            .accueillir_le_petit(especes, a(7_200), &mut AleatoireScripte::new([2, 1]))
+            .unwrap();
+        let petit = &naissance.petit;
+        assert_eq!(petit.espece().id().as_str(), "loup");
+        assert_eq!(petit.niveau().valeur(), 1);
+        assert!(!petit.est_shiny());
+        assert_eq!(petit.habilete(), Some(Habilete::Fouineur));
+        let valeurs = petit.valeurs_internes().valeurs();
+        assert_eq!(
+            [
+                valeurs.pv,
+                valeurs.attaque,
+                valeurs.defense,
+                valeurs.attaque_speciale,
+                valeurs.defense_speciale,
+                valeurs.vitesse
+            ],
+            [31, 30, 20, 12, 5, 28]
+        );
+        assert!(partie.rite().is_none());
+        assert_eq!(partie.collection().places_reservees(), 0);
+        assert_eq!(partie.collection().equipe().len(), 3);
+        assert_eq!(partie.collection().camp().len(), 1);
+        assert_eq!(partie.collection().camp()[0], naissance.petit);
+        assert_eq!(
+            partie.codex().etat(&EspeceId::new("loup")),
+            crate::codex::EtatCodex::Capturee
+        );
+        assert_eq!(
+            partie.accueillir_le_petit(especes, a(9_000), &mut aucun_tirage),
+            Err(ErreurRite::AucunRite)
+        );
+    }
+
+    #[test]
+    fn le_rite_demande_malvoise_et_une_place_pour_le_petit() {
+        let (mut partie, contenu) = chez_malvoise();
+        let especes = contenu.especes();
+        // La Salamandre ne lâche pas de ressource : le rite ne coûte que
+        // l'argent.
+        accueillir(&mut partie, &contenu, "salamandre", 5, [0; 6]);
+        accueillir(&mut partie, &contenu, "salamandre", 6, [0; 6]);
+        let (premier, second) = (Emplacement::Equipe(1), Emplacement::Equipe(2));
+        let apercu = partie.preparer_le_rite(premier, second, especes).unwrap();
+        assert!(apercu.ressources.is_empty());
+        partie.marchand_au_camp = false;
+        assert_eq!(
+            partie.preparer_le_rite(premier, second, especes),
+            Err(ErreurRite::AucunMarchand)
+        );
+        partie.marchand_au_camp = true;
+        // Un camp plein à une place près : les deux parents venus de
+        // l'équipe la prendraient, et il n'en resterait aucune au petit.
+        let places = partie.collection().tailles().camp;
+        while partie.collection().camp().len() + 2 < places {
+            accueillir(&mut partie, &contenu, "loup", 3, [0; 6]);
+        }
+        assert_eq!(
+            partie.preparer_le_rite(premier, second, especes),
+            Err(ErreurRite::AucunePlacePourLePetit)
+        );
+    }
 
     #[test]
     fn le_carnet_de_traque_suit_l_ordre_des_victoires() {

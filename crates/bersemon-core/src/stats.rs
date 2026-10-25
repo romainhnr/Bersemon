@@ -164,6 +164,20 @@ impl ValeursInternes {
         &self.0
     }
 
+    /// Pour chaque stat, la plus haute des deux : celles du petit du Rite du
+    /// sang mêlé (section 13.11).
+    pub fn meilleures(&self, autre: &Self) -> Self {
+        let (a, b) = (&self.0, &autre.0);
+        Self(Stats {
+            pv: a.pv.max(b.pv),
+            attaque: a.attaque.max(b.attaque),
+            defense: a.defense.max(b.defense),
+            attaque_speciale: a.attaque_speciale.max(b.attaque_speciale),
+            defense_speciale: a.defense_speciale.max(b.defense_speciale),
+            vitesse: a.vitesse.max(b.vitesse),
+        })
+    }
+
     /// Ajoute `gain` à la valeur de cette stat, sans dépasser 31, comme un
     /// booster (section 14.3).
     pub fn augmenter(&mut self, stat: Stat, gain: u8) {

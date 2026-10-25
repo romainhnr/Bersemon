@@ -473,7 +473,18 @@ impl Collection {
         Ok(())
     }
 
-    fn places_libres_au_camp(&self) -> usize {
+    /// Une place du camp gardée pour un monstre à venir : le petit du Rite
+    /// du sang mêlé (section 13.11). Elle se libère à son arrivée, comme
+    /// celle d'un monstre rentré d'expédition.
+    pub(crate) fn reserver_une_place(&mut self) -> Result<(), ErreurCollection> {
+        if self.places_libres_au_camp() == 0 {
+            return Err(ErreurCollection::CampPlein);
+        }
+        self.places_reservees += 1;
+        Ok(())
+    }
+
+    pub(crate) fn places_libres_au_camp(&self) -> usize {
         self.tailles
             .camp
             .saturating_sub(self.camp.len() + self.places_reservees)

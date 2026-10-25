@@ -528,6 +528,7 @@ mod tests {
             machines: Default::default(),
             beherit: Default::default(),
             records_de_la_tour: Default::default(),
+            rite: None,
         }
     }
 

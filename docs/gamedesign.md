@@ -823,6 +823,18 @@ Décidé le 20/10/2026, pour les étapes 62 à 65 (choix de l'utilisateur) :
 - Un monstre de départ n'a qu'un type, et son espèce apprend déjà toutes les attaques de ce type qui existaient dans la V1. Les capsules comptent donc des attaques nouvelles pour les types Feu, Eau et Plante, trouvées dans la zone facile, et des attaques d'autres espèces, trouvées dans la zone difficile. Liste, types et prix dans docs/contenu-v1.md (section 6).
 - Le Chat noir, monstre de départ ajouté à l'étape 27, n'apprend pas toutes les attaques Ténèbres : la capsule Sentence lui sert aussi.
 
+### 13.11 Rite du sang mêlé (reproduction)
+
+Décidé le 25/10/2026, pour les étapes 110 à 112 (choix de l'utilisateur). Valeurs et textes dans docs/contenu-v1.md, section 28.
+
+- Malvoise, une fois au camp, unit deux monstres par le Rite du sang mêlé, depuis son étal, après confirmation. Un rite à la fois (hypothèse retenue, Q105).
+- Parents : deux monstres du joueur, de l'équipe ou du camp, de la même famille d'évolution (le Loup et le Warg, par exemple). Un monstre loué ne peut pas l'être, comme pour toute action autre que combattre (section 14.2). Les espèces rares sont admises (hypothèse retenue, Q105).
+- Coût, payé au lancement, du sac d'abord puis du coffre : 3 ressources de l'espèce du petit et 50 pièces d'argent. Une espèce qui ne lâche pas de ressource ne coûte que l'argent.
+- Le rite dure 2 heures réelles, même jeu fermé ou bot éteint. Les deux parents restent auprès de Malvoise jusqu'à la fin, comme dans la cour d'entraînement : ils quittent l'équipe ou le camp, gardent leur place au camp, et ne peuvent servir ailleurs. Le petit a aussi une place réservée au camp : le rite est refusé s'il n'en reste aucune (hypothèse retenue, Q105).
+- Le rite fini, le joueur accueille le petit depuis l'étal ; le camp signale qu'il attend. Le petit naît au niveau 1, de la forme de base de la famille (le Loup, même d'un Warg et d'un Loup). Pour chaque stat, il reçoit la plus haute valeur interne de ses deux parents : un parent shiny, qui a 31 partout, donne donc des petits à 31 partout. Comme un monstre sauvage, il a 1 chance sur 512 d'être shiny et tire son habileté ; il connaît les attaques de son espèce au niveau 1. Son espèce s'ouvre au codex.
+- Le petit rejoint l'équipe s'il y reste une place, sinon le camp, après ses parents, qui reviennent comme d'une expédition automatique (section 12.7).
+- Sauvegarde en version 28 : le rite en cours, avec ses parents et l'heure de sa fin.
+
 ## 14. Économie, marchands, objets et ressources
 
 ### 14.1 Monnaie
@@ -1102,6 +1114,10 @@ Les questions Q101 et suivantes ont été relevées le 24/10/2026 lors de la con
 Les questions Q102 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 103 filets dans le noyau, avec la sauvegarde en version 27, 104 vente par Malvoise et fabrication par Gunther, 105 écrans de la console, 106 écrans du bot Discord.
 
 Les questions Q103 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 107 carnet de traque du codex et 108 Philtre chromatique.
+
+Les questions Q105 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 110 Rite du sang mêlé dans le noyau, avec la sauvegarde en version 28, 111 écrans de la console, 112 bot Discord.
+
+- Q105. (Étapes 110 à 112) Hypothèses retenues, à confirmer : un seul rite à la fois ; les espèces rares peuvent se reproduire ; le petit a une place réservée au camp dès le lancement, et le rite est refusé s'il n'en reste aucune ; un rite lancé ne s'annule pas ; le petit ne garde ni surnom ni marque "reçu de", et ses parents ne gagnent rien. Textes proposés sans validation : la confirmation, le lancement, l'état du rite, l'avis au camp, la naissance et les refus (docs/contenu-v1.md, section 28).
 
 Les questions Q104 et suivantes ont été relevées le 25/10/2026 lors de la conception de l'étape 109, accès direct à la cour d'entraînement.
 
@@ -1560,5 +1576,12 @@ Les questions Q104 et suivantes ont été relevées le 25/10/2026 lors de la con
 - Claude a relevé que la cour d'entraînement de Gunther le fait déjà (section 13.6), mais qu'elle n'est accessible que par les machines de la forge.
 - Choix de l'utilisateur : la rendre plus visible, sans changer ses règles ; la reproduction reste à concevoir.
 - Hypothèses retenues, à confirmer : Q104.
+
+25/10/2026 (conception des étapes 110 à 112, reproduction) :
+
+- Demande de l'utilisateur : ajouter la reproduction des monstres.
+- Choix de l'utilisateur : un rituel de Malvoise, le Rite du sang mêlé, qui dure 2 heures réelles pendant lesquelles les parents restent auprès de lui ; deux parents de la même famille d'évolution ; un petit de la forme de base, au niveau 1, qui reçoit la meilleure valeur interne de ses parents pour chaque stat ; un coût de 3 ressources de l'espèce du petit et de 50 pièces d'argent (section 13.11).
+- Sauvegarde en version 28.
+- Hypothèses retenues, à confirmer : Q105.
 - Hypothèses retenues, à confirmer : Q103.
 

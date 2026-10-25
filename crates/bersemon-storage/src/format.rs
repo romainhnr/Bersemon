@@ -35,6 +35,7 @@ use bersemon_core::peche::Peche;
 use bersemon_core::pierre::PierreDEvolution;
 use bersemon_core::relations::{Palmares, Relations};
 use bersemon_core::ressource::RessourceId;
+use bersemon_core::rite::Rite;
 use bersemon_core::sauvegarde::ErreurSauvegarde;
 use bersemon_core::soin::Soin;
 use bersemon_core::stats::{Stats, ValeursInternes};
@@ -45,7 +46,7 @@ use bersemon_core::zone::{Zone, ZoneId};
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 27;
+pub(crate) const VERSION: u64 = 28;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -89,6 +90,10 @@ const VERSION_DES_RECORDS: u64 = 26;
 /// 11.2).
 const VERSION_DES_FILETS: u64 = 27;
 
+/// La version de la sauvegarde qui garde le Rite du sang mêlé en cours
+/// (section 13.11).
+const VERSION_DU_RITE: u64 = 28;
+
 /// Ce que reçoit, au coffre, une partie qui reprend une sauvegarde
 /// antérieure aux filets (hypothèse retenue, Q102).
 const FILETS_DES_SAUVEGARDES_ANTERIEURES: u32 = 10;
@@ -116,7 +121,9 @@ const GEOLIER_DE_GUNTHER: &str = "bourreau";
 /// Philtres chromatiques, la version 21 les amis et le palmarès des duels, la
 /// version 22 les machines du camp, la version 23 les charmes de garde et
 /// les protections des expéditions automatiques, la version 24 la location
-/// d'un monstre, la version 25 le Béhérit pourpre. Une sauvegarde d'une version précédente se lit avec cette
+/// d'un monstre, la version 25 le Béhérit pourpre, la version 26 les records
+/// de la Tour sans fond, la version 27 les filets de capture, la version 28
+/// le Rite du sang mêlé. Une sauvegarde d'une version précédente se lit avec cette
 /// structure : les champs ajoutés y prennent leur valeur de début de
 /// partie.
 #[derive(Debug, Serialize, Deserialize)]
@@ -206,6 +213,17 @@ pub(crate) struct SauvegardeV14 {
     record_seul_dans_la_tour: u32,
     #[serde(default)]
     record_a_deux_dans_la_tour: u32,
+    /// Depuis la version 28 (section 13.11) : les parents confiés à
+    /// Malvoise, absent sans rite en cours.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    rite: Option<RiteV28>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct RiteV28 {
+    parents: Vec<MonstreV1>,
+    /// Secondes depuis le 1er janvier 1970 (UTC).
+    fin: u64,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -670,6 +688,10 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV14 {
         beherit: beherit_en_texte(partie.beherit()).map(str::to_string),
         record_seul_dans_la_tour: partie.records_de_la_tour().seul,
         record_a_deux_dans_la_tour: partie.records_de_la_tour().a_deux,
+        rite: partie.rite().map(|rite| RiteV28 {
+            parents: rite.parents().iter().map(depuis_monstre).collect(),
+            fin: rite.fin().secondes(),
+        }),
     }
 }
 
@@ -1034,6 +1056,18 @@ pub(crate) fn vers_partie(
             a_deux: sauvegarde.record_a_deux_dans_la_tour,
         }
     };
+    // Avant la version 28, pas de rite (section 13.11).
+    let rite = match sauvegarde.rite {
+        Some(rite) if sauvegarde.version >= VERSION_DU_RITE => {
+            let parents: [Monstre; 2] = vers_monstres(rite.parents, catalogue)?
+                .try_into()
+                .map_err(|_| {
+                    ErreurSauvegarde::Incoherente("rite sans ses deux parents".to_string())
+                })?;
+            Some(Rite::new(parents, Horodatage::depuis_secondes(rite.fin)))
+        }
+        _ => None,
+    };
     Partie::restaurer(EtatPartie {
         heros,
         collection,
@@ -1063,6 +1097,7 @@ pub(crate) fn vers_partie(
         machines,
         beherit,
         records_de_la_tour,
+        rite,
     })
     .map_err(incoherente)
 }

@@ -125,6 +125,7 @@ mod tests {
                 seul: record,
                 a_deux: 0,
             },
+            rite: None,
         })
         .unwrap()
     }

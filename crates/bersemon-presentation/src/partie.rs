@@ -553,6 +553,7 @@ pub fn question_de_confirmation(confirmation: &Confirmation) -> String {
         Confirmation::LancerAmelioration(plan) => question_de_lancement(plan),
         Confirmation::LancerFabrication(plan) => question_de_fabrication(plan),
         Confirmation::FabriquerFilets(plan) => question_des_filets(plan),
+        Confirmation::LancerLeRite(apercu) => crate::rite::question_du_rite(apercu),
         Confirmation::Evoluer {
             monstre,
             vers,

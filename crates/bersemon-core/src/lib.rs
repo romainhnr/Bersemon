@@ -46,6 +46,7 @@ pub mod peche;
 pub mod pierre;
 pub mod relations;
 pub mod ressource;
+pub mod rite;
 pub mod sauvegarde;
 pub mod soin;
 pub mod stats;
