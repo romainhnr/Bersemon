@@ -834,6 +834,7 @@ Décidé le 25/10/2026, pour les étapes 110 à 112 (choix de l'utilisateur). Va
 - Le rite fini, le joueur accueille le petit depuis l'étal ; le camp signale qu'il attend. Le petit naît au niveau 1, de la forme de base de la famille (le Loup, même d'un Warg et d'un Loup). Pour chaque stat, il reçoit la plus haute valeur interne de ses deux parents : un parent shiny, qui a 31 partout, donne donc des petits à 31 partout. Comme un monstre sauvage, il a 1 chance sur 512 d'être shiny et tire son habileté ; il connaît les attaques de son espèce au niveau 1. Son espèce s'ouvre au codex.
 - Le petit rejoint l'équipe s'il y reste une place, sinon le camp, après ses parents, qui reviennent comme d'une expédition automatique (section 12.7).
 - Sauvegarde en version 28 : le rite en cours, avec ses parents et l'heure de sa fin.
+- Écrans, à l'étape 111 (console) : l'étal de Malvoise propose le rite en 12, avec son coût et sa durée ("Rendre un monstre loué" passe en 13). Le joueur choisit le premier parent dans la liste de ses monstres, puis le second parmi ceux de la même famille, et confirme. Pendant le rite, la même entrée en donne l'état (les parents et le temps restant) ; une fois le rite achevé, elle accueille le petit, et le camp signale qu'il attend. Précisé en codant : la liste des monstres disait "en expédition automatique" toutes les places gardées au camp, celles de la cour comprises ; elle dit désormais combien de places sont gardées, pour des monstres absents ou à naître.
 
 ## 14. Économie, marchands, objets et ressources
 

@@ -25,6 +25,7 @@ use bersemon_presentation::partie::{
     ames_d_apotres, capsules_d_habilete, collection as liste_des_monstres, en_tete_du_camp,
 };
 use bersemon_presentation::peche::ligne_prete;
+use bersemon_presentation::rite::rite_acheve;
 use bersemon_presentation::tour::destination_de_la_tour;
 
 use crate::affichage;
@@ -110,6 +111,9 @@ pub fn choisir(
             println!("{avis}");
         }
         if let Some(avis) = avis_des_pieges(partie, maintenant()) {
+            println!("{avis}");
+        }
+        if let Some(avis) = rite_acheve(partie, maintenant()) {
             println!("{avis}");
         }
         // Malvoise, Gunther et Ansgar n'apparaissent qu'une fois au camp

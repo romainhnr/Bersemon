@@ -13,7 +13,7 @@ use bersemon_core::rite::{
 use crate::erreurs::{erreur_collection, erreur_marchand};
 use crate::expeditions_automatiques::duree;
 use crate::forge::cout;
-use crate::monstres::nom_en_valeur;
+use crate::monstres::{nom, nom_en_valeur};
 use crate::partie::argent;
 
 pub const RITE_DU_SANG_MELE: &str = "Rite du sang mêlé";
@@ -41,8 +41,8 @@ pub fn question_du_rite(apercu: &ApercuDuRite) -> String {
     let [premier, second] = &apercu.parents;
     format!(
         "Confier {} et {} à Malvoise pour le {RITE_DU_SANG_MELE} ? Il prendra {}. Dans {}, le petit naîtra, de l'espèce {}, au niveau {NIVEAU_DU_PETIT}, avec la meilleure valeur interne de ses parents pour chaque stat. D'ici là, les deux restent auprès de Malvoise.",
-        nom_en_valeur(premier, Cote::Joueur),
-        nom_en_valeur(second, Cote::Joueur),
+        nom(premier, Cote::Joueur),
+        nom(second, Cote::Joueur),
         prix(apercu),
         duree(apercu.duree),
         apercu.petit.nom()
@@ -84,8 +84,8 @@ pub fn etat_du_rite(partie: &Partie, maintenant: Horodatage) -> Option<String> {
     };
     Some(format!(
         "{RITE_DU_SANG_MELE} : {} et {}, {fin}",
-        nom_en_valeur(premier, Cote::Joueur),
-        nom_en_valeur(second, Cote::Joueur)
+        nom(premier, Cote::Joueur),
+        nom(second, Cote::Joueur)
     ))
 }
 
@@ -160,7 +160,7 @@ mod tests {
         };
         assert_eq!(
             question_du_rite(&apercu),
-            "Confier **Croc** et **Bise** à Malvoise pour le Rite du sang mêlé ? Il prendra Croc de loup (3) et 50 pièces d'argent. Dans 2 h, le petit naîtra, de l'espèce Loup, au niveau 1, avec la meilleure valeur interne de ses parents pour chaque stat. D'ici là, les deux restent auprès de Malvoise."
+            "Confier Croc et Bise à Malvoise pour le Rite du sang mêlé ? Il prendra Croc de loup (3) et 50 pièces d'argent. Dans 2 h, le petit naîtra, de l'espèce Loup, au niveau 1, avec la meilleure valeur interne de ses parents pour chaque stat. D'ici là, les deux restent auprès de Malvoise."
         );
         assert_eq!(
             service_du_rite(),

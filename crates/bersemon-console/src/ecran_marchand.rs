@@ -1,9 +1,12 @@
 //! Malvoise, le nécromancien du camp (section 14.2) : soins, filets, capsules,
 //! pierres d'évolution, rachat des monstres et des ressources, don des
 //! âmes, monstre rendu shiny contre un Philtre chromatique, achat et location de
-//! monstres. Les achats se font sans confirmation ; la vente, le service
-//! shiny et le retour d'un monstre loué sont confirmés par le déroulement.
+//! monstres, Rite du sang mêlé. Les achats se font sans confirmation ; la
+//! vente, le service shiny, le rite et le retour d'un monstre loué sont
+//! confirmés par le déroulement.
 
+use bersemon_core::collection::Emplacement;
+use bersemon_core::combat::Cote;
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::Choix;
 use bersemon_core::marchand::{
@@ -11,6 +14,7 @@ use bersemon_core::marchand::{
 };
 use bersemon_core::partie::Partie;
 use bersemon_core::pierre::PierreDEvolution;
+use bersemon_core::rite::forme_de_base;
 use bersemon_presentation::beherit::{FORGER_LE_BEHERIT, peut_forger_le_beherit};
 use bersemon_presentation::boosters::SERVICE_SHINY;
 use bersemon_presentation::filets::{liste_de_filets, offre_de_filet};
@@ -18,10 +22,13 @@ use bersemon_presentation::marchand::{
     capsules_en_vente, etal, offre_d_achat, offre_de_capsule, offre_de_location,
     offre_de_ressources, ressources_a_vendre,
 };
-use bersemon_presentation::partie::argent;
+use bersemon_presentation::monstres::ligne_monstre;
+use bersemon_presentation::partie::{argent, collection as liste_des_monstres};
+use bersemon_presentation::rite::{etat_du_rite, service_du_rite};
 use bersemon_presentation::soins::{le_soin, offre_de_soin};
 
 use crate::ecran_camp::{designer, vendre};
+use crate::horloge::maintenant;
 use crate::saisie::Entree;
 
 /// `Some(None)` au retour vers le menu du camp.
@@ -49,13 +56,16 @@ pub fn choisir(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Opt
         );
         println!("  10. Acheter un monstre");
         println!("  11. Louer un monstre");
+        // Le rite en cours se suit et s'accueille par la même entrée.
+        let entree_du_rite = etat_du_rite(partie, maintenant()).unwrap_or_else(service_du_rite);
+        println!("  12. {entree_du_rite}");
         // Le retour d'un monstre loué n'est proposé que s'il y en a un.
         let loue = partie.collection().monstre_loue();
         if let Some((_, monstre)) = loue {
-            println!("  12. Rendre {} à Malvoise", monstre.nom());
+            println!("  13. Rendre {} à Malvoise", monstre.nom());
         }
         println!("  0. Retour au camp");
-        let dernier = if loue.is_some() { 12 } else { 11 };
+        let dernier = if loue.is_some() { 13 } else { 12 };
         let choix = match entree.choix(0, dernier)? {
             0 => return Some(None),
             1 => acheter_soins(partie, entree)?,
@@ -70,6 +80,7 @@ pub fn choisir(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Opt
                 .map(Choix::RendreShiny),
             10 => acheter_monstre(partie, contenu, entree)?,
             11 => louer_monstre(partie, contenu, entree)?,
+            12 => rite(partie, contenu, entree)?,
             _ => Some(Choix::RendreLeMonstreLoue),
         };
         if choix.is_some() {
@@ -222,6 +233,54 @@ fn acheter_pierres(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>
     let nombre = entree.choix(0, au_plus as usize)?;
     let pierre = PierreDEvolution::TOUTES[choix - 1];
     Some((nombre > 0).then_some(Choix::AcheterPierres(pierre, nombre as u32)))
+}
+
+/// Le rite en cours s'accueille une fois fini, et sinon le refus dit le
+/// temps qu'il reste ; sans rite, le joueur choisit deux parents d'une même
+/// famille d'évolution (section 13.11).
+fn rite(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Option<Option<Choix>> {
+    if partie.rite().is_some() {
+        return Some(Some(Choix::AccueillirLePetit));
+    }
+    let collection = partie.collection();
+    println!();
+    println!("{}", liste_des_monstres(collection));
+    let question = "Quel premier parent confier à Malvoise ?";
+    let Some(premier) = designer(collection, entree, question)? else {
+        return Some(None);
+    };
+    let Some(monstre) = collection.monstre(premier) else {
+        return Some(None);
+    };
+    let especes = contenu.especes();
+    let famille = forme_de_base(monstre.espece(), especes).id();
+    let equipe = (0..collection.equipe().len()).map(Emplacement::Equipe);
+    let camp = (0..collection.camp().len()).map(Emplacement::Camp);
+    let compatibles: Vec<Emplacement> = equipe
+        .chain(camp)
+        .filter(|emplacement| *emplacement != premier)
+        .filter(|emplacement| {
+            collection.monstre(*emplacement).is_some_and(|autre| {
+                !autre.est_loue() && forme_de_base(autre.espece(), especes).id() == famille
+            })
+        })
+        .collect();
+    if compatibles.is_empty() {
+        println!("Aucun autre de vos monstres n'est de sa famille d'évolution.");
+        return Some(None);
+    }
+    println!("Second parent, de la même famille :");
+    for (position, emplacement) in compatibles.iter().enumerate() {
+        if let Some(autre) = collection.monstre(*emplacement) {
+            println!("  {}. {}", position + 1, ligne_monstre(autre, Cote::Joueur));
+        }
+    }
+    println!("Lequel ? (0 pour annuler)");
+    let choix = entree.choix(0, compatibles.len())?;
+    Some((choix > 0).then(|| Choix::LancerLeRite {
+        premier,
+        second: compatibles[choix - 1],
+    }))
 }
 
 /// Les espèces communes des zones menées au bout (section 14.2).
