@@ -127,6 +127,7 @@ mod tests {
             },
             rite: None,
             paliers_du_codex: Vec::new(),
+            arene: Default::default(),
         })
         .unwrap()
     }

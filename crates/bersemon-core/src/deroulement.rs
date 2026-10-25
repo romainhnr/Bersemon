@@ -20,12 +20,13 @@ use crate::amelioration::{
     Amelioration, Chantier, ErreurAmelioration, PlanDAmelioration, PlanDeFabrication,
     PlanDesFilets, PlanDuCharme,
 };
+use crate::arene::{AdversaireDeLArene, ErreurArene, PALIERS_DE_LA_FOSSE};
 use crate::attaque::{Attaque, AttaqueId, ErreurAttaquesMonstre};
 use crate::beherit::ErreurBeherit;
 use crate::booster::{Booster, ErreurBooster};
 use crate::capsule::{Capsule, ErreurApprentissage};
 use crate::collection::{Emplacement, ErreurCollection, Placement, TriDuCamp};
-use crate::combat::{self, Action, BilanCombat, Combat, ErreurCombat, Issue, Phase};
+use crate::combat::{self, Action, BilanCombat, Combat, Cote, ErreurCombat, Issue, Phase};
 use crate::contenu::ContenuV1;
 use crate::echange::{ErreurEchange, Offre, conclure_offre};
 use crate::equipement::{ErreurEquipement, ObjetDEquipement, ObjetDEquipementId, PlaceDEquipement};
@@ -46,7 +47,7 @@ use crate::marchand::ErreurMarchand;
 use crate::meteo::Meteo;
 use crate::monstre::{Monstre, RapportExperience};
 use crate::nom::{ErreurNom, Nom};
-use crate::partie::{Partie, creer_monstre_de_depart};
+use crate::partie::{Partie, RecompenseObtenue, creer_monstre_de_depart};
 use crate::peche::{ErreurPeche, Pecheur, Prise};
 use crate::pierre::PierreDEvolution;
 use crate::recompenses_du_codex::{ErreurCodex, RecompenseDuCodex};
@@ -252,6 +253,12 @@ pub enum Choix {
     RelacherLaCapture,
     /// Répond à une annonce : combattre, ou lire l'indice (section 9.2).
     Poursuivre,
+    /// Au camp, affronter le prochain palier de la Fosse aux damnés
+    /// (section 9.8) : son adversaire est présenté d'abord.
+    EntrerDansLaFosse,
+    /// Dans la Fosse aux damnés, le héros jette son arme : c'est une défaite,
+    /// sans conséquence (section 9.8).
+    Abandonner,
     Oui,
     Non,
 }
@@ -334,6 +341,13 @@ pub enum Attente<'a> {
     /// À la fin d'une étape, le sac déborde de `Partie::exces_du_sac`
     /// objets : le joueur en jette par `Choix::Jeter` (section 13.3).
     SacPlein,
+    /// L'adversaire du prochain palier de la Fosse aux damnés : le joueur le
+    /// combat par `Choix::Poursuivre`, ou revient au camp par
+    /// `Choix::RentrerAuCamp` (section 9.8).
+    AdversaireDeLArene {
+        palier: u8,
+        adversaire: &'a AdversaireDeLArene,
+    },
 }
 
 /// Ce que le joueur doit confirmer avant que son choix s'applique.
@@ -397,6 +411,18 @@ pub enum Evenement {
     /// Après le choix de la classe, dont dépend son dernier paragraphe
     /// (section 6).
     Introduction(Classe),
+    /// Le palier de la Fosse aux damnés est vaincu pour la première fois,
+    /// avec ce qu'il a rapporté (section 9.8).
+    PalierDeLaFosseVaincu {
+        palier: u8,
+        adversaire: String,
+        recompense: RecompenseObtenue,
+        conquise: bool,
+    },
+    /// Le héros est tombé dans la Fosse, ou a jeté son arme.
+    DefaiteDansLaFosse {
+        abandon: bool,
+    },
     PartieCommencee(Monstre),
     /// Nom de la zone.
     Depart(String),
@@ -764,6 +790,7 @@ pub enum ErreurChoix {
     AuTourDeLAutre,
     /// En groupe, l'autre joueur a encore le temps de jouer.
     AttenteTropCourte,
+    Arene(ErreurArene),
 }
 
 impl fmt::Display for ErreurChoix {
@@ -799,6 +826,7 @@ impl fmt::Display for ErreurChoix {
             ErreurChoix::Codex(erreur) => write!(f, "{erreur}"),
             ErreurChoix::AuTourDeLAutre => write!(f, "c'est à l'autre joueur d'agir"),
             ErreurChoix::AttenteTropCourte => write!(f, "l'autre joueur a encore le temps"),
+            ErreurChoix::Arene(erreur) => write!(f, "{erreur}"),
         }
     }
 }
@@ -1241,6 +1269,16 @@ struct EnJeu {
     partie: Partie,
     /// `None` au camp.
     expedition: Option<EnExpedition>,
+    /// Le palier de la Fosse aux damnés en cours, depuis le camp.
+    arene: Option<PalierEnCours>,
+}
+
+/// Le palier de la Fosse aux damnés affronté : son adversaire, présenté
+/// avant le combat (section 9.8).
+struct PalierEnCours {
+    palier: u8,
+    adversaire: AdversaireDeLArene,
+    combat: Option<Combat>,
 }
 
 impl EnJeu {
@@ -1248,10 +1286,20 @@ impl EnJeu {
         Etat::EnJeu(Box::new(Self {
             partie,
             expedition: None,
+            arene: None,
         }))
     }
 
     fn attente(&self) -> Attente<'_> {
+        if let Some(en_cours) = &self.arene {
+            return match &en_cours.combat {
+                None => Attente::AdversaireDeLArene {
+                    palier: en_cours.palier,
+                    adversaire: &en_cours.adversaire,
+                },
+                Some(combat) => Attente::ActionDeCombat(combat),
+            };
+        }
         match &self.expedition {
             None => match self.partie.attaque_a_choisir() {
                 Some((monstre, nouvelle)) => Attente::OubliAttaque { monstre, nouvelle },
@@ -1271,6 +1319,9 @@ impl EnJeu {
         contexte: &mut Contexte<'_>,
         evenements: &mut Vec<Evenement>,
     ) -> Result<Reponse, ErreurChoix> {
+        if self.arene.is_some() {
+            return self.combattre_dans_la_fosse(choix, contexte, evenements);
+        }
         let reponse = match &mut self.expedition {
             None => return self.choisir_au_camp(choix, confirme, contexte, evenements),
             Some(en_cours) => {
@@ -1282,6 +1333,71 @@ impl EnJeu {
             return Ok(Reponse::Faite);
         }
         Ok(reponse)
+    }
+
+    /// Devant l'adversaire, combattre ou revenir ; en combat, attaquer ou
+    /// abandonner. À la fin, une victoire donne la récompense du palier et
+    /// se sauvegarde ; une défaite ne coûte rien (section 9.8).
+    fn combattre_dans_la_fosse(
+        &mut self,
+        choix: &Choix,
+        contexte: &mut Contexte<'_>,
+        evenements: &mut Vec<Evenement>,
+    ) -> Result<Reponse, ErreurChoix> {
+        let en_cours = self.arene.as_mut().expect("un palier en cours");
+        let Some(combat) = &mut en_cours.combat else {
+            match choix {
+                Choix::Poursuivre => {
+                    let combat = self
+                        .partie
+                        .preparer_combat_dans_la_fosse(&en_cours.adversaire)
+                        .map_err(ErreurChoix::Combat)?;
+                    en_cours.combat = Some(combat);
+                }
+                Choix::RentrerAuCamp => self.arene = None,
+                _ => return Err(ErreurChoix::HorsDePropos),
+            }
+            return Ok(Reponse::Faite);
+        };
+        let tour = match choix {
+            Choix::Combat(action @ Action::Attaquer(_)) => {
+                combat.jouer_tour(*action, &mut *contexte.aleatoire)
+            }
+            Choix::Abandonner => combat.abandonner(Cote::Joueur),
+            _ => return Err(ErreurChoix::HorsDePropos),
+        }
+        .map_err(ErreurChoix::Combat)?;
+        evenements.push(Evenement::Combat {
+            evenements: tour,
+            combat: combat.clone(),
+        });
+        let Phase::Termine(issue) = combat.phase() else {
+            return Ok(Reponse::Faite);
+        };
+        let en_cours = self.arene.take().expect("un palier en cours");
+        if issue == Issue::Victoire {
+            let arme = contexte
+                .contenu
+                .arme_du_champion(self.partie.heros().classe());
+            let recompense = self.partie.vaincre_le_palier(
+                en_cours.palier,
+                &en_cours.adversaire,
+                arme,
+                &mut *contexte.aleatoire,
+            );
+            evenements.push(Evenement::PalierDeLaFosseVaincu {
+                palier: en_cours.palier,
+                adversaire: en_cours.adversaire.nom().to_string(),
+                recompense,
+                conquise: en_cours.palier == PALIERS_DE_LA_FOSSE,
+            });
+            sauvegarder(&self.partie, contexte.depot, evenements);
+        } else {
+            evenements.push(Evenement::DefaiteDansLaFosse {
+                abandon: *choix == Choix::Abandonner,
+            });
+        }
+        Ok(Reponse::Faite)
     }
 
     fn choisir_au_camp(
@@ -1302,6 +1418,18 @@ impl EnJeu {
             return self.choisir_prise(choix, contexte, evenements);
         }
         match choix {
+            Choix::EntrerDansLaFosse => {
+                let (palier, adversaire) = self
+                    .partie
+                    .palier_a_affronter(contexte.contenu.fosse())
+                    .map_err(ErreurChoix::Arene)?;
+                self.arene = Some(PalierEnCours {
+                    palier,
+                    adversaire: adversaire.clone(),
+                    combat: None,
+                });
+                Ok(Reponse::Faite)
+            }
             Choix::PartirEnExpedition(id) if id == contexte.contenu.invocation().eclipse().id() => {
                 let expedition = self.partir_vers_l_eclipse(contexte)?;
                 self.lancer(expedition, contexte, evenements);
@@ -3506,6 +3634,7 @@ mod tests {
             records_de_la_tour: partie.records_de_la_tour(),
             rite: partie.rite().cloned(),
             paliers_du_codex: partie.paliers_du_codex().to_vec(),
+            arene: partie.arene(),
         }
     }
 
@@ -4739,6 +4868,7 @@ mod tests {
             }
             Attente::MonstreRare(_) => Choix::PrendreLeMonstreRare,
             Attente::Prise(_) => Choix::GarderLaPrise,
+            Attente::AdversaireDeLArene { .. } => Choix::Poursuivre,
             Attente::ActionDeCombat(combat) => {
                 let attaquant = combat.monstre(combat.actif(combat::Cote::Joueur));
                 let defenseur = combat.monstre(combat.actif(combat::Cote::Adversaire));
@@ -5989,6 +6119,7 @@ mod tests {
             records_de_la_tour: Default::default(),
             rite: None,
             paliers_du_codex: Vec::new(),
+            arene: Default::default(),
         })
         .unwrap()
     }
@@ -6102,6 +6233,158 @@ mod tests {
         let mut deroulement = Deroulement::demarrer(Ok(Some(partie)));
         repondre_sans_tirage(&mut deroulement, Choix::ReprendreLaPartie, contenu, depot).unwrap();
         deroulement
+    }
+
+    /// Joue un combat de la Fosse en attaquant toujours avec la première
+    /// attaque, jusqu'à sa fin. Rend les événements du dernier tour.
+    fn combattre_dans_la_fosse_jusqu_au_bout(
+        deroulement: &mut Deroulement,
+        contenu: &ContenuV1,
+        depot: &DepotMemoire,
+    ) -> Vec<Evenement> {
+        let mut aleatoire = crate::aleatoire::GenerateurAleatoire::new(7);
+        loop {
+            let mut contexte = Contexte {
+                contenu,
+                aleatoire: &mut aleatoire,
+                depot,
+                maintenant: Horodatage::depuis_secondes(0),
+            };
+            let evenements = deroulement
+                .repondre(Choix::Combat(Action::Attaquer(0)), &mut contexte)
+                .unwrap();
+            if deroulement.attente() == Attente::Camp {
+                return evenements;
+            }
+        }
+    }
+
+    /// Section 9.8 : la Fosse s'ouvre après le brigand ; chaque palier se
+    /// présente, se combat héros contre héros, et sa première victoire
+    /// donne sa récompense ; l'abandon ne coûte rien.
+    #[test]
+    fn la_fosse_aux_damnes_se_combat_de_palier_en_palier() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut fermee = au_camp(partie(&contenu), &contenu, &depot);
+        assert_eq!(
+            repondre_sans_tirage(&mut fermee, Choix::EntrerDansLaFosse, &contenu, &depot),
+            Err(ErreurChoix::Arene(ErreurArene::FosseFermee))
+        );
+        // Un Mage armé du grimoire du champion et de la robe des cendres, au
+        // niveau 40, face au Gueux, au niveau 10.
+        let mut etat = etat_de(&partie(&contenu));
+        etat.humains_vaincus = vec![HumainId::new("brigand")];
+        etat.coffre_du_camp = Inventaire::default();
+        let arme = contenu.arme_du_champion(Classe::Mage).clone();
+        let robe = contenu
+            .objet_d_equipement(&ObjetDEquipementId::new("robe-des-cendres"))
+            .unwrap();
+        let portes = [
+            (PlaceDEquipement::Arme, arme.id().clone()),
+            (PlaceDEquipement::Armure, robe.id().clone()),
+        ];
+        etat.heros = etat.heros.clone().avec_equipement(
+            crate::equipement::Equipement::restaurer(vec![arme, robe], &portes).unwrap(),
+        );
+        let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
+        repondre_sans_tirage(&mut deroulement, Choix::EntrerDansLaFosse, &contenu, &depot).unwrap();
+        assert!(matches!(
+            deroulement.attente(),
+            Attente::AdversaireDeLArene { palier: 1, adversaire } if adversaire.nom() == "Le Gueux"
+        ));
+        // Revenir au camp ne coûte rien.
+        repondre_sans_tirage(&mut deroulement, Choix::RentrerAuCamp, &contenu, &depot).unwrap();
+        assert_eq!(deroulement.attente(), Attente::Camp);
+        repondre_sans_tirage(&mut deroulement, Choix::EntrerDansLaFosse, &contenu, &depot).unwrap();
+        repondre_sans_tirage(&mut deroulement, Choix::Poursuivre, &contenu, &depot).unwrap();
+        let Attente::ActionDeCombat(combat) = deroulement.attente() else {
+            panic!("combat attendu");
+        };
+        assert!(combat.est_dans_l_arene());
+        assert!(!combat.fuite_possible() && !combat.filet_possible());
+        assert_eq!(combat.ordre_disponible(), None);
+        assert_eq!(
+            combat.monstre(combat.actif(Cote::Joueur)).niveau().valeur(),
+            40
+        );
+        assert_eq!(
+            repondre_sans_tirage(
+                &mut deroulement,
+                Choix::Combat(Action::Fuir),
+                &contenu,
+                &depot
+            ),
+            Err(ErreurChoix::HorsDePropos)
+        );
+        let evenements = combattre_dans_la_fosse_jusqu_au_bout(&mut deroulement, &contenu, &depot);
+        assert!(evenements.iter().any(|evenement| matches!(
+            evenement,
+            Evenement::PalierDeLaFosseVaincu { palier: 1, recompense, conquise: false, .. }
+                if recompense.argent == 40 && recompense.monstre.is_none()
+        )));
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert_eq!(sauvegarde.arene().paliers_vaincus, 1);
+        assert_eq!(sauvegarde.coffre_du_camp().argent(), 40);
+        // Le palier 2 se présente ; l'abandon est une défaite sans perte.
+        repondre_sans_tirage(&mut deroulement, Choix::EntrerDansLaFosse, &contenu, &depot).unwrap();
+        repondre_sans_tirage(&mut deroulement, Choix::Poursuivre, &contenu, &depot).unwrap();
+        let evenements =
+            repondre_sans_tirage(&mut deroulement, Choix::Abandonner, &contenu, &depot).unwrap();
+        assert_eq!(
+            evenements.last(),
+            Some(&Evenement::DefaiteDansLaFosse { abandon: true })
+        );
+        assert_eq!(deroulement.attente(), Attente::Camp);
+        assert_eq!(deroulement.partie().unwrap().arene().paliers_vaincus, 1);
+    }
+
+    /// Section 9.8 : le dernier palier donne le Taureau d'airain et l'arme
+    /// du palier 4 de la classe du héros ; la Fosse est alors conquise.
+    #[test]
+    fn le_champion_vaincu_donne_le_taureau_et_l_arme_du_palier_4() {
+        let contenu = ContenuV1::new();
+        let mut etat = etat_de(&partie(&contenu));
+        etat.humains_vaincus = vec![HumainId::new("brigand")];
+        etat.arene.paliers_vaincus = 9;
+        let arme = contenu
+            .objet_d_equipement(&ObjetDEquipementId::new("sceptre-des-cendres"))
+            .unwrap();
+        let robe = contenu
+            .objet_d_equipement(&ObjetDEquipementId::new("robe-des-cendres"))
+            .unwrap();
+        let portes = [
+            (PlaceDEquipement::Arme, arme.id().clone()),
+            (PlaceDEquipement::Armure, robe.id().clone()),
+        ];
+        etat.heros = etat.heros.clone().avec_equipement(
+            crate::equipement::Equipement::restaurer(vec![arme, robe], &portes).unwrap(),
+        );
+        let partie = Partie::restaurer(etat).unwrap();
+        let (palier, champion) = partie.palier_a_affronter(contenu.fosse()).unwrap();
+        assert_eq!((palier, champion.nom()), (10, "Le Champion de la Fosse"));
+        let mut partie = partie;
+        let recompense = partie.vaincre_le_palier(
+            palier,
+            champion,
+            contenu.arme_du_champion(Classe::Mage),
+            &mut crate::aleatoire::GenerateurAleatoire::new(1),
+        );
+        assert_eq!(recompense.argent, 400);
+        let (taureau, placement) = recompense.monstre.unwrap();
+        assert_eq!(taureau.espece().id().as_str(), "taureau-d-airain");
+        assert_eq!(taureau.niveau().valeur(), 35);
+        assert_eq!(placement, Placement::Equipe(2));
+        assert_eq!(
+            recompense.arme.unwrap().id().as_str(),
+            "grimoire-du-champion"
+        );
+        assert_eq!(
+            partie
+                .palier_a_affronter(contenu.fosse())
+                .map(|(palier, _)| palier),
+            Err(ErreurArene::FosseConquise)
+        );
     }
 
     #[test]

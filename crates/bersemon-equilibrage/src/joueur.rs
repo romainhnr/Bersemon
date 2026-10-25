@@ -426,6 +426,8 @@ fn choisir(
         }
         Attente::MonstreRare(_) => Choix::PrendreLeMonstreRare,
         Attente::Prise(_) => Choix::GarderLaPrise,
+        // Le joueur simulé n'entre pas dans la Fosse aux damnés.
+        Attente::AdversaireDeLArene { .. } => Choix::RentrerAuCamp,
         Attente::ActionDeCombat(combat) => {
             let partie = deroulement.partie().expect("partie en combat");
             en_combat(combat, partie)

@@ -117,6 +117,9 @@ fn demander(
             let partie = deroulement.partie().expect(PARTIE_EN_JEU);
             ecran_expedition::sac_plein(partie, entree)
         }
+        Attente::AdversaireDeLArene { palier, adversaire } => {
+            ecran_combat::devant_l_adversaire(palier, adversaire, entree)
+        }
         // La console reste une partie seule : l'expédition en groupe ne se
         // joue que sur Discord (section 15.5).
         Attente::CombatDeGroupe | Attente::AttenteDuGroupe => None,

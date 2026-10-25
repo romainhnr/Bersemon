@@ -19,6 +19,7 @@ use bersemon_core::marchand::prix_de_revente;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_core::stats::ValeursInternes;
+use bersemon_presentation::arene::description_de_la_fosse;
 use bersemon_presentation::beherit::description_de_l_eclipse;
 use bersemon_presentation::boosters::{boosters, effet_du_booster};
 use bersemon_presentation::equipement::{
@@ -44,7 +45,9 @@ use bersemon_presentation::recompenses_du_codex::{progression_du_codex, reclamer
 use bersemon_presentation::rite::{rite_acheve, service_du_rite};
 use bersemon_presentation::tour::description_de_la_tour;
 
-use crate::composants::{Cle, ECLIPSE, RETIRER, Vue, booster_en_texte, emplacement_en_texte};
+use crate::composants::{
+    Cle, ECLIPSE, FOSSE, RETIRER, Vue, booster_en_texte, emplacement_en_texte,
+};
 use crate::echanges::TableauDesEchanges;
 use crate::message::{
     Bouton, DANGER, OPTIONS_PAR_MENU, OptionDeMenu, PRINCIPAL, Question, Rangee, SECONDAIRE,
@@ -146,6 +149,15 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
             libelle: contenu.tour().nom().to_string(),
             valeur: contenu.tour().id().as_str().to_string(),
             description: Some(description),
+        });
+    }
+    // La Fosse aux damnés suit la Tour, une fois le brigand vaincu (section
+    // 9.8).
+    if partie.fosse_ouverte(contenu.fosse()) {
+        zones.push(OptionDeMenu {
+            libelle: "Fosse aux damnés".to_string(),
+            valeur: FOSSE.to_string(),
+            description: Some(description_de_la_fosse(partie.arene().paliers_vaincus)),
         });
     }
     if let Some(description) = description_de_l_eclipse(partie, contenu) {

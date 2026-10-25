@@ -237,6 +237,14 @@ pub fn evenement(evenement: &Evenement, combat: &Combat) -> String {
         Evenement::FinDuCombat(Issue::Fuite) => "Le combat est terminé.".to_string(),
         // Le récit d'un duel nomme le héros qui abandonne ou perd par
         // forfait (`duels::raconter`) : ces phrases ne servent qu'à défaut.
+        Evenement::Abandon(cote) if combat.est_dans_l_arene() => {
+            let adversaire = combat
+                .heros(Cote::Adversaire)
+                .first()
+                .map(|heros| heros.nom().to_string())
+                .unwrap_or_default();
+            crate::arene::abandon_dans_l_arene(*cote, &adversaire)
+        }
         Evenement::Abandon(cote) => match cote {
             Cote::Joueur => "Vous abandonnez le duel.".to_string(),
             Cote::Adversaire => "Votre adversaire abandonne le duel.".to_string(),

@@ -6,6 +6,7 @@
 //! Les phrases évitent les accords en genre, que le nom d'un monstre ne
 //! permet pas de connaître.
 
+pub mod arene;
 pub mod beherit;
 pub mod boosters;
 pub mod combat;

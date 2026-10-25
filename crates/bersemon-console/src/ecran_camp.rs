@@ -12,6 +12,7 @@ use bersemon_core::combat::Cote;
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::{ActionDeGestion, Choix};
 use bersemon_core::partie::Partie;
+use bersemon_presentation::arene::lieu_sur_la_carte;
 use bersemon_presentation::beherit::{DEMANDE_DE_SACRIFICE, destination_de_l_eclipse};
 use bersemon_presentation::boosters::{boosters, effet_du_booster};
 use bersemon_presentation::expeditions_automatiques::expeditions_rentrees;
@@ -217,8 +218,8 @@ fn choisir_une_option(entree: &mut Entree) -> Option<Option<Choix>> {
 }
 
 /// `Some(None)` si le joueur reste au camp. La Tour sans fond suit les
-/// zones, une fois ouverte (section 9.5), puis l'Éclipse, avec le Béhérit
-/// (section 9.4).
+/// zones, une fois ouverte (section 9.5), puis la Fosse aux damnés (section
+/// 9.8) et l'Éclipse, avec le Béhérit (section 9.4).
 fn carte(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Option<Option<Choix>> {
     let accessibles = partie.zones_accessibles(contenu.zones(), contenu.piste());
     println!();
@@ -229,6 +230,14 @@ fn carte(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Option<Op
     let tour = destination_de_la_tour(partie, contenu).map(|ligne| {
         dernier += 1;
         println!("  {dernier}. {ligne}");
+        dernier
+    });
+    let fosse = partie.fosse_ouverte(contenu.fosse()).then(|| {
+        dernier += 1;
+        println!(
+            "  {dernier}. {}",
+            lieu_sur_la_carte(partie.arene().paliers_vaincus)
+        );
         dernier
     });
     let eclipse = destination_de_l_eclipse(partie, contenu).map(|ligne| {
@@ -246,6 +255,7 @@ fn carte(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Option<Op
         numero if Some(numero) == tour => {
             Some(Some(Choix::PartirEnExpedition(contenu.tour().id().clone())))
         }
+        numero if Some(numero) == fosse => Some(Some(Choix::EntrerDansLaFosse)),
         numero if Some(numero) == eclipse && partie.beherit() == EtatDuBeherit::Forge => {
             choisir_le_sacrifice(partie, entree)
         }

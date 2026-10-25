@@ -1,0 +1,248 @@
+//! Fosse aux damnés (section 9.8) : une arène hors des zones, où le héros
+//! affronte seul, à mort, un humain de l'IA par palier. Chaque palier vaincu
+//! ouvre le suivant et donne sa récompense, la première fois.
+
+use crate::aleatoire::Aleatoire;
+use crate::equipement::ObjetDEquipement;
+use crate::espece::Espece;
+use crate::heros::{Classe, creer_combattant};
+use crate::humain::{HumainId, IaHumain};
+use crate::monstre::Monstre;
+use crate::niveau::Niveau;
+use crate::stats::ValeursInternes;
+
+pub const PALIERS_DE_LA_FOSSE: u8 = 10;
+
+/// La cote de chaque joueur au classement de l'arène, avant son premier
+/// combat contre un autre joueur (section 15.6).
+pub const COTE_DE_DEPART: u32 = 1000;
+
+/// Ce que le joueur a fait dans l'arène : le dernier palier vaincu de la
+/// Fosse aux damnés (section 9.8), puis sa cote et le nombre de ses combats
+/// contre d'autres joueurs (section 15.6).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EtatDeLArene {
+    pub paliers_vaincus: u8,
+    pub cote: u32,
+    pub combats_entre_joueurs: u32,
+}
+
+impl Default for EtatDeLArene {
+    fn default() -> Self {
+        Self {
+            paliers_vaincus: 0,
+            cote: COTE_DE_DEPART,
+            combats_entre_joueurs: 0,
+        }
+    }
+}
+
+/// Pourquoi la Fosse refuse le joueur.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ErreurArene {
+    /// Le brigand de la Lisière n'est pas encore vaincu.
+    FosseFermee,
+    /// Les 10 paliers sont vaincus.
+    FosseConquise,
+    /// Le palier donne un monstre, et ni l'équipe ni le camp n'ont de place
+    /// (hypothèse retenue, Q112).
+    PlusDePlace,
+}
+
+impl std::fmt::Display for ErreurArene {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ErreurArene::FosseFermee => write!(f, "la Fosse aux damnés n'est pas ouverte"),
+            ErreurArene::FosseConquise => write!(f, "tous les paliers sont vaincus"),
+            ErreurArene::PlusDePlace => write!(f, "aucune place pour le monstre offert"),
+        }
+    }
+}
+
+impl std::error::Error for ErreurArene {}
+
+/// Ce que donne un palier à sa première victoire : de l'argent, parfois un
+/// monstre au niveau du palier, et, au dernier, l'arme du palier 4 de la
+/// classe du héros (section 9.8).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecompenseDeLArene {
+    pub argent: u32,
+    pub monstre: Option<(Espece, Niveau)>,
+    pub arme_du_champion: bool,
+}
+
+/// L'humain d'un palier : il combat seul, avec sa classe et son
+/// équipement, et des valeurs internes fixes, comme le héros (section 4.4).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AdversaireDeLArene {
+    id: HumainId,
+    nom: String,
+    classe: Classe,
+    arme: Option<ObjetDEquipement>,
+    armure: Option<ObjetDEquipement>,
+    ia: IaHumain,
+    presentation: String,
+    recompense: RecompenseDeLArene,
+}
+
+impl AdversaireDeLArene {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        id: HumainId,
+        nom: impl Into<String>,
+        classe: Classe,
+        arme: Option<ObjetDEquipement>,
+        armure: Option<ObjetDEquipement>,
+        ia: IaHumain,
+        presentation: impl Into<String>,
+        recompense: RecompenseDeLArene,
+    ) -> Self {
+        Self {
+            id,
+            nom: nom.into(),
+            classe,
+            arme,
+            armure,
+            ia,
+            presentation: presentation.into(),
+            recompense,
+        }
+    }
+
+    pub fn id(&self) -> &HumainId {
+        &self.id
+    }
+
+    pub fn nom(&self) -> &str {
+        &self.nom
+    }
+
+    pub fn classe(&self) -> Classe {
+        self.classe
+    }
+
+    pub fn ia(&self) -> IaHumain {
+        self.ia
+    }
+
+    pub fn presentation(&self) -> &str {
+        &self.presentation
+    }
+
+    pub fn recompense(&self) -> &RecompenseDeLArene {
+        &self.recompense
+    }
+
+    /// Lui-même, prêt au combat, sans tirage.
+    pub fn generer_heros(&self) -> Monstre {
+        creer_combattant(
+            &self.nom,
+            self.classe,
+            self.arme.as_ref(),
+            self.armure.as_ref(),
+        )
+    }
+}
+
+/// Le monstre que donne un palier : valeurs internes et habileté tirées,
+/// jamais shiny (hypothèse retenue, Q112). Tirages : les six valeurs
+/// internes, puis l'habileté.
+pub fn generer_le_monstre_offert(
+    espece: &Espece,
+    niveau: Niveau,
+    aleatoire: &mut dyn Aleatoire,
+) -> Monstre {
+    let valeurs_internes = ValeursInternes::tirer(aleatoire);
+    Monstre::creer(espece.clone(), niveau, valeurs_internes, false)
+        .expect("monstre offert vérifié par le contenu")
+        .tirer_son_habilete(aleatoire)
+}
+
+/// Les adversaires des paliers 1 à 10, dans l'ordre, et l'humain dont la
+/// défaite ouvre la Fosse (section 9.8).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FosseAuxDamnes {
+    adversaires: Vec<AdversaireDeLArene>,
+    ouverte_par: HumainId,
+}
+
+impl FosseAuxDamnes {
+    /// Panique s'il n'y a pas un adversaire par palier : c'est une erreur du
+    /// contenu, que ses tests détectent.
+    pub fn new(adversaires: Vec<AdversaireDeLArene>, ouverte_par: HumainId) -> Self {
+        assert_eq!(
+            adversaires.len(),
+            usize::from(PALIERS_DE_LA_FOSSE),
+            "un adversaire par palier"
+        );
+        Self {
+            adversaires,
+            ouverte_par,
+        }
+    }
+
+    pub fn ouverte_par(&self) -> &HumainId {
+        &self.ouverte_par
+    }
+
+    pub fn adversaires(&self) -> &[AdversaireDeLArene] {
+        &self.adversaires
+    }
+
+    /// Celui du palier `palier`, de 1 à 10.
+    pub fn adversaire(&self, palier: u8) -> Option<&AdversaireDeLArene> {
+        let position = usize::from(palier).checked_sub(1)?;
+        self.adversaires.get(position)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::aleatoire::AleatoireScripte;
+    use crate::donnees_de_test::espece;
+
+    fn adversaire(palier: u8) -> AdversaireDeLArene {
+        AdversaireDeLArene::new(
+            HumainId::new(format!("adversaire-{palier}")),
+            format!("Adversaire {palier}"),
+            Classe::Guerrier,
+            None,
+            None,
+            IaHumain::Simple,
+            "",
+            RecompenseDeLArene {
+                argent: 10,
+                monstre: None,
+                arme_du_champion: false,
+            },
+        )
+    }
+
+    #[test]
+    fn un_adversaire_par_palier_de_1_a_10() {
+        let fosse = FosseAuxDamnes::new(
+            (1..=PALIERS_DE_LA_FOSSE).map(adversaire).collect(),
+            HumainId::new("brigand"),
+        );
+        assert_eq!(fosse.adversaire(0), None);
+        assert_eq!(fosse.adversaire(1).unwrap().nom(), "Adversaire 1");
+        assert_eq!(fosse.adversaire(10).unwrap().nom(), "Adversaire 10");
+        assert_eq!(fosse.adversaire(11), None);
+        let heros = fosse.adversaire(3).unwrap().generer_heros();
+        assert_eq!(heros.nom(), "Adversaire 3");
+        assert_eq!(heros.niveau().valeur(), 5);
+    }
+
+    #[test]
+    fn le_monstre_offert_n_est_jamais_shiny() {
+        let tirages = [31, 31, 31, 31, 31, 31];
+        let monstre = generer_le_monstre_offert(
+            &espece("loup"),
+            Niveau::new(20).unwrap(),
+            &mut AleatoireScripte::new(tirages),
+        );
+        assert!(!monstre.est_shiny());
+        assert_eq!(monstre.niveau().valeur(), 20);
+    }
+}

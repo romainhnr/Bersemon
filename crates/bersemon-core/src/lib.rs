@@ -8,6 +8,7 @@
 pub mod aleatoire;
 pub mod ame;
 pub mod amelioration;
+pub mod arene;
 pub mod attaque;
 pub mod beherit;
 pub mod booster;

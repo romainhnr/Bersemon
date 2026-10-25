@@ -511,6 +511,8 @@ pub struct Combat {
     /// Contre un autre joueur, qui choisit les actions de l'adversaire
     /// (section 15.3).
     duel: bool,
+    /// Dans l'arène, héros contre héros (sections 9.8 et 15.6).
+    arene: bool,
     /// Les deux joueurs d'une expédition en groupe forment un seul côté
     /// (section 15.5). En boîte, pour que le combat reste léger.
     groupe: Option<Box<EnGroupe>>,
@@ -552,7 +554,43 @@ impl Combat {
     /// commencent le combat. `terminer` rend ensuite l'équipe avec ses PV et
     /// ses statuts.
     pub fn new(equipe: Vec<Monstre>, adversaires: Vec<Monstre>) -> Result<Self, ErreurCombat> {
-        Self::construire(equipe, Vec::new(), adversaires)
+        Self::construire(equipe, Vec::new(), adversaires, Vec::new())
+    }
+
+    /// Dans la Fosse aux damnés, le héros seul contre un humain seul, à
+    /// mort : ni objet, ni filet, ni fuite, ni ordre, mais l'abandon reste
+    /// possible (section 9.8).
+    pub fn dans_l_arene(
+        heros: Monstre,
+        adversaire: Monstre,
+        ia: IaHumain,
+    ) -> Result<Self, ErreurCombat> {
+        let mut combat = Self::construire(
+            Vec::new(),
+            vec![(heros, Membre::Hote)],
+            Vec::new(),
+            vec![adversaire],
+        )?
+        .contre_un_humain(ia);
+        combat.arene = true;
+        Ok(combat)
+    }
+
+    /// Deux héros de joueurs, en temps réel, comme un duel (section 15.6).
+    pub fn duel_dans_l_arene(premier: Monstre, second: Monstre) -> Result<Self, ErreurCombat> {
+        let mut combat = Self::construire(
+            Vec::new(),
+            vec![(premier, Membre::Hote)],
+            Vec::new(),
+            vec![second],
+        )?;
+        combat.duel = true;
+        combat.arene = true;
+        Ok(combat)
+    }
+
+    pub fn est_dans_l_arene(&self) -> bool {
+        self.arene
     }
 
     /// Avec le héros du joueur, qui suit son équipe : il commence le combat
@@ -562,13 +600,14 @@ impl Combat {
         heros: Monstre,
         adversaires: Vec<Monstre>,
     ) -> Result<Self, ErreurCombat> {
-        Self::construire(equipe, vec![(heros, Membre::Hote)], adversaires)
+        Self::construire(equipe, vec![(heros, Membre::Hote)], adversaires, Vec::new())
     }
 
     fn construire(
         equipe: Vec<Monstre>,
         heros: Vec<(Monstre, Membre)>,
         adversaires: Vec<Monstre>,
+        heros_adverses: Vec<Monstre>,
     ) -> Result<Self, ErreurCombat> {
         let actif_joueur = equipe
             .iter()
@@ -580,20 +619,24 @@ impl Combat {
                     .map(|position| equipe.len() + position)
             })
             .ok_or(ErreurCombat::EquipeSansMonstreApte)?;
-        if adversaires.is_empty() {
+        if adversaires.is_empty() && heros_adverses.is_empty() {
             return Err(ErreurCombat::AucunAdversaire);
         }
-        if let Some(index) = adversaires.iter().position(Monstre::est_ko) {
+        let adversaire_ko = adversaires
+            .iter()
+            .chain(&heros_adverses)
+            .position(Monstre::est_ko);
+        if let Some(index) = adversaire_ko {
             return Err(ErreurCombat::AdversaireKo(index));
         }
         let (heros_du_joueur, membres_des_heros) = heros.into_iter().unzip();
         let mut combat = Self {
             equipe,
             actif_joueur,
-            participants: vec![Vec::new(); adversaires.len()],
+            participants: vec![Vec::new(); adversaires.len() + heros_adverses.len()],
             adversaires,
             actif_adversaire: 0,
-            heros: [heros_du_joueur, Vec::new()],
+            heros: [heros_du_joueur, heros_adverses],
             membres_des_heros,
             captures: Vec::new(),
             regles: Default::default(),
@@ -607,6 +650,7 @@ impl Combat {
             contre_un_gardien: false,
             ia: Ia::Hasard,
             duel: false,
+            arene: false,
             groupe: None,
             premiere_equipe_tombee: None,
             jour_ou_nuit: None,
@@ -677,7 +721,7 @@ impl Combat {
         let debut_de_l_invite = hote.len();
         let mut equipe = hote;
         equipe.extend(invite);
-        let mut combat = Combat::construire(equipe, heros, adversaires)?;
+        let mut combat = Combat::construire(equipe, heros, adversaires, Vec::new())?;
         combat.groupe = Some(Box::new(EnGroupe {
             debut_de_l_invite,
             regles: ReglesDuCote {
@@ -969,6 +1013,7 @@ impl Combat {
         self.ia = match ia {
             IaHumain::Simple => Ia::PlusForte,
             IaHumain::Relevee => Ia::PlusForteEtChangement,
+            IaHumain::Avancee => Ia::Avancee,
         };
         self
     }
@@ -1003,6 +1048,11 @@ impl Combat {
 
     pub fn fuite_possible(&self) -> bool {
         !self.contre_un_apotre && !self.contre_un_humain && !self.contre_un_gardien && !self.duel
+    }
+
+    /// En duel et dans l'arène, à tout moment avant la fin.
+    pub fn abandon_possible(&self) -> bool {
+        (self.duel || self.arene) && !matches!(self.phase, Phase::Termine(_))
     }
 
     pub fn filet_possible(&self) -> bool {
@@ -1458,7 +1508,7 @@ impl Combat {
     }
 
     fn perdre(&mut self, cote: Cote, evenement: Evenement) -> Result<Vec<Evenement>, ErreurCombat> {
-        if !self.duel {
+        if !self.duel && !self.arene {
             return Err(ErreurCombat::ReserveAuDuel);
         }
         if let Phase::Termine(_) = self.phase {
@@ -1499,6 +1549,7 @@ impl Combat {
             contre_un_gardien: self.contre_un_gardien,
             ia: self.ia,
             duel: self.duel,
+            arene: self.arene,
             groupe: None,
             premiere_equipe_tombee: self.premiere_equipe_tombee.map(Cote::oppose),
             jour_ou_nuit: self.jour_ou_nuit,

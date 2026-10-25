@@ -46,6 +46,7 @@ pub fn menu_action(combat: &Combat, commandes: &[Commande]) -> String {
             }
             Commande::UtiliserSoin => format!("Utiliser un soin ({})", sac(combat.soins())),
             Commande::Fuir => "Fuir".to_string(),
+            Commande::Abandonner => "Abandonner".to_string(),
         };
         lignes.push(format!("  {}. {libelle}", position + 1));
     }

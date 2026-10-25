@@ -2,6 +2,7 @@
 //! le remplacement d'un monstre KO, la capture des KO, l'attaque à oublier
 //! et l'évolution.
 
+use bersemon_core::arene::AdversaireDeLArene;
 use bersemon_core::attaque::Attaque;
 use bersemon_core::codex::Codex;
 use bersemon_core::collection::Collection;
@@ -11,6 +12,7 @@ use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_core::soin::Soins;
 use bersemon_core::types::Efficacite;
+use bersemon_presentation::arene::annonce_du_palier;
 use bersemon_presentation::combat::{attaque_de_trop, attaque_en_combat, etat, ordre_et_bonus};
 use bersemon_presentation::filets::nom_du_filet;
 use bersemon_presentation::monstres::{
@@ -68,6 +70,10 @@ pub fn action(combat: &Combat, partie: &Partie) -> Question {
     }
     if combat.fuite_possible() {
         autres.push(bouton(Cle::Fuir, "Fuir", SECONDAIRE));
+    }
+    // Dans la Fosse aux damnés, attaquer ou jeter son arme (section 9.8).
+    if combat.est_dans_l_arene() {
+        autres.push(bouton(Cle::AbandonnerLaFosse, "Abandonner", DANGER));
     }
     lignes.extend(rangees(autres));
     // En groupe, le joueur ne fait entrer que ses monstres (section 15.5).
@@ -257,12 +263,50 @@ pub fn oubli(monstre: &Monstre, nouvelle: &Attaque) -> Question {
     }
 }
 
+/// Le palier de la Fosse aux damnés et son adversaire : combattre, ou
+/// revenir au camp (section 9.8).
+pub fn devant_l_adversaire(palier: u8, adversaire: &AdversaireDeLArene) -> Question {
+    Question {
+        texte: annonce_du_palier(palier, adversaire),
+        rangees: rangees(vec![
+            bouton(Cle::Poursuivre, "Combattre", PRINCIPAL),
+            bouton(Cle::Rentrer, "Revenir au camp", SECONDAIRE),
+        ]),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use bersemon_core::heros::{Classe, Heros};
     use bersemon_core::nom::Nom;
     use bersemon_core::soin::Soin;
+
+    /// Section 9.8 : dans la Fosse, attaquer ou abandonner, rien d'autre.
+    #[test]
+    fn dans_la_fosse_le_heros_attaque_ou_abandonne() {
+        use bersemon_core::contenu::ContenuV1;
+        use crate::message::Rangee;
+
+        let contenu = ContenuV1::new();
+        let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Guerrier);
+        let gueux = contenu.fosse().adversaire(1).unwrap();
+        let combat =
+            Combat::dans_l_arene(heros.combattant(), gueux.generer_heros(), gueux.ia()).unwrap();
+        let depart = heros.combattant();
+        let partie = Partie::nouvelle(heros, depart);
+        let question = action(&combat, &partie);
+        let mut cles = Vec::new();
+        for rangee in &question.rangees {
+            match rangee {
+                Rangee::Boutons(boutons) => cles.extend(boutons.iter().map(|b| b.cle.clone())),
+                Rangee::Menu(menu) => cles.push(menu.cle.clone()),
+            }
+        }
+        assert_eq!(cles, vec![Cle::Attaquer(0), Cle::AbandonnerLaFosse]);
+        let annonce = devant_l_adversaire(1, gueux);
+        assert!(annonce.texte.contains("Le Gueux"));
+    }
 
     /// Section 4.4 : les soins servent au héros, sauf l'élixir.
     #[test]

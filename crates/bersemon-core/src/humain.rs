@@ -22,6 +22,9 @@ pub enum IaHumain {
     /// La même, et un changement de monstre quand le sien ne peut que peu ou
     /// pas blesser.
     Relevee,
+    /// Celle des Apôtres, pour les derniers adversaires de la Fosse aux
+    /// damnés (section 9.8).
+    Avancee,
 }
 
 /// Identifiant stable d'un humain, enregistré dans la sauvegarde une fois

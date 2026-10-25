@@ -280,6 +280,9 @@ fn question_de_la_partie(
         Attente::Annonce(annonce) => ecran_expedition::annonce(annonce),
         Attente::Confirmation(confirmation) => confirmer(confirmation),
         Attente::SacPlein => ecran_expedition::sac_plein(partie()),
+        Attente::AdversaireDeLArene { palier, adversaire } => {
+            ecran_combat::devant_l_adversaire(palier, adversaire)
+        }
         // Le combat commun et l'attente du compagnon passent par
         // `ecran_groupe` ; sans expédition en groupe, rien à faire.
         Attente::CombatDeGroupe | Attente::AttenteDuGroupe => Question {

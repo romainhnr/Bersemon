@@ -9,6 +9,9 @@ use crate::amelioration::{
     Chantier, ErreurAmelioration, Forge, Ouvrage, PlanDAmelioration, PlanDeFabrication,
     PlanDesFilets, PlanDuCharme,
 };
+use crate::arene::{
+    AdversaireDeLArene, ErreurArene, EtatDeLArene, FosseAuxDamnes, generer_le_monstre_offert,
+};
 use crate::attaque::{Attaque, AttaqueId, ErreurAttaquesMonstre};
 use crate::beherit::{
     ErreurBeherit, EtatDuBeherit, Invocation, NIVEAU_MINIMAL_DU_SACRIFICE, PHILTRES_DU_DEMIURGE,
@@ -19,7 +22,7 @@ use crate::catalogue::Catalogue;
 use crate::codex::Codex;
 use crate::collection::{Collection, Emplacement, ErreurCollection, Placement};
 use crate::combat::{BilanCombat, Combat, Cote, ErreurCombat, Issue, Membre, ReglesDuMembre};
-use crate::equipement::{ErreurEquipement, ObjetDEquipementId, PlaceDEquipement};
+use crate::equipement::{ErreurEquipement, ObjetDEquipement, ObjetDEquipementId, PlaceDEquipement};
 use crate::espece::{Espece, EspeceId, Rarete};
 use crate::evolution::{
     Circonstances, ErreurEvolution, ResultatEvolution, evolution_possible, faire_evoluer,
@@ -137,6 +140,17 @@ pub struct Partie {
     rite: Option<Rite>,
     /// Les paliers du codex dont la récompense est réclamée (section 5.6).
     paliers_du_codex: Vec<PalierDuCodex>,
+    /// Les paliers vaincus de la Fosse aux damnés et la cote de l'arène
+    /// (sections 9.8 et 15.6).
+    arene: EtatDeLArene,
+}
+
+/// Ce qu'a rapporté un palier de la Fosse aux damnés (section 9.8).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecompenseObtenue {
+    pub argent: u32,
+    pub monstre: Option<(Monstre, Placement)>,
+    pub arme: Option<ObjetDEquipement>,
 }
 
 /// Attaque qu'un monstre rentré d'expédition automatique veut apprendre en
@@ -186,6 +200,7 @@ pub struct EtatPartie {
     pub records_de_la_tour: RecordsDeLaTour,
     pub rite: Option<Rite>,
     pub paliers_du_codex: Vec<PalierDuCodex>,
+    pub arene: EtatDeLArene,
 }
 
 /// Sauvegarde lisible mais contraire aux règles des expéditions
@@ -281,6 +296,7 @@ impl Partie {
             records_de_la_tour: RecordsDeLaTour::default(),
             rite: None,
             paliers_du_codex: Vec::new(),
+            arene: EtatDeLArene::default(),
             conseils_vus: Vec::new(),
             expeditions_automatiques: Vec::new(),
             attaques_a_choisir: Vec::new(),
@@ -555,6 +571,80 @@ impl Partie {
 
     pub fn paliers_du_codex(&self) -> &[PalierDuCodex] {
         &self.paliers_du_codex
+    }
+
+    pub fn arene(&self) -> EtatDeLArene {
+        self.arene
+    }
+
+    /// Ouverte quand le brigand de la Lisière est vaincu (section 9.8).
+    pub fn fosse_ouverte(&self, fosse: &FosseAuxDamnes) -> bool {
+        self.humains_vaincus.contains(fosse.ouverte_par())
+    }
+
+    /// Le palier à affronter : celui qui suit le dernier vaincu. Refusé si
+    /// la Fosse est fermée ou conquise, ou s'il donne un monstre que ni
+    /// l'équipe ni le camp ne peuvent accueillir (section 9.8, Q112).
+    pub fn palier_a_affronter<'f>(
+        &self,
+        fosse: &'f FosseAuxDamnes,
+    ) -> Result<(u8, &'f AdversaireDeLArene), ErreurArene> {
+        if !self.fosse_ouverte(fosse) {
+            return Err(ErreurArene::FosseFermee);
+        }
+        let palier = self.arene.paliers_vaincus + 1;
+        let adversaire = fosse.adversaire(palier).ok_or(ErreurArene::FosseConquise)?;
+        if adversaire.recompense().monstre.is_some() && !self.collection.a_de_la_place() {
+            return Err(ErreurArene::PlusDePlace);
+        }
+        Ok((palier, adversaire))
+    }
+
+    /// Le héros, avec tous ses PV, seul contre l'adversaire du palier : ni
+    /// objet, ni filet, ni fuite, ni ordre (section 9.8).
+    pub fn preparer_combat_dans_la_fosse(
+        &self,
+        adversaire: &AdversaireDeLArene,
+    ) -> Result<Combat, ErreurCombat> {
+        let mut heros = self.heros.combattant();
+        heros.soigner_completement();
+        Combat::dans_l_arene(heros, adversaire.generer_heros(), adversaire.ia())
+    }
+
+    /// Le palier est vaincu pour la première fois : l'argent va au coffre,
+    /// le monstre offert à l'équipe ou au camp, et l'arme du champion, celle
+    /// de la classe du héros, à son équipement (section 9.8). Tirages : ceux
+    /// du monstre offert.
+    pub fn vaincre_le_palier(
+        &mut self,
+        palier: u8,
+        adversaire: &AdversaireDeLArene,
+        arme_du_champion: &ObjetDEquipement,
+        aleatoire: &mut dyn Aleatoire,
+    ) -> RecompenseObtenue {
+        self.arene.paliers_vaincus = self.arene.paliers_vaincus.max(palier);
+        let recompense = adversaire.recompense();
+        self.coffre_du_camp.ajouter_argent(recompense.argent);
+        let monstre = recompense.monstre.as_ref().map(|(espece, niveau)| {
+            let monstre = generer_le_monstre_offert(espece, *niveau, aleatoire);
+            self.codex.noter_capture(monstre.espece().id());
+            let placement = self.collection.accueillir_capture(monstre.clone());
+            (monstre, placement)
+        });
+        let arme = (recompense.arme_du_champion
+            && !self.heros.equipement().possede(arme_du_champion.id()))
+        .then(|| {
+            self.heros
+                .equipement_mut()
+                .ajouter(arme_du_champion.clone())
+                .expect("arme non possédée");
+            arme_du_champion.clone()
+        });
+        RecompenseObtenue {
+            argent: recompense.argent,
+            monstre,
+            arme,
+        }
     }
 
     /// Le premier palier atteint dont la récompense n'est pas réclamée,
@@ -2008,6 +2098,7 @@ impl Partie {
             records_de_la_tour: etat.records_de_la_tour,
             rite: etat.rite,
             paliers_du_codex: etat.paliers_du_codex,
+            arene: etat.arene,
         })
     }
 
@@ -3946,6 +4037,7 @@ mod tests {
             records_de_la_tour: partie.records_de_la_tour(),
             rite: partie.rite().cloned(),
             paliers_du_codex: partie.paliers_du_codex().to_vec(),
+            arene: partie.arene(),
         }
     }
 

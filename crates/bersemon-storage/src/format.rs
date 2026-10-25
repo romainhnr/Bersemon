@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use bersemon_core::ame::{MarchandId, MarchandMort};
 use bersemon_core::amelioration::{Amelioration, Ameliorations, Chantier, Forge, Ouvrage};
+use bersemon_core::arene::{COTE_DE_DEPART, EtatDeLArene, PALIERS_DE_LA_FOSSE};
 use bersemon_core::attaque::{AttaqueId, AttaquesMonstre};
 use bersemon_core::beherit::EtatDuBeherit;
 use bersemon_core::booster::Booster;
@@ -47,7 +48,7 @@ use bersemon_core::zone::{Zone, ZoneId};
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 32;
+pub(crate) const VERSION: u64 = 33;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -230,6 +231,19 @@ pub(crate) struct SauvegardeV14 {
     /// Depuis la version 29 (section 5.6) : "10", "20"... ou "complet".
     #[serde(default)]
     paliers_du_codex: Vec<String>,
+    /// Depuis la version 33 : le dernier palier vaincu de la Fosse aux
+    /// damnés (section 9.8), la cote de l'arène et le nombre de combats
+    /// contre d'autres joueurs (section 15.6).
+    #[serde(default)]
+    paliers_de_la_fosse: u8,
+    #[serde(default = "cote_de_depart")]
+    cote_de_l_arene: u32,
+    #[serde(default)]
+    combats_d_arene: u32,
+}
+
+fn cote_de_depart() -> u32 {
+    COTE_DE_DEPART
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -734,6 +748,9 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV14 {
             parents: rite.parents().iter().map(depuis_monstre).collect(),
             fin: rite.fin().secondes(),
         }),
+        paliers_de_la_fosse: partie.arene().paliers_vaincus,
+        cote_de_l_arene: partie.arene().cote,
+        combats_d_arene: partie.arene().combats_entre_joueurs,
         paliers_du_codex: partie
             .paliers_du_codex()
             .iter()
@@ -1182,6 +1199,11 @@ pub(crate) fn vers_partie(
         records_de_la_tour,
         rite,
         paliers_du_codex,
+        arene: EtatDeLArene {
+            paliers_vaincus: sauvegarde.paliers_de_la_fosse.min(PALIERS_DE_LA_FOSSE),
+            cote: sauvegarde.cote_de_l_arene,
+            combats_entre_joueurs: sauvegarde.combats_d_arene,
+        },
     })
     .map_err(incoherente)
 }

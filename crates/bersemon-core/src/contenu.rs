@@ -14,6 +14,7 @@ use crate::ame::{Gardien, MarchandId, MarchandMort};
 use crate::amelioration::{
     Amelioration, PlanDAmelioration, PlanDeFabrication, PlanDesFilets, PlanDuCharme,
 };
+use crate::arene::{AdversaireDeLArene, FosseAuxDamnes, RecompenseDeLArene};
 use crate::attaque::{Attaque, AttaqueId, Categorie, EffetSecondaire};
 use crate::beherit::Invocation;
 use crate::booster::Booster;
@@ -227,6 +228,7 @@ pub struct ContenuV1 {
     peche: ParametresPeche,
     invocation: Invocation,
     tour: TourSansFond,
+    fosse: FosseAuxDamnes,
     recompenses_du_codex: Vec<RecompenseDuCodex>,
 }
 
@@ -667,6 +669,7 @@ impl ContenuV1 {
             REPOS_DANS_LA_TOUR,
         )
         .expect("Tour sans fond conforme aux règles");
+        let fosse = creer_la_fosse(&trouver);
         let peche = ParametresPeche::new(
             Duration::from_secs(HEURES_DE_PECHE * 3_600),
             ESPECES_PECHEES.iter().map(|id| trouver(id)).collect(),
@@ -710,7 +713,14 @@ impl ContenuV1 {
             peche,
             invocation,
             tour,
+            fosse,
         }
+    }
+
+    /// L'arène où le héros affronte seul des humains, de palier en palier
+    /// (section 9.8).
+    pub fn fosse(&self) -> &FosseAuxDamnes {
+        &self.fosse
     }
 
     /// Le lieu hors de la carte où l'on descend le plus loin possible,
@@ -1057,7 +1067,7 @@ const ATTAQUES_DES_HEROS: [FicheAttaque; 20] = [
 ];
 
 /// Section 1 de docs/contenu-v1.md, dans le même ordre.
-const ATTAQUES: [FicheAttaque; 133] = [
+const ATTAQUES: [FicheAttaque; 135] = [
     fiche(
         "souffle-chaud",
         "Souffle chaud",
@@ -2023,6 +2033,23 @@ const ATTAQUES: [FicheAttaque; 133] = [
         80,
         100,
     ),
+    // Attaques d'œuf des espèces de la Fosse aux damnés (section 36).
+    fiche(
+        "charge-des-fosses",
+        "Charge des fosses",
+        Type::Combat,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "charge-d-airain",
+        "Charge d'airain",
+        Type::Acier,
+        Physique,
+        80,
+        100,
+    ),
 ];
 
 struct FicheCapsule {
@@ -2233,7 +2260,7 @@ const MARCHAND_ZOMBIE: FicheEspece = FicheEspece {
 /// Section 2 de docs/contenu-v1.md, dans l'ordre du codex : les monstres de
 /// départ, les communs, les rares, l'Apôtre, le monstre caché, puis les
 /// formes évoluées de la section 8.
-const ESPECES: [FicheEspece; 56] = [
+const ESPECES: [FicheEspece; 58] = [
     FicheEspece {
         id: "salamandre",
         nom: "Salamandre",
@@ -3243,6 +3270,42 @@ const ESPECES: [FicheEspece; 56] = [
         ],
         evolution: None,
     },
+    // Exclusives à la Fosse aux damnés, qui les donne aux paliers 5 et 10
+    // (section 36).
+    FicheEspece {
+        id: "molosse-des-fosses",
+        nom: "Molosse des fosses",
+        types: &[Type::Combat],
+        role: Role::Offensif,
+        stats_de_base: [80, 100, 70, 35, 60, 85],
+        rendement_experience: 170,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Ferocite, Habilete::Instinct],
+        apprentissage: &[
+            (1, "griffure"),
+            (5, "frappe-d-os"),
+            (12, "curee"),
+            (20, "dechiquetage"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "taureau-d-airain",
+        nom: "Taureau d'airain",
+        types: &[Type::Acier, Type::Feu],
+        role: Role::Offensif,
+        stats_de_base: [90, 110, 100, 75, 70, 40],
+        rendement_experience: 200,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Carapace, Habilete::Ferocite],
+        apprentissage: &[
+            (1, "coup-de-garde"),
+            (10, "brasier"),
+            (25, "taille-d-acier"),
+            (30, "bucher"),
+        ],
+        evolution: None,
+    },
 ];
 
 /// Section 15 de docs/contenu-v1.md : la ligne est prête 2 h après avoir
@@ -3953,6 +4016,163 @@ fn creer_recompenses_du_codex() -> Vec<RecompenseDuCodex> {
     ]
 }
 
+/// Section 36 de docs/contenu-v1.md : l'adversaire de chaque palier, avec
+/// sa classe, son arme et son armure, son IA, son texte, l'argent de sa
+/// récompense et le monstre qu'il donne, avec son niveau.
+struct FicheDAdversaire {
+    id: &'static str,
+    nom: &'static str,
+    classe: Classe,
+    arme: Option<&'static str>,
+    armure: Option<&'static str>,
+    ia: IaHumain,
+    presentation: &'static str,
+    argent: u32,
+    monstre: Option<(&'static str, u8)>,
+}
+
+const ADVERSAIRES_DE_LA_FOSSE: [FicheDAdversaire; 10] = [
+    FicheDAdversaire {
+        id: "gueux",
+        nom: "Le Gueux",
+        classe: Classe::Guerrier,
+        arme: Some("lame-de-milicien"),
+        armure: None,
+        ia: IaHumain::Simple,
+        presentation: "Un vagabond en haillons, un gourdin à la main. Il n'a plus rien à perdre.",
+        argent: 40,
+        monstre: None,
+    },
+    FicheDAdversaire {
+        id: "coupe-jarret",
+        nom: "Le Coupe-jarret",
+        classe: Classe::Assassin,
+        arme: Some("couteau-de-chasse"),
+        armure: Some("brigandine-de-cuir"),
+        ia: IaHumain::Simple,
+        presentation: "Il tourne autour de vous en souriant, une lame courte dans chaque main.",
+        argent: 60,
+        monstre: None,
+    },
+    FicheDAdversaire {
+        id: "novice-de-l-ordre",
+        nom: "Le Novice de l'ordre",
+        classe: Classe::Templier,
+        arme: Some("masse-de-pelerin"),
+        armure: Some("haubert-de-pelerin"),
+        ia: IaHumain::Simple,
+        presentation: "Un jeune frère en armure trop grande, qui prie à voix basse en levant sa masse.",
+        argent: 80,
+        monstre: Some(("basilic", 15)),
+    },
+    FicheDAdversaire {
+        id: "apprenti-necromant",
+        nom: "L'Apprenti nécromant",
+        classe: Classe::Mage,
+        arme: Some("grimoire-des-brumes"),
+        armure: Some("robe-de-lin"),
+        ia: IaHumain::Simple,
+        presentation: "Sa robe sent la tombe ; une lueur malsaine danse au bout de ses doigts.",
+        argent: 100,
+        monstre: None,
+    },
+    FicheDAdversaire {
+        id: "mercenaire",
+        nom: "Le Mercenaire",
+        classe: Classe::Guerrier,
+        arme: Some("epee-du-pendu"),
+        armure: Some("gambison"),
+        ia: IaHumain::Avancee,
+        presentation: "Il a vendu son épée à tous les seigneurs du royaume, et leur a survécu à tous.",
+        argent: 120,
+        monstre: Some(("molosse-des-fosses", 20)),
+    },
+    FicheDAdversaire {
+        id: "lame-noire",
+        nom: "La Lame noire",
+        classe: Classe::Assassin,
+        arme: Some("dague-des-brumes"),
+        armure: Some("cuir-des-brumes"),
+        ia: IaHumain::Avancee,
+        presentation: "Une silhouette encapuchonnée, dont on dit qu'elle n'a jamais raté une gorge.",
+        argent: 150,
+        monstre: None,
+    },
+    FicheDAdversaire {
+        id: "sorciere-des-cendres",
+        nom: "La Sorcière des cendres",
+        classe: Classe::Mage,
+        arme: Some("sceptre-des-cendres"),
+        armure: Some("robe-des-brumes"),
+        ia: IaHumain::Avancee,
+        presentation: "Elle sort des ruines de l'Abbaye, la peau grise de cendre, les yeux brûlants.",
+        argent: 180,
+        monstre: Some(("chimere", 30)),
+    },
+    FicheDAdversaire {
+        id: "templier-renegat",
+        nom: "Le Templier renégat",
+        classe: Classe::Templier,
+        arme: Some("encensoir-maudit"),
+        armure: Some("cotte-benie"),
+        ia: IaHumain::Avancee,
+        presentation: "Il a renié son ordre, mais pas sa foi ni son armure.",
+        argent: 210,
+        monstre: None,
+    },
+    FicheDAdversaire {
+        id: "gladiateur",
+        nom: "Le Gladiateur",
+        classe: Classe::Guerrier,
+        arme: Some("espadon-des-cendres"),
+        armure: Some("plates-de-gargouille"),
+        ia: IaHumain::Avancee,
+        presentation: "La foule scande son nom. Il salue les gradins avant de vous faire face.",
+        argent: 250,
+        monstre: None,
+    },
+    FicheDAdversaire {
+        id: "champion-de-la-fosse",
+        nom: "Le Champion de la Fosse",
+        classe: Classe::Assassin,
+        arme: Some("lames-de-cendre"),
+        armure: Some("manteau-de-cendre"),
+        ia: IaHumain::Avancee,
+        presentation: "Personne ne l'a jamais vu saigner. Les gradins se taisent quand il entre.",
+        argent: 400,
+        monstre: Some(("taureau-d-airain", 35)),
+    },
+];
+
+/// Le dernier palier donne aussi l'arme du palier 4 de la classe du héros ;
+/// la défaite du brigand ouvre la Fosse (section 9.8).
+fn creer_la_fosse(trouver: &dyn Fn(&str) -> Espece) -> FosseAuxDamnes {
+    let adversaires = ADVERSAIRES_DE_LA_FOSSE
+        .iter()
+        .enumerate()
+        .map(|(position, fiche)| {
+            let recompense = RecompenseDeLArene {
+                argent: fiche.argent,
+                monstre: fiche
+                    .monstre
+                    .map(|(espece, niveau_offert)| (trouver(espece), niveau(niveau_offert))),
+                arme_du_champion: position + 1 == ADVERSAIRES_DE_LA_FOSSE.len(),
+            };
+            AdversaireDeLArene::new(
+                HumainId::new(fiche.id),
+                fiche.nom,
+                fiche.classe,
+                fiche.arme.map(objet),
+                fiche.armure.map(objet),
+                fiche.ia,
+                fiche.presentation,
+                recompense,
+            )
+        })
+        .collect();
+    FosseAuxDamnes::new(adversaires, HumainId::new("brigand"))
+}
+
 /// Une arme ou une armure de docs/contenu-v1.md, section 34, comme celles
 /// des humains de l'IA (section 10.7).
 fn objet(id: &str) -> ObjetDEquipement {
@@ -4052,7 +4272,7 @@ const ACTIVITES: [(&str, Activite); 11] = [
 
 /// Section 28 de docs/contenu-v1.md : l'attaque d'œuf de chaque famille
 /// d'évolution, par sa forme de base (section 13.11).
-const ATTAQUES_D_OEUF: [(&str, &str); 32] = [
+const ATTAQUES_D_OEUF: [(&str, &str); 34] = [
     ("salamandre", "souffle-des-forges"),
     ("crapaud", "ressac"),
     ("mandragore", "seve-maudite"),
@@ -4085,6 +4305,8 @@ const ATTAQUES_D_OEUF: [(&str, &str); 32] = [
     ("sylphe-des-neiges", "valse-des-neiges"),
     ("cloche-hurlante", "volee-de-cloches"),
     ("seraphin-de-vitrail", "rosace-ardente"),
+    ("molosse-des-fosses", "charge-des-fosses"),
+    ("taureau-d-airain", "charge-d-airain"),
 ];
 
 /// La forme de base de la famille de cette espèce : celle qu'aucune autre
@@ -4306,8 +4528,8 @@ mod tests {
         let mut uniques = vues.clone();
         uniques.sort_by(|a, b| a.as_str().cmp(b.as_str()));
         uniques.dedup();
-        assert_eq!(vues.len(), 32);
-        assert_eq!(uniques.len(), 32);
+        assert_eq!(vues.len(), 34);
+        assert_eq!(uniques.len(), 34);
     }
 
     #[test]
@@ -4316,13 +4538,13 @@ mod tests {
 
         let contenu = ContenuV1::new();
         let au_codex = especes_au_codex(contenu.especes());
-        assert_eq!(au_codex, 51);
+        assert_eq!(au_codex, 53);
         let seuils: Vec<u32> = contenu
             .recompenses_du_codex()
             .iter()
             .map(|recompense| recompense.palier.seuil(au_codex))
             .collect();
-        assert_eq!(seuils, vec![10, 20, 30, 40, 50, 51]);
+        assert_eq!(seuils, vec![10, 20, 30, 40, 50, 53]);
         let complet = contenu.recompenses_du_codex().last().unwrap();
         assert_eq!(complet.palier, PalierDuCodex::Complet);
         let sceau = complet.objet_unique.as_ref().unwrap();
@@ -4378,7 +4600,7 @@ mod tests {
     #[test]
     fn contenu_conforme_aux_regles() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.especes().len(), 56);
+        assert_eq!(contenu.especes().len(), 58);
         assert_eq!(contenu.zones().len(), 5);
         assert_eq!(contenu.piste().indices().count(), 6);
         // Toute espèce rencontrée en zone se retrouve au chargement d'une
@@ -4460,6 +4682,16 @@ mod tests {
             .flat_map(|zone| zone.rares().iter().chain(zone.monstre_cache()))
             .map(|rare| rare.espece.id())
             .chain([contenu.peche().rare().id()])
+            // Les espèces exclusives que donne la Fosse aux damnés (section
+            // 9.8).
+            .chain(
+                contenu
+                    .fosse()
+                    .adversaires()
+                    .iter()
+                    .filter_map(|adversaire| adversaire.recompense().monstre.as_ref())
+                    .map(|(espece, _)| espece.id()),
+            )
             .collect();
         let apotres: Vec<&EspeceId> = contenu
             .piste()

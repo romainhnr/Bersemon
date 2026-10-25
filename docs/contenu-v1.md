@@ -1237,7 +1237,7 @@ Décidé le 25/10/2026, pour l'étape 115 (gamedesign.md, section 5.6). Paliers,
 | 30 espèces capturées | 1 Philtre chromatique |
 | 40 espèces capturées | 3 capsules d'habileté |
 | 50 espèces capturées | 1 booster de chaque sorte (6) |
-| Codex complet (51 espèces aujourd'hui) | 3 Philtres chromatiques, et le Sceau du bestiaire dans l'équipement du héros |
+| Codex complet (53 espèces depuis l'étape 135, 51 avant) | 3 Philtres chromatiques, et le Sceau du bestiaire dans l'équipement du héros |
 
 Sceau du bestiaire (identifiant sceau-du-bestiaire) : talisman, +5 % à l'Attaque, la Défense, l'Attaque spéciale, la Défense spéciale et la Vitesse. Unique, il ne se fabrique pas.
 
@@ -1474,7 +1474,14 @@ Attaques apprises, toutes existantes :
 - Molosse des fosses : Griffure (niv. 1), Frappe d'os (niv. 5), Curée (niv. 12), Déchiquetage (niv. 20).
 - Taureau d'airain : Coup de garde (niv. 1), Brasier (niv. 10), Taille d'acier (niv. 25), Bûcher (niv. 30).
 
-Textes validés (descriptions du codex) :
+Attaques d'œuf (Rite du sang mêlé, section 28), ajoutées à l'étape 135, proposées par Claude sans validation (gamedesign.md, Q112), sur le modèle des autres :
+
+| Famille | Identifiant | Attaque | Type | Catégorie | Puissance | Précision | Effet |
+|---|---|---|---|---|---|---|---|
+| Molosse des fosses | charge-des-fosses | Charge des fosses | Combat | physique | 80 | 100 | aucun |
+| Taureau d'airain | charge-d-airain | Charge d'airain | Acier | physique | 80 | 100 | aucun |
+
+Textes validés avec les espèces, qui ne s'affichent nulle part pour l'instant : les fiches d'espèce n'ont pas de description.
 
 > Molosse des fosses : chien de guerre élevé dans les fosses, nourri de chair de condamné.
 
@@ -1501,7 +1508,12 @@ Textes proposés sans validation (gamedesign.md, Q112) :
 | Défaite | {héros} s'effondre sous les huées. Vous pourrez revenir quand vous voudrez. |
 | Abandon | Vous jetez votre arme sur le sable : la foule vous couvre d'insultes. |
 | Fosse conquise | Vous avez vaincu le Champion : la Fosse aux damnés n'a plus d'adversaire à vous opposer. |
-| Carte de la console et menu du bot | Fosse aux damnés (arène) : palier {n}/10 / Fosse aux damnés (arène) : conquise |
+| Carte de la console | Fosse aux damnés (arène) : palier {n}/10 / Fosse aux damnés (arène) : conquise |
+| Menu des expéditions du bot | Fosse aux damnés ; Arène ; prochain palier {n}/10 / Arène ; conquise |
+| Boutons | Combattre ; Revenir au camp ; Abandonner |
+| Abandon de l'adversaire, en duel d'arène | {adversaire} jette son arme sur le sable. |
+| Après une défaite ou un abandon | Les huées vous raccompagnent hors de la Fosse. Vous pourrez revenir quand vous voudrez. |
+| Refus | La Fosse aux damnés n'ouvre ses portes qu'à qui a vaincu le brigand de la Lisière. / Vous avez vaincu tous les adversaires de la Fosse aux damnés. / Ce palier offre un monstre : faites-lui de la place dans l'équipe ou au camp avant de combattre. |
 
 ## 37. Arène entre joueurs
 

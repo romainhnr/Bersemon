@@ -9,6 +9,7 @@ use bersemon_core::deroulement::Evenement;
 use bersemon_core::marchand::EXPEDITIONS_DE_LOCATION;
 use bersemon_core::ressource::Ressource;
 
+use crate::arene;
 use crate::boosters::{PHILTRE_RAMASSE, booster_donne, boosters, monstre_rendu_shiny};
 use crate::combat::{ordre_donne, rapport_experience, remplacement, renoncement};
 use crate::equipement::{nom_de_place, objet_et_bonus};
@@ -71,6 +72,18 @@ pub fn raconter(evenements: &[Evenement]) -> Vec<Recit> {
 
 fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
     let (texte, nouveau_paragraphe) = match evenement {
+        Evenement::PalierDeLaFosseVaincu {
+            palier,
+            adversaire,
+            recompense,
+            conquise,
+        } => (
+            arene::palier_vaincu(*palier, adversaire, recompense, *conquise),
+            true,
+        ),
+        Evenement::DefaiteDansLaFosse { .. } => {
+            (arene::DEFAITE_DANS_LA_FOSSE.to_string(), true)
+        }
         Evenement::Introduction(classe) => (
             format!("{INTRODUCTION}\n\n{}", fin_de_l_introduction(*classe)),
             true,

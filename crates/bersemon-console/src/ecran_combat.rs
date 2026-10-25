@@ -2,6 +2,7 @@
 //! remplacement d'un monstre KO, capture des KO, attaque à oublier et
 //! évolution.
 
+use bersemon_core::arene::AdversaireDeLArene;
 use bersemon_core::attaque::Attaque;
 use bersemon_core::collection::Collection;
 use bersemon_core::combat::{Action, Combat, Cote};
@@ -11,6 +12,7 @@ use bersemon_core::filet::Filet;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_core::soin::{Soin, Soins};
+use bersemon_presentation::arene::annonce_du_palier;
 use bersemon_presentation::filets::nom_du_filet;
 use bersemon_presentation::partie::{places_pour_une_capture, proposition_d_evolution};
 use bersemon_presentation::soins::{effet_du_soin, nom_du_soin};
@@ -27,13 +29,20 @@ pub enum Commande {
     LancerFilet,
     UtiliserSoin,
     Fuir,
+    /// Dans la Fosse aux damnés (section 9.8).
+    Abandonner,
 }
 
 /// Face à un Apôtre, le filet et la fuite ne sont pas proposés (section 9.4),
 /// ni l'ordre du héros une fois donné (section 4.2), ni le changement quand
-/// le héros combat, faute de monstre debout (section 4.4).
+/// le héros combat, faute de monstre debout (section 4.4). Dans la Fosse aux
+/// damnés, seulement attaquer ou abandonner (section 9.8).
 fn commandes(combat: &Combat) -> Vec<Commande> {
     let mut commandes = vec![Commande::Attaquer];
+    if combat.est_dans_l_arene() {
+        commandes.push(Commande::Abandonner);
+        return commandes;
+    }
     if !combat.est_heros(combat.actif(Cote::Joueur)) {
         commandes.push(Commande::Changer);
     }
@@ -94,6 +103,7 @@ pub fn choisir_action(combat: &Combat, partie: &Partie, entree: &mut Entree) -> 
                 None => None,
             },
             Commande::Fuir => Some(Action::Fuir),
+            Commande::Abandonner => return Some(Choix::Abandonner),
         };
         if let Some(action) = action {
             return Some(Choix::Combat(action));
@@ -195,4 +205,22 @@ pub fn choisir_attaque_a_oublier(
         choix => Choix::OublierAttaque(choix - 1),
     };
     Some(choix)
+}
+
+/// Le palier de la Fosse aux damnés et son adversaire : combattre, ou
+/// revenir au camp (section 9.8).
+pub fn devant_l_adversaire(
+    palier: u8,
+    adversaire: &AdversaireDeLArene,
+    entree: &mut Entree,
+) -> Option<Choix> {
+    println!();
+    println!("{}", annonce_du_palier(palier, adversaire));
+    println!("  1. Combattre");
+    println!("  0. Revenir au camp");
+    Some(if entree.choix(0, 1)? == 1 {
+        Choix::Poursuivre
+    } else {
+        Choix::RentrerAuCamp
+    })
 }

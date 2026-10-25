@@ -407,6 +407,8 @@ pub enum Cle {
     RefuserDefi,
     RetirerDefi,
     Abandonner,
+    /// Dans la Fosse aux damnés, le héros jette son arme (section 9.8).
+    AbandonnerLaFosse,
     ReclamerLaVictoire,
     /// Après la fin du duel.
     RevenirDuDuel,
@@ -427,6 +429,10 @@ pub const RETIRER: &str = "-";
 /// La valeur de l'Éclipse dans le menu des expéditions : l'identifiant de
 /// ce lieu dans le contenu (section 9.4).
 pub const ECLIPSE: &str = "eclipse";
+
+/// La valeur de la Fosse aux damnés dans le menu des expéditions (section
+/// 9.8).
+pub const FOSSE: &str = "fosse-aux-damnes";
 
 /// La valeur qui forge le Béhérit dans le menu des âmes de l'étal.
 pub const BEHERIT: &str = "beherit";
@@ -449,6 +455,7 @@ impl Cle {
             // L'Éclipse s'ouvre d'abord sur son écran : le sacrifice ou le
             // départ (section 9.4).
             Cle::Partir if valeur? == ECLIPSE => Some(Commande::Afficher(Vue::Eclipse)),
+            Cle::Partir if valeur? == FOSSE => jouer(Choix::EntrerDansLaFosse),
             Cle::Partir => jouer(Choix::PartirEnExpedition(ZoneId::new(valeur?))),
             Cle::PartirVersLEclipse => jouer(Choix::PartirEnExpedition(ZoneId::new(ECLIPSE))),
             Cle::Sacrifier(_) => jouer(Choix::Sacrifier(lire_emplacement(valeur?)?)),
@@ -611,6 +618,7 @@ impl Cle {
             Cle::RefuserDefi => Some(Commande::Duel(ActionDeDuel::RefuserDefi)),
             Cle::RetirerDefi => Some(Commande::Duel(ActionDeDuel::RetirerDefi)),
             Cle::Abandonner => Some(Commande::Duel(ActionDeDuel::Abandonner)),
+            Cle::AbandonnerLaFosse => jouer(Choix::Abandonner),
             Cle::ReclamerLaVictoire => Some(Commande::Duel(ActionDeDuel::ReclamerLaVictoire)),
             Cle::RevenirDuDuel => Some(Commande::Duel(ActionDeDuel::RevenirAuCamp)),
             Cle::Actualiser => Some(Commande::Actualiser),
@@ -814,6 +822,7 @@ impl Cle {
             Cle::RefuserDefi => "refuser-defi".to_string(),
             Cle::RetirerDefi => "retirer-defi".to_string(),
             Cle::Abandonner => "abandonner".to_string(),
+            Cle::AbandonnerLaFosse => "abandonner-la-fosse".to_string(),
             Cle::ReclamerLaVictoire => "reclamer-victoire".to_string(),
             Cle::RevenirDuDuel => "revenir-du-duel".to_string(),
             Cle::Actualiser => "actualiser".to_string(),
@@ -894,6 +903,7 @@ impl Cle {
             "refuser-defi" => Cle::RefuserDefi,
             "retirer-defi" => Cle::RetirerDefi,
             "abandonner" => Cle::Abandonner,
+            "abandonner-la-fosse" => Cle::AbandonnerLaFosse,
             "reclamer-victoire" => Cle::ReclamerLaVictoire,
             "revenir-du-duel" => Cle::RevenirDuDuel,
             "actualiser" => Cle::Actualiser,
@@ -1358,6 +1368,7 @@ mod tests {
             Cle::RefuserDefi,
             Cle::RetirerDefi,
             Cle::Abandonner,
+            Cle::AbandonnerLaFosse,
             Cle::ReclamerLaVictoire,
             Cle::RevenirDuDuel,
             Cle::Actualiser,

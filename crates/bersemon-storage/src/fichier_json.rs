@@ -484,6 +484,7 @@ mod tests {
                 Horodatage::depuis_secondes(7_200),
             )),
             paliers_du_codex: vec![PalierDuCodex::Especes(10), PalierDuCodex::Complet],
+            arene: Default::default(),
         };
         let mut partie = Partie::restaurer(etat(&partie, Vec::new())).unwrap();
         // Croc apprend l'attaque de la capsule, hors de la liste de son
