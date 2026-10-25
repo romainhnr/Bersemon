@@ -4,6 +4,7 @@
 
 use bersemon_core::combat::Cote;
 use bersemon_core::horodatage::Horodatage;
+use bersemon_core::monstre::CHANCES_SHINY;
 use bersemon_core::partie::Partie;
 use bersemon_core::rite::{
     ApercuDuRite, DUREE_DU_RITE, ErreurRite, NIVEAU_DU_PETIT, NaissanceDuRite, PRIX_DU_RITE,
@@ -13,6 +14,7 @@ use bersemon_core::rite::{
 use crate::erreurs::{erreur_collection, erreur_marchand};
 use crate::expeditions_automatiques::duree;
 use crate::forge::cout;
+use crate::mise_en_valeur::important;
 use crate::monstres::{nom, nom_en_valeur};
 use crate::partie::argent;
 
@@ -40,13 +42,43 @@ fn prix(apercu: &ApercuDuRite) -> String {
 pub fn question_du_rite(apercu: &ApercuDuRite) -> String {
     let [premier, second] = &apercu.parents;
     format!(
-        "Confier {} et {} à Malvoise pour le {RITE_DU_SANG_MELE} ? Il prendra {}. Dans {}, le petit naîtra, de l'espèce {}, au niveau {NIVEAU_DU_PETIT}, avec la meilleure valeur interne de ses parents pour chaque stat. D'ici là, les deux restent auprès de Malvoise.",
+        "Confier {} et {} à Malvoise pour le {RITE_DU_SANG_MELE} ? Il prendra {}. Dans {}, le petit naîtra, de l'espèce {}, au niveau {NIVEAU_DU_PETIT}, avec la meilleure valeur interne de ses parents pour chaque stat.{}{} D'ici là, les deux restent auprès de Malvoise.",
         nom(premier, Cote::Joueur),
         nom(second, Cote::Joueur),
         prix(apercu),
         duree(apercu.duree),
-        apercu.petit.nom()
+        apercu.petit.nom(),
+        chances_de_l_attaque_d_oeuf(apercu),
+        chances_shiny(apercu.shiny_sur)
     )
+}
+
+/// " Il a 1 chance sur 4 de connaître ..." ; rien pour une famille sans
+/// attaque d'œuf.
+fn chances_de_l_attaque_d_oeuf(apercu: &ApercuDuRite) -> String {
+    match &apercu.attaque_d_oeuf {
+        None => String::new(),
+        Some((attaque, 1)) => format!(
+            " Il connaîtra {}, l'attaque d'œuf de sa famille, que connaît un parent.",
+            attaque.nom()
+        ),
+        Some((attaque, sur)) => format!(
+            " Il a 1 chance sur {sur} de connaître {}, l'attaque d'œuf de sa famille.",
+            attaque.nom()
+        ),
+    }
+}
+
+/// Rien quand aucun parent n'est shiny : le petit a les chances d'un
+/// monstre sauvage.
+fn chances_shiny(sur: u32) -> String {
+    match sur {
+        1 => " Ses deux parents sont shiny : il le sera aussi.".to_string(),
+        sur if sur < CHANCES_SHINY => {
+            format!(" Avec un parent shiny, il a 1 chance sur {sur} de l'être.")
+        }
+        _ => String::new(),
+    }
 }
 
 pub fn rite_lance(apercu: &ApercuDuRite) -> String {
@@ -61,8 +93,18 @@ pub fn rite_lance(apercu: &ApercuDuRite) -> String {
 
 pub fn naissance(naissance: &NaissanceDuRite) -> String {
     let [premier, second] = &naissance.parents;
+    let attaque = naissance
+        .attaque_d_oeuf
+        .as_ref()
+        .map(|attaque| {
+            format!(
+                " Il connaît {}, l'attaque d'œuf de sa famille.",
+                important(attaque.nom())
+            )
+        })
+        .unwrap_or_default();
     format!(
-        "Le cercle de sang se referme et le petit en naît : {}, au niveau {}. {} et {} vous rejoignent.",
+        "Le cercle de sang se referme et le petit en naît : {}, au niveau {}.{attaque} {} et {} vous rejoignent.",
         nom_en_valeur(&naissance.petit, Cote::Joueur),
         naissance.petit.niveau().valeur(),
         nom_en_valeur(premier, Cote::Joueur),
@@ -151,16 +193,28 @@ mod tests {
             monstre
         };
         let loup = contenu.espece(&EspeceId::new("loup")).unwrap();
-        let apercu = ApercuDuRite {
+        let assaut = loup.attaque_d_oeuf().unwrap().clone();
+        let mut apercu = ApercuDuRite {
             parents: [creer("loup", "Croc"), creer("warg", "Bise")],
             ressources: vec![(loup.ressource().unwrap().clone(), 3)],
             petit: loup,
             prix: 50,
             duree: DUREE_DU_RITE,
+            shiny_sur: 512,
+            attaque_d_oeuf: Some((assaut.clone(), 4)),
         };
         assert_eq!(
             question_du_rite(&apercu),
-            "Confier Croc et Bise à Malvoise pour le Rite du sang mêlé ? Il prendra Croc de loup (3) et 50 pièces d'argent. Dans 2 h, le petit naîtra, de l'espèce Loup, au niveau 1, avec la meilleure valeur interne de ses parents pour chaque stat. D'ici là, les deux restent auprès de Malvoise."
+            "Confier Croc et Bise à Malvoise pour le Rite du sang mêlé ? Il prendra Croc de loup (3) et 50 pièces d'argent. Dans 2 h, le petit naîtra, de l'espèce Loup, au niveau 1, avec la meilleure valeur interne de ses parents pour chaque stat. Il a 1 chance sur 4 de connaître Assaut de meute, l'attaque d'œuf de sa famille. D'ici là, les deux restent auprès de Malvoise."
+        );
+        apercu.shiny_sur = 256;
+        apercu.attaque_d_oeuf = Some((assaut, 1));
+        assert!(question_du_rite(&apercu).contains(
+            "Il connaîtra Assaut de meute, l'attaque d'œuf de sa famille, que connaît un parent. Avec un parent shiny, il a 1 chance sur 256 de l'être."
+        ));
+        apercu.shiny_sur = 1;
+        assert!(
+            question_du_rite(&apercu).contains("Ses deux parents sont shiny : il le sera aussi.")
         );
         assert_eq!(
             service_du_rite(),

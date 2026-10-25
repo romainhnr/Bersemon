@@ -27,7 +27,9 @@ use crate::filets::liste_de_filets;
 use crate::forge::{
     question_de_fabrication, question_de_lancement, question_des_filets, question_du_charme,
 };
-use crate::monstres::{decrire_stats, effet_d_habilete, ligne_monstre, nom, types_de};
+use crate::monstres::{
+    decrire_attaque, decrire_stats, effet_d_habilete, ligne_monstre, nom, types_de,
+};
 use crate::soins::{liste_de_soins, question_du_soin_perdu};
 
 /// Équipe puis camp, numérotés à la suite : l'équipe de 1 à 3, le camp
@@ -493,6 +495,14 @@ pub fn fiche_d_espece(espece: &Espece, catalogue: &dyn Catalogue) -> Vec<String>
             "Évolution : {} {}",
             vers.nom(),
             condition_d_evolution(condition, catalogue)
+        ));
+    }
+    // La même pour toute la famille, que seul le Rite du sang mêlé
+    // transmet (section 13.11).
+    if let Some(attaque) = espece.attaque_d_oeuf() {
+        fiche.push(format!(
+            "Attaque d'œuf (Rite du sang mêlé) : {}",
+            decrire_attaque(attaque)
         ));
     }
     fiche

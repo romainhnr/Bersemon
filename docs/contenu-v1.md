@@ -1155,7 +1155,8 @@ Décidé le 25/10/2026, pour les étapes 110 à 112 (gamedesign.md, section 13.1
 | Coût | 3 ressources de l'espèce du petit et 50 pièces d'argent (l'argent seul pour une espèce qui ne lâche pas de ressource) |
 | Niveau du petit | 1 |
 | Valeurs internes du petit | pour chaque stat, la plus haute des deux parents |
-| Shiny du petit | 1 chance sur 512, comme un monstre sauvage |
+| Shiny du petit | 1 chance sur 512 comme un monstre sauvage ; 1 sur 256 avec un parent shiny ; à coup sûr avec deux (étape 114) |
+| Attaque d'œuf | 1 chance sur 4 ; à coup sûr si un parent la connaît (étape 114) |
 
 Textes proposés sans validation (gamedesign.md, Q105). {a} et {b} sont les parents, {petit} le nom du petit, {espèce} son espèce, {coût} les ressources et l'argent, {durée} le temps restant.
 
@@ -1170,7 +1171,47 @@ Textes proposés sans validation (gamedesign.md, Q105). {a} et {b} sont les pare
 | Console | Quel premier parent confier à Malvoise ? ; Second parent, de la même famille : ; Aucun autre de vos monstres n'est de sa famille d'évolution. |
 | Discord | Rite du sang mêlé (Malvoise) ; Choisissez le second parent, de la même famille d'évolution que {a}. ; Lui unir un monstre de l'équipe / du camp ; Retour au monstre ; Accueillir le petit (Malvoise) ; Choisissez d'abord un monstre dans la gestion. ; à l'étal : {service} : bouton "Rite du sang mêlé (Malvoise)" de la gestion des monstres. |
 | Liste des monstres | 1 place du camp est gardée, pour un monstre absent ou à naître. / {n} places du camp sont gardées, pour des monstres absents ou à naître. |
+| Confirmation, ajouts de l'étape 114 | Il a 1 chance sur 4 de connaître {attaque}, l'attaque d'œuf de sa famille. / Il connaîtra {attaque}, l'attaque d'œuf de sa famille, que connaît un parent. / Avec un parent shiny, il a 1 chance sur 256 de l'être. / Ses deux parents sont shiny : il le sera aussi. |
+| Naissance, ajout de l'étape 114 | Il connaît {attaque}, l'attaque d'œuf de sa famille. |
+| Fiche du codex | Attaque d'œuf (Rite du sang mêlé) : {attaque} ({type}, {catégorie}, puissance {n}, précision {n} %) |
 | Refus | Malvoise accomplit déjà un rite : un seul à la fois. / Le rite n'unit que deux monstres d'une même famille d'évolution. / Il faut une place libre au camp pour le petit. / Il vous manque {ressources}. / Aucun rite n'est en cours. / Le rite n'est pas encore achevé. |
+
+Attaques d'œuf, décidées le 25/10/2026 pour l'étape 114 (tableau proposé par Claude et validé par l'utilisateur ; 32 familles, voir gamedesign.md, section 13.11). Elles ne s'obtiennent que par le rite ; toute la famille partage celle de sa forme de base.
+
+| Famille (forme de base) | Identifiant | Attaque | Type | Catégorie | Puissance | Précision | Effet |
+|---|---|---|---|---|---|---|---|
+| Salamandre | souffle-des-forges | Souffle des forges | Feu | spéciale | 80 | 100 | aucun |
+| Crapaud | ressac | Ressac | Eau | physique | 80 | 100 | aucun |
+| Mandragore | seve-maudite | Sève maudite | Plante | spéciale | 75 | 100 | poison 20 % |
+| Chat noir | griffes-de-minuit | Griffes de minuit | Ténèbres | physique | 80 | 100 | aucun |
+| Loup | assaut-de-meute | Assaut de meute | Normal | physique | 80 | 100 | aucun |
+| Corbeau | plongee-funebre | Plongée funèbre | Vol | physique | 80 | 100 | aucun |
+| Vipère | etreinte-de-l-aspic | Étreinte de l'aspic | Poison | physique | 75 | 100 | poison 30 % |
+| Feu follet | lueur-des-marais | Lueur des marais | Spectre | spéciale | 80 | 100 | aucun |
+| Armure hantée | coup-de-heaume | Coup de heaume | Acier | physique | 80 | 100 | aucun |
+| Fée noire | essaim-maudit | Essaim maudit | Insecte | spéciale | 80 | 100 | aucun |
+| Squelette | danse-macabre | Danse macabre | Combat | physique | 80 | 100 | aucun |
+| Cerf blanc | brame-sacre | Brame sacré | Féerique | spéciale | 80 | 100 | aucun |
+| Basilic | souffle-du-basilic | Souffle du basilic | Dragon | spéciale | 75 | 100 | poison 20 % |
+| Elfe | sortilege-sylvestre | Sortilège sylvestre | Féerique | spéciale | 80 | 100 | aucun |
+| Vouivre | pique-draconique | Piqué draconique | Dragon | physique | 80 | 100 | aucun |
+| Schnoz | pluie-d-etoiles | Pluie d'étoiles | Stellaire | spéciale | 80 | 100 | aucun |
+| Gargouille | plongeon-de-granit | Plongeon de granit | Roche | physique | 80 | 100 | aucun |
+| Goule | griffes-putrides | Griffes putrides | Poison | physique | 75 | 100 | poison 30 % |
+| Chauve-souris de crypte | vol-nocturne | Vol nocturne | Vol | physique | 80 | 100 | aucun |
+| Chimère | souffle-triple | Souffle triple | Dragon | spéciale | 80 | 100 | aucun |
+| Ange déchu | litanie-des-dechus | Litanie des déchus | Psychique | spéciale | 80 | 100 | aucun |
+| Noyé | appel-des-profondeurs | Appel des profondeurs | Eau | spéciale | 80 | 100 | aucun |
+| Anguille des tourbières | morsure-des-tourbieres | Morsure des tourbières | Ténèbres | physique | 80 | 100 | aucun |
+| Sangsue géante | saignee | Saignée | Poison | physique | 75 | 100 | poison 30 % |
+| Kelpie | galop-des-eaux | Galop des eaux | Eau | physique | 80 | 100 | aucun |
+| Wendigo | griffes-de-famine | Griffes de famine | Glace | physique | 80 | 100 | aucun |
+| Troll des cavernes | coup-de-massue | Coup de massue | Sol | physique | 80 | 100 | aucun |
+| Harpie des orages | oeil-de-l-orage | Œil de l'orage | Électrique | spéciale | 75 | 100 | paralysie 20 % |
+| Wyrm de givre | souffle-de-l-hiver | Souffle de l'hiver | Glace | spéciale | 80 | 100 | aucun |
+| Sylphe des neiges | valse-des-neiges | Valse des neiges | Féerique | spéciale | 80 | 100 | aucun |
+| Cloche hurlante | volee-de-cloches | Volée de cloches | Son | spéciale | 80 | 100 | aucun |
+| Séraphin de vitrail | rosace-ardente | Rosace ardente | Lumière | spéciale | 80 | 100 | aucun |
 
 ## 29. Messages privés de fin
 

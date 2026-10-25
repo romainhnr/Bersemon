@@ -957,6 +957,52 @@ mod tests {
     }
 
     #[test]
+    fn l_attaque_d_oeuf_de_sa_famille_se_relit() {
+        let assaut = Attaque::new(
+            AttaqueId::new("assaut-de-meute"),
+            "Assaut de meute",
+            Type::Normal,
+            Categorie::Physique,
+            80,
+            100,
+        )
+        .unwrap();
+        let mut avec_oeuf = catalogue();
+        for espece in &mut avec_oeuf.especes {
+            if espece.id().as_str() == "loup" {
+                *espece = espece.clone().avec_attaque_d_oeuf(assaut.clone());
+            }
+        }
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        let equipe = valeur["equipe"].as_array_mut().unwrap();
+        let position = equipe
+            .iter()
+            .position(|monstre| monstre["espece"] == "loup")
+            .unwrap();
+        let attaques = equipe[position]["attaques"].as_array_mut().unwrap();
+        attaques.truncate(3);
+        attaques.push("assaut-de-meute".into());
+        let texte = valeur.to_string();
+        let chemin = chemin_de_test("attaque-d-oeuf");
+        fs::create_dir_all(chemin.parent().unwrap()).unwrap();
+        fs::write(&chemin, &texte).unwrap();
+        let relue = FichierJson::new(&chemin).charger(&avec_oeuf);
+        nettoyer(&chemin);
+        let relue = relue.unwrap().unwrap();
+        assert!(
+            relue.collection().equipe()[position]
+                .attaques()
+                .liste()
+                .contains(&assaut)
+        );
+        // Sans être l'attaque d'œuf de sa famille, elle est refusée.
+        assert!(matches!(
+            charger_texte(&texte),
+            Err(ErreurSauvegarde::AttaqueInconnue { .. })
+        ));
+    }
+
+    #[test]
     fn attaque_d_une_capsule_d_un_autre_type_refusee() {
         let texte = texte_de_partie().replace("\"grand-coup\"", "\"vague\"");
         assert!(matches!(

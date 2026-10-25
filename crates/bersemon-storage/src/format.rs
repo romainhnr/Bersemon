@@ -1285,7 +1285,8 @@ fn vers_monstre(
         .espece(&EspeceId::new(monstre.espece.as_str()))
         .ok_or_else(|| ErreurSauvegarde::EspeceInconnue(monstre.espece.clone()))?;
     // Une attaque hors de la liste de l'espèce vient d'une capsule de son
-    // type (section 13.10).
+    // type (section 13.10), ou c'est l'attaque d'œuf de sa famille (section
+    // 13.11).
     let attaques = monstre
         .attaques
         .iter()
@@ -1297,10 +1298,17 @@ fn vers_monstre(
                     .filter(|capsule| capsule.convient_a(&espece))
                     .map(|capsule| capsule.attaque().clone())
             };
+            let d_oeuf = || {
+                espece
+                    .attaque_d_oeuf()
+                    .filter(|attaque| attaque.id() == &id_attaque)
+                    .cloned()
+            };
             espece
                 .attaque_apprise(&id_attaque)
                 .cloned()
                 .or_else(de_capsule)
+                .or_else(d_oeuf)
                 .ok_or_else(|| ErreurSauvegarde::AttaqueInconnue {
                     espece: monstre.espece.clone(),
                     attaque: id.clone(),

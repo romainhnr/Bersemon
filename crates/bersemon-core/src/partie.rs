@@ -52,7 +52,7 @@ use crate::relations::Relations;
 use crate::ressource::{Ressource, RessourceId};
 use crate::rite::{
     ApercuDuRite, DUREE_DU_RITE, ErreurRite, NaissanceDuRite, PLACES_DU_RITE, PRIX_DU_RITE,
-    RESSOURCES_DU_RITE, Rite, forme_de_base,
+    RESSOURCES_DU_RITE, Rite, chances_d_attaque_d_oeuf, chances_shiny, forme_de_base,
 };
 use crate::soin::{EffetDuSoin, ErreurSoin, Soin};
 use crate::stats::ValeursInternes;
@@ -580,12 +580,19 @@ impl Partie {
                 argent,
             });
         }
+        let shiny_sur = chances_shiny(&parents);
+        let attaque_d_oeuf = petit.attaque_d_oeuf().map(|attaque| {
+            let sur = chances_d_attaque_d_oeuf(&parents, attaque);
+            (attaque.clone(), sur)
+        });
         Ok(ApercuDuRite {
             parents,
             petit,
             ressources,
             prix: PRIX_DU_RITE,
             duree: DUREE_DU_RITE,
+            shiny_sur,
+            attaque_d_oeuf,
         })
     }
 
@@ -647,7 +654,21 @@ impl Partie {
         let [premier, second] = parents.clone();
         self.collection
             .accueillir_retour(vec![premier, second, petit.clone()]);
-        Ok(NaissanceDuRite { petit, parents })
+        let attaque_d_oeuf = base
+            .attaque_d_oeuf()
+            .filter(|attaque| {
+                petit
+                    .attaques()
+                    .liste()
+                    .iter()
+                    .any(|connue| connue.id() == attaque.id())
+            })
+            .cloned();
+        Ok(NaissanceDuRite {
+            petit,
+            parents,
+            attaque_d_oeuf,
+        })
     }
 
     pub fn relations(&self) -> &Relations {
@@ -3834,10 +3855,11 @@ mod tests {
             partie.accueillir_le_petit(especes, a(7_199), &mut aucun_tirage),
             Err(ErreurRite::PasEncoreFini(a(7_200)))
         );
-        // Pas shiny, puis la seconde habileté du Loup.
+        // Pas shiny, sans l'attaque d'œuf, puis la seconde habileté du Loup.
         let naissance = partie
-            .accueillir_le_petit(especes, a(7_200), &mut AleatoireScripte::new([2, 1]))
+            .accueillir_le_petit(especes, a(7_200), &mut AleatoireScripte::new([2, 2, 1]))
             .unwrap();
+        assert_eq!(naissance.attaque_d_oeuf, None);
         let petit = &naissance.petit;
         assert_eq!(petit.espece().id().as_str(), "loup");
         assert_eq!(petit.niveau().valeur(), 1);
@@ -3868,6 +3890,65 @@ mod tests {
             partie.accueillir_le_petit(especes, a(9_000), &mut aucun_tirage),
             Err(ErreurRite::AucunRite)
         );
+    }
+
+    #[test]
+    fn des_parents_shiny_et_l_attaque_d_oeuf_changent_les_chances_du_petit() {
+        let (mut partie, contenu) = chez_malvoise();
+        let especes = contenu.especes();
+        accueillir(&mut partie, &contenu, "salamandre", 5, [0; 6]);
+        accueillir(&mut partie, &contenu, "salamandre", 6, [0; 6]);
+        let (premier, second) = (Emplacement::Equipe(1), Emplacement::Equipe(2));
+        let souffle = contenu
+            .espece(&EspeceId::new("salamandre"))
+            .unwrap()
+            .attaque_d_oeuf()
+            .unwrap()
+            .clone();
+        assert_eq!(souffle.id().as_str(), "souffle-des-forges");
+        let apercu = partie.preparer_le_rite(premier, second, especes).unwrap();
+        assert_eq!(apercu.shiny_sur, 512);
+        assert_eq!(apercu.attaque_d_oeuf, Some((souffle.clone(), 4)));
+        // Un parent shiny : 1 chance sur 256. Le petit naît avec l'attaque
+        // d'œuf, tirée 1 fois sur 4.
+        let shiny = |partie: &mut Partie, emplacement: Emplacement| {
+            let mut monstre = partie.collection.monstre(emplacement).unwrap().clone();
+            monstre.devenir_shiny();
+            partie.collection.relacher(emplacement).unwrap();
+            partie.collection.accueillir_capture(monstre);
+        };
+        shiny(&mut partie, premier);
+        let premier = Emplacement::Equipe(2);
+        let second = Emplacement::Equipe(1);
+        let apercu = partie.preparer_le_rite(premier, second, especes).unwrap();
+        assert_eq!(apercu.shiny_sur, 256);
+        partie
+            .lancer_le_rite(premier, second, especes, a(0))
+            .unwrap();
+        let naissance = partie
+            .accueillir_le_petit(especes, a(7_200), &mut AleatoireScripte::new([2, 1, 0]))
+            .unwrap();
+        assert!(!naissance.petit.est_shiny());
+        assert_eq!(naissance.attaque_d_oeuf, Some(souffle.clone()));
+        assert!(naissance.petit.attaques().liste().contains(&souffle));
+        // Deux parents shiny, dont l'un connaît l'attaque d'œuf : shiny et
+        // attaque à coup sûr, sans tirage.
+        let le_petit = Emplacement::Camp(0);
+        assert_eq!(partie.collection().camp()[0], naissance.petit);
+        shiny(&mut partie, le_petit);
+        assert!(partie.collection().equipe()[1].est_shiny());
+        let (premier, second) = (Emplacement::Equipe(1), le_petit);
+        let apercu = partie.preparer_le_rite(premier, second, especes).unwrap();
+        assert_eq!(apercu.shiny_sur, 1);
+        assert_eq!(apercu.attaque_d_oeuf, Some((souffle.clone(), 1)));
+        partie
+            .lancer_le_rite(premier, second, especes, a(8_000))
+            .unwrap();
+        let naissance = partie
+            .accueillir_le_petit(especes, a(15_200), &mut AleatoireScripte::new([0]))
+            .unwrap();
+        assert!(naissance.petit.est_shiny());
+        assert_eq!(naissance.attaque_d_oeuf, Some(souffle));
     }
 
     #[test]

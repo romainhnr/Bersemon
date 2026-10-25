@@ -5966,14 +5966,14 @@ mod tests {
                 Horodatage::depuis_secondes(8_200)
             )))
         );
-        // Pas shiny, puis la première habileté du Loup.
+        // Pas shiny, sans l'attaque d'œuf, puis la première habileté du Loup.
         let evenements = repondre_a(
             &mut deroulement,
             Choix::AccueillirLePetit,
             &contenu,
             &depot,
             8_200,
-            vec![2, 0],
+            vec![2, 2, 0],
         )
         .unwrap();
         assert!(matches!(

@@ -489,10 +489,15 @@ mod tests {
         let espece = crate::partie::fiche_d_espece(loup.espece(), &contenu);
         assert_eq!(espece[1], "Habiletés possibles : Traqueur et Fouineur");
         assert_eq!(espece[4], "Évolution : Warg au niveau 16");
+        assert_eq!(
+            espece[5],
+            "Attaque d'œuf (Rite du sang mêlé) : Assaut de meute (Normal, physique, puissance 80, précision 100 %)"
+        );
         let fiche = |id: &str| {
             let espece = contenu.espece(&EspeceId::new(id)).unwrap();
             crate::partie::fiche_d_espece(&espece, &contenu)
-                .pop()
+                .into_iter()
+                .find(|ligne| ligne.starts_with("Évolution"))
                 .unwrap()
         };
         assert_eq!(

@@ -1,16 +1,18 @@
 //! Le Rite du sang mêlé de Malvoise (section 13.11) : deux monstres d'une
 //! même famille d'évolution lui sont confiés pendant 2 heures réelles, puis
 //! donnent un petit de la forme de base de la famille, au niveau 1, qui
-//! reçoit, pour chaque stat, la meilleure valeur interne de ses parents.
+//! reçoit, pour chaque stat, la meilleure valeur interne de ses parents, et
+//! parfois l'attaque d'œuf de sa famille.
 
 use std::fmt;
 use std::time::Duration;
 
 use crate::aleatoire::Aleatoire;
+use crate::attaque::{Attaque, AttaquesMonstre};
 use crate::collection::ErreurCollection;
 use crate::espece::Espece;
 use crate::horodatage::Horodatage;
-use crate::monstre::{Monstre, tirer_shiny};
+use crate::monstre::{CHANCES_SHINY, Monstre};
 use crate::niveau::Niveau;
 use crate::ressource::Ressource;
 
@@ -24,6 +26,38 @@ pub const NIVEAU_DU_PETIT: u8 = 1;
 /// Places du camp gardées pendant le rite : celles des deux parents, qui
 /// les gardent comme un monstre parti, et celle du petit à naître.
 pub const PLACES_DU_RITE: usize = 3;
+/// Un parent shiny double les chances du petit de l'être ; deux parents
+/// shiny le rendent shiny à coup sûr.
+pub const CHANCES_SHINY_AVEC_UN_PARENT_SHINY: u32 = 256;
+/// Sauf si un parent la connaît : il la transmet alors à coup sûr.
+pub const UNE_ATTAQUE_D_OEUF_SUR: u32 = 4;
+
+/// 1 chance sur ce nombre que le petit soit shiny : 1 s'il l'est à coup sûr.
+pub fn chances_shiny(parents: &[Monstre; 2]) -> u32 {
+    match parents.iter().filter(|parent| parent.est_shiny()).count() {
+        0 => CHANCES_SHINY,
+        1 => CHANCES_SHINY_AVEC_UN_PARENT_SHINY,
+        _ => 1,
+    }
+}
+
+/// 1 chance sur ce nombre que le petit connaisse `attaque`, l'attaque d'œuf
+/// de sa famille : 1 si un parent la connaît.
+pub fn chances_d_attaque_d_oeuf(parents: &[Monstre; 2], attaque: &Attaque) -> u32 {
+    let connue = parents.iter().any(|parent| {
+        parent
+            .attaques()
+            .liste()
+            .iter()
+            .any(|connue| connue.id() == attaque.id())
+    });
+    if connue { 1 } else { UNE_ATTAQUE_D_OEUF_SUR }
+}
+
+/// Vrai à coup sûr pour 1, sinon une chance sur `sur`, tirée.
+fn tirer_une_chance_sur(sur: u32, aleatoire: &mut dyn Aleatoire) -> bool {
+    sur <= 1 || aleatoire.tirer(1..=sur) == 1
+}
 
 /// La forme de base de la famille d'évolution de cette espèce : celle
 /// qu'aucune autre ne précède (section 5.4).
@@ -75,9 +109,11 @@ impl Rite {
     }
 
     /// Le petit, de l'espèce `forme_de_base`, avec la meilleure valeur
-    /// interne de ses parents pour chaque stat. Comme pour un monstre
-    /// sauvage, il a 1 chance sur 512 d'être shiny et tire son habileté :
-    /// tirages, le shiny, puis l'habileté.
+    /// interne de ses parents pour chaque stat. Ses chances d'être shiny
+    /// suivent `chances_shiny`, celles de connaître l'attaque d'œuf de sa
+    /// famille `chances_d_attaque_d_oeuf` ; il tire son habileté comme un
+    /// monstre sauvage. Tirages, sauf issue certaine : le shiny, l'attaque
+    /// d'œuf, puis l'habileté.
     pub(crate) fn faire_naitre(
         &self,
         forme_de_base: &Espece,
@@ -87,11 +123,36 @@ impl Rite {
         let valeurs_internes = premier
             .valeurs_internes()
             .meilleures(second.valeurs_internes());
-        let shiny = tirer_shiny(aleatoire);
+        let shiny = tirer_une_chance_sur(chances_shiny(&self.parents), aleatoire);
+        let attaque_d_oeuf = forme_de_base.attaque_d_oeuf().filter(|attaque| {
+            tirer_une_chance_sur(chances_d_attaque_d_oeuf(&self.parents, attaque), aleatoire)
+        });
         let niveau = Niveau::new(NIVEAU_DU_PETIT).expect("niveau du petit valide");
-        Monstre::creer(forme_de_base.clone(), niveau, valeurs_internes, shiny)
-            .expect("toute forme de base connaît une attaque au niveau 1")
-            .tirer_son_habilete(aleatoire)
+        let mut attaques: Vec<Attaque> = forme_de_base
+            .apprentissage()
+            .iter()
+            .filter(|apprise| apprise.niveau <= niveau)
+            .map(|apprise| apprise.attaque.clone())
+            .collect();
+        if let Some(attaque) = attaque_d_oeuf {
+            // Elle prend la place de la plus ancienne si le petit en connaît
+            // déjà 4 (hypothèse retenue, Q105).
+            if attaques.len() >= AttaquesMonstre::MAX {
+                attaques.remove(0);
+            }
+            attaques.push(attaque.clone());
+        }
+        let debut = attaques.len().saturating_sub(AttaquesMonstre::MAX);
+        let attaques = AttaquesMonstre::new(attaques[debut..].to_vec())
+            .expect("toute forme de base connaît une attaque au niveau 1");
+        Monstre::new(
+            forme_de_base.clone(),
+            niveau,
+            valeurs_internes,
+            attaques,
+            shiny,
+        )
+        .tirer_son_habilete(aleatoire)
     }
 }
 
@@ -104,6 +165,11 @@ pub struct ApercuDuRite {
     pub ressources: Vec<(Ressource, u32)>,
     pub prix: u32,
     pub duree: Duration,
+    /// 1 chance sur ce nombre que le petit soit shiny : 1 à coup sûr.
+    pub shiny_sur: u32,
+    /// L'attaque d'œuf de la famille, et 1 chance sur ce nombre que le
+    /// petit la connaisse : 1 à coup sûr.
+    pub attaque_d_oeuf: Option<(Attaque, u32)>,
 }
 
 /// Le petit, à sa place dans l'équipe ou au camp, et ses parents rendus.
@@ -111,6 +177,8 @@ pub struct ApercuDuRite {
 pub struct NaissanceDuRite {
     pub petit: Monstre,
     pub parents: [Monstre; 2],
+    /// Celle de sa famille, s'il est né en la connaissant.
+    pub attaque_d_oeuf: Option<Attaque>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

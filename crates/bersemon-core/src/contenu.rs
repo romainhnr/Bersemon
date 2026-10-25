@@ -854,7 +854,7 @@ const fn avec_effet(fiche: FicheAttaque, statut: Statut, chance: u8) -> FicheAtt
 }
 
 /// Section 1 de docs/contenu-v1.md, dans le même ordre.
-const ATTAQUES: [FicheAttaque; 101] = [
+const ATTAQUES: [FicheAttaque; 133] = [
     fiche(
         "souffle-chaud",
         "Souffle chaud",
@@ -1558,6 +1558,267 @@ const ATTAQUES: [FicheAttaque; 101] = [
         Speciale,
         90,
         90,
+    ),
+    // Attaques d'œuf : elles ne s'obtiennent que par le Rite du sang mêlé
+    // (docs/contenu-v1.md, section 28).
+    fiche(
+        "souffle-des-forges",
+        "Souffle des forges",
+        Type::Feu,
+        Speciale,
+        80,
+        100,
+    ),
+    fiche("ressac", "Ressac", Type::Eau, Physique, 80, 100),
+    avec_effet(
+        fiche(
+            "seve-maudite",
+            "Sève maudite",
+            Type::Plante,
+            Speciale,
+            75,
+            100,
+        ),
+        Poison,
+        20,
+    ),
+    fiche(
+        "griffes-de-minuit",
+        "Griffes de minuit",
+        Type::Tenebres,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "assaut-de-meute",
+        "Assaut de meute",
+        Type::Normal,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "plongee-funebre",
+        "Plongée funèbre",
+        Type::Vol,
+        Physique,
+        80,
+        100,
+    ),
+    avec_effet(
+        fiche(
+            "etreinte-de-l-aspic",
+            "Étreinte de l'aspic",
+            Type::Poison,
+            Physique,
+            75,
+            100,
+        ),
+        Poison,
+        30,
+    ),
+    fiche(
+        "lueur-des-marais",
+        "Lueur des marais",
+        Type::Spectre,
+        Speciale,
+        80,
+        100,
+    ),
+    fiche(
+        "coup-de-heaume",
+        "Coup de heaume",
+        Type::Acier,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "essaim-maudit",
+        "Essaim maudit",
+        Type::Insecte,
+        Speciale,
+        80,
+        100,
+    ),
+    fiche(
+        "danse-macabre",
+        "Danse macabre",
+        Type::Combat,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "brame-sacre",
+        "Brame sacré",
+        Type::Feerique,
+        Speciale,
+        80,
+        100,
+    ),
+    avec_effet(
+        fiche(
+            "souffle-du-basilic",
+            "Souffle du basilic",
+            Type::Dragon,
+            Speciale,
+            75,
+            100,
+        ),
+        Poison,
+        20,
+    ),
+    fiche(
+        "sortilege-sylvestre",
+        "Sortilège sylvestre",
+        Type::Feerique,
+        Speciale,
+        80,
+        100,
+    ),
+    fiche(
+        "pique-draconique",
+        "Piqué draconique",
+        Type::Dragon,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "pluie-d-etoiles",
+        "Pluie d'étoiles",
+        Type::Stellaire,
+        Speciale,
+        80,
+        100,
+    ),
+    fiche(
+        "plongeon-de-granit",
+        "Plongeon de granit",
+        Type::Roche,
+        Physique,
+        80,
+        100,
+    ),
+    avec_effet(
+        fiche(
+            "griffes-putrides",
+            "Griffes putrides",
+            Type::Poison,
+            Physique,
+            75,
+            100,
+        ),
+        Poison,
+        30,
+    ),
+    fiche("vol-nocturne", "Vol nocturne", Type::Vol, Physique, 80, 100),
+    fiche(
+        "souffle-triple",
+        "Souffle triple",
+        Type::Dragon,
+        Speciale,
+        80,
+        100,
+    ),
+    fiche(
+        "litanie-des-dechus",
+        "Litanie des déchus",
+        Type::Psychique,
+        Speciale,
+        80,
+        100,
+    ),
+    fiche(
+        "appel-des-profondeurs",
+        "Appel des profondeurs",
+        Type::Eau,
+        Speciale,
+        80,
+        100,
+    ),
+    fiche(
+        "morsure-des-tourbieres",
+        "Morsure des tourbières",
+        Type::Tenebres,
+        Physique,
+        80,
+        100,
+    ),
+    avec_effet(
+        fiche("saignee", "Saignée", Type::Poison, Physique, 75, 100),
+        Poison,
+        30,
+    ),
+    fiche(
+        "galop-des-eaux",
+        "Galop des eaux",
+        Type::Eau,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "griffes-de-famine",
+        "Griffes de famine",
+        Type::Glace,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "coup-de-massue",
+        "Coup de massue",
+        Type::Sol,
+        Physique,
+        80,
+        100,
+    ),
+    avec_effet(
+        fiche(
+            "oeil-de-l-orage",
+            "Œil de l'orage",
+            Type::Electrique,
+            Speciale,
+            75,
+            100,
+        ),
+        Paralysie,
+        20,
+    ),
+    fiche(
+        "souffle-de-l-hiver",
+        "Souffle de l'hiver",
+        Type::Glace,
+        Speciale,
+        80,
+        100,
+    ),
+    fiche(
+        "valse-des-neiges",
+        "Valse des neiges",
+        Type::Feerique,
+        Speciale,
+        80,
+        100,
+    ),
+    fiche(
+        "volee-de-cloches",
+        "Volée de cloches",
+        Type::Son,
+        Speciale,
+        80,
+        100,
+    ),
+    fiche(
+        "rosace-ardente",
+        "Rosace ardente",
+        Type::Lumiere,
+        Speciale,
+        80,
+        100,
     ),
 ];
 
@@ -2791,6 +3052,11 @@ fn creer_espece(fiche: &FicheEspece) -> Espece {
         Some(evolution) => espece.avec_evolution(creer_evolution(evolution)),
         None => espece,
     };
+    let base = base_de_la_famille(fiche.id);
+    let espece = match ATTAQUES_D_OEUF.iter().find(|(espece, _)| *espece == base) {
+        Some((_, attaque)) => espece.avec_attaque_d_oeuf(creer_attaque(attaque)),
+        None => espece,
+    };
     match RESSOURCES.iter().find(|(espece, _, _)| *espece == fiche.id) {
         Some((_, id, nom)) => {
             let prix = match fiche.rarete {
@@ -3158,6 +3424,58 @@ const RESSOURCES: [(&str, &str, &str); 20] = [
     ("cloche-hurlante", "eclat-de-bronze", "Éclat de bronze"),
 ];
 
+/// Section 28 de docs/contenu-v1.md : l'attaque d'œuf de chaque famille
+/// d'évolution, par sa forme de base (section 13.11).
+const ATTAQUES_D_OEUF: [(&str, &str); 32] = [
+    ("salamandre", "souffle-des-forges"),
+    ("crapaud", "ressac"),
+    ("mandragore", "seve-maudite"),
+    ("chat-noir", "griffes-de-minuit"),
+    ("loup", "assaut-de-meute"),
+    ("corbeau", "plongee-funebre"),
+    ("vipere", "etreinte-de-l-aspic"),
+    ("feu-follet", "lueur-des-marais"),
+    ("armure-hantee", "coup-de-heaume"),
+    ("fee-noire", "essaim-maudit"),
+    ("squelette", "danse-macabre"),
+    ("cerf-blanc", "brame-sacre"),
+    ("basilic", "souffle-du-basilic"),
+    ("elfe", "sortilege-sylvestre"),
+    ("vouivre", "pique-draconique"),
+    ("schnoz", "pluie-d-etoiles"),
+    ("gargouille", "plongeon-de-granit"),
+    ("goule", "griffes-putrides"),
+    ("chauve-souris-de-crypte", "vol-nocturne"),
+    ("chimere", "souffle-triple"),
+    ("ange-dechu", "litanie-des-dechus"),
+    ("noye", "appel-des-profondeurs"),
+    ("anguille-des-tourbieres", "morsure-des-tourbieres"),
+    ("sangsue-geante", "saignee"),
+    ("kelpie", "galop-des-eaux"),
+    ("wendigo", "griffes-de-famine"),
+    ("troll-des-cavernes", "coup-de-massue"),
+    ("harpie-des-orages", "oeil-de-l-orage"),
+    ("wyrm-de-givre", "souffle-de-l-hiver"),
+    ("sylphe-des-neiges", "valse-des-neiges"),
+    ("cloche-hurlante", "volee-de-cloches"),
+    ("seraphin-de-vitrail", "rosace-ardente"),
+];
+
+/// La forme de base de la famille de cette espèce : celle qu'aucune autre
+/// ne précède (section 5.4).
+fn base_de_la_famille(id: &str) -> &str {
+    let mut forme = id;
+    while let Some(precedente) = ESPECES.iter().find(|fiche| {
+        fiche
+            .evolution
+            .as_ref()
+            .is_some_and(|evolution| evolution.vers == forme)
+    }) {
+        forme = precedente.id;
+    }
+    forme
+}
+
 fn creer_attaque(id: &str) -> Attaque {
     let fiche = ATTAQUES
         .iter()
@@ -3315,12 +3633,54 @@ mod tests {
                     .any(|&(_, attaque)| attaque == fiche.id)
             });
             let en_capsule = CAPSULES.iter().any(|capsule| capsule.attaque == fiche.id);
+            let d_oeuf = ATTAQUES_D_OEUF
+                .iter()
+                .any(|&(_, attaque)| attaque == fiche.id);
             assert!(
-                apprise || en_capsule,
-                "attaque {} apprise par aucune espèce ni capsule",
+                apprise || en_capsule || d_oeuf,
+                "attaque {} apprise par aucune espèce ni capsule, ni d'œuf",
                 fiche.id
             );
         }
+    }
+
+    #[test]
+    fn chaque_famille_a_son_attaque_d_oeuf_de_son_type_et_d_elle_seule() {
+        let contenu = ContenuV1::new();
+        let especes = contenu.especes();
+        let mut vues = Vec::new();
+        for espece in especes {
+            if matches!(espece.rarete(), Rarete::Apotre | Rarete::Demiurge) {
+                assert!(espece.attaque_d_oeuf().is_none(), "{}", espece.nom());
+                continue;
+            }
+            let base = crate::rite::forme_de_base(espece, especes);
+            let attaque = espece.attaque_d_oeuf().expect("attaque d'œuf");
+            assert_eq!(base.attaque_d_oeuf(), Some(attaque), "{}", espece.nom());
+            assert!(
+                base.types().liste().contains(&attaque.type_attaque()),
+                "{} : {}",
+                base.nom(),
+                attaque.nom()
+            );
+            // Ni par niveau, ni par capsule : par le rite seulement.
+            assert!(
+                especes
+                    .iter()
+                    .all(|autre| autre.attaque_apprise(attaque.id()).is_none()),
+                "{}",
+                attaque.nom()
+            );
+            assert!(contenu.capsule(attaque.id()).is_none(), "{}", attaque.nom());
+            if base.id() == espece.id() {
+                vues.push(attaque.id().clone());
+            }
+        }
+        let mut uniques = vues.clone();
+        uniques.sort_by(|a, b| a.as_str().cmp(b.as_str()));
+        uniques.dedup();
+        assert_eq!(vues.len(), 32);
+        assert_eq!(uniques.len(), 32);
     }
 
     #[test]

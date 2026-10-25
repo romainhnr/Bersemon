@@ -94,6 +94,9 @@ pub struct Espece {
     ressource: Option<Box<Ressource>>,
     /// En boîte, pour la même raison (section 5.4).
     evolution: Option<Box<Evolution>>,
+    /// Celle de sa famille d'évolution, que seul le Rite du sang mêlé
+    /// transmet (section 13.11). En boîte, pour la même raison.
+    attaque_d_oeuf: Option<Box<Attaque>>,
 }
 
 impl Espece {
@@ -123,7 +126,18 @@ impl Espece {
             habiletes: Vec::new(),
             ressource: None,
             evolution: None,
+            attaque_d_oeuf: None,
         }
+    }
+
+    pub fn avec_attaque_d_oeuf(mut self, attaque: Attaque) -> Self {
+        self.attaque_d_oeuf = Some(Box::new(attaque));
+        self
+    }
+
+    /// La même pour toutes les espèces d'une famille d'évolution.
+    pub fn attaque_d_oeuf(&self) -> Option<&Attaque> {
+        self.attaque_d_oeuf.as_deref()
     }
 
     pub fn avec_evolution(mut self, evolution: Evolution) -> Self {
