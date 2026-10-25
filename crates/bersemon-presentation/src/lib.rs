@@ -20,6 +20,7 @@ pub mod groupe;
 pub mod jour_et_nuit;
 pub mod machines;
 pub mod marchand;
+pub mod meteo;
 pub mod mise_en_valeur;
 pub mod monstres;
 pub mod partie;

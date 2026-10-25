@@ -20,6 +20,7 @@ use crate::forge::{
 };
 use crate::jour_et_nuit;
 use crate::machines;
+use crate::meteo;
 use crate::mise_en_valeur::important;
 use crate::monstres::{effet_d_habilete, nom_en_valeur, nom_sauvage};
 use crate::partie::{
@@ -84,6 +85,7 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
         Evenement::JourOuNuitAuDepart(jour_ou_nuit) => {
             (jour_et_nuit::au_depart(*jour_ou_nuit).to_string(), false)
         }
+        Evenement::MeteoAuDepart(meteo) => (meteo::au_depart(*meteo).to_string(), false),
         Evenement::Etape {
             numero,
             total: Some(total),

@@ -163,3 +163,7 @@ Le joueur automatique ne connaît pas le cycle : il part à toute heure, son hor
 | Bourreau | 2,0, 38 % | 2,0, 37 % |
 
 La nuit profite à ce joueur : ses monstres plus forts rapportent plus d'XP, et le bonus de 25 % s'y ajoute, sans beaucoup plus de défaites, puisqu'il fuit les combats mal engagés. Les combats de fin de zone, hors du cycle, ne changent pas.
+
+## 8. Effet de la météo (étape 121)
+
+Mesuré sur 100 parties par classe, cycle du jour et météo compris : 51, 54, 55 et 54 expéditions (Guerrier, Mage, Templier, Assassin), 9,0, 11,6, 7,2 et 6,5 défaites ; le Baron pendu demande 2,7 tentatives (34 % au premier essai), l'Abbesse 2,4 (53 %), le Margrave 2,0 (68 %), le Bourreau 2,0 (35 %). Les écarts avec la section 7 sont de l'ordre du bruit : une météo touche un créneau sur 3, renforce deux types pour les deux camps, et le joueur automatique n'en tient pas compte.

@@ -494,6 +494,21 @@ Décidé le 25/10/2026, pour les étapes 118 à 120 (choix de l'utilisateur) :
 - Écrans, à l'étape 119 (console) : au camp, sous l'en-tête, et en haut de la carte des expéditions, "Jour : la nuit tombe dans 1 h 12." ou "Nuit : l'aube dans 23 min." ; après "Vous partez pour ...", le texte du moment ; le compteur d'étapes devient "[Étape : 2/5] Nuit", sans moment dans la Tour ; la fiche d'une espèce capturée nocturne ou diurne finit par "Ne sort que la nuit." ou "Ne sort que le jour.", et la condition d'évolution dit "Warg dès le niveau 16, après un combat de nuit".
 - Écrans, à l'étape 120 (Discord) : le camp, qui porte le menu "Partir en expédition", dit le moment sous son en-tête ; le texte du départ, le compteur d'étapes et la fiche du codex sont ceux de la console.
 
+### 9.7 Météo
+
+Décidé le 25/10/2026, pour les étapes 121 à 123 (choix de l'utilisateur) :
+
+- Six météos : pluie, tempête, grêle, tempête de sable, cyclone et canicule. Chaque zone de la carte a les siennes. Le cyclone ne se produit que dans une zone de mer et la tempête de sable que dans un désert ; le jeu n'en ayant pas encore, ces deux météos ne se produisent nulle part pour l'instant.
+- Météos par zone : Lisière du Bois-Sombre, Marais des Pendus et Abbaye des Cendres : pluie, tempête, canicule ; Vallée des Brumes : pluie, tempête, grêle ; Col du Givre-Noir : grêle, tempête. Zones à venir : une mer, avec pluie, tempête et cyclone ; un désert, avec canicule et tempête de sable.
+- Le temps se découpe en créneaux de 30 minutes réelles, les mêmes pour tous les joueurs, jeu fermé ou bot éteint compris. À chaque créneau, chaque zone a 1 chance sur 3 d'avoir une météo, tirée parmi les siennes, et sinon un temps calme. Le tirage dépend seulement du créneau et de la zone : tous les joueurs voient le même ciel, sans sauvegarde. Deux créneaux de suite peuvent tirer la même météo, qui dure alors plus longtemps.
+- Une expédition garde la météo de son départ jusqu'au retour, comme le moment du jour (section 9.6). La Tour sans fond, l'Éclipse et les expéditions automatiques n'ont pas de météo.
+- Chaque météo renforce deux types : leurs attaques font 20 % de dégâts en plus, pour les deux camps. Pluie : Eau, Plante. Tempête : Électrique, Vol. Grêle : Glace, Roche. Tempête de sable : Sol, Roche. Cyclone : Eau, Vol. Canicule : Feu, Sol.
+- Le bonus de la météo se cumule à celui du moment du jour, en se multipliant : une attaque Feu de jour sous la canicule fait x1,2 puis x1,2, soit x1,44, en divisions entières, après l'habileté Affinité et avant l'efficacité (section 10.4).
+- Contrairement au moment du jour, la météo joue aussi dans les combats de fin de zone, contre les humains et les Apôtres.
+- Affichage : sur la carte des expéditions, la météo de chaque zone et le temps qu'elle va encore durer ; en expédition, la météo à côté du moment, après le compteur d'étapes, et un court texte au départ. Textes dans docs/contenu-v1.md, section 32.
+- La sauvegarde ne change pas.
+- Précisé à l'étape 121, en codant : le tirage d'un créneau se fait sur un générateur propre, dont la graine mêle le numéro du créneau et l'identifiant de la zone ; il ne touche pas aux tirages de la partie. Le temps restant regarde au plus une journée de créneaux en avant. Mesuré par l'outil d'équilibrage, l'effet de la météo sur la durée de la partie et sur les combats de fin de zone reste de l'ordre du bruit (docs/equilibrage.md, section 8).
+
 ## 10. Combat
 
 ### 10.1 Principes
@@ -1150,6 +1165,10 @@ Les questions Q102 et suivantes ont été relevées le 25/10/2026 lors de la con
 
 Les questions Q103 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 107 carnet de traque du codex et 108 Philtre chromatique.
 
+Les questions Q110 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 121 à 123, météo.
+
+- Q110. (Étapes 121 à 123) Hypothèses retenues, à confirmer : les créneaux de 30 minutes partent de minuit UTC, comme le cycle du jour ; une météo n'a pas d'autre effet que le bonus de types (ni sur les espèces, ni sur les niveaux, ni sur les récompenses) ; le temps restant affiché court jusqu'au changement de météo de la zone, sur les créneaux suivants s'ils tirent la même ; une zone sans météo possible reste au calme. Le cyclone et la tempête de sable attendent une zone de mer et un désert, à concevoir. Textes proposés sans validation (docs/contenu-v1.md, section 32).
+
 Les questions Q109 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 118 à 120, cycle du jour et de la nuit.
 
 - Q109. (Étapes 118 à 120) Hypothèses retenues, à confirmer : le cycle part de minuit UTC ; les monstres rares, même pacifiques, ont aussi leurs 2 niveaux de plus la nuit ; le bonus de types et celui d'XP jouent contre les monstres des âmes de marchands et le Noyé d'Ansgar, dont l'espèce et le niveau ne changent pas ; si une zone n'avait aucune espèce à un moment, toutes y sortiraient ; la fiche d'une espèce nocturne ou diurne le dit, comme toute fiche, une fois l'espèce capturée. Textes proposés sans validation (docs/contenu-v1.md, section 31).
@@ -1672,4 +1691,10 @@ Les questions Q104 et suivantes ont été relevées le 25/10/2026 lors de la con
 - Choix de l'utilisateur : un cycle accéléré en temps réel, 2 heures de jour puis 1 heure de nuit ; une expédition garde le moment de son départ ; le cycle ne joue que dans les zones, sans les combats de fin de zone ; de nuit, des monstres sauvages de 2 niveaux de plus, qui rapportent 25 % d'XP et d'argent des coffres en plus ; un bonus de 20 % aux attaques Ténèbres, Spectre et Poison de nuit, Lumière, Feu et Plante de jour ; des espèces exclusivement nocturnes ou diurnes, selon la liste ajustée par Claude ; trois évolutions selon le moment ; l'affichage au camp, sur la carte et en expédition (section 9.6).
 - Claude a relevé qu'avec des espèces exclusives, sa première liste laissait une seule espèce de jour dans la Vallée et l'Abbaye, et de nuit dans la Lisière ; la liste ajustée en garde au moins deux par zone et par moment.
 - Hypothèses retenues, à confirmer : Q109.
+25/10/2026 (conception des étapes 121 à 123, météo) :
+
+- Demande de l'utilisateur : une météo, pluie, tempête, grêle, tempête de sable, cyclone et canicule, en événements aléatoires de 30 minutes, certaines exclusives à des zones (cyclone en mer, tempête de sable au désert), qui renforcent des types et se cumulent au cycle du jour.
+- Claude a relevé que le jeu n'a ni zone de mer ni désert. Choix de l'utilisateur : le cyclone et la tempête de sable sont réservés à ces zones futures.
+- Choix de l'utilisateur : une météo par zone, la même pour tous les joueurs, une chance sur 3 par créneau de 30 minutes ; fixée au départ de l'expédition ; deux types renforcés de 20 % par météo, selon la répartition proposée par Claude, en se multipliant au bonus du moment ; les météos de chaque zone proposées par Claude ; la météo joue aussi contre les humains et les Apôtres de fin de zone (section 9.7).
+- Hypothèses retenues, à confirmer : Q110.
 

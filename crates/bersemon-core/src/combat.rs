@@ -28,13 +28,14 @@ use crate::filet::{Filet, Filets};
 use crate::habilete::{BONUS_D_INSTINCT, Habilete, majorer};
 use crate::heros::Ordre;
 use crate::humain::IaHumain;
-use crate::jour_et_nuit::{BONUS_DE_LA_NUIT, JourOuNuit};
+use crate::jour_et_nuit::{BONUS_DE_LA_NUIT, BONUS_DES_TYPES_DU_MOMENT, JourOuNuit};
+use crate::meteo::{BONUS_DE_LA_METEO, Meteo};
 use crate::monstre::{Monstre, RapportExperience};
 use crate::obeissance::chances_de_desobeir;
 use crate::soin::{EffetDuSoin, ErreurSoin, Soin, Soins, appliquer_soin, verifier_cible};
 use crate::stats::{BonusDeStats, Stats, appliquer_bonus, cumuler_bonus};
 use crate::statut::{CHANCES_BLOCAGE_PARALYSIE, Statut, degats_de_poison};
-use crate::types::{Efficacite, efficacite};
+use crate::types::{Efficacite, Type, efficacite};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Cote {
@@ -485,6 +486,9 @@ pub struct Combat {
     /// Le moment d'un combat soumis au cycle, dans une expédition d'une zone
     /// de la carte : il renforce des types et, de nuit, l'XP (section 9.6).
     jour_ou_nuit: Option<JourOuNuit>,
+    /// La météo d'un combat dans une zone de la carte, combats de fin de
+    /// zone compris : elle renforce deux types (section 9.7).
+    meteo: Option<Meteo>,
     phase: Phase,
 }
 
@@ -545,6 +549,7 @@ impl Combat {
             groupe: None,
             premiere_equipe_tombee: None,
             jour_ou_nuit: None,
+            meteo: None,
             phase: Phase::ChoixAction,
         };
         combat.noter_participation();
@@ -560,6 +565,31 @@ impl Combat {
 
     pub fn jour_ou_nuit(&self) -> Option<JourOuNuit> {
         self.jour_ou_nuit
+    }
+
+    /// Aussi contre un humain ou un Apôtre de fin de zone (section 9.7).
+    pub fn avec_meteo(mut self, meteo: Meteo) -> Self {
+        self.meteo = Some(meteo);
+        self
+    }
+
+    pub fn meteo(&self) -> Option<Meteo> {
+        self.meteo
+    }
+
+    /// Les pourcentages de dégâts en plus pour une attaque de ce type : celui
+    /// du moment du jour, puis celui de la météo, qui se multiplient
+    /// (sections 9.6 et 9.7).
+    fn renforts(&self, type_attaque: Type) -> Vec<u64> {
+        let moment = self
+            .jour_ou_nuit
+            .filter(|jour_ou_nuit| jour_ou_nuit.renforce(type_attaque))
+            .map(|_| BONUS_DES_TYPES_DU_MOMENT);
+        let meteo = self
+            .meteo
+            .filter(|meteo| meteo.renforce(type_attaque))
+            .map(|_| BONUS_DE_LA_METEO);
+        moment.into_iter().chain(meteo).collect()
     }
 
     /// Combat d'une expédition en groupe : l'équipe de l'hôte, puis celle
@@ -1035,7 +1065,7 @@ impl Combat {
             attaque,
             defenseur,
             &self.stats_en_combat(adversaire),
-            self.jour_ou_nuit,
+            &self.renforts(attaque.type_attaque()),
         );
         Some(ApercuAttaque {
             degats_min,
@@ -1324,6 +1354,7 @@ impl Combat {
             groupe: None,
             premiere_equipe_tombee: self.premiere_equipe_tombee.map(Cote::oppose),
             jour_ou_nuit: self.jour_ou_nuit,
+            meteo: self.meteo,
             phase: match self.phase {
                 Phase::Termine(issue) => Phase::Termine(issue.miroir()),
                 autre => autre,
@@ -1546,7 +1577,7 @@ impl Combat {
                     attaque,
                     self.monstre(cible),
                     &stats_cible,
-                    self.jour_ou_nuit,
+                    &self.renforts(attaque.type_attaque()),
                 )
             })
             .collect()
@@ -1821,7 +1852,8 @@ impl Combat {
 
         let stats_attaquant = self.stats_en_combat(lanceur);
         let stats_defenseur = self.stats_en_combat(cible);
-        let jour_ou_nuit = self.jour_ou_nuit;
+        let type_attaque = self.monstre(lanceur).attaques().liste()[index_attaque].type_attaque();
+        let renforts = self.renforts(type_attaque);
         let (attaquant, defenseur) = self.attaquant_et_defenseur(cote);
         let attaque = attaquant.attaques().liste()[index_attaque].clone();
         let resultat = resoudre_attaque(
@@ -1830,7 +1862,7 @@ impl Combat {
             &attaque,
             defenseur,
             &stats_defenseur,
-            jour_ou_nuit,
+            &renforts,
             aleatoire,
         );
         let effet = attaque.effet();
@@ -3229,6 +3261,40 @@ mod tests {
         // 50 XP de base, 62 de nuit, 74 avec Instinct.
         let bilan = terminer(combat, &[100]);
         assert_eq!(xp_gagnee(&bilan, 0), Some(74));
+    }
+
+    /// Une attaque Feu de jour sous la canicule : x1,2 pour le moment, puis
+    /// x1,2 pour la météo ; la pluie ne la renforce pas (sections 9.6 et
+    /// 9.7).
+    #[test]
+    fn le_moment_et_la_meteo_se_cumulent() {
+        let flamme = attaque("flamme", Type::Feu, Categorie::Speciale, 90, 100);
+        let attaquant = monstre(&[Type::Normal], stats_uniformes(80), 50, vec![flamme]);
+        let cible = || monstre(&[Type::Normal], stats_uniformes(80), 50, vec![coup()]);
+        let haut = |combat: Combat| combat.apercu_attaque(0).unwrap().degats_max;
+        let sans = haut(combat(vec![attaquant.clone()], vec![cible()]));
+        let de_jour = haut(
+            combat(vec![attaquant.clone()], vec![cible()]).avec_jour_ou_nuit(JourOuNuit::Jour),
+        );
+        assert_eq!(de_jour, sans * 6 / 5);
+        let sous_la_canicule = haut(
+            combat(vec![attaquant.clone()], vec![cible()])
+                .avec_jour_ou_nuit(JourOuNuit::Jour)
+                .avec_meteo(Meteo::Canicule),
+        );
+        assert_eq!(sous_la_canicule, sans * 6 / 5 * 6 / 5);
+        let sous_la_pluie = haut(
+            combat(vec![attaquant.clone()], vec![cible()])
+                .avec_jour_ou_nuit(JourOuNuit::Jour)
+                .avec_meteo(Meteo::Pluie),
+        );
+        assert_eq!(sous_la_pluie, de_jour);
+        let de_nuit_sous_la_canicule = haut(
+            combat(vec![attaquant], vec![cible()])
+                .avec_jour_ou_nuit(JourOuNuit::Nuit)
+                .avec_meteo(Meteo::Canicule),
+        );
+        assert_eq!(de_nuit_sous_la_canicule, de_jour);
     }
 
     #[test]

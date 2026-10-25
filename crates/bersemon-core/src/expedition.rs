@@ -13,6 +13,7 @@ use crate::expedition_automatique::ErreurParametres;
 use crate::filet::Filet;
 use crate::humain::Humain;
 use crate::jour_et_nuit::{BONUS_DE_LA_NUIT, JourOuNuit};
+use crate::meteo::Meteo;
 use crate::monstre::Monstre;
 use crate::peche::Pecheur;
 use crate::pierre::PierreDEvolution;
@@ -167,6 +168,9 @@ pub struct Expedition {
     /// Le moment de son départ, qu'elle garde jusqu'au retour ; `None` hors
     /// des zones de la carte, où le cycle ne joue pas (section 9.6).
     jour_ou_nuit: Option<JourOuNuit>,
+    /// La météo de son départ, qu'elle garde jusqu'au retour ; `None` par
+    /// temps calme et hors des zones de la carte (section 9.7).
+    meteo: Option<Meteo>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -195,6 +199,7 @@ impl Expedition {
             capsules_trouvees: Vec::new(),
             descente: None,
             jour_ou_nuit: None,
+            meteo: None,
         }
     }
 
@@ -269,6 +274,17 @@ impl Expedition {
     /// `None` dans la Tour sans fond et dans l'Éclipse, hors du cycle.
     pub fn jour_ou_nuit(&self) -> Option<JourOuNuit> {
         self.jour_ou_nuit
+    }
+
+    /// Le départ dans une zone de la carte fixe la météo de toute
+    /// l'expédition (section 9.7).
+    pub(crate) fn avec_meteo(mut self, meteo: Option<Meteo>) -> Self {
+        self.meteo = meteo;
+        self
+    }
+
+    pub fn meteo(&self) -> Option<Meteo> {
+        self.meteo
     }
 
     pub(crate) fn avec_capsules_possedees(mut self, capsules: Vec<AttaqueId>) -> Self {

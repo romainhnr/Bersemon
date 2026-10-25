@@ -1281,3 +1281,26 @@ Textes :
 | Compteur d'étapes | [Étape : 2/5] Jour / [Étape : 2/5] Nuit |
 | Condition d'évolution, à la fiche | Warg dès le niveau 16, après un combat de nuit / Aspic dès le niveau 16, après un combat de jour |
 | Fiche d'une espèce capturée | Ne sort que la nuit. / Ne sort que le jour. |
+
+## 32. Météo
+
+Décidé le 25/10/2026, pour les étapes 121 à 123 (gamedesign.md, section 9.7). Valeurs choisies par l'utilisateur ; textes proposés sans validation (gamedesign.md, Q110).
+
+| Météo | Identifiant | Types renforcés (+20 %) | Zones | Texte au départ |
+|---|---|---|---|---|
+| Pluie | pluie | Eau, Plante | Lisière, Marais, Vallée, Abbaye, mer à venir | Une pluie froide tombe sans relâche. |
+| Tempête | tempete | Électrique, Vol | toutes, mer et désert à venir compris | L'orage gronde : le ciel se déchire d'éclairs. |
+| Grêle | grele | Glace, Roche | Vallée, Col | La grêle crépite sur les pierres et les armures. |
+| Tempête de sable | tempete-de-sable | Sol, Roche | désert à venir | Le sable vole, cinglant comme une lame. |
+| Cyclone | cyclone | Eau, Vol | mer à venir | Le cyclone hurle, et les vagues montent à l'assaut des côtes. |
+| Canicule | canicule | Feu, Sol | Lisière, Marais, Abbaye, désert à venir | Une chaleur écrasante pèse sur la terre. |
+
+Chaque zone a 1 chance sur 3, par créneau de 30 minutes, d'avoir une de ses météos ; sinon, temps calme.
+
+Textes :
+
+| Moment | Texte |
+|---|---|
+| Carte, console | Lisière du Bois-Sombre (niveaux 3 à 7), explorée : pluie, encore 42 min |
+| Carte, Discord, description de la zone | Niveaux 3 à 7, explorée ; pluie, encore 42 min |
+| Compteur d'étapes | [Étape : 2/5] Nuit, pluie |

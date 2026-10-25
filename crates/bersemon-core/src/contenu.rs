@@ -30,6 +30,7 @@ use crate::heros::Classe;
 use crate::humain::{Humain, HumainId, IaHumain};
 use crate::inventaire::Inventaire;
 use crate::jour_et_nuit::{Activite, JourOuNuit};
+use crate::meteo::Meteo;
 use crate::niveau::Niveau;
 use crate::peche::{ParametresPeche, Pecheur};
 use crate::pierre::PierreDEvolution;
@@ -349,7 +350,11 @@ impl ContenuV1 {
             coffre(10..=25, capsules_de("lisiere")),
         )
         .and_then(|zone| zone.avec_monstre_cache(schnoz()))
-        .map(|zone| zone.avec_humain(brigand).avec_marchand_mort(bertrand))
+        .map(|zone| {
+            zone.avec_humain(brigand)
+                .avec_marchand_mort(bertrand)
+                .avec_meteos(METEOS_COMMUNES.to_vec())
+        })
         .expect("Lisière conforme aux règles");
         let marais = Zone::new(
             ZoneId::new("marais"),
@@ -375,6 +380,7 @@ impl ContenuV1 {
             zone.avec_humain(bourreau)
                 .avec_marchand_mort(grete)
                 .avec_pecheur(ansgar)
+                .avec_meteos(METEOS_COMMUNES.to_vec())
         })
         .expect("Marais conforme aux règles");
         let vallee = Zone::new(
@@ -402,7 +408,13 @@ impl ContenuV1 {
             coffre(50..=90, capsules_de("vallee")),
         )
         .and_then(|zone| zone.avec_monstre_cache(schnoz()))
-        .map(|zone| zone.avec_marchand_mort(ulrich))
+        .map(|zone| {
+            zone.avec_marchand_mort(ulrich).avec_meteos(vec![
+                Meteo::Pluie,
+                Meteo::Tempete,
+                Meteo::Grele,
+            ])
+        })
         .expect("Vallée conforme aux règles");
         // Au service de l'Abbesse, il garde l'Abbaye (section 9.4).
         let inquisiteur = Humain::new(
@@ -451,7 +463,10 @@ impl ContenuV1 {
             coffre(90..=150, capsules_de("abbaye")),
         )
         .and_then(|zone| zone.avec_monstre_cache(schnoz()))
-        .map(|zone| zone.avec_humain(inquisiteur))
+        .map(|zone| {
+            zone.avec_humain(inquisiteur)
+                .avec_meteos(METEOS_COMMUNES.to_vec())
+        })
         .expect("Abbaye conforme aux règles");
         // Au service du Margrave, il garde le Col (section 9.4).
         let porte_etendard = Humain::new(
@@ -498,7 +513,10 @@ impl ContenuV1 {
             coffre(140..=220, capsules_de("col-du-givre-noir")),
         )
         .and_then(|zone| zone.avec_monstre_cache(schnoz()))
-        .map(|zone| zone.avec_humain(porte_etendard))
+        .map(|zone| {
+            zone.avec_humain(porte_etendard)
+                .avec_meteos(vec![Meteo::Grele, Meteo::Tempete])
+        })
         .expect("Col conforme aux règles");
         // Le Baron pendu attend au fond de la Vallée, que le second indice,
         // donné par le Bourreau, ouvre. Premier Apôtre, il combat au niveau
@@ -3519,6 +3537,11 @@ const RESSOURCES: [(&str, &str, &str); 20] = [
     ("cloche-hurlante", "eclat-de-bronze", "Éclat de bronze"),
 ];
 
+/// Section 32 de docs/contenu-v1.md : les météos de la Lisière, du Marais
+/// et de l'Abbaye (section 9.7). Le cyclone et la tempête de sable attendent
+/// une zone de mer et un désert.
+const METEOS_COMMUNES: [Meteo; 3] = [Meteo::Pluie, Meteo::Tempete, Meteo::Canicule];
+
 /// Section 31 de docs/contenu-v1.md : les espèces qui ne sortent, dans les
 /// groupes sauvages des zones, que la nuit ou que le jour (section 9.6).
 /// Chaque zone en garde au moins deux à chaque moment.
@@ -4308,6 +4331,28 @@ mod tests {
             );
             assert!(jour.len() >= 2 && nuit.len() >= 2, "{id}");
         }
+    }
+
+    /// Section 32 de docs/contenu-v1.md ; le cyclone et la tempête de sable
+    /// attendent une zone de mer et un désert (section 9.7).
+    #[test]
+    fn chaque_zone_a_ses_meteos() {
+        use Meteo::*;
+        let contenu = ContenuV1::new();
+        let attendu: [(&str, &[Meteo]); 5] = [
+            ("lisiere", &[Pluie, Tempete, Canicule]),
+            ("marais", &[Pluie, Tempete, Canicule]),
+            ("vallee", &[Pluie, Tempete, Grele]),
+            ("abbaye", &[Pluie, Tempete, Canicule]),
+            ("col-du-givre-noir", &[Grele, Tempete]),
+        ];
+        for (id, meteos) in attendu {
+            let zone = contenu.zone(&ZoneId::new(id)).unwrap();
+            assert_eq!(zone.meteos(), meteos, "{id}");
+        }
+        assert!(contenu.zones().iter().all(|zone| {
+            !zone.meteos().contains(&Cyclone) && !zone.meteos().contains(&TempeteDeSable)
+        }));
     }
 
     #[test]

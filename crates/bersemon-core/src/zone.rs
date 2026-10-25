@@ -14,6 +14,7 @@ use crate::expedition::ParametresCoffre;
 use crate::expedition_automatique::ParametresExpeditionAutomatique;
 use crate::humain::Humain;
 use crate::jour_et_nuit::{JourOuNuit, NIVEAUX_DE_PLUS_LA_NUIT};
+use crate::meteo::Meteo;
 use crate::monstre::{Monstre, tirer_shiny, tirer_valeurs_internes};
 use crate::niveau::Niveau;
 use crate::peche::Pecheur;
@@ -118,6 +119,9 @@ pub struct Zone {
     /// L'Éclipse, où le Béhérit fait venir le Démiurge : elle ne compte
     /// jamais comme explorée (section 9.4).
     lieu_d_invocation: bool,
+    /// Celles qui peuvent s'y produire ; aucune hors des zones de la carte
+    /// (section 9.7).
+    meteos: Vec<Meteo>,
 }
 
 impl Zone {
@@ -174,7 +178,17 @@ impl Zone {
             expedition_automatique,
             coffre,
             lieu_d_invocation: false,
+            meteos: Vec::new(),
         })
+    }
+
+    pub fn avec_meteos(mut self, meteos: Vec<Meteo>) -> Self {
+        self.meteos = meteos;
+        self
+    }
+
+    pub fn meteos(&self) -> &[Meteo] {
+        &self.meteos
     }
 
     pub(crate) fn en_lieu_d_invocation(mut self) -> Self {

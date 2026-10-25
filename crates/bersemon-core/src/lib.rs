@@ -38,6 +38,7 @@ pub mod inventaire;
 pub mod jour_et_nuit;
 pub mod machines;
 pub mod marchand;
+pub mod meteo;
 pub mod monstre;
 pub mod niveau;
 pub mod nom;

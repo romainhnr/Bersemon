@@ -43,6 +43,7 @@ use crate::inventaire::{ErreurObjet, Inventaire, Objet};
 use crate::jour_et_nuit::JourOuNuit;
 use crate::machines::ErreurMachine;
 use crate::marchand::ErreurMarchand;
+use crate::meteo::Meteo;
 use crate::monstre::{Monstre, RapportExperience};
 use crate::nom::{ErreurNom, Nom};
 use crate::partie::{Partie, creer_monstre_de_depart};
@@ -396,6 +397,8 @@ pub enum Evenement {
     /// Le moment que garde une expédition dans une zone de la carte, dit
     /// après le départ (section 9.6).
     JourOuNuitAuDepart(JourOuNuit),
+    /// La météo qu'elle garde, s'il n'y fait pas calme (section 9.7).
+    MeteoAuDepart(Meteo),
     /// Numéro de l'étape et nombre d'étapes de l'expédition (section 9.2),
     /// sans total dans la Tour sans fond (section 9.5).
     Etape {
@@ -1311,7 +1314,8 @@ impl EnJeu {
                         ErreurExpedition::ZoneFermee => ErreurChoix::ZoneFermee,
                         ErreurExpedition::EquipeVide => ErreurChoix::EquipeVide,
                     })?
-                    .avec_jour_ou_nuit(JourOuNuit::a(contexte.maintenant));
+                    .avec_jour_ou_nuit(JourOuNuit::a(contexte.maintenant))
+                    .avec_meteo(Meteo::de_la_zone(zone, contexte.maintenant));
                 self.lancer(expedition, contexte, evenements);
                 Ok(Reponse::Faite)
             }
@@ -2218,6 +2222,9 @@ impl EnJeu {
         evenements.push(Evenement::Depart(expedition.zone().nom().to_string()));
         if let Some(jour_ou_nuit) = expedition.jour_ou_nuit() {
             evenements.push(Evenement::JourOuNuitAuDepart(jour_ou_nuit));
+        }
+        if let Some(meteo) = expedition.meteo() {
+            evenements.push(Evenement::MeteoAuDepart(meteo));
         }
         if let Some(tour) = expedition.tour() {
             evenements.push(Evenement::EntreeDansLaTour(
@@ -3179,6 +3186,7 @@ impl EnExpedition {
                     .preparer_combat_contre_apotre(formes)
                     .expect(EQUIPE_APTE)
                     .avec_limite_d_obeissance(limite);
+                let combat = self.sous_la_meteo(combat);
                 self.moment = Moment::AnnonceDeCombat(combat);
                 Reponse::Faite
             }
@@ -3207,6 +3215,7 @@ impl EnExpedition {
                     .preparer_combat_contre_humain(equipe, humain.ia())
                     .expect(EQUIPE_APTE)
                     .avec_limite_d_obeissance(limite);
+                let combat = self.sous_la_meteo(combat);
                 self.moment = Moment::AnnonceDeCombat(combat);
                 Reponse::Faite
             }
@@ -3247,10 +3256,20 @@ impl EnExpedition {
 
     /// Les combats d'une expédition dans une zone de la carte suivent son
     /// moment ; pas ceux de fin de zone, contre un humain ou un Apôtre
-    /// (section 9.6).
+    /// (section 9.6). Tous suivent sa météo (section 9.7).
     fn sous_le_cycle(&self, combat: Combat) -> Combat {
+        let combat = self.sous_la_meteo(combat);
         match self.expedition.jour_ou_nuit() {
             Some(jour_ou_nuit) => combat.avec_jour_ou_nuit(jour_ou_nuit),
+            None => combat,
+        }
+    }
+
+    /// Les combats de fin de zone suivent la météo, mais pas le moment
+    /// (sections 9.6 et 9.7).
+    fn sous_la_meteo(&self, combat: Combat) -> Combat {
+        match self.expedition.meteo() {
+            Some(meteo) => combat.avec_meteo(meteo),
             None => combat,
         }
     }
@@ -5591,6 +5610,10 @@ mod tests {
             // combats des zones, partis à minuit UTC, sont de jour (section
             // 9.6).
             if let Attente::ActionDeCombat(combat) = deroulement.attente() {
+                // Tous les combats d'une expédition suivent sa météo, ceux
+                // de fin de zone compris (section 9.7).
+                let meteo = deroulement.expedition().and_then(Expedition::meteo);
+                assert_eq!(combat.meteo(), meteo);
                 if combat.est_contre_un_humain() || combat.est_contre_un_apotre() {
                     assert_eq!(combat.jour_ou_nuit(), None);
                 } else if combat.jour_ou_nuit() == Some(JourOuNuit::Jour) {
@@ -6365,6 +6388,35 @@ mod tests {
             deroulement.expedition().unwrap().jour_ou_nuit(),
             Some(JourOuNuit::Nuit)
         );
+    }
+
+    /// Partie sous une météo, l'expédition la garde jusqu'au retour et le
+    /// récit la dit (section 9.7).
+    #[test]
+    fn une_expedition_garde_la_meteo_de_son_depart() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let lisiere = contenu.zone(&ZoneId::new("lisiere")).unwrap();
+        let (maintenant, meteo) = (0..)
+            .map(|creneau| Horodatage::depuis_secondes(creneau * 30 * 60))
+            .find_map(|maintenant| {
+                Meteo::de_la_zone(&lisiere, maintenant).map(|meteo| (maintenant, meteo))
+            })
+            .unwrap();
+        let mut deroulement = Deroulement::demarrer(Ok(Some(partie(&contenu))));
+        repondre_sans_tirage(&mut deroulement, Choix::ReprendreLaPartie, &contenu, &depot).unwrap();
+        // Un coffre d'une potion et de 12 pièces d'argent, sans capsule.
+        let evenements = repondre_avec_tirages(
+            &mut deroulement,
+            Choix::PartirEnExpedition(ZoneId::new("lisiere")),
+            &contenu,
+            &depot,
+            maintenant,
+            vec![81, 1, 12, 21, 100],
+        )
+        .unwrap();
+        assert!(evenements.contains(&Evenement::MeteoAuDepart(meteo)));
+        assert_eq!(deroulement.expedition().unwrap().meteo(), Some(meteo));
     }
 
     /// Ansgar au camp, avec la Salamandre et le Loup d'Aldric ; seule la
