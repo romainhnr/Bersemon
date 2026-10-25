@@ -117,10 +117,11 @@ L'objectif du jeu est de proposer des boucles de gameplay intéressantes et stim
 - Après la V1, le Templier rejoint les classes jouables : Guerrier, Mage ou Templier. Chaque classe a son monstre de départ attitré (section 6).
 - Depuis l'étape 27 (19/10/2026), l'Assassin aussi : Guerrier, Mage, Templier ou Assassin.
 - Depuis les étapes 48 à 51 (20/10/2026), le héros a un équipement : une arme, une armure et 2 talismans (Q6), fabriqués par Gunther (section 4.3). Il n'a toujours ni niveau ni stats propres (hypothèse retenue, Q87).
+- Depuis les étapes 128 à 133 (25/10/2026), le héros combat quand tous ses monstres sont KO (section 4.4). Il a des stats, tirées de sa classe, et un niveau de combat, tiré de son équipement, mais toujours ni XP ni niveau propre.
 
 ### 4.2 Rôle en combat
 
-- Pour le moment, seuls les monstres combattent, un à un. Le héros ne combat pas et n'a pas de PV en combat ; depuis l'étape 52, il donne un ordre par combat (ci-dessous).
+- Pour le moment, seuls les monstres combattent, un à un. Le héros ne combat pas et n'a pas de PV en combat ; depuis l'étape 52, il donne un ordre par combat (ci-dessous). Remplacé le 25/10/2026, pour l'étape 130 : le héros combat en dernier, quand tous ses monstres sont KO (section 4.4).
 - La classe et l'équipement du héros donnent des bonus aux monstres et quelques actions de soutien, par exemple des ordres ou l'utilisation d'objets.
 - Bonus de classe : en combat, les monstres du joueur ont +10 % dans une stat, arrondi à l'entier inférieur. Guerrier : Attaque. Mage : Attaque spéciale. Après la V1, Templier : Défense et Défense spéciale, à chacune +10 % ; depuis l'étape 27, Assassin : Vitesse. Les actions de soutien viendront après la V1 ; depuis l'étape 52, ce sont les ordres (ci-dessous).
 - Décidé le 18/10/2026, pour l'étape 27 : l'Assassin devient jouable, avec un monstre attitré rapide, qui frappe fort mais encaisse mal. Précisé le 19/10/2026 (Q72) : ce monstre est le Chat noir, de type Ténèbres, offensif en attaque physique (section 6, fiche dans docs/contenu-v1.md).
@@ -133,7 +134,7 @@ L'objectif du jeu est de proposer des boucles de gameplay intéressantes et stim
   - l'ordre se donne dans tous les combats, dès le premier, contre les Apôtres et les humains compris ; pas pendant le remplacement d'un monstre KO. Il ne joue pas sur les expéditions automatiques (hypothèses retenues, Q88) ;
   - l'utilisation d'objets en combat existe déjà : les soins sont l'action du tour (section 14.4).
   - Écrans : la console ajoute "Ordre du héros" au menu de combat (étape 53), le bot Discord un bouton dans la rangée du filet et de la fuite (étape 54), tant que l'ordre n'est pas donné.
-- À terme, option hybride envisagée : le héros combat lui-même uniquement lorsque tous ses monstres sont KO.
+- À terme, option hybride envisagée : le héros combat lui-même uniquement lorsque tous ses monstres sont KO. Retenue le 25/10/2026 (section 4.4).
 
 ### 4.3 Équipement
 
@@ -148,6 +149,29 @@ Décidé le 20/10/2026, pour les étapes 48 à 51 (choix de l'utilisateur) :
 - Liste, bonus, coûts et durées dans docs/contenu-v1.md, section 11 : 14 objets en trois paliers, liés aux ressources des zones.
 - Écrans, à l'étape 50 (console) : une fois Gunther au camp, ou dès que le héros possède un objet, le camp propose "Équipement du héros". L'écran montre l'objet porté à chaque place (arme, armure, premier et second talisman), le bonus total des objets portés et les objets non portés ; le joueur choisit une place, puis l'objet à y porter, parmi ceux de sa sorte qui ne sont portés nulle part, ou de retirer l'objet porté. La forge propose "Fabriquer un objet" : la liste de tous les objets, avec leur coût et leur durée, ou "possédé", puis ceux qui ne sont pas encore possédés, même faute de ressources ou si Gunther est occupé (le refus dit pourquoi). Le lancement est confirmé, comme pour une amélioration.
 - Écrans, à l'étape 51 (Discord) : un bouton "Équipement" s'ajoute au camp dans les mêmes cas (au plus 8 boutons, sur deux rangées). L'écran d'équipement a un menu par place, qui propose les objets à y porter, avec leur bonus, et "Retirer" pour l'objet porté ; une place sans objet à porter ni à retirer n'a pas de menu. La forge a un menu "Fabriquer un objet" : chaque objet non possédé, avec son bonus, son coût et sa durée. Le bot prévient par message privé de la fin d'une fabrication, comme d'une construction.
+
+Armes et armures de classe, décidées le 25/10/2026 pour l'étape 129 (choix de l'utilisateur) :
+
+- Les armes et les armures deviennent propres à chaque classe : la place d'arme et celle d'armure ne prennent que des objets de la classe du héros, et Gunther ne fabrique que ceux-là. Les talismans ne changent pas et restent ouverts à toutes les classes. Remplace, pour les armes et les armures, l'hypothèse de Q87 selon laquelle aucun objet n'est réservé à une classe.
+- Chaque classe a une arme par palier, du palier 1 au palier 3, et une arme du palier 4, qui ne se fabrique pas : c'est la récompense du dernier palier de la Fosse aux damnés (section 9.8). Elle a une armure par palier, du palier 1 au palier 3.
+- Une arme renforce toujours les monstres, mais l'Attaque et l'Attaque spéciale à la fois : +3 %, +5 %, +8 % ou +10 % selon son palier. Une armure garde ses +5 %, +10 % ou +15 % de Défense et de Défense spéciale.
+- En plus, l'arme donne au héros ses attaques et l'arme comme l'armure élèvent son niveau de combat (section 4.4).
+- Les coûts et les durées reprennent ceux des objets du même palier : pour les armes du Guerrier et de l'Assassin, ceux des armes d'Attaque ; pour celles du Mage et du Templier, ceux des armes d'Attaque spéciale ; pour les armures, ceux des armures. Liste dans docs/contenu-v1.md, section 34.
+- Une sauvegarde antérieure garde ses objets : chaque arme et chaque armure qui n'est pas de la classe du héros devient celle de sa classe, de même sorte et de même palier, portée si l'ancienne l'était. Deux anciens objets du même palier n'en donnent qu'un.
+
+### 4.4 Héros combattant
+
+Décidé le 25/10/2026, pour les étapes 128 à 133 (choix de l'utilisateur) :
+
+- Le héros est de type Humain (section 5.2). Les humains sont des proies : faibles face à presque tous les types, peu efficaces contre tous.
+- Il combat en dernier : il entre de lui-même, sans choix du joueur, quand tous les monstres de son équipe sont KO, dans tous les combats, contre les monstres sauvages, les humains, les Apôtres, les gardiens de la Tour, et en duel. Sa chute fait perdre le combat : une défaite n'arrive plus qu'à la chute du héros.
+- Stats : chaque classe a des stats de base, comme une espèce, avec des valeurs internes fixes à 15 (docs/contenu-v1.md, section 34). Le héros n'a ni XP ni niveau propre : son niveau de combat vaut 5, plus 5 par palier de son arme et 5 par palier de son armure. Il est au niveau 5 sans rien, 15 avec une arme et une armure du palier 1, 25 au palier 2, 35 au palier 3, 40 avec l'arme du palier 4. Ses stats se calculent comme celles d'un monstre de ce niveau (section 5.8).
+- Attaques : celles de son arme, toutes de type Humain : l'attaque principale du palier de l'arme et l'attaque de sa classe. Sans arme, il n'a que Coup de poing. Les attaques du Guerrier et de l'Assassin sont physiques, celles du Mage et du Templier spéciales.
+- Ses PV et son statut durent pendant toute l'expédition, comme ceux d'un monstre, et sont soignés au retour au camp. Les potions, grandes potions et remèdes servent sur lui, en combat comme action du tour et entre deux étapes ; les élixirs ne relèvent que les monstres. S'il gagne seul, l'expédition continue, avec ses monstres KO.
+- Quand il combat, il attaque, utilise un soin, lance un filet ou fuit, là où le combat le permet. Un monstre relevé par un élixir pendant qu'il combat reprend sa place à la fin du tour, et le héros repasse en dernier.
+- Sa chute est une défaite ordinaire (section 9.3). Comme ses monstres, il ne meurt pas (section 5.7).
+- Les humains de l'IA combattent aussi en dernier, avec leur classe et leur équipement (section 10.7), comme les héros des autres joueurs en duel (section 15.3).
+- Écrans, à l'étape 132 (console) et 133 (Discord) : l'écran d'équipement du héros montre son niveau de combat, ses stats, ses PV et ses attaques ; en combat, le héros se montre comme un monstre, de type Humain ; les menus des soins le proposent avec les monstres.
 
 ## 5. Les monstres
 
@@ -186,6 +210,10 @@ Chaque monstre possède :
   - Le Stellaire reste neutre envers la Lumière et le Son, dans les deux sens.
   - Ils arrivent par deux espèces nouvelles de l'Abbaye des Cendres (section 5.3) et six attaques nouvelles, sans capsule : les capsules n'enseignent qu'aux monstres de leur type (section 13.10), et chaque type n'a qu'une espèce. Les attaques existantes ne changent pas de type (docs/contenu-v1.md, section 24).
   - Précisé à l'étape 95, en vérifiant les écrans : la console et le bot Discord n'ont pas changé. Le codex de Discord, à 56 espèces, garde deux pages de 30 ; chez Malvoise, 14 espèces à acheter et 9 à louer quand toutes les zones sont menées au bout.
+- Type Humain, décidé le 25/10/2026 pour l'étape 128 (choix de l'utilisateur) : il n'appartient qu'aux humains, le héros du joueur et ceux de l'IA (section 4.4) ; aucune espèce ne l'a.
+  - En défense : toutes les attaques lui sont très efficaces, Obscur compris, sauf les attaques Lumière, Féérique et Stellaire, auxquelles il résiste, et les attaques Humain, neutres.
+  - En attaque : une attaque Humain est peu efficace contre tous les types, sans effet sur le Spectre, et neutre contre l'Humain.
+  - Le Stellaire perd ainsi sa neutralité envers l'Humain, dans les deux sens (Q76).
 
 ### 5.3 Bestiaire
 
@@ -275,6 +303,7 @@ Le joueur peut :
 - Un monstre dont les PV tombent à 0 est KO, comme dans Pokémon. Il est soigné automatiquement au retour au camp.
 - Une défaite totale, lorsque tous les monstres engagés sont KO, n'entraîne pas de mort : les monstres restent simplement KO, en expédition manuelle (section 9.3) comme en expédition automatique (section 12.3).
 - Il n'existe pas de mort définitive pour le moment. Elle pourra être introduite plus tard, avec une ressource de réanimation (section 13.7).
+- Confirmé le 25/10/2026 (choix de l'utilisateur) : ni le héros ni les monstres ne meurent. Le héros KO perd le combat et il est soigné au camp (section 4.4). Un monstre KO se relève en combat avec un élixir ou un grand élixir (section 14.4).
 
 ### 5.8 Stats
 
@@ -411,6 +440,8 @@ Si tous les monstres du joueur sont KO pendant une expédition manuelle :
 - depuis l'étape 34, il garde les âmes des marchands qu'il porte : elles ne sont pas dans le sac (section 14.2). Les capsules d'habileté et les ressources du sac se perdent avec lui (étapes 35 et 36) ;
 - l'expédition ne compte pas comme menée jusqu'au bout.
 
+Depuis l'étape 130 (25/10/2026), le héros combat après ses monstres (section 4.4) : la défaite vient à sa chute, et non plus à celle du dernier monstre. Si le dernier monstre du joueur et le dernier monstre adverse tombent au même tour, le héros, encore debout, gagne le combat (hypothèse retenue, Q112).
+
 ### 9.4 Traque d'un Apôtre
 
 - Chaque expédition menée jusqu'à sa dernière étape révèle un indice sur la cachette de l'Apôtre traqué : un court texte d'histoire.
@@ -512,6 +543,20 @@ Décidé le 25/10/2026, pour les étapes 121 à 123 (choix de l'utilisateur) :
 - Écrans, à l'étape 122 (console) : sur la carte, une zone sous une météo finit par ": pluie, encore 42 min" ; le compteur d'étapes devient "[Étape : 2/5] Nuit, pluie", sans météo par temps calme ; le texte de la météo suit celui du moment, au départ.
 - Écrans, à l'étape 123 (Discord) : dans le menu "Partir en expédition" du camp, la description d'une zone sous une météo finit par "; pluie, encore 42 min" ; le départ et le compteur d'étapes sont ceux de la console.
 
+### 9.8 Fosse aux damnés (arène)
+
+Décidé le 25/10/2026, pour les étapes 135 à 137 (choix de l'utilisateur) :
+
+- La Fosse aux damnés est une arène, un lieu à part hors des zones de la carte, comme la Tour sans fond : le héros y combat seul, à mort, contre des humains de l'IA, comme dans un colisée. Elle s'ouvre quand le brigand de la Lisière est vaincu. Elle se joue dans la console comme sur Discord.
+- Elle compte 10 paliers. Le joueur affronte le palier qui suit le dernier qu'il a vaincu. Chaque palier est un combat, le héros seul contre un humain seul, sans monstres, avec tous leurs PV au départ. Adversaires, classes, niveaux et récompenses dans docs/contenu-v1.md, section 36.
+- Ni objet, ni filet, ni fuite, ni ordre. Le joueur peut abandonner, ce qui est une défaite. L'IA est l'IA simple des humains aux paliers 1 à 4, l'IA avancée des Apôtres aux paliers 5 à 10 (section 10.7).
+- Une victoire ouvre le palier suivant et donne sa récompense, à la première victoire seulement : de l'argent, au coffre, à chaque palier ; un Basilic au palier 3 et une Chimère au palier 7 ; une espèce exclusive à la Fosse aux paliers 5 et 10 (le Molosse des fosses et le Taureau d'airain) ; au palier 10, l'arme du palier 4 de la classe du héros (section 4.3). Les monstres donnés sont au niveau de leur palier.
+- Une défaite ne coûte rien : le joueur peut réessayer aussitôt.
+- Un combat dans la Fosse se lance depuis le camp et ne coûte pas d'expédition. Le héros y a toujours tous ses PV. Elle ne compte ni pour un monstre loué, ni pour l'obéissance, ni pour le tutoriel, et ne remplit aucune condition d'évolution.
+- Les espèces exclusives ne se rencontrent nulle part ailleurs ; Malvoise ne les vend ni ne les loue. Elles comptent au codex comme les autres.
+- La sauvegarde garde le dernier palier vaincu.
+- Écrans, aux étapes 136 (console) et 137 (Discord) : la carte et le menu des expéditions proposent la Fosse après la Tour, une fois ouverte, avec le prochain palier ; le choisir montre l'adversaire, son texte, et propose de combattre ou de revenir. Le combat ne propose que les attaques du héros et l'abandon.
+
 ## 10. Combat
 
 ### 10.1 Principes
@@ -586,6 +631,11 @@ Décidé le 19/10/2026, pour l'étape 30 (Q75) :
 - Décidé le 25/10/2026, pour l'étape 117 (choix de l'utilisateur, d'après docs/equilibrage.md) : les monstres du Bourreau passent aux niveaux 13, 13 et 14, le maximum du Marais et un niveau de plus, comme ceux de l'Inquisiteur et du Porte-étendard. Mesuré : 2,0 tentatives au lieu de 2,6, et 38 % de victoires au premier essai au lieu de 21 %.
 - IA plus relevée du Bourreau : celle du brigand, mais si son monstre actif n'a que des attaques peu efficaces ou sans effet contre le monstre actif du joueur et qu'un autre de ses monstres, pas KO, a une attaque aux dégâts estimés plus hauts, il change pour celui qui a la meilleure : c'est l'action de son tour, qui passe avant les attaques, comme pour le joueur (section 10.2).
 - IA avancée de l'Apôtre : s'il peut mettre KO le monstre actif du joueur, même avec le bas de la fourchette de dégâts, il prend la plus précise des attaques qui le font, la plus forte à précision égale. Sinon, il prend l'attaque aux dégâts moyens attendus les plus hauts (milieu de la fourchette x précision). Une attaque à effet de statut lui est préférée si elle vaut au moins 80 % de cette meilleure attaque et que la cible peut subir son statut. Aucun tirage pour ce choix.
+
+Décidé le 25/10/2026, pour l'étape 131 (choix de l'utilisateur) :
+
+- Les humains de fin de zone combattent eux aussi en dernier, après leurs monstres, comme le héros du joueur (section 4.4), avec leur classe et leur équipement : le brigand, Assassin au niveau 10 (arme du palier 1) ; le Bourreau, Guerrier au niveau 15 (arme et armure du palier 1) ; l'Inquisiteur, Mage au niveau 25 (palier 2) ; le Porte-étendard, Templier au niveau 35 (palier 3). Leur héros choisit ses attaques avec l'IA de son humain.
+- Il faut le vaincre après ses monstres pour gagner. Il n'est pas sauvage et ne se prend pas après la victoire : le joueur choisit toujours parmi les monstres de l'humain (section 11.3).
 
 ## 11. Obtention des monstres
 
@@ -934,7 +984,7 @@ Premier marchand, après la V1 :
   - chaque zone a son marchand mort : Bertrand, colporteur, dans la Lisière ; Grete, herboriste, dans le Marais ; Ulrich, alchimiste, dans la Vallée des Brumes. Tant que l'âme du marchand d'une zone n'est pas recueillie, la rencontre de son âme prend 10 % des étapes de cette zone, à la place d'un combat, une fois par expédition au plus, comme le marchand d'avant (section 9.2) ;
   - dans la Lisière, un monstre de la zone, au niveau maximal de la zone, tue Bertrand sous les yeux du joueur et l'attaque : un combat ordinaire contre un monstre sauvage, fuite et filet compris. Dans le Marais, Grete s'est relevée en marchand zombie, qui attaque : fuite possible, mais ni filet ni capture, et il n'entre pas au codex. Dans la Vallée, Ulrich pend au gibet du Baron, et un monstre de la Vallée garde son corps et attaque, comme dans la Lisière ;
   - une victoire recueille l'âme, acquise dès ce moment même si l'expédition finit en défaite (hypothèse retenue, comme la rencontre du marchand d'avant). Une fuite ou une défaite laisse l'âme à trouver ;
-  - chaque âme recueillie ajoute à l'étal de Malvoise l'objet de son marchand (section 14.4) : le remède pour Bertrand, la grande potion pour Grete, l'élixir pour Ulrich.
+  - chaque âme recueillie ajoute à l'étal de Malvoise l'objet de son marchand (section 14.4) : le remède pour Bertrand, la grande potion pour Grete, l'élixir pour Ulrich. Depuis l'étape 134, l'âme d'Ulrich ajoute aussi le grand élixir (section 14.4).
 - Précisé à l'étape 31, en codant :
   - Malvoise arrive au retour de la première expédition menée au bout, qui ne peut être que dans la Lisière, seule zone ouverte avant ;
   - l'âme d'un marchand ne se trouve qu'une fois Malvoise au camp, pour que le texte "Vous la recueillez pour Malvoise" ait un sens (hypothèse retenue, Q80) ;
@@ -990,6 +1040,8 @@ Premier marchand, après la V1 :
   - la grande potion, 60 pièces d'argent : comme une potion, mais elle rend de 80 % à 100 % des PV max ;
   - l'élixir, 150 pièces d'argent : il relève un monstre KO avec la moitié de ses PV max, au moins 1.
 - Ces soins s'utilisent comme la potion : en combat, comme action du tour, ou entre deux étapes. Ils se rangent dans le sac et le coffre, se perdent avec le sac et ne se trouvent pas dans les coffres. Comme une potion sur un monstre qui a tous ses PV, un soin sans effet (un remède sur un monstre sans statut, un élixir sur un monstre qui n'est pas KO) demande confirmation et serait consommé pour rien. Une potion, une grande potion ou un remède ne relève pas un monstre KO.
+- Décidé le 25/10/2026, pour l'étape 134 (choix de l'utilisateur) : le grand élixir, 400 pièces d'argent, relève un monstre KO avec tous ses PV max, comme le Rappel max de Pokémon. Malvoise le vend avec l'élixir, une fois l'âme d'Ulrich recueillie ; il s'utilise comme lui.
+- Depuis l'étape 130, les potions, grandes potions et remèdes servent aussi sur le héros quand il a perdu des PV ou subi un statut ; les élixirs ne servent que sur les monstres (section 4.4).
 
 ### 14.5 Montants (après la V1)
 
@@ -1054,6 +1106,7 @@ Décidé le 20/10/2026, pour les étapes 59 à 61 (choix de l'utilisateur) :
 - Le joueur qui a choisi attend l'autre : son message le dit, avec un bouton Actualiser qui montre le tour une fois joué. Si l'autre n'a toujours pas joué 5 minutes après lui, il peut réclamer la victoire par forfait. Chacun peut abandonner à tout moment, ce qui donne la victoire à l'autre.
 - Le duel se gagne quand toute l'équipe de l'autre est KO. Si les deux équipes tombent au même tour, le joueur dont le dernier monstre est tombé le premier perd.
 - Pas de palmarès des duels pour l'instant. Remplacé le 20/10/2026, pour les étapes 70 et 71 : voir la section 15.4.
+- Depuis l'étape 131 (25/10/2026), chaque héros combat en dernier, avec une copie soignée, quand toute son équipe est KO (section 4.4) : le duel se gagne à la chute du héros de l'autre.
 
 ### 15.4 Amis et palmarès des duels
 
@@ -1083,6 +1136,16 @@ Décidé le 24/10/2026, pour les étapes 99 à 102 (choix de l'utilisateur) :
 - Comme une expédition seul, l'expédition en groupe n'est pas sauvegardée en cours : si le bot redémarre, chacun reprend à sa dernière sauvegarde.
 - Précisé aux étapes 99 et 100, en codant (hypothèses retenues, Q101) : l'expédition de l'hôte tire les étapes et les monstres, celle de l'invité les suit ; chacun tire son propre coffre, avec les capsules des zones qu'il a menées au bout. Un monstre rare pacifique est le même pour les deux : chacun prend ou laisse son exemplaire. Après une victoire, chacun capture pour soi les monstres KO qu'il veut, le premier qui choisit l'emporte, et le combat se termine quand chacun a fini de capturer. Chacun lance ses filets avec les améliorations de sa forge. Le gardien n'a pas de bouton "Combattre" en groupe : son texte précède aussitôt le combat. Un soin sans effet n'est pas confirmé en combat commun. Pendant ses attaques à apprendre ou ses évolutions, un joueur ne bloque l'autre que pour continuer ; quand le groupe rentre, chacun rentre une fois ses suites réglées.
 - Précisé aux étapes 101 et 102, en codant : pour que l'écran "Autres joueurs" tienne dans un message, un joueur n'a qu'un défi ou qu'une invitation en attente à la fois, envoyé ou reçu (hypothèse retenue, Q101). Une fois un joueur choisi, l'écran propose "Inviter dans la Tour" à côté de "Défier en duel" ; l'invitation reçue ou envoyée y apparaît avec "Accepter l'invitation" et "Refuser l'invitation", ou "Retirer l'invitation". Pendant la descente, chaque écran commence par "Descente avec {héros}." ; celui qui agit voit les écrans d'un combat seul, où il ne fait entrer que ses monstres ; l'autre voit l'état du combat, "En attente de {héros}." et un bouton "Actualiser" ; celui qui veut continuer voit "Vous voulez continuer : vous attendez {héros}.", avec "Actualiser" et "Rentrer au camp". Entre deux étapes, "{héros} veut continuer." quand le compagnon a déjà choisi. Après 5 minutes d'attente, un bouton "Ramener le groupe au camp" apparaît. Les suites des choix du compagnon s'affichent au prochain affichage ; un récit trop long perd ses plus anciens passages, pour que la question reste entière, pour tous les écrans du bot.
+
+### 15.6 Arène entre joueurs
+
+Décidé le 25/10/2026, pour l'étape 138 (choix de l'utilisateur) :
+
+- Sur le bot Discord seulement. Depuis l'écran "Autres joueurs", une fois un joueur choisi, le joueur peut le défier à l'arène, à côté du défi en duel. Le combat se joue en temps réel, comme un duel (section 15.3) : défi, acceptation ou refus, messages privés, choix des actions sans voir celle de l'autre, victoire par forfait après 5 minutes, abandon. Un seul défi à la fois par joueur, duel ou arène.
+- Héros contre héros, sans monstres ni objets, avec une copie soignée de chaque héros, sa classe et son équipement du moment (section 4.4). Rien d'autre ne change après le combat.
+- Classement par cote, comme aux échecs (cote Elo) : chaque joueur part de 1000 points. À la fin du combat, le vainqueur gagne 32 x (1 - E) points, arrondis à l'entier le plus proche, où E = 1 / (1 + 10^((cote du perdant - cote du vainqueur) / 400)) est sa chance attendue de gagner, et le perdant perd autant. Battre un joueur mieux classé rapporte plus ; battre sans cesse un joueur moins bien classé ne rapporte presque rien. Un abandon ou un forfait compte comme une défaite.
+- La cote est gardée dans la sauvegarde de chaque joueur et notée dès la fin du combat, comme le palmarès des duels (section 15.4).
+- L'écran du classement des duels a un bouton "Classement de l'arène", comme celui des records de la Tour : la cote du joueur, puis les 10 meilleures cotes des joueurs qui ont livré au moins un combat d'arène.
 
 ## 16. Questions ouvertes et valeurs à définir
 
@@ -1176,6 +1239,10 @@ Les questions Q101 et suivantes ont été relevées le 24/10/2026 lors de la con
 Les questions Q102 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 103 filets dans le noyau, avec la sauvegarde en version 27, 104 vente par Malvoise et fabrication par Gunther, 105 écrans de la console, 106 écrans du bot Discord.
 
 Les questions Q103 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 107 carnet de traque du codex et 108 Philtre chromatique.
+
+Les questions Q112 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 128 type Humain, 129 armes et armures de classe, 130 héros combattant dans le noyau, 131 héros des humains, des duels et du groupe, 132 écrans de la console, 133 écrans du bot Discord, 134 grand élixir, 135 Fosse aux damnés dans le noyau, 136 et 137 ses écrans, 138 arène entre joueurs, 139 outil d'équilibrage.
+
+- Q112. (Étapes 128 à 139) Hypothèses retenues, à confirmer : le héros n'a ni le bonus de sa classe, ni celui de son équipement, ni bonus de rôle, ni habileté, et ne reçoit pas l'ordre, qui restent aux monstres ; il ne gagne pas d'XP, et un monstre adverse qu'il met KO donne son XP aux monstres qui l'ont affronté avant de tomber, comme s'il était tombé sous leurs coups ; il ne se capture pas, et le héros d'un humain ne se prend pas ; il n'entre ni dans les expéditions automatiques ni dans les pièges ; en groupe, les deux héros entrent après tous les monstres des deux joueurs, celui de l'hôte d'abord, et le combat est perdu à la chute du second ; si le dernier monstre du joueur et le dernier monstre adverse tombent au même tour, le héros, encore debout, gagne le combat ; un monstre relevé par un élixir pendant que le héros combat est le premier monstre debout de l'équipe à reprendre sa place ; dans la Fosse aux damnés, plus aucun combat après le palier 10, et les monstres donnés ont des valeurs internes et une habileté tirées, ne sont jamais shiny et vont à l'équipe s'il y a de la place, sinon au camp ; l'arène entre joueurs ne demande pas d'avoir ouvert la Fosse, et une cote ne descend pas sous 0. Textes proposés sans validation (docs/contenu-v1.md, sections 34 à 37).
 
 Les questions Q111 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 124, évolutions selon la météo, et 125 à 127, capacité du sac.
 
@@ -1719,4 +1786,13 @@ Les questions Q104 et suivantes ont été relevées le 25/10/2026 lors de la con
 - Demande de l'utilisateur : une limite au sac, améliorable avec des ressources. Choix de l'utilisateur : chaque objet prend une place, sauf l'argent ; 30 places, puis 45, 60 et 80 avec l'amélioration de Gunther, aux coûts proposés par Claude ; le joueur choisit quoi jeter à la fin de l'étape où le sac déborde ; au camp, une sortie du coffre qui ferait déborder le sac est refusée ; le départ est refusé tant que le sac déborde (sections 13.3 et 13.4).
 - Claude a relevé que les achats chez Malvoise vont au coffre : seule la sortie du coffre est limitée au camp.
 - Hypothèses retenues, à confirmer : Q111.
+
+25/10/2026 (conception des étapes 128 à 139, héros combattant, type Humain, Fosse aux damnés et arène entre joueurs) :
+
+- Demande de l'utilisateur : le héros combat, avec une arme et une armure propres à chaque classe ; l'Humain est un type, faible face à tous les types sauf la Lumière, le Féérique et le Stellaire, peu efficace contre tous, sans effet sur le Spectre, neutre face à l'Humain ; le héros combat en dernier quand son équipe est tombée, et risque de perdre ; une arène où le héros affronte seul des humains de l'IA, de palier en palier, pour des récompenses dont des monstres rares et exclusifs ; des combats d'arène entre joueurs, avec un classement ; aucune mort définitive ; un objet qui relève un monstre KO en combat, comme les rappels de Pokémon.
+- Choix de l'utilisateur : la Lumière, le Féérique et le Stellaire résistent à l'Humain (section 5.2) ; le niveau de combat du héros est fixé par son équipement, ses stats viennent d'une base par classe ; l'arme et l'armure de classe remplacent les armes et armures actuelles et renforcent toujours les monstres, l'Attaque et l'Attaque spéciale à moitié pour les armes ; les attaques viennent de l'arme, toutes de type Humain ; le héros combat dans tous les combats, duels compris, et les humains de l'IA aussi ; ses PV durent pendant l'expédition et les soins servent sur lui (sections 4.3 et 4.4) ; la Fosse aux damnés, lieu à part ouvert après le brigand, 10 paliers d'un combat chacun, sans objet, avec de l'argent, deux monstres rares, deux espèces exclusives et une arme du palier 4 en récompense (section 9.8) ; l'arène entre joueurs en temps réel, classée par cote Elo (section 15.6) ; un grand élixir chez Malvoise, à 400 pièces (section 14.4) ; le contenu proposé par Claude (docs/contenu-v1.md, sections 34 à 37).
+- Claude a relevé qu'avec 10 niveaux par palier d'équipement, sa première proposition, le héros serait au niveau 30 dès le palier 1 et battrait seul les monstres sauvages, à l'inverse de la demande. Choix de l'utilisateur : 5 niveaux par palier, du niveau 5 au niveau 40.
+- Claude a relevé que l'Humain étant faible à presque tout, une attaque d'un autre type ferait x2 à un autre humain, plus qu'une attaque Humain : tous les héros s'en serviraient à l'arène. Choix de l'utilisateur : toutes les attaques du héros sont de type Humain.
+- Claude a relevé que l'élixir relève déjà un monstre KO, à la moitié de ses PV, en combat. Choix de l'utilisateur : ajouter un grand élixir, qui rend tous les PV.
+- Hypothèses retenues, à confirmer : Q112.
 

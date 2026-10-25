@@ -1326,3 +1326,184 @@ Places : 30 au départ, puis 45, 60 et 80 avec l'amélioration du sac. Chaque ob
 | Refus de sortie du coffre | Le sac est plein : rangez des objets au coffre. / Le sac n'a plus que {n} places libres. |
 | Refus de départ | Votre sac déborde de {surplus} objets : rangez-en au coffre avant de partir. |
 | Forge, effet | sac de 45 places |
+
+## 34. Héros combattant, type Humain et équipement de classe
+
+Décidé le 25/10/2026, pour les étapes 128 à 133 (gamedesign.md, sections 4.3, 4.4 et 5.2), contenu proposé par Claude et validé par l'utilisateur, à ajuster en jouant.
+
+Stats de base des classes, dans l'ordre PV / Attaque / Défense / Attaque spéciale / Défense spéciale / Vitesse, avec des valeurs internes fixes à 15 :
+
+| Classe | Stats de base (total) |
+|---|---|
+| Guerrier | 90 / 100 / 85 / 40 / 65 / 70 (450) |
+| Mage | 70 / 40 / 55 / 110 / 90 / 85 (450) |
+| Templier | 95 / 45 / 100 / 75 / 95 / 40 (450) |
+| Assassin | 70 / 105 / 55 / 40 / 60 / 120 (450) |
+
+Niveau de combat : 5, plus 5 par palier de l'arme et 5 par palier de l'armure (5 à 40).
+
+Attaques du héros, toutes de type Humain :
+
+| Identifiant | Attaque | Classe | Catégorie | Puissance | Précision | Effet |
+|---|---|---|---|---|---|---|
+| coup-de-poing | Coup de poing | toutes, sans arme | P | 40 | 100 | |
+| taille | Taille | Guerrier, palier 1 | P | 40 | 100 | |
+| estoc | Estoc | Guerrier, palier 2 | P | 50 | 100 | |
+| pourfendre | Pourfendre | Guerrier, palier 3 | P | 60 | 100 | |
+| coup-du-champion | Coup du champion | Guerrier, palier 4 | P | 75 | 100 | |
+| frappe-brutale | Frappe brutale | Guerrier, toute arme | P | 70 | 80 | |
+| entaille | Entaille | Assassin, palier 1 | P | 40 | 100 | |
+| coup-bas | Coup bas | Assassin, palier 2 | P | 50 | 100 | |
+| saignee | Saignée | Assassin, palier 3 | P | 60 | 100 | |
+| execution | Exécution | Assassin, palier 4 | P | 75 | 100 | |
+| lame-empoisonnee | Lame empoisonnée | Assassin, toute arme | P | 30 | 100 | poison 50 % |
+| trait-arcanique | Trait arcanique | Mage, palier 1 | S | 40 | 100 | |
+| fleche-occulte | Flèche occulte | Mage, palier 2 | S | 50 | 100 | |
+| rayon-occulte | Rayon occulte | Mage, palier 3 | S | 60 | 100 | |
+| tempete-occulte | Tempête occulte | Mage, palier 4 | S | 75 | 100 | |
+| onde-engourdissante | Onde engourdissante | Mage, toute arme | S | 30 | 100 | paralysie 40 % |
+| chatiment | Châtiment | Templier, palier 1 | S | 40 | 100 | |
+| verdict | Verdict | Templier, palier 2 | S | 50 | 100 | |
+| anatheme | Anathème | Templier, palier 3 | S | 60 | 100 | |
+| courroux-sacre | Courroux sacré | Templier, palier 4 | S | 75 | 100 | |
+| sceau-d-entrave | Sceau d'entrave | Templier, toute arme | S | 30 | 100 | paralysie 30 % |
+
+Chaque arme donne l'attaque principale de son palier, puis l'attaque de sa classe.
+
+Armes de classe. Bonus aux monstres : +3 %, +5 %, +8 % ou +10 % d'Attaque et d'Attaque spéciale selon le palier. Coûts et durées : ceux des anciennes armes d'Attaque pour le Guerrier et l'Assassin, d'Attaque spéciale pour le Mage et le Templier.
+
+| Identifiant | Arme | Classe | Palier | Coût | Durée |
+|---|---|---|---|---|---|
+| lame-de-milicien | Lame de milicien | Guerrier | 1 | 6 Croc de loup, 4 Écaille de vipère | 1 h |
+| epee-du-pendu | Épée du pendu | Guerrier | 2 | 6 Fragment d'armure, 6 Os de squelette, 1 Croc de basilic | 3 h |
+| espadon-des-cendres | Espadon des cendres | Guerrier | 3 | 8 Éclat de gargouille, 6 Dent de goule, 1 Crin de chimère | 6 h |
+| glaive-du-champion | Glaive du champion | Guerrier | 4 | récompense de la Fosse aux damnés | |
+| couteau-de-chasse | Couteau de chasse | Assassin | 1 | 6 Croc de loup, 4 Écaille de vipère | 1 h |
+| dague-des-brumes | Dague des brumes | Assassin | 2 | 6 Fragment d'armure, 6 Os de squelette, 1 Croc de basilic | 3 h |
+| lames-de-cendre | Lames de cendre | Assassin | 3 | 8 Éclat de gargouille, 6 Dent de goule, 1 Crin de chimère | 6 h |
+| crocs-du-champion | Crocs du champion | Assassin | 4 | récompense de la Fosse aux damnés | |
+| baton-d-if | Bâton d'if | Mage | 1 | 6 Plume de corbeau, 4 Écaille de vipère | 1 h |
+| grimoire-des-brumes | Grimoire des brumes | Mage | 2 | 6 Cendre de feu follet, 6 Aile de fée noire, 1 Croc de basilic | 3 h |
+| sceptre-des-cendres | Sceptre des cendres | Mage | 3 | 8 Aile de chauve-souris, 6 Dent de goule, 1 Crin de chimère | 6 h |
+| grimoire-du-champion | Grimoire du champion | Mage | 4 | récompense de la Fosse aux damnés | |
+| masse-de-pelerin | Masse de pèlerin | Templier | 1 | 6 Plume de corbeau, 4 Écaille de vipère | 1 h |
+| fleau-du-pendu | Fléau du pendu | Templier | 2 | 6 Cendre de feu follet, 6 Aile de fée noire, 1 Croc de basilic | 3 h |
+| encensoir-maudit | Encensoir maudit | Templier | 3 | 8 Aile de chauve-souris, 6 Dent de goule, 1 Crin de chimère | 6 h |
+| marteau-du-champion | Marteau du champion | Templier | 4 | récompense de la Fosse aux damnés | |
+
+Armures de classe. Bonus aux monstres : +5 %, +10 % ou +15 % de Défense et de Défense spéciale selon le palier. Coûts et durées : ceux des anciennes armures du même palier.
+
+| Identifiant | Armure | Classe | Palier | Coût | Durée |
+|---|---|---|---|---|---|
+| gambison | Gambison | Guerrier | 1 | 6 Croc de loup, 6 Plume de corbeau | 2 h |
+| cotte-de-mailles | Cotte de mailles | Guerrier | 2 | 8 Fragment d'armure, 4 Os de squelette, 1 Écaille de vouivre | 4 h |
+| plates-de-gargouille | Plates de gargouille | Guerrier | 3 | 10 Éclat de gargouille, 6 Os de squelette, 1 Crin de chimère | 8 h |
+| brigandine-de-cuir | Brigandine de cuir | Assassin | 1 | 6 Croc de loup, 6 Plume de corbeau | 2 h |
+| cuir-des-brumes | Cuir des brumes | Assassin | 2 | 8 Fragment d'armure, 4 Os de squelette, 1 Écaille de vouivre | 4 h |
+| manteau-de-cendre | Manteau de cendre | Assassin | 3 | 10 Éclat de gargouille, 6 Os de squelette, 1 Crin de chimère | 8 h |
+| robe-de-lin | Robe de lin | Mage | 1 | 6 Croc de loup, 6 Plume de corbeau | 2 h |
+| robe-des-brumes | Robe des brumes | Mage | 2 | 8 Fragment d'armure, 4 Os de squelette, 1 Écaille de vouivre | 4 h |
+| robe-des-cendres | Robe des cendres | Mage | 3 | 10 Éclat de gargouille, 6 Os de squelette, 1 Crin de chimère | 8 h |
+| haubert-de-pelerin | Haubert de pèlerin | Templier | 1 | 6 Croc de loup, 6 Plume de corbeau | 2 h |
+| cotte-benie | Cotte bénie | Templier | 2 | 8 Fragment d'armure, 4 Os de squelette, 1 Écaille de vouivre | 4 h |
+| plates-consacrees | Plates consacrées | Templier | 3 | 10 Éclat de gargouille, 6 Os de squelette, 1 Crin de chimère | 8 h |
+
+Les identifiants des anciens objets sont gardés pour l'objet de classe qui reprend leur nom. Les talismans de la section 11 et le Sceau du bestiaire ne changent pas.
+
+Humains de fin de zone (gamedesign.md, section 10.7) :
+
+| Humain | Classe | Arme | Armure | Niveau |
+|---|---|---|---|---|
+| Brigand | Assassin | palier 1 | aucune | 10 |
+| Bourreau | Guerrier | palier 1 | palier 1 | 15 |
+| Inquisiteur | Mage | palier 2 | palier 2 | 25 |
+| Porte-étendard | Templier | palier 3 | palier 3 | 35 |
+
+Textes proposés sans validation (gamedesign.md, Q112) :
+
+| Moment | Texte |
+|---|---|
+| Entrée du héros en combat | Tous vos monstres sont à terre : {héros} entre lui-même dans le combat ! |
+| Entrée du héros d'un humain | {humain} n'a plus de monstre debout : il entre lui-même dans le combat ! |
+| Retour d'un monstre relevé | {monstre} se relève et reprend sa place : {héros} recule. |
+| Défaite | {héros} s'effondre. |
+| Fiche du héros | {héros}, {classe}, Humain, niveau de combat {n}. PV {pv}/{max}. Attaques : {attaques}. |
+
+## 35. Grand élixir
+
+Décidé le 25/10/2026, pour l'étape 134 (gamedesign.md, section 14.4) : grand élixir (identifiant grand-elixir), 400 pièces d'argent, relève un monstre KO avec tous ses PV max. Vendu par Malvoise une fois l'âme d'Ulrich recueillie, avec l'élixir.
+
+## 36. Fosse aux damnés
+
+Décidée le 25/10/2026, pour les étapes 135 à 137 (gamedesign.md, section 9.8), contenu proposé par Claude et validé par l'utilisateur.
+
+Lieu : la Fosse aux damnés (identifiant fosse-aux-damnes), hors des zones de la carte, ouverte quand le brigand est vaincu. 10 paliers, un adversaire chacun, au niveau donné par son équipement (gamedesign.md, section 4.4), valeurs internes fixes à 15.
+
+| Palier | Identifiant | Adversaire | Classe | Arme | Armure | Niveau | IA | Récompense, à la première victoire |
+|---|---|---|---|---|---|---|---|---|
+| 1 | gueux | Le Gueux | Guerrier | palier 1 | aucune | 10 | simple | 40 pièces |
+| 2 | coupe-jarret | Le Coupe-jarret | Assassin | palier 1 | palier 1 | 15 | simple | 60 pièces |
+| 3 | novice-de-l-ordre | Le Novice de l'ordre | Templier | palier 1 | palier 1 | 15 | simple | 80 pièces, un Basilic de niveau 15 |
+| 4 | apprenti-necromant | L'Apprenti nécromant | Mage | palier 2 | palier 1 | 20 | simple | 100 pièces |
+| 5 | mercenaire | Le Mercenaire | Guerrier | palier 2 | palier 1 | 20 | avancée | 120 pièces, un Molosse des fosses de niveau 20 |
+| 6 | lame-noire | La Lame noire | Assassin | palier 2 | palier 2 | 25 | avancée | 150 pièces |
+| 7 | sorciere-des-cendres | La Sorcière des cendres | Mage | palier 3 | palier 2 | 30 | avancée | 180 pièces, une Chimère de niveau 30 |
+| 8 | templier-renegat | Le Templier renégat | Templier | palier 3 | palier 2 | 30 | avancée | 210 pièces |
+| 9 | gladiateur | Le Gladiateur | Guerrier | palier 3 | palier 3 | 35 | avancée | 250 pièces |
+| 10 | champion-de-la-fosse | Le Champion de la Fosse | Assassin | palier 3 | palier 3 | 35 | avancée | 400 pièces, un Taureau d'airain de niveau 35, l'arme du palier 4 de la classe du héros |
+
+L'argent va au coffre du camp.
+
+Espèces exclusives à la Fosse (rares, ni sauvages, ni vendues, ni louées, sans évolution, sans ressource, sans capsule ; au codex après les espèces existantes) :
+
+| Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP | Habiletés |
+|---|---|---|---|---|---|---|
+| molosse-des-fosses | Molosse des fosses | Combat | offensif | 80 / 100 / 70 / 35 / 60 / 85 (430) | 170 | Férocité, Instinct |
+| taureau-d-airain | Taureau d'airain | Acier, Feu | offensif | 90 / 110 / 100 / 75 / 70 / 40 (485) | 200 | Carapace, Férocité |
+
+Attaques apprises, toutes existantes :
+
+- Molosse des fosses : Griffure (niv. 1), Frappe d'os (niv. 5), Curée (niv. 12), Déchiquetage (niv. 20).
+- Taureau d'airain : Coup de garde (niv. 1), Brasier (niv. 10), Taille d'acier (niv. 25), Bûcher (niv. 30).
+
+Textes validés (descriptions du codex) :
+
+> Molosse des fosses : chien de guerre élevé dans les fosses, nourri de chair de condamné.
+
+> Taureau d'airain : taureau de bronze où l'on brûlait les condamnés ; leurs cris l'ont éveillé.
+
+Textes proposés sans validation (gamedesign.md, Q112) :
+
+| Moment | Texte |
+|---|---|
+| Lieu | Une fosse creusée dans la roche, cernée de gradins où se pressent des ombres avides. Ici, les humains s'entretuent pour le plaisir des spectateurs, et le sable ne sèche jamais. |
+| Avant un palier | Palier {n} sur 10. Face à vous : {adversaire}, {classe}, niveau {niveau}. |
+| Le Gueux | Un vagabond en haillons, un gourdin à la main. Il n'a plus rien à perdre. |
+| Le Coupe-jarret | Il tourne autour de vous en souriant, une lame courte dans chaque main. |
+| Le Novice de l'ordre | Un jeune frère en armure trop grande, qui prie à voix basse en levant sa masse. |
+| L'Apprenti nécromant | Sa robe sent la tombe ; une lueur malsaine danse au bout de ses doigts. |
+| Le Mercenaire | Il a vendu son épée à tous les seigneurs du royaume, et leur a survécu à tous. |
+| La Lame noire | Une silhouette encapuchonnée, dont on dit qu'elle n'a jamais raté une gorge. |
+| La Sorcière des cendres | Elle sort des ruines de l'Abbaye, la peau grise de cendre, les yeux brûlants. |
+| Le Templier renégat | Il a renié son ordre, mais pas sa foi ni son armure. |
+| Le Gladiateur | La foule scande son nom. Il salue les gradins avant de vous faire face. |
+| Le Champion de la Fosse | Personne ne l'a jamais vu saigner. Les gradins se taisent quand il entre. |
+| Victoire | {adversaire} tombe sur le sable. La foule hurle votre nom : palier {n} vaincu. |
+| Récompense | Récompense du palier {n} : {récompenses}. |
+| Défaite | {héros} s'effondre sous les huées. Vous pourrez revenir quand vous voudrez. |
+| Abandon | Vous jetez votre arme sur le sable : la foule vous couvre d'insultes. |
+| Fosse conquise | Vous avez vaincu le Champion : la Fosse aux damnés n'a plus d'adversaire à vous opposer. |
+| Carte de la console et menu du bot | Fosse aux damnés (arène) : palier {n}/10 / Fosse aux damnés (arène) : conquise |
+
+## 37. Arène entre joueurs
+
+Décidée le 25/10/2026, pour l'étape 138 (gamedesign.md, section 15.6). Cote de départ 1000 ; gain du vainqueur 32 x (1 - E), arrondi à l'entier le plus proche, avec E = 1 / (1 + 10^((cote du perdant - cote du vainqueur) / 400)) ; le perdant perd autant, sans descendre sous 0.
+
+Textes proposés sans validation (gamedesign.md, Q112) :
+
+| Moment | Texte |
+|---|---|
+| Écran des autres joueurs | Bouton Défier à l'arène. / {héros} vous défie à l'arène. / Vous avez défié {héros} à l'arène. En attente de sa réponse. |
+| Message privé, défi reçu | {héros} ({pseudo}) vous défie à l'arène. Ouvrez /bersemon, au camp, pour répondre. |
+| Fin du combat | Vous remportez le combat d'arène : votre cote passe à {cote} (+{gain}). / Vous perdez le combat d'arène : votre cote passe à {cote} (-{perte}). |
+| Classement de l'arène | Classement de l'arène. / Votre cote : {cote}. / Aucun combat d'arène pour l'instant. ; boutons Classement de l'arène, Classement des duels |
