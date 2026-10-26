@@ -229,6 +229,9 @@ impl Chapitre {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Piste {
     chapitres: Vec<Chapitre>,
+    /// Les indices qui suivent le dernier Apôtre : ils ouvrent des zones,
+    /// sans encore mener à un antre (section 9.4).
+    suite: Vec<Indice>,
 }
 
 impl Piste {
@@ -236,18 +239,29 @@ impl Piste {
         if chapitres.is_empty() {
             return Err(ErreurTraque::AucunIndice);
         }
-        Ok(Self { chapitres })
+        Ok(Self {
+            chapitres,
+            suite: Vec::new(),
+        })
+    }
+
+    /// Ils se trouvent, comme ceux d'un chapitre, une fois vaincu l'Apôtre
+    /// du dernier chapitre.
+    pub fn avec_suite(mut self, indices: Vec<Indice>) -> Self {
+        self.suite = indices;
+        self
     }
 
     pub fn chapitres(&self) -> &[Chapitre] {
         &self.chapitres
     }
 
-    /// Tous les indices, numérotés à la suite.
+    /// Tous les indices, numérotés à la suite, ceux de la suite compris.
     pub fn indices(&self) -> impl Iterator<Item = &Indice> {
         self.chapitres
             .iter()
             .flat_map(|chapitre| chapitre.indices.iter())
+            .chain(&self.suite)
     }
 
     /// Les Apôtres, dans l'ordre de la traque.
@@ -279,7 +293,7 @@ impl Piste {
     }
 
     /// `None` une fois tous les indices trouvés, ou tant que l'Apôtre du
-    /// chapitre précédent n'est pas vaincu.
+    /// chapitre précédent, ou du dernier pour la suite, n'est pas vaincu.
     pub fn indice_suivant(
         &self,
         indices_trouves: usize,
@@ -297,7 +311,10 @@ impl Piste {
             debut = fin;
             precedent = Some(&chapitre.apotre);
         }
-        None
+        if precedent.is_some_and(|apotre| !apotres_vaincus.contains(apotre.espece().id())) {
+            return None;
+        }
+        self.suite.get(indices_trouves - debut)
     }
 
     /// L'Apôtre dont l'antre, localisé, est dans cette zone, tant qu'il n'est
@@ -419,6 +436,23 @@ mod tests {
         );
         assert_eq!(piste.indice_suivant(4, &baron), None);
         assert_eq!(piste.indices().count(), 4);
+        assert_eq!(piste.apotres().count(), 2);
+    }
+
+    #[test]
+    fn la_suite_attend_le_dernier_apotre_et_ouvre_sa_zone_sans_antre() {
+        let piste = deux_chapitres().avec_suite(vec![indice("cimes"), indice("desert")]);
+        let vaincus = [EspeceId::new("baron"), EspeceId::new("abbesse")];
+        let desert = ZoneId::new("desert");
+        assert_eq!(piste.indices().count(), 6);
+        assert_eq!(piste.indice_suivant(4, &vaincus[..1]), None);
+        assert_eq!(piste.indice_suivant(4, &vaincus), Some(&indice("cimes")));
+        assert!(!piste.zone_ouverte(&desert, 4));
+        assert!(piste.zone_ouverte(&desert, 5));
+        assert_eq!(piste.indice_suivant(5, &vaincus), Some(&indice("desert")));
+        assert_eq!(piste.indice_suivant(6, &vaincus), None);
+        // Aucun Apôtre n'attend dans le désert, même la suite trouvée.
+        assert_eq!(piste.apotre_en_attente(&desert, 6, &vaincus), None);
         assert_eq!(piste.apotres().count(), 2);
     }
 
