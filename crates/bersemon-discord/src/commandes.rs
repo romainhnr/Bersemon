@@ -22,10 +22,13 @@ pub async fn bersemon(contexte: ContexteDeCommande<'_>) -> Result<(), Erreur> {
         let session = joueurs.session(joueur, &donnees.contenu);
         message::message(session, &[], None, &donnees.contenu, maintenant())
     };
-    let reponse = poise::CreateReply::default()
+    let mut reponse = poise::CreateReply::default()
         .components(affiche.composants())
-        .content(affiche.texte)
         .ephemeral(!donnees.messages_publics);
+    if let Some(sprite) = affiche.piece_jointe() {
+        reponse = reponse.attachment(sprite);
+    }
+    let reponse = reponse.content(affiche.texte);
     contexte.send(reponse).await?;
     Ok(())
 }

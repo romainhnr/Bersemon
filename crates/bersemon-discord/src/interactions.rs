@@ -182,11 +182,15 @@ pub async fn envoyer_les_messages_prives(contexte: &serenity::Context, donnees: 
 
 /// Remplace le texte et les composants du message d'où vient l'interaction.
 fn mise_a_jour(message: Message) -> serenity::CreateInteractionResponse {
-    serenity::CreateInteractionResponse::UpdateMessage(
-        serenity::CreateInteractionResponseMessage::new()
-            .components(message.composants())
-            .content(message.texte),
-    )
+    let reponse =
+        serenity::CreateInteractionResponseMessage::new().components(message.composants());
+    // Sans sprite, la liste vide des pièces jointes retire l'image du
+    // message précédent.
+    let reponse = match message.piece_jointe() {
+        Some(sprite) => reponse.add_file(sprite),
+        None => reponse,
+    };
+    serenity::CreateInteractionResponse::UpdateMessage(reponse.content(message.texte))
 }
 
 fn valeur_du_champ(lignes: &[serenity::ActionRow], champ: &str) -> Option<String> {

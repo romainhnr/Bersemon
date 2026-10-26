@@ -5,9 +5,13 @@
 //! sont tenues ici : 2000 caractères par message, 5 rangées, 5 boutons par
 //! rangée, 25 options par menu.
 
+use bersemon_core::codex::EtatCodex;
+use bersemon_core::combat::{Combat, Cote};
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::{Attente, Confirmation, Evenement};
+use bersemon_core::espece::EspeceId;
 use bersemon_core::horodatage::Horodatage;
+use bersemon_core::monstre::Monstre;
 use bersemon_presentation::erreurs::erreur_de_choix;
 use bersemon_presentation::partie::{compteur_d_etapes, question_de_confirmation};
 use bersemon_presentation::recit::raconter;
@@ -18,6 +22,7 @@ use crate::duels::erreur_de_defi;
 use crate::echanges::erreur_d_offre;
 use crate::groupes::erreur_d_invitation;
 use crate::joueurs::{Refus, Session};
+use crate::sprites;
 use crate::{
     ecran_accueil, ecran_camp, ecran_combat, ecran_duel, ecran_echanges, ecran_expedition,
     ecran_groupe, ecran_peche,
@@ -73,9 +78,38 @@ pub struct Message {
     pub rangees: Vec<Rangee>,
     /// Version de la partie, portée par chaque composant.
     pub version: u32,
+    /// Le monstre dont le sprite est joint au message (section 5.1).
+    pub sprite: Option<Illustration>,
+}
+
+/// Le sprite d'un monstre : son espèce, et s'il est shiny.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Illustration {
+    pub espece: EspeceId,
+    pub shiny: bool,
+}
+
+impl Illustration {
+    fn de(monstre: &Monstre) -> Self {
+        Self {
+            espece: monstre.espece().id().clone(),
+            shiny: monstre.est_shiny(),
+        }
+    }
 }
 
 impl Message {
+    /// Le PNG à joindre, si l'espèce a son sprite. Un message mis à jour sans
+    /// pièce jointe perd l'image du précédent.
+    pub fn piece_jointe(&self) -> Option<serenity::CreateAttachment> {
+        let illustration = self.sprite.as_ref()?;
+        let sprite = sprites::sprite(&illustration.espece)?;
+        Some(serenity::CreateAttachment::bytes(
+            sprite.png(illustration.shiny),
+            sprites::nom_de_fichier(&illustration.espece, illustration.shiny),
+        ))
+    }
+
     pub fn composants(&self) -> Vec<serenity::CreateActionRow> {
         self.rangees
             .iter()
@@ -179,6 +213,69 @@ pub fn message(
         texte: couper(&texte, LONGUEUR_MAX),
         rangees,
         version: session.version,
+        sprite: illustration(session, evenements, contenu),
+    }
+}
+
+/// Le monstre à montrer, dans l'ordre : l'adversaire actif d'un combat,
+/// d'un duel ou d'un combat de groupe ; le monstre rare, la prise de la
+/// pêche ou la capture qui attend une place ; le dernier monstre qui vient
+/// de rejoindre l'équipe ou le camp ; au camp, la fiche ouverte du codex ou
+/// le monstre choisi dans la gestion (section 5.1).
+fn illustration(
+    session: &Session,
+    evenements: &[Evenement],
+    contenu: &ContenuV1,
+) -> Option<Illustration> {
+    let adversaire =
+        |combat: &Combat| Illustration::de(combat.monstre(combat.actif(Cote::Adversaire)));
+    if let Some(duel) = &session.duel {
+        return Some(adversaire(&duel.duel.vu_par(duel.cote)));
+    }
+    if let Some(combat) = session
+        .groupe
+        .as_ref()
+        .and_then(|groupe| groupe.combat.as_ref())
+    {
+        return Some(adversaire(combat));
+    }
+    match session.deroulement.attente() {
+        Attente::ActionDeCombat(combat)
+        | Attente::Remplacement(combat)
+        | Attente::CaptureDesKo(combat) => return Some(adversaire(combat)),
+        Attente::MonstreRare(monstre) | Attente::Prise(monstre) => {
+            return Some(Illustration::de(monstre));
+        }
+        Attente::PlaceManquante(capture) => return Some(Illustration::de(capture)),
+        _ => {}
+    }
+    let arrive = evenements
+        .iter()
+        .rev()
+        .find_map(|evenement| match evenement {
+            Evenement::RejointLEquipe(monstre) | Evenement::PartPourLeCamp(monstre) => {
+                Some(Illustration::de(monstre))
+            }
+            _ => None,
+        });
+    if arrive.is_some() {
+        return arrive;
+    }
+    let partie = session.deroulement.partie()?;
+    match (session.deroulement.attente(), session.vue) {
+        (Attente::Camp, Vue::Codex(Some(position))) => {
+            let espece = contenu.especes().get(position)?;
+            // La fiche ne s'ouvre que pour une espèce capturée (section 5.6).
+            (partie.codex().etat(espece.id()) == EtatCodex::Capturee).then(|| Illustration {
+                espece: espece.id().clone(),
+                shiny: false,
+            })
+        }
+        (Attente::Camp, Vue::Gestion(Some(emplacement))) => partie
+            .collection()
+            .monstre(emplacement)
+            .map(Illustration::de),
+        _ => None,
     }
 }
 

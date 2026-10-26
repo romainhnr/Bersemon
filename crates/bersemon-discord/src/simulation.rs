@@ -574,6 +574,7 @@ fn l_equipe_et_le_camp_pleins_tiennent_dans_les_limites() {
                 texte: question.texte,
                 rangees: question.rangees,
                 version: 1,
+                sprite: None,
             };
             verifier_les_limites(&affiche);
         }
@@ -696,11 +697,20 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
     let mut heure = 0;
     let mut automatique_faite = false;
     let mut visite = Visite::AFaire;
+    let mut sprites_en_combat = 0;
     for _ in 0..50_000 {
         let maintenant = Horodatage::depuis_secondes(heure);
         let session = joueurs.session(JOUEUR, &contenu);
         let affiche = message(session, &evenements, None, &contenu, maintenant);
         verifier_les_limites(&affiche);
+        // En combat, l'image montre l'adversaire actif (section 5.1).
+        if let Attente::ActionDeCombat(combat) = session.deroulement.attente() {
+            let adversaire = combat.monstre(combat.actif(Cote::Adversaire));
+            let sprite = affiche.sprite.as_ref().expect("sprite en combat");
+            assert_eq!(&sprite.espece, adversaire.espece().id());
+            assert_eq!(sprite.shiny, adversaire.est_shiny());
+            sprites_en_combat += usize::from(affiche.piece_jointe().is_some());
+        }
         // Jusqu'à la chute du troisième Apôtre, puis le retour au camp.
         let epilogues = vus
             .iter()
@@ -766,6 +776,8 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
         .filter(|evenement| matches!(evenement, Evenement::HumainVaincu { .. }))
         .count();
     assert_eq!(humains_vaincus, 4);
+    // Les Loups de la Lisière, au moins, ont leur sprite joint.
+    assert!(sprites_en_combat > 0);
     assert!(
         vus.iter()
             .any(|evenement| matches!(evenement, Evenement::OrdreDonne { .. })),
@@ -852,6 +864,85 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
 
 /// Une construction lancée depuis la forge, confirmée, annoncée par message
 /// privé à son heure, puis constatée (section 13.4).
+/// Au camp, l'image suit la fiche ouverte du codex, le monstre choisi dans
+/// la gestion, ou le monstre qui vient de rejoindre l'équipe ; l'écran
+/// principal n'en a pas (section 5.1).
+#[test]
+fn le_sprite_suit_la_fiche_ouverte_au_camp() {
+    use bersemon_core::catalogue::Catalogue;
+    use bersemon_core::deroulement::Choix;
+    use bersemon_core::niveau::Niveau;
+    use bersemon_core::stats::ValeursInternes;
+
+    let contenu = ContenuV1::new();
+    let dossier = dossier_de_test().join("sprites");
+    let mut joueurs = Joueurs::new(dossier.clone(), 2026);
+    let maintenant = Horodatage::depuis_secondes(0);
+    let version = |joueurs: &mut Joueurs| joueurs.session(JOUEUR, &contenu).version;
+    let v = version(&mut joueurs);
+    joueurs
+        .jouer(
+            JOUEUR,
+            v,
+            Choix::NomDuHeros("Aldric".to_string()),
+            &contenu,
+            maintenant,
+        )
+        .unwrap();
+    let v = version(&mut joueurs);
+    joueurs
+        .jouer(JOUEUR, v, Choix::Classe(Classe::Mage), &contenu, maintenant)
+        .unwrap();
+    let sprite = |joueurs: &mut Joueurs, vue: Vue, evenements: &[Evenement]| {
+        let v = version(joueurs);
+        joueurs.afficher(JOUEUR, v, vue, &contenu).unwrap();
+        let affiche = message(
+            joueurs.session(JOUEUR, &contenu),
+            evenements,
+            None,
+            &contenu,
+            maintenant,
+        );
+        affiche
+            .sprite
+            .map(|sprite| sprite.espece.as_str().to_string())
+    };
+    assert_eq!(sprite(&mut joueurs, Vue::Camp, &[]), None);
+    let salamandre = Some("salamandre".to_string());
+    assert_eq!(
+        sprite(
+            &mut joueurs,
+            Vue::Gestion(Some(Emplacement::Equipe(0))),
+            &[]
+        ),
+        salamandre
+    );
+    // La Salamandre de départ compte comme capturée ; le Loup est inconnu.
+    assert_eq!(sprite(&mut joueurs, Vue::Codex(Some(0)), &[]), salamandre);
+    let loup = contenu
+        .especes()
+        .iter()
+        .position(|espece| espece.id().as_str() == "loup")
+        .unwrap();
+    assert_eq!(sprite(&mut joueurs, Vue::Codex(Some(loup)), &[]), None);
+    let capture = Monstre::creer(
+        contenu.espece(&EspeceId::new("loup")).unwrap(),
+        Niveau::new(4).unwrap(),
+        ValeursInternes::default(),
+        false,
+    )
+    .unwrap();
+    assert_eq!(
+        sprite(
+            &mut joueurs,
+            Vue::Camp,
+            &[Evenement::RejointLEquipe(capture)]
+        ),
+        Some("loup".to_string())
+    );
+    let _ = fs::remove_dir_all(dossier);
+}
+
 /// Les trois Apôtres vaincus : Malvoise forge le Béhérit depuis le menu des
 /// âmes, l'Éclipse se choisit dans le menu des expéditions, le Béhérit prend
 /// le Loup de niveau 30, puis le Démiurge tombe sous ses deux formes
@@ -1697,6 +1788,7 @@ fn toute_l_equipe_se_prepare_d_un_bouton_s_il_y_a_de_la_place_au_camp() {
             texte: question.texte,
             rangees: question.rangees,
             version: 1,
+            sprite: None,
         };
         verifier_les_limites(&affiche);
         boutons(&affiche).into_iter().find_map(|cle| match cle {
@@ -1780,6 +1872,7 @@ fn toute_l_equipe_se_prepare_d_un_bouton_s_il_y_a_de_la_place_au_camp() {
         texte: question.texte,
         rangees: question.rangees,
         version: 1,
+        sprite: None,
     };
     verifier_les_limites(&affiche);
     assert!(
@@ -1937,6 +2030,7 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
             texte: question.texte,
             rangees: question.rangees,
             version: 1,
+            sprite: None,
         };
         verifier_les_limites(&affiche);
         boutons(&affiche).into_iter().cloned().collect::<Vec<Cle>>()
@@ -1987,6 +2081,7 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
             texte: sac_plein.texte,
             rangees: sac_plein.rangees,
             version: 1,
+            sprite: None,
         });
         for (ecran, attendues) in [
             (
@@ -2218,6 +2313,7 @@ fn les_machines_tiennent_dans_les_limites() {
             texte: question.texte,
             rangees: question.rangees,
             version: 1,
+            sprite: None,
         };
         verifier_les_limites(&affiche);
         affiche
@@ -3213,6 +3309,7 @@ fn le_camp_dit_le_jour_ou_la_nuit() {
             texte: question.texte,
             rangees: question.rangees,
             version: 1,
+            sprite: None,
         };
         verifier_les_limites(&affiche);
         assert!(affiche.texte.contains(attendu), "{}", affiche.texte);
@@ -3250,6 +3347,7 @@ fn le_menu_des_expeditions_dit_la_meteo() {
             texte: question.texte,
             rangees: question.rangees,
             version: 1,
+            sprite: None,
         };
         verifier_les_limites(&affiche);
         affiche
