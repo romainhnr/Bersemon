@@ -73,10 +73,11 @@ pub fn ligne_monstre_nommee(monstre: &Monstre, nom: &str) -> String {
 }
 
 /// "Aldric (héros, niv. 15) : 40/54 PV" : le héros qui combat en dernier
-/// (section 4.4).
+/// (section 4.4), "héros shiny" pour un shiny (section 4.1).
 pub fn ligne_du_heros(heros: &Monstre) -> String {
+    let shiny = if heros.est_shiny() { " shiny" } else { "" };
     format!(
-        "{} (héros, niv. {}) : {}/{} PV{}",
+        "{} (héros{shiny}, niv. {}) : {}/{} PV{}",
         heros.nom(),
         heros.niveau().valeur(),
         heros.pv_actuels(),
@@ -98,7 +99,17 @@ fn etat(monstre: &Monstre) -> &'static str {
 }
 
 pub fn decrire_attaque(attaque: &Attaque) -> String {
-    let categorie = match attaque.categorie() {
+    decrire(attaque, attaque.categorie())
+}
+
+/// Pour ce monstre : la catégorie du Rayon chromatique, qui suit ses stats,
+/// y est résolue (section 5.1).
+pub fn decrire_attaque_de(monstre: &Monstre, attaque: &Attaque) -> String {
+    decrire(attaque, attaque.categorie_pour(monstre))
+}
+
+fn decrire(attaque: &Attaque, categorie: Categorie) -> String {
+    let categorie = match categorie {
         Categorie::Physique => "physique",
         Categorie::Speciale => "spéciale",
         Categorie::Adaptative => "physique ou spéciale",
@@ -224,7 +235,11 @@ pub fn decrire_stats<T: Display>(stats: &Stats<T>) -> String {
 pub fn attaques_connues(monstre: &Monstre) -> String {
     let mut lignes = vec![format!("Attaques de {} :", nom(monstre, Cote::Joueur))];
     for (position, attaque) in monstre.attaques().liste().iter().enumerate() {
-        lignes.push(format!("  {}. {}", position + 1, decrire_attaque(attaque)));
+        lignes.push(format!(
+            "  {}. {}",
+            position + 1,
+            decrire_attaque_de(monstre, attaque)
+        ));
     }
     lignes.join("\n")
 }

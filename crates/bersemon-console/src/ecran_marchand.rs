@@ -1,6 +1,6 @@
 //! Malvoise, le nécromancien du camp (section 14.2) : soins, filets, capsules,
 //! pierres d'évolution, rachat des monstres et des ressources, don des
-//! âmes, monstre rendu shiny contre un Philtre chromatique, achat et location de
+//! âmes, monstre ou héros rendu shiny contre un Philtre chromatique, achat et location de
 //! monstres, Rite du sang mêlé. Les achats se font sans confirmation ; la
 //! vente, le service shiny, le rite et le retour d'un monstre loué sont
 //! confirmés par le déroulement.
@@ -74,8 +74,7 @@ pub fn choisir(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Opt
             6 => acheter_capsules_d_habilete(partie, entree)?,
             7 => vendre_ressources(partie, entree)?,
             8 => acheter_pierres(partie, entree)?,
-            9 => designer(partie.collection(), entree, "Quel monstre rendre shiny ?")?
-                .map(Choix::RendreShiny),
+            9 => rendre_shiny(partie, entree)?,
             10 => acheter_monstre(partie, contenu, entree)?,
             11 => louer_monstre(partie, contenu, entree)?,
             12 => rite(partie, contenu, entree)?,
@@ -84,6 +83,22 @@ pub fn choisir(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Opt
         if choix.is_some() {
             return Some(choix);
         }
+    }
+}
+
+/// Un monstre, ou le héros (section 13.7).
+fn rendre_shiny(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
+    println!("Qui rendre shiny ?");
+    println!("  1. Un de vos monstres");
+    println!("  2. Votre héros, {}", partie.heros().nom().as_str());
+    println!("  0. Annuler");
+    match entree.choix(0, 2)? {
+        0 => Some(None),
+        1 => Some(
+            designer(partie.collection(), entree, "Quel monstre rendre shiny ?")?
+                .map(Choix::RendreShiny),
+        ),
+        _ => Some(Some(Choix::RendreLeHerosShiny)),
     }
 }
 

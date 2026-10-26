@@ -21,7 +21,7 @@ use bersemon_presentation::jour_et_nuit::moment_present;
 use bersemon_presentation::machines::avis_des_pieges;
 use bersemon_presentation::marchand::liste_de_rachat;
 use bersemon_presentation::monstres::{
-    attaques_connues, decrire_attaque, fiche_du_monstre, ligne_monstre,
+    attaques_connues, decrire_attaque_de, fiche_du_monstre, ligne_monstre,
 };
 use bersemon_presentation::partie::{
     ames_d_apotres, capsules_d_habilete, collection as liste_des_monstres, en_tete_du_camp,
@@ -574,7 +574,11 @@ fn attaques(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
     }
     println!("À apprendre au camp :");
     for (position, attaque) in a_apprendre.iter().enumerate() {
-        println!("  {}. {}", position + 1, decrire_attaque(attaque));
+        println!(
+            "  {}. {}",
+            position + 1,
+            decrire_attaque_de(monstre, attaque)
+        );
     }
     println!("Quelle attaque apprendre ? (0 pour annuler)");
     let choix = entree.choix(0, a_apprendre.len())?;

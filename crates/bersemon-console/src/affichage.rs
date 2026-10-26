@@ -16,7 +16,7 @@ use bersemon_presentation::combat::{attaque_de_trop, attaque_en_combat, ordre_et
 use bersemon_presentation::filets::liste_de_filets;
 use bersemon_presentation::meteo::meteo_de_la_zone;
 use bersemon_presentation::monstres::{
-    decrire_attaque, ligne_du_heros, ligne_monstre, nom_en_combat,
+    decrire_attaque_de, ligne_du_heros, ligne_monstre, nom_en_combat,
 };
 use bersemon_presentation::partie::{
     TITRE_DU_CARNET, decrire_zone, entree_du_carnet, especes_du_codex, fiche_d_espece,
@@ -73,8 +73,8 @@ pub fn liste_attaques(combat: &Combat) -> String {
         .iter()
         .enumerate()
         .map(|(position, attaque)| {
-            let ligne =
-                attaque_en_combat(combat, position).unwrap_or_else(|| decrire_attaque(attaque));
+            let ligne = attaque_en_combat(combat, position)
+                .unwrap_or_else(|| decrire_attaque_de(monstre, attaque));
             format!("  {}. {ligne}", position + 1)
         })
         .collect();
@@ -152,7 +152,11 @@ pub fn question_oubli(monstre: &Monstre, nouvelle: &Attaque) -> String {
         "Quelle attaque oublier ?".to_string(),
     ];
     for (position, attaque) in monstre.attaques().liste().iter().enumerate() {
-        lignes.push(format!("  {}. {}", position + 1, decrire_attaque(attaque)));
+        lignes.push(format!(
+            "  {}. {}",
+            position + 1,
+            decrire_attaque_de(monstre, attaque)
+        ));
     }
     lignes.push(format!("  0. Renoncer à {}", nouvelle.nom()));
     lignes.join("\n")

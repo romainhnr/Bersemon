@@ -13,8 +13,9 @@ use crate::monstres::nom_en_valeur;
 /// Après l'âme d'un Apôtre vaincu (section 9.4).
 pub const PHILTRE_RAMASSE: &str = "Dans la poussière de sa dépouille roule une fiole aux reflets changeants : un Philtre chromatique. Vous le ramassez.";
 
-/// Le libellé du service, à l'étal de Malvoise.
-pub const SERVICE_SHINY: &str = "Rendre un monstre shiny (1 Philtre chromatique)";
+/// Le libellé du service, à l'étal de Malvoise, qui rend aussi le héros
+/// shiny (section 13.7).
+pub const SERVICE_SHINY: &str = "Rendre un monstre ou votre héros shiny (1 Philtre chromatique)";
 
 /// À la création, 1 fois sur 512 (section 4.1).
 pub const HEROS_NE_SHINY: &str =
@@ -182,5 +183,35 @@ mod tests {
         )
         .unwrap();
         assert!(monstre_rendu_shiny(&sans_rayon).ends_with("est désormais shiny."));
+    }
+
+    /// Section 5.1 : la catégorie du Rayon chromatique suit les stats du
+    /// monstre ; sans monstre, les deux sont dites.
+    #[test]
+    fn la_categorie_du_rayon_se_dit_pour_le_monstre() {
+        use crate::monstres::{decrire_attaque, decrire_attaque_de};
+        use bersemon_core::catalogue::Catalogue;
+        use bersemon_core::contenu::ContenuV1;
+        use bersemon_core::espece::EspeceId;
+        use bersemon_core::niveau::Niveau;
+
+        let contenu = ContenuV1::new();
+        let creer = |id: &str| {
+            Monstre::creer(
+                contenu.espece(&EspeceId::new(id)).unwrap(),
+                Niveau::new(30).unwrap(),
+                ValeursInternes::default(),
+                true,
+            )
+            .unwrap()
+        };
+        let rayon = rayon_chromatique();
+        assert_eq!(
+            decrire_attaque(&rayon),
+            "Rayon chromatique (Stellaire, physique ou spéciale, puissance 80, précision 100 %)"
+        );
+        // Le Loup frappe en physique, la Salamandre en spécial.
+        assert!(decrire_attaque_de(&creer("loup"), &rayon).contains("Stellaire, physique,"));
+        assert!(decrire_attaque_de(&creer("salamandre"), &rayon).contains("Stellaire, spéciale,"));
     }
 }

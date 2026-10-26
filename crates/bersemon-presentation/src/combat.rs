@@ -14,7 +14,7 @@ use crate::equipement::decrire_bonus;
 use crate::filets::nom_du_filet;
 use crate::mise_en_valeur::important;
 use crate::monstres::{
-    decrire_attaque, ligne_du_heros, ligne_monstre, nom, nom_en_combat, nom_en_valeur,
+    decrire_attaque_de, ligne_du_heros, ligne_monstre, nom, nom_en_combat, nom_en_valeur,
     progression_d_experience, types_de,
 };
 use crate::partie::{enumerer, types_connus};
@@ -326,7 +326,7 @@ pub fn attaque_de_trop(monstre: &Monstre, nouvelle: &Attaque) -> String {
     format!(
         "{} veut apprendre {}, mais connaît déjà 4 attaques.",
         nom(monstre, Cote::Joueur),
-        decrire_attaque(nouvelle)
+        decrire_attaque_de(monstre, nouvelle)
     )
 }
 
@@ -350,6 +350,7 @@ pub fn remplacement(monstre: &Monstre, oubliee: &Attaque, nouvelle: &Attaque) ->
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::monstres::decrire_attaque;
     use bersemon_core::catalogue::Catalogue;
     use bersemon_core::contenu::ContenuV1;
     use bersemon_core::espece::EspeceId;

@@ -6,7 +6,7 @@ use bersemon_core::heros::{Heros, NIVEAU_DU_SECOND_TYPE};
 use bersemon_core::stats::BonusDeStats;
 
 use crate::monstres::{decrire_attaque, decrire_stats, types_de};
-use crate::partie::enumerer;
+use crate::partie::{enumerer, nom_du_heros};
 
 /// "d'Attaque", "de Défense" : le nom de la stat, avec son article.
 fn stats_renforcees(bonus: &BonusDeStats) -> Vec<(u8, &'static str)> {
@@ -79,7 +79,7 @@ pub fn fiche_du_heros(heros: &Heros) -> String {
     let mut lignes = vec![
         format!(
             "{}, {}, {}, niveau de combat {} : {}/{} PV.",
-            heros.nom().as_str(),
+            nom_du_heros(heros),
             heros.classe().nom(),
             types_de(combattant.espece()),
             combattant.niveau().valeur(),
@@ -194,6 +194,27 @@ mod tests {
         assert!(
             fiche.ends_with("Au niveau de combat 25, il prendra aussi le type Combat."),
             "{fiche}"
+        );
+    }
+
+    /// Section 4.1 : un héros shiny est signalé comme un monstre shiny, sur
+    /// sa fiche comme en combat.
+    #[test]
+    fn le_heros_shiny_est_signale() {
+        use crate::monstres::ligne_du_heros;
+        use bersemon_core::nom::Nom;
+
+        let heros = Heros::new(
+            Nom::new("Aldric").unwrap(),
+            bersemon_core::heros::Classe::Mage,
+        )
+        .avec_shiny(true);
+        let fiche = fiche_du_heros(&heros);
+        assert!(fiche.starts_with("Aldric (shiny), Mage, "), "{fiche}");
+        assert!(
+            ligne_du_heros(&heros.combattant()).starts_with("Aldric (héros shiny, niv. 5) : "),
+            "{}",
+            ligne_du_heros(&heros.combattant())
         );
     }
     use bersemon_core::stats::Stats;

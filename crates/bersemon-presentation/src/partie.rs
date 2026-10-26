@@ -12,7 +12,7 @@ use bersemon_core::espece::{Espece, EspeceId};
 use bersemon_core::evolution::ConditionEvolution;
 use bersemon_core::expedition::Expedition;
 use bersemon_core::habilete::Habilete;
-use bersemon_core::heros::Classe;
+use bersemon_core::heros::{Classe, Heros};
 use bersemon_core::inventaire::Inventaire;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
@@ -371,10 +371,19 @@ pub fn decrire_classe(classe: Classe, contenu: &ContenuV1) -> String {
     )
 }
 
+/// "Aldric", ou "Aldric (shiny)", comme un monstre shiny (section 4.1).
+pub fn nom_du_heros(heros: &Heros) -> String {
+    if heros.est_shiny() {
+        format!("{} (shiny)", heros.nom().as_str())
+    } else {
+        heros.nom().as_str().to_string()
+    }
+}
+
 pub fn partie_en_cours(partie: &Partie) -> String {
     format!(
         "Partie en cours : {}, {}.",
-        partie.heros().nom().as_str(),
+        nom_du_heros(partie.heros()),
         partie.heros().classe().nom()
     )
 }
@@ -383,7 +392,7 @@ pub fn partie_en_cours(partie: &Partie) -> String {
 pub fn en_tete_du_camp(partie: &Partie) -> String {
     format!(
         "Camp de base ({}, {}).\nSac ({}) : {}. Coffre du camp : {}.{}",
-        partie.heros().nom().as_str(),
+        nom_du_heros(partie.heros()),
         partie.heros().classe().nom(),
         crate::sac::places(partie),
         contenu(partie.sac()),
@@ -398,7 +407,7 @@ pub fn en_tete_du_camp(partie: &Partie) -> String {
 pub fn en_tete_abrege_du_camp(partie: &Partie) -> String {
     format!(
         "Camp de base ({}, {}).\nSac ({}) : {}. Coffre du camp : {}.{}",
-        partie.heros().nom().as_str(),
+        nom_du_heros(partie.heros()),
         partie.heros().classe().nom(),
         crate::sac::places(partie),
         contenu_detaille(partie.sac(), false),
