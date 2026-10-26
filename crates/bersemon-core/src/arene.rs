@@ -5,7 +5,7 @@
 use crate::aleatoire::Aleatoire;
 use crate::equipement::ObjetDEquipement;
 use crate::espece::Espece;
-use crate::heros::{Classe, creer_combattant};
+use crate::heros::{Classe, creer_combattant_au_niveau};
 use crate::humain::{HumainId, IaHumain};
 use crate::monstre::Monstre;
 use crate::niveau::Niveau;
@@ -96,15 +96,17 @@ pub struct RecompenseDeLArene {
     pub arme_du_champion: bool,
 }
 
-/// L'humain d'un palier : il combat seul, avec sa classe et son
-/// équipement, et des valeurs internes fixes, comme le héros (section 4.4).
+/// L'humain d'un palier : il combat seul, avec sa classe, son arme et des
+/// valeurs internes fixes, comme le héros (section 4.4). Son niveau est fixé
+/// à part de son équipement, pour que les paliers se suivent de 2 ou 3
+/// niveaux, et non de 5 (section 9.8).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AdversaireDeLArene {
     id: HumainId,
     nom: String,
     classe: Classe,
     arme: Option<ObjetDEquipement>,
-    armure: Option<ObjetDEquipement>,
+    niveau: Niveau,
     ia: IaHumain,
     presentation: String,
     recompense: RecompenseDeLArene,
@@ -117,7 +119,7 @@ impl AdversaireDeLArene {
         nom: impl Into<String>,
         classe: Classe,
         arme: Option<ObjetDEquipement>,
-        armure: Option<ObjetDEquipement>,
+        niveau: Niveau,
         ia: IaHumain,
         presentation: impl Into<String>,
         recompense: RecompenseDeLArene,
@@ -127,7 +129,7 @@ impl AdversaireDeLArene {
             nom: nom.into(),
             classe,
             arme,
-            armure,
+            niveau,
             ia,
             presentation: presentation.into(),
             recompense,
@@ -146,6 +148,10 @@ impl AdversaireDeLArene {
         self.classe
     }
 
+    pub fn niveau(&self) -> Niveau {
+        self.niveau
+    }
+
     pub fn ia(&self) -> IaHumain {
         self.ia
     }
@@ -160,12 +166,7 @@ impl AdversaireDeLArene {
 
     /// Lui-même, prêt au combat, sans tirage.
     pub fn generer_heros(&self) -> Monstre {
-        creer_combattant(
-            &self.nom,
-            self.classe,
-            self.arme.as_ref(),
-            self.armure.as_ref(),
-        )
+        creer_combattant_au_niveau(&self.nom, self.classe, self.arme.as_ref(), self.niveau)
     }
 }
 
@@ -233,7 +234,7 @@ mod tests {
             format!("Adversaire {palier}"),
             Classe::Guerrier,
             None,
-            None,
+            Niveau::new(5).unwrap(),
             IaHumain::Simple,
             "",
             RecompenseDeLArene {

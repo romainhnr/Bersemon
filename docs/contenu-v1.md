@@ -1447,20 +1447,22 @@ Textes proposés sans validation (gamedesign.md, Q112) : Grand élixir ; 1 grand
 
 Décidée le 25/10/2026, pour les étapes 135 à 137 (gamedesign.md, section 9.8), contenu proposé par Claude et validé par l'utilisateur.
 
-Lieu : la Fosse aux damnés (identifiant fosse-aux-damnes), hors des zones de la carte, ouverte quand le brigand est vaincu. 10 paliers, un adversaire chacun, au niveau donné par son équipement (gamedesign.md, section 4.4), valeurs internes fixes à 15.
+Lieu : la Fosse aux damnés (identifiant fosse-aux-damnes), hors des zones de la carte, ouverte quand le brigand est vaincu. 10 paliers, un adversaire chacun, à un niveau fixé (au niveau donné par son équipement jusqu'à l'étape 148), valeurs internes fixes à 15.
 
-| Palier | Identifiant | Adversaire | Classe | Arme | Armure | Niveau | IA | Récompense, à la première victoire |
-|---|---|---|---|---|---|---|---|---|
-| 1 | gueux | Le Gueux | Guerrier | palier 1 | aucune | 10 | simple | 40 pièces |
-| 2 | coupe-jarret | Le Coupe-jarret | Assassin | palier 1 | palier 1 | 15 | simple | 60 pièces |
-| 3 | novice-de-l-ordre | Le Novice de l'ordre | Templier | palier 1 | palier 1 | 15 | simple | 80 pièces, un Basilic de niveau 15 |
-| 4 | apprenti-necromant | L'Apprenti nécromant | Mage | palier 2 | palier 1 | 20 | simple | 100 pièces |
-| 5 | mercenaire | Le Mercenaire | Guerrier | palier 2 | palier 1 | 20 | avancée | 120 pièces, un Molosse des fosses de niveau 20 |
-| 6 | lame-noire | La Lame noire | Assassin | palier 2 | palier 2 | 25 | avancée | 150 pièces |
-| 7 | sorciere-des-cendres | La Sorcière des cendres | Mage | palier 3 | palier 2 | 30 | avancée | 180 pièces, une Chimère de niveau 30 |
-| 8 | templier-renegat | Le Templier renégat | Templier | palier 3 | palier 2 | 30 | avancée | 210 pièces |
-| 9 | gladiateur | Le Gladiateur | Guerrier | palier 3 | palier 3 | 35 | avancée | 250 pièces |
-| 10 | champion-de-la-fosse | Le Champion de la Fosse | Assassin | palier 3 | palier 3 | 35 | avancée | 400 pièces, un Taureau d'airain de niveau 35, l'arme du palier 4 de la classe du héros |
+| Palier | Identifiant | Adversaire | Classe | Arme | Niveau | IA | Récompense, à la première victoire |
+|---|---|---|---|---|---|---|---|
+| 1 | gueux | Le Gueux | Guerrier | palier 1 | 10 | simple | 40 pièces |
+| 2 | coupe-jarret | Le Coupe-jarret | Assassin | palier 1 | 13 | simple | 60 pièces |
+| 3 | novice-de-l-ordre | Le Novice de l'ordre | Templier | palier 1 | 16 | simple | 80 pièces, un Basilic de niveau 16 |
+| 4 | apprenti-necromant | L'Apprenti nécromant | Mage | palier 2 | 18 | simple | 100 pièces |
+| 5 | mercenaire | Le Mercenaire | Guerrier | palier 2 | 21 | avancée | 120 pièces, un Molosse des fosses de niveau 21 |
+| 6 | lame-noire | La Lame noire | Assassin | palier 2 | 24 | avancée | 150 pièces |
+| 7 | sorciere-des-cendres | La Sorcière des cendres | Mage | palier 3 | 27 | avancée | 180 pièces, une Chimère de niveau 27 |
+| 8 | templier-renegat | Le Templier renégat | Templier | palier 3 | 29 | avancée | 210 pièces |
+| 9 | gladiateur | Le Gladiateur | Guerrier | palier 3 | 32 | avancée | 250 pièces |
+| 10 | champion-de-la-fosse | Le Champion de la Fosse | Assassin | palier 3 | 35 | avancée | 400 pièces, un Taureau d'airain de niveau 35, l'arme du palier 4 de la classe du héros |
+
+Niveaux fixés le 26/10/2026, à l'étape 148 (choix de l'utilisateur, gamedesign.md, section 9.8) : ils venaient de l'équipement (10, 15, 15, 20, 20, 25, 30, 30, 35, 35), et les armures ne servaient qu'à les donner ; elles sont retirées. Les monstres offerts suivent le niveau de leur palier (le Basilic était de niveau 15, le Molosse 20, la Chimère 30). Second type de la classe aux paliers 7 à 10 (section 41).
 
 L'argent va au coffre du camp.
 
@@ -1641,6 +1643,6 @@ Décidé le 26/10/2026, pour l'étape 145 (gamedesign.md, section 4.4), choix de
 | Mage | Humain | Humain, Psychique |
 | Templier | Humain | Humain, Lumière |
 
-Humains concernés aujourd'hui : l'Inquisiteur (niveau 25), le Porte-étendard (35) et la Pythie de sel (40) ; les adversaires des paliers 6 à 10 de la Fosse aux damnés (25 à 35). Le brigand (10), le Bourreau (15) et les paliers 1 à 5 (10 à 20) restent Humain seul.
+Humains concernés aujourd'hui : l'Inquisiteur (niveau 25), le Porte-étendard (35) et la Pythie de sel (40) ; les adversaires des paliers 7 à 10 de la Fosse aux damnés (27 à 35), depuis l'étape 148 (paliers 6 à 10 avant). Le brigand (10), le Bourreau (15) et les paliers 1 à 6 (10 à 24) restent Humain seul.
 
 Textes proposés sans validation (gamedesign.md, Q114) : la fiche du héros commence par "Aldric, Guerrier, Humain, Combat, niveau de combat 25 : {PV}/{PV max} PV." et, sous le niveau 25, finit par "Au niveau de combat 25, il prendra aussi le type Combat."

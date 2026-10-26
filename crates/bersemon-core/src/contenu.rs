@@ -4367,10 +4367,13 @@ struct FicheDAdversaire {
     nom: &'static str,
     classe: Classe,
     arme: Option<&'static str>,
-    armure: Option<&'static str>,
+    /// Fixé à part de l'équipement, de 2 ou 3 niveaux d'un palier à
+    /// l'autre (section 9.8).
+    niveau: u8,
     ia: IaHumain,
     presentation: &'static str,
     argent: u32,
+    /// Au niveau du palier.
     monstre: Option<(&'static str, u8)>,
 }
 
@@ -4380,7 +4383,7 @@ const ADVERSAIRES_DE_LA_FOSSE: [FicheDAdversaire; 10] = [
         nom: "Le Gueux",
         classe: Classe::Guerrier,
         arme: Some("lame-de-milicien"),
-        armure: None,
+        niveau: 10,
         ia: IaHumain::Simple,
         presentation: "Un vagabond en haillons, un gourdin à la main. Il n'a plus rien à perdre.",
         argent: 40,
@@ -4391,7 +4394,7 @@ const ADVERSAIRES_DE_LA_FOSSE: [FicheDAdversaire; 10] = [
         nom: "Le Coupe-jarret",
         classe: Classe::Assassin,
         arme: Some("couteau-de-chasse"),
-        armure: Some("brigandine-de-cuir"),
+        niveau: 13,
         ia: IaHumain::Simple,
         presentation: "Il tourne autour de vous en souriant, une lame courte dans chaque main.",
         argent: 60,
@@ -4402,18 +4405,18 @@ const ADVERSAIRES_DE_LA_FOSSE: [FicheDAdversaire; 10] = [
         nom: "Le Novice de l'ordre",
         classe: Classe::Templier,
         arme: Some("masse-de-pelerin"),
-        armure: Some("haubert-de-pelerin"),
+        niveau: 16,
         ia: IaHumain::Simple,
         presentation: "Un jeune frère en armure trop grande, qui prie à voix basse en levant sa masse.",
         argent: 80,
-        monstre: Some(("basilic", 15)),
+        monstre: Some(("basilic", 16)),
     },
     FicheDAdversaire {
         id: "apprenti-necromant",
         nom: "L'Apprenti nécromant",
         classe: Classe::Mage,
         arme: Some("grimoire-des-brumes"),
-        armure: Some("robe-de-lin"),
+        niveau: 18,
         ia: IaHumain::Simple,
         presentation: "Sa robe sent la tombe ; une lueur malsaine danse au bout de ses doigts.",
         argent: 100,
@@ -4424,18 +4427,18 @@ const ADVERSAIRES_DE_LA_FOSSE: [FicheDAdversaire; 10] = [
         nom: "Le Mercenaire",
         classe: Classe::Guerrier,
         arme: Some("epee-du-pendu"),
-        armure: Some("gambison"),
+        niveau: 21,
         ia: IaHumain::Avancee,
         presentation: "Il a vendu son épée à tous les seigneurs du royaume, et leur a survécu à tous.",
         argent: 120,
-        monstre: Some(("molosse-des-fosses", 20)),
+        monstre: Some(("molosse-des-fosses", 21)),
     },
     FicheDAdversaire {
         id: "lame-noire",
         nom: "La Lame noire",
         classe: Classe::Assassin,
         arme: Some("dague-des-brumes"),
-        armure: Some("cuir-des-brumes"),
+        niveau: 24,
         ia: IaHumain::Avancee,
         presentation: "Une silhouette encapuchonnée, dont on dit qu'elle n'a jamais raté une gorge.",
         argent: 150,
@@ -4446,18 +4449,18 @@ const ADVERSAIRES_DE_LA_FOSSE: [FicheDAdversaire; 10] = [
         nom: "La Sorcière des cendres",
         classe: Classe::Mage,
         arme: Some("sceptre-des-cendres"),
-        armure: Some("robe-des-brumes"),
+        niveau: 27,
         ia: IaHumain::Avancee,
         presentation: "Elle sort des ruines de l'Abbaye, la peau grise de cendre, les yeux brûlants.",
         argent: 180,
-        monstre: Some(("chimere", 30)),
+        monstre: Some(("chimere", 27)),
     },
     FicheDAdversaire {
         id: "templier-renegat",
         nom: "Le Templier renégat",
         classe: Classe::Templier,
         arme: Some("encensoir-maudit"),
-        armure: Some("cotte-benie"),
+        niveau: 29,
         ia: IaHumain::Avancee,
         presentation: "Il a renié son ordre, mais pas sa foi ni son armure.",
         argent: 210,
@@ -4468,7 +4471,7 @@ const ADVERSAIRES_DE_LA_FOSSE: [FicheDAdversaire; 10] = [
         nom: "Le Gladiateur",
         classe: Classe::Guerrier,
         arme: Some("espadon-des-cendres"),
-        armure: Some("plates-de-gargouille"),
+        niveau: 32,
         ia: IaHumain::Avancee,
         presentation: "La foule scande son nom. Il salue les gradins avant de vous faire face.",
         argent: 250,
@@ -4479,7 +4482,7 @@ const ADVERSAIRES_DE_LA_FOSSE: [FicheDAdversaire; 10] = [
         nom: "Le Champion de la Fosse",
         classe: Classe::Assassin,
         arme: Some("lames-de-cendre"),
-        armure: Some("manteau-de-cendre"),
+        niveau: 35,
         ia: IaHumain::Avancee,
         presentation: "Personne ne l'a jamais vu saigner. Les gradins se taisent quand il entre.",
         argent: 400,
@@ -4506,7 +4509,7 @@ fn creer_la_fosse(trouver: &dyn Fn(&str) -> Espece) -> FosseAuxDamnes {
                 fiche.nom,
                 fiche.classe,
                 fiche.arme.map(objet),
-                fiche.armure.map(objet),
+                niveau(fiche.niveau),
                 fiche.ia,
                 fiche.presentation,
                 recompense,
@@ -5366,10 +5369,11 @@ mod tests {
         }
     }
 
-    /// Section 9.8 : les adversaires de la Fosse prennent le second type de
-    /// leur classe dès le niveau 25, aux paliers 6 à 10 (étape 145).
+    /// Section 9.8 : les paliers se suivent de 2 ou 3 niveaux (étape 148) ;
+    /// les adversaires prennent le second type de leur classe dès le niveau
+    /// 25, aux paliers 7 à 10 (étape 145).
     #[test]
-    fn les_adversaires_de_la_fosse_prennent_leur_second_type_au_niveau_25() {
+    fn les_paliers_de_la_fosse_se_suivent_de_2_ou_3_niveaux() {
         let contenu = ContenuV1::new();
         let paliers: Vec<(u8, usize)> = contenu
             .fosse()
@@ -5389,17 +5393,23 @@ mod tests {
             paliers,
             vec![
                 (10, 1),
-                (15, 1),
-                (15, 1),
-                (20, 1),
-                (20, 1),
-                (25, 2),
-                (30, 2),
-                (30, 2),
-                (35, 2),
+                (13, 1),
+                (16, 1),
+                (18, 1),
+                (21, 1),
+                (24, 1),
+                (27, 2),
+                (29, 2),
+                (32, 2),
                 (35, 2)
             ]
         );
+        // Le monstre offert est au niveau de son palier.
+        for adversaire in contenu.fosse().adversaires() {
+            if let Some((_, niveau)) = &adversaire.recompense().monstre {
+                assert_eq!(*niveau, adversaire.niveau(), "{}", adversaire.nom());
+            }
+        }
     }
 
     /// Section 10.7, décidée le 25/10/2026 pour l'étape 131 : chaque humain

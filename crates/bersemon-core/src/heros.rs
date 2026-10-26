@@ -176,7 +176,18 @@ pub fn creer_combattant(
     arme: Option<&ObjetDEquipement>,
     armure: Option<&ObjetDEquipement>,
 ) -> Monstre {
-    let niveau = niveau_de_combat(arme, armure);
+    creer_combattant_au_niveau(nom, classe, arme, niveau_de_combat(arme, armure))
+}
+
+/// Un humain dont le niveau est fixé à part de son équipement, comme un
+/// adversaire de la Fosse aux damnés (section 9.8) : son arme ne lui donne
+/// que ses attaques.
+pub fn creer_combattant_au_niveau(
+    nom: &str,
+    classe: Classe,
+    arme: Option<&ObjetDEquipement>,
+    niveau: Niveau,
+) -> Monstre {
     let espece = Espece::new(
         EspeceId::new("heros"),
         nom,
