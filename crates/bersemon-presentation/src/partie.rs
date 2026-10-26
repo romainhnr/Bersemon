@@ -235,6 +235,40 @@ pub fn coffre_du_camp(partie: &Partie) -> String {
     )
 }
 
+/// Pour Discord, quand l'écran du coffre ne tient plus dans un message : les
+/// ressources s'y comptent par sortes, détaillées à l'écran des ressources
+/// (section 13.3).
+pub fn coffre_du_camp_abrege(partie: &Partie) -> String {
+    format!(
+        "Ce qui est rangé dans le coffre du camp est à l'abri. Le sac part avec vous en expédition : une défaite le fait perdre.\nSac : {}.\nCoffre du camp : {}.{}",
+        contenu_detaille(partie.sac(), false),
+        contenu_detaille(partie.coffre_du_camp(), false),
+        ligne_des_ames(partie)
+    )
+}
+
+/// Pour Discord, l'écran des ressources quand le coffre détaillé ne tient
+/// plus dans un message : les ressources seules, du sac puis du coffre.
+pub fn ressources_du_sac_et_du_coffre(partie: &Partie) -> String {
+    let liste = |inventaire: &Inventaire| {
+        let elements: Vec<String> = inventaire
+            .ressources()
+            .iter()
+            .map(|(ressource, nombre)| ressources(ressource, *nombre))
+            .collect();
+        if elements.is_empty() {
+            "aucune".to_string()
+        } else {
+            enumerer(&elements)
+        }
+    };
+    format!(
+        "Ressources du sac : {}.\nRessources du coffre du camp : {}.",
+        liste(partie.sac()),
+        liste(partie.coffre_du_camp())
+    )
+}
+
 /// Le sac en expédition : une défaite le ferait perdre (section 9.3).
 pub fn sac_en_expedition(partie: &Partie) -> String {
     let sac = partie.sac();

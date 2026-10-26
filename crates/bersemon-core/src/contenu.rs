@@ -88,6 +88,10 @@ const INDICE_5: &str = "sous l'autel de l'Abbesse, une plaque de fer gravée du 
 
 const INDICE_6: &str = "le porte-étendard vaincu a parlé : le Margrave attend au sommet, dans la forteresse où ses soldats ont gelé à sa place.";
 
+const INDICE_7: &str = "dans la forteresse du Margrave, une carte de cuir marquée du même sceau : au sud, au-delà des cols, le Désert de sel, où une ville entière a été changée en sel. Une prophétesse y attendait des nouvelles du Margrave.";
+
+const INDICE_8: &str = "la Pythie vaincue a parlé avant de se taire : un autre Apôtre a reçu la marque du Démiurge. Il attend au-delà du désert, là où la route s'efface sous le sel. Elle n'a pas su dire où.";
+
 /// Au bout de la première expédition menée au bout, quand le joueur porte
 /// l'âme de Bertrand (section 14.2).
 pub const MALVOISE_ET_L_AME: &str = "Sur le chemin du camp, un homme en robe noire vous attend, un crâne posé au creux du bras. \"Je t'ai vu recueillir cette âme. Elle m'intéresse, si tu ne sais pas quoi en faire. Je suis Malvoise, et les marchands morts sur ces routes ont encore des choses à vendre.\" Il vous suit jusqu'au camp et s'y installe.";
@@ -114,6 +118,10 @@ const AVANT_ULRICH: &str = "Au pied d'un gibet, un alchimiste pend au bout d'une
 
 const APRES_ULRICH: &str =
     "L'âme d'Ulrich, alchimiste, s'échappe enfin de la corde. Vous la recueillez pour Malvoise.";
+
+const AVANT_HILDE: &str = "Sous une dune, une caravane ensevelie : la marchande Hilde est morte assise contre sa charrette, une sacoche de baumes serrée contre elle. Un monstre rôde autour du corps et se jette sur vous.";
+
+const APRES_HILDE: &str = "L'âme de Hilde, marchande de baumes, s'échappe enfin de la caravane. Vous la recueillez pour Malvoise.";
 
 const AVANT_LE_BRIGAND: &str = "Au sortir de la Lisière, un brigand vous barre la route, un loup et un corbeau à ses côtés. Ses bêtes ont faim, et lui aussi.";
 
@@ -143,6 +151,10 @@ const AVANT_LE_PORTE_ETENDARD: &str = "Au milieu du col, un soldat couvert de gi
 
 const APRES_LE_PORTE_ETENDARD: &str =
     "Le porte-étendard tombe à genoux ; l'étendard gelé se brise dans la neige.";
+
+const AVANT_LA_PYTHIE: &str = "Au cœur du désert, parmi les ruines d'une ville changée en sel, une femme aux yeux blancs vous attend. \"Je t'ai vu venir depuis le col.\" Trois bêtes se dressent dans le sable.";
+
+const APRES_LA_PYTHIE: &str = "La Pythie s'effondre dans le sel, un dernier mot aux lèvres.";
 
 const AVANT_LE_MARGRAVE: &str = "Au sommet, sur un trône de glace entouré de soldats figés, le Margrave de givre se lève. Apôtre du Démiurge, il a offert son armée au froid. Il n'y aura pas de fuite.";
 
@@ -333,6 +345,14 @@ impl ContenuV1 {
             Gardien::MonstreDeLaZone,
             AVANT_ULRICH,
             APRES_ULRICH,
+        );
+        let hilde = marchand(
+            "hilde",
+            "Hilde",
+            Soin::Panacee,
+            Gardien::MonstreDeLaZone,
+            AVANT_HILDE,
+            APRES_HILDE,
         );
         // Aux prises avec un Noyé, au niveau maximal du Marais (section
         // 9.2).
@@ -537,6 +557,60 @@ impl ContenuV1 {
                 .avec_meteos(vec![Meteo::Grele, Meteo::Tempete])
         })
         .expect("Col conforme aux règles");
+        // Elle annonce un autre Apôtre, sans en garder aucun (section 9.4).
+        let pythie = Humain::new(
+            HumainId::new("pythie-de-sel"),
+            "Pythie de sel",
+            vec![
+                (trouver("momie-de-sel"), niveau(45)),
+                (trouver("ver-des-salines"), niveau(45)),
+                (trouver("sphinx-des-sables"), niveau(46)),
+            ],
+            500,
+            AVANT_LA_PYTHIE,
+            APRES_LA_PYTHIE,
+        )
+        .expect("Pythie de sel conforme aux règles")
+        .avec_heros(
+            Classe::Mage,
+            Some(objet("grimoire-du-champion")),
+            Some(objet("robe-des-cendres")),
+        )
+        .avec_ia(IaHumain::Relevee);
+        // Ouvert par l'indice que laisse le Margrave ; ses niveaux mènent la
+        // Vouivre à son évolution du niveau 45 (sections 5.4 et 9.1).
+        let desert = Zone::new(
+            ZoneId::new("desert-de-sel"),
+            "Désert de sel",
+            (niveau(37), niveau(45)),
+            5,
+            3,
+            vec![
+                trouver("crotale-des-salines"),
+                trouver("scarabee-solaire"),
+                trouver("momie-de-sel"),
+                trouver("ver-des-salines"),
+            ],
+            vec![
+                EspeceRare {
+                    espece: trouver("sphinx-des-sables"),
+                    pacifique: false,
+                },
+                EspeceRare {
+                    espece: trouver("phenix-blanc"),
+                    pacifique: true,
+                },
+            ],
+            expedition_automatique(6, 280..=560, 3000..=4600, 1..=3, 230..=400),
+            coffre(180..=280, capsules_de("desert-de-sel")),
+        )
+        .and_then(|zone| zone.avec_monstre_cache(schnoz()))
+        .map(|zone| {
+            zone.avec_humain(pythie)
+                .avec_marchand_mort(hilde)
+                .avec_meteos(vec![Meteo::TempeteDeSable, Meteo::Canicule])
+        })
+        .expect("Désert de sel conforme aux règles");
         // Le Baron pendu attend au fond de la Vallée, que le second indice,
         // donné par le Bourreau, ouvre. Premier Apôtre, il combat au niveau
         // maximal de la Vallée, 20, et ne connaît qu'une attaque Obscur
@@ -587,12 +661,16 @@ impl ContenuV1 {
             margrave,
         )
         .expect("chapitre du Margrave conforme aux règles");
+        // Le septième indice se trouve au bout de l'expédition qui abat le
+        // Margrave, dans le Col, et ouvre le Désert ; le huitième, laissé par
+        // la Pythie, n'ouvre encore rien (section 9.4).
         let piste = Piste::new(vec![
             chapitre_du_baron,
             chapitre_de_l_abbesse,
             chapitre_du_margrave,
         ])
-        .expect("piste conforme aux règles");
+        .expect("piste conforme aux règles")
+        .avec_suite(vec![indice(&col, INDICE_7), indice(&desert, INDICE_8)]);
         let ressource = |id: &str| {
             especes
                 .iter()
@@ -658,7 +736,7 @@ impl ContenuV1 {
         .expect("Démiurge conforme aux règles")
         .avec_ligne_du_carnet(CARNET_DU_DEMIURGE);
         let invocation = Invocation::new(eclipse, demiurge, FORGE_DU_BEHERIT, SACRIFICE);
-        let zones = vec![lisiere, marais, vallee, abbaye, col];
+        let zones = vec![lisiere, marais, vallee, abbaye, col, desert];
         let tour = TourSansFond::new(
             ZoneId::new("tour-sans-fond"),
             "Tour sans fond",
@@ -1067,7 +1145,7 @@ const ATTAQUES_DES_HEROS: [FicheAttaque; 20] = [
 ];
 
 /// Section 1 de docs/contenu-v1.md, dans le même ordre.
-const ATTAQUES: [FicheAttaque; 135] = [
+const ATTAQUES: [FicheAttaque; 150] = [
     fiche(
         "souffle-chaud",
         "Souffle chaud",
@@ -2050,6 +2128,133 @@ const ATTAQUES: [FicheAttaque; 135] = [
         80,
         100,
     ),
+    // Attaques du Désert de sel et du Dragon des brumes (section 40).
+    avec_effet(
+        fiche("crecelle", "Crécelle", Type::Son, Speciale, 60, 100),
+        Paralysie,
+        20,
+    ),
+    fiche(
+        "chant-des-dunes",
+        "Chant des dunes",
+        Type::Son,
+        Speciale,
+        85,
+        95,
+    ),
+    fiche(
+        "rayon-solaire",
+        "Rayon solaire",
+        Type::Lumiere,
+        Speciale,
+        70,
+        100,
+    ),
+    fiche(
+        "eclat-du-zenith",
+        "Éclat du zénith",
+        Type::Lumiere,
+        Speciale,
+        85,
+        95,
+    ),
+    fiche(
+        "flamme-blanche",
+        "Flamme blanche",
+        Type::Lumiere,
+        Speciale,
+        95,
+        90,
+    ),
+    avec_effet(
+        fiche(
+            "bandelettes",
+            "Bandelettes",
+            Type::Spectre,
+            Physique,
+            65,
+            100,
+        ),
+        Paralysie,
+        20,
+    ),
+    fiche(
+        "engloutissement",
+        "Engloutissement",
+        Type::Sol,
+        Physique,
+        95,
+        85,
+    ),
+    fiche(
+        "vent-de-sable",
+        "Vent de sable",
+        Type::Sol,
+        Speciale,
+        85,
+        90,
+    ),
+    fiche(
+        "souffle-des-brumes",
+        "Souffle des brumes",
+        Type::Dragon,
+        Speciale,
+        95,
+        90,
+    ),
+    // Attaques d'œuf des espèces du Désert de sel (section 40).
+    fiche(
+        "morsure-des-salines",
+        "Morsure des salines",
+        Type::Poison,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "disque-solaire",
+        "Disque solaire",
+        Type::Lumiere,
+        Speciale,
+        80,
+        100,
+    ),
+    avec_effet(
+        fiche(
+            "linceul-de-sel",
+            "Linceul de sel",
+            Type::Spectre,
+            Physique,
+            75,
+            100,
+        ),
+        Paralysie,
+        20,
+    ),
+    fiche(
+        "charge-des-dunes",
+        "Charge des dunes",
+        Type::Sol,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "enigme-du-sphinx",
+        "Énigme du sphinx",
+        Type::Psychique,
+        Speciale,
+        80,
+        100,
+    ),
+    fiche(
+        "aile-d-aurore",
+        "Aile d'aurore",
+        Type::Lumiere,
+        Speciale,
+        80,
+        100,
+    ),
 ];
 
 struct FicheCapsule {
@@ -2060,7 +2265,7 @@ struct FicheCapsule {
 }
 
 /// Section 6 de docs/contenu-v1.md, dans le même ordre.
-const CAPSULES: [FicheCapsule; 15] = [
+const CAPSULES: [FicheCapsule; 18] = [
     FicheCapsule {
         attaque: "brasier",
         prix: 150,
@@ -2135,6 +2340,21 @@ const CAPSULES: [FicheCapsule; 15] = [
         attaque: "onde-de-choc",
         prix: 450,
         zone: "col-du-givre-noir",
+    },
+    FicheCapsule {
+        attaque: "chant-des-dunes",
+        prix: 550,
+        zone: "desert-de-sel",
+    },
+    FicheCapsule {
+        attaque: "eclat-du-zenith",
+        prix: 550,
+        zone: "desert-de-sel",
+    },
+    FicheCapsule {
+        attaque: "vent-de-sable",
+        prix: 500,
+        zone: "desert-de-sel",
     },
 ];
 
@@ -2260,7 +2480,7 @@ const MARCHAND_ZOMBIE: FicheEspece = FicheEspece {
 /// Section 2 de docs/contenu-v1.md, dans l'ordre du codex : les monstres de
 /// départ, les communs, les rares, l'Apôtre, le monstre caché, puis les
 /// formes évoluées de la section 8.
-const ESPECES: [FicheEspece; 58] = [
+const ESPECES: [FicheEspece; 65] = [
     FicheEspece {
         id: "salamandre",
         nom: "Salamandre",
@@ -2505,7 +2725,7 @@ const ESPECES: [FicheEspece; 58] = [
             (8, "pique"),
             (12, "furie-draconique"),
         ],
-        evolution: None,
+        evolution: par_niveau("dragon-des-brumes", 45, "souffle-des-brumes"),
     },
     FicheEspece {
         id: "baron-pendu",
@@ -3303,6 +3523,129 @@ const ESPECES: [FicheEspece; 58] = [
             (10, "brasier"),
             (25, "taille-d-acier"),
             (30, "bucher"),
+        ],
+        evolution: None,
+    },
+    // Espèces du Désert de sel (section 40), puis l'évolution de la Vouivre.
+    FicheEspece {
+        id: "crotale-des-salines",
+        nom: "Crotale des salines",
+        types: &[Type::Son, Type::Poison],
+        role: Role::Offensif,
+        stats_de_base: [60, 78, 52, 72, 52, 76],
+        rendement_experience: 115,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Celerite, Habilete::Instinct],
+        apprentissage: &[
+            (1, "crecelle"),
+            (1, "croc-de-venin"),
+            (22, "tocsin"),
+            (32, "venin-noir"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "scarabee-solaire",
+        nom: "Scarabée solaire",
+        types: &[Type::Lumiere, Type::Insecte],
+        role: Role::Soutien,
+        stats_de_base: [65, 50, 80, 75, 80, 40],
+        rendement_experience: 114,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Carapace, Habilete::Volonte],
+        apprentissage: &[
+            (1, "bourdonnement"),
+            (1, "rayon-solaire"),
+            (22, "nuee"),
+            (32, "aube-eclatante"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "momie-de-sel",
+        nom: "Momie de sel",
+        types: &[Type::Spectre, Type::Roche],
+        role: Role::Soutien,
+        stats_de_base: [85, 72, 95, 40, 78, 20],
+        rendement_experience: 117,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Carapace, Habilete::Ferocite],
+        apprentissage: &[
+            (1, "bandelettes"),
+            (1, "chute-de-pierres"),
+            (22, "lamentation"),
+            (32, "eboulement"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "ver-des-salines",
+        nom: "Ver des salines",
+        types: &[Type::Sol],
+        role: Role::Offensif,
+        stats_de_base: [95, 92, 68, 35, 55, 45],
+        rendement_experience: 116,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Ferocite, Habilete::Traqueur],
+        apprentissage: &[
+            (1, "secousse"),
+            (1, "etreinte"),
+            (22, "engloutissement"),
+            (32, "seisme"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "sphinx-des-sables",
+        nom: "Sphinx des sables",
+        types: &[Type::Son, Type::Psychique],
+        role: Role::Offensif,
+        stats_de_base: [80, 70, 75, 100, 85, 55],
+        rendement_experience: 205,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Sorcellerie, Habilete::Volonte],
+        apprentissage: &[
+            (1, "onde-psychique"),
+            (1, "glas"),
+            (20, "carillon-funebre"),
+            (30, "jugement"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "phenix-blanc",
+        nom: "Phénix blanc",
+        types: &[Type::Lumiere, Type::Feu],
+        role: Role::Soutien,
+        stats_de_base: [75, 50, 65, 100, 95, 80],
+        rendement_experience: 200,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Volonte, Habilete::Instinct],
+        apprentissage: &[
+            (1, "lueur-sacree"),
+            (1, "brasier"),
+            (15, "rayon-solaire"),
+            (30, "flamme-blanche"),
+        ],
+        evolution: None,
+    },
+    // La Vouivre évolue au niveau 45 (section 5.4) ; son rendement d'XP
+    // vaut 1,4 fois le sien.
+    FicheEspece {
+        id: "dragon-des-brumes",
+        nom: "Dragon des brumes",
+        types: &[Type::Dragon, Type::Vol],
+        role: Role::Offensif,
+        stats_de_base: [90, 100, 80, 100, 75, 75],
+        rendement_experience: 238,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Affinite, Habilete::Ferocite],
+        apprentissage: &[
+            (1, "souffle-draconique"),
+            (8, "pique"),
+            (12, "furie-draconique"),
+            (45, "souffle-des-brumes"),
+            (45, "bec-funeste"),
         ],
         evolution: None,
     },
@@ -4219,7 +4562,7 @@ const PRIX_D_UNE_RESSOURCE_RARE: u32 = 15;
 
 /// Espèce, identifiant et nom de chaque ressource : seules les espèces
 /// sauvages qui se combattent en ont une (section 14.3).
-const RESSOURCES: [(&str, &str, &str); 20] = [
+const RESSOURCES: [(&str, &str, &str); 25] = [
     ("loup", "croc-de-loup", "Croc de loup"),
     ("corbeau", "plume-de-corbeau", "Plume de corbeau"),
     ("vipere", "ecaille-de-vipere", "Écaille de vipère"),
@@ -4246,17 +4589,26 @@ const RESSOURCES: [(&str, &str, &str); 20] = [
     ("warg", "croc-de-loup", "Croc de loup"),
     ("chevalier-noir", "fragment-d-armure", "Fragment d'armure"),
     ("cloche-hurlante", "eclat-de-bronze", "Éclat de bronze"),
+    (
+        "crotale-des-salines",
+        "sonnette-de-crotale",
+        "Sonnette de crotale",
+    ),
+    ("scarabee-solaire", "elytre-solaire", "Élytre solaire"),
+    ("momie-de-sel", "bandelette-de-sel", "Bandelette de sel"),
+    ("ver-des-salines", "anneau-de-ver", "Anneau de ver"),
+    ("sphinx-des-sables", "griffe-de-sphinx", "Griffe de sphinx"),
 ];
 
 /// Section 32 de docs/contenu-v1.md : les météos de la Lisière, du Marais
-/// et de l'Abbaye (section 9.7). Le cyclone et la tempête de sable attendent
-/// une zone de mer et un désert.
+/// et de l'Abbaye (section 9.7). Le cyclone attend une zone de mer ; la
+/// tempête de sable est réservée au Désert de sel.
 const METEOS_COMMUNES: [Meteo; 3] = [Meteo::Pluie, Meteo::Tempete, Meteo::Canicule];
 
 /// Section 31 de docs/contenu-v1.md : les espèces qui ne sortent, dans les
 /// groupes sauvages des zones, que la nuit ou que le jour (section 9.6).
 /// Chaque zone en garde au moins deux à chaque moment.
-const ACTIVITES: [(&str, Activite); 11] = [
+const ACTIVITES: [(&str, Activite); 13] = [
     ("loup", Activite::Nocturne),
     ("feu-follet", Activite::Nocturne),
     ("fee-noire", Activite::Nocturne),
@@ -4268,11 +4620,13 @@ const ACTIVITES: [(&str, Activite); 11] = [
     ("vipere", Activite::Diurne),
     ("cloche-hurlante", Activite::Diurne),
     ("harpie-des-orages", Activite::Diurne),
+    ("scarabee-solaire", Activite::Diurne),
+    ("momie-de-sel", Activite::Nocturne),
 ];
 
 /// Section 28 de docs/contenu-v1.md : l'attaque d'œuf de chaque famille
 /// d'évolution, par sa forme de base (section 13.11).
-const ATTAQUES_D_OEUF: [(&str, &str); 34] = [
+const ATTAQUES_D_OEUF: [(&str, &str); 40] = [
     ("salamandre", "souffle-des-forges"),
     ("crapaud", "ressac"),
     ("mandragore", "seve-maudite"),
@@ -4307,6 +4661,12 @@ const ATTAQUES_D_OEUF: [(&str, &str); 34] = [
     ("seraphin-de-vitrail", "rosace-ardente"),
     ("molosse-des-fosses", "charge-des-fosses"),
     ("taureau-d-airain", "charge-d-airain"),
+    ("crotale-des-salines", "morsure-des-salines"),
+    ("scarabee-solaire", "disque-solaire"),
+    ("momie-de-sel", "linceul-de-sel"),
+    ("ver-des-salines", "charge-des-dunes"),
+    ("sphinx-des-sables", "enigme-du-sphinx"),
+    ("phenix-blanc", "aile-d-aurore"),
 ];
 
 /// La forme de base de la famille de cette espèce : celle qu'aucune autre
@@ -4528,8 +4888,8 @@ mod tests {
         let mut uniques = vues.clone();
         uniques.sort_by(|a, b| a.as_str().cmp(b.as_str()));
         uniques.dedup();
-        assert_eq!(vues.len(), 34);
-        assert_eq!(uniques.len(), 34);
+        assert_eq!(vues.len(), 40);
+        assert_eq!(uniques.len(), 40);
     }
 
     #[test]
@@ -4538,13 +4898,13 @@ mod tests {
 
         let contenu = ContenuV1::new();
         let au_codex = especes_au_codex(contenu.especes());
-        assert_eq!(au_codex, 53);
+        assert_eq!(au_codex, 60);
         let seuils: Vec<u32> = contenu
             .recompenses_du_codex()
             .iter()
             .map(|recompense| recompense.palier.seuil(au_codex))
             .collect();
-        assert_eq!(seuils, vec![10, 20, 30, 40, 50, 53]);
+        assert_eq!(seuils, vec![10, 20, 30, 40, 50, 60]);
         let complet = contenu.recompenses_du_codex().last().unwrap();
         assert_eq!(complet.palier, PalierDuCodex::Complet);
         let sceau = complet.objet_unique.as_ref().unwrap();
@@ -4555,7 +4915,7 @@ mod tests {
     #[test]
     fn chaque_capsule_sert_a_une_espece_qui_ne_l_apprend_pas() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.capsules().len(), 15);
+        assert_eq!(contenu.capsules().len(), 18);
         for capsule in contenu.capsules() {
             let utile = contenu.especes().iter().any(|espece| {
                 capsule.convient_a(espece) && espece.attaque_apprise(capsule.id()).is_none()
@@ -4595,14 +4955,18 @@ mod tests {
             ids(&contenu.zones()[4]),
             vec!["blizzard", "seisme", "onde-de-choc"]
         );
+        assert_eq!(
+            ids(&contenu.zones()[5]),
+            vec!["chant-des-dunes", "eclat-du-zenith", "vent-de-sable"]
+        );
     }
 
     #[test]
     fn contenu_conforme_aux_regles() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.especes().len(), 58);
-        assert_eq!(contenu.zones().len(), 5);
-        assert_eq!(contenu.piste().indices().count(), 6);
+        assert_eq!(contenu.especes().len(), 65);
+        assert_eq!(contenu.zones().len(), 6);
+        assert_eq!(contenu.piste().indices().count(), 8);
         // Toute espèce rencontrée en zone se retrouve au chargement d'une
         // sauvegarde.
         for zone in contenu.zones() {
@@ -4645,6 +5009,9 @@ mod tests {
             1
         );
         assert!(especes(12).contains(&"warg".to_string()));
+        // Le Désert de sel, dès le niveau 37 : à l'étape 17, niveau 38.
+        assert!(!especes(16).contains(&"crotale-des-salines".to_string()));
+        assert!(especes(17).contains(&"crotale-des-salines".to_string()));
         assert!(tour.recit_du_gardien("Basilic").contains("Basilic garde"));
     }
 
@@ -4903,7 +5270,7 @@ mod tests {
                 "{nom}"
             );
         }
-        assert_eq!(evoluees, 19);
+        assert_eq!(evoluees, 20);
         assert_eq!(sauvages, vec!["warg", "chevalier-noir"]);
     }
 
@@ -4932,7 +5299,7 @@ mod tests {
             .iter()
             .map(|zone| zone.pecheur().map(Pecheur::etape))
             .collect();
-        assert_eq!(etapes, vec![None, Some(2), None, None, None]);
+        assert_eq!(etapes, vec![None, Some(2), None, None, None, None]);
         let ids: Vec<&str> = peche
             .especes()
             .iter()
@@ -5037,6 +5404,7 @@ mod tests {
                 ("bourreau", Classe::Guerrier, 15),
                 ("inquisiteur", Classe::Mage, 25),
                 ("porte-etendard", Classe::Templier, 35),
+                ("pythie-de-sel", Classe::Mage, 40),
             ]
         );
         assert_eq!(heros[0].3, ["entaille", "lame-empoisonnee"]);
@@ -5172,20 +5540,33 @@ mod tests {
     fn chaque_zone_a_ses_meteos() {
         use Meteo::*;
         let contenu = ContenuV1::new();
-        let attendu: [(&str, &[Meteo]); 5] = [
+        let attendu: [(&str, &[Meteo]); 6] = [
             ("lisiere", &[Pluie, Tempete, Canicule]),
             ("marais", &[Pluie, Tempete, Canicule]),
             ("vallee", &[Pluie, Tempete, Grele]),
             ("abbaye", &[Pluie, Tempete, Canicule]),
             ("col-du-givre-noir", &[Grele, Tempete]),
+            ("desert-de-sel", &[TempeteDeSable, Canicule]),
         ];
         for (id, meteos) in attendu {
             let zone = contenu.zone(&ZoneId::new(id)).unwrap();
             assert_eq!(zone.meteos(), meteos, "{id}");
         }
-        assert!(contenu.zones().iter().all(|zone| {
-            !zone.meteos().contains(&Cyclone) && !zone.meteos().contains(&TempeteDeSable)
-        }));
+        // Le cyclone attend une zone de mer ; la tempête de sable ne souffle
+        // que sur le désert.
+        assert!(
+            contenu
+                .zones()
+                .iter()
+                .all(|zone| !zone.meteos().contains(&Cyclone))
+        );
+        let sable: Vec<&str> = contenu
+            .zones()
+            .iter()
+            .filter(|zone| zone.meteos().contains(&TempeteDeSable))
+            .map(|zone| zone.id().as_str())
+            .collect();
+        assert_eq!(sable, ["desert-de-sel"]);
     }
 
     #[test]
@@ -5322,6 +5703,122 @@ mod tests {
         );
     }
 
+    /// Section 40 de docs/contenu-v1.md (étape 143).
+    #[test]
+    fn le_desert_de_sel_suit_le_margrave_sans_apotre() {
+        let contenu = ContenuV1::new();
+        let desert = &contenu.zones()[5];
+        assert_eq!(desert.id().as_str(), "desert-de-sel");
+        assert_eq!(desert.niveaux(), (niveau(37), niveau(45)));
+        let types = |id: &str| -> Vec<Type> {
+            contenu
+                .espece(&EspeceId::new(id))
+                .unwrap()
+                .types()
+                .liste()
+                .to_vec()
+        };
+        // Une commune et une rare Son, une commune et une rare Lumière.
+        assert_eq!(types("crotale-des-salines"), [Type::Son, Type::Poison]);
+        assert_eq!(types("scarabee-solaire"), [Type::Lumiere, Type::Insecte]);
+        assert_eq!(types("sphinx-des-sables"), [Type::Son, Type::Psychique]);
+        assert_eq!(types("phenix-blanc"), [Type::Lumiere, Type::Feu]);
+        assert_eq!(desert.especes().len(), 4);
+        let rares: Vec<(&str, bool)> = desert
+            .rares()
+            .iter()
+            .map(|rare| (rare.espece.id().as_str(), rare.pacifique))
+            .collect();
+        assert_eq!(
+            rares,
+            vec![("sphinx-des-sables", false), ("phenix-blanc", true)]
+        );
+        // La Pythie annonce un autre Apôtre sans en garder aucun.
+        let pythie = desert.humain().unwrap();
+        assert_eq!(pythie.id().as_str(), "pythie-de-sel");
+        assert_eq!(pythie.argent(), 500);
+        let equipe: Vec<(String, u8)> = pythie
+            .generer_equipe()
+            .iter()
+            .map(|monstre| {
+                (
+                    monstre.espece().id().as_str().to_string(),
+                    monstre.niveau().valeur(),
+                )
+            })
+            .collect();
+        assert_eq!(
+            equipe,
+            vec![
+                ("momie-de-sel".to_string(), 45),
+                ("ver-des-salines".to_string(), 45),
+                ("sphinx-des-sables".to_string(), 46),
+            ]
+        );
+        assert!(
+            contenu
+                .piste()
+                .apotres()
+                .all(|apotre| apotre.zone() != desert.id())
+        );
+        // Hilde ajoute la panacée à l'étal de Malvoise.
+        let hilde = desert.marchand_mort().unwrap();
+        assert_eq!(
+            (hilde.id().as_str(), hilde.soin()),
+            ("hilde", Soin::Panacee)
+        );
+        // Le septième indice, au Col, une fois le Margrave abattu, ouvre le
+        // Désert ; le huitième, au Désert, n'ouvre plus rien.
+        let piste = contenu.piste();
+        let vaincus: Vec<EspeceId> = piste
+            .apotres()
+            .map(|apotre| apotre.espece().id().clone())
+            .collect();
+        assert_eq!(piste.indice_suivant(6, &vaincus[..2]), None);
+        let septieme = piste.indice_suivant(6, &vaincus).unwrap();
+        assert_eq!(septieme.zone.as_str(), "col-du-givre-noir");
+        assert!(!piste.zone_ouverte(desert.id(), 6));
+        assert!(piste.zone_ouverte(desert.id(), 7));
+        let huitieme = piste.indice_suivant(7, &vaincus).unwrap();
+        assert_eq!(huitieme.zone.as_str(), "desert-de-sel");
+        assert!(huitieme.texte.contains("un autre Apôtre"));
+        assert_eq!(piste.indice_suivant(8, &vaincus), None);
+        assert!(
+            contenu
+                .zones()
+                .iter()
+                .all(|zone| piste.zone_ouverte(zone.id(), 8))
+        );
+        // La tempête de sable et la canicule renforcent le Sol, la Roche et
+        // le Feu de ses espèces.
+        assert_eq!(desert.meteos(), &[Meteo::TempeteDeSable, Meteo::Canicule]);
+        let griffe = contenu
+            .espece(&EspeceId::new("sphinx-des-sables"))
+            .and_then(|espece| espece.ressource().cloned())
+            .unwrap();
+        assert_eq!((griffe.nom(), griffe.prix()), ("Griffe de sphinx", 15));
+    }
+
+    #[test]
+    fn la_vouivre_evolue_en_dragon_des_brumes_au_niveau_45() {
+        let contenu = ContenuV1::new();
+        let evolution = contenu
+            .espece(&EspeceId::new("vouivre"))
+            .and_then(|espece| espece.evolution().cloned())
+            .unwrap();
+        assert_eq!(evolution.vers().as_str(), "dragon-des-brumes");
+        assert_eq!(
+            evolution.condition(),
+            &ConditionEvolution::Niveau(niveau(45))
+        );
+        assert_eq!(evolution.attaque().as_str(), "souffle-des-brumes");
+        let dragon = contenu.espece(evolution.vers()).unwrap();
+        assert_eq!(dragon.types().liste(), &[Type::Dragon, Type::Vol]);
+        assert_eq!(dragon.rarete(), Rarete::Rare);
+        // Le Désert de sel mène la Vouivre à son niveau d'évolution.
+        assert_eq!(contenu.zones()[5].niveaux().1, niveau(45));
+    }
+
     #[test]
     fn chaque_apotre_et_le_demiurge_ont_leur_ligne_au_carnet() {
         let contenu = ContenuV1::new();
@@ -5402,7 +5899,9 @@ mod tests {
                 "vallee",
                 "abbaye",
                 "abbaye",
-                "col-du-givre-noir"
+                "col-du-givre-noir",
+                "col-du-givre-noir",
+                "desert-de-sel"
             ]
         );
     }

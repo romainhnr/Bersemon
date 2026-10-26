@@ -12,14 +12,16 @@ use bersemon_presentation::filets::filets;
 use bersemon_presentation::monstres::decrire_attaque;
 use bersemon_presentation::partie::{
     argent, capsules_d_habilete as capsules_d_habilete_en_texte, charmes_de_garde, coffre_du_camp,
-    pierres, ressources as ressources_en_texte,
+    coffre_du_camp_abrege, pierres, ressources as ressources_en_texte,
+    ressources_du_sac_et_du_coffre,
 };
 use bersemon_presentation::soins::soins;
 
 use crate::composants::{Cle, Vue, objet_en_texte};
 use crate::ecran_camp::retour;
 use crate::message::{
-    OPTIONS_PAR_MENU, OptionDeMenu, PRINCIPAL, Question, Rangee, SECONDAIRE, bouton, menu, rangees,
+    LONGUEUR_MAX, OPTIONS_PAR_MENU, OptionDeMenu, PRINCIPAL, Question, Rangee, SECONDAIRE, bouton,
+    menu, rangees,
 };
 
 /// Quantités proposées en plus de tout ce qu'il y en a. Un seul lot pour
@@ -72,8 +74,17 @@ pub fn coffre(partie: &Partie) -> Question {
     }
     boutons.push(retour());
     lignes.extend(rangees(boutons));
+    // Avec toutes les ressources du Désert de sel, le coffre détaillé ne
+    // tient plus dans un message : elles se comptent alors par sortes, et
+    // l'écran des ressources les détaille.
+    let detaille = coffre_du_camp(partie);
+    let texte = if detaille.chars().count() <= LONGUEUR_MAX {
+        detaille
+    } else {
+        coffre_du_camp_abrege(partie)
+    };
     Question {
-        texte: coffre_du_camp(partie),
+        texte,
         rangees: lignes,
     }
 }
@@ -175,8 +186,14 @@ pub fn ressources(partie: &Partie) -> Question {
         bouton(Cle::Afficher(Vue::Coffre), "Retour au coffre", SECONDAIRE),
         retour(),
     ]));
+    let detaille = coffre_du_camp(partie);
+    let texte = if detaille.chars().count() <= LONGUEUR_MAX {
+        detaille
+    } else {
+        ressources_du_sac_et_du_coffre(partie)
+    };
     Question {
-        texte: coffre_du_camp(partie),
+        texte,
         rangees: lignes,
     }
 }

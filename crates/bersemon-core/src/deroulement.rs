@@ -5902,7 +5902,9 @@ mod tests {
             .iter()
             .filter(|evenement| matches!(evenement, Evenement::Indice { .. }))
             .count();
-        assert_eq!(indices, 6);
+        // Le septième, au bout de l'expédition qui abat le Margrave, ouvre le
+        // Désert de sel (section 9.4).
+        assert_eq!(indices, 7);
         // Chaque indice et chaque combat de fin de zone sont d'abord annoncés
         // par un bouton (section 9.2).
         let annonces_d_indice = annonces
@@ -5942,11 +5944,11 @@ mod tests {
         }
         // Chaque Apôtre attendait à la dernière étape : l'épilogue est suivi
         // du retour au camp et de la sauvegarde. Le Baron laisse l'indice 3,
-        // qui ouvre l'Abbaye, l'Abbesse l'indice 5, qui ouvre le Col (section
-        // 9.4).
+        // qui ouvre l'Abbaye, l'Abbesse l'indice 5, qui ouvre le Col, le
+        // Margrave l'indice 7, qui ouvre le Désert (section 9.4).
         assert_eq!(deroulement.attente(), Attente::Camp);
         let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
-        assert_eq!(sauvegarde.indices_trouves(), 6);
+        assert_eq!(sauvegarde.indices_trouves(), 7);
         assert_eq!(
             sauvegarde.apotres_vaincus(),
             &[

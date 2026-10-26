@@ -815,7 +815,9 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
     let session = joueurs.session(JOUEUR, &contenu);
     assert_eq!(session.deroulement.attente(), Attente::Camp);
     let partie = session.deroulement.partie().unwrap();
-    assert_eq!(partie.indices_trouves(), 6);
+    // Le septième indice, au bout de l'expédition qui abat le Margrave,
+    // ouvre le Désert de sel (section 9.4).
+    assert_eq!(partie.indices_trouves(), 7);
     assert_eq!(
         partie.apotres_vaincus(),
         &[
@@ -1125,8 +1127,8 @@ fn malvoise_vend_et_loue_des_monstres_a_travers_les_ecrans_du_bot() {
             })
             .unwrap_or(0)
     };
-    assert_eq!(options(Cle::AcheterMonstre), 14);
-    assert_eq!(options(Cle::LouerMonstre), 9);
+    assert_eq!(options(Cle::AcheterMonstre), 18);
+    assert_eq!(options(Cle::LouerMonstre), 11);
     assert!(!propose(&affiche, |cle| *cle == Cle::RendreLeMonstreLoue));
     let clic = choisir_dans(&affiche, |cle| *cle == Cle::AcheterMonstre, "loup").unwrap();
     let achat = jouer(&mut joueurs, clic);
@@ -1941,8 +1943,8 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
     };
     // Tous les soins en vente, ou une âme encore à donner.
     for (donnees, portees) in [
-        (vec!["bertrand", "grete", "ulrich"], vec![]),
-        (vec!["bertrand", "grete"], vec!["ulrich"]),
+        (vec!["bertrand", "grete", "ulrich", "hilde"], vec![]),
+        (vec!["bertrand", "grete"], vec!["ulrich", "hilde"]),
     ] {
         let partie = Partie::restaurer(etat(donnees, portees)).unwrap();
         let cles = afficher(&partie, Vue::Marchand);

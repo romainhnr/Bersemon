@@ -961,7 +961,7 @@ Stades 3, au niveau 36 (gamedesign.md, section 5.4). Chacun garde le rôle, la r
 | Chat des ombres | cait-sith | Cait sith | Ténèbres, Spectre | 65 / 112 / 55 / 65 / 58 / 135 (490) | 120 | Griffes spectrales | Charge spectrale |
 | Warg | loup-garou | Loup-garou | Combat, Ténèbres | 85 / 110 / 75 / 45 / 65 / 100 (480) | 137 | Déchiquetage | Griffe d'ombre |
 
-Le Dragon de feu (stade 4, niveau 70) et le Dragon des brumes (Vouivre, niveau 45) restent seulement nommés.
+Le Dragon de feu (stade 4, niveau 70) et le Dragon des brumes (Vouivre, niveau 45) restent seulement nommés. Le Dragon des brumes est codé à l'étape 143 (section 40).
 
 ## 22. Achat et location de monstres
 
@@ -1546,3 +1546,84 @@ L'attaque d'œuf et le moment de sortie suivent, comme avant.
 Décidée le 26/10/2026, pour l'étape 142 (gamedesign.md, section 14.4) : panacée (identifiant panacee), 120 pièces d'argent, rend tous les PV max et guérit le poison ou la paralysie, sans relever un monstre KO. Vendue par Malvoise une fois l'âme de Hilde recueillie (section 40).
 
 Textes proposés sans validation (gamedesign.md, Q113) : Panacée ; 1 panacée, 3 panacées ; La panacée ; rend tous les PV max et guérit le poison ou la paralysie ; {monstre} récupère {pv} PV. ; {monstre} récupère {pv} PV et guérit du poison. (ou de la paralysie) ; La panacée guérit {monstre} du poison. (ou de la paralysie, quand il a tous ses PV) ; {monstre} a déjà tous ses PV, sans poison ni paralysie : la panacée serait perdue. L'utiliser quand même ? ; Vous n'avez plus de panacée. Sur Discord, le menu de l'étal : "Acheter des soins", options "5 potions : 100 pièces d'argent", avec l'effet du soin en description.
+
+## 40. Désert de sel et Dragon des brumes
+
+Décidés le 26/10/2026, pour l'étape 143 (gamedesign.md, sections 5.3, 5.4, 9.1 et 9.4). La place de la zone, ses niveaux, le nombre et les types de ses espèces, l'humain qui annonce la suite, les services et l'évolution de la Vouivre sont des choix de l'utilisateur ; le reste est proposé par Claude sans validation (gamedesign.md, Q113).
+
+Zone :
+
+| Identifiant | Nom | Niveaux | Taille des groupes | Espèces | Monstres rares | Humain | Apôtre |
+|---|---|---|---|---|---|---|---|
+| desert-de-sel | Désert de sel | 37 à 45 | 1 à 3 | Crotale des salines, Scarabée solaire, Momie de sel, Ver des salines | Sphinx des sables (hostile), Phénix blanc (pacifique) | Pythie de sel | aucun |
+
+Marchand mort : Hilde (identifiant hilde), gardée par un monstre de la zone ; son âme fait vendre la panacée (section 39). Météos : tempête de sable et canicule. Le Scarabée solaire est diurne, la Momie de sel nocturne.
+
+Expédition automatique : durée de base 6 h, dégâts 280 à 560, XP 3000 à 4600, potions 1 à 3, argent 230 à 400. Coffres : 1 à 2 potions et 180 à 280 pièces d'argent ; capsules Chant des dunes (550), Éclat du zénith (550) et Vent de sable (500).
+
+Espèces (stats dans l'ordre PV / Attaque / Défense / Attaque spéciale / Défense spéciale / Vitesse) :
+
+| Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP | Rareté | Habiletés | Attaques apprises |
+|---|---|---|---|---|---|---|---|---|
+| crotale-des-salines | Crotale des salines | Son, Poison | offensif | 60 / 78 / 52 / 72 / 52 / 76 (390) | 115 | commune | Célérité, Instinct | Crécelle (1), Croc de venin (1), Tocsin (22), Venin noir (32) |
+| scarabee-solaire | Scarabée solaire | Lumière, Insecte | soutien | 65 / 50 / 80 / 75 / 80 / 40 (390) | 114 | commune | Carapace, Volonté | Bourdonnement (1), Rayon solaire (1), Nuée (22), Aube éclatante (32) |
+| momie-de-sel | Momie de sel | Spectre, Roche | soutien | 85 / 72 / 95 / 40 / 78 / 20 (390) | 117 | commune | Carapace, Férocité | Bandelettes (1), Chute de pierres (1), Lamentation (22), Éboulement (32) |
+| ver-des-salines | Ver des salines | Sol | offensif | 95 / 92 / 68 / 35 / 55 / 45 (390) | 116 | commune | Férocité, Traqueur | Secousse (1), Étreinte (1), Engloutissement (22), Séisme (32) |
+| sphinx-des-sables | Sphinx des sables | Son, Psychique | offensif | 80 / 70 / 75 / 100 / 85 / 55 (465) | 205 | rare, hostile | Sorcellerie, Volonté | Onde psychique (1), Glas (1), Carillon funèbre (20), Jugement (30) |
+| phenix-blanc | Phénix blanc | Lumière, Feu | soutien | 75 / 50 / 65 / 100 / 95 / 80 (465) | 200 | rare, pacifique | Volonté, Instinct | Lueur sacrée (1), Brasier (1), Rayon solaire (15), Flamme blanche (30) |
+| dragon-des-brumes | Dragon des brumes | Dragon, Vol | offensif | 90 / 100 / 80 / 100 / 75 / 75 (520) | 238 | rare | Affinité, Férocité | celles de la Vouivre, puis Souffle des brumes (45, attaque d'évolution) et Bec funeste (45) |
+
+La Vouivre évolue en Dragon des brumes au niveau 45. Au codex, ces espèces viennent après le Taureau d'airain, dans l'ordre du tableau. Les espèces du Désert n'évoluent pas.
+
+Attaques nouvelles :
+
+| Identifiant | Nom | Type | Cat. | Puissance | Précision | Effet |
+|---|---|---|---|---|---|---|
+| crecelle | Crécelle | Son | S | 60 | 100 | paralysie 20 % |
+| chant-des-dunes | Chant des dunes | Son | S | 85 | 95 | |
+| rayon-solaire | Rayon solaire | Lumière | S | 70 | 100 | |
+| eclat-du-zenith | Éclat du zénith | Lumière | S | 85 | 95 | |
+| flamme-blanche | Flamme blanche | Lumière | S | 95 | 90 | |
+| bandelettes | Bandelettes | Spectre | P | 65 | 100 | paralysie 20 % |
+| engloutissement | Engloutissement | Sol | P | 95 | 85 | |
+| vent-de-sable | Vent de sable | Sol | S | 85 | 90 | |
+| souffle-des-brumes | Souffle des brumes | Dragon | S | 95 | 90 | |
+
+Attaques d'œuf, sur le modèle de la section 28 :
+
+| Famille | Identifiant | Nom | Type | Cat. | Puissance | Précision | Effet |
+|---|---|---|---|---|---|---|---|
+| Crotale des salines | morsure-des-salines | Morsure des salines | Poison | P | 80 | 100 | |
+| Scarabée solaire | disque-solaire | Disque solaire | Lumière | S | 80 | 100 | |
+| Momie de sel | linceul-de-sel | Linceul de sel | Spectre | P | 75 | 100 | paralysie 20 % |
+| Ver des salines | charge-des-dunes | Charge des dunes | Sol | P | 80 | 100 | |
+| Sphinx des sables | enigme-du-sphinx | Énigme du sphinx | Psychique | S | 80 | 100 | |
+| Phénix blanc | aile-d-aurore | Aile d'aurore | Lumière | S | 80 | 100 | |
+
+Le Dragon des brumes est de la famille de la Vouivre, dont il garde l'attaque d'œuf, Piqué draconique.
+
+Ressources : Sonnette de crotale (sonnette-de-crotale), Élytre solaire (elytre-solaire), Bandelette de sel (bandelette-de-sel) et Anneau de ver (anneau-de-ver), 5 pièces d'argent chacune, Griffe de sphinx (griffe-de-sphinx), 15. Ressource rare des pièges dans cette zone : la Griffe de sphinx.
+
+La Pythie de sel (identifiant pythie-de-sel), de classe Mage, attend au bout du Désert avec une Momie de sel et un Ver des salines de niveau 45 et un Sphinx des sables de niveau 46 (valeurs internes à 15, première habileté de leur espèce). Son héros porte le Grimoire du champion et la Robe des cendres, et combat au niveau 40 ; IA relevée. Victoire : 500 pièces d'argent, puis l'indice 8 au retour.
+
+Textes :
+
+> Indice 7 : dans la forteresse du Margrave, une carte de cuir marquée du même sceau : au sud, au-delà des cols, le Désert de sel, où une ville entière a été changée en sel. Une prophétesse y attendait des nouvelles du Margrave.
+
+> Indice 8 : la Pythie vaincue a parlé avant de se taire : un autre Apôtre a reçu la marque du Démiurge. Il attend au-delà du désert, là où la route s'efface sous le sel. Elle n'a pas su dire où.
+
+Pythie de sel, avant le combat :
+
+> Au cœur du désert, parmi les ruines d'une ville changée en sel, une femme aux yeux blancs vous attend. "Je t'ai vu venir depuis le col." Trois bêtes se dressent dans le sable.
+
+Après la victoire :
+
+> La Pythie s'effondre dans le sel, un dernier mot aux lèvres.
+
+Hilde, avant le combat contre son gardien :
+
+> Sous une dune, une caravane ensevelie : la marchande Hilde est morte assise contre sa charrette, une sacoche de baumes serrée contre elle. Un monstre rôde autour du corps et se jette sur vous.
+
+Après la victoire :
+
+> L'âme de Hilde, marchande de baumes, s'échappe enfin de la caravane. Vous la recueillez pour Malvoise.
