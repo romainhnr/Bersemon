@@ -6,13 +6,14 @@ use bersemon_core::contenu::{
     fin_de_l_introduction, texte_du_conseil,
 };
 use bersemon_core::deroulement::Evenement;
+use bersemon_core::expedition::Tresor;
 use bersemon_core::marchand::EXPEDITIONS_DE_LOCATION;
 use bersemon_core::ressource::Ressource;
 
 use crate::arene;
 use crate::boosters::{
     HEROS_NE_SHINY, HEROS_RENDU_SHINY, PHILTRE_RAMASSE, booster_donne, boosters,
-    monstre_rendu_shiny,
+    monstre_rendu_shiny, philtres_chromatiques,
 };
 use crate::combat::{ordre_donne, rapport_experience, remplacement, renoncement};
 use crate::equipement::{nom_de_place, objet_et_bonus};
@@ -131,6 +132,7 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             pierre,
             booster,
             filets: filets_trouves,
+            tresor,
         } => {
             let mut contenu = vec![potions(*nombre)];
             if *montant > 0 {
@@ -149,6 +151,13 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             if let Some((filet, nombre)) = filets_trouves {
                 contenu.push(filets(*filet, *nombre));
             }
+            // Le trésor d'un coffre d'annexe (section 9.9).
+            contenu.extend(tresor.map(|tresor| match tresor {
+                Tresor::PhiltreChromatique => philtres_chromatiques(1),
+                Tresor::Pierre(pierre) => pierres(pierre, 1),
+                Tresor::Booster(booster) => boosters(booster, 1),
+                Tresor::CapsuleDHabilete => capsules_d_habilete(1),
+            }));
             (
                 format!("Vous trouvez un coffre : {}.", enumerer(&contenu)),
                 false,
@@ -171,7 +180,16 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
         Evenement::MonstreRareLaisse => ("Vous le laissez partir.".to_string(), false),
         Evenement::RecitDeLApotre(recit)
         | Evenement::HumainRencontre(recit)
+        | Evenement::LegendaireRencontre(recit)
         | Evenement::AmeRencontree(recit) => (recit.clone(), false),
+        Evenement::LegendaireCapture(texte) => (texte.clone(), true),
+        Evenement::AnnexeDecouverte { nom, texte } => (
+            format!(
+                "{texte} Un nouveau lieu s'ouvre : {}.",
+                important(nom)
+            ),
+            true,
+        ),
         Evenement::AmeRecueillie(texte) => (texte.clone(), true),
         Evenement::PecheurRencontre(texte) => (texte.clone(), false),
         Evenement::PecheurSauve(texte) => (texte.clone(), true),
@@ -676,6 +694,7 @@ mod tests {
             pierre: None,
             booster: None,
             filets: None,
+            tresor: None,
         }])[0];
         assert_eq!(
             recit.texte,
@@ -690,6 +709,7 @@ mod tests {
             pierre: None,
             booster: None,
             filets: None,
+            tresor: None,
         }])[0];
         assert_eq!(sans_argent.texte, "Vous trouvez un coffre : 1 potion.");
         let avec_capsule = &raconter(&[Evenement::Coffre {
@@ -701,6 +721,7 @@ mod tests {
             pierre: None,
             booster: None,
             filets: None,
+            tresor: None,
         }])[0];
         assert_eq!(
             avec_capsule.texte,
@@ -715,6 +736,7 @@ mod tests {
             pierre: None,
             booster: None,
             filets: None,
+            tresor: None,
         }])[0];
         assert_eq!(
             avec_pillard.texte,
@@ -729,6 +751,7 @@ mod tests {
             pierre: Some(bersemon_core::pierre::PierreDEvolution::Lune),
             booster: None,
             filets: None,
+            tresor: None,
         }])[0];
         assert_eq!(
             avec_pierre.texte,
@@ -743,6 +766,7 @@ mod tests {
             pierre: None,
             booster: Some(bersemon_core::booster::Booster::EcorceDeFer),
             filets: None,
+            tresor: None,
         }])[0];
         assert_eq!(
             avec_booster.texte,

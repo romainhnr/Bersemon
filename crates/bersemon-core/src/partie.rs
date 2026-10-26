@@ -9,6 +9,7 @@ use crate::amelioration::{
     Chantier, ErreurAmelioration, Forge, Ouvrage, PlanDAmelioration, PlanDeFabrication,
     PlanDesFilets, PlanDuCharme,
 };
+use crate::annexe::Annexe;
 use crate::arene::{
     AdversaireDeLArene, ErreurArene, EtatDeLArene, FosseAuxDamnes, generer_le_monstre_offert,
 };
@@ -27,7 +28,7 @@ use crate::espece::{Espece, EspeceId, Rarete};
 use crate::evolution::{
     Circonstances, ErreurEvolution, ResultatEvolution, evolution_possible, faire_evoluer,
 };
-use crate::expedition::{ErreurExpedition, Expedition, RencontreDeLAme};
+use crate::expedition::{ErreurExpedition, Expedition, RencontreDeLAme, Tresor};
 use crate::expedition_automatique::{
     BilanExpeditionAutomatique, ErreurExpeditionAutomatique, Estimation, ExpeditionAutomatique,
     MONSTRES_MAX, MONSTRES_MIN, Protection, verifier_protection,
@@ -40,6 +41,7 @@ use crate::heros::Heros;
 use crate::horodatage::Horodatage;
 use crate::humain::{Humain, HumainId, IaHumain};
 use crate::inventaire::{ErreurObjet, Inventaire, Objet};
+use crate::legendaire::ZoneLegendaire;
 use crate::machines::{ErreurMachine, Machines, reste_avant_le_plafond};
 use crate::marchand::{
     EXPEDITIONS_DE_LOCATION, ErreurMarchand, OffreDeMonstre, PRIX_CAPSULE_D_HABILETE,
@@ -145,6 +147,16 @@ pub struct Partie {
     /// Les paliers vaincus de la Fosse aux damnés et la cote de l'arène
     /// (sections 9.8 et 15.6).
     arene: EtatDeLArene,
+    decouvertes: Decouvertes,
+}
+
+/// Ce que le joueur a trouvé hors de la piste des Apôtres : les zones
+/// annexes ouvertes, dans l'ordre de leur découverte, et les légendaires
+/// capturés (sections 9.9 et 9.10).
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Decouvertes {
+    pub annexes_ouvertes: Vec<ZoneId>,
+    pub legendaires_captures: Vec<EspeceId>,
 }
 
 /// Ce qu'a rapporté un palier de la Fosse aux damnés (section 9.8).
@@ -203,6 +215,7 @@ pub struct EtatPartie {
     pub rite: Option<Rite>,
     pub paliers_du_codex: Vec<PalierDuCodex>,
     pub arene: EtatDeLArene,
+    pub decouvertes: Decouvertes,
 }
 
 /// Sauvegarde lisible mais contraire aux règles des expéditions
@@ -299,6 +312,7 @@ impl Partie {
             rite: None,
             paliers_du_codex: Vec::new(),
             arene: EtatDeLArene::default(),
+            decouvertes: Decouvertes::default(),
             conseils_vus: Vec::new(),
             expeditions_automatiques: Vec::new(),
             attaques_a_choisir: Vec::new(),
@@ -1995,6 +2009,108 @@ impl Partie {
             .vers_l_antre(invocation.demiurge().clone()))
     }
 
+    pub fn decouvertes(&self) -> &Decouvertes {
+        &self.decouvertes
+    }
+
+    pub fn annexe_ouverte(&self, annexe: &ZoneId) -> bool {
+        self.decouvertes.annexes_ouvertes.contains(annexe)
+    }
+
+    /// Les annexes ouvertes, dans l'ordre du contenu.
+    pub fn annexes_accessibles<'a>(&self, annexes: &'a [Annexe]) -> Vec<&'a Annexe> {
+        annexes
+            .iter()
+            .filter(|annexe| self.annexe_ouverte(annexe.zone().id()))
+            .collect()
+    }
+
+    /// L'annexe dont un coffre de cette zone peut contenir la carte : tant
+    /// qu'elle n'est pas ouverte, et une fois l'humain gardien de la zone
+    /// vaincu (section 9.9).
+    pub fn annexe_a_decouvrir(&self, zone: &Zone, annexes: &[Annexe]) -> Option<ZoneId> {
+        let gardien_vaincu = zone
+            .humain()
+            .is_none_or(|humain| self.humains_vaincus.contains(humain.id()));
+        annexes
+            .iter()
+            .find(|annexe| annexe.de() == zone.id())
+            .map(|annexe| annexe.zone().id().clone())
+            .filter(|annexe| gardien_vaincu && !self.annexe_ouverte(annexe))
+    }
+
+    /// La carte trouvée ouvre l'annexe aussitôt : une défaite ne la fait
+    /// pas perdre (section 9.9).
+    pub(crate) fn ouvrir_l_annexe(&mut self, annexe: ZoneId) {
+        if !self.annexe_ouverte(&annexe) {
+            self.decouvertes.annexes_ouvertes.push(annexe);
+        }
+    }
+
+    /// Une expédition dans une annexe ouverte : ni humain, ni Apôtre, ni
+    /// marchand mort (section 9.9).
+    pub fn partir_vers_l_annexe(&self, annexe: &Annexe) -> Result<Expedition, ErreurExpedition> {
+        if !self.annexe_ouverte(annexe.zone().id()) {
+            return Err(ErreurExpedition::ZoneFermee);
+        }
+        self.verifier_le_depart()?;
+        let possedees = self
+            .capsules()
+            .map(|capsule| capsule.id().clone())
+            .collect();
+        Ok(Expedition::partir(annexe.zone().clone()).avec_capsules_possedees(possedees))
+    }
+
+    /// Les zones légendaires s'ouvrent à la chute du Démiurge (section
+    /// 9.10).
+    pub fn zones_legendaires_ouvertes(&self) -> bool {
+        self.beherit == EtatDuBeherit::DemiurgeVaincu
+    }
+
+    pub fn legendaire_capture(&self, espece: &EspeceId) -> bool {
+        self.decouvertes.legendaires_captures.contains(espece)
+    }
+
+    /// Le légendaire attend à la dernière étape, tant qu'il n'est pas
+    /// capturé ; ensuite, la zone se parcourt comme une autre (section
+    /// 9.10).
+    pub fn partir_vers_la_zone_legendaire(
+        &self,
+        zone: &ZoneLegendaire,
+    ) -> Result<Expedition, ErreurExpedition> {
+        if !self.zones_legendaires_ouvertes() {
+            return Err(ErreurExpedition::ZoneFermee);
+        }
+        self.verifier_le_depart()?;
+        let possedees = self
+            .capsules()
+            .map(|capsule| capsule.id().clone())
+            .collect();
+        let expedition = Expedition::partir(zone.zone().clone()).avec_capsules_possedees(possedees);
+        let legendaire = zone.legendaire();
+        if self.legendaire_capture(legendaire.espece().id()) {
+            return Ok(expedition);
+        }
+        Ok(expedition.contre_le_legendaire(legendaire.clone()))
+    }
+
+    /// Une fois capturé, il ne revient plus, même relâché (section 9.10).
+    pub(crate) fn noter_legendaire_capture(&mut self, espece: &EspeceId) {
+        if !self.legendaire_capture(espece) {
+            self.decouvertes.legendaires_captures.push(espece.clone());
+        }
+    }
+
+    /// Le trésor d'un coffre d'annexe va dans le sac (section 9.9).
+    pub fn trouver_tresor(&mut self, tresor: Tresor) {
+        match tresor {
+            Tresor::PhiltreChromatique => self.sac.ajouter_philtres_chromatiques(1),
+            Tresor::Pierre(pierre) => self.trouver_pierre(pierre),
+            Tresor::Booster(booster) => self.trouver_booster(booster),
+            Tresor::CapsuleDHabilete => self.trouver_capsule_d_habilete(),
+        }
+    }
+
     /// La Tour sans fond s'ouvre quand la Lisière est menée au bout
     /// (section 9.5).
     pub fn tour_ouverte(&self, tour: &TourSansFond) -> bool {
@@ -2182,6 +2298,7 @@ impl Partie {
             rite: etat.rite,
             paliers_du_codex: etat.paliers_du_codex,
             arene: etat.arene,
+            decouvertes: etat.decouvertes,
         })
     }
 
@@ -2793,11 +2910,16 @@ impl Partie {
     ) -> Option<&'p Indice> {
         self.collection.soigner_tout();
         self.heros.soigner();
-        // L'Éclipse ne compte jamais comme explorée (section 9.4).
-        if !expedition.est_reussie() || expedition.zone().est_un_lieu_d_invocation() {
+        // Ni l'Éclipse, ni une annexe, ni une zone légendaire ne comptent
+        // comme explorées : seules les zones de la piste (sections 9.4, 9.9
+        // et 9.10).
+        let zone = expedition.zone().id();
+        if !expedition.est_reussie()
+            || expedition.zone().est_un_lieu_d_invocation()
+            || !piste.zone_ouverte(zone, self.indices_trouves)
+        {
             return None;
         }
-        let zone = expedition.zone().id();
         if !self.est_exploree(zone) {
             self.zones_explorees.push(zone.clone());
         }
@@ -2896,6 +3018,25 @@ mod tests {
         let apprenables = |emplacement| partie.attaques_a_apprendre(emplacement).unwrap();
         assert!(apprenables(Emplacement::Equipe(1)).contains(&rayon));
         assert!(!apprenables(Emplacement::Equipe(0)).contains(&rayon));
+    }
+
+    /// Section 9.9 : le trésor d'un coffre d'annexe va dans le sac.
+    #[test]
+    fn chaque_tresor_va_dans_le_sac() {
+        let mut partie = partie();
+        for tresor in [
+            Tresor::PhiltreChromatique,
+            Tresor::Pierre(PierreDEvolution::Lune),
+            Tresor::Booster(Booster::TOUS[2]),
+            Tresor::CapsuleDHabilete,
+        ] {
+            partie.trouver_tresor(tresor);
+        }
+        let sac = partie.sac();
+        assert_eq!(sac.philtres_chromatiques(), 1);
+        assert_eq!(sac.pierres(), [(PierreDEvolution::Lune, 1)]);
+        assert_eq!(sac.boosters(), [(Booster::TOUS[2], 1)]);
+        assert_eq!(sac.capsules_d_habilete(), 1);
     }
 
     #[test]
@@ -4161,6 +4302,7 @@ mod tests {
             rite: partie.rite().cloned(),
             paliers_du_codex: partie.paliers_du_codex().to_vec(),
             arene: partie.arene(),
+            decouvertes: partie.decouvertes().clone(),
         }
     }
 

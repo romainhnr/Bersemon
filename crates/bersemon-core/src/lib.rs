@@ -8,6 +8,7 @@
 pub mod aleatoire;
 pub mod ame;
 pub mod amelioration;
+pub mod annexe;
 pub mod arene;
 pub mod attaque;
 pub mod beherit;
@@ -37,6 +38,7 @@ pub mod horodatage;
 pub mod humain;
 pub mod inventaire;
 pub mod jour_et_nuit;
+pub mod legendaire;
 pub mod machines;
 pub mod marchand;
 pub mod meteo;

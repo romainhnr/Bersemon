@@ -428,6 +428,24 @@ Le jeu alterne entre deux phases :
 - Décidé le 19/10/2026, pour les étapes 44 à 47, après les améliorations du camp : une quatrième zone, l'Abbaye des Cendres (niveaux 21 à 27), s'ouvre avec la défaite du Baron pendu (section 9.4).
 - Décidé le 20/10/2026, pour les étapes 79 à 82 (choix de l'utilisateur) : une cinquième zone, le Col du Givre-Noir (niveaux 28 à 36, 9 niveaux pour que les stades 3 du niveau 36 s'y atteignent), s'ouvre avec la défaite de l'Abbesse écorchée (section 9.4).
 - Décidé le 26/10/2026, pour l'étape 143 (choix de l'utilisateur) : une sixième zone, le Désert de sel (niveaux 37 à 45), s'ouvre avec la défaite du Margrave de givre. Elle n'a pas d'Apôtre ; l'Éclipse reste accessible en parallèle (section 9.4).
+- Décidé le 27/10/2026, pour les étapes 161 à 167 (choix de l'utilisateur) : la suite de l'aventure compte dix nouveaux Apôtres, soit 13 en tout, puis le Démiurge en combat final, au niveau 100 (section 9.4). Chaque nouvel Apôtre a sa zone, de 5 à 6 niveaux, avec un humain gardien au bout ; l'Apôtre combat 2 niveaux au-dessus du maximum de sa zone, le dernier au niveau 100. Rythme visé : environ 12 expéditions par zone, comme jusqu'ici, mesuré avec l'outil d'équilibrage et réglé par le rendement d'XP des nouvelles espèces.
+
+| Apôtre | Zone (niveaux) | Apôtre (niveau) | Humain gardien |
+|---|---|---|---|
+| 4 | Port des Noyés (46 à 51) | Amiral noyé (53) | le Contrebandier |
+| 5 | Mines de Fer-Noir (52 à 57) | Prévôt des fosses (59) | le Contremaître |
+| 6 | Sylve écarlate (58 à 62) | Duchesse sanguine (64) | la Chasseresse |
+| 7 | Catacombes de Sainte-Ombre (63 à 67) | Évêque des os (69) | le Fossoyeur |
+| 8 | Plaine du Massacre (68 à 72) | Connétable boucher (74) | le Capitaine mercenaire |
+| 9 | Haute-Cité déchue (73 à 77) | Chancelier aux mille yeux (79) | l'Archiviste |
+| 10 | Gorge de Braise (78 à 82) | Prince de braise (84) | le Pyromancien |
+| 11 | Pics Foudroyés (83 à 87) | Sénéchal des orages (89) | le Héraut de l'orage |
+| 12 | Palais de Chair (88 à 92) | Reine-mère de chair (94) | la Favorite |
+| 13 | Puits du Monde (93 à 98) | Roi sans visage (100) | le Chevalier-Crâne |
+
+  - Chaque zone a 3 espèces communes nouvelles et 1 espèce rare nouvelle, chacune avec son sprite, normal et shiny (section 5.1).
+  - Chaque nouvelle zone a sa zone annexe (section 9.9). Après le Démiurge, trois zones légendaires optionnelles, au niveau 100 (section 9.10).
+  - Le fil (zones, noms, humains, légendaires) est proposé par Claude et validé par l'utilisateur ; le détail de chaque lot (espèces, stats, attaques, textes) est proposé lot par lot.
 
 ### 9.2 Événements
 
@@ -531,6 +549,14 @@ Décidé le 21/10/2026, pour les étapes 88 à 92 (choix de l'utilisateur, Q92 ;
 - Précisé aux étapes 88 à 90, en codant : le sacrifice est sauvegardé aussitôt, avant le départ qu'il déclenche ; l'Éclipse n'est pas parmi les zones de la carte, et ses paramètres d'expédition automatique et de coffre ne servent jamais. En combat, la seconde forme n'est pas comptée parmi les monstres en attente, et son entrée est racontée par le texte de la métamorphose.
 - Écrans, aux étapes 91 et 92 : dans la console, l'étal propose de forger le Béhérit après les âmes portées, dans "Donner une âme" ; la carte propose l'Éclipse après les zones, puis, avant le premier départ, la liste des monstres que le Béhérit accepte. Sur Discord, le menu "Donner une âme à Malvoise" propose "Âmes des Apôtres : forger le Béhérit pourpre" ; le menu "Partir en expédition" propose l'Éclipse, qui ouvre son écran : un menu des monstres à sacrifier, ou le bouton "Partir vers l'Éclipse". Le camp rappelle le Béhérit à la place des âmes d'Apôtres.
 
+#### Suite de l'aventure et Démiurge final
+
+Décidé le 27/10/2026, pour les étapes 161 à 167 (choix de l'utilisateur) :
+
+- La piste continue au-delà du Désert de sel avec dix nouveaux Apôtres (section 9.1). L'indice 8, au bout du Désert, ouvre la zone du quatrième Apôtre. Chaque chapitre suit le modèle du Col : l'indice trouvé à la chute de l'Apôtre ouvre la zone suivante ; la première expédition menée au bout de la nouvelle zone, où attend l'humain gardien, donne l'indice qui localise l'antre ; chaque expédition dans la zone s'achève ensuite par l'Apôtre, tant qu'il n'est pas vaincu.
+- Le Démiurge devient le combat final : le Béhérit pourpre demande les âmes des 13 Apôtres, puis l'Éclipse et le sacrifice viennent à la fin. Le Démiurge combat au niveau 100, sans changer la règle du niveau maximal : ses deux formes ont des stats de base bien au-dessus de celles des Apôtres.
+- Sauvegardes antérieures : un Béhérit forgé, avec ou sans sacrifice, redevient les âmes des trois premiers Apôtres ; un monstre sacrifié reste perdu, et le sacrifice sera de nouveau demandé ; un Démiurge déjà vaincu au niveau 42 attendra de nouveau, au niveau 100, et les Philtres chromatiques qu'il a laissés restent acquis.
+
 ### 9.5 Tour sans fond
 
 Décidé le 24/10/2026, pour les étapes 96 à 98 (choix de l'utilisateur) :
@@ -607,6 +633,25 @@ Décidé le 25/10/2026, pour les étapes 135 à 137 (choix de l'utilisateur) :
   - Raison : avec les attaques du second type (section 4.4), certains combats étaient perdus d'avance quel que soit le niveau du héros. Le Gladiateur (Humain/Combat) battait toujours le Templier et l'Assassin, le Champion (Humain/Ténèbres) le Mage et le Templier, et la Sorcière (Humain/Psychique) le Templier jusqu'au niveau 40, qu'il n'atteint qu'avec l'arme du palier 10. Un Templier ne pouvait pas dépasser le palier 7.
   - Mesuré ensuite (docs/equilibrage.md, section 13) : chaque classe gagne chaque palier au niveau 35 au plus, le palier 10 une fois sur deux environ au niveau 35, à chances égales entre les classes.
   - Écrans : l'annonce d'un palier miroir donne la classe du héros ("Face à vous : Le Champion de la Fosse, Templier, niveau 35.").
+
+### 9.9 Zones annexes
+
+Décidé le 27/10/2026, pour les étapes 161 à 167 (choix de l'utilisateur) :
+
+- Chaque nouvelle zone d'Apôtre a une zone annexe, optionnelle : courte, un peu plus haute que sa zone, avec une espèce rare qu'on ne trouve que là et des coffres plus riches, qui peuvent contenir des objets rares (Philtres chromatiques, pierres d'évolution, boosters, capsules rares). Exemple proposé : l'Épave du Léviathan pour le Port des Noyés.
+- Une annexe s'ouvre par une carte trouvée dans un coffre de sa zone, une fois l'humain gardien de la zone vaincu : un coffre en contient une 1 fois sur 5, comme les capsules, tant que l'annexe n'est pas ouverte.
+- Le détail de chaque annexe (niveaux, étapes, espèce, coffres) est proposé avec le lot de sa zone.
+- Décidé le 27/10/2026, pour l'étape 161 (choix de l'utilisateur) : une expédition dans une annexe compte 3 étapes, avec 60 % de combats, 30 % de coffres et 10 % de monstres rares, au lieu de 80, 15 et 5 dans une zone de la carte. Ni humain, ni Apôtre, ni marchand mort, ni expédition automatique ; le jour, la nuit et la météo jouent. Chaque coffre y contient en plus un trésor à coup sûr, tiré dans la liste de l'annexe selon son poids : Philtre chromatique (rare), pierre d'évolution, booster ou capsule d'habileté. La carte trouvée ouvre l'annexe aussitôt : ce n'est pas un objet, et une défaite ne la fait pas perdre.
+- Précisé à l'étape 161, en codant : une annexe ne compte jamais comme explorée, comme l'Éclipse ; seule une expédition seule y trouve la carte, pas une expédition en groupe (hypothèses retenues, Q118). Sauvegarde en version 36 : les annexes ouvertes et les légendaires capturés.
+
+### 9.10 Zones légendaires
+
+Décidé le 27/10/2026, pour les étapes 161 à 167 (choix de l'utilisateur) :
+
+- Après la chute du Démiurge, trois zones légendaires optionnelles s'ouvrent, au niveau 100 : les Abysses, gardées par Léviathan, les Terres arides, par Béhémoth, et le Ciel déchiré, par Ziz, le trio biblique de la mer, de la terre et du ciel.
+- Le légendaire attend au bout de sa zone, dans un combat unique, sans fuite ni filet, comme un Apôtre. Vaincu et KO, il se capture à coup sûr ; une défaite permet de retenter. Il n'y en a qu'un exemplaire par partie.
+- Décidé le 27/10/2026, pour l'étape 161 (choix de l'utilisateur) : vaincu, le légendaire est capturé d'office, sans filet, et rejoint l'équipe ou le camp ; sans place, le choix habituel s'applique (relâcher un monstre ou lui). Une fois capturé, il ne revient plus, même relâché : la zone se parcourt ensuite comme une autre.
+- Précisé à l'étape 161, en codant : comme un Apôtre, il a 31 dans chaque valeur interne, 1 chance sur 512 d'être shiny, son habileté tirée et l'IA avancée ; une zone légendaire ne compte pas comme explorée (hypothèses retenues, Q118).
 
 ## 10. Combat
 
@@ -1301,6 +1346,10 @@ Les questions Q102 et suivantes ont été relevées le 25/10/2026 lors de la con
 
 Les questions Q103 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 107 carnet de traque du codex et 108 Philtre chromatique.
 
+Les questions Q118 et suivantes ont été relevées le 27/10/2026 lors de la conception des étapes 161 zones annexes et légendaires, 162 à 166 les dix nouveaux Apôtres par lots de deux, et 167 Démiurge final et zones légendaires.
+
+- Q118. (Étapes 161 à 167) À préciser lot par lot : espèces, stats, attaques, capsules, ressources, humains, textes, annexes. Hypothèses retenues, à confirmer : sur Discord, les annexes et les zones légendaires ont un menu de départ à part, le menu des expéditions ne tenant pas plus de 25 options. Étape 161 : ni une annexe ni une zone légendaire ne comptent comme explorées ; seule une expédition seule trouve la carte d'une annexe ; un légendaire a les valeurs internes, le shiny et l'IA d'un Apôtre.
+
 Les questions Q117 et suivantes ont été relevées le 26/10/2026 lors de la conception des étapes 158 Rayon chromatique et héros shiny dans le noyau, avec la sauvegarde en version 35, 159 écrans de la console, 160 écrans du bot Discord.
 
 - Q117. (Étapes 158 à 160) Hypothèses retenues, à confirmer : à la reprise d'une sauvegarde antérieure, seuls les monstres de l'équipe et du camp apprennent le Rayon chromatique ; ceux qui sont absents (expédition automatique, cour d'entraînement, rite) pourront l'apprendre au camp ; le Rayon ne passe pas au petit d'un rite, qui ne le connaît que s'il naît shiny ; le héros tire son shiny après son monstre de départ. Nom de l'attaque et textes proposés par Claude sans validation (docs/contenu-v1.md, section 43).
@@ -1933,3 +1982,10 @@ Les questions Q104 et suivantes ont été relevées le 25/10/2026 lors de la con
 - Claude a relevé qu'une attaque spéciale commune à tous les shiny servirait peu aux monstres physiques, et qu'une attaque en plus des 4 contournerait la règle des 4 attaques.
 - Choix de l'utilisateur : un héros shiny ne change que de couleur ; il naît shiny 1 fois sur 512 ou le devient par le Philtre chromatique ; l'attaque prend une des 4 places ; elle est Stellaire, de puissance 80, et sa catégorie s'adapte aux stats du monstre ; un monstre né shiny la connaît à la place de sa plus ancienne attaque, un monstre rendu shiny fait choisir l'attaque à oublier, et les shiny des sauvegardes antérieures l'apprennent à la reprise (sections 4.1, 5.1 et 13.7).
 - Hypothèses retenues, à confirmer : Q117.
+
+27/10/2026 (conception des étapes 161 à 167, suite de l'aventure) :
+
+- Demande de l'utilisateur : la suite de l'aventure, avec 13 Apôtres au total, puis le Démiurge en combat final, affronté au niveau 100, au-dessus du niveau 100 ou renforcé, en tenant compte de la courbe de niveau ; après le Démiurge, des zones optionnelles de monstres légendaires ; des zones annexes tout au long de l'aventure, pour des objets et monstres rares.
+- Choix de l'utilisateur : le combat final déplacé (le Béhérit demande les 13 âmes) ; le Démiurge au niveau 100, aux stats renforcées ; une zone par Apôtre ; un rythme d'environ 12 expéditions par zone ; 3 espèces communes et 1 rare par zone ; 3 zones légendaires, Léviathan, Béhémoth et Ziz, capturés à coup sûr une fois vaincus ; une zone annexe par nouvel Apôtre, ouverte par une carte trouvée dans les coffres ; un nouveau sacrifice pour les sauvegardes qui avaient vaincu le Démiurge au niveau 42 (sections 9.1, 9.4, 9.9 et 9.10).
+- Fil proposé par Claude et validé : zones, Apôtres et humains gardiens (section 9.1).
+- Hypothèses retenues, à confirmer : Q118.

@@ -507,6 +507,9 @@ pub struct Combat {
     /// Face au gardien de la Tour sans fond, ni fuite, ni filet, ni capture
     /// (section 9.5).
     contre_un_gardien: bool,
+    /// Face à un légendaire, ni fuite ni filet ; vaincu et KO, il se capture
+    /// sans filet (section 9.10).
+    contre_un_legendaire: bool,
     ia: Ia,
     /// Contre un autre joueur, qui choisit les actions de l'adversaire
     /// (section 15.3).
@@ -648,6 +651,7 @@ impl Combat {
             contre_un_humain: false,
             sans_capture: false,
             contre_un_gardien: false,
+            contre_un_legendaire: false,
             ia: Ia::Hasard,
             duel: false,
             arene: false,
@@ -1046,8 +1050,24 @@ impl Combat {
         self.contre_un_gardien
     }
 
+    /// Contre un légendaire : ni fuite ni filet, l'IA avancée des Apôtres ;
+    /// vaincu et KO, il se capture sans filet (section 9.10).
+    pub fn contre_un_legendaire(mut self) -> Self {
+        self.contre_un_legendaire = true;
+        self.ia = Ia::Avancee;
+        self
+    }
+
+    pub fn est_contre_un_legendaire(&self) -> bool {
+        self.contre_un_legendaire
+    }
+
     pub fn fuite_possible(&self) -> bool {
-        !self.contre_un_apotre && !self.contre_un_humain && !self.contre_un_gardien && !self.duel
+        !self.contre_un_apotre
+            && !self.contre_un_humain
+            && !self.contre_un_gardien
+            && !self.contre_un_legendaire
+            && !self.duel
     }
 
     /// En duel et dans l'arène, à tout moment avant la fin.
@@ -1056,7 +1076,11 @@ impl Combat {
     }
 
     pub fn filet_possible(&self) -> bool {
-        !self.contre_un_apotre && !self.contre_un_humain && !self.sans_capture && !self.duel
+        !self.contre_un_apotre
+            && !self.contre_un_humain
+            && !self.sans_capture
+            && !self.contre_un_legendaire
+            && !self.duel
     }
 
     /// Bonus appliqué aux stats des monstres du joueur pendant tout le combat,
@@ -1547,6 +1571,7 @@ impl Combat {
             contre_un_humain: self.contre_un_humain,
             sans_capture: self.sans_capture,
             contre_un_gardien: self.contre_un_gardien,
+            contre_un_legendaire: self.contre_un_legendaire,
             ia: self.ia,
             duel: self.duel,
             arene: self.arene,
@@ -1566,7 +1591,8 @@ impl Combat {
     /// 10.7), aucun dans un combat sans capture (section 14.2), ni sans
     /// filet (section 11.2).
     pub fn adversaires_capturables(&self) -> Vec<usize> {
-        let un_filet = self.peut_capturer(Membre::Hote)
+        let un_filet = self.contre_un_legendaire
+            || self.peut_capturer(Membre::Hote)
             || (self.groupe.is_some() && self.peut_capturer(Membre::Invite));
         if self.phase != Phase::Termine(Issue::Victoire)
             || self.sans_capture
@@ -1598,11 +1624,14 @@ impl Combat {
         if !self.adversaires_capturables().contains(&index) {
             return Err(ErreurCombat::CaptureImpossible(index));
         }
-        let filet = self
-            .filets_du_membre(membre)
-            .le_plus_simple()
-            .ok_or(ErreurCombat::SansFilet)?;
-        self.filets_du_membre_mut(membre).retirer(filet, 1);
+        // Un légendaire vaincu se capture sans filet (section 9.10).
+        if !self.contre_un_legendaire {
+            let filet = self
+                .filets_du_membre(membre)
+                .le_plus_simple()
+                .ok_or(ErreurCombat::SansFilet)?;
+            self.filets_du_membre_mut(membre).retirer(filet, 1);
+        }
         self.noter_capture(index, membre);
         Ok(vec![Evenement::CaptureReussie(Combattant {
             cote: Cote::Adversaire,

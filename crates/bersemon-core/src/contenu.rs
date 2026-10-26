@@ -7,6 +7,8 @@
 //! le futur bot Discord. Les règles, elles, n'en dépendent pas : elles le
 //! reçoivent de l'appelant, comme le hasard.
 
+use crate::annexe::Annexe;
+use crate::legendaire::ZoneLegendaire;
 use std::ops::RangeInclusive;
 use std::time::Duration;
 
@@ -242,6 +244,10 @@ pub struct ContenuV1 {
     tour: TourSansFond,
     fosse: FosseAuxDamnes,
     recompenses_du_codex: Vec<RecompenseDuCodex>,
+    /// Une par zone d'Apôtre, à partir du quatrième (section 9.9).
+    annexes: Vec<Annexe>,
+    /// Ouvertes à la chute du Démiurge (section 9.10).
+    zones_legendaires: Vec<ZoneLegendaire>,
 }
 
 impl ContenuV1 {
@@ -792,7 +798,31 @@ impl ContenuV1 {
             invocation,
             tour,
             fosse,
+            annexes: Vec::new(),
+            zones_legendaires: Vec::new(),
         }
+    }
+
+    pub fn annexes(&self) -> &[Annexe] {
+        &self.annexes
+    }
+
+    /// Pour les tests, avant que le contenu ait ses propres annexes.
+    #[cfg(test)]
+    pub(crate) fn avec_annexes(mut self, annexes: Vec<Annexe>) -> Self {
+        self.annexes = annexes;
+        self
+    }
+
+    /// Pour les tests, avant que le contenu ait ses zones légendaires.
+    #[cfg(test)]
+    pub(crate) fn avec_zones_legendaires(mut self, zones: Vec<ZoneLegendaire>) -> Self {
+        self.zones_legendaires = zones;
+        self
+    }
+
+    pub fn zones_legendaires(&self) -> &[ZoneLegendaire] {
+        &self.zones_legendaires
     }
 
     /// L'arène où le héros affronte seul des humains, de palier en palier

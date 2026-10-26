@@ -486,6 +486,7 @@ mod tests {
             )),
             paliers_du_codex: vec![PalierDuCodex::Especes(10), PalierDuCodex::Complet],
             arene: Default::default(),
+            decouvertes: Default::default(),
         };
         let mut partie = Partie::restaurer(etat(&partie, Vec::new())).unwrap();
         // Croc apprend l'attaque de la capsule, hors de la liste de son
@@ -1466,6 +1467,31 @@ mod tests {
         assert!(!relue.heros().est_shiny());
         assert!(relue.collection().equipe()[0].attaques().connait(&rayon));
         assert!(!relue.collection().equipe()[1].attaques().connait(&rayon));
+    }
+
+    /// Les annexes ouvertes et les légendaires capturés se relisent ; avant
+    /// la version 36, il n'y en a aucun (sections 9.9 et 9.10).
+    #[test]
+    fn les_decouvertes_hors_de_la_piste_se_relisent() {
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        valeur["annexes_ouvertes"] = serde_json::json!(["epave"]);
+        valeur["legendaires_captures"] = serde_json::json!(["leviathan"]);
+        let relue = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        assert_eq!(relue.decouvertes().annexes_ouvertes, [ZoneId::new("epave")]);
+        assert!(relue.legendaire_capture(&EspeceId::new("leviathan")));
+        let texte = serde_json::to_string(&format::depuis_partie(&relue)).unwrap();
+        assert!(
+            texte.contains(
+                "\"annexes_ouvertes\":[\"epave\"],\"legendaires_captures\":[\"leviathan\"]"
+            ),
+            "{texte}"
+        );
+        let objet = valeur.as_object_mut().unwrap();
+        objet.remove("annexes_ouvertes");
+        objet.remove("legendaires_captures");
+        objet.insert("version".to_string(), 35.into());
+        let ancienne = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        assert_eq!(ancienne.decouvertes(), &Default::default());
     }
 
     #[test]

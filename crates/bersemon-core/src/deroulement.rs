@@ -32,7 +32,7 @@ use crate::echange::{ErreurEchange, Offre, conclure_offre};
 use crate::equipement::{ErreurEquipement, ObjetDEquipement, ObjetDEquipementId, PlaceDEquipement};
 use crate::espece::{Espece, EspeceId};
 use crate::evolution::{Circonstances, ErreurEvolution, evolution_possible, faire_evoluer};
-use crate::expedition::{ErreurExpedition, EvenementExpedition, Expedition};
+use crate::expedition::{ErreurExpedition, EvenementExpedition, Expedition, Tresor};
 use crate::expedition_automatique::{
     BilanExpeditionAutomatique, ErreurExpeditionAutomatique, ExpeditionAutomatique, Protection,
 };
@@ -469,11 +469,23 @@ pub enum Evenement {
         booster: Option<Booster>,
         /// Ils vont dans le sac (section 11.2).
         filets: Option<(Filet, u32)>,
+        /// Dans une zone annexe, il va dans le sac (section 9.9).
+        tresor: Option<Tresor>,
     },
     MonstreRarePacifique(Monstre),
     MonstreRareHostile(Monstre),
     MonstreRareLaisse,
     RecitDeLApotre(String),
+    /// La carte d'une zone annexe, trouvée dans un coffre : son nom et le
+    /// texte de sa découverte (section 9.9).
+    AnnexeDecouverte {
+        nom: String,
+        texte: String,
+    },
+    /// Le texte qui présente le légendaire avant le combat (section 9.10).
+    LegendaireRencontre(String),
+    /// Vaincu, il rejoint le joueur : le texte de sa capture.
+    LegendaireCapture(String),
     /// Le texte qui présente l'humain avant le combat (section 10.7).
     HumainRencontre(String),
     /// Son texte après la victoire, et l'argent mis dans le sac.
@@ -1126,6 +1138,7 @@ impl Deroulement {
             contre_un_apotre: false,
             contre_un_humain: false,
             contre_un_gardien,
+            contre_un_legendaire: false,
             sac_perdu: Inventaire::default(),
         };
         let reponse =
@@ -1498,10 +1511,36 @@ impl EnJeu {
                 Ok(Reponse::Faite)
             }
             Choix::PartirEnExpedition(id) => {
-                let zone = zone_du_contenu(contexte.contenu, id)?;
-                let expedition = self
-                    .partie
-                    .partir_en_expedition(zone, contexte.contenu.piste())
+                let contenu = contexte.contenu;
+                let annexe = contenu
+                    .annexes()
+                    .iter()
+                    .find(|annexe| annexe.zone().id() == id);
+                let legendaire = contenu
+                    .zones_legendaires()
+                    .iter()
+                    .find(|legendaire| legendaire.zone().id() == id);
+                let (zone, depart) = match (annexe, legendaire) {
+                    (Some(annexe), _) => (annexe.zone(), self.partie.partir_vers_l_annexe(annexe)),
+                    (None, Some(legendaire)) => (
+                        legendaire.zone(),
+                        self.partie.partir_vers_la_zone_legendaire(legendaire),
+                    ),
+                    (None, None) => {
+                        let zone = zone_du_contenu(contenu, id)?;
+                        // Un coffre peut y contenir la carte de son annexe
+                        // (section 9.9).
+                        let carte = self.partie.annexe_a_decouvrir(zone, contenu.annexes());
+                        let depart = self.partie.partir_en_expedition(zone, contenu.piste()).map(
+                            |expedition| match carte {
+                                Some(carte) => expedition.avec_carte(carte),
+                                None => expedition,
+                            },
+                        );
+                        (zone, depart)
+                    }
+                };
+                let expedition = depart
                     .map_err(|erreur| match erreur {
                         ErreurExpedition::ZoneFermee => ErreurChoix::ZoneFermee,
                         ErreurExpedition::EquipeVide => ErreurChoix::EquipeVide,
@@ -2611,6 +2650,7 @@ struct FinDeCombat {
     contre_un_apotre: bool,
     contre_un_humain: bool,
     contre_un_gardien: bool,
+    contre_un_legendaire: bool,
     /// Le contenu du sac, perdu après une défaite (section 9.3).
     sac_perdu: Inventaire,
 }
@@ -2918,6 +2958,18 @@ impl EnExpedition {
                 combat: combat.clone(),
             });
         }
+        // Vaincu, le légendaire est capturé d'office, sans filet (section
+        // 9.10).
+        if combat.est_contre_un_legendaire() {
+            for index in combat.adversaires_capturables() {
+                if let Ok(capture) = combat.capturer_ko(index) {
+                    evenements.push(Evenement::Combat {
+                        evenements: capture,
+                        combat: combat.clone(),
+                    });
+                }
+            }
+        }
         // Après une victoire, le joueur capture les monstres KO qu'il veut
         // avant que le combat se termine (Q29).
         let fini = *choix == Choix::NePlusCapturer
@@ -2932,6 +2984,7 @@ impl EnExpedition {
             contre_un_apotre: combat.est_contre_un_apotre(),
             contre_un_humain: combat.est_contre_un_humain(),
             contre_un_gardien: combat.est_contre_un_gardien(),
+            contre_un_legendaire: combat.est_contre_un_legendaire(),
             sac_perdu: Inventaire::default(),
         };
         let bilan = combat.terminer(&mut *contexte.aleatoire);
@@ -3229,6 +3282,15 @@ impl EnExpedition {
                     evenements.push(Evenement::PhiltreChromatiqueRamasse);
                 }
             }
+            // Capturé, le légendaire ne revient plus (section 9.10).
+            if fin.contre_un_legendaire && fin.issue == Some(Issue::Victoire) {
+                if let Some(legendaire) = self.expedition.legendaire().cloned() {
+                    partie.noter_legendaire_capture(legendaire.espece().id());
+                    evenements.push(Evenement::LegendaireCapture(
+                        legendaire.capture().to_string(),
+                    ));
+                }
+            }
             // Le repos qui suit le gardien de la Tour soigne tout (section
             // 9.5).
             if fin.contre_un_gardien && fin.issue == Some(Issue::Victoire) {
@@ -3353,8 +3415,13 @@ impl EnExpedition {
                 pierre,
                 booster,
                 filets,
+                tresor,
+                carte,
             } => {
                 let argent_du_pillard = partie.ouvrir_coffre(potions, argent, capsule.clone());
+                if let Some(tresor) = tresor {
+                    partie.trouver_tresor(tresor);
+                }
                 if let Some((filet, nombre)) = filets {
                     partie.trouver_filets(filet, nombre);
                 }
@@ -3376,7 +3443,20 @@ impl EnExpedition {
                     pierre,
                     booster,
                     filets,
+                    tresor,
                 });
+                if let Some(annexe) = carte.and_then(|id| {
+                    contenu
+                        .annexes()
+                        .iter()
+                        .find(|annexe| annexe.zone().id() == &id)
+                }) {
+                    partie.ouvrir_l_annexe(annexe.zone().id().clone());
+                    evenements.push(Evenement::AnnexeDecouverte {
+                        nom: annexe.zone().nom().to_string(),
+                        texte: annexe.decouverte().to_string(),
+                    });
+                }
                 self.apres_l_etape(partie, evenements)
             }
             EvenementExpedition::Ame {
@@ -3444,6 +3524,23 @@ impl EnExpedition {
                 let combat = partie
                     .preparer_combat_contre_apotre(formes)
                     .expect(EQUIPE_APTE)
+                    .avec_limite_d_obeissance(limite);
+                let combat = self.sous_la_meteo(combat);
+                self.moment = Moment::AnnonceDeCombat(combat);
+                Reponse::Faite
+            }
+            EvenementExpedition::Legendaire(legendaire) => {
+                // Comme pour l'Apôtre, son texte annonce la rencontre.
+                let recit = self
+                    .expedition
+                    .legendaire()
+                    .map(|attendu| attendu.avant_combat().to_string())
+                    .unwrap_or_default();
+                evenements.push(Evenement::LegendaireRencontre(recit));
+                let combat = partie
+                    .preparer_combat(vec![legendaire])
+                    .expect(EQUIPE_APTE)
+                    .contre_un_legendaire()
                     .avec_limite_d_obeissance(limite);
                 let combat = self.sous_la_meteo(combat);
                 self.moment = Moment::AnnonceDeCombat(combat);
@@ -3698,6 +3795,7 @@ mod tests {
             rite: partie.rite().cloned(),
             paliers_du_codex: partie.paliers_du_codex().to_vec(),
             arene: partie.arene(),
+            decouvertes: partie.decouvertes().clone(),
         }
     }
 
@@ -3972,7 +4070,8 @@ mod tests {
                     capsule_d_habilete: false,
                     pierre: None,
                     booster: None,
-                    filets: None
+                    filets: None,
+                    tresor: None,
                 },
                 Evenement::Conseil(Conseil::PremierArretEntreDeuxEtapes),
             ]
@@ -5842,6 +5941,232 @@ mod tests {
         );
     }
 
+    /// Du camp au retour, une expédition dans cette zone, jouée par
+    /// `jouer_un_coup`. Rend tout ce qui s'est passé.
+    fn jouer_l_expedition(
+        deroulement: &mut Deroulement,
+        contenu: &ContenuV1,
+        depot: &DepotMemoire,
+        zone: &ZoneId,
+        aleatoire: &mut GenerateurAleatoire,
+    ) -> Vec<Evenement> {
+        let mut vus = Vec::new();
+        let mut choix = Choix::PartirEnExpedition(zone.clone());
+        for _ in 0..500 {
+            let mut contexte = Contexte {
+                contenu,
+                aleatoire: &mut *aleatoire,
+                depot,
+                maintenant: Horodatage::depuis_secondes(0),
+            };
+            vus.extend(deroulement.repondre(choix, &mut contexte).unwrap());
+            if deroulement.attente() == Attente::Camp {
+                return vus;
+            }
+            choix = jouer_un_coup(deroulement, contenu);
+        }
+        panic!("expédition sans fin : {:?}", deroulement.attente());
+    }
+
+    /// Une annexe de la Lisière, pour les tests : 3 étapes, des Loups, et
+    /// un Philtre chromatique dans chaque coffre (section 9.9).
+    fn contenu_avec_annexe() -> ContenuV1 {
+        let contenu = ContenuV1::new();
+        let niveau = Niveau::new(5).unwrap();
+        let terrier = Zone::new(
+            ZoneId::new("terrier"),
+            "Terrier",
+            (niveau, niveau),
+            3,
+            1,
+            vec![contenu.espece(&EspeceId::new("loup")).unwrap()],
+            Vec::new(),
+            crate::donnees_de_test::parametres_expedition_automatique(),
+            crate::expedition::ParametresCoffre::new(10..=10, Vec::new())
+                .unwrap()
+                .avec_tresors(vec![(Tresor::PhiltreChromatique, 1)]),
+        )
+        .unwrap()
+        .avec_repartition(crate::zone::Repartition {
+            combat: 60,
+            coffre: 30,
+        })
+        .unwrap();
+        contenu.avec_annexes(vec![crate::annexe::Annexe::new(
+            terrier,
+            ZoneId::new("lisiere"),
+            "Une carte griffonnée mène à un terrier.",
+        )])
+    }
+
+    /// Section 9.9 : une fois le brigand vaincu, un coffre de la Lisière
+    /// contient parfois la carte de son annexe, qui l'ouvre aussitôt ; ses
+    /// coffres y contiennent chacun un trésor, et elle ne compte pas comme
+    /// explorée.
+    #[test]
+    fn la_carte_d_un_coffre_ouvre_l_annexe_aux_coffres_riches() {
+        let contenu = contenu_avec_annexe();
+        let depot = DepotMemoire::default();
+        let terrier = ZoneId::new("terrier");
+        let lisiere = ZoneId::new("lisiere");
+        let zone_de_la_lisiere = zone_du_contenu(&contenu, &lisiere).unwrap();
+        let partie = partie_de(salamandre(&contenu, 40));
+        assert_eq!(
+            partie.annexe_a_decouvrir(zone_de_la_lisiere, contenu.annexes()),
+            None
+        );
+        let mut etat = etat_de(&partie);
+        etat.humains_vaincus = vec![HumainId::new("brigand")];
+        etat.sac.ajouter_potions(10);
+        let partie = Partie::restaurer(etat).unwrap();
+        assert_eq!(
+            partie.annexe_a_decouvrir(zone_de_la_lisiere, contenu.annexes()),
+            Some(terrier.clone())
+        );
+        let mut deroulement = au_camp(partie, &contenu, &depot);
+        assert_eq!(
+            repondre_sans_tirage(
+                &mut deroulement,
+                Choix::PartirEnExpedition(terrier.clone()),
+                &contenu,
+                &depot
+            ),
+            Err(ErreurChoix::ZoneFermee)
+        );
+        let mut aleatoire = GenerateurAleatoire::new(5);
+        let mut vus = Vec::new();
+        for _ in 0..200 {
+            vus.extend(jouer_l_expedition(
+                &mut deroulement,
+                &contenu,
+                &depot,
+                &lisiere,
+                &mut aleatoire,
+            ));
+            if deroulement.partie().unwrap().annexe_ouverte(&terrier) {
+                break;
+            }
+        }
+        let decouvertes = vus
+            .iter()
+            .filter(|evenement| {
+                matches!(evenement, Evenement::AnnexeDecouverte { nom, .. } if nom == "Terrier")
+            })
+            .count();
+        assert_eq!(decouvertes, 1);
+        let partie = deroulement.partie().unwrap();
+        assert_eq!(
+            partie.annexe_a_decouvrir(zone_de_la_lisiere, contenu.annexes()),
+            None
+        );
+        let philtres = partie.philtres_chromatiques();
+        let vus = jouer_l_expedition(&mut deroulement, &contenu, &depot, &terrier, &mut aleatoire);
+        let tresors = vus
+            .iter()
+            .filter(|evenement| {
+                matches!(
+                    evenement,
+                    Evenement::Coffre {
+                        tresor: Some(Tresor::PhiltreChromatique),
+                        ..
+                    }
+                )
+            })
+            .count();
+        let coffres = vus
+            .iter()
+            .filter(|evenement| matches!(evenement, Evenement::Coffre { .. }))
+            .count();
+        assert_eq!(tresors, coffres);
+        let partie = deroulement.partie().unwrap();
+        assert_eq!(
+            partie.philtres_chromatiques(),
+            philtres + u32::try_from(tresors).unwrap()
+        );
+        assert!(!partie.est_exploree(&terrier));
+    }
+
+    /// Section 9.10 : fermée avant la chute du Démiurge, la zone légendaire
+    /// s'achève par le légendaire, capturé d'office une fois vaincu, qui ne
+    /// revient plus.
+    #[test]
+    fn le_legendaire_vaincu_est_capture_d_office_et_ne_revient_plus() {
+        use crate::legendaire::{Legendaire, ZoneLegendaire};
+
+        let contenu = ContenuV1::new();
+        let niveau = Niveau::new(5).unwrap();
+        // Une seule étape : le légendaire, sans combat sauvage avant lui.
+        let abysses = Zone::new(
+            ZoneId::new("abysses"),
+            "Abysses",
+            (niveau, niveau),
+            1,
+            1,
+            vec![contenu.espece(&EspeceId::new("loup")).unwrap()],
+            Vec::new(),
+            crate::donnees_de_test::parametres_expedition_automatique(),
+            crate::donnees_de_test::parametres_coffre(),
+        )
+        .unwrap();
+        let legendaire = Legendaire::new(
+            contenu.espece(&EspeceId::new("cerf-blanc")).unwrap(),
+            Niveau::new(10).unwrap(),
+            "Les flots se soulèvent.",
+            "Le Cerf blanc vous rejoint.",
+        )
+        .unwrap();
+        let contenu =
+            contenu.avec_zones_legendaires(vec![ZoneLegendaire::new(abysses, legendaire)]);
+        let depot = DepotMemoire::default();
+        let zone = ZoneId::new("abysses");
+        let partie = partie_pour_le_demiurge(&contenu);
+        let mut deroulement = au_camp(partie.clone(), &contenu, &depot);
+        assert_eq!(
+            repondre_sans_tirage(
+                &mut deroulement,
+                Choix::PartirEnExpedition(zone.clone()),
+                &contenu,
+                &depot
+            ),
+            Err(ErreurChoix::ZoneFermee)
+        );
+        let mut etat = etat_de(&partie);
+        etat.beherit = EtatDuBeherit::DemiurgeVaincu;
+        let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
+        let mut aleatoire = GenerateurAleatoire::new(3);
+        let vus = jouer_l_expedition(&mut deroulement, &contenu, &depot, &zone, &mut aleatoire);
+        assert!(vus.contains(&Evenement::LegendaireRencontre(
+            "Les flots se soulèvent.".to_string()
+        )));
+        assert!(vus.contains(&Evenement::LegendaireCapture(
+            "Le Cerf blanc vous rejoint.".to_string()
+        )));
+        let cerf = EspeceId::new("cerf-blanc");
+        let partie = deroulement.partie().unwrap();
+        assert!(partie.legendaire_capture(&cerf));
+        let collection = partie.collection();
+        let capture = collection
+            .equipe()
+            .iter()
+            .chain(collection.camp())
+            .find(|monstre| monstre.espece().id() == &cerf)
+            .expect("le légendaire a rejoint le joueur");
+        assert_eq!(capture.niveau().valeur(), 10);
+        assert_eq!(capture.valeurs_internes(), &ValeursInternes::maximales());
+        // Aucun filet n'a servi.
+        assert_eq!(
+            partie.sac().filets().nombre(crate::filet::Filet::Chanvre),
+            10
+        );
+        let vus = jouer_l_expedition(&mut deroulement, &contenu, &depot, &zone, &mut aleatoire);
+        assert!(
+            !vus.iter()
+                .any(|evenement| matches!(evenement, Evenement::LegendaireRencontre(_)))
+        );
+        // La zone ne compte pas comme explorée.
+        assert!(!deroulement.partie().unwrap().est_exploree(&zone));
+    }
+
     fn partie_pour_la_tour(contenu: &ContenuV1) -> Partie {
         let mut partie = partie_de(salamandre(contenu, 40));
         partie.prendre_monstre_rare(monstre_du_contenu(contenu, "crapaud", 40));
@@ -6300,6 +6625,7 @@ mod tests {
             rite: None,
             paliers_du_codex: Vec::new(),
             arene: Default::default(),
+            decouvertes: Default::default(),
         })
         .unwrap()
     }

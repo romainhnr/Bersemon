@@ -538,6 +538,7 @@ fn l_equipe_et_le_camp_pleins_tiennent_dans_les_limites() {
             rite: None,
             paliers_du_codex: Vec::new(),
             arene: Default::default(),
+            decouvertes: Default::default(),
         })
         .unwrap();
         let maintenant = Horodatage::depuis_secondes(0);
@@ -644,6 +645,7 @@ fn les_attaques_au_camp_se_choisissent_par_menu() {
         rite: None,
         paliers_du_codex: Vec::new(),
         arene: Default::default(),
+        decouvertes: Default::default(),
     })
     .unwrap();
     let menus = |emplacement: Emplacement| -> Vec<(Cle, Vec<String>)> {
@@ -1064,6 +1066,7 @@ fn la_fosse_montre_son_adversaire_puis_le_face_a_face() {
         rite: None,
         paliers_du_codex: Vec::new(),
         arene: Default::default(),
+        decouvertes: Default::default(),
     })
     .unwrap();
     let dossier = dossier_de_test().join("fosse");
@@ -1162,6 +1165,7 @@ fn le_heros_devient_shiny_depuis_son_equipement() {
         rite: None,
         paliers_du_codex: Vec::new(),
         arene: Default::default(),
+        decouvertes: Default::default(),
     })
     .unwrap();
     let dossier = dossier_de_test().join("heros-shiny");
@@ -1291,6 +1295,7 @@ fn le_demiurge_s_affronte_a_travers_les_ecrans_du_bot() {
         rite: None,
         paliers_du_codex: Vec::new(),
         arene: Default::default(),
+        decouvertes: Default::default(),
     })
     .unwrap();
     let dossier = dossier_de_test().join("demiurge");
@@ -1444,6 +1449,7 @@ fn malvoise_vend_et_loue_des_monstres_a_travers_les_ecrans_du_bot() {
         rite: None,
         paliers_du_codex: Vec::new(),
         arene: Default::default(),
+        decouvertes: Default::default(),
     })
     .unwrap();
     let dossier = dossier_de_test().join("achats");
@@ -1604,6 +1610,7 @@ fn gunther_agrandit_l_enclos_a_travers_les_ecrans_du_bot() {
         rite: None,
         paliers_du_codex: Vec::new(),
         arene: Default::default(),
+        decouvertes: Default::default(),
     })
     .unwrap();
     let dossier = dossier_de_test().join("forge");
@@ -1769,6 +1776,7 @@ fn ansgar_peche_a_travers_les_ecrans_du_bot() {
         rite: None,
         paliers_du_codex: Vec::new(),
         arene: Default::default(),
+        decouvertes: Default::default(),
     })
     .unwrap();
     let dossier = dossier_de_test().join("peche");
@@ -1900,6 +1908,7 @@ fn le_codex_complet_tient_dans_les_limites() {
         rite: None,
         paliers_du_codex: Vec::new(),
         arene: Default::default(),
+        decouvertes: Default::default(),
     })
     .unwrap();
     let maintenant = Horodatage::depuis_secondes(0);
@@ -1996,6 +2005,7 @@ fn la_forge_et_l_equipement_tiennent_dans_les_limites() {
             rite: None,
             paliers_du_codex: Vec::new(),
             arene: Default::default(),
+            decouvertes: Default::default(),
         })
         .unwrap();
         let maintenant = Horodatage::depuis_secondes(0);
@@ -2049,6 +2059,7 @@ fn toute_l_equipe_se_prepare_d_un_bouton_s_il_y_a_de_la_place_au_camp() {
             rite: None,
             paliers_du_codex: Vec::new(),
             arene: Default::default(),
+            decouvertes: Default::default(),
         })
         .unwrap()
     };
@@ -2129,6 +2140,7 @@ fn toute_l_equipe_se_prepare_d_un_bouton_s_il_y_a_de_la_place_au_camp() {
         rite: None,
         paliers_du_codex: Vec::new(),
         arene: Default::default(),
+        decouvertes: Default::default(),
     })
     .unwrap();
     let choisis = [
@@ -2300,6 +2312,7 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         rite: None,
         paliers_du_codex: Vec::new(),
         arene: Default::default(),
+        decouvertes: Default::default(),
     };
     let afficher = |partie: &Partie, vue: Vue| {
         let question =
@@ -2567,6 +2580,7 @@ fn les_machines_tiennent_dans_les_limites() {
         rite: None,
         paliers_du_codex: Vec::new(),
         arene: Default::default(),
+        decouvertes: Default::default(),
     };
     // L'enclos et l'équipe agrandis d'abord, pour une équipe de 4 et 57
     // monstres au camp, qui laissent leur place aux 3 de la cour.

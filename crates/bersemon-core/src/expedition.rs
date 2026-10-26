@@ -13,13 +13,14 @@ use crate::expedition_automatique::ErreurParametres;
 use crate::filet::Filet;
 use crate::humain::Humain;
 use crate::jour_et_nuit::{BONUS_DE_LA_NUIT, JourOuNuit};
+use crate::legendaire::Legendaire;
 use crate::meteo::Meteo;
 use crate::monstre::Monstre;
 use crate::peche::Pecheur;
 use crate::pierre::PierreDEvolution;
 use crate::tour::TourSansFond;
 use crate::traque::Apotre;
-use crate::zone::{MonstreRare, Zone, tirer_entre};
+use crate::zone::{MonstreRare, Zone, ZoneId, tirer_entre};
 
 /// Un coffre contient 1 à 2 potions (Q39).
 const POTIONS_MIN: u32 = 1;
@@ -39,11 +40,29 @@ const PREMIER_TIRAGE_DES_BOOSTERS: u32 = 21;
 const TIRAGES_DES_FILETS: [(std::ops::RangeInclusive<u32>, Filet, u32); 2] =
     [(27..=41, Filet::Chanvre, 2), (42..=46, Filet::Leste, 1)];
 
+/// Un coffre sur 5 d'une zone contient la carte de son annexe, tant
+/// qu'elle n'est pas ouverte et une fois l'humain gardien vaincu (section
+/// 9.9).
+pub const CHANCE_DE_CARTE: u32 = 20;
+
+/// Ce que contient en plus, à coup sûr, un coffre d'une zone annexe
+/// (section 9.9).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Tresor {
+    PhiltreChromatique,
+    Pierre(PierreDEvolution),
+    Booster(Booster),
+    CapsuleDHabilete,
+}
+
 /// Contenu des coffres propre à chaque zone (section 14.5).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParametresCoffre {
     argent: RangeInclusive<u32>,
     capsules: Vec<Capsule>,
+    /// Ceux d'une zone annexe, avec leur poids dans le tirage ; aucun dans
+    /// une zone de la carte (section 9.9).
+    tresors: Vec<(Tresor, u32)>,
 }
 
 impl ParametresCoffre {
@@ -55,7 +74,42 @@ impl ParametresCoffre {
         if argent.is_empty() {
             return Err(ErreurParametres::FourchetteInversee);
         }
-        Ok(Self { argent, capsules })
+        Ok(Self {
+            argent,
+            capsules,
+            tresors: Vec::new(),
+        })
+    }
+
+    /// Chaque coffre contient en plus un de ces trésors, tiré selon son
+    /// poids (section 9.9). Les poids nuls sont ignorés.
+    pub fn avec_tresors(mut self, tresors: Vec<(Tresor, u32)>) -> Self {
+        self.tresors = tresors
+            .into_iter()
+            .filter(|(_, poids)| *poids > 0)
+            .collect();
+        self
+    }
+
+    pub fn tresors(&self) -> &[(Tresor, u32)] {
+        &self.tresors
+    }
+
+    /// Tirage, s'il y a des trésors : lequel.
+    fn tirer_un_tresor(&self, aleatoire: &mut dyn Aleatoire) -> Option<Tresor> {
+        let total: u32 = self.tresors.iter().map(|(_, poids)| poids).sum();
+        if total == 0 {
+            return None;
+        }
+        let mut tirage = aleatoire.tirer(1..=total);
+        self.tresors.iter().find_map(|(tresor, poids)| {
+            if tirage <= *poids {
+                Some(*tresor)
+            } else {
+                tirage -= poids;
+                None
+            }
+        })
     }
 
     pub fn argent(&self) -> &RangeInclusive<u32> {
@@ -81,6 +135,10 @@ pub enum EvenementExpedition {
         booster: Option<Booster>,
         /// Des filets de capture, et leur nombre (section 11.2).
         filets: Option<(Filet, u32)>,
+        /// Dans une zone annexe, à coup sûr (section 9.9).
+        tresor: Option<Tresor>,
+        /// La carte qui ouvre l'annexe de la zone (section 9.9).
+        carte: Option<ZoneId>,
     },
     MonstreRare(MonstreRare),
     /// Combat, ni fuite ni filet ni capture, contre le gardien de la Tour
@@ -89,6 +147,9 @@ pub enum EvenementExpedition {
     /// Combat, sans fuite, contre l'Apôtre ; le Démiurge a deux formes, la
     /// seconde après la première (section 9.4).
     Apotre(Vec<Monstre>),
+    /// Combat, ni fuite ni filet, contre le légendaire de la zone, capturé
+    /// d'office s'il est vaincu (section 9.10).
+    Legendaire(Monstre),
     /// Combat, ni fuite ni filet, contre un humain et son équipe (section
     /// 10.7).
     Humain {
@@ -173,6 +234,12 @@ pub struct Expedition {
     /// Dans la Tour sans fond, de quoi recréer la zone de chaque étape
     /// (section 9.5). En boîte, pour que l'expédition reste légère.
     descente: Option<Box<Descente>>,
+    /// La carte de l'annexe de la zone, que peut contenir un coffre ; une
+    /// fois au plus (section 9.9).
+    carte: Option<ZoneId>,
+    /// Le légendaire qui attend à la dernière étape, tant qu'il n'est pas
+    /// capturé (section 9.10). En boîte, comme la descente.
+    legendaire: Option<Box<Legendaire>>,
     /// Le moment de son départ, qu'elle garde jusqu'au retour ; `None` hors
     /// des zones de la carte, où le cycle ne joue pas (section 9.6).
     jour_ou_nuit: Option<JourOuNuit>,
@@ -206,6 +273,8 @@ impl Expedition {
             capsules_possedees: Vec::new(),
             capsules_trouvees: Vec::new(),
             descente: None,
+            carte: None,
+            legendaire: None,
             jour_ou_nuit: None,
             meteo: None,
         }
@@ -255,6 +324,22 @@ impl Expedition {
     pub(crate) fn contre_l_humain(mut self, humain: Humain) -> Self {
         self.humain = Some(humain);
         self
+    }
+
+    /// Un coffre peut contenir la carte de cette annexe (section 9.9).
+    pub(crate) fn avec_carte(mut self, annexe: ZoneId) -> Self {
+        self.carte = Some(annexe);
+        self
+    }
+
+    pub(crate) fn contre_le_legendaire(mut self, legendaire: Legendaire) -> Self {
+        self.legendaire = Some(Box::new(legendaire));
+        self
+    }
+
+    /// Le légendaire qui attend au bout de cette expédition.
+    pub fn legendaire(&self) -> Option<&Legendaire> {
+        self.legendaire.as_deref()
     }
 
     /// Celui qui attend au bout de cette expédition.
@@ -381,6 +466,11 @@ impl Expedition {
                 equipe: humain.generer_equipe(),
             });
         }
+        if let Some(legendaire) = self.legendaire.as_ref().filter(|_| derniere) {
+            return Some(EvenementExpedition::Legendaire(
+                legendaire.generer(aleatoire),
+            ));
+        }
         let etape = self.etapes_faites;
         if let Some(pecheur) = self.pecheur.take_if(|pecheur| pecheur.etape() == etape) {
             let adversaire = pecheur.generer_adversaire(aleatoire);
@@ -393,12 +483,19 @@ impl Expedition {
             return Some(self.rencontrer_l_ame(aleatoire));
         }
         let tirable = matches!(&self.ame, Some((_, RencontreDeLAme::Tiree)));
-        let evenement = match aleatoire.tirer(1..=100) {
-            71..=80 if tirable => self.rencontrer_l_ame(aleatoire),
-            1..=80 => {
+        // Les 10 derniers tirages des combats donnent l'âme, quand elle se
+        // tire ; dans une zone de la carte, de 71 à 80 (section 14.2).
+        let repartition = self.zone.repartition();
+        let tirage = aleatoire.tirer(1..=100);
+        let ame = repartition.combat.saturating_sub(9)..=repartition.combat;
+        let evenement = match tirage {
+            _ if tirable && ame.contains(&tirage) => self.rencontrer_l_ame(aleatoire),
+            _ if tirage <= repartition.combat => {
                 EvenementExpedition::Combat(self.zone.generer_groupe(self.jour_ou_nuit, aleatoire))
             }
-            81..=95 => self.tirer_un_coffre(aleatoire),
+            _ if tirage <= repartition.combat + repartition.coffre => {
+                self.tirer_un_coffre(aleatoire)
+            }
             _ => match self.zone.generer_monstre_rare(self.jour_ou_nuit, aleatoire) {
                 Some(rare) => EvenementExpedition::MonstreRare(rare),
                 None => EvenementExpedition::Combat(
@@ -486,6 +583,10 @@ impl Expedition {
             .iter()
             .find(|(tirages, _, _)| tirages.contains(&tirage))
             .map(|(_, filet, nombre)| (*filet, *nombre));
+        let tresor = self.zone.coffre().tirer_un_tresor(aleatoire);
+        let carte = self
+            .carte
+            .take_if(|_| aleatoire.tirer(1..=100) <= CHANCE_DE_CARTE);
         EvenementExpedition::Coffre {
             potions,
             argent,
@@ -494,6 +595,8 @@ impl Expedition {
             pierre,
             booster,
             filets,
+            tresor,
+            carte,
         }
     }
 
@@ -530,8 +633,9 @@ mod tests {
     use crate::donnees_de_test::{espece, parametres_coffre, parametres_expedition_automatique};
     use crate::niveau::Niveau;
     use crate::soin::Soin;
+    use crate::stats::ValeursInternes;
     use crate::traque::Apotre;
-    use crate::zone::{EspeceRare, ZoneId};
+    use crate::zone::{EspeceRare, Repartition, ZoneId};
 
     /// Niveau 5 fixe et groupes d'un monstre : un monstre ne tire que son
     /// shiny et ses 6 valeurs internes.
@@ -579,7 +683,9 @@ mod tests {
                 capsule_d_habilete: false,
                 pierre: None,
                 booster: None,
-                filets: None
+                filets: None,
+                tresor: None,
+                carte: None,
             })
         );
         let mut rare = vec![96];
@@ -589,6 +695,129 @@ mod tests {
             Some(EvenementExpedition::MonstreRare(rare)) if rare.pacifique
         ));
         assert_eq!(expedition.etapes_faites(), 3);
+    }
+
+    /// Section 9.9 : une annexe a plus de coffres et de monstres rares (60,
+    /// 30 et 10 %), et chaque coffre y contient en plus un trésor, tiré
+    /// selon son poids.
+    #[test]
+    fn une_annexe_a_plus_de_coffres_et_un_tresor_par_coffre() {
+        let coffre = parametres_coffre().avec_tresors(vec![
+            (Tresor::PhiltreChromatique, 1),
+            (Tresor::CapsuleDHabilete, 3),
+            (Tresor::Booster(Booster::TOUS[0]), 0),
+        ]);
+        assert_eq!(coffre.tresors().len(), 2);
+        let niveau = Niveau::new(5).unwrap();
+        let annexe = Zone::new(
+            ZoneId::new("epave"),
+            "Épave",
+            (niveau, niveau),
+            4,
+            1,
+            vec![espece("loup")],
+            vec![EspeceRare {
+                espece: espece("leviathan"),
+                pacifique: false,
+            }],
+            parametres_expedition_automatique(),
+            coffre,
+        )
+        .unwrap();
+        assert_eq!(
+            annexe.clone().avec_repartition(Repartition {
+                combat: 75,
+                coffre: 30
+            }),
+            Err(crate::zone::ErreurZone::RepartitionInvalide)
+        );
+        let annexe = annexe
+            .avec_repartition(Repartition {
+                combat: 60,
+                coffre: 30,
+            })
+            .unwrap();
+        let mut expedition = Expedition::partir(annexe);
+        let mut combat = vec![60];
+        combat.extend(MONSTRE);
+        assert!(matches!(
+            expedition.etape_suivante(&mut AleatoireScripte::new(combat)),
+            Some(EvenementExpedition::Combat(_))
+        ));
+        // 61 : un coffre ; puis ses potions, son tirage, et le trésor, le
+        // Philtre 1 fois sur 4.
+        assert!(matches!(
+            expedition.etape_suivante(&mut AleatoireScripte::new([61, 1, 47, 1])),
+            Some(EvenementExpedition::Coffre {
+                tresor: Some(Tresor::PhiltreChromatique),
+                ..
+            })
+        ));
+        assert!(matches!(
+            expedition.etape_suivante(&mut AleatoireScripte::new([90, 1, 47, 2])),
+            Some(EvenementExpedition::Coffre {
+                tresor: Some(Tresor::CapsuleDHabilete),
+                ..
+            })
+        ));
+        let mut rare = vec![91];
+        rare.extend(MONSTRE);
+        assert!(matches!(
+            expedition.etape_suivante(&mut AleatoireScripte::new(rare)),
+            Some(EvenementExpedition::MonstreRare(rare)) if !rare.pacifique
+        ));
+    }
+
+    /// Section 9.9 : un coffre sur 5 contient la carte de l'annexe, une fois
+    /// par expédition au plus ; sans carte à trouver, rien ne se tire.
+    #[test]
+    fn la_carte_de_l_annexe_se_trouve_dans_un_coffre() {
+        let annexe = ZoneId::new("epave");
+        let mut expedition = Expedition::partir(zone(false)).avec_carte(annexe.clone());
+        assert!(matches!(
+            expedition.etape_suivante(&mut AleatoireScripte::new([81, 1, 47, 21])),
+            Some(EvenementExpedition::Coffre { carte: None, .. })
+        ));
+        assert!(matches!(
+            expedition.etape_suivante(&mut AleatoireScripte::new([81, 1, 47, 20])),
+            Some(EvenementExpedition::Coffre { carte: Some(id), .. }) if id == annexe
+        ));
+        assert!(matches!(
+            expedition.etape_suivante(&mut AleatoireScripte::new([81, 1, 47])),
+            Some(EvenementExpedition::Coffre { carte: None, .. })
+        ));
+    }
+
+    /// Section 9.10 : le légendaire attend à la dernière étape, au maximum
+    /// de ses valeurs internes.
+    #[test]
+    fn le_legendaire_attend_a_la_derniere_etape() {
+        let legendaire = Legendaire::new(
+            espece("leviathan"),
+            Niveau::new(5).unwrap(),
+            "Les flots se soulèvent.",
+            "Léviathan vous rejoint.",
+        )
+        .unwrap();
+        let mut expedition = Expedition::partir(zone(false)).contre_le_legendaire(legendaire);
+        for _ in 0..3 {
+            let mut combat = vec![1];
+            combat.extend(MONSTRE);
+            assert!(matches!(
+                expedition.etape_suivante(&mut AleatoireScripte::new(combat)),
+                Some(EvenementExpedition::Combat(_))
+            ));
+        }
+        // Le seul tirage de son shiny : il est créé à 31 partout.
+        let Some(EvenementExpedition::Legendaire(monstre)) =
+            expedition.etape_suivante(&mut AleatoireScripte::new([2]))
+        else {
+            panic!("légendaire attendu");
+        };
+        assert_eq!(monstre.espece().id().as_str(), "leviathan");
+        assert_eq!(monstre.valeurs_internes(), &ValeursInternes::maximales());
+        assert!(!monstre.est_shiny());
+        assert!(expedition.est_terminee());
     }
 
     /// De nuit, l'argent des coffres augmente de 25 %, et les monstres ont
@@ -785,7 +1014,9 @@ mod tests {
                 capsule_d_habilete: true,
                 pierre: None,
                 booster: None,
-                filets: None
+                filets: None,
+                tresor: None,
+                carte: None,
             })
         );
         // Le même tirage donne une pierre, de 11 à 20.

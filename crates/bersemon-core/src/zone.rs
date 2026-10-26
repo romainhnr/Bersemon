@@ -53,8 +53,28 @@ pub struct MonstreRare {
     pub pacifique: bool,
 }
 
+/// Chance, en pourcentage, de chaque événement d'une étape : un combat, un
+/// coffre, sinon un monstre rare (section 9.2).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Repartition {
+    pub combat: u32,
+    pub coffre: u32,
+}
+
+impl Repartition {
+    /// Celle des zones de la carte : combat 80 %, coffre 15 %, monstre rare
+    /// 5 % (section 9.2).
+    pub const DE_LA_CARTE: Repartition = Repartition {
+        combat: 80,
+        coffre: 15,
+    };
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ErreurZone {
+    /// Combat et coffre dépassent 100 %, ou le combat n'a pas les 10 %
+    /// où se tire l'âme d'un marchand mort.
+    RepartitionInvalide,
     NiveauxInverses,
     /// Une expédition compte au moins une étape.
     AucuneEtape,
@@ -71,6 +91,9 @@ pub enum ErreurZone {
 impl fmt::Display for ErreurZone {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            ErreurZone::RepartitionInvalide => {
+                write!(f, "la répartition des événements est invalide")
+            }
             ErreurZone::NiveauxInverses => {
                 write!(f, "le niveau minimal dépasse le niveau maximal")
             }
@@ -122,6 +145,9 @@ pub struct Zone {
     /// Celles qui peuvent s'y produire ; aucune hors des zones de la carte
     /// (section 9.7).
     meteos: Vec<Meteo>,
+    /// Plus de coffres et de monstres rares dans une zone annexe (section
+    /// 9.9).
+    repartition: Repartition,
 }
 
 impl Zone {
@@ -179,7 +205,22 @@ impl Zone {
             coffre,
             lieu_d_invocation: false,
             meteos: Vec::new(),
+            repartition: Repartition::DE_LA_CARTE,
         })
+    }
+
+    /// Celle d'une zone annexe : 60 % de combats, 30 % de coffres, 10 % de
+    /// monstres rares, par exemple (section 9.9).
+    pub fn avec_repartition(mut self, repartition: Repartition) -> Result<Self, ErreurZone> {
+        if repartition.combat + repartition.coffre > 100 || repartition.combat < 10 {
+            return Err(ErreurZone::RepartitionInvalide);
+        }
+        self.repartition = repartition;
+        Ok(self)
+    }
+
+    pub fn repartition(&self) -> Repartition {
+        self.repartition
     }
 
     pub fn avec_meteos(mut self, meteos: Vec<Meteo>) -> Self {

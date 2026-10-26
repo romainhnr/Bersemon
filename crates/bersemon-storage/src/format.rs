@@ -31,7 +31,7 @@ use bersemon_core::machines::{Entrainement, Machines, Pieges};
 use bersemon_core::monstre::{EtatMonstre, Monstre, rayon_chromatique};
 use bersemon_core::niveau::Niveau;
 use bersemon_core::nom::Nom;
-use bersemon_core::partie::{AttaqueAChoisir, EtatPartie, Partie};
+use bersemon_core::partie::{AttaqueAChoisir, Decouvertes, EtatPartie, Partie};
 use bersemon_core::peche::Peche;
 use bersemon_core::pierre::PierreDEvolution;
 use bersemon_core::recompenses_du_codex::PalierDuCodex;
@@ -48,7 +48,7 @@ use bersemon_core::zone::{Zone, ZoneId};
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 35;
+pub(crate) const VERSION: u64 = 36;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -244,6 +244,12 @@ pub(crate) struct SauvegardeV14 {
     cote_de_l_arene: u32,
     #[serde(default)]
     combats_d_arene: u32,
+    /// Depuis la version 36 : les zones annexes ouvertes et les légendaires
+    /// capturés, par leur identifiant (sections 9.9 et 9.10).
+    #[serde(default)]
+    annexes_ouvertes: Vec<String>,
+    #[serde(default)]
+    legendaires_captures: Vec<String>,
 }
 
 fn cote_de_depart() -> u32 {
@@ -762,6 +768,18 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV14 {
         paliers_de_la_fosse: partie.arene().paliers_vaincus,
         cote_de_l_arene: partie.arene().cote,
         combats_d_arene: partie.arene().combats_entre_joueurs,
+        annexes_ouvertes: partie
+            .decouvertes()
+            .annexes_ouvertes
+            .iter()
+            .map(|id| id.as_str().to_string())
+            .collect(),
+        legendaires_captures: partie
+            .decouvertes()
+            .legendaires_captures
+            .iter()
+            .map(|id| id.as_str().to_string())
+            .collect(),
         paliers_du_codex: partie
             .paliers_du_codex()
             .iter()
@@ -1217,6 +1235,18 @@ pub(crate) fn vers_partie(
             paliers_vaincus: sauvegarde.paliers_de_la_fosse.min(PALIERS_DE_LA_FOSSE),
             cote: sauvegarde.cote_de_l_arene,
             combats_entre_joueurs: sauvegarde.combats_d_arene,
+        },
+        decouvertes: Decouvertes {
+            annexes_ouvertes: sauvegarde
+                .annexes_ouvertes
+                .iter()
+                .map(|id| ZoneId::new(id.as_str()))
+                .collect(),
+            legendaires_captures: sauvegarde
+                .legendaires_captures
+                .iter()
+                .map(|id| EspeceId::new(id.as_str()))
+                .collect(),
         },
     })
     .map_err(incoherente)?;
