@@ -2,10 +2,10 @@
 //! qu'il porte.
 
 use bersemon_core::equipement::{Equipement, ErreurEquipement, ObjetDEquipement, PlaceDEquipement};
-use bersemon_core::heros::Heros;
+use bersemon_core::heros::{Heros, NIVEAU_DU_SECOND_TYPE};
 use bersemon_core::stats::BonusDeStats;
 
-use crate::monstres::{decrire_attaque, decrire_stats};
+use crate::monstres::{decrire_attaque, decrire_stats, types_de};
 use crate::partie::enumerer;
 
 /// "d'Attaque", "de Défense" : le nom de la stat, avec son article.
@@ -78,9 +78,10 @@ pub fn fiche_du_heros(heros: &Heros) -> String {
     let combattant = heros.combattant();
     let mut lignes = vec![
         format!(
-            "{}, {}, Humain, niveau de combat {} : {}/{} PV.",
+            "{}, {}, {}, niveau de combat {} : {}/{} PV.",
             heros.nom().as_str(),
             heros.classe().nom(),
+            types_de(combattant.espece()),
             combattant.niveau().valeur(),
             combattant.pv_actuels(),
             combattant.stats().pv
@@ -94,6 +95,12 @@ pub fn fiche_du_heros(heros: &Heros) -> String {
     lignes.push(
         "Il combat quand tous vos monstres sont KO. Son niveau vaut 5, plus 5 par palier de son arme et de son armure.".to_string(),
     );
+    if combattant.niveau().valeur() < NIVEAU_DU_SECOND_TYPE {
+        lignes.push(format!(
+            "Au niveau de combat {NIVEAU_DU_SECOND_TYPE}, il prendra aussi le type {}.",
+            heros.classe().second_type().nom()
+        ));
+    }
     lignes.join("\n")
 }
 
@@ -168,6 +175,27 @@ pub fn erreur_equipement(erreur: &ErreurEquipement) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Section 4.4 : la fiche dit les types du héros, et quand il prendra le
+    /// second type de sa classe (étape 145).
+    #[test]
+    fn la_fiche_du_heros_dit_ses_types() {
+        use bersemon_core::nom::Nom;
+
+        let heros = Heros::new(
+            Nom::new("Aldric").unwrap(),
+            bersemon_core::heros::Classe::Guerrier,
+        );
+        let fiche = fiche_du_heros(&heros);
+        assert!(
+            fiche.starts_with("Aldric, Guerrier, Humain, niveau de combat 5 : "),
+            "{fiche}"
+        );
+        assert!(
+            fiche.ends_with("Au niveau de combat 25, il prendra aussi le type Combat."),
+            "{fiche}"
+        );
+    }
     use bersemon_core::stats::Stats;
 
     #[test]

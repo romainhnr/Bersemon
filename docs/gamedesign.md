@@ -175,6 +175,11 @@ Décidé le 25/10/2026, pour les étapes 128 à 133 (choix de l'utilisateur) :
 - Précisé à l'étape 132, en codant (console) : le héros suit l'équipe, sur une ligne "Aldric (héros, niv. 15) : 40/54 PV", en combat comme entre deux étapes ; face à un humain, une ligne annonce qu'il combattra en dernier ; le menu de combat ne propose plus de changer de monstre quand le héros combat ; la forge dit les attaques que chaque arme donne au héros ; le retour au camp dit que le héros est soigné. L'écran d'équipement, qui montre la fiche du héros, reste proposé une fois Gunther au camp ou un objet possédé.
 - Précisé à l'étape 133, en codant (Discord) : l'écran du combat et celui entre deux étapes montrent la ligne du héros après l'équipe ; le menu des soins le propose après les monstres, pour chaque soin sauf l'élixir (en groupe, le héros du joueur qui agit) ; le menu "Changer de monstre" disparaît quand le héros combat, faute de monstre debout ; l'écran d'équipement montre la fiche du héros au-dessus de l'équipement. La forge ne dit pas les attaques des armes, faute de place dans la description d'une option.
 - Mesuré à l'étape 139 avec l'outil d'équilibrage (docs/equilibrage.md, section 9) : le héros combattant change peu la progression du joueur automatique, qui ne joue pas la Fosse ; il reste une proie face aux monstres des zones. Le brigand, qui combat désormais en dernier, passe de 70 % à 63 % de victoires au premier essai.
+- Décidé le 26/10/2026, pour l'étape 145 (choix de l'utilisateur) : chaque classe a un second type, qu'un humain prend en plus de l'Humain dès le niveau de combat 25 (arme et armure du palier 2) : Guerrier, Humain et Combat ; Assassin, Humain et Ténèbres ; Mage, Humain et Psychique ; Templier, Humain et Lumière.
+  - La règle vaut pour tous : le héros du joueur, ceux des autres joueurs en duel et à l'arène, les humains de fin de zone (l'Inquisiteur, le Porte-étendard et la Pythie de sel, mais ni le brigand ni le Bourreau) et les adversaires de la Fosse aux damnés (paliers 6 à 10, section 9.8). Sous le niveau 25, un humain reste Humain seul.
+  - Le second type compte comme celui d'un monstre, dans les deux sens de la table des types (section 5.2). Les attaques du héros restent toutes de type Humain : le second type ne change que ses faiblesses et ses résistances. Le Spectre a été écarté : il rendrait un humain insensible aux attaques Humain.
+  - Conséquence acceptée par l'utilisateur : une attaque Humain ne fait que x0,5 à un humain à double type (x1 pour l'Humain, x0,5 pour le second type). Entre deux héros de niveau 25 ou plus, les dégâts sont divisés par deux et les combats durent plus longtemps ; un héros de niveau 25 face à un héros plus faible ne subit que la moitié de ses coups.
+  - Écrans : la fiche du héros dit ses types ("Aldric, Guerrier, Humain, Combat, niveau de combat 25") et, sous le niveau 25, "Au niveau de combat 25, il prendra aussi le type Combat." En combat, un héros adverse montre ses deux types, comme avant le sien. La sauvegarde ne change pas : les types se déduisent de la classe et de l'équipement.
 
 ## 5. Les monstres
 
@@ -217,6 +222,7 @@ Chaque monstre possède :
   - En défense : toutes les attaques lui sont très efficaces, Obscur compris, sauf les attaques Lumière, Féérique et Stellaire, auxquelles il résiste, et les attaques Humain, neutres.
   - En attaque : une attaque Humain est peu efficace contre tous les types, sans effet sur le Spectre, et neutre contre l'Humain.
   - Le Stellaire perd ainsi sa neutralité envers l'Humain, dans les deux sens (Q76).
+- Décidé le 26/10/2026, pour l'étape 145 (choix de l'utilisateur) : dès le niveau de combat 25, un humain a aussi le second type de sa classe, Combat, Ténèbres, Psychique ou Lumière (section 4.4). Ses faiblesses suivent la règle des types multiples : par exemple, un Guerrier de niveau 25 subit x4 des attaques Vol, Psychique et Obscur, et x1 des attaques Roche, Insecte, Ténèbres et Féérique ; un Assassin ne craint plus le Psychique (x0). Une attaque Humain ne lui fait que x0,5.
 
 ### 5.3 Bestiaire
 
@@ -578,6 +584,7 @@ Décidé le 25/10/2026, pour les étapes 135 à 137 (choix de l'utilisateur) :
 - La sauvegarde garde le dernier palier vaincu.
 - Écrans, aux étapes 136 (console) et 137 (Discord) : la carte et le menu des expéditions proposent la Fosse après la Tour, une fois ouverte, avec le prochain palier ; le choisir montre l'adversaire, son texte, et propose de combattre ou de revenir. Le combat ne propose que les attaques du héros et l'abandon.
 - Précisé aux étapes 135 à 137, en codant : un palier qui offre un monstre est refusé tant que ni l'équipe ni le camp n'ont de place, comme un achat chez Malvoise ; le combat se lance depuis le camp, sans expédition, et le joueur n'est pas au camp pendant ce temps (ni échange ni duel) ; la sauvegarde passe en version 33, avec les paliers vaincus et déjà la cote de l'arène entre joueurs (section 15.6) ; au codex, le Molosse des fosses et le Taureau d'airain suivent le Séraphin de vitrail, et le codex complet compte 53 espèces au lieu de 51 ; comme toute famille, chacune a une attaque d'œuf pour le Rite du sang mêlé, proposée par Claude sans validation (docs/contenu-v1.md, section 36) ; les textes des deux espèces validés avec elles ne s'affichent nulle part, faute de description dans les fiches d'espèce. Sur Discord, le codex garde deux pages de 30 avec ses 58 espèces.
+- Décidé le 26/10/2026, pour l'étape 145 (choix de l'utilisateur) : les adversaires des paliers 6 à 10, de niveau 25 ou plus, ont aussi le second type de leur classe (section 4.4) ; ceux des paliers 1 à 5 restent Humain seul. L'arène entre joueurs suit la même règle (section 15.6).
 
 ## 10. Combat
 
@@ -658,6 +665,7 @@ Décidé le 25/10/2026, pour l'étape 131 (choix de l'utilisateur) :
 
 - Les humains de fin de zone combattent eux aussi en dernier, après leurs monstres, comme le héros du joueur (section 4.4), avec leur classe et leur équipement : le brigand, Assassin au niveau 10 (arme du palier 1) ; le Bourreau, Guerrier au niveau 15 (arme et armure du palier 1) ; l'Inquisiteur, Mage au niveau 25 (palier 2) ; le Porte-étendard, Templier au niveau 35 (palier 3). Leur héros choisit ses attaques avec l'IA de son humain.
 - Il faut le vaincre après ses monstres pour gagner. Il n'est pas sauvage et ne se prend pas après la victoire : le joueur choisit toujours parmi les monstres de l'humain (section 11.3).
+- Décidé le 26/10/2026, pour l'étape 145 (choix de l'utilisateur) : dès le niveau de combat 25, les humains de fin de zone ont aussi le second type de leur classe (section 4.4) : l'Inquisiteur (Mage, niveau 25) est Humain et Psychique, le Porte-étendard (Templier, 35) Humain et Lumière, la Pythie de sel (Mage, 40) Humain et Psychique. Le brigand et le Bourreau restent Humain seul.
 
 ## 11. Obtention des monstres
 
@@ -1268,6 +1276,10 @@ Les questions Q102 et suivantes ont été relevées le 25/10/2026 lors de la con
 
 Les questions Q103 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 107 carnet de traque du codex et 108 Philtre chromatique.
 
+Les questions Q114 et suivantes ont été relevées le 26/10/2026 lors de la conception des étapes 145 second type des classes et 146 mesure de la Fosse aux damnés.
+
+- Q114. (Étapes 145 et 146) Hypothèses retenues, à confirmer : le seuil se lit sur le niveau de combat, quelle que soit la façon d'y arriver (arme du palier 3 et armure du palier 1, ou arme du palier 4 seule, comptent comme le palier 2 partout) ; la ligne du héros du joueur en combat ne montre toujours pas ses types, seule sa fiche les dit. Libellés proposés sans validation (docs/contenu-v1.md, section 41).
+
 Les questions Q113 et suivantes ont été relevées le 26/10/2026 lors de la conception des étapes 140 fiche du codex, 141 suite de la piste, 142 panacée, 143 Désert de sel et Dragon des brumes, et 144 mesure de l'équilibrage.
 
 - Q113. (Étapes 140 à 144) Hypothèses retenues, à confirmer : les capsules que l'espèce apprend déjà par niveau ne sont pas répétées parmi ses capsules possibles ; une évolution seulement rencontrée reste "???" ; la condition masquée cache aussi le niveau ; la fiche d'un Apôtre abattu suit les mêmes règles. La panacée et son prix, 120 pièces d'argent, sont proposés sans validation, comme le menu des soins de l'étal sur Discord. Pour le Désert de sel (étape 143), proposés par Claude sans validation : les noms, types, rôles, stats, rendements d'XP, habiletés et attaques des six espèces et du Dragon des brumes, leurs ressources, les quinze attaques nouvelles, dont les six attaques d'œuf, les trois capsules et leurs prix, les paramètres de l'expédition automatique et des coffres, les météos, le Scarabée diurne et la Momie nocturne, la Pythie de sel (classe, équipement, IA, équipe, 500 pièces d'argent), Hilde et tous les textes (docs/contenu-v1.md, section 40). Hypothèses : les espèces du Désert n'évoluent pas ; une sauvegarde où le Margrave est déjà vaincu trouve l'indice 7 au bout de sa prochaine expédition menée au bout dans le Col ; la Tour s'étend au Désert dès l'étape 17, le Sphinx parmi ses gardiens.
@@ -1838,3 +1850,10 @@ Les questions Q104 et suivantes ont été relevées le 25/10/2026 lors de la con
 - Claude a relevé, en codant, que l'étal de Malvoise sur Discord n'a plus la place d'un bouton : les soins s'y achètent désormais dans un menu (section 14.4) ; et que l'écran du coffre ne tient plus dans un message avec toutes les ressources : elles s'y comptent alors par sortes, détaillées à l'écran des ressources (section 13.3).
 - Mesuré à l'étape 144 (docs/equilibrage.md, section 10), le joueur automatique allant désormais jusqu'à la Pythie : la Pythie de sel est aussi difficile que le Porte-étendard (2,3 tentatives, 48 % au premier essai) ; le Désert ajoute 12 expéditions environ, avec 19 % de défaites, mais ses expéditions sont rarement menées au bout (8 %). Aucun réglage, en attendant la validation du contenu.
 - Hypothèses retenues, à confirmer : Q113.
+
+26/10/2026 (conception des étapes 145 et 146, second type des classes et mesure de la Fosse aux damnés) :
+
+- Demande de l'utilisateur : ajouter finalement un double type aux classes, Humain et Combat pour le Guerrier, et ainsi de suite ; les humains de la Fosse aux damnés auront eux aussi un double type, une fois assez avancé, quand le niveau est plus relevé.
+- Choix de l'utilisateur : Combat pour le Guerrier, Ténèbres pour l'Assassin, Psychique pour le Mage, Lumière pour le Templier ; la même règle pour tous les humains, joueur comme IA : le second type dès le niveau de combat 25 ; la table des types s'applique sans exception ; la Fosse mesurée par l'outil d'équilibrage (sections 4.4 et 9.8).
+- Claude a relevé qu'un second type Spectre rendrait le héros insensible aux attaques Humain, et qu'une attaque Humain ne fait plus que x0,5 à un humain à double type : les combats entre héros de niveau 25 ou plus durent deux fois plus longtemps. L'utilisateur garde la règle des types.
+- Hypothèses retenues, à confirmer : Q114.

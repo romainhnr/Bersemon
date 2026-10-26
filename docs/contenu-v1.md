@@ -1627,3 +1627,18 @@ Hilde, avant le combat contre son gardien :
 Après la victoire :
 
 > L'âme de Hilde, marchande de baumes, s'échappe enfin de la caravane. Vous la recueillez pour Malvoise.
+
+## 41. Second type des classes
+
+Décidé le 26/10/2026, pour l'étape 145 (gamedesign.md, section 4.4), choix de l'utilisateur. Dès le niveau de combat 25 (arme et armure du palier 2), un humain, héros du joueur ou de l'IA, a aussi le second type de sa classe :
+
+| Classe | Types sous le niveau 25 | Types dès le niveau 25 |
+|---|---|---|
+| Guerrier | Humain | Humain, Combat |
+| Assassin | Humain | Humain, Ténèbres |
+| Mage | Humain | Humain, Psychique |
+| Templier | Humain | Humain, Lumière |
+
+Humains concernés aujourd'hui : l'Inquisiteur (niveau 25), le Porte-étendard (35) et la Pythie de sel (40) ; les adversaires des paliers 6 à 10 de la Fosse aux damnés (25 à 35). Le brigand (10), le Bourreau (15) et les paliers 1 à 5 (10 à 20) restent Humain seul.
+
+Textes proposés sans validation (gamedesign.md, Q114) : la fiche du héros commence par "Aldric, Guerrier, Humain, Combat, niveau de combat 25 : {PV}/{PV max} PV." et, sous le niveau 25, finit par "Au niveau de combat 25, il prendra aussi le type Combat."

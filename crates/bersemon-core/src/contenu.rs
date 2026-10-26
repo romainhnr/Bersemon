@@ -5366,6 +5366,42 @@ mod tests {
         }
     }
 
+    /// Section 9.8 : les adversaires de la Fosse prennent le second type de
+    /// leur classe dès le niveau 25, aux paliers 6 à 10 (étape 145).
+    #[test]
+    fn les_adversaires_de_la_fosse_prennent_leur_second_type_au_niveau_25() {
+        let contenu = ContenuV1::new();
+        let paliers: Vec<(u8, usize)> = contenu
+            .fosse()
+            .adversaires()
+            .iter()
+            .map(|adversaire| {
+                let heros = adversaire.generer_heros();
+                let types = heros.espece().types().liste();
+                assert_eq!(types[0], Type::Humain);
+                if let Some(second) = types.get(1) {
+                    assert_eq!(*second, adversaire.classe().second_type());
+                }
+                (heros.niveau().valeur(), types.len())
+            })
+            .collect();
+        assert_eq!(
+            paliers,
+            vec![
+                (10, 1),
+                (15, 1),
+                (15, 1),
+                (20, 1),
+                (20, 1),
+                (25, 2),
+                (30, 2),
+                (30, 2),
+                (35, 2),
+                (35, 2)
+            ]
+        );
+    }
+
     /// Section 10.7, décidée le 25/10/2026 pour l'étape 131 : chaque humain
     /// de fin de zone combat après ses monstres, au niveau de son équipement.
     #[test]
@@ -5378,7 +5414,15 @@ mod tests {
             .map(|humain| {
                 let heros = humain.generer_heros().unwrap();
                 assert_eq!(heros.nom(), humain.nom());
-                assert_eq!(heros.espece().types().liste(), [Type::Humain]);
+                // Le second type de sa classe dès le niveau 25 (section
+                // 4.4) : l'Inquisiteur, le Porte-étendard et la Pythie.
+                let classe = humain.classe().unwrap();
+                let attendus = if heros.niveau().valeur() >= 25 {
+                    vec![Type::Humain, classe.second_type()]
+                } else {
+                    vec![Type::Humain]
+                };
+                assert_eq!(heros.espece().types().liste(), attendus);
                 let attaques = heros
                     .attaques()
                     .liste()

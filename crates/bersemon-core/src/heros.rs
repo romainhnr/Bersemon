@@ -65,6 +65,17 @@ impl Classe {
         }
     }
 
+    /// Le type que prend le héros de cette classe, en plus de l'Humain, dès
+    /// le niveau de combat 25 (section 4.4).
+    pub fn second_type(self) -> Type {
+        match self {
+            Classe::Guerrier => Type::Combat,
+            Classe::Mage => Type::Psychique,
+            Classe::Templier => Type::Lumiere,
+            Classe::Assassin => Type::Tenebres,
+        }
+    }
+
     pub fn ordre(self) -> Ordre {
         match self {
             Classe::Guerrier => Ordre::CriDeGuerre,
@@ -110,6 +121,22 @@ const NIVEAUX_PAR_PALIER: u8 = 5;
 /// 4.4).
 const VALEURS_INTERNES_DU_HEROS: u8 = 15;
 
+/// Dès ce niveau de combat, celui d'une arme et d'une armure du palier 2,
+/// un humain prend le second type de sa classe : le joueur, les autres
+/// joueurs et les humains de l'IA suivent la même règle (section 4.4).
+pub const NIVEAU_DU_SECOND_TYPE: u8 = 25;
+
+/// Humain seul, puis Humain et le second type de sa classe dès le niveau
+/// de combat 25.
+pub fn types_du_heros(classe: Classe, niveau: Niveau) -> TypesMonstre {
+    let types = if niveau.valeur() >= NIVEAU_DU_SECOND_TYPE {
+        vec![Type::Humain, classe.second_type()]
+    } else {
+        vec![Type::Humain]
+    };
+    TypesMonstre::new(&types).expect("types du héros distincts")
+}
+
 /// L'attaque du héros sans arme (docs/contenu-v1.md, section 34).
 pub fn coup_de_poing() -> Attaque {
     Attaque::new(
@@ -140,17 +167,19 @@ pub fn niveau_de_combat(
 /// Un héros qui combat, celui du joueur comme celui d'un humain de l'IA :
 /// un monstre de type Humain, au nom du héros, aux stats de sa classe et
 /// au niveau de son équipement, avec les attaques de son arme et tous ses
-/// PV (section 4.4). Il n'a ni habileté, ni XP à gagner.
+/// PV (section 4.4). Dès le niveau 25, il a aussi le second type de sa
+/// classe. Il n'a ni habileté, ni XP à gagner.
 pub fn creer_combattant(
     nom: &str,
     classe: Classe,
     arme: Option<&ObjetDEquipement>,
     armure: Option<&ObjetDEquipement>,
 ) -> Monstre {
+    let niveau = niveau_de_combat(arme, armure);
     let espece = Espece::new(
         EspeceId::new("heros"),
         nom,
-        TypesMonstre::new(&[Type::Humain]).expect("un type"),
+        types_du_heros(classe, niveau),
         Role::Offensif,
         classe.stats_de_base(),
         0,
@@ -172,7 +201,7 @@ pub fn creer_combattant(
     .expect("valeurs internes valides");
     Monstre::new(
         espece,
-        niveau_de_combat(arme, armure),
+        niveau,
         valeurs_internes,
         AttaquesMonstre::new(attaques).expect("attaques du héros valides"),
         false,
@@ -367,6 +396,39 @@ mod tests {
         // Base 90 au niveau 5, valeurs internes à 15 : (180 + 15) x 5 / 100
         // + 5 + 10.
         assert_eq!(combattant.stats().pv, 24);
+    }
+
+    /// Section 4.4, décidée le 26/10/2026 pour l'étape 145.
+    #[test]
+    fn le_heros_prend_le_second_type_de_sa_classe_au_niveau_25() {
+        let arme = |palier| objet(SorteDObjet::Arme, palier, Vec::new());
+        let armure = |palier| objet(SorteDObjet::Armure, palier, Vec::new());
+        let types = |arme: &ObjetDEquipement, armure: &ObjetDEquipement| {
+            creer_combattant("Aldric", Classe::Guerrier, Some(arme), Some(armure))
+                .espece()
+                .types()
+                .liste()
+                .to_vec()
+        };
+        // Niveau 20, puis 25.
+        assert_eq!(types(&arme(2), &armure(1)), [Type::Humain]);
+        assert_eq!(types(&arme(2), &armure(2)), [Type::Humain, Type::Combat]);
+        let seconds: Vec<Type> = Classe::TOUTES
+            .iter()
+            .map(|classe| {
+                types_du_heros(*classe, Niveau::new(NIVEAU_DU_SECOND_TYPE).unwrap()).liste()[1]
+            })
+            .collect();
+        assert_eq!(
+            seconds,
+            [Type::Combat, Type::Psychique, Type::Lumiere, Type::Tenebres]
+        );
+        // Une attaque Humain ne fait plus que x0,5 à un humain à double type.
+        let double = types_du_heros(Classe::Mage, Niveau::new(30).unwrap());
+        assert_eq!(
+            crate::types::efficacite(Type::Humain, &double),
+            crate::types::Efficacite::Reduite
+        );
     }
 
     #[test]
