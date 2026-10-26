@@ -216,7 +216,7 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
             avec: None,
             cede: None,
         }),
-        "Autres joueurs",
+        "Multijoueur",
         SECONDAIRE,
     ));
     boutons.push(bouton(Cle::Afficher(Vue::Options), "Options", SECONDAIRE));

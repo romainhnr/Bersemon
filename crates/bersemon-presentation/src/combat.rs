@@ -704,19 +704,32 @@ mod tests {
         let warg = fiche("warg");
         let evolution: Vec<&String> = warg
             .iter()
-            .filter(|ligne| ligne.contains("(évolution)"))
+            .filter(|ligne| ligne.contains("(en évoluant depuis"))
             .collect();
         assert_eq!(evolution.len(), 1, "{warg:?}");
+        // Le Loup, pas encore capturé, reste caché.
         assert!(
-            evolution[0].starts_with("  niv. 16 (évolution) : "),
+            evolution[0].starts_with("  niv. 16 (en évoluant depuis ???) : Croc noir ("),
             "{warg:?}"
         );
-        // Le Loup n'évolue de rien : aucune attaque d'évolution.
-        assert!(
-            !fiche("loup")
-                .iter()
-                .any(|ligne| ligne.contains("(évolution)"))
+        let mut codex = Codex::default();
+        codex.noter_capture(&EspeceId::new("loup"));
+        let warg = crate::partie::fiche_d_espece(
+            &contenu.espece(&EspeceId::new("warg")).unwrap(),
+            &codex,
+            &[],
+            &contenu,
         );
+        assert!(
+            warg.iter()
+                .any(|ligne| ligne.starts_with("  niv. 16 (en évoluant depuis Loup) : Croc noir (")),
+            "{warg:?}"
+        );
+        // Le Loup n'évolue de rien : aucune attaque d'évolution sur sa page,
+        // pas même celle du Warg.
+        let loup = fiche("loup");
+        assert!(!loup.iter().any(|ligne| ligne.contains("en évoluant")));
+        assert!(!loup.iter().any(|ligne| ligne.contains("Croc noir")));
         // Chaque capsule de son type, sauf celles que l'espèce apprend déjà.
         for espece in contenu.especes() {
             let lignes = fiche(espece.id().as_str());

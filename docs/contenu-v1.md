@@ -688,7 +688,7 @@ Décidé le 20/10/2026, pour les étapes 55 à 58 (gamedesign.md, sections 15.1 
 | Récit, pour chaque monstre cédé (hypothèse, Q89) | Vous cédez {monstre} à {héros}. |
 | Récit, pour chaque monstre reçu (hypothèse, Q89) | Vous recevez {monstre} de {héros}. |
 
-Au camp, le bouton s'appelle "Échanges", puis "Autres joueurs" depuis l'étape 60 (section 14). Limite d'obéissance : niveau maximal de la zone la plus avancée ouverte, plus 5 (12, 18, 25 puis 32).
+Au camp, le bouton s'appelle "Échanges", puis "Autres joueurs" depuis l'étape 60 (section 14), puis "Multijoueur" depuis l'étape 150 ; l'écran commence alors par "Multijoueur : offres de monstres et duels." Limite d'obéissance : niveau maximal de la zone la plus avancée ouverte, plus 5 (12, 18, 25 puis 32).
 
 ## 14. Duel en temps réel
 
@@ -1548,7 +1548,7 @@ Décidée le 26/10/2026, pour l'étape 140 (gamedesign.md, section 5.6). Libell�
 
 | Ligne | Texte |
 |---|---|
-| Attaques apprises | Attaques apprises : / puis une ligne par attaque : "niv. 1 : Griffure (Normal, physique, puissance 40, précision 100 %)", et pour l'attaque d'évolution : "niv. 16 (évolution) : Croc noir (Ténèbres, physique, puissance 75, précision 95 %)" |
+| Attaques apprises | Attaques apprises : / puis une ligne par attaque : "niv. 1 : Griffure (Normal, physique, puissance 40, précision 100 %)", et pour l'attaque d'évolution, sur la page de l'espèce d'arrivée : "niv. 16 (en évoluant depuis Loup) : Croc noir (Ténèbres, physique, puissance 75, précision 95 %)", depuis l'étape 150 ("(évolution)" avant ; "???" pour une espèce de départ pas encore capturée) |
 | Évolution | Évolution : Warg dès le niveau 16, après un combat de nuit. / Évolution : ??? dès le niveau 16, après un combat de nuit (espèce d'arrivée pas encore capturée). / Évolution : ???, condition inconnue (Apôtre pas encore abattu) |
 | Capsules | Capsules d'attaque possibles : / puis une ligne par capsule : "Sentence (Ténèbres, spéciale, puissance 80, précision 95 %)" ; ou "Capsules d'attaque possibles : aucune" |
 

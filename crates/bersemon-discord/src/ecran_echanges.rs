@@ -214,7 +214,7 @@ pub fn echanges(
     lignes.extend(rangees(boutons));
     Question {
         texte: format!(
-            "Autres joueurs : offres de monstres et duels.\n{}\n\n{}",
+            "Multijoueur : offres de monstres et duels.\n{}\n\n{}",
             vos_duels(partie.relations().palmares()),
             paragraphes.join("\n\n")
         ),

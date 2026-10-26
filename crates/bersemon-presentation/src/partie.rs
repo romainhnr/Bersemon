@@ -537,18 +537,25 @@ pub fn fiche_d_espece(
         "Attaques apprises :".to_string(),
     ];
     // L'attaque d'évolution est dans la liste de l'espèce d'arrivée : on la
-    // retrouve par l'espèce qui évolue vers celle-ci.
+    // retrouve par l'espèce qui évolue vers celle-ci, dont le nom reste
+    // caché tant qu'elle n'est pas capturée, comme celui d'une évolution.
     let attaque_d_evolution = contenu.especes().iter().find_map(|avant| {
         avant
             .evolution()
             .filter(|evolution| evolution.vers() == espece.id())
-            .map(|evolution| evolution.attaque())
+            .map(|evolution| (evolution.attaque(), avant))
     });
     for apprise in espece.apprentissage() {
-        let evolution = if attaque_d_evolution == Some(apprise.attaque.id()) {
-            " (évolution)"
-        } else {
-            ""
+        let evolution = match attaque_d_evolution {
+            Some((attaque, avant)) if attaque == apprise.attaque.id() => {
+                let nom = if codex.etat(avant.id()) == EtatCodex::Capturee {
+                    avant.nom()
+                } else {
+                    "???"
+                };
+                format!(" (en évoluant depuis {nom})")
+            }
+            _ => String::new(),
         };
         fiche.push(format!(
             "  niv. {}{evolution} : {}",
