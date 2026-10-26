@@ -1160,6 +1160,22 @@ impl Deroulement {
         Some(evenements)
     }
 
+    /// Le combat que le joueur engagera par `Choix::Poursuivre`, pendant
+    /// `Annonce::Combat` : contre un humain, un Apôtre ou un gardien de la
+    /// Tour. Les interfaces y voient qui l'attend (section 5.1).
+    pub fn combat_annonce(&self) -> Option<&Combat> {
+        if self.a_confirmer.is_some() {
+            return None;
+        }
+        let Etat::EnJeu(jeu) = &self.etat else {
+            return None;
+        };
+        match &jeu.expedition.as_ref()?.moment {
+            Moment::AnnonceDeCombat(combat) if jeu.arene.is_none() => Some(combat),
+            _ => None,
+        }
+    }
+
     pub fn attente(&self) -> Attente<'_> {
         if let Some((_, confirmation)) = &self.a_confirmer {
             return Attente::Confirmation(confirmation);
@@ -5858,10 +5874,26 @@ mod tests {
         let mut deroulement = Deroulement::demarrer(depot.charger(&contenu));
         let mut vus = Vec::new();
         let mut annonces = Vec::new();
+        let mut attendus: Vec<EspeceId> = Vec::new();
         let mut combats_de_jour = 0;
         for _ in 0..200_000 {
             if let Attente::Annonce(annonce) = deroulement.attente() {
                 annonces.push(annonce);
+                // Le combat annoncé dit qui attend : l'humain lui-même, ou
+                // l'Apôtre (section 5.1).
+                match (annonce, deroulement.combat_annonce()) {
+                    (Annonce::Combat, Some(combat)) => {
+                        let attend = combat
+                            .heros(Cote::Adversaire)
+                            .first()
+                            .unwrap_or_else(|| combat.monstre(combat.actif(Cote::Adversaire)));
+                        if !attendus.contains(attend.espece().id()) {
+                            attendus.push(attend.espece().id().clone());
+                        }
+                    }
+                    (Annonce::Indice, None) => {}
+                    (annonce, combat) => panic!("{annonce:?} : {combat:?}"),
+                }
             }
             // Les combats de fin de zone ne suivent pas le cycle ; les autres
             // combats des zones, partis à minuit UTC, sont de jour (section
@@ -5927,6 +5959,9 @@ mod tests {
             .count();
         assert!(fins_de_zone >= 7);
         assert_eq!(annonces_de_combat, fins_de_zone);
+        for attendu in ["humain-brigand", "humain-bourreau", "baron-pendu"] {
+            assert!(attendus.contains(&EspeceId::new(attendu)), "{attendu}");
+        }
         assert!(
             vus.iter()
                 .any(|evenement| matches!(evenement, Evenement::Epilogue(_)))

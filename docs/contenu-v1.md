@@ -1658,7 +1658,7 @@ Humains concernés aujourd'hui : l'Inquisiteur (niveau 25), le Porte-étendard (
 
 Textes proposés sans validation (gamedesign.md, Q114) : la fiche du héros commence par "Aldric, Guerrier, Humain, Combat, niveau de combat 25 : {PV}/{PV max} PV." et, sous le niveau 25, finit par "Au niveau de combat 25, il prendra aussi le type Combat."
 
-## 42. Sprites des monstres
+## 42. Sprites des monstres et des humains
 
 Décidé le 26/10/2026, pour les étapes 152 à 154 (gamedesign.md, section 5.1), choix de l'utilisateur : du pixel art dessiné par Claude, style validé sur les cinq premières espèces.
 
@@ -1675,3 +1675,9 @@ Conventions de dessin : contour sombre d'un pixel, lumière venue d'en haut à g
 
 Espèces dessinées à l'étape 152, style validé par l'utilisateur : Salamandre, Crapaud, Mandragore, Chat noir, Loup. Les 60 autres à l'étape 154, sur le même modèle : les formes évoluées reprennent la silhouette et les couleurs de leur forme de base en plus imposant ; chaque shiny change de teinte, souvent vers la couleur complémentaire. Dessins et palettes proposés par Claude, à relire espèce par espèce (gamedesign.md, Q115). Un test vérifie que chaque espèce du contenu a son sprite, et qu'aucun sprite ne reste sans espèce : une espèce ajoutée plus tard demande son dessin.
 
+Humains, décidé le 26/10/2026 pour les étapes 155 à 157 (gamedesign.md, section 5.1) : même format, sans section `shiny`, puisqu'un humain n'est jamais shiny.
+
+- `crates/bersemon-discord/sprites/heros/{classe}.txt` : guerrier, mage, templier, assassin. En combat, le héros d'un joueur a l'espèce technique `heros-{classe}`.
+- `crates/bersemon-discord/sprites/humains/{identifiant}.txt` : les 5 humains du récit et les 10 adversaires de la Fosse aux damnés. En combat, un humain de l'IA a l'espèce technique `humain-{identifiant}`, par exemple `humain-brigand`.
+
+Images composées : en combat, les deux combattants actifs face à face, celui du joueur à gauche et retourné, avec un écart de 4 pixels de la grille (312 x 144 pixels) ; au choix de la classe, les quatre classes côte à côte (648 x 144 pixels). Chaque sprite garde sa palette, d'au plus 63 couleurs.

@@ -202,6 +202,8 @@ Chaque monstre possède :
 - Décidé le 26/10/2026, pour les étapes 152 à 154 (choix de l'utilisateur, Q64) : chaque espèce a un sprite en pixel art, dessiné par Claude, de 24 x 24 pixels, avec un contour sombre, la lumière en haut à gauche et le profil tourné vers la gauche. Le shiny a son propre sprite : le même dessin, avec une autre palette. Pas de droits à régler : le jeu les possède. Format et liste dans docs/contenu-v1.md, section 42.
   - Sur Discord, le sprite est joint au message, agrandi six fois (144 pixels de côté) : l'adversaire actif en combat, en duel ou en groupe ; le monstre rare pacifique, la prise de la pêche et la capture qui attend une place ; le monstre qui vient de rejoindre l'équipe ou le camp ; au camp, l'espèce de la fiche ouverte du codex et le monstre choisi dans la gestion. Un monstre shiny montre son sprite shiny ; la fiche du codex, le sprite normal.
   - La console reste textuelle : elle n'affiche aucun sprite.
+  - Décidé le 26/10/2026, pour les étapes 155 à 157 (choix de l'utilisateur) : les humains ont aussi leur sprite, de même format, sans palette shiny puisqu'ils ne sont jamais shiny. Chacune des quatre classes a le sien, qui montre le héros du joueur et ceux des autres joueurs (duel, groupe, arène) ; chacun des 5 humains du récit et des 10 adversaires de la Fosse aux damnés a le sien, que les adversaires miroirs gardent quand ils prennent la classe du héros. Les Apôtres et le Démiurge, qui sont des espèces, avaient déjà le leur.
+  - En combat, l'image montre face à face le combattant actif du joueur, à gauche et retourné vers la droite, et l'adversaire actif, à droite (312 x 144 pixels). Le sprite de l'adversaire se montre aussi dès l'annonce du combat : l'humain lui-même, l'Apôtre, le Démiurge ou le gardien de la Tour sans fond, et l'adversaire du prochain palier de la Fosse. Les quatre classes se montrent côte à côte au choix de la classe, et celle du héros sur l'écran de son équipement.
 
 ### 5.2 Types
 
@@ -1289,9 +1291,13 @@ Les questions Q102 et suivantes ont été relevées le 25/10/2026 lors de la con
 
 Les questions Q103 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 107 carnet de traque du codex et 108 Philtre chromatique.
 
+Les questions Q116 et suivantes ont été relevées le 26/10/2026 lors de la conception des étapes 155 affichage des humains et du face à face, 156 sprites des classes et des humains du récit, 157 sprites des adversaires de la Fosse.
+
+- Q116. (Étapes 155 à 157) Hypothèses retenues, à confirmer : en combat, le combattant du joueur KO qui attend son remplaçant laisse sa place vide ; en groupe, la place du joueur montre le combattant actif de son côté, à qui qu'il soit ; à l'annonce du combat contre un humain, l'image montre l'humain plutôt que son premier monstre ; dans l'arène entre joueurs, l'adversaire montre le sprite de sa classe. Dessins et couleurs des humains proposés par Claude.
+
 Les questions Q115 et suivantes ont été relevées le 26/10/2026 lors de la conception des étapes 152 format des sprites et encodeur PNG, 153 affichage sur Discord, 154 sprites de toutes les espèces.
 
-- Q115. (Étapes 152 à 154) Hypothèses retenues, à confirmer : un seul sprite à la fois, celui de l'adversaire actif en combat (pas celui du monstre du joueur) ; le monstre qui vient de rejoindre l'équipe ou le camp l'emporte sur la fiche ouverte au camp ; aucun sprite pour un humain, ni pour l'annonce d'un combat ; un sprite sans palette shiny complète est refusé. Dessins, couleurs et palettes shiny proposés par Claude : style validé par l'utilisateur sur les cinq premiers, à vérifier espèce par espèce.
+- Q115. (Étapes 152 à 154) Hypothèses retenues, à confirmer : le monstre qui vient de rejoindre l'équipe ou le camp l'emporte sur la fiche ouverte au camp ; le sprite d'une espèce sans palette shiny complète est refusé. Dessins, couleurs et palettes shiny proposés par Claude : style validé par l'utilisateur sur les cinq premiers, à vérifier espèce par espèce. Tranché le 26/10/2026 pour les étapes 155 à 157 : en combat, l'image montre aussi le monstre du joueur ; les humains ont leur sprite, montré aussi à l'annonce du combat (section 5.1).
 
 Les questions Q114 et suivantes ont été relevées le 26/10/2026 lors de la conception des étapes 145 second type des classes, 146 mesure de la Fosse aux damnés, 147 PV du héros, 148 paliers rapprochés, 149 attaques du second type, 150 bouton Multijoueur et attaque d'évolution au codex, et 151 adversaires miroirs.
 
@@ -1898,3 +1904,10 @@ Les questions Q104 et suivantes ont été relevées le 25/10/2026 lors de la con
 - Le bot écrit lui-même les PNG, sans crate : image à palette, non compressée.
 - Hypothèses retenues, à confirmer : Q115.
 
+26/10/2026 (conception des étapes 155 à 157, sprites des humains et face à face) :
+
+- Demande de l'utilisateur : des sprites pour les humains, les Apôtres, le Démiurge et chaque classe du héros ; montrer son propre monstre en combat.
+- Claude a relevé que les Apôtres et le Démiurge, qui sont des espèces, avaient déjà leur sprite depuis l'étape 154, montré en combat.
+- Choix de l'utilisateur : un sprite pour chaque humain, les 5 du récit et les 10 de la Fosse aux damnés, en plus des 4 classes ; le sprite de l'adversaire dès l'annonce du combat ; une seule image en combat, les deux combattants face à face ; les classes montrées en combat, au choix de la classe et sur l'écran de l'équipement (section 5.1).
+- En combat, un humain ou un héros est un monstre d'une espèce technique qui dit qui il est : "heros-guerrier" pour un héros de joueur, "humain-brigand" pour un humain de l'IA. Le bot y trouve son sprite.
+- Hypothèses retenues, à confirmer : Q116.

@@ -5,7 +5,7 @@ use std::fmt;
 
 use crate::equipement::ObjetDEquipement;
 use crate::espece::{Espece, EspeceId};
-use crate::heros::{Classe, creer_combattant};
+use crate::heros::{Classe, creer_combattant_au_niveau, niveau_de_combat};
 use crate::monstre::Monstre;
 use crate::niveau::Niveau;
 use crate::stats::{Stats, ValeursInternes};
@@ -39,6 +39,13 @@ impl HumainId {
 
     pub fn as_str(&self) -> &str {
         &self.0
+    }
+
+    /// Son espèce quand il combat lui-même : "humain-brigand". Elle dit qui
+    /// combat, pour que les interfaces le montrent avec son sprite (section
+    /// 5.1).
+    pub fn espece_du_combattant(&self) -> EspeceId {
+        EspeceId::new(format!("humain-{}", self.0))
     }
 }
 
@@ -155,11 +162,12 @@ impl Humain {
     /// classe et au niveau de son équipement.
     pub fn generer_heros(&self) -> Option<Monstre> {
         self.heros.as_ref().map(|heros| {
-            creer_combattant(
+            creer_combattant_au_niveau(
+                self.id.espece_du_combattant(),
                 &self.nom,
                 heros.classe,
                 heros.arme.as_ref(),
-                heros.armure.as_ref(),
+                niveau_de_combat(heros.arme.as_ref(), heros.armure.as_ref()),
             )
         })
     }
@@ -263,6 +271,14 @@ mod tests {
         assert!(!equipe[0].est_shiny());
         assert_eq!(equipe[0].habilete(), Some(Habilete::Traqueur));
         assert_eq!(brigand.generer_equipe(), equipe);
+        assert_eq!(brigand.generer_heros(), None);
+        // Quand il combat lui-même, son espèce dit qui il est (section 5.1).
+        let heros = brigand
+            .avec_heros(Classe::Assassin, None, None)
+            .generer_heros()
+            .unwrap();
+        assert_eq!(heros.espece().id().as_str(), "humain-brigand");
+        assert_eq!(heros.nom(), "Brigand");
     }
 
     #[test]

@@ -8,8 +8,9 @@
 use bersemon_core::codex::EtatCodex;
 use bersemon_core::combat::{Combat, Cote};
 use bersemon_core::contenu::ContenuV1;
-use bersemon_core::deroulement::{Attente, Confirmation, Evenement};
+use bersemon_core::deroulement::{Annonce, Attente, Confirmation, Evenement};
 use bersemon_core::espece::EspeceId;
+use bersemon_core::heros::Classe;
 use bersemon_core::horodatage::Horodatage;
 use bersemon_core::monstre::Monstre;
 use bersemon_presentation::erreurs::erreur_de_choix;
@@ -78,35 +79,100 @@ pub struct Message {
     pub rangees: Vec<Rangee>,
     /// Version de la partie, portée par chaque composant.
     pub version: u32,
-    /// Le monstre dont le sprite est joint au message (section 5.1).
+    /// L'image jointe au message (section 5.1).
     pub sprite: Option<Illustration>,
 }
 
-/// Le sprite d'un monstre : son espèce, et s'il est shiny.
+/// Le sprite d'un monstre ou d'un humain : son espèce, celle d'un monstre
+/// ou celle d'un humain en combat, et s'il est shiny.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Illustration {
+pub struct Portrait {
     pub espece: EspeceId,
     pub shiny: bool,
 }
 
-impl Illustration {
+impl Portrait {
     fn de(monstre: &Monstre) -> Self {
         Self {
             espece: monstre.espece().id().clone(),
             shiny: monstre.est_shiny(),
         }
     }
+
+    fn de_la_classe(classe: Classe) -> Self {
+        Self {
+            espece: classe.espece_du_combattant(),
+            shiny: false,
+        }
+    }
+}
+
+/// Ce que montre l'image jointe au message (section 5.1).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Illustration {
+    Seul(Portrait),
+    /// En combat : le combattant actif du joueur à gauche, retourné vers
+    /// l'adversaire actif, à droite. Aucun quand le sien est KO et attend
+    /// son remplaçant.
+    FaceAFace {
+        joueur: Option<Portrait>,
+        adversaire: Portrait,
+    },
+    /// Côte à côte, tournés vers la gauche : les classes, au choix de la
+    /// classe.
+    CoteACote(Vec<Portrait>),
 }
 
 impl Message {
-    /// Le PNG à joindre, si l'espèce a son sprite. Un message mis à jour sans
-    /// pièce jointe perd l'image du précédent.
+    /// Le PNG à joindre, si un de ses sprites est dessiné ; une case sans
+    /// sprite reste vide. Un message mis à jour sans pièce jointe perd
+    /// l'image du précédent.
     pub fn piece_jointe(&self) -> Option<serenity::CreateAttachment> {
-        let illustration = self.sprite.as_ref()?;
-        let sprite = sprites::sprite(&illustration.espece)?;
+        let (portraits, nom) = match self.sprite.as_ref()? {
+            Illustration::Seul(portrait) => (
+                vec![Some((portrait, false))],
+                sprites::nom_de_fichier(&portrait.espece, portrait.shiny),
+            ),
+            Illustration::FaceAFace { joueur, adversaire } => (
+                vec![
+                    joueur.as_ref().map(|joueur| (joueur, true)),
+                    Some((adversaire, false)),
+                ],
+                "combat.png".to_string(),
+            ),
+            Illustration::CoteACote(portraits) => (
+                portraits
+                    .iter()
+                    .map(|portrait| Some((portrait, false)))
+                    .collect(),
+                "portraits.png".to_string(),
+            ),
+        };
+        let dessines: Vec<Option<(sprites::Sprite, bool, bool)>> = portraits
+            .into_iter()
+            .map(|place| {
+                let (portrait, retourne) = place?;
+                Some((sprites::sprite(&portrait.espece)?, portrait.shiny, retourne))
+            })
+            .collect();
+        if dessines.iter().all(Option::is_none) {
+            return None;
+        }
+        let cases: Vec<Option<sprites::Case<'_>>> = dessines
+            .iter()
+            .map(|place| {
+                place
+                    .as_ref()
+                    .map(|(sprite, shiny, retourne)| sprites::Case {
+                        sprite,
+                        shiny: *shiny,
+                        retourne: *retourne,
+                    })
+            })
+            .collect();
         Some(serenity::CreateAttachment::bytes(
-            sprite.png(illustration.shiny),
-            sprites::nom_de_fichier(&illustration.espece, illustration.shiny),
+            sprites::png_cote_a_cote(&cases),
+            nom,
         ))
     }
 
@@ -227,26 +293,48 @@ fn illustration(
     evenements: &[Evenement],
     contenu: &ContenuV1,
 ) -> Option<Illustration> {
-    let adversaire =
-        |combat: &Combat| Illustration::de(combat.monstre(combat.actif(Cote::Adversaire)));
     if let Some(duel) = &session.duel {
-        return Some(adversaire(&duel.duel.vu_par(duel.cote)));
+        return Some(face_a_face(&duel.duel.vu_par(duel.cote)));
     }
     if let Some(combat) = session
         .groupe
         .as_ref()
         .and_then(|groupe| groupe.combat.as_ref())
     {
-        return Some(adversaire(combat));
+        return Some(face_a_face(combat));
     }
+    let seul = |monstre: &Monstre| Some(Illustration::Seul(Portrait::de(monstre)));
     match session.deroulement.attente() {
         Attente::ActionDeCombat(combat)
         | Attente::Remplacement(combat)
-        | Attente::CaptureDesKo(combat) => return Some(adversaire(combat)),
-        Attente::MonstreRare(monstre) | Attente::Prise(monstre) => {
-            return Some(Illustration::de(monstre));
+        | Attente::CaptureDesKo(combat) => return Some(face_a_face(combat)),
+        Attente::MonstreRare(monstre) | Attente::Prise(monstre) => return seul(monstre),
+        Attente::PlaceManquante(capture) => return seul(capture),
+        Attente::Annonce(Annonce::Combat) => {
+            // L'humain lui-même plutôt que son premier monstre ; sinon
+            // l'Apôtre, ou le gardien de la Tour.
+            let combat = session.deroulement.combat_annonce()?;
+            return seul(
+                combat
+                    .heros(Cote::Adversaire)
+                    .first()
+                    .unwrap_or_else(|| combat.monstre(combat.actif(Cote::Adversaire))),
+            );
         }
-        Attente::PlaceManquante(capture) => return Some(Illustration::de(capture)),
+        Attente::AdversaireDeLArene { adversaire, .. } => {
+            return Some(Illustration::Seul(Portrait {
+                espece: adversaire.id().espece_du_combattant(),
+                shiny: false,
+            }));
+        }
+        Attente::Classe => {
+            return Some(Illustration::CoteACote(
+                Classe::TOUTES
+                    .iter()
+                    .map(|classe| Portrait::de_la_classe(*classe))
+                    .collect(),
+            ));
+        }
         _ => {}
     }
     let arrive = evenements
@@ -254,7 +342,7 @@ fn illustration(
         .rev()
         .find_map(|evenement| match evenement {
             Evenement::RejointLEquipe(monstre) | Evenement::PartPourLeCamp(monstre) => {
-                Some(Illustration::de(monstre))
+                Some(Illustration::Seul(Portrait::de(monstre)))
             }
             _ => None,
         });
@@ -266,16 +354,30 @@ fn illustration(
         (Attente::Camp, Vue::Codex(Some(position))) => {
             let espece = contenu.especes().get(position)?;
             // La fiche ne s'ouvre que pour une espèce capturée (section 5.6).
-            (partie.codex().etat(espece.id()) == EtatCodex::Capturee).then(|| Illustration {
-                espece: espece.id().clone(),
-                shiny: false,
+            (partie.codex().etat(espece.id()) == EtatCodex::Capturee).then(|| {
+                Illustration::Seul(Portrait {
+                    espece: espece.id().clone(),
+                    shiny: false,
+                })
             })
         }
         (Attente::Camp, Vue::Gestion(Some(emplacement))) => partie
             .collection()
             .monstre(emplacement)
-            .map(Illustration::de),
+            .map(|monstre| Illustration::Seul(Portrait::de(monstre))),
+        (Attente::Camp, Vue::Equipement) => Some(Illustration::Seul(Portrait::de_la_classe(
+            partie.heros().classe(),
+        ))),
         _ => None,
+    }
+}
+
+/// Les combattants actifs, celui du joueur à gauche, vus par le joueur.
+fn face_a_face(combat: &Combat) -> Illustration {
+    let joueur = combat.monstre(combat.actif(Cote::Joueur));
+    Illustration::FaceAFace {
+        joueur: (!joueur.est_ko()).then(|| Portrait::de(joueur)),
+        adversaire: Portrait::de(combat.monstre(combat.actif(Cote::Adversaire))),
     }
 }
 

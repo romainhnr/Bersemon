@@ -1,14 +1,16 @@
-//! Sprites des monstres (section 5.1) : pour chaque espèce, une grille de
-//! 24 x 24 pixels avec sa palette et sa palette shiny, écrite en texte dans
+//! Sprites des monstres et des humains (section 5.1) : pour chaque espèce,
+//! chaque classe de héros et chaque humain de l'IA, une grille de 24 x 24
+//! pixels avec sa palette, écrite en texte dans
 //! `crates/bersemon-discord/sprites/`. Le bot la rend en PNG agrandi, joint
-//! à son message. Le PNG est écrit à la main, sans crate : une image à
-//! palette, non compressée, suffit pour quelques kilo-octets.
+//! à son message, seule ou à côté d'autres. Le PNG est écrit à la main, sans
+//! crate : une image à palette, non compressée, suffit pour quelques
+//! dizaines de kilo-octets.
 //!
 //! Format d'un fichier : des lignes de commentaire qui commencent par `#`,
 //! puis `palette`, une couleur par ligne (`b 8a8a92` : un caractère et sa
 //! couleur en hexadécimal), `shiny`, les mêmes caractères avec leurs couleurs
 //! shiny, et enfin `dessin`, 24 lignes de 24 caractères, où `.` est
-//! transparent.
+//! transparent. Un humain, jamais shiny, n'a pas de section `shiny`.
 
 use std::fmt;
 
@@ -20,6 +22,13 @@ pub const COTE: usize = 24;
 /// sur Discord.
 pub const ECHELLE: usize = 6;
 const TRANSPARENT: char = '.';
+/// Écart entre deux sprites d'une même image, en pixels de la grille.
+const ECART: usize = 4;
+/// Une image en montre au plus quatre, les quatre classes au choix de la
+/// classe ; avec 63 couleurs chacun, ils tiennent dans les 256 couleurs d'un
+/// PNG à palette, l'indice 0 restant transparent.
+const CASES_MAX: usize = 4;
+const COULEURS_MAX: usize = 63;
 
 /// Identifiant de l'espèce et texte de son sprite, dans l'ordre du codex.
 const SPRITES: [(&str, &str); 65] = [
@@ -183,13 +192,19 @@ const SPRITES: [(&str, &str); 65] = [
     ),
 ];
 
+/// Identifiant de l'espèce du combattant et texte de son sprite : les
+/// classes des héros des joueurs, puis les humains de l'IA (section 5.1).
+const SPRITES_DES_HUMAINS: [(&str, &str); 0] = [];
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ErreurSprite {
-    /// Il manque `palette`, `shiny` ou `dessin`, ou ils sont dans le désordre.
+    /// Il manque `palette` ou `dessin`, ou les sections sont dans le
+    /// désordre.
     SectionManquante,
     CouleurIllisible(String),
     /// Une couleur de la palette manque à la palette shiny, ou l'inverse.
     PalettesDifferentes,
+    TropDeCouleurs,
     TailleIncorrecte,
     /// Un caractère du dessin n'a pas de couleur.
     CaractereSansCouleur(char),
@@ -199,7 +214,7 @@ impl fmt::Display for ErreurSprite {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ErreurSprite::SectionManquante => {
-                write!(f, "section palette, shiny ou dessin manquante")
+                write!(f, "section palette ou dessin manquante")
             }
             ErreurSprite::CouleurIllisible(ligne) => write!(f, "couleur illisible : {ligne}"),
             ErreurSprite::PalettesDifferentes => {
@@ -208,6 +223,7 @@ impl fmt::Display for ErreurSprite {
                     "la palette et la palette shiny n'ont pas les mêmes caractères"
                 )
             }
+            ErreurSprite::TropDeCouleurs => write!(f, "plus de {COULEURS_MAX} couleurs"),
             ErreurSprite::TailleIncorrecte => write!(f, "le dessin doit faire {COTE} x {COTE}"),
             ErreurSprite::CaractereSansCouleur(caractere) => {
                 write!(f, "caractère sans couleur : {caractere}")
@@ -223,16 +239,27 @@ type Palette = Vec<(char, [u8; 3])>;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Sprite {
     palette: Palette,
-    shiny: Palette,
+    /// `None` pour un humain, jamais shiny.
+    shiny: Option<Palette>,
     /// `COTE` lignes de `COTE` caractères.
     dessin: Vec<Vec<char>>,
+}
+
+/// Un sprite placé dans une image : avec sa palette shiny ou non, et
+/// retourné ou non, pour regarder vers la droite comme le combattant du
+/// joueur face à l'adversaire.
+#[derive(Debug, Clone, Copy)]
+pub struct Case<'a> {
+    pub sprite: &'a Sprite,
+    pub shiny: bool,
+    pub retourne: bool,
 }
 
 impl Sprite {
     pub fn lire(texte: &str) -> Result<Self, ErreurSprite> {
         let mut section = "";
         let mut palette = Vec::new();
-        let mut shiny = Vec::new();
+        let mut shiny = None;
         let mut dessin = Vec::new();
         for ligne in texte.lines() {
             let ligne = ligne.trim_end();
@@ -240,9 +267,15 @@ impl Sprite {
                 continue;
             }
             match (section, ligne) {
-                ("", "palette") | ("palette", "shiny") | ("shiny", "dessin") => section = ligne,
+                ("palette", "shiny") => {
+                    shiny = Some(Vec::new());
+                    section = ligne;
+                }
+                ("", "palette") | ("palette" | "shiny", "dessin") => section = ligne,
                 ("palette", _) => palette.push(lire_couleur(ligne)?),
-                ("shiny", _) => shiny.push(lire_couleur(ligne)?),
+                ("shiny", _) => shiny
+                    .get_or_insert_with(Vec::new)
+                    .push(lire_couleur(ligne)?),
                 ("dessin", _) => dessin.push(ligne.chars().collect::<Vec<char>>()),
                 _ => return Err(ErreurSprite::SectionManquante),
             }
@@ -255,8 +288,14 @@ impl Sprite {
             caracteres.sort_unstable();
             caracteres
         };
-        if caracteres(&palette) != caracteres(&shiny) {
+        if shiny
+            .as_ref()
+            .is_some_and(|shiny| caracteres(&palette) != caracteres(shiny))
+        {
             return Err(ErreurSprite::PalettesDifferentes);
+        }
+        if palette.len() > COULEURS_MAX {
+            return Err(ErreurSprite::TropDeCouleurs);
         }
         if dessin.len() != COTE || dessin.iter().any(|ligne| ligne.len() != COTE) {
             return Err(ErreurSprite::TailleIncorrecte);
@@ -275,54 +314,94 @@ impl Sprite {
         })
     }
 
-    /// Le PNG agrandi, à palette : l'indice 0 est transparent, les suivants
-    /// sont les couleurs dans l'ordre du fichier.
-    pub fn png(&self, shiny: bool) -> Vec<u8> {
-        let palette = if shiny { &self.shiny } else { &self.palette };
-        let indice = |c: char| {
-            palette
-                .iter()
-                .position(|(k, _)| *k == c)
-                .map_or(0, |position| position as u8 + 1)
-        };
-        let cote = COTE * ECHELLE;
-        let mut lignes = Vec::with_capacity(cote * (cote + 1));
-        for ligne in &self.dessin {
-            let pixels: Vec<u8> = ligne
-                .iter()
-                .flat_map(|c| std::iter::repeat_n(indice(*c), ECHELLE))
-                .collect();
-            for _ in 0..ECHELLE {
-                // Filtre 0 : la ligne telle quelle.
-                lignes.push(0);
-                lignes.extend_from_slice(&pixels);
-            }
+    #[cfg(test)]
+    fn a_un_shiny(&self) -> bool {
+        self.shiny.is_some()
+    }
+
+    /// La palette shiny, si elle est demandée et que le sprite en a une.
+    fn palette(&self, shiny: bool) -> &Palette {
+        match &self.shiny {
+            Some(palette) if shiny => palette,
+            _ => &self.palette,
         }
-        let mut plte = vec![0, 0, 0];
-        let mut trns = vec![0];
+    }
+
+    /// Le PNG agrandi de ce seul sprite.
+    #[cfg(test)]
+    fn png(&self, shiny: bool) -> Vec<u8> {
+        png_cote_a_cote(&[Some(Case {
+            sprite: self,
+            shiny,
+            retourne: false,
+        })])
+    }
+}
+
+/// Les sprites côte à côte, de gauche à droite, dans un PNG agrandi, à
+/// palette : l'indice 0 est transparent, les suivants sont les couleurs de
+/// chaque sprite dans l'ordre de son fichier. Une case vide reste
+/// transparente.
+pub fn png_cote_a_cote(cases: &[Option<Case<'_>>]) -> Vec<u8> {
+    debug_assert!(cases.len() <= CASES_MAX, "au plus {CASES_MAX} sprites");
+    let largeur = cases.len() * COTE + cases.len().saturating_sub(1) * ECART;
+    let mut grille = vec![vec![0_u8; largeur]; COTE];
+    let mut plte = vec![0, 0, 0];
+    let mut trns = vec![0];
+    for (position, case) in cases.iter().enumerate() {
+        let Some(case) = case else {
+            continue;
+        };
+        let premier = trns.len();
+        let palette = case.sprite.palette(case.shiny);
         for (_, couleur) in palette {
             plte.extend_from_slice(couleur);
             trns.push(255);
         }
-        let cote = cote as u32;
-        let mut ihdr = Vec::with_capacity(13);
-        ihdr.extend_from_slice(&cote.to_be_bytes());
-        ihdr.extend_from_slice(&cote.to_be_bytes());
-        // 8 bits par pixel, couleurs à palette, sans entrelacement.
-        ihdr.extend_from_slice(&[8, 3, 0, 0, 0]);
-        let mut png = vec![0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a];
-        ecrire_bloc(&mut png, b"IHDR", &ihdr);
-        ecrire_bloc(&mut png, b"PLTE", &plte);
-        ecrire_bloc(&mut png, b"tRNS", &trns);
-        ecrire_bloc(&mut png, b"IDAT", &zlib_sans_compression(&lignes));
-        ecrire_bloc(&mut png, b"IEND", &[]);
-        png
+        let gauche = position * (COTE + ECART);
+        for (ligne, caracteres) in grille.iter_mut().zip(&case.sprite.dessin) {
+            for (x, c) in caracteres.iter().enumerate() {
+                let Some(rang) = palette.iter().position(|(k, _)| k == c) else {
+                    continue;
+                };
+                let x = if case.retourne { COTE - 1 - x } else { x };
+                ligne[gauche + x] = (premier + rang) as u8;
+            }
+        }
     }
+    let mut lignes = Vec::with_capacity(COTE * ECHELLE * (largeur * ECHELLE + 1));
+    for ligne in &grille {
+        let pixels: Vec<u8> = ligne
+            .iter()
+            .flat_map(|indice| std::iter::repeat_n(*indice, ECHELLE))
+            .collect();
+        for _ in 0..ECHELLE {
+            // Filtre 0 : la ligne telle quelle.
+            lignes.push(0);
+            lignes.extend_from_slice(&pixels);
+        }
+    }
+    let mut ihdr = Vec::with_capacity(13);
+    ihdr.extend_from_slice(&((largeur * ECHELLE) as u32).to_be_bytes());
+    ihdr.extend_from_slice(&((COTE * ECHELLE) as u32).to_be_bytes());
+    // 8 bits par pixel, couleurs à palette, sans entrelacement.
+    ihdr.extend_from_slice(&[8, 3, 0, 0, 0]);
+    let mut png = vec![0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a];
+    ecrire_bloc(&mut png, b"IHDR", &ihdr);
+    ecrire_bloc(&mut png, b"PLTE", &plte);
+    ecrire_bloc(&mut png, b"tRNS", &trns);
+    ecrire_bloc(&mut png, b"IDAT", &zlib_sans_compression(&lignes));
+    ecrire_bloc(&mut png, b"IEND", &[]);
+    png
 }
 
-/// Le sprite de l'espèce, s'il est dessiné.
+/// Le sprite de l'espèce, s'il est dessiné : celle d'un monstre, ou celle
+/// d'un héros ou d'un humain en combat.
 pub fn sprite(espece: &EspeceId) -> Option<Sprite> {
-    let (_, texte) = SPRITES.iter().find(|(id, _)| *id == espece.as_str())?;
+    let (_, texte) = SPRITES
+        .iter()
+        .chain(&SPRITES_DES_HUMAINS)
+        .find(|(id, _)| *id == espece.as_str())?;
     Sprite::lire(texte).ok()
 }
 
@@ -422,7 +501,7 @@ mod tests {
 
     #[test]
     fn chaque_sprite_dessine_se_lit() {
-        for (id, texte) in SPRITES {
+        for (id, texte) in SPRITES.iter().chain(&SPRITES_DES_HUMAINS) {
             Sprite::lire(texte).unwrap_or_else(|erreur| panic!("{id} : {erreur}"));
         }
     }
@@ -440,7 +519,8 @@ mod tests {
         let dessinees: Vec<&str> = especes_dessinees().collect();
         assert_eq!(dessinees, especes);
         for espece in contenu.especes() {
-            assert!(sprite(espece.id()).is_some(), "{}", espece.id().as_str());
+            let sprite = sprite(espece.id()).unwrap_or_else(|| panic!("{}", espece.id().as_str()));
+            assert!(sprite.a_un_shiny(), "{}", espece.id().as_str());
         }
     }
 
@@ -454,10 +534,13 @@ mod tests {
             std::env::var("BERSEMON_SPRITES").expect("variable BERSEMON_SPRITES"),
         );
         std::fs::create_dir_all(&dossier).unwrap();
-        for id in especes_dessinees() {
-            let espece = EspeceId::new(id);
+        for (id, _) in SPRITES.iter().chain(&SPRITES_DES_HUMAINS) {
+            let espece = EspeceId::new(*id);
             let sprite = sprite(&espece).unwrap();
-            for shiny in [false, true] {
+            for shiny in [false, true]
+                .into_iter()
+                .take(1 + usize::from(sprite.a_un_shiny()))
+            {
                 std::fs::write(
                     dossier.join(nom_de_fichier(&espece, shiny)),
                     sprite.png(shiny),
@@ -488,6 +571,66 @@ mod tests {
         assert_ne!(loup.png(true), png);
     }
 
+    /// En combat, le combattant du joueur, à gauche, est retourné vers
+    /// l'adversaire (section 5.1).
+    #[test]
+    fn deux_sprites_face_a_face() {
+        let dessin = |ligne: &str| vec![ligne; COTE].join("\n");
+        let gauche = Sprite::lire(&format!(
+            "palette\na 102030\nshiny\na 405060\ndessin\n{}\n",
+            dessin(&format!("a{}", ".".repeat(COTE - 1)))
+        ))
+        .unwrap();
+        let droite = Sprite::lire(&format!(
+            "palette\nb 708090\ndessin\n{}\n",
+            dessin(&format!("b{}", ".".repeat(COTE - 1)))
+        ))
+        .unwrap();
+        assert!(!droite.a_un_shiny());
+        let png = png_cote_a_cote(&[
+            Some(Case {
+                sprite: &gauche,
+                shiny: true,
+                retourne: true,
+            }),
+            Some(Case {
+                sprite: &droite,
+                shiny: true,
+                retourne: false,
+            }),
+        ]);
+        let largeur = (2 * COTE + ECART) * ECHELLE;
+        assert_eq!(&png[16..20], &(largeur as u32).to_be_bytes());
+        assert_eq!(&png[20..24], &144_u32.to_be_bytes());
+        // PLTE : le transparent, la couleur shiny du premier, puis celle du
+        // second, qui n'a pas de shiny.
+        assert_eq!(&png[33..37], &9_u32.to_be_bytes());
+        assert_eq!(&png[37..41], b"PLTE");
+        assert_eq!(&png[41..50], &[0, 0, 0, 0x40, 0x50, 0x60, 0x70, 0x80, 0x90]);
+        // Première ligne, après les blocs IHDR, PLTE, tRNS, l'en-tête zlib et
+        // celui du bloc stocké : le filtre, puis les pixels.
+        let debut = 8 + 25 + 21 + 15 + 8 + 2 + 5;
+        assert_eq!(&png[debut - 4 - 2 - 5..debut - 2 - 5], b"IDAT");
+        let ligne = &png[debut + 1..debut + 1 + largeur];
+        let colonne = |x: usize| ligne[x * ECHELLE];
+        // Le premier, retourné, a son pixel au bord droit de sa case ; le
+        // second, au bord gauche de la sienne.
+        assert_eq!(colonne(0), 0);
+        assert_eq!(colonne(COTE - 1), 1);
+        assert_eq!(colonne(COTE), 0);
+        assert_eq!(colonne(COTE + ECART), 2);
+        // Une case vide reste transparente.
+        let seul = png_cote_a_cote(&[
+            None,
+            Some(Case {
+                sprite: &droite,
+                shiny: false,
+                retourne: false,
+            }),
+        ]);
+        assert_eq!(&seul[16..20], &(largeur as u32).to_be_bytes());
+    }
+
     #[test]
     fn un_sprite_mal_forme_est_refuse() {
         let ligne = ".".repeat(COTE);
@@ -513,6 +656,19 @@ mod tests {
         assert_eq!(
             Sprite::lire("dessin\n"),
             Err(ErreurSprite::SectionManquante)
+        );
+        assert_eq!(
+            Sprite::lire("palette\nb 102030\n"),
+            Err(ErreurSprite::SectionManquante)
+        );
+        // Sans palette shiny : un humain.
+        assert!(Sprite::lire(&correct.replace("shiny\nb 405060\n", "")).is_ok());
+        let couleurs: String = (0..=COULEURS_MAX)
+            .map(|rang| format!("{} 000000\n", char::from(b'0' + rang as u8)))
+            .collect();
+        assert_eq!(
+            Sprite::lire(&format!("palette\n{couleurs}dessin\n{dessin}\n")),
+            Err(ErreurSprite::TropDeCouleurs)
         );
     }
 }

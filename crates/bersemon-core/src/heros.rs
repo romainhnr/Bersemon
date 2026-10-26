@@ -41,6 +41,13 @@ impl Classe {
         }
     }
 
+    /// L'espèce du héros d'un joueur de cette classe, en combat :
+    /// "heros-guerrier". Elle dit qui combat, pour que les interfaces le
+    /// montrent avec le sprite de sa classe (section 5.1).
+    pub fn espece_du_combattant(self) -> EspeceId {
+        EspeceId::new(format!("heros-{}", self.nom().to_lowercase()))
+    }
+
     /// +10 % dans une stat des monstres du joueur en combat (Q34), dans les
     /// deux défenses pour le Templier (section 4.2).
     pub fn bonus(self) -> BonusDeStats {
@@ -176,20 +183,28 @@ pub fn creer_combattant(
     arme: Option<&ObjetDEquipement>,
     armure: Option<&ObjetDEquipement>,
 ) -> Monstre {
-    creer_combattant_au_niveau(nom, classe, arme, niveau_de_combat(arme, armure))
+    creer_combattant_au_niveau(
+        classe.espece_du_combattant(),
+        nom,
+        classe,
+        arme,
+        niveau_de_combat(arme, armure),
+    )
 }
 
-/// Un humain dont le niveau est fixé à part de son équipement, comme un
-/// adversaire de la Fosse aux damnés (section 9.8) : son arme ne lui donne
-/// que ses attaques.
+/// Un combattant de l'espèce donnée, qui dit qui il est : un humain de
+/// l'IA a la sienne (section 5.1). Son niveau peut être fixé à part de son
+/// équipement, comme pour un adversaire de la Fosse aux damnés (section
+/// 9.8) : son arme ne lui donne alors que ses attaques.
 pub fn creer_combattant_au_niveau(
+    espece: EspeceId,
     nom: &str,
     classe: Classe,
     arme: Option<&ObjetDEquipement>,
     niveau: Niveau,
 ) -> Monstre {
     let espece = Espece::new(
-        EspeceId::new("heros"),
+        espece,
         nom,
         types_du_heros(classe, niveau),
         Role::Offensif,
@@ -408,6 +423,31 @@ mod tests {
         // Base 180 au niveau 5, valeurs internes à 15 : (360 + 15) x 5 / 100
         // + 5 + 10.
         assert_eq!(combattant.stats().pv, 33);
+    }
+
+    /// Son espèce dit sa classe, pour que les interfaces le montrent
+    /// (section 5.1).
+    #[test]
+    fn le_combattant_d_un_joueur_a_l_espece_de_sa_classe() {
+        let especes: Vec<String> = Classe::TOUTES
+            .iter()
+            .map(|classe| {
+                creer_combattant("Aldric", *classe, None, None)
+                    .espece()
+                    .id()
+                    .as_str()
+                    .to_string()
+            })
+            .collect();
+        assert_eq!(
+            especes,
+            [
+                "heros-guerrier",
+                "heros-mage",
+                "heros-templier",
+                "heros-assassin"
+            ]
+        );
     }
 
     /// Section 4.4, décidée le 26/10/2026 pour l'étape 145.

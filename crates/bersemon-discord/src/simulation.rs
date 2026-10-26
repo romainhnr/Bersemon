@@ -13,7 +13,7 @@ use bersemon_core::codex::EtatCodex;
 use bersemon_core::collection::Emplacement;
 use bersemon_core::combat::{Combat, Cote};
 use bersemon_core::contenu::ContenuV1;
-use bersemon_core::deroulement::{Attente, Evenement};
+use bersemon_core::deroulement::{Annonce, Attente, Evenement};
 use bersemon_core::equipement::PlaceDEquipement;
 use bersemon_core::espece::EspeceId;
 use bersemon_core::filet::Filet;
@@ -33,10 +33,18 @@ use crate::composants::{
 };
 use crate::joueurs::{IdJoueur, Joueurs, Session};
 use crate::message::{
-    BOUTONS_PAR_RANGEE, LONGUEUR_MAX, Message, OPTIONS_PAR_MENU, RANGEES_MAX, Rangee, message,
+    BOUTONS_PAR_RANGEE, Illustration, LONGUEUR_MAX, Message, OPTIONS_PAR_MENU, Portrait,
+    RANGEES_MAX, Rangee, message,
 };
 
 const JOUEUR: IdJoueur = 7;
+
+fn portrait(monstre: &Monstre) -> Portrait {
+    Portrait {
+        espece: monstre.espece().id().clone(),
+        shiny: monstre.est_shiny(),
+    }
+}
 
 /// Un clic sur un bouton, une option choisie dans un menu, ou un texte envoyé
 /// par un formulaire.
@@ -698,18 +706,60 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
     let mut automatique_faite = false;
     let mut visite = Visite::AFaire;
     let mut sprites_en_combat = 0;
+    let mut annonces: Vec<EspeceId> = Vec::new();
+    let mut choix_de_classe = 0;
+    let mut paliers = 0;
     for _ in 0..50_000 {
         let maintenant = Horodatage::depuis_secondes(heure);
         let session = joueurs.session(JOUEUR, &contenu);
         let affiche = message(session, &evenements, None, &contenu, maintenant);
         verifier_les_limites(&affiche);
-        // En combat, l'image montre l'adversaire actif (section 5.1).
-        if let Attente::ActionDeCombat(combat) = session.deroulement.attente() {
-            let adversaire = combat.monstre(combat.actif(Cote::Adversaire));
-            let sprite = affiche.sprite.as_ref().expect("sprite en combat");
-            assert_eq!(&sprite.espece, adversaire.espece().id());
-            assert_eq!(sprite.shiny, adversaire.est_shiny());
-            sprites_en_combat += usize::from(affiche.piece_jointe().is_some());
+        // En combat, l'image montre face à face les combattants actifs ;
+        // à l'annonce, celui qui attend ; au choix de la classe, les quatre
+        // classes (section 5.1).
+        match session.deroulement.attente() {
+            Attente::ActionDeCombat(combat) => {
+                let joueur = combat.monstre(combat.actif(Cote::Joueur));
+                let adversaire = combat.monstre(combat.actif(Cote::Adversaire));
+                assert_eq!(
+                    affiche.sprite,
+                    Some(Illustration::FaceAFace {
+                        joueur: Some(portrait(joueur)),
+                        adversaire: portrait(adversaire),
+                    })
+                );
+                sprites_en_combat += usize::from(affiche.piece_jointe().is_some());
+            }
+            Attente::Annonce(Annonce::Combat) => match &affiche.sprite {
+                Some(Illustration::Seul(portrait)) => {
+                    if !annonces.contains(&portrait.espece) {
+                        annonces.push(portrait.espece.clone());
+                    }
+                }
+                autre => panic!("annonce : {autre:?}"),
+            },
+            Attente::Classe => {
+                let classes = Classe::TOUTES
+                    .iter()
+                    .map(|classe| Portrait {
+                        espece: classe.espece_du_combattant(),
+                        shiny: false,
+                    })
+                    .collect();
+                assert_eq!(affiche.sprite, Some(Illustration::CoteACote(classes)));
+                choix_de_classe += 1;
+            }
+            Attente::AdversaireDeLArene { adversaire, .. } => {
+                assert_eq!(
+                    affiche.sprite,
+                    Some(Illustration::Seul(Portrait {
+                        espece: adversaire.id().espece_du_combattant(),
+                        shiny: false,
+                    }))
+                );
+                paliers += 1;
+            }
+            _ => {}
         }
         // Jusqu'à la chute du troisième Apôtre, puis le retour au camp.
         let epilogues = vus
@@ -778,6 +828,13 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
     assert_eq!(humains_vaincus, 4);
     // Les Loups de la Lisière, au moins, ont leur sprite joint.
     assert!(sprites_en_combat > 0);
+    for attendu in ["humain-brigand", "humain-bourreau", "baron-pendu"] {
+        assert!(annonces.contains(&EspeceId::new(attendu)), "{attendu}");
+    }
+    // La partie commence par le choix de la classe ; la Fosse se vérifie à
+    // part.
+    assert_eq!(choix_de_classe, 1);
+    assert_eq!(paliers, 0);
     assert!(
         vus.iter()
             .any(|evenement| matches!(evenement, Evenement::OrdreDonne { .. })),
@@ -865,8 +922,9 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
 /// Une construction lancée depuis la forge, confirmée, annoncée par message
 /// privé à son heure, puis constatée (section 13.4).
 /// Au camp, l'image suit la fiche ouverte du codex, le monstre choisi dans
-/// la gestion, ou le monstre qui vient de rejoindre l'équipe ; l'écran
-/// principal n'en a pas (section 5.1).
+/// la gestion, la classe du héros sur l'écran de son équipement, ou le
+/// monstre qui vient de rejoindre l'équipe ; l'écran principal n'en a pas
+/// (section 5.1).
 #[test]
 fn le_sprite_suit_la_fiche_ouverte_au_camp() {
     use bersemon_core::catalogue::Catalogue;
@@ -903,11 +961,16 @@ fn le_sprite_suit_la_fiche_ouverte_au_camp() {
             &contenu,
             maintenant,
         );
-        affiche
-            .sprite
-            .map(|sprite| sprite.espece.as_str().to_string())
+        affiche.sprite.map(|sprite| match sprite {
+            Illustration::Seul(portrait) => portrait.espece.as_str().to_string(),
+            autre => panic!("{autre:?}"),
+        })
     };
     assert_eq!(sprite(&mut joueurs, Vue::Camp, &[]), None);
+    assert_eq!(
+        sprite(&mut joueurs, Vue::Equipement, &[]),
+        Some("heros-mage".to_string())
+    );
     let salamandre = Some("salamandre".to_string());
     assert_eq!(
         sprite(
@@ -939,6 +1002,105 @@ fn le_sprite_suit_la_fiche_ouverte_au_camp() {
             &[Evenement::RejointLEquipe(capture)]
         ),
         Some("loup".to_string())
+    );
+    let _ = fs::remove_dir_all(dossier);
+}
+
+/// Dans la Fosse aux damnés, l'adversaire du palier se montre avant le
+/// combat, puis face au héros, qui combat seul (section 5.1).
+#[test]
+fn la_fosse_montre_son_adversaire_puis_le_face_a_face() {
+    use bersemon_core::catalogue::Catalogue;
+    use bersemon_core::deroulement::Choix;
+    use bersemon_core::heros::Heros;
+    use bersemon_core::humain::HumainId;
+    use bersemon_core::niveau::Niveau;
+    use bersemon_core::nom::Nom;
+    use bersemon_core::partie::Partie;
+    use bersemon_core::sauvegarde::SauvegardeRepository;
+    use bersemon_core::stats::ValeursInternes;
+    use bersemon_storage::FichierJson;
+
+    let contenu = ContenuV1::new();
+    let depart = Monstre::creer(
+        contenu.espece(&EspeceId::new("salamandre")).unwrap(),
+        Niveau::new(10).unwrap(),
+        ValeursInternes::default(),
+        false,
+    )
+    .unwrap();
+    let partie = Partie::nouvelle(
+        Heros::new(Nom::new("Aldric").unwrap(), Classe::Mage),
+        depart,
+    );
+    let partie = Partie::restaurer(EtatPartie {
+        heros: partie.heros().clone(),
+        collection: partie.collection().clone(),
+        sac: Inventaire::default(),
+        coffre_du_camp: Inventaire::default(),
+        marchand_au_camp: false,
+        ames_donnees: Vec::new(),
+        ames_portees: Vec::new(),
+        ames_a_retrouver: Vec::new(),
+        codex: partie.codex().clone(),
+        zones_explorees: Vec::new(),
+        indices_trouves: 0,
+        apotres_vaincus: Vec::new(),
+        humains_vaincus: vec![HumainId::new("brigand")],
+        conseils_vus: Vec::new(),
+        expeditions_automatiques: Vec::new(),
+        attaques_a_choisir: Vec::new(),
+        peche: Default::default(),
+        forge: Default::default(),
+        relations: Default::default(),
+        machines: Default::default(),
+        beherit: Default::default(),
+        records_de_la_tour: Default::default(),
+        rite: None,
+        paliers_du_codex: Vec::new(),
+        arene: Default::default(),
+    })
+    .unwrap();
+    let dossier = dossier_de_test().join("fosse");
+    fs::create_dir_all(&dossier).unwrap();
+    FichierJson::new(dossier.join(format!("{JOUEUR}.json")))
+        .enregistrer(&partie)
+        .unwrap();
+    let mut joueurs = Joueurs::new(dossier.clone(), 2026);
+    let maintenant = Horodatage::depuis_secondes(0);
+    let mut jouer = |choix: Choix| {
+        let version = joueurs.session(JOUEUR, &contenu).version;
+        joueurs
+            .jouer(JOUEUR, version, choix, &contenu, maintenant)
+            .unwrap();
+        let affiche = message(
+            joueurs.session(JOUEUR, &contenu),
+            &[],
+            None,
+            &contenu,
+            maintenant,
+        );
+        verifier_les_limites(&affiche);
+        affiche.sprite
+    };
+    jouer(Choix::ReprendreLaPartie);
+    let gueux = Portrait {
+        espece: EspeceId::new("humain-gueux"),
+        shiny: false,
+    };
+    assert_eq!(
+        jouer(Choix::EntrerDansLaFosse),
+        Some(Illustration::Seul(gueux.clone()))
+    );
+    assert_eq!(
+        jouer(Choix::Poursuivre),
+        Some(Illustration::FaceAFace {
+            joueur: Some(Portrait {
+                espece: EspeceId::new("heros-mage"),
+                shiny: false,
+            }),
+            adversaire: gueux,
+        })
     );
     let _ = fs::remove_dir_all(dossier);
 }

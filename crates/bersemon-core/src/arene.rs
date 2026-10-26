@@ -195,7 +195,13 @@ impl AdversaireDeLArene {
 
     /// Lui-même, prêt au combat, sans tirage.
     pub fn generer_heros(&self) -> Monstre {
-        creer_combattant_au_niveau(&self.nom, self.classe, self.arme.as_ref(), self.niveau)
+        creer_combattant_au_niveau(
+            self.id.espece_du_combattant(),
+            &self.nom,
+            self.classe,
+            self.arme.as_ref(),
+            self.niveau,
+        )
     }
 }
 
