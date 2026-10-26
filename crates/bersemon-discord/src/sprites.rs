@@ -21,13 +21,166 @@ pub const COTE: usize = 24;
 pub const ECHELLE: usize = 6;
 const TRANSPARENT: char = '.';
 
-/// Identifiant de l'espèce et texte de son sprite.
-const SPRITES: [(&str, &str); 5] = [
+/// Identifiant de l'espèce et texte de son sprite, dans l'ordre du codex.
+const SPRITES: [(&str, &str); 65] = [
     ("salamandre", include_str!("../sprites/salamandre.txt")),
     ("crapaud", include_str!("../sprites/crapaud.txt")),
     ("mandragore", include_str!("../sprites/mandragore.txt")),
     ("chat-noir", include_str!("../sprites/chat-noir.txt")),
     ("loup", include_str!("../sprites/loup.txt")),
+    ("corbeau", include_str!("../sprites/corbeau.txt")),
+    ("vipere", include_str!("../sprites/vipere.txt")),
+    ("feu-follet", include_str!("../sprites/feu-follet.txt")),
+    (
+        "armure-hantee",
+        include_str!("../sprites/armure-hantee.txt"),
+    ),
+    ("fee-noire", include_str!("../sprites/fee-noire.txt")),
+    ("squelette", include_str!("../sprites/squelette.txt")),
+    ("cerf-blanc", include_str!("../sprites/cerf-blanc.txt")),
+    ("basilic", include_str!("../sprites/basilic.txt")),
+    ("elfe", include_str!("../sprites/elfe.txt")),
+    ("vouivre", include_str!("../sprites/vouivre.txt")),
+    ("baron-pendu", include_str!("../sprites/baron-pendu.txt")),
+    ("schnoz", include_str!("../sprites/schnoz.txt")),
+    (
+        "lezard-de-braise",
+        include_str!("../sprites/lezard-de-braise.txt"),
+    ),
+    (
+        "crapaud-geant",
+        include_str!("../sprites/crapaud-geant.txt"),
+    ),
+    (
+        "mandragore-ancienne",
+        include_str!("../sprites/mandragore-ancienne.txt"),
+    ),
+    (
+        "chat-des-ombres",
+        include_str!("../sprites/chat-des-ombres.txt"),
+    ),
+    ("warg", include_str!("../sprites/warg.txt")),
+    (
+        "corbeau-des-gibets",
+        include_str!("../sprites/corbeau-des-gibets.txt"),
+    ),
+    ("aspic", include_str!("../sprites/aspic.txt")),
+    ("fee-sorciere", include_str!("../sprites/fee-sorciere.txt")),
+    (
+        "basilic-royal",
+        include_str!("../sprites/basilic-royal.txt"),
+    ),
+    (
+        "lanterne-des-morts",
+        include_str!("../sprites/lanterne-des-morts.txt"),
+    ),
+    ("cerf-de-lune", include_str!("../sprites/cerf-de-lune.txt")),
+    (
+        "chevalier-noir",
+        include_str!("../sprites/chevalier-noir.txt"),
+    ),
+    (
+        "chevalier-squelette",
+        include_str!("../sprites/chevalier-squelette.txt"),
+    ),
+    ("gargouille", include_str!("../sprites/gargouille.txt")),
+    ("goule", include_str!("../sprites/goule.txt")),
+    (
+        "chauve-souris-de-crypte",
+        include_str!("../sprites/chauve-souris-de-crypte.txt"),
+    ),
+    ("chimere", include_str!("../sprites/chimere.txt")),
+    ("ange-dechu", include_str!("../sprites/ange-dechu.txt")),
+    (
+        "abbesse-ecorchee",
+        include_str!("../sprites/abbesse-ecorchee.txt"),
+    ),
+    (
+        "reine-des-ronces",
+        include_str!("../sprites/reine-des-ronces.txt"),
+    ),
+    ("noye", include_str!("../sprites/noye.txt")),
+    (
+        "anguille-des-tourbieres",
+        include_str!("../sprites/anguille-des-tourbieres.txt"),
+    ),
+    (
+        "sangsue-geante",
+        include_str!("../sprites/sangsue-geante.txt"),
+    ),
+    ("kelpie", include_str!("../sprites/kelpie.txt")),
+    ("wendigo", include_str!("../sprites/wendigo.txt")),
+    (
+        "troll-des-cavernes",
+        include_str!("../sprites/troll-des-cavernes.txt"),
+    ),
+    (
+        "harpie-des-orages",
+        include_str!("../sprites/harpie-des-orages.txt"),
+    ),
+    (
+        "wyrm-de-givre",
+        include_str!("../sprites/wyrm-de-givre.txt"),
+    ),
+    (
+        "sylphe-des-neiges",
+        include_str!("../sprites/sylphe-des-neiges.txt"),
+    ),
+    (
+        "margrave-de-givre",
+        include_str!("../sprites/margrave-de-givre.txt"),
+    ),
+    (
+        "wyverne-de-cendre",
+        include_str!("../sprites/wyverne-de-cendre.txt"),
+    ),
+    ("crapaud-roi", include_str!("../sprites/crapaud-roi.txt")),
+    ("arbre-pendu", include_str!("../sprites/arbre-pendu.txt")),
+    ("cait-sith", include_str!("../sprites/cait-sith.txt")),
+    ("loup-garou", include_str!("../sprites/loup-garou.txt")),
+    ("demiurge", include_str!("../sprites/demiurge.txt")),
+    (
+        "demiurge-eveille",
+        include_str!("../sprites/demiurge-eveille.txt"),
+    ),
+    (
+        "cloche-hurlante",
+        include_str!("../sprites/cloche-hurlante.txt"),
+    ),
+    (
+        "seraphin-de-vitrail",
+        include_str!("../sprites/seraphin-de-vitrail.txt"),
+    ),
+    (
+        "molosse-des-fosses",
+        include_str!("../sprites/molosse-des-fosses.txt"),
+    ),
+    (
+        "taureau-d-airain",
+        include_str!("../sprites/taureau-d-airain.txt"),
+    ),
+    (
+        "crotale-des-salines",
+        include_str!("../sprites/crotale-des-salines.txt"),
+    ),
+    (
+        "scarabee-solaire",
+        include_str!("../sprites/scarabee-solaire.txt"),
+    ),
+    ("momie-de-sel", include_str!("../sprites/momie-de-sel.txt")),
+    (
+        "ver-des-salines",
+        include_str!("../sprites/ver-des-salines.txt"),
+    ),
+    (
+        "sphinx-des-sables",
+        include_str!("../sprites/sphinx-des-sables.txt"),
+    ),
+    ("phenix-blanc", include_str!("../sprites/phenix-blanc.txt")),
+    (
+        "dragon-des-brumes",
+        include_str!("../sprites/dragon-des-brumes.txt"),
+    ),
 ];
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -271,6 +424,23 @@ mod tests {
     fn chaque_sprite_dessine_se_lit() {
         for (id, texte) in SPRITES {
             Sprite::lire(texte).unwrap_or_else(|erreur| panic!("{id} : {erreur}"));
+        }
+    }
+
+    /// Chaque espèce du contenu a son sprite, et aucun sprite ne reste sans
+    /// espèce (section 5.1).
+    #[test]
+    fn chaque_espece_a_son_sprite() {
+        let contenu = bersemon_core::contenu::ContenuV1::new();
+        let especes: Vec<&str> = contenu
+            .especes()
+            .iter()
+            .map(|espece| espece.id().as_str())
+            .collect();
+        let dessinees: Vec<&str> = especes_dessinees().collect();
+        assert_eq!(dessinees, especes);
+        for espece in contenu.especes() {
+            assert!(sprite(espece.id()).is_some(), "{}", espece.id().as_str());
         }
     }
 

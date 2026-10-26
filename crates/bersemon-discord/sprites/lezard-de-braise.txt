@@ -1,0 +1,44 @@
+# Lézard de braise
+palette
+o 1b1420
+b d8502a
+c 9a3018
+d f07a42
+v f6b84f
+f ffa02e
+j fff2a8
+k 1b1420
+shiny
+o 1b1420
+b 2f8fb9
+c 1f5f80
+d 5fb8d8
+v d8eef2
+f a06bff
+j e8dcff
+k 1b1420
+dessin
+........................
+......................o.
+.....................ofo
+....................offf
+....................offf
+....................ofjf
+..........o.o.......ofjf
+........oojojoo.o...offf
+...ooooojofofojojo.odbfo
+..oddddcfofofofofo.odbco
+.odbjkbbfofofofofoodbco.
+.odbbbbbbddddddcoodbbco.
+.occbbbbbbbbbbbbddbbbco.
+..occbbbbbbbbbbbbbbbco..
+...oodbbbbbbbbbbbbbco...
+....ocbcccccccccbbbco...
+.....ocvvvvvvvvvdcco....
+......ovvvvvvvvvcoo.....
+......odcodcooodco......
+......odcocco.odco......
+......occooo..occo......
+.......oo......oo.......
+........................
+........................

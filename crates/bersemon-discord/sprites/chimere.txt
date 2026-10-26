@@ -1,0 +1,52 @@
+# Chimère
+palette
+o 1b1420
+a b04a3a
+e 7a2e24
+f d8705a
+b d88a3a
+c a05e20
+d f0b060
+m 8a3a1a
+n 5a2410
+g 5a8a3a
+y ffe040
+k 1b1420
+shiny
+o 1b1420
+a 3a5aa0
+e 24386a
+f 5a7ac8
+b e0d8c0
+c a8a08a
+d fffaf0
+m 4a4a5a
+n 2a2a38
+g 8a3aa0
+y 40e0ff
+k 1b1420
+dessin
+................o.......
+...............oeoo.....
+..............ofefeoo...
+..............ofeaafeo..
+.............ofeeaaaeo..
+....ooooo....ofeaaaeo...
+...ommmmno..ofaeaaeo....
+..ommmmmmno.ofaeaaeo....
+.ommnnnmmmnoeaeeaeo.....
+.omnddcnmmnooeeaeo......
+.ondybbcmmnoooeeoo......
+.ondbbbcmmnddddddco.....
+.okkbbbcmmndbbbbbbco....
+.ofncccmmndbbbbbbbbco...
+..oonnnnndbbbbbbbbbcgo..
+....ooocdbbbbbbbbbbcggo.
+.......odbbbbbbbbbbcgggo
+.......odbcbbccbbcbcgggo
+.......odcodcoodcodcoggg
+.......odcodcoodcodcoggg
+.......odcodcoodcoccoogo
+.......occoccooccooo..o.
+........oo.oo..oo.......
+........................

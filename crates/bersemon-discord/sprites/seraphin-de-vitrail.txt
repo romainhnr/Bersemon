@@ -1,0 +1,48 @@
+# Séraphin de vitrail
+palette
+o 1b1420
+a 4a8ad0
+e d04a5a
+f e0c040
+b f0e8c8
+c c8b890
+d fffaf0
+m f0dcc8
+y fff0a0
+k 2a2430
+shiny
+o 1b1420
+a 6ad08a
+e a04ad0
+f f08a40
+b d8e0f8
+c a8b0d0
+d f4f8ff
+m e0d0c0
+y a0f0ff
+k 2a2430
+dessin
+........................
+..o......ooooooo.....o..
+.oao....oyyyyyyyo...oao.
+.oaaoo.oyoooooooyoooaao.
+.oakkao.o.ommmo.ooaakko.
+oaaakkkooommmmmooakkkao.
+oaaaeafkkomymymakfkeaaao
+oaaaaaaakkmmmmmkkaaaaaao
+oaaaaaaaaakmmmkaaaaaaaao
+oaaaaaaaadddddcaaaaaaaao
+.okkkkkkkdbbkbckkkkkkkko
+.oaaaaaaadbbkbcaaaaaaoo.
+..ofaaeadbbbkbbcaaeaafo.
+...oaaoodbebkbfcoaaaoo..
+....oo.odbbbkbbcoooo....
+.......odbbbkbbco.......
+.......okkkkkkkkko......
+.......odbbbkbbco.......
+.......odbbbkbbco.......
+......odbbfbkbebco......
+......odbbbbkbbbco......
+......occccckcccco......
+.......oooooooooo.......
+........................

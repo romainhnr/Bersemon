@@ -1,0 +1,48 @@
+# Crotale des salines
+palette
+o 1b1420
+b d8c49a
+c a8946a
+d f0e2c0
+a b0a080
+e 6a5a40
+z 8a6a40
+y e04030
+r c03050
+w c8c8d8
+shiny
+o 1b1420
+b 8ab0c8
+c 5a809a
+d b8d8ec
+a 7a9ab0
+e 3a5a70
+z 3a4a6a
+y f0d030
+r 3070c0
+w f0c060
+dessin
+........................
+........................
+........................
+........................
+........................
+....ooo.................
+..ooddcoo..........o...o
+.oddybbdco........owo.ow
+.odbbbbbco.........owoow
+orccbbbbco..........oaaw
+roooccbbco..........oeao
+o...oodbbco.........oaao
+.....odbbco.........oeao
+.....ocbbbco.......odbco
+......odbbcooooo...odco.
+......odbbbddddcooodbco.
+.....odbbbbbbbbbdddbco..
+....odbzzbzzbzzbzzbbco..
+....odbbbbbbbbbbbbbco...
+....ocbbbbbbbbbbbbbco...
+.....occcbbbbbbbccco....
+......ooocccccccooo.....
+.........ooooooo........
+........................

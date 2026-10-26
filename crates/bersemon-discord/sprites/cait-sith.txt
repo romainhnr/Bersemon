@@ -1,0 +1,44 @@
+# Cait sith
+palette
+o 0c0a10
+b 25202e
+c 15111b
+d 3a3446
+w e8e8f0
+y 7af0c0
+r 8a4a5a
+m 7a5ab0
+shiny
+o 0c0a10
+b d8d0c0
+c a49c8c
+d f4eee4
+w 2a2430
+y f05080
+r c07a8a
+m f0c040
+dessin
+...o.......o............
+..oco.....oco....o......
+..occo...odco...omo..o..
+...odcooodbco....o..omo.
+...odbdddbbco........o..
+...odbbbbbbco.......oo..
+...odbbbbbbbco.....odco.
+...odyybbyybco.....odco.
+...ocbbbbbbbco.....ocbco
+..orocbbbbbcocooo...odco
+...o.occcbbbdbddco..odco
+......ooodbbbbbbbco.odco
+.......odwwwbbbbbbcoocbc
+..o...odbwwwbbbbbbbcoodc
+.omo..odwwwwwbbbbbbcodbc
+..o...odbwwwbbbbbbbcodco
+......odbwwwbbbbbbbbdbco
+...o..ocbbbbbbbbbbbbbco.
+..omo..odbbbbbbbbbcbbco.
+...o...odbbbbbbbbcodco..
+.......odbccbbcccodbco..
+.......odcoodcoooocco.o.
+.......occoocco...oo.omo
+........oo..oo........o.

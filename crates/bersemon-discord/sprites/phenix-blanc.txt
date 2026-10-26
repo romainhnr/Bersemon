@@ -1,0 +1,50 @@
+# Phénix blanc
+palette
+o 1b1420
+f ff8a30
+g d04a20
+j fff0a0
+a f0ecf4
+e c0bcd0
+b fafaff
+c c8c8dc
+d ffffff
+p e8b040
+k 1b1420
+shiny
+o 1b1420
+f 6ab0ff
+g 3a6ad0
+j e0f4ff
+a 3a3446
+e 24202e
+b 4a4458
+c 302c3a
+d 68607a
+p b070ff
+k f0f0f0
+dessin
+........................
+...o........o......o....
+..oeo......ofo....oeo...
+..oaeo....ofofo..oaaeo..
+.oaaaeo..ooo.o..oaaaeo..
+.oaaaeoooddco..oaaaaeo..
+.oaaaaepdbkbco.oaaaaaeo.
+.oeaaappdbbbcooaaaaaaeo.
+..oaaappcbbbcoaaaaaaeo..
+..oeaaaaacbbbcaaaaaeo...
+...oeaaaaedbbbcaaaaeo...
+....oeeaedbbbbbceeeo....
+.....ooeedbbbbbcooo.....
+.......oodbbbbbco.......
+........odbbbbbcoo......
+........ocbbbbbcjgoo....
+.........ocbbbcfffjgoo..
+..........occcgfffffjgo.
+...........oooojffffffgo
+..............ogffggffgo
+...............ojgooggo.
+...............oggo.ogo.
+................oo...o..
+........................

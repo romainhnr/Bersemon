@@ -1,0 +1,50 @@
+# Dragon des brumes
+palette
+o 1b1420
+a 8aa4b4
+e 5a7484
+f b4ccd8
+b 6a8494
+c 465a68
+d 8eaab8
+w e0e8ec
+r e02040
+y f0e040
+m c8d8e0
+shiny
+o 1b1420
+a b49aa4
+e 846a74
+f d8c4cc
+b 94747e
+c 684e58
+d b8969e
+w f0e8ec
+r 30c0ff
+y f0e040
+m e0d0d8
+dessin
+..owo..o.....ofeooooo...
+..owo.owo....oeaffffeoo.
+...owoowo...ofeaaaaaafeo
+...owowo....oeeaaaaaaeo.
+..odrcwo....oeaaaaaeaeo.
+.odbbbco...ofeaaaaeeeo..
+odbybbbco..ofeaaaaeaeo..
+ocbbbbbco..ofeaaaeeaaeo.
+.occcbbbcoofeeaaaeaaaeeo
+..ooocbbcooeeaaaeeaaaeeo
+.....odbbcooceaaeaaaeeo.
+.....ocbbbddbddceaaeoo..
+......odbbbbbbbbdceo....
+......odbbbbbbbbbco.....
+.....ocbbbbbbbbbbbco....
+......odbbbbbbbbbco.....
+......occbbbbbbbbco.....
+.......oodbcbcbbbbcoo...
+........odcocodbccbdco..
+..o.....odcooodcoocbbco.
+.omo....odco.odco.occbco
+omo..o..occo.occo..oomo.
+.o..omo..oo...oo...o.o..
+.....o............omo...

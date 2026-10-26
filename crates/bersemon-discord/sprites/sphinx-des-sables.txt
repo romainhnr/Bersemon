@@ -1,0 +1,48 @@
+# Sphinx des sables
+palette
+o 1b1420
+b d8b070
+c a8804a
+d f0d098
+m c89a6a
+h 3a5aa8
+i 24387a
+g e8c040
+k 1b1420
+n 8a5a3a
+shiny
+o 1b1420
+b b8b8c8
+c 84849a
+d dcdce8
+m 8a7a9a
+h a03a3a
+i 6e2424
+g f0f0f8
+k 1b1420
+n 5a4a6a
+dessin
+........................
+........................
+........................
+........o...............
+.......ogo..............
+.....ooogoo.............
+....ohhhhhio............
+....ohhmmmioo...........
+...oghhmmmhigo.........o
+...ohhmkmkmio.........ob
+...oghhmmmhigo.o.....obb
+...oiiinnniiooocoooo.obo
+..oigoommmoigddbdddcobbo
+...oo..ooddcidbbbbbbdbo.
+........odbbdbbbbbbbbco.
+.......ocbbbbbbbbbbbbbco
+....ooooodbbbbbbbbbbbco.
+...odddddbbbbbbbbbbbbco.
+...odbbbbbbbbccbbbbbco..
+...occcccccccoocbbbbco..
+....ooooooooo..occccco..
+................ooooo...
+........................
+........................

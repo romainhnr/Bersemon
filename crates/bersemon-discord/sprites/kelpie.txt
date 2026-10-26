@@ -1,0 +1,46 @@
+# Kelpie
+palette
+o 1b1420
+b 3a7aa0
+c 245270
+d 5aa0c8
+g 3a8a5a
+i 24603a
+y e0f8ff
+k 1b1420
+w 8ad0f0
+shiny
+o 1b1420
+b 1e2a40
+c 121a2a
+d 34446a
+g a03a6a
+i 6e2448
+y ff40a0
+k 1b1420
+w c08af0
+dessin
+........................
+........................
+.........o..............
+....ooo.oioo............
+...oddcooggio...........
+..odybbddggio...........
+.odbbbbbbigio...........
+okccbbbbbcgio...........
+.ooocccbbbggioooooo..oo.
+....ooocbbigidddddcoogio
+.......odbbiibbbbbbgggio
+.......odbbbbbbbbbbiggio
+.......odbbbbbbbbbbbigio
+.......ocbbbbbbbbbbbciio
+........odbbbbbbbbbcooio
+........odcbccccbcco..o.
+........ococoooococo....
+........ococo..ococo....
+........ococo..ococo....
+.......oococoooococo....
+.....oowwwwwwwwwwwwwoo..
+....owwwwwwwwwwwwwwwwwo.
+.....oowwwwwwwwwwwwwoo..
+.......ooooooooooooo....

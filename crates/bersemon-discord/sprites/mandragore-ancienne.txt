@@ -1,0 +1,50 @@
+# Mandragore ancienne
+palette
+o 1b1420
+b 8a5e36
+c 5a3a20
+d b0845a
+g 3f8a32
+h 64b24a
+i 2a5e26
+r d03a4a
+y ffe060
+k 1b1420
+q c04040
+shiny
+o 1b1420
+b b8a4c8
+c 806a96
+d dcd0ea
+g b8405e
+h dc6484
+i 7a2440
+r 40a0e0
+y ffffff
+k 1b1420
+q 3a7ab0
+dessin
+.....ohio......oioo.....
+....oiggio.oooohghio....
+....ooiggiorrrhggioo....
+...oiooiggiryrggiooio...
+..ohghioiggrrrgiohhgio..
+.oiigggiohggggiohgggiio.
+..ooiiighgggggghgiiioo..
+....oooiiiggggiiiooo....
+.......oooiiiiooo.......
+.........oddddco........
+........odbbbbbco.......
+.......ocbbbbbbbco......
+......odbbcbbbcbbco.....
+......odbbkbbbkbbbco....
+.....odbbbbbbbbbbbbco...
+....odbbbbbbbbbbcbbco...
+...odbbbbbbkkkbbbbcbco..
+...odbcbbbbkqkbbbcodco..
+..odbcocbbbkkkbbbcocbco.
+..occo.occbbbbbbco.occo.
+.ocoo...odbbbbbbco..oco.
+.oco...odbccbcccbco..oco
+..o...odbcoocooodco...o.
+.....occco.oco.occco....

@@ -1,0 +1,50 @@
+# Harpie des orages
+palette
+o 1b1420
+a 4a5a8a
+e 2e3a5e
+f 6e80b0
+b 5a6a9a
+c 3a466e
+d 7e8ec0
+m e0c8b0
+h f0d040
+p b08a3a
+y fff060
+shiny
+o 1b1420
+a 8a4a6a
+e 5e2e46
+f b06e8e
+b 9a5a7a
+c 6e3a56
+d c07e9e
+m e0c8b0
+h f0f0f8
+p 6a6a72
+y 60f0ff
+dessin
+........................
+........................
+.o....................o.
+oeo......oooooo......oeo
+ofeoo...ohhhhhho...oofeo
+oeafeo..ohhhhhho..offaeo
+.ofaaeoohhmymyhooofaaeo.
+.ofeaafehommmmmhffaaeeo.
+.oeofaaaeoommmofaaaeoeo.
+..oofaaaaedddcfaaaaeoo..
+...ofaaaaedbbcfaaaaeo...
+...ofaaaeodbbceaaaaeo...
+...oeeaaeodbbcofaeeeo...
+....ooeeedbbbbceeooo....
+...o..ooodbbbbcoo....o..
+..oyo...odbbbbco....oyo.
+...oyo..occcccco...oyo..
+...oyo...opooopo...oyo..
+....oyo..opo.opo..oyo...
+....oyo.oppo.oppo..o....
+...oyo..opo...opo.......
+...oyo..opo...opo.......
+....o..opopo.opopo......
+........o.o...o.o.......

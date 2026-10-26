@@ -1,0 +1,46 @@
+# Elfe
+palette
+o 1b1420
+w bfe8f0
+x 8ac0d0
+b 4aa060
+c 2e7040
+d 72c888
+m ecd4bc
+h f0d070
+k 1b1420
+shiny
+o 1b1420
+w f0c8f0
+x c898c8
+b 8a5ab0
+c 5e3a80
+d b088d4
+m ecd4bc
+h e8ecf4
+k 1b1420
+dessin
+........................
+........................
+......o...oooo.......o..
+.....omooohhhho.....oxo.
+......ommomhhho....owxo.
+.......ommmmhho..oowwxo.
+........okmmhho.owwwwxo.
+........ommmhhhowwwwwxo.
+.........ommmhhwwwwwxo..
+........oddddhhwwwwwxo..
+........ombbbcmwwwwwxo..
+.......omdbbbcmmwwwwxo..
+.......ombbbbbcmxxwwxo..
+......omdbbbbbcmmoxxxo..
+......omdbbbbbcomoooo...
+.....omodbbbbbcoo.......
+......oodbbbbbco........
+.......odbbbbbco........
+......odbbbbbbbco.......
+......odbddddddco.......
+......occccccccco.......
+.......ooooooooo........
+........................
+........................

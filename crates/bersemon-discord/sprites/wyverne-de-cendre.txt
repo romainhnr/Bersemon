@@ -1,0 +1,46 @@
+# Wyverne de cendre
+palette
+o 1b1420
+a 5a4a4a
+e 3a2e2e
+f 7e6a6a
+b 4a4046
+c 2e282c
+d 6a5e64
+y ffb030
+j ff6a20
+shiny
+o 1b1420
+a c8c0b8
+e 948c84
+f ece6e0
+b b0a8a0
+c 7c746c
+d d8d0c8
+y 60e0ff
+j 40a0ff
+dessin
+.............oeooo......
+.............oeffeooo...
+............ofeaaaffeoo.
+....o.o.....oeeaaaaaafeo
+...ococo....oeaaaaaaaeo.
+..oddco....ofeaaaaaeeo..
+.odybbco...ofeaaaaeeo...
+odbbbbbco..ofeaaaeeeo...
+occbbbco..ofeeaaaeaaeo..
+joocccbco.oeeaaaeeaaeeo.
+ojoooodcooooeeeaeeeeoo..
+.o...ocbdddddddceooo....
+......odbbbbbjbbco......
+......odbbbbbbbbbco.....
+......odbbbbbbbjbco.....
+......ocbbbjbbbbbco.....
+.......ocbbbbbbbbco.....
+........ocbcccbbcbco....
+.........ocooodcocbco...
+.........oco.odcoocbco..
+.........oco.odco.ocbco.
+........occcocccco.occo.
+.........ooo.oooo...oo..
+........................

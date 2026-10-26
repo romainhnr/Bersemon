@@ -1,0 +1,46 @@
+# Taureau d'airain
+palette
+o 1b1420
+b b07a3a
+c 7a5020
+d d8a45e
+a e8d8a8
+f ff6a20
+j fff0a0
+k 1b1420
+s a8a8b0
+shiny
+o 1b1420
+b 6a8aa8
+c 465e78
+d 8eaecc
+a f0f0f8
+f 40c0ff
+j e0fcff
+k 1b1420
+s d0d0d8
+dessin
+........................
+........................
+..oo.....oo.............
+.oaao...oaao............
+.oaaao..oaao............
+..oaaaooaaao............
+..oaaaooaaao..o.........
+...oaaacaaoooocooooo....
+..odcaacaaddcccccccco...
+.oodbfdbddbbbbbbbbbdco..
+osdbbbbbbbbbbbfffbbbco..
+sodbbbbbbbbbbffjffbbbco.
+ookcbbbbbbbbffjjjffbbco.
+soooccccbbbbbffjffbbbco.
+o...oooodbbcccccccccco..
+.......odbbbbbbbbbbcbco.
+.......odbbcbbbccbcodco.
+.......odbcodbcoodcodco.
+.......odbcodco.odcodco.
+.......odbcodco.odcodco.
+.......odbcodco.odcocco.
+.......occcocco.occooo..
+........ooo.oo...oo.....
+........................

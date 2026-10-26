@@ -1,0 +1,48 @@
+# Crapaud-roi
+palette
+o 1b1420
+b 4a6a8a
+c 2e4660
+d 6a8eae
+v b8c8a0
+g e0c040
+r d03050
+w d8e6dc
+k 1b1420
+z 8a4aa0
+shiny
+o 1b1420
+b a04a6a
+c 6e2e46
+d c86a8e
+v f0d8c0
+g e8e8f0
+r 3080e0
+w f6ecd2
+k 1b1420
+z f0c040
+dessin
+............o...........
+.........o.ogo.o........
+........ogooooogo.......
+........ogggrgggo.......
+........ogggggggo.......
+.....oooogggggggoooo....
+....oddddcoooooddddco...
+....odbwbco.o.odbwbco...
+...ocbbkbbcocodbbkbbco..
+....odbbbbbdbdbbbbbco...
+....odbbbzbbbbbzbbbco...
+...odzbbbbbbbbbbbbbbco..
+..odbbbbbbbzbbbbbbbzbco.
+.odbbbbbbbbbbbbbbbbbbbco
+.odkkkkkkkkkkkkkkkkkkkco
+.odbbbbcccccvcccccbbbbco
+.odbbbzvvvvvvvvvvzcbbbco
+.ocbbcvvvvvvvvvvvvvcbbco
+..occvvvvvvvvvvvvvvvdco.
+..oodcvvvvvvvvvvvvvdcoo.
+.oddbbcvvvvvvvvvvvdbbdco
+ocbbbbbcccccvcccccbbbbbc
+.occcccooooocoooooccccco
+..ooooo.....o.....ooooo.

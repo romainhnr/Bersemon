@@ -1,0 +1,50 @@
+# Démiurge
+palette
+o 0c0a10
+a 3a1a2a
+e 220e18
+f 5a2a40
+b 2a1830
+c 180e1e
+d 42284c
+m d8c8c0
+n a89890
+r ff2030
+y e0b040
+shiny
+o 0c0a10
+a e8e0d0
+e b0a898
+f ffffff
+b d8d0c8
+c a49c94
+d f4f0ea
+m 3a2a3a
+n 241824
+r 30d0ff
+y 9a3ad0
+dessin
+........................
+.o..........o.........o.
+oeo.......oonoo.....ooeo
+ofeoo....ommmmno...offeo
+ofafeoo..ommmmno.oofaaeo
+ofaaafeo.omrmrnooffaaaeo
+oeaaaaaeoommmmnffaaaaaeo
+.ofaaaaafennmnnaaaaaaeo.
+.ofaaaaaadddndcaaaaaaeo.
+.ofaaaaaadbbbbcaaaaaaeo.
+.ofeeaaadbbbbbcaaaaeaeo.
+.oeoofaadbbbbbbcaaeoeeo.
+..o.ofaadbybbbycaaeooo..
+....oeaadbybybycaeo.....
+.....ofedbbyyybceeo.....
+.....oedbbyybyycoeo.....
+......odbbbyyybbco......
+......odbbbbybbbco......
+......odbbbbbbbbco......
+......odbbbbbbbbco......
+.....odbbbbbbbbbco......
+.....odbbbbbbbbbbco.....
+.....occcccccccccco.....
+......oooooooooooo......

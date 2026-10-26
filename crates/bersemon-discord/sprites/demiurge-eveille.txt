@@ -1,0 +1,54 @@
+# Démiurge éveillé
+palette
+o 0c0a10
+t 5a1a30
+u 3a0e1e
+a 2a1020
+e 180812
+f 441a34
+b 6a2a3a
+c 461a26
+d 8e3e52
+r ff2030
+y fff0a0
+k 0c0a10
+w f0ece0
+shiny
+o 0c0a10
+t 2a4a6a
+u 182e46
+a d0d8e0
+e 9aa4b0
+f f4f8fc
+b 3a6a8a
+c 24465e
+d 5a8eae
+r f0d030
+y ffffff
+k 0c0a10
+w f0ece0
+dessin
+eo...................oeo
+feoo...............oofeo
+fafeoo............offaeo
+eaaafeo.........oofaaaeo
+ofaaaaeoo...o..offaaaeo.
+ofaaaaafeooocoofaaaaaeo.
+ofaaaaaaedddbddcaaaaaeo.
+oeaaaaaedbbbbbbbcaaaaeo.
+.oeeeaedbyrbbyrbbcaeeo..
+..oooeodbbbbbbbbbceoo...
+.....odbbbbbbbbbbbco....
+.....odbbbbyrbbbbbcoo...
+oooooudbbbbbbbbbbbctuooo
+tttttudbyrbbbbyrbbcttttu
+uuuuuucbbbbbbbbbbbcuuuuu
+ooooooodbbbyrbbbbcoooooo
+......ocbbbbbbbbbcoo....
+.....otucyrbbyrbcttuo...
+....otttucccbcccouttuo..
+...otttuookwkwko.outtuo.
+..ottuuo.okkkkko..ouutuo
+.ottuoo...ooooo....ooutu
+ottuo................ouu
+ouuo..................ou

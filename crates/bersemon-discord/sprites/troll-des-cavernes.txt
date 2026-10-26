@@ -1,0 +1,46 @@
+# Troll des cavernes
+palette
+o 1b1420
+b 8a7a5a
+c 5e523c
+d ae9e7a
+s 6e6e74
+p 5a4030
+y f0d030
+k 1b1420
+w e8e4d0
+shiny
+o 1b1420
+b 6a8aa0
+c 465e70
+d 8eaec4
+s a07a5a
+p 3a3a4a
+y ff6040
+k 1b1420
+w e8e4d0
+dessin
+........................
+........................
+........................
+........o...............
+......oocoo.............
+.....oddbdco..........o.
+....odbbbbbco........opo
+....odbybybbcooo....oppp
+....ocbbbbbbbddcoo..oppp
+.....okkkkbbbbsbdco.oppp
+.....owbbwbbsssssbco.opp
+.....odbbbbbsssssbcooppp
+.....odbbbbbsssssbbdcppp
+....odbbbbbbbbsbbbbbbppo
+....odbbbbbbbbbbbbbbbppo
+....odbbbsssbbbbbbbbpppo
+...odbbbsssssbbbbbcbpppo
+...odbbcbsssbbbbbcodppco
+..odbbcodbbcbcbbcoocppco
+..odbbcodbcocodbco.occco
+..odbbcodbcooodbco..ooo.
+..occcoodbco.odbco......
+...ooo.occco.occco......
+........ooo...ooo.......

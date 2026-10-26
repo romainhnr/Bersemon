@@ -1,0 +1,46 @@
+# Chat des ombres
+palette
+o 0c0a10
+b 2a2534
+c 19151f
+d 403a4c
+m 5a3a8a
+n 3a2460
+r 8a4a5a
+y b070ff
+z f0d0ff
+shiny
+o 0c0a10
+b 5a6070
+c 3c404c
+d 7a8294
+m 2a8a8a
+n 1a5a5a
+r c07a8a
+y f0d030
+z ffffff
+dessin
+........................
+....o......o............
+...oco....oco...........
+...odro..odro...........
+...odbcoodbco...........
+...odbbddbbco...........
+...odbbbbbbco........oo.
+...odbbbbbbbco......omno
+...odyzybyzyco......omno
+...ocbbbbbbbcooo....omno
+...orcbbbbbbbddcoo..omno
+....ooccbbbbbbbbdco.onmn
+......oodbbbbbbbnbco.omn
+.......odbbbbbbbbbco.omn
+.......odbbbbbbbbbno.omn
+......ocbbbbbbbbbbbcommn
+.......odbbbbbbbbbcommno
+.......odbbbbbbnbbcommmn
+.......odbbbbbbbbbcmmmno
+.......odbcbbbbbccommno.
+.......odcocbbccoommno..
+.......occooccoo.onno...
+........oo..oo....oo....
+........................
