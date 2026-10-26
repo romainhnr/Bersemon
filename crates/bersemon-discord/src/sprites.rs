@@ -193,8 +193,9 @@ const SPRITES: [(&str, &str); 65] = [
 ];
 
 /// Identifiant de l'espèce du combattant et texte de son sprite : les
-/// classes des héros des joueurs, puis les humains de l'IA (section 5.1).
-const SPRITES_DES_HUMAINS: [(&str, &str); 9] = [
+/// classes des héros des joueurs, puis les humains de l'IA, ceux des zones
+/// puis ceux de la Fosse aux damnés (section 5.1).
+const SPRITES_DES_HUMAINS: [(&str, &str); 19] = [
     (
         "heros-guerrier",
         include_str!("../sprites/heros/guerrier.txt"),
@@ -227,6 +228,43 @@ const SPRITES_DES_HUMAINS: [(&str, &str); 9] = [
     (
         "humain-pythie-de-sel",
         include_str!("../sprites/humains/pythie-de-sel.txt"),
+    ),
+    ("humain-gueux", include_str!("../sprites/humains/gueux.txt")),
+    (
+        "humain-coupe-jarret",
+        include_str!("../sprites/humains/coupe-jarret.txt"),
+    ),
+    (
+        "humain-novice-de-l-ordre",
+        include_str!("../sprites/humains/novice-de-l-ordre.txt"),
+    ),
+    (
+        "humain-apprenti-necromant",
+        include_str!("../sprites/humains/apprenti-necromant.txt"),
+    ),
+    (
+        "humain-mercenaire",
+        include_str!("../sprites/humains/mercenaire.txt"),
+    ),
+    (
+        "humain-lame-noire",
+        include_str!("../sprites/humains/lame-noire.txt"),
+    ),
+    (
+        "humain-sorciere-des-cendres",
+        include_str!("../sprites/humains/sorciere-des-cendres.txt"),
+    ),
+    (
+        "humain-templier-renegat",
+        include_str!("../sprites/humains/templier-renegat.txt"),
+    ),
+    (
+        "humain-gladiateur",
+        include_str!("../sprites/humains/gladiateur.txt"),
+    ),
+    (
+        "humain-champion-de-la-fosse",
+        include_str!("../sprites/humains/champion-de-la-fosse.txt"),
     ),
 ];
 
@@ -555,6 +593,46 @@ mod tests {
         for espece in contenu.especes() {
             let sprite = sprite(espece.id()).unwrap_or_else(|| panic!("{}", espece.id().as_str()));
             assert!(sprite.a_un_shiny(), "{}", espece.id().as_str());
+        }
+    }
+
+    /// Chaque classe et chaque humain de l'IA ont leur sprite, sans palette
+    /// shiny, et aucun sprite d'humain ne reste sans combattant (section
+    /// 5.1).
+    #[test]
+    fn chaque_humain_a_son_sprite() {
+        use bersemon_core::catalogue::Catalogue;
+        use bersemon_core::heros::Classe;
+
+        let contenu = bersemon_core::contenu::ContenuV1::new();
+        let attendus: Vec<EspeceId> = Classe::TOUTES
+            .iter()
+            .map(|classe| classe.espece_du_combattant())
+            .chain(
+                contenu
+                    .zones()
+                    .iter()
+                    .filter_map(|zone| zone.humain())
+                    .map(|humain| humain.id().espece_du_combattant()),
+            )
+            .chain(
+                contenu
+                    .fosse()
+                    .adversaires()
+                    .iter()
+                    .map(|adversaire| adversaire.id().espece_du_combattant()),
+            )
+            .collect();
+        let dessines: Vec<EspeceId> = SPRITES_DES_HUMAINS
+            .iter()
+            .map(|(id, _)| EspeceId::new(*id))
+            .collect();
+        assert_eq!(dessines, attendus);
+        for espece in &attendus {
+            let sprite = sprite(espece).unwrap_or_else(|| panic!("{}", espece.as_str()));
+            assert!(!sprite.a_un_shiny(), "{}", espece.as_str());
+            // Aucune espèce de monstre ne porte le même identifiant.
+            assert!(contenu.espece(espece).is_none(), "{}", espece.as_str());
         }
     }
 
