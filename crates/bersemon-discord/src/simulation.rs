@@ -1225,13 +1225,11 @@ fn le_heros_devient_shiny_depuis_son_equipement() {
     let _ = fs::remove_dir_all(dossier);
 }
 
-/// Les trois Apôtres vaincus : Malvoise forge le Béhérit depuis le menu des
-/// âmes, l'Éclipse se choisit dans le menu des expéditions, le Béhérit prend
-/// le Loup de niveau 30, puis le Démiurge tombe sous ses deux formes
-/// (section 9.4).
+/// Les trois premiers Apôtres vaincus ne suffisent plus : le Béhérit attend
+/// les âmes des 13 Apôtres de la traque, et Malvoise ne propose pas de le
+/// forger (section 9.4).
 #[test]
-fn le_demiurge_s_affronte_a_travers_les_ecrans_du_bot() {
-    use bersemon_core::beherit::EtatDuBeherit;
+fn le_beherit_attend_les_ames_des_13_apotres_a_travers_les_ecrans_du_bot() {
     use bersemon_core::catalogue::Catalogue;
     use bersemon_core::heros::Heros;
     use bersemon_core::niveau::Niveau;
@@ -1251,20 +1249,22 @@ fn le_demiurge_s_affronte_a_travers_les_ecrans_du_bot() {
                 .marchand_mort()
                 .is_none_or(|marchand| marchand.id().as_str() != BEHERIT)
     }));
+    // Une équipe de fin de jeu, au maximum de ses valeurs internes, avec des
+    // types qui frappent l'Obscur ; le Loup, à sacrifier, va au camp.
     let creer = |id: &str, niveau: u8| {
         Monstre::creer(
             contenu.espece(&EspeceId::new(id)).unwrap(),
             Niveau::new(niveau).unwrap(),
-            ValeursInternes::default(),
+            ValeursInternes::maximales(),
             false,
         )
         .unwrap()
     };
     let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Mage);
-    let mut partie = Partie::nouvelle(heros, creer("salamandre", 100));
-    partie.prendre_monstre_rare(creer("crapaud", 100));
+    let mut partie = Partie::nouvelle(heros, creer("seraphin-de-vitrail", 100));
+    partie.prendre_monstre_rare(creer("sphinx-des-sables", 100));
+    partie.prendre_monstre_rare(creer("sylphe-des-neiges", 100));
     partie.prendre_monstre_rare(creer("loup", 30));
-    partie.prendre_monstre_rare(creer("mandragore", 100));
     let partie = Partie::restaurer(EtatPartie {
         heros: partie.heros().clone(),
         collection: partie.collection().clone(),
@@ -1333,12 +1333,6 @@ fn le_demiurge_s_affronte_a_travers_les_ecrans_du_bot() {
         let clic = cliquer(&affiche, |propose| *propose == cle);
         jouer(joueurs, clic)
     };
-    let choisir = |joueurs: &mut Joueurs, voulu: fn(&Cle) -> bool, valeur: &str| {
-        let affiche = afficher(joueurs);
-        let clic = choisir_dans(&affiche, voulu, valeur)
-            .unwrap_or_else(|| panic!("{valeur} absent : {}", affiche.texte));
-        jouer(joueurs, clic)
-    };
     cliquer_sur(&mut joueurs, Cle::ReprendreLaPartie);
     let camp = afficher(&mut joueurs);
     assert!(
@@ -1347,45 +1341,8 @@ fn le_demiurge_s_affronte_a_travers_les_ecrans_du_bot() {
     );
     assert!(choisir_dans(&camp, |cle| *cle == Cle::Partir, ECLIPSE).is_none());
     cliquer_sur(&mut joueurs, Cle::Afficher(Vue::Marchand));
-    choisir(&mut joueurs, |cle| *cle == Cle::DonnerAme, BEHERIT);
-    let forge = cliquer_sur(&mut joueurs, Cle::Oui);
-    assert!(matches!(&forge[..], [Evenement::BeheritForge(_), ..]));
-    cliquer_sur(&mut joueurs, Cle::Afficher(Vue::Camp));
-    let camp = afficher(&mut joueurs);
-    assert!(
-        camp.texte
-            .contains("Béhérit pourpre : il attend son sacrifice.")
-    );
-    choisir(&mut joueurs, |cle| *cle == Cle::Partir, ECLIPSE);
-    let eclipse = afficher(&mut joueurs);
-    assert!(eclipse.texte.contains("réclame un sacrifice"));
-    // Seuls les monstres de niveau 30 ou plus, qui ne vident pas l'équipe.
-    assert!(choisir_dans(&eclipse, |cle| matches!(cle, Cle::Sacrifier(_)), "c0").is_some());
-    choisir(&mut joueurs, |cle| matches!(cle, Cle::Sacrifier(_)), "e2");
-    let mut vus = cliquer_sur(&mut joueurs, Cle::Oui);
-    let mut tour = TOUR_DU_CAMP;
-    for _ in 0..500 {
-        let session = joueurs.session(JOUEUR, &contenu);
-        if session.deroulement.attente() == Attente::Camp {
-            break;
-        }
-        let affiche = message(session, &vus, None, &contenu, maintenant);
-        verifier_les_limites(&affiche);
-        let clic = jouer_un_coup(session, &affiche, &mut tour, true, Visite::Faite);
-        vus.extend(jouer(&mut joueurs, clic));
-    }
-    assert!(matches!(&vus[..], [Evenement::Sacrifice(recit), ..] if recit.contains("Loup")));
-    assert!(vus.contains(&Evenement::RecompenseDuDemiurge));
-    let session = joueurs.session(JOUEUR, &contenu);
-    let partie = session.deroulement.partie().unwrap();
-    assert_eq!(partie.beherit(), EtatDuBeherit::DemiurgeVaincu);
-    assert_eq!(partie.sac().philtres_chromatiques(), 3);
-    let camp = afficher(&mut joueurs);
-    assert!(
-        camp.texte
-            .contains("Béhérit pourpre : l'Éclipse s'est refermée.")
-    );
-    assert!(choisir_dans(&camp, |cle| *cle == Cle::Partir, ECLIPSE).is_none());
+    let marchand = afficher(&mut joueurs);
+    assert!(choisir_dans(&marchand, |cle| *cle == Cle::DonnerAme, BEHERIT).is_none());
     let _ = fs::remove_dir_all(dossier);
 }
 

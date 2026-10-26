@@ -1929,10 +1929,26 @@ impl Partie {
         if self.beherit.est_forge() {
             return Err(ErreurBeherit::DejaForge);
         }
-        if !piste.apotres().all(|apotre| self.est_vaincu(apotre)) {
+        if !piste.apotres().all(|apotre| self.est_vaincu(apotre))
+            || self.apotres_vaincus.len() < piste.apotres_attendus()
+        {
             return Err(ErreurBeherit::AmesManquantes);
         }
         Ok(())
+    }
+
+    /// À la reprise : un Béhérit forgé avec moins d'âmes que la traque n'en
+    /// compte redevient les âmes des Apôtres vaincus. Le sacrifice sera de
+    /// nouveau demandé ; un Démiurge vaincu attendra de nouveau, et ses
+    /// Philtres chromatiques restent acquis (section 9.4). Rend vrai si le
+    /// Béhérit a été défait.
+    pub fn reprendre_les_ames(&mut self, piste: &Piste) -> bool {
+        let incomplet = self.apotres_vaincus.len() < piste.apotres_attendus();
+        if self.beherit.est_forge() && incomplet {
+            self.beherit = EtatDuBeherit::Aucun;
+            return true;
+        }
+        false
     }
 
     /// Au camp, chez Malvoise, après confirmation : les âmes de tous les
@@ -2944,7 +2960,7 @@ fn monstre_de_malvoise(offre: &OffreDeMonstre, aleatoire: &mut dyn Aleatoire) ->
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use crate::aleatoire::AleatoireScripte;
     use crate::ame::Gardien;
@@ -4881,6 +4897,13 @@ mod tests {
             .map(|apotre| apotre.espece().id().clone())
             .collect();
         assert_eq!(partie.ames_d_apotres().len(), 3);
+        // Tous ceux de la piste ne suffisent pas : le Béhérit attend les
+        // âmes des 13 Apôtres de la traque complète (section 9.4).
+        assert_eq!(
+            partie.forger_le_beherit(piste),
+            Err(ErreurBeherit::AmesManquantes)
+        );
+        partie.apotres_vaincus = ames_des_13_apotres(piste);
         partie.marchand_au_camp = false;
         assert_eq!(
             partie.forger_le_beherit(piste),
@@ -4893,6 +4916,26 @@ mod tests {
             partie.forger_le_beherit(piste),
             Err(ErreurBeherit::DejaForge)
         );
+        // Une sauvegarde d'avant les 13 Apôtres reprend ses âmes.
+        assert!(!partie.reprendre_les_ames(piste));
+        partie.apotres_vaincus.truncate(3);
+        partie.beherit = EtatDuBeherit::DemiurgeVaincu;
+        assert!(partie.reprendre_les_ames(piste));
+        assert_eq!(partie.beherit(), EtatDuBeherit::Aucun);
+        assert_eq!(partie.ames_d_apotres().len(), 3);
+    }
+
+    /// Les Apôtres de la piste, complétés jusqu'aux 13 de la traque par des
+    /// Apôtres que le contenu n'a pas encore.
+    pub(crate) fn ames_des_13_apotres(piste: &Piste) -> Vec<EspeceId> {
+        let mut ames: Vec<EspeceId> = piste
+            .apotres()
+            .map(|apotre| apotre.espece().id().clone())
+            .collect();
+        for rang in ames.len()..piste.apotres_attendus() {
+            ames.push(EspeceId::new(format!("apotre-{}", rang + 1)));
+        }
+        ames
     }
 
     #[test]

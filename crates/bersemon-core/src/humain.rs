@@ -100,6 +100,10 @@ struct HerosDeLHumain {
     classe: Classe,
     arme: Option<ObjetDEquipement>,
     armure: Option<ObjetDEquipement>,
+    /// Fixé à part de son équipement, comme un adversaire de la Fosse : au
+    /// niveau de sa zone, au-delà du niveau 40 que donne l'équipement
+    /// (section 10.7).
+    niveau: Option<Niveau>,
 }
 
 impl Humain {
@@ -150,7 +154,18 @@ impl Humain {
             classe,
             arme,
             armure,
+            niveau: None,
         }));
+        self
+    }
+
+    /// Son héros combat à ce niveau, quel que soit son équipement : celui
+    /// des humains gardiens des zones au-delà du Désert de sel (section
+    /// 10.7). Sans effet s'il ne combat pas lui-même.
+    pub fn avec_niveau_du_heros(mut self, niveau: Niveau) -> Self {
+        if let Some(heros) = self.heros.as_mut() {
+            heros.niveau = Some(niveau);
+        }
         self
     }
 
@@ -167,7 +182,9 @@ impl Humain {
                 &self.nom,
                 heros.classe,
                 heros.arme.as_ref(),
-                niveau_de_combat(heros.arme.as_ref(), heros.armure.as_ref()),
+                heros.niveau.unwrap_or_else(|| {
+                    niveau_de_combat(heros.arme.as_ref(), heros.armure.as_ref())
+                }),
             )
         })
     }
@@ -279,6 +296,35 @@ mod tests {
             .unwrap();
         assert_eq!(heros.espece().id().as_str(), "humain-brigand");
         assert_eq!(heros.nom(), "Brigand");
+        // Sans équipement, niveau 5 ; au niveau fixé sinon.
+        assert_eq!(heros.niveau(), niveau(5));
+    }
+
+    /// Section 10.7 : le héros d'un humain gardien des zones au-delà du
+    /// Désert de sel combat au niveau de sa zone.
+    #[test]
+    fn le_heros_de_l_humain_peut_combattre_a_un_niveau_fixe() {
+        let creer = || {
+            Humain::new(
+                HumainId::new("contrebandier"),
+                "Contrebandier",
+                vec![(espece("loup"), niveau(7))],
+                0,
+                "",
+                "",
+            )
+            .unwrap()
+        };
+        assert_eq!(
+            creer().avec_niveau_du_heros(niveau(51)).generer_heros(),
+            None
+        );
+        let heros = creer()
+            .avec_heros(Classe::Assassin, None, None)
+            .avec_niveau_du_heros(niveau(51))
+            .generer_heros()
+            .unwrap();
+        assert_eq!(heros.niveau(), niveau(51));
     }
 
     #[test]

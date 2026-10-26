@@ -1251,7 +1251,10 @@ impl Deroulement {
     ) -> Result<Reponse, ErreurChoix> {
         let suivant = match (&self.etat, choix) {
             (Etat::Reprise(partie), Choix::ReprendreLaPartie) => {
-                EnJeu::au_camp(Partie::clone(partie))
+                // La traque compte désormais 13 Apôtres (section 9.4).
+                let mut partie = Partie::clone(partie);
+                partie.reprendre_les_ames(contexte.contenu.piste());
+                EnJeu::au_camp(partie)
             }
             (Etat::Reprise(partie), Choix::NouvellePartie) => {
                 if !confirme {
@@ -5808,25 +5811,30 @@ mod tests {
         assert!(trouvees > 0);
     }
 
-    /// Les trois Apôtres vaincus, Malvoise au camp, et une équipe de
+    /// Les 13 Apôtres vaincus, Malvoise au camp, et une équipe de
     /// niveau 100 avec un Loup de niveau 30 au camp, à sacrifier (section
     /// 9.4).
     fn partie_pour_le_demiurge(contenu: &ContenuV1) -> Partie {
-        let mut partie = partie_de(salamandre(contenu, 100));
-        partie.prendre_monstre_rare(monstre_du_contenu(contenu, "crapaud", 100));
-        partie.prendre_monstre_rare(monstre_du_contenu(contenu, "mandragore", 100));
-        partie
-            .collection_mut()
-            .envoyer_au_camp(2)
-            .expect("place au camp");
+        // Une équipe de fin de jeu, au maximum de ses valeurs internes, avec
+        // des types qui frappent l'Obscur (section 5.2).
+        let fort = |id: &str| {
+            Monstre::creer(
+                contenu.espece(&EspeceId::new(id)).unwrap(),
+                Niveau::new(100).unwrap(),
+                ValeursInternes::maximales(),
+                false,
+            )
+            .unwrap()
+        };
+        let mut partie = partie_de(fort("seraphin-de-vitrail"));
+        partie.prendre_monstre_rare(fort("sphinx-des-sables"));
+        partie.prendre_monstre_rare(fort("sylphe-des-neiges"));
+        // L'équipe est pleine : le Loup va au camp.
         partie.prendre_monstre_rare(monstre_du_contenu(contenu, "loup", 30));
         let mut etat = etat_de(&partie);
+        etat.sac.ajouter_potions(10);
         etat.marchand_au_camp = true;
-        etat.apotres_vaincus = contenu
-            .piste()
-            .apotres()
-            .map(|apotre| apotre.espece().id().clone())
-            .collect();
+        etat.apotres_vaincus = crate::partie::tests::ames_des_13_apotres(contenu.piste());
         Partie::restaurer(etat).unwrap()
     }
 
@@ -5866,14 +5874,14 @@ mod tests {
             ),
             Err(ErreurChoix::Beherit(ErreurBeherit::EclipseFermee))
         );
-        let loup = Emplacement::Equipe(2);
+        let loup = Emplacement::Camp(0);
         assert_eq!(
             deroulement.partie().unwrap().monstres_sacrifiables(),
             vec![
                 Emplacement::Equipe(0),
                 Emplacement::Equipe(1),
-                loup,
-                Emplacement::Camp(0)
+                Emplacement::Equipe(2),
+                loup
             ]
         );
         repondre_sans_tirage(&mut deroulement, Choix::Sacrifier(loup), &contenu, &depot).unwrap();
@@ -5896,6 +5904,29 @@ mod tests {
         assert!(
             matches!(&vus[..], [Evenement::Sacrifice(recit), Evenement::Depart(_), ..] if recit.contains("Loup"))
         );
+        // Combat final au niveau 100 : une défaite laisse l'Éclipse ouverte,
+        // et le joueur y retourne sans nouveau sacrifice (section 9.4).
+        for _ in 0..60 {
+            if vus.contains(&Evenement::RecompenseDuDemiurge) {
+                break;
+            }
+            assert_eq!(
+                deroulement.partie().unwrap().beherit(),
+                EtatDuBeherit::EclipseOuverte
+            );
+            vus.extend(jouer_l_expedition(
+                &mut deroulement,
+                &contenu,
+                &depot,
+                &eclipse,
+                &mut aleatoire,
+            ));
+        }
+        assert!(
+            !vus.iter()
+                .skip(1)
+                .any(|evenement| matches!(evenement, Evenement::Sacrifice(_)))
+        );
         let metamorphoses = vus
             .iter()
             .filter(|evenement| {
@@ -5903,7 +5934,7 @@ mod tests {
                     if evenements.iter().any(|e| matches!(e, combat::Evenement::Metamorphose(_))))
             })
             .count();
-        assert_eq!(metamorphoses, 1);
+        assert!(metamorphoses >= 1);
         assert!(vus.iter().any(|evenement| matches!(evenement, Evenement::Epilogue(texte) if texte.contains("Démiurge"))));
         assert!(vus.contains(&Evenement::RecompenseDuDemiurge));
         assert!(!vus.iter().any(|evenement| matches!(

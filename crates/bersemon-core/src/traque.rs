@@ -232,6 +232,9 @@ pub struct Piste {
     /// Les indices qui suivent le dernier Apôtre : ils ouvrent des zones,
     /// sans encore mener à un antre (section 9.4).
     suite: Vec<Indice>,
+    /// Les Apôtres de la traque complète, dont le Béhérit réclame les
+    /// âmes, même quand le contenu ne les a pas encore tous (section 9.4).
+    apotres_attendus: usize,
 }
 
 impl Piste {
@@ -240,9 +243,21 @@ impl Piste {
             return Err(ErreurTraque::AucunIndice);
         }
         Ok(Self {
+            apotres_attendus: chapitres.len(),
             chapitres,
             suite: Vec::new(),
         })
+    }
+
+    /// Le Béhérit attendra les âmes de ce nombre d'Apôtres, au moins ceux
+    /// de la piste (section 9.4).
+    pub fn avec_apotres_attendus(mut self, nombre: usize) -> Self {
+        self.apotres_attendus = nombre.max(self.chapitres.len());
+        self
+    }
+
+    pub fn apotres_attendus(&self) -> usize {
+        self.apotres_attendus
     }
 
     /// Ils se trouvent, comme ceux d'un chapitre, une fois vaincu l'Apôtre

@@ -186,7 +186,11 @@ const AME_DU_MARGRAVE: &str =
 
 /// L'Éclipse et le Démiurge, section 23 de docs/contenu-v1.md (étapes 88 à
 /// 90).
-const FORGE_DU_BEHERIT: &str = "Malvoise dépose les trois âmes au creux de ses mains. Elles se tordent, se mêlent et durcissent en un œuf de pierre pourpre, où des yeux et une bouche s'ouvrent et se referment. \"Le Béhérit pourpre. Il t'ouvrira la porte du Démiurge, mais il réclamera son dû.\"";
+/// Le Béhérit réclame les âmes des 13 Apôtres de la traque complète
+/// (section 9.4).
+const APOTRES_DE_LA_TRAQUE: usize = 13;
+
+const FORGE_DU_BEHERIT: &str = "Malvoise dépose les âmes des Apôtres au creux de ses mains. Elles se tordent, se mêlent et durcissent en un œuf de pierre pourpre, où des yeux et une bouche s'ouvrent et se referment. \"Le Béhérit pourpre. Il t'ouvrira la porte du Démiurge, mais il réclamera son dû.\"";
 
 // Tour sans fond, section 25 de docs/contenu-v1.md (étape 96).
 const ENTREE_DANS_LA_TOUR: &str = "Au milieu des ruines se dresse le sommet d'une tour engloutie. Ses marches s'enfoncent dans la terre, et nul n'en a trouvé le fond ; plus on descend, plus les bêtes sont terribles.";
@@ -676,7 +680,10 @@ impl ContenuV1 {
             chapitre_du_margrave,
         ])
         .expect("piste conforme aux règles")
-        .avec_suite(vec![indice(&col, INDICE_7), indice(&desert, INDICE_8)]);
+        .avec_suite(vec![indice(&col, INDICE_7), indice(&desert, INDICE_8)])
+        // Le Béhérit attend les âmes des 13 Apôtres de la traque complète
+        // (section 9.4).
+        .avec_apotres_attendus(APOTRES_DE_LA_TRAQUE);
         let ressource = |id: &str| {
             especes
                 .iter()
@@ -718,12 +725,13 @@ impl ContenuV1 {
             })
             .collect();
         // Le Démiurge attend seul dans l'Éclipse, deux niveaux au-dessus de
-        // ce lieu d'une étape, comme un Apôtre (section 9.4). Ses paramètres
-        // d'expédition automatique et de coffre ne servent jamais.
+        // ce lieu d'une étape, comme un Apôtre : au niveau 100, en combat
+        // final (section 9.4). Ses paramètres d'expédition automatique et de
+        // coffre ne servent jamais.
         let eclipse = Zone::new(
             ZoneId::new("eclipse"),
             "Éclipse",
-            (niveau(40), niveau(40)),
+            (niveau(98), niveau(98)),
             1,
             1,
             vec![trouver("demiurge")],
@@ -3484,14 +3492,15 @@ const ESPECES: [FicheEspece; 65] = [
         evolution: None,
     },
     // Les deux formes du Démiurge, section 23 de docs/contenu-v1.md (étape
-    // 90).
+    // 90) ; combat final au niveau 100 depuis l'étape 162, aux stats bien
+    // au-dessus de celles des Apôtres.
     FicheEspece {
         id: "demiurge",
         nom: "Démiurge",
         types: &[Type::Obscur],
         role: Role::Offensif,
-        stats_de_base: [95, 100, 90, 100, 90, 85],
-        rendement_experience: 320,
+        stats_de_base: [120, 130, 110, 130, 110, 100],
+        rendement_experience: 420,
         rarete: Rarete::Demiurge,
         habiletes: &[Habilete::Ferocite, Habilete::Volonte],
         apprentissage: &[
@@ -3507,8 +3516,8 @@ const ESPECES: [FicheEspece; 65] = [
         nom: "Démiurge éveillé",
         types: &[Type::Obscur],
         role: Role::Offensif,
-        stats_de_base: [110, 115, 100, 120, 100, 95],
-        rendement_experience: 380,
+        stats_de_base: [135, 145, 120, 150, 120, 110],
+        rendement_experience: 480,
         rarete: Rarete::Demiurge,
         habiletes: &[Habilete::Sorcellerie, Habilete::Carapace],
         apprentissage: &[
@@ -6027,7 +6036,7 @@ mod tests {
     }
 
     #[test]
-    fn le_demiurge_attend_seul_dans_l_eclipse_sous_deux_formes_au_niveau_42() {
+    fn le_demiurge_attend_seul_dans_l_eclipse_sous_deux_formes_au_niveau_100() {
         let contenu = ContenuV1::new();
         let invocation = contenu.invocation();
         let eclipse = invocation.eclipse();
@@ -6035,14 +6044,15 @@ mod tests {
         assert_eq!(eclipse.etapes(), 1);
         assert!(contenu.zones().iter().all(|zone| zone.id() != eclipse.id()));
         let demiurge = invocation.demiurge();
-        assert_eq!(demiurge.niveau(), niveau(42));
+        assert_eq!(demiurge.niveau(), niveau(100));
+        assert_eq!(contenu.piste().apotres_attendus(), 13);
         assert_eq!(demiurge.espece().id().as_str(), "demiurge");
         assert_eq!(
             demiurge.seconde_forme().map(|espece| espece.id().as_str()),
             Some("demiurge-eveille")
         );
         let attaques = |id: &str| -> Vec<String> {
-            creer(&contenu, id, 42)
+            creer(&contenu, id, 100)
                 .attaques()
                 .liste()
                 .iter()

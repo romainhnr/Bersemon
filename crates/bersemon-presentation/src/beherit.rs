@@ -19,7 +19,7 @@ pub fn peut_forger_le_beherit(partie: &Partie, contenu: &ContenuV1) -> bool {
 }
 
 /// Le lieu se propose avec le Béhérit, tant que le Démiurge n'est pas
-/// vaincu : "Éclipse (niveau 42) : le Démiurge", avec le sacrifice à faire
+/// vaincu : "Éclipse (niveau 100) : le Démiurge", avec le sacrifice à faire
 /// avant le premier départ.
 pub fn destination_de_l_eclipse(partie: &Partie, contenu: &ContenuV1) -> Option<String> {
     let niveau = contenu.invocation().demiurge().niveau().valeur();
@@ -33,7 +33,7 @@ pub fn destination_de_l_eclipse(partie: &Partie, contenu: &ContenuV1) -> Option<
     }
 }
 
-/// Sous le nom du lieu, dans le menu des expéditions du bot : "Niveau 42 :
+/// Sous le nom du lieu, dans le menu des expéditions du bot : "Niveau 100 :
 /// le Démiurge", avec le sacrifice à faire avant le premier départ.
 pub fn description_de_l_eclipse(partie: &Partie, contenu: &ContenuV1) -> Option<String> {
     let niveau = contenu.invocation().demiurge().niveau().valeur();
@@ -80,10 +80,16 @@ mod tests {
             codex: partie.codex().clone(),
             zones_explorees: Vec::new(),
             indices_trouves: 6,
+            // Ceux de la piste, complétés jusqu'aux 13 de la traque par des
+            // Apôtres que le contenu n'a pas encore (section 9.4).
             apotres_vaincus: contenu
                 .piste()
                 .apotres()
                 .map(|apotre| apotre.espece().id().clone())
+                .chain(
+                    (contenu.piste().apotres().count()..contenu.piste().apotres_attendus())
+                        .map(|rang| EspeceId::new(format!("apotre-{}", rang + 1))),
+                )
                 .collect(),
             humains_vaincus: Vec::new(),
             conseils_vus: Vec::new(),
@@ -113,12 +119,12 @@ mod tests {
         assert!(!peut_forger_le_beherit(&forge, &contenu));
         assert_eq!(
             destination_de_l_eclipse(&forge, &contenu).as_deref(),
-            Some("Éclipse (niveau 42) : le Démiurge ; le Béhérit réclame d'abord un sacrifice")
+            Some("Éclipse (niveau 100) : le Démiurge ; le Béhérit réclame d'abord un sacrifice")
         );
         let ouverte = partie(&contenu, EtatDuBeherit::EclipseOuverte);
         assert_eq!(
             destination_de_l_eclipse(&ouverte, &contenu).as_deref(),
-            Some("Éclipse (niveau 42) : le Démiurge")
+            Some("Éclipse (niveau 100) : le Démiurge")
         );
         let vaincu = partie(&contenu, EtatDuBeherit::DemiurgeVaincu);
         assert_eq!(destination_de_l_eclipse(&vaincu, &contenu), None);

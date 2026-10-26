@@ -111,7 +111,7 @@ pub fn etal(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Que
         ames.push(OptionDeMenu {
             libelle: FORGER_LE_BEHERIT.to_string(),
             valeur: BEHERIT.to_string(),
-            description: Some("Les trois âmes seront perdues".to_string()),
+            description: Some("Les âmes des Apôtres seront perdues".to_string()),
         });
     }
     lignes.extend(menu(Cle::DonnerAme, "Donner une âme à Malvoise", ames));

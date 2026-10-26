@@ -711,7 +711,7 @@ pub fn question_de_confirmation(confirmation: &Confirmation) -> String {
         }
         Confirmation::RendreShiny(monstre) => question_shiny(monstre),
         Confirmation::RendreLeHerosShiny => QUESTION_SHINY_DU_HEROS.to_string(),
-        Confirmation::ForgerLeBeherit => "Donner à Malvoise les âmes des trois Apôtres pour forger le Béhérit pourpre ? Elles seront perdues.".to_string(),
+        Confirmation::ForgerLeBeherit => "Donner à Malvoise les âmes des Apôtres pour forger le Béhérit pourpre ? Elles seront perdues.".to_string(),
         Confirmation::Sacrifier(monstre) => format!(
             "Sacrifier {} au Béhérit pourpre ? Il sera perdu pour toujours.",
             monstre.nom()

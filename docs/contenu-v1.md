@@ -990,7 +990,7 @@ Décidés le 20/10/2026, pour les étapes 83 à 86 (gamedesign.md, section 14.2)
 
 Décidés le 21/10/2026, pour les étapes 88 à 92 (gamedesign.md, section 9.4), contenu proposé par Claude et validé par l'utilisateur.
 
-Le Démiurge a deux formes, au niveau 42, à valeurs internes fixes de 31 ; la seconde se relève quand la première tombe KO. Une rareté à part, "Démiurge" ; elles n'ont pas de ressource et ne se capturent pas. Au codex, elles viennent après les stades 3.
+Le Démiurge a deux formes, au niveau 42, à valeurs internes fixes de 31 ; la seconde se relève quand la première tombe KO. Depuis l'étape 162 (27/10/2026), combat final au niveau 100, après les 13 Apôtres, aux stats de base de 120 / 130 / 110 / 130 / 110 / 100 (700) et 135 / 145 / 120 / 150 / 120 / 110 (780), rendements d'XP 420 et 480 ; valeurs provisoires, à mesurer au dernier lot (gamedesign.md, Q118). Dans les menus : "Niveau 100 : le Démiurge". Les textes du Béhérit ne disent plus "trois" âmes : "Malvoise dépose les âmes des Apôtres au creux de ses mains", "Donner à Malvoise les âmes des Apôtres pour forger le Béhérit pourpre ? Elles seront perdues.", "Il vous faut les âmes des 13 Apôtres." Une rareté à part, "Démiurge" ; elles n'ont pas de ressource et ne se capturent pas. Au codex, elles viennent après les stades 3.
 
 | Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP | Habiletés | Attaques apprises |
 |---|---|---|---|---|---|---|---|

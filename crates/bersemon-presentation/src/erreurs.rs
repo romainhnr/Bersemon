@@ -179,7 +179,7 @@ pub fn erreur_de_combat(erreur: &ErreurCombat) -> String {
 pub fn erreur_beherit(erreur: &ErreurBeherit) -> String {
     match erreur {
         ErreurBeherit::AucunMarchand => "Malvoise ne s'est pas encore installé au camp.".to_string(),
-        ErreurBeherit::AmesManquantes => "Il vous faut les âmes des trois Apôtres.".to_string(),
+        ErreurBeherit::AmesManquantes => "Il vous faut les âmes des 13 Apôtres.".to_string(),
         ErreurBeherit::DejaForge => "Le Béhérit pourpre est déjà forgé.".to_string(),
         ErreurBeherit::AucunBeherit => "Il vous faut le Béhérit pourpre.".to_string(),
         ErreurBeherit::SacrificeDejaFait => "Le Béhérit a déjà reçu son sacrifice.".to_string(),
