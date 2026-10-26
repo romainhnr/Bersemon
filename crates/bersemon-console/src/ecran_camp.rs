@@ -18,6 +18,7 @@ use bersemon_presentation::boosters::{boosters, effet_du_booster};
 use bersemon_presentation::expeditions_automatiques::expeditions_rentrees;
 use bersemon_presentation::forge::travail_fini;
 use bersemon_presentation::jour_et_nuit::moment_present;
+use bersemon_presentation::lieux_a_part::{lieux_a_part, ligne_du_lieu};
 use bersemon_presentation::machines::avis_des_pieges;
 use bersemon_presentation::marchand::liste_de_rachat;
 use bersemon_presentation::monstres::{
@@ -219,7 +220,8 @@ fn choisir_une_option(entree: &mut Entree) -> Option<Option<Choix>> {
 
 /// `Some(None)` si le joueur reste au camp. La Tour sans fond suit les
 /// zones, une fois ouverte (section 9.5), puis la Fosse aux damnés (section
-/// 9.8) et l'Éclipse, avec le Béhérit (section 9.4).
+/// 9.8), l'Éclipse, avec le Béhérit (section 9.4), et les lieux à part :
+/// annexes ouvertes et zones légendaires (sections 9.9 et 9.10).
 fn carte(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Option<Option<Choix>> {
     let accessibles = partie.zones_accessibles(contenu.zones(), contenu.piste());
     println!();
@@ -245,10 +247,19 @@ fn carte(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Option<Op
         println!("  {dernier}. {ligne}");
         dernier
     });
+    let lieux = lieux_a_part(partie, contenu);
+    let premier_lieu = dernier + 1;
+    for lieu in &lieux {
+        dernier += 1;
+        println!("  {dernier}. {}", ligne_du_lieu(lieu, maintenant()));
+    }
     println!("  0. Rester au camp");
     let choix = entree.choix(0, dernier)?;
     match choix {
         0 => Some(None),
+        numero if numero >= premier_lieu => Some(Some(Choix::PartirEnExpedition(
+            lieux[numero - premier_lieu].zone.id().clone(),
+        ))),
         numero if numero <= accessibles.len() => Some(Some(Choix::PartirEnExpedition(
             accessibles[numero - 1].id().clone(),
         ))),

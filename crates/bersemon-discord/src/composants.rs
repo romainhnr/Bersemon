@@ -227,6 +227,9 @@ pub enum Cle {
     Non,
     /// Menu des zones.
     Partir,
+    /// Menu des lieux à part : annexes et zones légendaires (sections 9.9
+    /// et 9.10).
+    PartirAilleurs,
     Afficher(Vue),
     /// Menu numéroté des espèces capturées du codex : il en faut plusieurs
     /// au-delà de 25 espèces.
@@ -465,7 +468,9 @@ impl Cle {
             // départ (section 9.4).
             Cle::Partir if valeur? == ECLIPSE => Some(Commande::Afficher(Vue::Eclipse)),
             Cle::Partir if valeur? == FOSSE => jouer(Choix::EntrerDansLaFosse),
-            Cle::Partir => jouer(Choix::PartirEnExpedition(ZoneId::new(valeur?))),
+            Cle::Partir | Cle::PartirAilleurs => {
+                jouer(Choix::PartirEnExpedition(ZoneId::new(valeur?)))
+            }
             Cle::PartirVersLEclipse => jouer(Choix::PartirEnExpedition(ZoneId::new(ECLIPSE))),
             Cle::Sacrifier(_) => jouer(Choix::Sacrifier(lire_emplacement(valeur?)?)),
             Cle::Afficher(vue) => Some(Commande::Afficher(*vue)),
@@ -657,6 +662,7 @@ impl Cle {
             Cle::Oui => "oui".to_string(),
             Cle::Non => "non".to_string(),
             Cle::Partir => "partir".to_string(),
+            Cle::PartirAilleurs => "partir-ailleurs".to_string(),
             Cle::Afficher(Vue::Camp) => "vue:camp".to_string(),
             Cle::Afficher(Vue::Codex(None)) => "vue:codex".to_string(),
             Cle::Afficher(Vue::Codex(Some(index))) => format!("vue:codex:{index}"),
@@ -862,6 +868,7 @@ impl Cle {
             "oui" => Cle::Oui,
             "non" => Cle::Non,
             "partir" => Cle::Partir,
+            "partir-ailleurs" => Cle::PartirAilleurs,
             "vue:camp" => Cle::Afficher(Vue::Camp),
             // La liste des monstres a disparu du camp : un bouton d'un ancien
             // message ouvre la gestion, qui la montre.
@@ -1329,6 +1336,7 @@ mod tests {
             Cle::Oui,
             Cle::Non,
             Cle::Partir,
+            Cle::PartirAilleurs,
             Cle::Afficher(Vue::Camp),
             Cle::Afficher(Vue::Codex(None)),
             Cle::Afficher(Vue::Codex(Some(10))),

@@ -2268,7 +2268,15 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         rite: None,
         paliers_du_codex: Vec::new(),
         arene: Default::default(),
-        decouvertes: Default::default(),
+        // Toutes les annexes ouvertes : le camp a leur menu (section 9.9).
+        decouvertes: bersemon_core::partie::Decouvertes {
+            annexes_ouvertes: contenu
+                .annexes()
+                .iter()
+                .map(|annexe| annexe.zone().id().clone())
+                .collect(),
+            legendaires_captures: Vec::new(),
+        },
     };
     let afficher = |partie: &Partie, vue: Vue| {
         let question =
@@ -2454,6 +2462,14 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
     let partie = Partie::restaurer(avec_rite).unwrap();
     let cles = afficher(&partie, Vue::Camp);
     assert!(cles.contains(&Cle::AccueillirLePetit));
+    // Avec le menu des lieux à part, le camp a ses 5 rangées.
+    let camp =
+        crate::ecran_camp::question(&partie, Vue::Camp, &contenu, Horodatage::depuis_secondes(0));
+    assert!(camp.rangees.iter().any(|rangee| matches!(
+        rangee,
+        Rangee::Menu(menu) if menu.cle == Cle::PartirAilleurs && menu.options.len() == 2
+    )));
+    assert_eq!(camp.rangees.len(), crate::message::RANGEES_MAX);
     afficher(&partie, Vue::Marchand);
     let etal = crate::ecran_camp::question(
         &partie,
@@ -3183,6 +3199,54 @@ fn la_tour_sans_fond_et_le_classement_de_ses_records() {
         "{}",
         affiche.texte
     );
+    let _ = fs::remove_dir_all(dossier);
+}
+
+/// Une annexe ouverte se propose dans le menu des lieux à part, sous celui
+/// des expéditions, et s'y part pour trois étapes (sections 9.9 et 9.2).
+#[test]
+fn une_annexe_ouverte_se_propose_dans_le_menu_des_lieux_a_part() {
+    let contenu = ContenuV1::new();
+    let (_, dossier) = deux_joueurs_au_camp(&contenu, "annexe");
+    let camp_sans_annexe = {
+        let mut joueurs = Joueurs::new(dossier.clone(), 2026);
+        executer_le_clic(
+            &mut joueurs,
+            JOUEUR,
+            bouton(Cle::ReprendreLaPartie),
+            &contenu,
+        )
+    };
+    assert!(!propose(&camp_sans_annexe, |cle| *cle == Cle::PartirAilleurs));
+    let chemin = dossier.join(format!("{JOUEUR}.json"));
+    let texte = fs::read_to_string(&chemin).unwrap();
+    assert!(texte.contains("\"annexes_ouvertes\": []"));
+    fs::write(
+        &chemin,
+        texte.replace(
+            "\"annexes_ouvertes\": []",
+            "\"annexes_ouvertes\": [\"epave-du-leviathan\"]",
+        ),
+    )
+    .unwrap();
+    // Le bot redémarre et relit la sauvegarde.
+    let mut joueurs = Joueurs::new(dossier.clone(), 2026);
+    let camp = executer_le_clic(
+        &mut joueurs,
+        JOUEUR,
+        bouton(Cle::ReprendreLaPartie),
+        &contenu,
+    );
+    verifier_les_limites(&camp);
+    assert!(choisir_dans(&camp, |cle| *cle == Cle::Partir, "epave-du-leviathan").is_none());
+    let clic = choisir_dans(
+        &camp,
+        |cle| *cle == Cle::PartirAilleurs,
+        "epave-du-leviathan",
+    )
+    .unwrap();
+    let affiche = executer_le_clic(&mut joueurs, JOUEUR, clic, &contenu);
+    assert!(affiche.texte.contains("/3]"), "{}", affiche.texte);
     let _ = fs::remove_dir_all(dossier);
 }
 

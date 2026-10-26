@@ -29,6 +29,7 @@ use bersemon_presentation::expeditions_automatiques::duree;
 use bersemon_presentation::expeditions_automatiques::expeditions_rentrees;
 use bersemon_presentation::forge::{cout, etat_de_la_forge, lot_de_filets, travail_fini};
 use bersemon_presentation::jour_et_nuit::moment_present;
+use bersemon_presentation::lieux_a_part::{description_du_lieu, lieux_a_part};
 use bersemon_presentation::machines::{
     avis_des_pieges, etat_de_la_cour, machines as texte_des_machines,
 };
@@ -173,6 +174,22 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
     let mut lignes: Vec<Rangee> = menu(Cle::Partir, "Partir en expédition", zones)
         .into_iter()
         .collect();
+    // Les annexes et les zones légendaires ont leur menu : avec les 16 zones
+    // de la traque, la Tour, la Fosse et l'Éclipse, celui des expéditions
+    // n'aurait plus la place (Q118).
+    let lieux = lieux_a_part(partie, contenu)
+        .iter()
+        .map(|lieu| OptionDeMenu {
+            libelle: lieu.zone.nom().to_string(),
+            valeur: lieu.zone.id().as_str().to_string(),
+            description: Some(description_du_lieu(lieu, maintenant)),
+        })
+        .collect();
+    lignes.extend(menu(
+        Cle::PartirAilleurs,
+        "Partir vers un lieu à part",
+        lieux,
+    ));
     let mut boutons = vec![
         bouton(
             Cle::Afficher(Vue::Expeditions),
