@@ -8,6 +8,7 @@ Ce document décrit l'outil d'équilibrage, la stratégie du joueur automatique 
 - Commande : `cargo run --release -p bersemon-equilibrage -- [parties par classe] [classe]`. Sans argument, 25 parties par classe ; avec une classe, seule celle-ci est jouée. Le rapport s'écrit en Markdown sur la sortie standard.
 - Une partie se rejoue à l'identique avec la même graine. En release, 100 parties par classe se jouent en 5 secondes environ.
 - Pour mesurer un réglage, on change la valeur dans le noyau, on relance, et on compare les deux rapports. Toute modification du jeu change la suite des tirages : des écarts de 1 à 3 expéditions sur la médiane sont de l'ordre du bruit.
+- Depuis l'étape 146, le rapport finit par la Fosse aux damnés, simulée à part : le héros de chaque classe, à chaque niveau de combat que donne son équipement, contre l'adversaire de chaque palier, 200 combats par case, avec et sans le second type des classes (section 11). Elle se joue en moins d'une seconde.
 - Le crate ne dépend que du noyau, sans crate externe. Il est hors de ce que joue le joueur : ni la console ni le bot Discord n'en dépendent.
 
 ## 2. Le joueur automatique
@@ -207,3 +208,32 @@ Le joueur automatique continue désormais après le Margrave, jusqu'à la chute 
 | Pythie de sel (Désert, 45) | 2,3 | 48 % | 45,2 |
 
 Constats : la Pythie de sel est aussi difficile que le Porte-étendard (2,3 tentatives et 48 % au premier essai, contre 2,0 et 50 %), et ses victoires se gagnent au niveau maximal de la zone, comme celles des autres humains de fin de zone. Le Désert ajoute 12 expéditions environ à une partie, avec une part de défaites proche de celle du Col (19 % contre 16 %). Ses expéditions sont rarement menées au bout (8 %, contre 26 % dans le Col) : le joueur y entre au niveau 39, six niveaux sous le maximum, et rentre quand l'équipe faiblit. Hypothèse, non mesurée : ses espèces communes, de 390 au total au lieu de 360 dans le Col, y pèsent pour beaucoup. Aucun réglage n'est fait : les valeurs du Désert attendent la validation de l'utilisateur (gamedesign.md, Q113).
+
+## 11. Fosse aux damnés et second type des classes (étapes 145 et 146)
+
+Le joueur automatique n'entre pas dans la Fosse : elle est simulée à part. Le héros de chaque classe, à chaque niveau de combat (10 : arme du palier 1 sans armure ; 15 : 1 et 1 ; 20 : 2 et 1 ; 25 : 2 et 2 ; 30 : 3 et 2 ; 35 : 3 et 3 ; 40 : arme du palier 4 et armure du palier 3), affronte l'adversaire de chaque palier, 200 fois, seul et sans objet, en attaquant avec l'attaque aux dégâts attendus les plus hauts ; l'adversaire suit l'IA de son palier. Mesuré après l'étape 145, où les humains de niveau 25 ou plus ont le second type de leur classe :
+
+| Palier | Adversaire (classe, niveau, types) | 10 | 15 | 20 | 25 | 30 | 35 | 40 | Tours |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | Le Gueux (Guerrier, 10, Humain) | 21 % | 100 % | 100 % | 100 % | 100 % | 100 % | 100 % | 1,6 |
+| 2 | Le Coupe-jarret (Assassin, 15, Humain) | 0 % | 65 % | 100 % | 100 % | 100 % | 100 % | 100 % | 1,9 |
+| 3 | Le Novice de l'ordre (Templier, 15, Humain) | 0 % | 58 % | 100 % | 100 % | 100 % | 100 % | 100 % | 2,6 |
+| 4 | L'Apprenti nécromant (Mage, 20, Humain) | 0 % | 0 % | 55 % | 100 % | 100 % | 100 % | 100 % | 2,1 |
+| 5 | Le Mercenaire (Guerrier, 20, Humain) | 0 % | 0 % | 28 % | 100 % | 100 % | 100 % | 100 % | 2,1 |
+| 6 | La Lame noire (Assassin, 25, Humain, Ténèbres) | 0 % | 0 % | 0 % | 66 % | 100 % | 100 % | 100 % | 3,0 |
+| 7 | La Sorcière des cendres (Mage, 30, Humain, Psychique) | 0 % | 0 % | 0 % | 0 % | 51 % | 100 % | 100 % | 3,2 |
+| 8 | Le Templier renégat (Templier, 30, Humain, Lumière) | 0 % | 0 % | 0 % | 0 % | 40 % | 100 % | 100 % | 4,4 |
+| 9 | Le Gladiateur (Guerrier, 35, Humain, Combat) | 0 % | 0 % | 0 % | 0 % | 0 % | 35 % | 100 % | 3,3 |
+| 10 | Le Champion de la Fosse (Assassin, 35, Humain, Ténèbres) | 0 % | 0 % | 0 % | 0 % | 1 % | 66 % | 100 % | 2,9 |
+
+Part de victoires, moyenne des quatre classes, selon le niveau de combat du héros ; dernière colonne, la durée moyenne d'un combat, en tours.
+
+Effet du second type : la même mesure, tous les humains restant Humain seul, ne change la part de victoires qu'au niveau même de l'adversaire, de -14 à +14 points selon le palier (palier 7 au niveau 30 : +14 ; palier 9 au niveau 35 : -14), et rien ailleurs. Les combats des paliers 6 à 10 durent en moyenne 2,0 à 2,6 tours sans le second type, 2,9 à 4,4 avec.
+
+Dans les expéditions, le second type de l'Inquisiteur, du Porte-étendard et de la Pythie ne change rien au-delà du bruit (100 parties par classe) : 1,7 tentative et 56 % au premier essai pour l'Inquisiteur (1,7 et 55 % avant), 1,9 et 53 % pour le Porte-étendard (2,0 et 50 %), 2,2 et 46 % pour la Pythie (2,3 et 48 %) ; 64, 64, 71 et 68 expéditions jusqu'à la Pythie (64, 66, 70 et 68 avant).
+
+Constats :
+
+- La Fosse est un contrôle de niveau : un héros de 5 niveaux au-dessus de l'adversaire gagne toujours, 5 niveaux au-dessous perd toujours ; au même niveau, il gagne une fois sur deux environ, selon les classes. Chaque palier attend donc un palier d'équipement de plus, ce qu'il récompense d'autant.
+- Les combats sont très courts : 2 à 4 tours. Hypothèse, non mesurée : avec le bonus de type sur ses attaques Humain, neutres contre un humain à type simple, chaque coup emporte une grande part des PV adverses, et le plus rapide frappe le premier. Le second type allonge les combats de haut niveau de moitié environ, sans changer qui gagne.
+- Le joueur automatique de la Fosse n'emploie que l'attaque la plus forte : le poison et la paralysie des attaques de classe n'y pèsent pas, alors qu'ils pèseraient davantage dans des combats plus longs. Aucun réglage n'est fait ; la durée des combats et l'écart de 5 niveaux d'un palier à l'autre sont à trancher (gamedesign.md, Q114).

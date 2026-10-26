@@ -1,13 +1,15 @@
 //! Outil d'équilibrage de Bersemon : un joueur automatique mène des parties
 //! complètes avec le noyau, sans interface ni sauvegarde, de la création du
 //! héros à la chute du troisième Apôtre et de l'humain de la dernière zone,
-//! et le programme écrit leurs statistiques en Markdown. Il sert à régler
-//! les valeurs du jeu et ne fait pas partie de ce que joue le joueur.
+//! et le programme écrit leurs statistiques en Markdown, puis celles de la
+//! Fosse aux damnés, simulée palier par palier. Il sert à régler les
+//! valeurs du jeu et ne fait pas partie de ce que joue le joueur.
 //!
 //! Usage : `cargo run --release -p bersemon-equilibrage -- [parties par classe] [classe]`.
 //! Sans classe, les quatre sont jouées. Les parties d'une même graine se
 //! rejouent à l'identique.
 
+mod arene;
 mod joueur;
 mod rapport;
 
@@ -38,6 +40,9 @@ fn main() {
         }
     }
     print!("{}", rapport::rapport(&contenu, &bilans, parties));
+    let avec = arene::mesurer_la_fosse(&contenu, true);
+    let sans = arene::mesurer_la_fosse(&contenu, false);
+    print!("{}", rapport::rapport_de_la_fosse(&avec, &sans));
 }
 
 #[cfg(test)]

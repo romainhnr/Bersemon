@@ -6,6 +6,7 @@ use std::fmt::Write;
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::heros::Classe;
 
+use crate::arene::{COMBATS_PAR_CASE, EQUIPEMENTS, MesureDuPalier};
 use crate::joueur::{Bilan, ExpeditionJouee, Issue};
 
 fn moyenne(valeurs: impl IntoIterator<Item = f64>) -> f64 {
@@ -388,4 +389,113 @@ fn ressources(texte: &mut String, bilans: &[Bilan]) {
         );
     }
     let _ = writeln!(texte);
+}
+
+/// La Fosse aux damnés, palier par palier : la part de victoires du héros
+/// selon son niveau de combat, le niveau où chaque classe gagne une fois sur
+/// deux, puis l'effet du second type des classes (section 4.4).
+pub fn rapport_de_la_fosse(avec: &[MesureDuPalier], sans: &[MesureDuPalier]) -> String {
+    let mut texte = String::new();
+    let equipements: Vec<String> = EQUIPEMENTS
+        .iter()
+        .map(|(niveau, arme, armure)| {
+            let armure = if *armure == 0 {
+                "aucune".to_string()
+            } else {
+                armure.to_string()
+            };
+            format!("{niveau} = {arme} et {armure}")
+        })
+        .collect();
+    let _ = writeln!(texte, "## Fosse aux damnés\n");
+    let _ = writeln!(
+        texte,
+        "Le héros seul contre l'adversaire de chaque palier, sans objet, {COMBATS_PAR_CASE} combats par case, en attaquant avec l'attaque aux dégâts attendus les plus hauts. Part de victoires, moyenne des quatre classes, selon le niveau de combat du héros (paliers de l'arme et de l'armure : {}). Dès le niveau 25, les humains ont le second type de leur classe.\n",
+        equipements.join(", ")
+    );
+    let mut entete = "| Palier | Adversaire |".to_string();
+    let mut separation = "|---|---|".to_string();
+    for (niveau, _, _) in EQUIPEMENTS {
+        entete.push_str(&format!(" {niveau} |"));
+        separation.push_str("---|");
+    }
+    entete.push_str(" Tours |");
+    separation.push_str("---|");
+    let _ = writeln!(texte, "{entete}");
+    let _ = writeln!(texte, "{separation}");
+    for palier in avec {
+        let mut ligne = format!(
+            "| {} | {} ({}, {}, {}) |",
+            palier.numero,
+            palier.adversaire,
+            palier.classe.nom(),
+            palier.niveau,
+            palier.types
+        );
+        for part in parts_moyennes(palier) {
+            ligne.push_str(&format!(" {part:.0} % |"));
+        }
+        ligne.push_str(&format!(" {:.1} |", palier.tours));
+        let _ = writeln!(texte, "{ligne}");
+    }
+    let _ = writeln!(texte);
+    let _ = writeln!(
+        texte,
+        "Niveau de combat à partir duquel chaque classe gagne au moins une fois sur deux (au-delà de 40 : jamais).\n"
+    );
+    let mut entete = "| Palier |".to_string();
+    let mut separation = "|---|".to_string();
+    for classe in Classe::TOUTES {
+        entete.push_str(&format!(" {} |", classe.nom()));
+        separation.push_str("---|");
+    }
+    let _ = writeln!(texte, "{entete}");
+    let _ = writeln!(texte, "{separation}");
+    for palier in avec {
+        let mut ligne = format!("| {} |", palier.numero);
+        for (_, parts) in &palier.victoires {
+            let niveau = EQUIPEMENTS
+                .iter()
+                .zip(parts)
+                .find(|(_, part)| **part >= 50.0)
+                .map_or_else(
+                    || "jamais".to_string(),
+                    |((niveau, _, _), _)| niveau.to_string(),
+                );
+            ligne.push_str(&format!(" {niveau} |"));
+        }
+        let _ = writeln!(texte, "{ligne}");
+    }
+    let _ = writeln!(texte);
+    let _ = writeln!(texte, "### Effet du second type\n");
+    let _ = writeln!(
+        texte,
+        "La même mesure, tous les humains restant Humain seul, comme avant l'étape 145 : écart de la part de victoires, en points (avec le second type moins sans), et durée des combats sans le second type.\n"
+    );
+    let mut entete = "| Palier |".to_string();
+    let mut separation = "|---|".to_string();
+    for (niveau, _, _) in EQUIPEMENTS {
+        entete.push_str(&format!(" {niveau} |"));
+        separation.push_str("---|");
+    }
+    entete.push_str(" Tours sans |");
+    separation.push_str("---|");
+    let _ = writeln!(texte, "{entete}");
+    let _ = writeln!(texte, "{separation}");
+    for (palier, sans) in avec.iter().zip(sans) {
+        let mut ligne = format!("| {} |", palier.numero);
+        for (part, part_sans) in parts_moyennes(palier).iter().zip(parts_moyennes(sans)) {
+            ligne.push_str(&format!(" {:+.0} |", part - part_sans));
+        }
+        ligne.push_str(&format!(" {:.1} |", sans.tours));
+        let _ = writeln!(texte, "{ligne}");
+    }
+    let _ = writeln!(texte);
+    texte
+}
+
+fn parts_moyennes(palier: &MesureDuPalier) -> Vec<f64> {
+    (0..EQUIPEMENTS.len())
+        .map(|rang| moyenne(palier.victoires.iter().map(|(_, parts)| parts[rang])))
+        .collect()
 }
