@@ -194,7 +194,41 @@ const SPRITES: [(&str, &str); 65] = [
 
 /// Identifiant de l'espèce du combattant et texte de son sprite : les
 /// classes des héros des joueurs, puis les humains de l'IA (section 5.1).
-const SPRITES_DES_HUMAINS: [(&str, &str); 0] = [];
+const SPRITES_DES_HUMAINS: [(&str, &str); 9] = [
+    (
+        "heros-guerrier",
+        include_str!("../sprites/heros/guerrier.txt"),
+    ),
+    ("heros-mage", include_str!("../sprites/heros/mage.txt")),
+    (
+        "heros-templier",
+        include_str!("../sprites/heros/templier.txt"),
+    ),
+    (
+        "heros-assassin",
+        include_str!("../sprites/heros/assassin.txt"),
+    ),
+    (
+        "humain-brigand",
+        include_str!("../sprites/humains/brigand.txt"),
+    ),
+    (
+        "humain-bourreau",
+        include_str!("../sprites/humains/bourreau.txt"),
+    ),
+    (
+        "humain-inquisiteur",
+        include_str!("../sprites/humains/inquisiteur.txt"),
+    ),
+    (
+        "humain-porte-etendard",
+        include_str!("../sprites/humains/porte-etendard.txt"),
+    ),
+    (
+        "humain-pythie-de-sel",
+        include_str!("../sprites/humains/pythie-de-sel.txt"),
+    ),
+];
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ErreurSprite {
@@ -548,6 +582,29 @@ mod tests {
                 .unwrap();
             }
         }
+        // Deux exemples d'images composées : un combat, le choix de la
+        // classe.
+        let guerrier = sprite(&EspeceId::new("heros-guerrier")).unwrap();
+        let loup = sprite(&EspeceId::new("loup")).unwrap();
+        let case = |sprite, retourne| {
+            Some(Case {
+                sprite,
+                shiny: false,
+                retourne,
+            })
+        };
+        std::fs::write(
+            dossier.join("exemple-combat.png"),
+            png_cote_a_cote(&[case(&guerrier, true), case(&loup, false)]),
+        )
+        .unwrap();
+        let classes: Vec<Sprite> = ["guerrier", "mage", "templier", "assassin"]
+            .iter()
+            .map(|classe| sprite(&EspeceId::new(format!("heros-{classe}"))).unwrap())
+            .collect();
+        let cases: Vec<Option<Case<'_>>> =
+            classes.iter().map(|sprite| case(sprite, false)).collect();
+        std::fs::write(dossier.join("exemple-classes.png"), png_cote_a_cote(&cases)).unwrap();
     }
 
     #[test]

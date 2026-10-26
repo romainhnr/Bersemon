@@ -1910,4 +1910,5 @@ Les questions Q104 et suivantes ont été relevées le 25/10/2026 lors de la con
 - Claude a relevé que les Apôtres et le Démiurge, qui sont des espèces, avaient déjà leur sprite depuis l'étape 154, montré en combat.
 - Choix de l'utilisateur : un sprite pour chaque humain, les 5 du récit et les 10 de la Fosse aux damnés, en plus des 4 classes ; le sprite de l'adversaire dès l'annonce du combat ; une seule image en combat, les deux combattants face à face ; les classes montrées en combat, au choix de la classe et sur l'écran de l'équipement (section 5.1).
 - En combat, un humain ou un héros est un monstre d'une espèce technique qui dit qui il est : "heros-guerrier" pour un héros de joueur, "humain-brigand" pour un humain de l'IA. Le bot y trouve son sprite.
+- Style des humains validé par l'utilisateur sur une planche des 4 classes et des 5 humains du récit, avec un exemple de combat face à face, écart compris.
 - Hypothèses retenues, à confirmer : Q116.

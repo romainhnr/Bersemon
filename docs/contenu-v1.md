@@ -1680,4 +1680,6 @@ Humains, décidé le 26/10/2026 pour les étapes 155 à 157 (gamedesign.md, sect
 - `crates/bersemon-discord/sprites/heros/{classe}.txt` : guerrier, mage, templier, assassin. En combat, le héros d'un joueur a l'espèce technique `heros-{classe}`.
 - `crates/bersemon-discord/sprites/humains/{identifiant}.txt` : les 5 humains du récit et les 10 adversaires de la Fosse aux damnés. En combat, un humain de l'IA a l'espèce technique `humain-{identifiant}`, par exemple `humain-brigand`.
 
+Les 4 classes et les 5 humains du récit sont dessinés à l'étape 156, style validé par l'utilisateur ; les 10 adversaires de la Fosse à l'étape 157, sur le même modèle. Dessins et couleurs proposés par Claude (gamedesign.md, Q116).
+
 Images composées : en combat, les deux combattants actifs face à face, celui du joueur à gauche et retourné, avec un écart de 4 pixels de la grille (312 x 144 pixels) ; au choix de la classe, les quatre classes côte à côte (648 x 144 pixels). Chaque sprite garde sa palette, d'au plus 63 couleurs.
