@@ -118,6 +118,7 @@ L'objectif du jeu est de proposer des boucles de gameplay intéressantes et stim
 - Depuis l'étape 27 (19/10/2026), l'Assassin aussi : Guerrier, Mage, Templier ou Assassin.
 - Depuis les étapes 48 à 51 (20/10/2026), le héros a un équipement : une arme, une armure et 2 talismans (Q6), fabriqués par Gunther (section 4.3). Il n'a toujours ni niveau ni stats propres (hypothèse retenue, Q87).
 - Depuis les étapes 128 à 133 (25/10/2026), le héros combat quand tous ses monstres sont KO (section 4.4). Il a des stats, tirées de sa classe, et un niveau de combat, tiré de son équipement, mais toujours ni XP ni niveau propre.
+- Décidé le 26/10/2026, pour les étapes 158 à 160 (choix de l'utilisateur) : le héros du joueur a, comme un monstre sauvage, 1 chance sur 512 d'être shiny, tirée à sa création, après son monstre de départ. Malvoise peut aussi le rendre shiny contre un Philtre chromatique (section 13.7). Un héros shiny ne change que de couleur : ses valeurs internes restent à 15, ses stats et ses attaques ne changent pas, et il ne connaît pas le Rayon chromatique (section 5.1). Il est signalé comme un monstre shiny et a son sprite shiny ; les héros des autres joueurs se montrent shiny en duel, en groupe et à l'arène. Les héros des sauvegardes antérieures restent non shiny. Les humains de l'IA ne sont jamais shiny : leur combat est le même pour tous (section 10.7).
 
 ### 4.2 Rôle en combat
 
@@ -202,6 +203,11 @@ Chaque monstre possède :
 - Décidé le 26/10/2026, pour les étapes 152 à 154 (choix de l'utilisateur, Q64) : chaque espèce a un sprite en pixel art, dessiné par Claude, de 24 x 24 pixels, avec un contour sombre, la lumière en haut à gauche et le profil tourné vers la gauche. Le shiny a son propre sprite : le même dessin, avec une autre palette. Pas de droits à régler : le jeu les possède. Format et liste dans docs/contenu-v1.md, section 42.
   - Sur Discord, le sprite est joint au message, agrandi six fois (144 pixels de côté) : l'adversaire actif en combat, en duel ou en groupe ; le monstre rare pacifique, la prise de la pêche et la capture qui attend une place ; le monstre qui vient de rejoindre l'équipe ou le camp ; au camp, l'espèce de la fiche ouverte du codex et le monstre choisi dans la gestion. Un monstre shiny montre son sprite shiny ; la fiche du codex, le sprite normal.
   - La console reste textuelle : elle n'affiche aucun sprite.
+- Décidé le 26/10/2026, pour les étapes 158 à 160 (choix de l'utilisateur) : tout monstre shiny, et lui seul, peut connaître le Rayon chromatique, une attaque Stellaire de puissance 80 et de précision 100, sans effet. Sa catégorie s'adapte au monstre qui l'utilise : physique si son Attaque dépasse son Attaque spéciale, spéciale sinon, à égalité comprise, d'après ses stats hors bonus de combat. Le Stellaire est neutre contre presque tout, très efficace contre l'Obscur (Apôtres, Démiurge) et peu efficace contre l'Humain (section 5.2) ; seul le Schnoz en a le bonus de type. Valeurs dans docs/contenu-v1.md, section 43.
+  - Elle prend une des 4 places, comme toute attaque. Un monstre qui naît shiny (sauvage, Apôtre, monstre de départ, acheté, loué, pêché, né d'un rite) la connaît d'office, à la place de la plus ancienne de ses attaques, la première de sa liste, s'il en connaît déjà 4.
+  - Un monstre rendu shiny par le Philtre chromatique l'apprend s'il a une place libre ; sinon le joueur choisit l'attaque à oublier ou y renonce, comme à la montée de niveau.
+  - Les monstres shiny de l'équipe et du camp d'une sauvegarde antérieure l'apprennent à la reprise, de la même façon.
+  - Comme les autres attaques, elle s'oublie, se garde à l'évolution et à l'échange, et se réapprend au camp, gratuitement, tant que le monstre est shiny (section 13.10).
   - Décidé le 26/10/2026, pour les étapes 155 à 157 (choix de l'utilisateur) : les humains ont aussi leur sprite, de même format, sans palette shiny puisqu'ils ne sont jamais shiny. Chacune des quatre classes a le sien, qui montre le héros du joueur et ceux des autres joueurs (duel, groupe, arène) ; chacun des 5 humains du récit et des 10 adversaires de la Fosse aux damnés a le sien, que les adversaires miroirs gardent quand ils prennent la classe du héros. Les Apôtres et le Démiurge, qui sont des espèces, avaient déjà le leur.
   - En combat, l'image montre face à face le combattant actif du joueur, à gauche et retourné vers la droite, et l'adversaire actif, à droite (312 x 144 pixels). Le sprite de l'adversaire se montre aussi dès l'annonce du combat : l'humain lui-même, l'Apôtre, le Démiurge ou le gardien de la Tour sans fond, et l'adversaire du prochain palier de la Fosse. Les quatre classes se montrent côte à côte au choix de la classe, et celle du héros sur l'écran de son équipement.
 
@@ -926,6 +932,7 @@ Décidé le 20/10/2026, pour les étapes 67 à 69 (choix de l'utilisateur) :
 - C'est Malvoise qui rend un monstre shiny, au camp, depuis son étal, contre un Philtre chromatique (section 14.3), sans argent. Le joueur choisit un monstre de l'équipe ou du camp qui n'est pas shiny ; le jeu demande confirmation, puis le Philtre est consommé, du sac d'abord, puis du coffre.
 - Le monstre devient shiny, avec ce que cela implique déjà (section 5.1) : 31 dans chaque valeur interne, et une revente doublée (section 14.5). Il garde le reste : surnom, niveau, XP, attaques, habileté, marque "reçu de". Ses PV actuels augmentent d'autant que ses PV max, sauf s'il est KO (hypothèse retenue, Q93).
 - L'étal propose le service même sans Philtre, comme la forge propose une amélioration faute de ressources : le refus dit ce qui manque (hypothèse retenue, Q93).
+- Décidé le 26/10/2026, pour les étapes 158 à 160 (choix de l'utilisateur) : Malvoise rend aussi le héros shiny, contre un Philtre chromatique, après confirmation. Le héros ne change que de couleur (section 4.1). Un monstre rendu shiny apprend le Rayon chromatique (section 5.1).
 - Écrans, à l'étape 68 (console) : l'étal de Malvoise propose "Rendre un monstre shiny (1 Philtre chromatique)", avec le nombre de Philtres possédés, puis le choix du monstre et la confirmation. La gestion des monstres propose "Donner un booster à un monstre" : le booster, parmi ceux du sac et du coffre, avec son effet, puis le monstre. Le coffre déplace les boosters, par sorte et au nombre choisi, et les Philtres chromatiques.
 - Écrans, à l'étape 69 (Discord), précisé en codant : la dernière rangée de l'étal de Malvoise est pleine. Le service se rend donc depuis la gestion des monstres : une fois Malvoise au camp et un Philtre chromatique possédé, un monstre choisi qui n'est pas shiny a un bouton "Rendre shiny (Malvoise)", suivi de la confirmation ; l'étal rappelle le service et le nombre de Philtres. Le monstre choisi a aussi un menu "Donner un booster", avec les boosters possédés qui lui servent encore (sa valeur interne n'est pas à 31). Dans le coffre, les boosters, par sorte entière, et les Philtres chromatiques, tous ensemble, s'ajoutent aux menus des ressources et des pierres, qui comptent alors 24 options au plus.
 
@@ -970,6 +977,7 @@ Décidé le 20/10/2026, pour les étapes 62 à 65 (choix de l'utilisateur) :
 ### 13.10 Attaques des monstres
 
 - Au camp, un monstre peut réapprendre gratuitement toute attaque que son espèce apprend jusqu'à son niveau, y compris celles qu'il a oubliées ou refusées. S'il en connaît déjà 4, il en oublie une (section 7).
+- Depuis l'étape 158, un monstre shiny peut aussi y apprendre le Rayon chromatique (section 5.1).
 - Une capsule d'attaque enseigne une attaque précise à tout monstre qui a le type de cette attaque et ne la connaît pas déjà, de la même façon. Elle n'est pas consommée : une fois obtenue, elle sert autant de fois qu'on veut.
 - Les capsules se trouvent dans les coffres des expéditions manuelles (section 9.2), ou s'achètent chez le marchand, qui les vend toutes (section 14.2). Chaque zone a ses capsules : un coffre en contient une fois sur 5, tirée parmi celles de la zone que le joueur n'a pas encore ; quand il les a toutes, le coffre n'en contient plus.
 - Un monstre de départ n'a qu'un type, et son espèce apprend déjà toutes les attaques de ce type qui existaient dans la V1. Les capsules comptent donc des attaques nouvelles pour les types Feu, Eau et Plante, trouvées dans la zone facile, et des attaques d'autres espèces, trouvées dans la zone difficile. Liste, types et prix dans docs/contenu-v1.md (section 6).
@@ -1290,6 +1298,10 @@ Les questions Q101 et suivantes ont été relevées le 24/10/2026 lors de la con
 Les questions Q102 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 103 filets dans le noyau, avec la sauvegarde en version 27, 104 vente par Malvoise et fabrication par Gunther, 105 écrans de la console, 106 écrans du bot Discord.
 
 Les questions Q103 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 107 carnet de traque du codex et 108 Philtre chromatique.
+
+Les questions Q117 et suivantes ont été relevées le 26/10/2026 lors de la conception des étapes 158 Rayon chromatique et héros shiny dans le noyau, avec la sauvegarde en version 35, 159 écrans de la console, 160 écrans du bot Discord.
+
+- Q117. (Étapes 158 à 160) Hypothèses retenues, à confirmer : à la reprise d'une sauvegarde antérieure, seuls les monstres de l'équipe et du camp apprennent le Rayon chromatique ; ceux qui sont absents (expédition automatique, cour d'entraînement, rite) pourront l'apprendre au camp ; le Rayon ne passe pas au petit d'un rite, qui ne le connaît que s'il naît shiny ; le héros tire son shiny après son monstre de départ. Nom de l'attaque et textes proposés par Claude sans validation (docs/contenu-v1.md, section 43).
 
 Les questions Q116 et suivantes ont été relevées le 26/10/2026 lors de la conception des étapes 155 affichage des humains et du face à face, 156 sprites des classes et des humains du récit, 157 sprites des adversaires de la Fosse.
 
@@ -1912,3 +1924,10 @@ Les questions Q104 et suivantes ont été relevées le 25/10/2026 lors de la con
 - En combat, un humain ou un héros est un monstre d'une espèce technique qui dit qui il est : "heros-guerrier" pour un héros de joueur, "humain-brigand" pour un humain de l'IA. Le bot y trouve son sprite.
 - Style des humains validé par l'utilisateur sur une planche des 4 classes et des 5 humains du récit, avec un exemple de combat face à face, écart compris.
 - Hypothèses retenues, à confirmer : Q116.
+
+26/10/2026 (conception des étapes 158 à 160, Rayon chromatique et héros shiny) :
+
+- Demande de l'utilisateur : des héros shiny, au même taux que les monstres ; une attaque unique, spéciale et commune à tous les monstres shiny, que les héros shiny n'ont pas.
+- Claude a relevé qu'une attaque spéciale commune à tous les shiny servirait peu aux monstres physiques, et qu'une attaque en plus des 4 contournerait la règle des 4 attaques.
+- Choix de l'utilisateur : un héros shiny ne change que de couleur ; il naît shiny 1 fois sur 512 ou le devient par le Philtre chromatique ; l'attaque prend une des 4 places ; elle est Stellaire, de puissance 80, et sa catégorie s'adapte aux stats du monstre ; un monstre né shiny la connaît à la place de sa plus ancienne attaque, un monstre rendu shiny fait choisir l'attaque à oublier, et les shiny des sauvegardes antérieures l'apprennent à la reprise (sections 4.1, 5.1 et 13.7).
+- Hypothèses retenues, à confirmer : Q117.

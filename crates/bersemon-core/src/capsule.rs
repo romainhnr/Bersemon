@@ -5,7 +5,7 @@ use std::fmt;
 use crate::attaque::{Attaque, AttaqueId, ErreurAttaquesMonstre};
 use crate::collection::ErreurCollection;
 use crate::espece::Espece;
-use crate::monstre::Monstre;
+use crate::monstre::{Monstre, rayon_chromatique};
 
 /// Enseigne son attaque à tout monstre qui a le type de cette attaque. Elle
 /// n'est pas consommée : une fois obtenue, elle sert autant qu'on veut.
@@ -68,6 +68,10 @@ pub fn attaques_a_apprendre<'c>(
         if capsule.convient_a(monstre.espece()) {
             ajouter(capsule.attaque());
         }
+    }
+    // Un shiny peut réapprendre le Rayon chromatique (section 5.1).
+    if monstre.est_shiny() {
+        ajouter(&rayon_chromatique());
     }
     attaques
 }

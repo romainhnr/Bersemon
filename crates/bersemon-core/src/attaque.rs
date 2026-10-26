@@ -2,6 +2,7 @@
 
 use std::fmt;
 
+use crate::monstre::Monstre;
 use crate::statut::Statut;
 use crate::types::Type;
 
@@ -26,6 +27,10 @@ impl AttaqueId {
 pub enum Categorie {
     Physique,
     Speciale,
+    /// Physique ou spéciale selon la plus haute des deux attaques du monstre
+    /// qui l'utilise, hors bonus de combat, spéciale à égalité : celle du
+    /// Rayon chromatique, utile à tout shiny (section 5.1).
+    Adaptative,
 }
 
 /// Chance, en pourcentage, d'infliger un statut à la cible touchée (section
@@ -116,8 +121,25 @@ impl Attaque {
         self.type_attaque
     }
 
+    /// Telle que déclarée : `Categorie::Adaptative` ne se résout qu'avec le
+    /// monstre qui l'utilise (`categorie_pour`).
     pub fn categorie(&self) -> Categorie {
         self.categorie
+    }
+
+    /// Physique ou spéciale, pour ce monstre.
+    pub fn categorie_pour(&self, monstre: &Monstre) -> Categorie {
+        match self.categorie {
+            Categorie::Adaptative => {
+                let stats = monstre.stats();
+                if stats.attaque > stats.attaque_speciale {
+                    Categorie::Physique
+                } else {
+                    Categorie::Speciale
+                }
+            }
+            categorie => categorie,
+        }
     }
 
     pub fn puissance(&self) -> u16 {

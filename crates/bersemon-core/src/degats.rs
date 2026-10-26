@@ -124,9 +124,10 @@ fn parametres<'a>(
     pourcentage: u32,
     efficacite: Efficacite,
 ) -> ParametresDegats<'a> {
-    let (stat_attaque, stat_defense) = match attaque.categorie() {
+    let (stat_attaque, stat_defense) = match attaque.categorie_pour(attaquant) {
         Categorie::Physique => (stats_attaquant.attaque, stats_defenseur.defense),
-        Categorie::Speciale => (
+        // `categorie_pour` ne rend jamais la catégorie adaptative.
+        Categorie::Speciale | Categorie::Adaptative => (
             stats_attaquant.attaque_speciale,
             stats_defenseur.defense_speciale,
         ),

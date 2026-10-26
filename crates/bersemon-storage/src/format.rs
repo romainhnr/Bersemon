@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use bersemon_core::ame::{MarchandId, MarchandMort};
 use bersemon_core::amelioration::{Amelioration, Ameliorations, Chantier, Forge, Ouvrage};
 use bersemon_core::arene::{COTE_DE_DEPART, EtatDeLArene, PALIERS_DE_LA_FOSSE};
-use bersemon_core::attaque::{AttaqueId, AttaquesMonstre};
+use bersemon_core::attaque::{Attaque, AttaqueId, AttaquesMonstre};
 use bersemon_core::beherit::EtatDuBeherit;
 use bersemon_core::booster::Booster;
 use bersemon_core::catalogue::Catalogue;
@@ -28,7 +28,7 @@ use bersemon_core::horodatage::Horodatage;
 use bersemon_core::humain::HumainId;
 use bersemon_core::inventaire::Inventaire;
 use bersemon_core::machines::{Entrainement, Machines, Pieges};
-use bersemon_core::monstre::{EtatMonstre, Monstre};
+use bersemon_core::monstre::{EtatMonstre, Monstre, rayon_chromatique};
 use bersemon_core::niveau::Niveau;
 use bersemon_core::nom::Nom;
 use bersemon_core::partie::{AttaqueAChoisir, EtatPartie, Partie};
@@ -48,7 +48,7 @@ use bersemon_core::zone::{Zone, ZoneId};
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 34;
+pub(crate) const VERSION: u64 = 35;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -103,6 +103,10 @@ const VERSION_DES_PALIERS_DU_CODEX: u64 = 29;
 /// La version de la sauvegarde où le sac s'améliore chez Gunther (section
 /// 13.3).
 const VERSION_DU_SAC: u64 = 30;
+
+/// La version de la sauvegarde où tout monstre shiny connaît le Rayon
+/// chromatique, et où le héros peut être shiny (sections 4.1 et 5.1).
+const VERSION_DU_RAYON_CHROMATIQUE: u64 = 35;
 
 /// Ce que reçoit, au coffre, une partie qui reprend une sauvegarde
 /// antérieure aux filets (hypothèse retenue, Q102).
@@ -483,6 +487,9 @@ struct HerosV1 {
     pv_perdus: u32,
     #[serde(default)]
     statut: Option<String>,
+    /// Depuis la version 35 (section 4.1). Avant, aucun héros n'est shiny.
+    #[serde(default)]
+    shiny: bool,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -609,6 +616,7 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV14 {
                 .heros()
                 .statut()
                 .map(|statut| nom_de_statut(statut).to_string()),
+            shiny: partie.heros().est_shiny(),
         },
         equipe: collection.equipe().iter().map(depuis_monstre).collect(),
         camp: collection.camp().iter().map(depuis_monstre).collect(),
@@ -907,7 +915,8 @@ pub(crate) fn vers_partie(
         .avec_blessures(
             sauvegarde.heros.pv_perdus,
             sauvegarde.heros.statut.as_deref().map(statut).transpose()?,
-        );
+        )
+        .avec_shiny(sauvegarde.heros.shiny);
     // Avant la version 24, aucun monstre n'est loué (section 14.2).
     if sauvegarde.version < VERSION_DES_LOCATIONS {
         for monstre in sauvegarde.equipe.iter_mut().chain(&mut sauvegarde.camp) {
@@ -1173,7 +1182,7 @@ pub(crate) fn vers_partie(
             .map(|texte| lire_palier(texte))
             .collect::<Result<Vec<_>, _>>()?
     };
-    Partie::restaurer(EtatPartie {
+    let mut partie = Partie::restaurer(EtatPartie {
         heros,
         collection,
         sac,
@@ -1210,7 +1219,14 @@ pub(crate) fn vers_partie(
             combats_entre_joueurs: sauvegarde.combats_d_arene,
         },
     })
-    .map_err(incoherente)
+    .map_err(incoherente)?;
+    // Avant la version 35, les shiny ne connaissaient pas le Rayon
+    // chromatique : ceux de l'équipe et du camp l'apprennent à la reprise
+    // (section 5.1).
+    if sauvegarde.version < VERSION_DU_RAYON_CHROMATIQUE {
+        partie.enseigner_le_rayon_chromatique_aux_shiny();
+    }
+    Ok(partie)
 }
 
 fn ids_de_marchands(marchands: &[MarchandMort]) -> Vec<String> {
@@ -1331,9 +1347,11 @@ fn vers_attaque_a_choisir(
         ))
     })?;
     let espece = monstre.espece();
+    let id_attaque = AttaqueId::new(a_choisir.attaque.as_str());
     let attaque = espece
-        .attaque_apprise(&AttaqueId::new(a_choisir.attaque.as_str()))
+        .attaque_apprise(&id_attaque)
         .cloned()
+        .or_else(|| rayon_du_shiny(monstre.est_shiny(), &id_attaque))
         .ok_or_else(|| ErreurSauvegarde::AttaqueInconnue {
             espece: espece.id().as_str().to_string(),
             attaque: a_choisir.attaque,
@@ -1342,6 +1360,12 @@ fn vers_attaque_a_choisir(
         emplacement,
         attaque,
     })
+}
+
+/// Le Rayon chromatique, que seul un shiny connaît (section 5.1).
+fn rayon_du_shiny(shiny: bool, id: &AttaqueId) -> Option<Attaque> {
+    let rayon = rayon_chromatique();
+    (shiny && rayon.id() == id).then_some(rayon)
 }
 
 fn depuis_monstre(monstre: &Monstre) -> MonstreV1 {
@@ -1396,8 +1420,8 @@ fn vers_monstre(
         .espece(&EspeceId::new(monstre.espece.as_str()))
         .ok_or_else(|| ErreurSauvegarde::EspeceInconnue(monstre.espece.clone()))?;
     // Une attaque hors de la liste de l'espèce vient d'une capsule de son
-    // type (section 13.10), ou c'est l'attaque d'œuf de sa famille (section
-    // 13.11).
+    // type (section 13.10), c'est l'attaque d'œuf de sa famille (section
+    // 13.11), ou le Rayon chromatique d'un shiny (section 5.1).
     let attaques = monstre
         .attaques
         .iter()
@@ -1420,6 +1444,7 @@ fn vers_monstre(
                 .cloned()
                 .or_else(de_capsule)
                 .or_else(d_oeuf)
+                .or_else(|| rayon_du_shiny(monstre.shiny, &id_attaque))
                 .ok_or_else(|| ErreurSauvegarde::AttaqueInconnue {
                     espece: monstre.espece.clone(),
                     attaque: id.clone(),

@@ -22,7 +22,7 @@ use bersemon_core::ressource::Ressource;
 use bersemon_core::traque::Apotre;
 use bersemon_core::zone::Zone;
 
-use crate::boosters::{boosters, philtres_chromatiques, question_shiny};
+use crate::boosters::{QUESTION_SHINY_DU_HEROS, boosters, philtres_chromatiques, question_shiny};
 use crate::expeditions_automatiques::question_de_rappel;
 use crate::filets::liste_de_filets;
 use crate::forge::{
@@ -701,6 +701,7 @@ pub fn question_de_confirmation(confirmation: &Confirmation) -> String {
             )
         }
         Confirmation::RendreShiny(monstre) => question_shiny(monstre),
+        Confirmation::RendreLeHerosShiny => QUESTION_SHINY_DU_HEROS.to_string(),
         Confirmation::ForgerLeBeherit => "Donner à Malvoise les âmes des trois Apôtres pour forger le Béhérit pourpre ? Elles seront perdues.".to_string(),
         Confirmation::Sacrifier(monstre) => format!(
             "Sacrifier {} au Béhérit pourpre ? Il sera perdu pour toujours.",

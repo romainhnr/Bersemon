@@ -10,7 +10,10 @@ use bersemon_core::marchand::EXPEDITIONS_DE_LOCATION;
 use bersemon_core::ressource::Ressource;
 
 use crate::arene;
-use crate::boosters::{PHILTRE_RAMASSE, booster_donne, boosters, monstre_rendu_shiny};
+use crate::boosters::{
+    HEROS_NE_SHINY, HEROS_RENDU_SHINY, PHILTRE_RAMASSE, booster_donne, boosters,
+    monstre_rendu_shiny,
+};
 use crate::combat::{ordre_donne, rapport_experience, remplacement, renoncement};
 use crate::equipement::{nom_de_place, objet_et_bonus};
 use crate::erreurs::erreur_sauvegarde;
@@ -95,6 +98,7 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             ),
             false,
         ),
+        Evenement::HerosShiny => (HEROS_NE_SHINY.to_string(), false),
         Evenement::Depart(zone) => (format!("Vous partez pour {zone}."), true),
         Evenement::JourOuNuitAuDepart(jour_ou_nuit) => {
             (jour_et_nuit::au_depart(*jour_ou_nuit).to_string(), false)
@@ -554,6 +558,7 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             apres,
         } => (booster_donne(*booster, avant, apres), false),
         Evenement::MonstreRenduShiny(monstre) => (monstre_rendu_shiny(monstre), false),
+        Evenement::HerosRenduShiny => (HEROS_RENDU_SHINY.to_string(), false),
         Evenement::HabileteChangee { monstre, ancienne } => {
             let avant = ancienne
                 .map(|habilete| format!(", à la place de {}", habilete.nom()))

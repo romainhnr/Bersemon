@@ -1683,3 +1683,20 @@ Humains, décidé le 26/10/2026 pour les étapes 155 à 157 (gamedesign.md, sect
 Les 4 classes et les 5 humains du récit sont dessinés à l'étape 156, style validé par l'utilisateur ; les 10 adversaires de la Fosse à l'étape 157, sur le même modèle. Dessins et couleurs proposés par Claude (gamedesign.md, Q116).
 
 Images composées : en combat, les deux combattants actifs face à face, celui du joueur à gauche et retourné, avec un écart de 4 pixels de la grille (312 x 144 pixels) ; au choix de la classe, les quatre classes côte à côte (648 x 144 pixels). Chaque sprite garde sa palette, d'au plus 63 couleurs.
+
+## 43. Rayon chromatique et héros shiny
+
+Décidé le 26/10/2026, pour les étapes 158 à 160 (gamedesign.md, sections 4.1, 5.1 et 13.7). Nom et textes proposés par Claude sans validation (Q117).
+
+| Identifiant | Nom | Type | Cat. | Puissance | Précision | Effet |
+|---|---|---|---|---|---|---|
+| rayon-chromatique | Rayon chromatique | Stellaire | P ou S | 80 | 100 | |
+
+La catégorie suit le monstre qui l'utilise : physique si son Attaque dépasse son Attaque spéciale, spéciale sinon. Seul un monstre shiny la connaît.
+
+Textes :
+
+- héros né shiny : "Une lueur étrange émane de vous : vous êtes shiny, une chance sur 512." ;
+- confirmation du service : "Faire rendre votre héros shiny par Malvoise contre un Philtre chromatique ? Seule sa couleur changera." ;
+- héros rendu shiny : "Malvoise vous fait boire le Philtre chromatique ; votre sang s'altère, et une lueur nouvelle vous enveloppe. Vous êtes désormais shiny." ;
+- monstre rendu shiny avec une place libre, à la suite du texte existant : "Il apprend Rayon chromatique."

@@ -236,8 +236,13 @@ fn visite_au_marchand(session: &Session, message: &Message, visite: Visite) -> O
     }
     let camp = partie.collection().camp().len();
     let possible = match visite {
+        // La visite attend des ressources à vendre, pour passer par leur
+        // vente quels que soient les tirages de la partie.
         Visite::AFaire => {
-            partie.marchand_au_camp() && camp > 0 && partie.argent() >= prix_du_soin(Soin::Potion)
+            partie.marchand_au_camp()
+                && camp > 0
+                && partie.argent() >= prix_du_soin(Soin::Potion)
+                && !ressources_a_vendre(partie).is_empty()
         }
         Visite::PotionAchetee => camp > 0,
         Visite::MonstreVendu => true,

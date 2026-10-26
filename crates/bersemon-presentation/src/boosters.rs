@@ -1,9 +1,10 @@
-//! Textes des boosters et du service de Malvoise qui rend un monstre shiny
-//! (sections 13.7 et 14.3, docs/contenu-v1.md, section 17).
+//! Textes des boosters et du service de Malvoise qui rend un monstre ou le
+//! héros shiny (sections 4.1, 13.7 et 14.3, docs/contenu-v1.md, sections 17
+//! et 43).
 
 use bersemon_core::booster::{Booster, GAIN_D_UN_BOOSTER};
 use bersemon_core::combat::Cote;
-use bersemon_core::monstre::Monstre;
+use bersemon_core::monstre::{Monstre, rayon_chromatique};
 use bersemon_core::stats::{Stat, ValeursInternes};
 
 use crate::mise_en_valeur::important;
@@ -14,6 +15,15 @@ pub const PHILTRE_RAMASSE: &str = "Dans la poussière de sa dépouille roule une
 
 /// Le libellé du service, à l'étal de Malvoise.
 pub const SERVICE_SHINY: &str = "Rendre un monstre shiny (1 Philtre chromatique)";
+
+/// À la création, 1 fois sur 512 (section 4.1).
+pub const HEROS_NE_SHINY: &str =
+    "Une lueur étrange émane de vous : vous êtes shiny, une chance sur 512.";
+
+/// Seule la couleur du héros change (section 4.1).
+pub const QUESTION_SHINY_DU_HEROS: &str = "Faire rendre votre héros shiny par Malvoise contre un Philtre chromatique ? Seule sa couleur changera.";
+
+pub const HEROS_RENDU_SHINY: &str = "Malvoise vous fait boire le Philtre chromatique ; votre sang s'altère, et une lueur nouvelle vous enveloppe. Vous êtes désormais shiny.";
 
 pub fn nom_de_stat(stat: Stat) -> &'static str {
     match stat {
@@ -110,8 +120,16 @@ pub fn question_shiny(monstre: &Monstre) -> String {
 /// 13.7).
 pub fn monstre_rendu_shiny(monstre: &Monstre) -> String {
     let nom = important(monstre.nom());
+    // Sans place libre, la question de l'attaque à oublier suit (section
+    // 5.1).
+    let rayon = rayon_chromatique();
+    let apprend = if monstre.attaques().connait(rayon.id()) {
+        format!(" Il apprend {}.", rayon.nom())
+    } else {
+        String::new()
+    };
     format!(
-        "Malvoise fait boire le Philtre chromatique à {nom} ; sa lignée s'altère, et sa robe prend une couleur nouvelle. {nom} est désormais shiny."
+        "Malvoise fait boire le Philtre chromatique à {nom} ; sa lignée s'altère, et sa robe prend une couleur nouvelle. {nom} est désormais shiny.{apprend}"
     )
 }
 
@@ -150,6 +168,19 @@ mod tests {
         .unwrap();
         let texte = monstre_rendu_shiny(&loup);
         assert_eq!(texte.matches("shiny").count(), 1, "{texte}");
-        assert!(texte.ends_with("**Loup** est désormais shiny."), "{texte}");
+        assert!(
+            texte.ends_with("**Loup** est désormais shiny. Il apprend Rayon chromatique."),
+            "{texte}"
+        );
+        // Sans place libre, le texte n'en dit rien : la question de l'attaque
+        // à oublier suit (section 5.1).
+        let sans_rayon = Monstre::creer(
+            contenu.espece(&EspeceId::new("loup")).unwrap().clone(),
+            Niveau::new(5).unwrap(),
+            ValeursInternes::default(),
+            false,
+        )
+        .unwrap();
+        assert!(monstre_rendu_shiny(&sans_rayon).ends_with("est désormais shiny."));
     }
 }

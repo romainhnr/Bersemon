@@ -45,7 +45,9 @@ use crate::marchand::{
     EXPEDITIONS_DE_LOCATION, ErreurMarchand, OffreDeMonstre, PRIX_CAPSULE_D_HABILETE,
     PRIX_PIERRE_D_EVOLUTION, prix_de_revente, prix_du_filet, prix_du_soin,
 };
-use crate::monstre::{Monstre, RapportExperience, tirer_shiny, tirer_valeurs_internes};
+use crate::monstre::{
+    Monstre, RapportExperience, rayon_chromatique, tirer_shiny, tirer_valeurs_internes,
+};
 use crate::niveau::Niveau;
 use crate::nom::Nom;
 use crate::obeissance::limite_d_obeissance;
@@ -1544,17 +1546,91 @@ impl Partie {
 
     /// Au camp, chez Malvoise, après confirmation (section 13.7) : le
     /// monstre devient shiny, et un Philtre chromatique est consommé, du sac
-    /// d'abord, puis du coffre. Rend le monstre d'avant.
+    /// d'abord, puis du coffre. Il apprend le Rayon chromatique s'il a une
+    /// place libre ; sinon, l'attaque rejoint les attaques à choisir (section
+    /// 5.1). Rend le monstre d'avant.
     pub fn rendre_shiny(&mut self, emplacement: Emplacement) -> Result<Monstre, ErreurMarchand> {
         let monstre = self.estimer_shiny(emplacement)?;
-        if !self.sac.utiliser_philtre_chromatique() {
-            self.coffre_du_camp.utiliser_philtre_chromatique();
-        }
+        self.utiliser_un_philtre_chromatique();
         self.collection
             .monstre_a_modifier(emplacement)
             .expect("emplacement vérifié")
             .devenir_shiny();
+        self.enseigner_le_rayon_chromatique(emplacement);
         Ok(monstre)
+    }
+
+    fn utiliser_un_philtre_chromatique(&mut self) {
+        if !self.sac.utiliser_philtre_chromatique() {
+            self.coffre_du_camp.utiliser_philtre_chromatique();
+        }
+    }
+
+    /// Le monstre shiny apprend le Rayon chromatique s'il a une place libre,
+    /// sinon le joueur choisit l'attaque à oublier ou y renonce, comme à la
+    /// montée de niveau (section 5.1).
+    fn enseigner_le_rayon_chromatique(&mut self, emplacement: Emplacement) {
+        let rayon = rayon_chromatique();
+        let Some(monstre) = self.collection.monstre_a_modifier(emplacement) else {
+            return;
+        };
+        if !monstre.est_shiny() || monstre.attaques().connait(rayon.id()) {
+            return;
+        }
+        if monstre.attaques().est_complete() {
+            self.attaques_a_choisir.push(AttaqueAChoisir {
+                emplacement,
+                attaque: rayon,
+            });
+        } else {
+            monstre
+                .ajouter_attaque(rayon)
+                .expect("une attaque inconnue trouve une place libre");
+        }
+    }
+
+    /// Pour une sauvegarde antérieure au Rayon chromatique : chaque monstre
+    /// shiny de l'équipe et du camp l'apprend, comme après le Philtre
+    /// (section 5.1). Ceux qui sont absents du camp pourront le réapprendre
+    /// au camp.
+    pub fn enseigner_le_rayon_chromatique_aux_shiny(&mut self) {
+        let shiny =
+            |(position, monstre): (usize, &Monstre)| monstre.est_shiny().then_some(position);
+        let emplacements: Vec<Emplacement> = (self.collection.equipe().iter().enumerate())
+            .filter_map(shiny)
+            .map(Emplacement::Equipe)
+            .chain(
+                (self.collection.camp().iter().enumerate())
+                    .filter_map(shiny)
+                    .map(Emplacement::Camp),
+            )
+            .collect();
+        for emplacement in emplacements {
+            self.enseigner_le_rayon_chromatique(emplacement);
+        }
+    }
+
+    /// Ce que refuserait `rendre_le_heros_shiny`, sans rien changer : de
+    /// quoi demander confirmation (section 13.7).
+    pub fn verifier_shiny_du_heros(&self) -> Result<(), ErreurMarchand> {
+        self.verifier_marchand()?;
+        if self.heros.est_shiny() {
+            return Err(ErreurMarchand::DejaShiny);
+        }
+        if self.philtres_chromatiques() == 0 {
+            return Err(ErreurMarchand::AucunPhiltreChromatique);
+        }
+        Ok(())
+    }
+
+    /// Au camp, chez Malvoise, après confirmation : le héros devient shiny,
+    /// sans rien changer d'autre que sa couleur, et un Philtre chromatique
+    /// est consommé, du sac d'abord, puis du coffre (sections 4.1 et 13.7).
+    pub fn rendre_le_heros_shiny(&mut self) -> Result<(), ErreurMarchand> {
+        self.verifier_shiny_du_heros()?;
+        self.utiliser_un_philtre_chromatique();
+        self.heros.devenir_shiny();
+        Ok(())
     }
 
     /// Au camp, après confirmation (section 5.4) : la forme évoluée compte
@@ -2750,7 +2826,7 @@ mod tests {
     use super::*;
     use crate::aleatoire::AleatoireScripte;
     use crate::ame::Gardien;
-    use crate::attaque::Categorie;
+    use crate::attaque::{AttaquesMonstre, Categorie};
     use crate::codex::EtatCodex;
     use crate::collection::Tailles;
     use crate::combat::Action;
@@ -2780,6 +2856,46 @@ mod tests {
         let mut partie = Partie::nouvelle(heros, creer("depart", 5));
         partie.sac = Inventaire::default();
         partie
+    }
+
+    /// Une sauvegarde antérieure au Rayon chromatique : chaque shiny de
+    /// l'équipe l'apprend s'il a une place libre ; sinon le joueur choisit
+    /// l'attaque à oublier. Il peut toujours le réapprendre au camp (section
+    /// 5.1).
+    #[test]
+    fn les_shiny_d_une_ancienne_sauvegarde_apprennent_le_rayon() {
+        let quatre = ["a", "b", "c", "d"]
+            .map(|id| attaque(id, Type::Normal, Categorie::Physique, 40, 100))
+            .to_vec();
+        let mut complet = Monstre::new(
+            espece("loup"),
+            Niveau::new(10).unwrap(),
+            ValeursInternes::default(),
+            AttaquesMonstre::new(quatre).unwrap(),
+            false,
+        );
+        complet.devenir_shiny();
+        let mut libre = creer("rat", 5);
+        libre.devenir_shiny();
+        let mut partie = partie();
+        partie.prendre_monstre_rare(complet);
+        partie.prendre_monstre_rare(libre);
+        let rayon = rayon_chromatique();
+        partie.enseigner_le_rayon_chromatique_aux_shiny();
+        let equipe = partie.collection().equipe();
+        assert!(!equipe[0].attaques().connait(rayon.id()));
+        assert!(!equipe[1].attaques().connait(rayon.id()));
+        assert!(equipe[2].attaques().connait(rayon.id()));
+        assert_eq!(
+            partie.attaques_a_choisir(),
+            [AttaqueAChoisir {
+                emplacement: Emplacement::Equipe(1),
+                attaque: rayon.clone(),
+            }]
+        );
+        let apprenables = |emplacement| partie.attaques_a_apprendre(emplacement).unwrap();
+        assert!(apprenables(Emplacement::Equipe(1)).contains(&rayon));
+        assert!(!apprenables(Emplacement::Equipe(0)).contains(&rayon));
     }
 
     #[test]

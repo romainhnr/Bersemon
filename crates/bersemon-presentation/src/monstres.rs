@@ -101,6 +101,7 @@ pub fn decrire_attaque(attaque: &Attaque) -> String {
     let categorie = match attaque.categorie() {
         Categorie::Physique => "physique",
         Categorie::Speciale => "spéciale",
+        Categorie::Adaptative => "physique ou spéciale",
     };
     let effet = match attaque.effet() {
         Some(effet) => {

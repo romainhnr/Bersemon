@@ -104,11 +104,8 @@ pub fn etat(combat: &Combat, codex: &Codex) -> String {
 /// Ce qu'une attaque ferait au monstre adverse actif : dégâts estimés sans
 /// coup critique, précision, catégorie et effet (section 10.6).
 pub fn attaque_en_combat(combat: &Combat, index_attaque: usize) -> Option<String> {
-    let attaque = combat
-        .monstre(combat.actif(Cote::Joueur))
-        .attaques()
-        .liste()
-        .get(index_attaque)?;
+    let monstre = combat.monstre(combat.actif(Cote::Joueur));
+    let attaque = monstre.attaques().liste().get(index_attaque)?;
     let apercu = combat.apercu_attaque(index_attaque)?;
     let degats = if apercu.efficacite == Efficacite::Nulle {
         "sans effet".to_string()
@@ -117,9 +114,10 @@ pub fn attaque_en_combat(combat: &Combat, index_attaque: usize) -> Option<String
     } else {
         format!("{} à {} dégâts", apercu.degats_min, apercu.degats_max)
     };
-    let categorie = match attaque.categorie() {
+    let categorie = match attaque.categorie_pour(monstre) {
         Categorie::Physique => "Phy",
-        Categorie::Speciale => "Spé",
+        // `categorie_pour` ne rend jamais la catégorie adaptative.
+        Categorie::Speciale | Categorie::Adaptative => "Spé",
     };
     let effet = match attaque.effet() {
         Some(effet) => {

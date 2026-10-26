@@ -1427,6 +1427,47 @@ mod tests {
         assert_eq!(ancienne.heros().statut(), None);
     }
 
+    /// Un héros shiny et le Rayon chromatique d'un monstre shiny se
+    /// relisent ; avant la version 35, aucun héros n'est shiny et les shiny
+    /// de l'équipe apprennent le Rayon à la reprise (sections 4.1 et 5.1).
+    #[test]
+    fn le_heros_shiny_et_le_rayon_chromatique_se_relisent() {
+        let rayon = AttaqueId::new("rayon-chromatique");
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        valeur["heros"]["shiny"] = true.into();
+        valeur["equipe"][0]["shiny"] = true.into();
+        valeur["equipe"][0]["attaques"]
+            .as_array_mut()
+            .unwrap()
+            .push("rayon-chromatique".into());
+        let relue = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        assert!(relue.heros().est_shiny());
+        let shiny = &relue.collection().equipe()[0];
+        assert!(shiny.est_shiny() && shiny.attaques().connait(&rayon));
+        let texte = serde_json::to_string(&format::depuis_partie(&relue)).unwrap();
+        assert!(texte.contains("\"shiny\":true}"), "{texte}");
+        assert!(texte.contains("rayon-chromatique"), "{texte}");
+        // Seul un shiny le connaît.
+        let mut faux = valeur.clone();
+        faux["equipe"][0]["shiny"] = false.into();
+        assert!(matches!(
+            charger_texte(&faux.to_string()),
+            Err(ErreurSauvegarde::AttaqueInconnue { .. })
+        ));
+        // Avant la version 35.
+        let mut ancienne = valeur;
+        ancienne["heros"].as_object_mut().unwrap().remove("shiny");
+        ancienne["equipe"][0]["attaques"]
+            .as_array_mut()
+            .unwrap()
+            .pop();
+        ancienne["version"] = 34.into();
+        let relue = charger_texte(&ancienne.to_string()).unwrap().unwrap();
+        assert!(!relue.heros().est_shiny());
+        assert!(relue.collection().equipe()[0].attaques().connait(&rayon));
+        assert!(!relue.collection().equipe()[1].attaques().connait(&rayon));
+    }
+
     #[test]
     fn une_arme_d_une_autre_classe_devient_celle_de_la_classe_du_heros() {
         let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();

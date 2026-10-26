@@ -45,7 +45,7 @@ use crate::jour_et_nuit::JourOuNuit;
 use crate::machines::ErreurMachine;
 use crate::marchand::ErreurMarchand;
 use crate::meteo::Meteo;
-use crate::monstre::{Monstre, RapportExperience};
+use crate::monstre::{Monstre, RapportExperience, tirer_shiny};
 use crate::nom::{ErreurNom, Nom};
 use crate::partie::{Partie, RecompenseObtenue, creer_monstre_de_depart};
 use crate::peche::{ErreurPeche, Pecheur, Prise};
@@ -151,6 +151,9 @@ pub enum Choix {
     /// Au camp, chez Malvoise, après confirmation : un Philtre chromatique rend ce
     /// monstre shiny (section 13.7).
     RendreShiny(Emplacement),
+    /// Au camp, chez Malvoise, après confirmation : un Philtre chromatique
+    /// rend le héros shiny (sections 4.1 et 13.7).
+    RendreLeHerosShiny,
     /// Au camp, après confirmation : Gunther construit le niveau suivant de
     /// cette amélioration (section 13.4).
     LancerAmelioration(Amelioration),
@@ -396,6 +399,8 @@ pub enum Confirmation {
     },
     /// Un Philtre chromatique serait consommé (section 13.7).
     RendreShiny(Monstre),
+    /// Un Philtre chromatique serait consommé pour le héros (section 13.7).
+    RendreLeHerosShiny,
     /// La location ne serait pas remboursée (section 14.2).
     RendreLeMonstreLoue(Monstre),
     /// Les âmes des Apôtres seraient perdues (section 9.4).
@@ -424,6 +429,8 @@ pub enum Evenement {
         abandon: bool,
     },
     PartieCommencee(Monstre),
+    /// Le héros est né shiny, 1 fois sur 512 (section 4.1).
+    HerosShiny,
     /// Nom de la zone.
     Depart(String),
     /// Le moment que garde une expédition dans une zone de la carte, dit
@@ -678,6 +685,8 @@ pub enum Evenement {
     },
     /// Le monstre, désormais shiny (section 13.7).
     MonstreRenduShiny(Monstre),
+    /// Le héros, désormais shiny (section 13.7).
+    HerosRenduShiny,
     /// Nom du marchand dont l'âme est donnée, et le soin que Malvoise vend
     /// désormais.
     AmeDonnee {
@@ -1248,7 +1257,14 @@ impl Deroulement {
                 let depart = creer_monstre_de_depart(espece.clone(), &mut *contexte.aleatoire)
                     .expect("les monstres de départ du contenu existent au niveau 5");
                 evenements.push(Evenement::PartieCommencee(depart.clone()));
-                let partie = Partie::nouvelle(Heros::new(nom.clone(), *classe), depart);
+                // Le héros tire son shiny après son monstre de départ, comme
+                // un monstre sauvage (section 4.1).
+                let shiny = tirer_shiny(&mut *contexte.aleatoire);
+                if shiny {
+                    evenements.push(Evenement::HerosShiny);
+                }
+                let heros = Heros::new(nom.clone(), *classe).avec_shiny(shiny);
+                let partie = Partie::nouvelle(heros, depart);
                 sauvegarder(&partie, contexte.depot, evenements);
                 EnJeu::au_camp(partie)
             }
@@ -1873,6 +1889,20 @@ impl EnJeu {
                     .cloned()
                     .expect("le monstre vient d'être rendu shiny");
                 evenements.push(Evenement::MonstreRenduShiny(monstre));
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::RendreLeHerosShiny => {
+                self.partie
+                    .verifier_shiny_du_heros()
+                    .map_err(ErreurChoix::Marchand)?;
+                if !confirme {
+                    return Ok(Reponse::a_confirmer(Confirmation::RendreLeHerosShiny));
+                }
+                self.partie
+                    .rendre_le_heros_shiny()
+                    .map_err(ErreurChoix::Marchand)?;
+                evenements.push(Evenement::HerosRenduShiny);
                 sauvegarder(&self.partie, contexte.depot, evenements);
                 Ok(Reponse::Faite)
             }
@@ -3569,6 +3599,7 @@ mod tests {
     use crate::espece::EspeceId;
     use crate::habilete::Habilete;
     use crate::humain::HumainId;
+    use crate::monstre::rayon_chromatique;
     use crate::niveau::Niveau;
     use crate::partie::EtatPartie;
     use crate::peche::Peche;
@@ -3690,8 +3721,9 @@ mod tests {
         assert_eq!(deroulement.attente(), Attente::Classe);
 
         // Shiny : ses valeurs internes ne se tirent pas ; puis son habileté,
-        // la première des deux de la Mandragore.
-        let mut aleatoire = AleatoireScripte::new([1, 0]);
+        // la première des deux de la Mandragore ; puis le shiny du héros
+        // (section 4.1).
+        let mut aleatoire = AleatoireScripte::new([1, 0, 512]);
         let mut contexte = Contexte {
             contenu: &contenu,
             aleatoire: &mut aleatoire,
@@ -3709,8 +3741,52 @@ mod tests {
         assert_eq!(deroulement.attente(), Attente::Camp);
         let partie = deroulement.partie().unwrap();
         assert_eq!(partie.heros().classe(), Classe::Templier);
+        assert!(!partie.heros().est_shiny());
+        // Né shiny, le monstre de départ connaît le Rayon chromatique
+        // (section 5.1).
+        let depart = &partie.collection().equipe()[0];
+        assert!(depart.attaques().connait(rayon_chromatique().id()));
         // La partie est sauvegardée dès sa création (section 13.9).
         assert_eq!(depot.sauvegardes.borrow().len(), 1);
+    }
+
+    /// 1 fois sur 512, le héros naît shiny ; il ne change que de couleur
+    /// (section 4.1).
+    #[test]
+    fn le_heros_peut_naitre_shiny() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut deroulement = Deroulement::demarrer(Ok(None));
+        let nom = Choix::NomDuHeros("Aldric".to_string());
+        repondre_sans_tirage(&mut deroulement, nom, &contenu, &depot).unwrap();
+        // Le monstre de départ : non shiny, ses six valeurs internes, son
+        // habileté ; puis le héros, shiny.
+        let mut aleatoire = AleatoireScripte::new([512, 0, 0, 0, 0, 0, 0, 0, 1]);
+        let mut contexte = Contexte {
+            contenu: &contenu,
+            aleatoire: &mut aleatoire,
+            depot: &depot,
+            maintenant: Horodatage::depuis_secondes(0),
+        };
+        let evenements = deroulement
+            .repondre(Choix::Classe(Classe::Guerrier), &mut contexte)
+            .unwrap();
+        assert!(matches!(
+            &evenements[..],
+            [
+                Evenement::Introduction(Classe::Guerrier),
+                Evenement::PartieCommencee(depart),
+                Evenement::HerosShiny
+            ] if !depart.est_shiny()
+        ));
+        let heros = deroulement.partie().unwrap().heros();
+        assert!(heros.est_shiny());
+        let combattant = heros.combattant();
+        assert!(combattant.est_shiny());
+        // Ni valeurs internes à 31, ni Rayon chromatique.
+        let ordinaire = Heros::new(Nom::new("Aldric").unwrap(), Classe::Guerrier).combattant();
+        assert_eq!(combattant.stats(), ordinaire.stats());
+        assert_eq!(combattant.attaques(), ordinaire.attaques());
     }
 
     #[test]
@@ -4239,7 +4315,7 @@ mod tests {
         repondre_sans_tirage(&mut deroulement, rendre.clone(), &contenu, &depot).unwrap();
         assert_eq!(
             deroulement.attente(),
-            Attente::Confirmation(&Confirmation::RendreShiny(avant))
+            Attente::Confirmation(&Confirmation::RendreShiny(avant.clone()))
         );
         let evenements =
             repondre_sans_tirage(&mut deroulement, Choix::Oui, &contenu, &depot).unwrap();
@@ -4250,9 +4326,60 @@ mod tests {
         let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
         assert_eq!(sauvegarde.coffre_du_camp().philtres_chromatiques(), 0);
         assert!(sauvegarde.collection().equipe()[0].est_shiny());
+        // Il connaît déjà 4 attaques : le joueur choisit celle qu'oublie le
+        // Rayon chromatique, ou y renonce (section 5.1).
+        assert_eq!(avant.attaques().liste().len(), 4);
+        let rayon = rayon_chromatique();
+        assert!(matches!(
+            deroulement.attente(),
+            Attente::OubliAttaque { nouvelle, .. } if *nouvelle == rayon
+        ));
+        repondre_sans_tirage(&mut deroulement, Choix::OublierAttaque(1), &contenu, &depot).unwrap();
+        let shiny = &deroulement.partie().unwrap().collection().equipe()[0];
+        assert_eq!(shiny.attaques().liste()[1], rayon);
         // Déjà shiny : le refus vient sans confirmation.
         assert_eq!(
             repondre_sans_tirage(&mut deroulement, rendre, &contenu, &depot),
+            Err(ErreurChoix::Marchand(ErreurMarchand::DejaShiny))
+        );
+    }
+
+    /// Malvoise rend aussi le héros shiny, contre un Philtre chromatique
+    /// (sections 4.1 et 13.7).
+    #[test]
+    fn malvoise_rend_le_heros_shiny_apres_confirmation() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut etat = etat_de(&partie_pour_les_expeditions(&contenu));
+        etat.marchand_au_camp = true;
+        etat.sac = Inventaire::default().avec_philtres_chromatiques(1);
+        let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
+        let stats_avant = deroulement.partie().unwrap().heros().combattant().stats();
+        repondre_sans_tirage(
+            &mut deroulement,
+            Choix::RendreLeHerosShiny,
+            &contenu,
+            &depot,
+        )
+        .unwrap();
+        assert_eq!(
+            deroulement.attente(),
+            Attente::Confirmation(&Confirmation::RendreLeHerosShiny)
+        );
+        let evenements =
+            repondre_sans_tirage(&mut deroulement, Choix::Oui, &contenu, &depot).unwrap();
+        assert_eq!(evenements, [Evenement::HerosRenduShiny]);
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert!(sauvegarde.heros().est_shiny());
+        assert_eq!(sauvegarde.sac().philtres_chromatiques(), 0);
+        assert_eq!(sauvegarde.heros().combattant().stats(), stats_avant);
+        assert_eq!(
+            repondre_sans_tirage(
+                &mut deroulement,
+                Choix::RendreLeHerosShiny,
+                &contenu,
+                &depot
+            ),
             Err(ErreurChoix::Marchand(ErreurMarchand::DejaShiny))
         );
     }

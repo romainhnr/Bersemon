@@ -292,6 +292,8 @@ pub struct Heros {
     /// comme ceux d'un monstre, et se soignent au camp (section 4.4).
     pv_perdus: u32,
     statut: Option<Statut>,
+    /// Il ne change que de couleur (section 4.1).
+    shiny: bool,
 }
 
 impl Heros {
@@ -302,7 +304,24 @@ impl Heros {
             equipement: Equipement::default(),
             pv_perdus: 0,
             statut: None,
+            shiny: false,
         }
+    }
+
+    /// Tiré à sa création, comme un monstre sauvage, ou reprise d'une
+    /// sauvegarde (section 4.1).
+    pub fn avec_shiny(mut self, shiny: bool) -> Self {
+        self.shiny = shiny;
+        self
+    }
+
+    pub fn est_shiny(&self) -> bool {
+        self.shiny
+    }
+
+    /// Le service de Malvoise, contre un Philtre chromatique (section 13.7).
+    pub(crate) fn devenir_shiny(&mut self) {
+        self.shiny = true;
     }
 
     /// Reprise d'une sauvegarde : ses PV perdus et son statut. Il n'a jamais
@@ -340,6 +359,9 @@ impl Heros {
         combattant.subir_degats(self.pv_perdus.min(pv_max.saturating_sub(1)));
         if let Some(statut) = self.statut {
             combattant.infliger_statut(statut);
+        }
+        if self.shiny {
+            combattant = combattant.en_couleurs_shiny();
         }
         combattant
     }

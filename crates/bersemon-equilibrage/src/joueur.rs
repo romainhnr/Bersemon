@@ -825,9 +825,12 @@ fn valeur_face_a(monstre: &Monstre, adversaire: &Monstre) -> f64 {
         .iter()
         .filter(|attaque| attaque.puissance() > 0)
         .map(|attaque| {
-            let (force, resistance) = match attaque.categorie() {
+            let (force, resistance) = match attaque.categorie_pour(monstre) {
                 Categorie::Physique => (stats.attaque, en_face.defense),
-                Categorie::Speciale => (stats.attaque_speciale, en_face.defense_speciale),
+                // `categorie_pour` ne rend jamais la catégorie adaptative.
+                Categorie::Speciale | Categorie::Adaptative => {
+                    (stats.attaque_speciale, en_face.defense_speciale)
+                }
             };
             let bonus_de_type = if types.liste().contains(&attaque.type_attaque()) {
                 1.5
