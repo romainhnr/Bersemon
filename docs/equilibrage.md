@@ -4,7 +4,7 @@ Ce document décrit l'outil d'équilibrage, la stratégie du joueur automatique 
 
 ## 1. L'outil
 
-- Le crate `bersemon-equilibrage` fait jouer des parties complètes par un joueur automatique, avec le noyau seul : ni interface, ni sauvegarde. Chaque partie va de la création du héros à la chute du troisième Apôtre, le Margrave de givre.
+- Le crate `bersemon-equilibrage` fait jouer des parties complètes par un joueur automatique, avec le noyau seul : ni interface, ni sauvegarde. Chaque partie va de la création du héros à la chute du troisième Apôtre, le Margrave de givre ; depuis l'étape 144, elle continue jusqu'à la chute de l'humain de la dernière zone de la carte, la Pythie de sel, au bout du Désert de sel (section 10).
 - Commande : `cargo run --release -p bersemon-equilibrage -- [parties par classe] [classe]`. Sans argument, 25 parties par classe ; avec une classe, seule celle-ci est jouée. Le rapport s'écrit en Markdown sur la sortie standard.
 - Une partie se rejoue à l'identique avec la même graine. En release, 100 parties par classe se jouent en 5 secondes environ.
 - Pour mesurer un réglage, on change la valeur dans le noyau, on relance, et on compare les deux rapports. Toute modification du jeu change la suite des tirages : des écarts de 1 à 3 expéditions sur la médiane sont de l'ordre du bruit.
@@ -184,3 +184,26 @@ Le joueur automatique ne change pas de stratégie : son héros entre de lui-mêm
 | Objets forgés (moyenne) | 2,6 (section 6) | 1,7 |
 
 Le héros change peu la progression de ce joueur : au niveau de son équipement, il reste une proie face aux monstres des zones, comme voulu (section 4.4 de gamedesign.md), et ne sauve qu'une part des combats perdus. Les humains de fin de zone, qui combattent désormais après leurs monstres, restent dans les mêmes eaux ; le brigand, Assassin au niveau 10, est un peu plus dur qu'à l'étape 117 (63 % au premier essai au lieu de 70 %). Les armes de classe réduisent le choix de Gunther : 1,7 objet forgé par partie au lieu de 2,6. Le Templier, le plus lent, gagne quelques expéditions de plus, dans la marge du bruit d'une classe à l'autre.
+
+## 10. Désert de sel (étapes 143 et 144)
+
+Le joueur automatique continue désormais après le Margrave, jusqu'à la chute de la Pythie de sel, au bout du Désert de sel ; sa stratégie ne change pas : il entre dans le Désert une fois le niveau 39 passé (le premier tiers de ses niveaux), et n'emploie ni la panacée, qu'il n'achète pas, ni l'Éclipse. Les mesures jusqu'au Margrave ne se comparent donc plus aux sections précédentes que zone par zone. Mesuré sur 100 parties par classe, après l'étape 143 :
+
+| Mesure | Guerrier | Mage | Templier | Assassin |
+|---|---|---|---|---|
+| Expéditions jusqu'à la Pythie (médiane) | 64 | 66 | 70 | 68 |
+| Défaites (moyenne) | 10,8 | 13,8 | 8,7 | 10,0 |
+| Expéditions dans le Désert (défaites) | 10,5 (2,1) | 12,5 (2,4) | 10,8 (1,6) | 14,5 (3,0) |
+
+| Zone | Expéditions par partie | Menées au bout | Défaites | Rentrées | Niveau à la première |
+|---|---|---|---|---|---|
+| Col du Givre-Noir (28 à 36) | 14,9 | 26 % | 16 % | 58 % | 30,9 |
+| Désert de sel (37 à 45) | 12,1 | 8 % | 19 % | 73 % | 39,6 |
+
+| Combat | Tentatives par partie | Victoires au premier essai | Niveau de l'équipe à la victoire |
+|---|---|---|---|
+| Porte-étendard (Col, 36) | 2,0 | 50 % | 36,1 |
+| Margrave de givre (Col, 38) | 1,9 | 69 % | 38,3 |
+| Pythie de sel (Désert, 45) | 2,3 | 48 % | 45,2 |
+
+Constats : la Pythie de sel est aussi difficile que le Porte-étendard (2,3 tentatives et 48 % au premier essai, contre 2,0 et 50 %), et ses victoires se gagnent au niveau maximal de la zone, comme celles des autres humains de fin de zone. Le Désert ajoute 12 expéditions environ à une partie, avec une part de défaites proche de celle du Col (19 % contre 16 %). Ses expéditions sont rarement menées au bout (8 %, contre 26 % dans le Col) : le joueur y entre au niveau 39, six niveaux sous le maximum, et rentre quand l'équipe faiblit. Hypothèse, non mesurée : ses espèces communes, de 390 au total au lieu de 360 dans le Col, y pèsent pour beaucoup. Aucun réglage n'est fait : les valeurs du Désert attendent la validation de l'utilisateur (gamedesign.md, Q113).

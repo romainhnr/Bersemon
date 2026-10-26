@@ -47,7 +47,7 @@ pub fn rapport(contenu: &ContenuV1, bilans: &[Bilan], parties_par_classe: u64) -
     let _ = writeln!(texte, "# Équilibrage de Bersemon\n");
     let _ = writeln!(
         texte,
-        "{parties_par_classe} parties par classe, du héros à la chute du Margrave de givre, jouées par le joueur automatique (crates/bersemon-equilibrage). Le niveau de l'équipe est la moyenne des monstres de plus haut niveau, équipe et camp réunis, autant qu'en compte l'équipe.\n"
+        "{parties_par_classe} parties par classe, du héros à la chute de la Pythie de sel, au bout du Désert de sel, après celle du Margrave de givre, jouées par le joueur automatique (crates/bersemon-equilibrage). Le niveau de l'équipe est la moyenne des monstres de plus haut niveau, équipe et camp réunis, autant qu'en compte l'équipe.\n"
     );
     parties(&mut texte, bilans);
     zones(&mut texte, contenu, bilans);

@@ -52,7 +52,8 @@ const POTIONS_EMPORTEES: u32 = 6;
 const FILETS_EMPORTES: u32 = 10;
 /// Il ne lance un filet qu'avec au moins cette chance, en pourcentage.
 const CHANCE_MINIMALE_DU_FILET: u32 = 50;
-/// La partie s'arrête à la chute du troisième Apôtre, le Margrave de givre.
+/// La partie s'arrête à la chute du troisième Apôtre, le Margrave de givre,
+/// puis de l'humain de la dernière zone de la carte, la Pythie de sel.
 const APOTRES_A_VAINCRE: usize = 3;
 /// Hypothèse : le temps réel qui passe à chaque choix du joueur, pauses
 /// comprises. Il règle ce que les travaux de Gunther, de 30 minutes à 8
@@ -107,7 +108,8 @@ pub struct ExpeditionJouee {
 pub struct Bilan {
     pub classe: Classe,
     pub expeditions: Vec<ExpeditionJouee>,
-    /// Le troisième Apôtre est tombé avant la limite d'expéditions.
+    /// Le troisième Apôtre, puis l'humain de la dernière zone, sont tombés
+    /// avant la limite d'expéditions.
     pub terminee: bool,
     /// Ce que le joueur a dépensé chez Malvoise, en soins et en filets.
     pub achats: u64,
@@ -224,9 +226,10 @@ pub fn jouer_une_partie(contenu: &ContenuV1, classe: Classe, graine: u64) -> Bil
     while bilan.expeditions.len() < LIMITE_D_EXPEDITIONS {
         if en_cours.is_none()
             && matches!(deroulement.attente(), Attente::Camp)
-            && deroulement
-                .partie()
-                .is_some_and(|partie| partie.apotres_vaincus().len() >= APOTRES_A_VAINCRE)
+            && deroulement.partie().is_some_and(|partie| {
+                partie.apotres_vaincus().len() >= APOTRES_A_VAINCRE
+                    && derniere_zone_menee_au_bout(partie, contenu)
+            })
         {
             bilan.terminee = true;
             break;
@@ -700,6 +703,15 @@ fn remplir_le_sac(partie: &Partie) -> Option<Choix> {
         }
     }
     None
+}
+
+/// L'humain de la dernière zone de la carte est vaincu.
+fn derniere_zone_menee_au_bout(partie: &Partie, contenu: &ContenuV1) -> bool {
+    contenu
+        .zones()
+        .last()
+        .and_then(Zone::humain)
+        .is_none_or(|humain| partie.humains_vaincus().contains(humain.id()))
 }
 
 fn partir(partie: &Partie, contenu: &ContenuV1) -> Choix {
