@@ -1677,7 +1677,7 @@ Espèces dessinées à l'étape 152, style validé par l'utilisateur : Salamandr
 
 Humains, décidé le 26/10/2026 pour les étapes 155 à 157 (gamedesign.md, section 5.1) : même format, sans section `shiny`, puisqu'un humain n'est jamais shiny.
 
-- `crates/bersemon-discord/sprites/heros/{classe}.txt` : guerrier, mage, templier, assassin. En combat, le héros d'un joueur a l'espèce technique `heros-{classe}`.
+- `crates/bersemon-discord/sprites/heros/{classe}.txt` : guerrier, mage, templier, assassin. En combat, le héros d'un joueur a l'espèce technique `heros-{classe}`. Depuis l'étape 160, ces quatre fichiers ont une section `shiny`, pour le héros shiny (section 43) : armure dorée et cape bleue pour le Guerrier, robe pourpre pour le Mage, armure noire et croix dorée pour le Templier, tenue blanche et foulard sarcelle pour l'Assassin.
 - `crates/bersemon-discord/sprites/humains/{identifiant}.txt` : les 5 humains du récit et les 10 adversaires de la Fosse aux damnés. En combat, un humain de l'IA a l'espèce technique `humain-{identifiant}`, par exemple `humain-brigand`.
 
 Les 4 classes et les 5 humains du récit sont dessinés à l'étape 156, style validé par l'utilisateur ; les 10 adversaires de la Fosse à l'étape 157, sur le même modèle. Dessins et couleurs proposés par Claude (gamedesign.md, Q116).

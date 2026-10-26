@@ -309,6 +309,9 @@ pub enum Cle {
     DonnerBooster(Emplacement),
     /// Malvoise rend shiny le monstre choisi (section 13.7).
     RendreShiny(Emplacement),
+    /// Malvoise rend le héros shiny, depuis l'écran de son équipement
+    /// (sections 4.1 et 13.7).
+    RendreLeHerosShiny,
     /// Une capsule d'habileté, chez Malvoise.
     AcheterCapsuleDHabilete,
     /// Menu des espèces que Malvoise vend (section 14.2).
@@ -550,6 +553,7 @@ impl Cle {
                 booster: lire_booster(valeur?)?,
             }),
             Cle::RendreShiny(emplacement) => jouer(Choix::RendreShiny(*emplacement)),
+            Cle::RendreLeHerosShiny => jouer(Choix::RendreLeHerosShiny),
             Cle::AcheterCapsuleDHabilete => jouer(Choix::AcheterCapsulesDHabilete(1)),
             Cle::AcheterMonstre => jouer(Choix::AcheterMonstre(EspeceId::new(valeur?))),
             Cle::LouerMonstre => jouer(Choix::LouerMonstre(EspeceId::new(valeur?))),
@@ -767,6 +771,7 @@ impl Cle {
             Cle::AcheterMonstre => "acheter-monstre".to_string(),
             Cle::LouerMonstre => "louer-monstre".to_string(),
             Cle::RendreLeMonstreLoue => "rendre-le-monstre-loue".to_string(),
+            Cle::RendreLeHerosShiny => "rendre-le-heros-shiny".to_string(),
             Cle::AcheterPierre(pierre) => format!("acheter-pierre:{}", pierre_en_texte(*pierre)),
             Cle::VendreCeMonstre(emplacement) => {
                 format!("vendre-monstre:{}", emplacement_en_texte(*emplacement))
@@ -931,6 +936,7 @@ impl Cle {
             "acheter-monstre" => Cle::AcheterMonstre,
             "louer-monstre" => Cle::LouerMonstre,
             "rendre-le-monstre-loue" => Cle::RendreLeMonstreLoue,
+            "rendre-le-heros-shiny" => Cle::RendreLeHerosShiny,
             "donner-ame" => Cle::DonnerAme,
             // Le menu unique d'avant l'étape 38 (section 5.4).
             "fiche" => Cle::Fiche(0),
@@ -1443,6 +1449,7 @@ mod tests {
             Cle::ChangerDHabilete(Emplacement::Camp(7)),
             Cle::DonnerBooster(Emplacement::Camp(59)),
             Cle::RendreShiny(Emplacement::Equipe(3)),
+            Cle::RendreLeHerosShiny,
             Cle::AcheterCapsuleDHabilete,
             Cle::AcheterMonstre,
             Cle::LouerMonstre,

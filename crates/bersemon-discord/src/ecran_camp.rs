@@ -34,7 +34,7 @@ use bersemon_presentation::machines::{
 };
 use bersemon_presentation::meteo::meteo_de_la_zone;
 use bersemon_presentation::monstres::{
-    attaques_connues, decrire_attaque, fiche_du_monstre, ligne_monstre, nom, provenance,
+    attaques_connues, decrire_attaque_de, fiche_du_monstre, ligne_monstre, nom, provenance,
 };
 use bersemon_presentation::partie::{
     ames_d_apotres, argent, carnet_de_traque, collection as liste_complete, en_tete_abrege_du_camp,
@@ -201,7 +201,12 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
             SECONDAIRE,
         ));
     }
-    if partie.forge().est_au_camp() || !partie.heros().equipement().possedes().is_empty() {
+    // L'écran de l'équipement porte aussi le service shiny du héros (section
+    // 13.7).
+    if partie.forge().est_au_camp()
+        || !partie.heros().equipement().possedes().is_empty()
+        || partie.verifier_shiny_du_heros().is_ok()
+    {
         boutons.push(bouton(
             Cle::Afficher(Vue::Equipement),
             "Équipement",
@@ -507,7 +512,17 @@ fn equipement(partie: &Partie) -> Question {
             menu(Cle::Equiper(*place), nom_de_place(*place), options)
         })
         .collect();
-    lignes.extend(rangees(vec![retour()]));
+    let mut boutons = vec![retour()];
+    // Le service shiny du héros se rend ici, comme celui d'un monstre depuis
+    // sa gestion (section 13.7).
+    if partie.verifier_shiny_du_heros().is_ok() {
+        boutons.push(bouton(
+            Cle::RendreLeHerosShiny,
+            "Rendre shiny (Malvoise)",
+            PRINCIPAL,
+        ));
+    }
+    lignes.extend(rangees(boutons));
     Question {
         texte: format!(
             "{}\n\n{}",
@@ -962,7 +977,7 @@ fn attaques(partie: &Partie, emplacement: Emplacement, contenu: &ContenuV1) -> Q
             .map(|attaque| OptionDeMenu {
                 libelle: attaque.nom().to_string(),
                 valeur: attaque.id().as_str().to_string(),
-                description: Some(decrire_attaque(attaque)),
+                description: Some(decrire_attaque_de(monstre, attaque)),
             })
             .collect()
     };

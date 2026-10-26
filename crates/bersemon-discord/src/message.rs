@@ -365,9 +365,10 @@ fn illustration(
             .collection()
             .monstre(emplacement)
             .map(|monstre| Illustration::Seul(Portrait::de(monstre))),
-        (Attente::Camp, Vue::Equipement) => Some(Illustration::Seul(Portrait::de_la_classe(
-            partie.heros().classe(),
-        ))),
+        (Attente::Camp, Vue::Equipement) => Some(Illustration::Seul(Portrait {
+            espece: partie.heros().classe().espece_du_combattant(),
+            shiny: partie.heros().est_shiny(),
+        })),
         _ => None,
     }
 }

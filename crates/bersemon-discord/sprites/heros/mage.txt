@@ -10,6 +10,17 @@ y 7af0ff
 j ffffff
 p 6a4a2a
 s e0b090
+shiny
+o 1b1420
+b 8a1a2a
+c 5a0e18
+d b8323e
+g d0d4dc
+k 14102a
+y ffd040
+j ffffff
+p 6a4a2a
+s e0b090
 dessin
 ............oco.........
 ....ooo...ooooco........

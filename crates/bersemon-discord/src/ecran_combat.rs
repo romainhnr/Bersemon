@@ -16,7 +16,7 @@ use bersemon_presentation::arene::annonce_du_palier;
 use bersemon_presentation::combat::{attaque_de_trop, attaque_en_combat, etat, ordre_et_bonus};
 use bersemon_presentation::filets::nom_du_filet;
 use bersemon_presentation::monstres::{
-    decrire_attaque, ligne_du_heros, ligne_monstre, nom, nom_en_combat,
+    decrire_attaque_de, ligne_du_heros, ligne_monstre, nom, nom_en_combat,
 };
 use bersemon_presentation::partie::{places_pour_une_capture, proposition_d_evolution};
 use bersemon_presentation::soins::nom_du_soin;
@@ -239,7 +239,13 @@ pub fn oubli(monstre: &Monstre, nouvelle: &Attaque) -> Question {
     let lignes: Vec<String> = connues
         .iter()
         .enumerate()
-        .map(|(position, attaque)| format!("  {}. {}", position + 1, decrire_attaque(attaque)))
+        .map(|(position, attaque)| {
+            format!(
+                "  {}. {}",
+                position + 1,
+                decrire_attaque_de(monstre, attaque)
+            )
+        })
         .collect();
     let mut boutons: Vec<_> = connues
         .iter()

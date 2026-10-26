@@ -13,6 +13,20 @@ w d0d4dc
 p c8a040
 e 8a6a40
 f 5a4428
+shiny
+o 1b1420
+b 4a4a58
+c 2e2e38
+d 6e6e7e
+v eae4d4
+u b8b0a0
+r d0a030
+k 1b1420
+m 3e3e4a
+w d0d4dc
+p c8a040
+e 6a1a24
+f 40101a
 dessin
 .........ooooooo........
 ........oddddddco.......

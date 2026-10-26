@@ -11,6 +11,18 @@ k 0c0a10
 r 8a1a2a
 w d0d4dc
 p 6a4a2a
+shiny
+o 0c0a10
+b d8d4dc
+c a8a4b4
+d f4f2f8
+e b8b4c0
+n 8a8694
+s d8a888
+k 0c0a10
+r 1a8a8a
+w d0d4dc
+p 6a4a2a
 dessin
 ...........oco..........
 ..........odbco.........

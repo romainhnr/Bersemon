@@ -1110,6 +1110,117 @@ fn la_fosse_montre_son_adversaire_puis_le_face_a_face() {
     let _ = fs::remove_dir_all(dossier);
 }
 
+/// Malvoise rend le héros shiny depuis l'écran de son équipement, contre un
+/// Philtre chromatique, après confirmation ; l'image du héros devient
+/// shiny (sections 4.1, 5.1 et 13.7).
+#[test]
+fn le_heros_devient_shiny_depuis_son_equipement() {
+    use bersemon_core::catalogue::Catalogue;
+    use bersemon_core::heros::Heros;
+    use bersemon_core::niveau::Niveau;
+    use bersemon_core::nom::Nom;
+    use bersemon_core::partie::Partie;
+    use bersemon_core::sauvegarde::SauvegardeRepository;
+    use bersemon_core::stats::ValeursInternes;
+    use bersemon_storage::FichierJson;
+
+    let contenu = ContenuV1::new();
+    let depart = Monstre::creer(
+        contenu.espece(&EspeceId::new("salamandre")).unwrap(),
+        Niveau::new(10).unwrap(),
+        ValeursInternes::default(),
+        false,
+    )
+    .unwrap();
+    let partie = Partie::nouvelle(
+        Heros::new(Nom::new("Aldric").unwrap(), Classe::Templier),
+        depart,
+    );
+    let partie = Partie::restaurer(EtatPartie {
+        heros: partie.heros().clone(),
+        collection: partie.collection().clone(),
+        sac: Inventaire::default().avec_philtres_chromatiques(1),
+        coffre_du_camp: Inventaire::default(),
+        marchand_au_camp: true,
+        ames_donnees: Vec::new(),
+        ames_portees: Vec::new(),
+        ames_a_retrouver: Vec::new(),
+        codex: partie.codex().clone(),
+        zones_explorees: Vec::new(),
+        indices_trouves: 0,
+        apotres_vaincus: Vec::new(),
+        humains_vaincus: Vec::new(),
+        conseils_vus: Vec::new(),
+        expeditions_automatiques: Vec::new(),
+        attaques_a_choisir: Vec::new(),
+        peche: Default::default(),
+        forge: Default::default(),
+        relations: Default::default(),
+        machines: Default::default(),
+        beherit: Default::default(),
+        records_de_la_tour: Default::default(),
+        rite: None,
+        paliers_du_codex: Vec::new(),
+        arene: Default::default(),
+    })
+    .unwrap();
+    let dossier = dossier_de_test().join("heros-shiny");
+    fs::create_dir_all(&dossier).unwrap();
+    FichierJson::new(dossier.join(format!("{JOUEUR}.json")))
+        .enregistrer(&partie)
+        .unwrap();
+    let mut joueurs = Joueurs::new(dossier.clone(), 2026);
+    let maintenant = Horodatage::depuis_secondes(0);
+    let afficher = |joueurs: &mut Joueurs| {
+        let affiche = message(
+            joueurs.session(JOUEUR, &contenu),
+            &[],
+            None,
+            &contenu,
+            maintenant,
+        );
+        verifier_les_limites(&affiche);
+        affiche
+    };
+    let cliquer_sur = |joueurs: &mut Joueurs, cle: Cle| {
+        let affiche = afficher(joueurs);
+        let clic = cliquer(&affiche, |propose| *propose == cle);
+        let version = joueurs.session(JOUEUR, &contenu).version;
+        match clic.cle.commande(None, None).expect("composant lisible") {
+            Commande::Jouer(choix) => joueurs
+                .jouer(JOUEUR, version, choix, &contenu, maintenant)
+                .unwrap(),
+            Commande::Afficher(vue) => {
+                joueurs.afficher(JOUEUR, version, vue, &contenu).unwrap();
+                Vec::new()
+            }
+            commande => panic!("{commande:?}"),
+        }
+    };
+    cliquer_sur(&mut joueurs, Cle::ReprendreLaPartie);
+    cliquer_sur(&mut joueurs, Cle::Afficher(Vue::Equipement));
+    let templier = |shiny| {
+        Some(Illustration::Seul(Portrait {
+            espece: EspeceId::new("heros-templier"),
+            shiny,
+        }))
+    };
+    assert_eq!(afficher(&mut joueurs).sprite, templier(false));
+    cliquer_sur(&mut joueurs, Cle::RendreLeHerosShiny);
+    let evenements = cliquer_sur(&mut joueurs, Cle::Oui);
+    assert_eq!(evenements, [Evenement::HerosRenduShiny]);
+    let equipement = afficher(&mut joueurs);
+    assert!(
+        equipement.texte.starts_with("Aldric (shiny), Templier, "),
+        "{}",
+        equipement.texte
+    );
+    assert_eq!(equipement.sprite, templier(true));
+    assert!(equipement.piece_jointe().is_some());
+    assert!(!propose(&equipement, |cle| *cle == Cle::RendreLeHerosShiny));
+    let _ = fs::remove_dir_all(dossier);
+}
+
 /// Les trois Apôtres vaincus : Malvoise forge le Béhérit depuis le menu des
 /// âmes, l'Éclipse se choisit dans le menu des expéditions, le Béhérit prend
 /// le Loup de niveau 30, puis le Démiurge tombe sous ses deux formes

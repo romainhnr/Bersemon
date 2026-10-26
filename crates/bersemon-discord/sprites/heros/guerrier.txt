@@ -13,6 +13,20 @@ s e0b090
 h 2a2024
 k 1b1420
 p 6a4a2a
+shiny
+o 1b1420
+b b08a30
+c 7a5e1c
+d e0c060
+w c8ccd4
+x 8a8e98
+r 2a4aa0
+q 18306a
+n 3a2a20
+s e0b090
+h e8e4d8
+k 1b1420
+p 6a4a2a
 dessin
 .........ohohooo....ooo.
 .........ohhhhhho..owwxo

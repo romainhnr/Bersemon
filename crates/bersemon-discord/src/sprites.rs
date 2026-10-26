@@ -10,7 +10,8 @@
 //! puis `palette`, une couleur par ligne (`b 8a8a92` : un caractère et sa
 //! couleur en hexadécimal), `shiny`, les mêmes caractères avec leurs couleurs
 //! shiny, et enfin `dessin`, 24 lignes de 24 caractères, où `.` est
-//! transparent. Un humain, jamais shiny, n'a pas de section `shiny`.
+//! transparent. Un humain de l'IA, jamais shiny, n'a pas de section
+//! `shiny` ; un héros de joueur, qui peut l'être, en a une.
 
 use std::fmt;
 
@@ -311,7 +312,7 @@ type Palette = Vec<(char, [u8; 3])>;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Sprite {
     palette: Palette,
-    /// `None` pour un humain, jamais shiny.
+    /// `None` pour un humain de l'IA, jamais shiny.
     shiny: Option<Palette>,
     /// `COTE` lignes de `COTE` caractères.
     dessin: Vec<Vec<char>>,
@@ -596,9 +597,9 @@ mod tests {
         }
     }
 
-    /// Chaque classe et chaque humain de l'IA ont leur sprite, sans palette
-    /// shiny, et aucun sprite d'humain ne reste sans combattant (section
-    /// 5.1).
+    /// Chaque classe et chaque humain de l'IA ont leur sprite, et aucun
+    /// sprite d'humain ne reste sans combattant ; seules les classes, que
+    /// le héros shiny prend, ont une palette shiny (sections 4.1 et 5.1).
     #[test]
     fn chaque_humain_a_son_sprite() {
         use bersemon_core::catalogue::Catalogue;
@@ -630,7 +631,8 @@ mod tests {
         assert_eq!(dessines, attendus);
         for espece in &attendus {
             let sprite = sprite(espece).unwrap_or_else(|| panic!("{}", espece.as_str()));
-            assert!(!sprite.a_un_shiny(), "{}", espece.as_str());
+            let classe = espece.as_str().starts_with("heros-");
+            assert_eq!(sprite.a_un_shiny(), classe, "{}", espece.as_str());
             // Aucune espèce de monstre ne porte le même identifiant.
             assert!(contenu.espece(espece).is_none(), "{}", espece.as_str());
         }
