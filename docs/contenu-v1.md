@@ -1344,7 +1344,7 @@ PV de base doublés le 26/10/2026, à l'étape 147 (choix de l'utilisateur, game
 
 Niveau de combat : 5, plus 5 par palier de l'arme et 5 par palier de l'armure (5 à 40).
 
-Attaques du héros, toutes de type Humain :
+Attaques du héros, de type Humain :
 
 | Identifiant | Attaque | Classe | Catégorie | Puissance | Précision | Effet |
 |---|---|---|---|---|---|---|
@@ -1369,6 +1369,15 @@ Attaques du héros, toutes de type Humain :
 | anatheme | Anathème | Templier, palier 3 | S | 60 | 100 | |
 | courroux-sacre | Courroux sacré | Templier, palier 4 | S | 75 | 100 | |
 | sceau-d-entrave | Sceau d'entrave | Templier, toute arme | S | 30 | 100 | paralysie 30 % |
+
+Attaques du second type, ajoutées le 26/10/2026 à l'étape 149 (choix de l'utilisateur, gamedesign.md, section 4.4 ; noms proposés sans validation, Q114). Les armes des paliers 2 à 4 de chaque classe les donnent en troisième attaque, après l'attaque principale et celle de la classe ; l'arme du palier 1 n'en donne pas :
+
+| Identifiant | Attaque | Classe | Type | Catégorie | Puissance | Précision | Effet |
+|---|---|---|---|---|---|---|---|
+| coup-de-pommeau | Coup de pommeau | Guerrier, paliers 2 à 4 | Combat | P | 60 | 100 | |
+| lame-des-tenebres | Lame des ténèbres | Assassin, paliers 2 à 4 | Ténèbres | P | 60 | 100 | |
+| emprise-mentale | Emprise mentale | Mage, paliers 2 à 4 | Psychique | S | 60 | 100 | |
+| rayon-de-foi | Rayon de foi | Templier, paliers 2 à 4 | Lumière | S | 60 | 100 | |
 
 Chaque arme donne l'attaque principale de son palier, puis l'attaque de sa classe. Précisé à l'étape 129, en codant : Saignée, nom validé pour l'attaque du palier 3 de l'Assassin, est déjà celui d'une attaque Poison de la Sangsue géante ; elle devient Égorgement, nom proposé sans validation (gamedesign.md, Q112).
 

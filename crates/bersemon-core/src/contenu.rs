@@ -1039,7 +1039,7 @@ const fn avec_effet(fiche: FicheAttaque, statut: Statut, chance: u8) -> FicheAtt
 /// Section 34 de docs/contenu-v1.md : les attaques que les armes donnent au
 /// héros, toutes de type Humain, classe par classe. Coup de poing, celle du
 /// héros sans arme, est dans le module du héros.
-const ATTAQUES_DES_HEROS: [FicheAttaque; 20] = [
+const ATTAQUES_DES_HEROS: [FicheAttaque; 24] = [
     fiche("taille", "Taille", Type::Humain, Physique, 40, 100),
     fiche("estoc", "Estoc", Type::Humain, Physique, 50, 100),
     fiche("pourfendre", "Pourfendre", Type::Humain, Physique, 60, 100),
@@ -1141,6 +1141,40 @@ const ATTAQUES_DES_HEROS: [FicheAttaque; 20] = [
         ),
         Statut::Paralysie,
         30,
+    ),
+    // L'attaque du second type de chaque classe, des armes des paliers 2 à
+    // 4 (étape 149, section 4.4).
+    fiche(
+        "coup-de-pommeau",
+        "Coup de pommeau",
+        Type::Combat,
+        Physique,
+        60,
+        100,
+    ),
+    fiche(
+        "lame-des-tenebres",
+        "Lame des ténèbres",
+        Type::Tenebres,
+        Physique,
+        60,
+        100,
+    ),
+    fiche(
+        "emprise-mentale",
+        "Emprise mentale",
+        Type::Psychique,
+        Speciale,
+        60,
+        100,
+    ),
+    fiche(
+        "rayon-de-foi",
+        "Rayon de foi",
+        Type::Lumiere,
+        Speciale,
+        60,
+        100,
     ),
 ];
 
@@ -3921,7 +3955,7 @@ const PLANS_DE_FABRICATION: [FicheObjet; 29] = [
         sorte: SorteDObjet::Arme,
         bonus: [5, 0, 5, 0, 0],
         classe: Some((Classe::Guerrier, 2)),
-        attaques: &["estoc", "frappe-brutale"],
+        attaques: &["estoc", "frappe-brutale", "coup-de-pommeau"],
         cout: &[
             ("fragment-d-armure", 6),
             ("os-de-squelette", 6),
@@ -3935,7 +3969,7 @@ const PLANS_DE_FABRICATION: [FicheObjet; 29] = [
         sorte: SorteDObjet::Arme,
         bonus: [8, 0, 8, 0, 0],
         classe: Some((Classe::Guerrier, 3)),
-        attaques: &["pourfendre", "frappe-brutale"],
+        attaques: &["pourfendre", "frappe-brutale", "coup-de-pommeau"],
         cout: &[
             ("eclat-de-gargouille", 8),
             ("dent-de-goule", 6),
@@ -3959,7 +3993,7 @@ const PLANS_DE_FABRICATION: [FicheObjet; 29] = [
         sorte: SorteDObjet::Arme,
         bonus: [5, 0, 5, 0, 0],
         classe: Some((Classe::Assassin, 2)),
-        attaques: &["coup-bas", "lame-empoisonnee"],
+        attaques: &["coup-bas", "lame-empoisonnee", "lame-des-tenebres"],
         cout: &[
             ("fragment-d-armure", 6),
             ("os-de-squelette", 6),
@@ -3973,7 +4007,7 @@ const PLANS_DE_FABRICATION: [FicheObjet; 29] = [
         sorte: SorteDObjet::Arme,
         bonus: [8, 0, 8, 0, 0],
         classe: Some((Classe::Assassin, 3)),
-        attaques: &["egorgement", "lame-empoisonnee"],
+        attaques: &["egorgement", "lame-empoisonnee", "lame-des-tenebres"],
         cout: &[
             ("eclat-de-gargouille", 8),
             ("dent-de-goule", 6),
@@ -3997,7 +4031,7 @@ const PLANS_DE_FABRICATION: [FicheObjet; 29] = [
         sorte: SorteDObjet::Arme,
         bonus: [5, 0, 5, 0, 0],
         classe: Some((Classe::Mage, 2)),
-        attaques: &["fleche-occulte", "onde-engourdissante"],
+        attaques: &["fleche-occulte", "onde-engourdissante", "emprise-mentale"],
         cout: &[
             ("cendre-de-feu-follet", 6),
             ("aile-de-fee-noire", 6),
@@ -4011,7 +4045,7 @@ const PLANS_DE_FABRICATION: [FicheObjet; 29] = [
         sorte: SorteDObjet::Arme,
         bonus: [8, 0, 8, 0, 0],
         classe: Some((Classe::Mage, 3)),
-        attaques: &["rayon-occulte", "onde-engourdissante"],
+        attaques: &["rayon-occulte", "onde-engourdissante", "emprise-mentale"],
         cout: &[
             ("aile-de-chauve-souris", 8),
             ("dent-de-goule", 6),
@@ -4035,7 +4069,7 @@ const PLANS_DE_FABRICATION: [FicheObjet; 29] = [
         sorte: SorteDObjet::Arme,
         bonus: [5, 0, 5, 0, 0],
         classe: Some((Classe::Templier, 2)),
-        attaques: &["verdict", "sceau-d-entrave"],
+        attaques: &["verdict", "sceau-d-entrave", "rayon-de-foi"],
         cout: &[
             ("cendre-de-feu-follet", 6),
             ("aile-de-fee-noire", 6),
@@ -4049,7 +4083,7 @@ const PLANS_DE_FABRICATION: [FicheObjet; 29] = [
         sorte: SorteDObjet::Arme,
         bonus: [8, 0, 8, 0, 0],
         classe: Some((Classe::Templier, 3)),
-        attaques: &["anatheme", "sceau-d-entrave"],
+        attaques: &["anatheme", "sceau-d-entrave", "rayon-de-foi"],
         cout: &[
             ("aile-de-chauve-souris", 8),
             ("dent-de-goule", 6),
@@ -4271,7 +4305,7 @@ const ARMES_DU_CHAMPION: [FicheObjet; 4] = [
         sorte: SorteDObjet::Arme,
         bonus: [10, 0, 10, 0, 0],
         classe: Some((Classe::Guerrier, 4)),
-        attaques: &["coup-du-champion", "frappe-brutale"],
+        attaques: &["coup-du-champion", "frappe-brutale", "coup-de-pommeau"],
         cout: &[],
         heures: 0,
     },
@@ -4281,7 +4315,7 @@ const ARMES_DU_CHAMPION: [FicheObjet; 4] = [
         sorte: SorteDObjet::Arme,
         bonus: [10, 0, 10, 0, 0],
         classe: Some((Classe::Assassin, 4)),
-        attaques: &["execution", "lame-empoisonnee"],
+        attaques: &["execution", "lame-empoisonnee", "lame-des-tenebres"],
         cout: &[],
         heures: 0,
     },
@@ -4291,7 +4325,7 @@ const ARMES_DU_CHAMPION: [FicheObjet; 4] = [
         sorte: SorteDObjet::Arme,
         bonus: [10, 0, 10, 0, 0],
         classe: Some((Classe::Mage, 4)),
-        attaques: &["tempete-occulte", "onde-engourdissante"],
+        attaques: &["tempete-occulte", "onde-engourdissante", "emprise-mentale"],
         cout: &[],
         heures: 0,
     },
@@ -4301,7 +4335,7 @@ const ARMES_DU_CHAMPION: [FicheObjet; 4] = [
         sorte: SorteDObjet::Arme,
         bonus: [10, 0, 10, 0, 0],
         classe: Some((Classe::Templier, 4)),
-        attaques: &["courroux-sacre", "sceau-d-entrave"],
+        attaques: &["courroux-sacre", "sceau-d-entrave", "rayon-de-foi"],
         cout: &[],
         heures: 0,
     },
@@ -5190,12 +5224,19 @@ mod tests {
         assert_eq!(plates.duree().as_secs(), 8 * 3_600);
     }
 
-    /// Section 34 de docs/contenu-v1.md : toutes Humain, l'attaque
-    /// principale de chaque palier, puis celle de la classe.
+    /// Section 34 de docs/contenu-v1.md : l'attaque principale de chaque
+    /// palier, puis celle de la classe, de type Humain ; depuis l'étape 149,
+    /// les armes des paliers 2 à 4 y ajoutent une attaque du second type de
+    /// la classe.
     #[test]
-    fn les_attaques_des_heros_sont_de_type_humain() {
+    fn les_attaques_des_heros_sont_humain_ou_du_second_type() {
+        let seconds = [Type::Combat, Type::Tenebres, Type::Psychique, Type::Lumiere];
         for fiche in &ATTAQUES_DES_HEROS {
-            assert_eq!(fiche.type_attaque, Type::Humain, "{}", fiche.id);
+            assert!(
+                fiche.type_attaque == Type::Humain || seconds.contains(&fiche.type_attaque),
+                "{}",
+                fiche.id
+            );
             assert!(
                 ATTAQUES.iter().all(|autre| autre.id != fiche.id),
                 "{}",
@@ -5212,8 +5253,18 @@ mod tests {
                             .objet_de_classe(classe, SorteDObjet::Arme, palier)
                             .unwrap(),
                     };
-                    assert_eq!(arme.attaques().len(), 2);
-                    arme.attaques()[0].puissance()
+                    let attaques = arme.attaques();
+                    assert_eq!(attaques.len(), if palier == 1 { 2 } else { 3 });
+                    assert!(
+                        attaques[..2]
+                            .iter()
+                            .all(|attaque| attaque.type_attaque() == Type::Humain)
+                    );
+                    if let Some(troisieme) = attaques.get(2) {
+                        assert_eq!(troisieme.type_attaque(), classe.second_type());
+                        assert_eq!((troisieme.puissance(), troisieme.precision()), (60, 100));
+                    }
+                    attaques[0].puissance()
                 })
                 .collect();
             assert_eq!(puissances, [40, 50, 60, 75], "{}", classe.nom());
