@@ -551,7 +551,12 @@ fn codex(partie: &Partie, fiche: Option<usize>, page: usize, contenu: &ContenuV1
     match ouverte {
         Some(espece) => {
             lignes.push(espece.nom().to_string());
-            lignes.extend(fiche_d_espece(espece, contenu));
+            lignes.extend(fiche_d_espece(
+                espece,
+                codex,
+                partie.apotres_vaincus(),
+                contenu,
+            ));
         }
         None => {
             lignes.push("Codex :".to_string());

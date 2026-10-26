@@ -207,7 +207,7 @@ pub fn codex(partie: &Partie, contenu: &ContenuV1) -> String {
             ligne_du_codex(codex, espece)
         ));
         if codex.etat(espece.id()) == EtatCodex::Capturee {
-            for ligne in fiche_d_espece(espece, contenu) {
+            for ligne in fiche_d_espece(espece, codex, partie.apotres_vaincus(), contenu) {
                 lignes.push(format!("     {ligne}"));
             }
         }
@@ -226,7 +226,7 @@ pub fn codex(partie: &Partie, contenu: &ContenuV1) -> String {
             if formes.len() > 1 {
                 lignes.push(format!("     {} :", espece.nom()));
             }
-            for ligne in fiche_d_espece(espece, contenu) {
+            for ligne in fiche_d_espece(espece, codex, partie.apotres_vaincus(), contenu) {
                 lignes.push(format!("     {ligne}"));
             }
         }

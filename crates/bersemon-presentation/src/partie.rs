@@ -8,7 +8,7 @@ use bersemon_core::collection::Collection;
 use bersemon_core::combat::Cote;
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::{Annonce, Confirmation};
-use bersemon_core::espece::Espece;
+use bersemon_core::espece::{Espece, EspeceId};
 use bersemon_core::evolution::ConditionEvolution;
 use bersemon_core::expedition::Expedition;
 use bersemon_core::habilete::Habilete;
@@ -469,8 +469,15 @@ pub fn types_connus(codex: &Codex, espece: &Espece) -> String {
 }
 
 /// Types, habiletés possibles, stats de base, attaques et évolution, montrés
-/// pour une espèce capturée (sections 5.4, 5.6 et 5.9).
-pub fn fiche_d_espece(espece: &Espece, catalogue: &dyn Catalogue) -> Vec<String> {
+/// pour une espèce capturée ou un Apôtre abattu (sections 5.4, 5.6 et 5.9).
+/// Elle ne dévoile ni le nom d'une évolution pas encore capturée, ni la
+/// condition qui nomme un Apôtre pas encore abattu (Q103).
+pub fn fiche_d_espece(
+    espece: &Espece,
+    codex: &Codex,
+    apotres_vaincus: &[EspeceId],
+    contenu: &ContenuV1,
+) -> Vec<String> {
     let base = espece.stats_de_base();
     let total = u32::from(base.pv)
         + u32::from(base.attaque)
@@ -479,17 +486,6 @@ pub fn fiche_d_espece(espece: &Espece, catalogue: &dyn Catalogue) -> Vec<String>
         + u32::from(base.defense_speciale)
         + u32::from(base.vitesse);
     let stats = format!("Stats de base : {} (total {total})", decrire_stats(base));
-    let attaques: Vec<String> = espece
-        .apprentissage()
-        .iter()
-        .map(|apprise| {
-            format!(
-                "{} (niv. {})",
-                apprise.attaque.nom(),
-                apprise.niveau.valeur()
-            )
-        })
-        .collect();
     let habiletes: Vec<String> = espece
         .habiletes()
         .iter()
@@ -504,18 +500,65 @@ pub fn fiche_d_espece(espece: &Espece, catalogue: &dyn Catalogue) -> Vec<String>
         format!("Types : {}", types_de(espece)),
         format!("Habiletés possibles : {habiletes}"),
         stats,
-        format!("Attaques : {}", attaques.join(", ")),
+        "Attaques apprises :".to_string(),
     ];
+    // L'attaque d'évolution est dans la liste de l'espèce d'arrivée : on la
+    // retrouve par l'espèce qui évolue vers celle-ci.
+    let attaque_d_evolution = contenu.especes().iter().find_map(|avant| {
+        avant
+            .evolution()
+            .filter(|evolution| evolution.vers() == espece.id())
+            .map(|evolution| evolution.attaque())
+    });
+    for apprise in espece.apprentissage() {
+        let evolution = if attaque_d_evolution == Some(apprise.attaque.id()) {
+            " (évolution)"
+        } else {
+            ""
+        };
+        fiche.push(format!(
+            "  niv. {}{evolution} : {}",
+            apprise.niveau.valeur(),
+            decrire_attaque(&apprise.attaque)
+        ));
+    }
     let evolution = espece.evolution().and_then(|evolution| {
-        let vers = catalogue.espece(evolution.vers())?;
+        let vers = contenu.espece(evolution.vers())?;
         Some((vers, evolution.condition()))
     });
     if let Some((vers, condition)) = evolution {
-        fiche.push(format!(
-            "Évolution : {} {}",
-            vers.nom(),
-            condition_d_evolution(condition, catalogue)
-        ));
+        let nom = if codex.etat(vers.id()) == EtatCodex::Capturee {
+            vers.nom()
+        } else {
+            "???"
+        };
+        let cachee = matches!(
+            condition,
+            ConditionEvolution::ApotreVaincu { apotre, .. } if !apotres_vaincus.contains(apotre)
+        );
+        if cachee {
+            fiche.push(format!("Évolution : {nom}, condition inconnue"));
+        } else {
+            fiche.push(format!(
+                "Évolution : {nom} {}",
+                condition_d_evolution(condition, contenu)
+            ));
+        }
+    }
+    // Celles que l'espèce apprend déjà d'elle-même ne s'y répètent pas. Le
+    // marchand les vend toutes : les nommer ne dévoile rien (section 13.10).
+    let capsules: Vec<String> = contenu
+        .capsules()
+        .iter()
+        .filter(|capsule| capsule.convient_a(espece))
+        .filter(|capsule| espece.attaque_apprise(capsule.id()).is_none())
+        .map(|capsule| format!("  {}", decrire_attaque(capsule.attaque())))
+        .collect();
+    if capsules.is_empty() {
+        fiche.push("Capsules d'attaque possibles : aucune".to_string());
+    } else {
+        fiche.push("Capsules d'attaque possibles :".to_string());
+        fiche.extend(capsules);
     }
     // La même pour toute la famille, que seul le Rite du sang mêlé
     // transmet (section 13.11).

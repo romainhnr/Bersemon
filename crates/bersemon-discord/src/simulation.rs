@@ -1469,6 +1469,79 @@ fn ansgar_peche_a_travers_les_ecrans_du_bot() {
     let _ = fs::remove_dir_all(dossier);
 }
 
+/// Chaque fiche du codex, avec le détail des attaques et des capsules, et
+/// chaque page de la liste tiennent dans un message, même tout capturé et
+/// tous les Apôtres abattus.
+#[test]
+fn le_codex_complet_tient_dans_les_limites() {
+    use crate::ecran_camp::question;
+    use bersemon_core::catalogue::Catalogue;
+    use bersemon_core::codex::Codex;
+    use bersemon_core::heros::Heros;
+    use bersemon_core::nom::Nom;
+    use bersemon_core::partie::Partie;
+
+    let contenu = ContenuV1::new();
+    let loup = Monstre::creer(
+        contenu.espece(&EspeceId::new("loup")).unwrap(),
+        bersemon_core::niveau::Niveau::new(5).unwrap(),
+        bersemon_core::stats::ValeursInternes::default(),
+        false,
+    )
+    .unwrap();
+    let mut codex = Codex::default();
+    for espece in contenu.especes() {
+        codex.noter_capture(espece.id());
+    }
+    let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Guerrier);
+    let partie = Partie::nouvelle(heros, loup);
+    let partie = Partie::restaurer(EtatPartie {
+        heros: partie.heros().clone(),
+        collection: partie.collection().clone(),
+        sac: Inventaire::default(),
+        coffre_du_camp: Inventaire::default(),
+        marchand_au_camp: true,
+        ames_donnees: Vec::new(),
+        ames_portees: Vec::new(),
+        ames_a_retrouver: Vec::new(),
+        codex,
+        zones_explorees: Vec::new(),
+        indices_trouves: 0,
+        apotres_vaincus: contenu
+            .piste()
+            .apotres()
+            .map(|apotre| apotre.espece().id().clone())
+            .collect(),
+        humains_vaincus: Vec::new(),
+        conseils_vus: Vec::new(),
+        expeditions_automatiques: Vec::new(),
+        attaques_a_choisir: Vec::new(),
+        peche: Default::default(),
+        forge: Default::default(),
+        relations: Default::default(),
+        machines: Default::default(),
+        beherit: Default::default(),
+        records_de_la_tour: Default::default(),
+        rite: None,
+        paliers_du_codex: Vec::new(),
+        arene: Default::default(),
+    })
+    .unwrap();
+    let maintenant = Horodatage::depuis_secondes(0);
+    let mut vues = vec![Vue::Codex(None)];
+    vues.extend((1..3).map(Vue::PageDuCodex));
+    vues.extend((0..contenu.especes().len()).map(|position| Vue::Codex(Some(position))));
+    for vue in vues {
+        let question = question(&partie, vue, &contenu, maintenant);
+        assert!(
+            question.texte.chars().count() <= LONGUEUR_MAX,
+            "{}",
+            question.texte
+        );
+        assert!(question.rangees.len() <= RANGEES_MAX);
+    }
+}
+
 /// Les options de la forge et de l'équipement tiennent dans les limites de
 /// Discord, même avec tous les objets possédés et portés.
 #[test]

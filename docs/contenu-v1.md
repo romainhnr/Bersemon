@@ -1528,3 +1528,15 @@ Textes proposés sans validation (gamedesign.md, Q112) :
 | Fin du combat | Vous remportez le combat d'arène : votre cote passe à {cote} (+{gain}). / Vous perdez le combat d'arène : votre cote passe à {cote} (-{perte}). |
 | Classement de l'arène | Classement de l'arène. / Votre cote : {cote}. / Aucun combat d'arène pour l'instant. / {rang}. {héros} ({pseudo}) : {cote} ; boutons Classement de l'arène, Classement des duels, Records de la Tour |
 | Écran du combat | Combat d'arène contre {héros}. / Victoire : vous remportez le combat d'arène contre {héros}. / Défaite : {héros} remporte le combat d'arène. / {héros} jette son arme sur le sable. |
+
+## 38. Fiche du codex
+
+Décidée le 26/10/2026, pour l'étape 140 (gamedesign.md, section 5.6). Libellés proposés sans validation (gamedesign.md, Q113), dans l'ordre de la fiche, après les types, les habiletés et les stats de base :
+
+| Ligne | Texte |
+|---|---|
+| Attaques apprises | Attaques apprises : / puis une ligne par attaque : "niv. 1 : Griffure (Normal, physique, puissance 40, précision 100 %)", et pour l'attaque d'évolution : "niv. 16 (évolution) : Croc noir (Ténèbres, physique, puissance 75, précision 95 %)" |
+| Évolution | Évolution : Warg dès le niveau 16, après un combat de nuit. / Évolution : ??? dès le niveau 16, après un combat de nuit (espèce d'arrivée pas encore capturée). / Évolution : ???, condition inconnue (Apôtre pas encore abattu) |
+| Capsules | Capsules d'attaque possibles : / puis une ligne par capsule : "Sentence (Ténèbres, spéciale, puissance 80, précision 95 %)" ; ou "Capsules d'attaque possibles : aucune" |
+
+L'attaque d'œuf et le moment de sortie suivent, comme avant.

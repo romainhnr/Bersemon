@@ -585,20 +585,46 @@ mod tests {
             fiche.contains("\nHabileté : Traqueur (chance de capture x1,25 quand il est actif)\n"),
             "{fiche}"
         );
-        let espece = crate::partie::fiche_d_espece(loup.espece(), &contenu);
+        // Tout capturé et tous les Apôtres abattus : la fiche ne cache rien.
+        let mut codex = Codex::default();
+        for espece in contenu.especes() {
+            codex.noter_capture(espece.id());
+        }
+        let apotres: Vec<EspeceId> = contenu
+            .piste()
+            .apotres()
+            .map(|apotre| apotre.espece().id().clone())
+            .collect();
+        let fiche_complete = |espece: &bersemon_core::espece::Espece| {
+            crate::partie::fiche_d_espece(espece, &codex, &apotres, &contenu)
+        };
+        let espece = fiche_complete(loup.espece());
         assert_eq!(espece[1], "Habiletés possibles : Traqueur et Fouineur");
+        assert_eq!(espece[3], "Attaques apprises :");
         assert_eq!(
             espece[4],
+            "  niv. 1 : Griffure (Normal, physique, puissance 40, précision 100 %)"
+        );
+        let suite: Vec<&String> = espece
+            .iter()
+            .skip_while(|ligne| !ligne.starts_with("Évolution"))
+            .collect();
+        assert_eq!(
+            suite[0],
             "Évolution : Warg dès le niveau 16, après un combat de nuit"
         );
-        assert_eq!(
-            espece[5],
-            "Attaque d'œuf (Rite du sang mêlé) : Assaut de meute (Normal, physique, puissance 80, précision 100 %)"
+        assert_eq!(suite[1], "Capsules d'attaque possibles :");
+        assert!(
+            suite.contains(
+                &&"Attaque d'œuf (Rite du sang mêlé) : Assaut de meute (Normal, physique, puissance 80, précision 100 %)"
+                    .to_string()
+            ),
+            "{espece:?}"
         );
         // Le Loup ne sort que la nuit (section 9.6).
-        assert_eq!(espece[6], "Ne sort que la nuit.");
+        assert_eq!(espece.last().unwrap(), "Ne sort que la nuit.");
         let basilic = contenu.espece(&EspeceId::new("basilic")).unwrap();
-        let fiche_du_basilic = crate::partie::fiche_d_espece(&basilic, &contenu);
+        let fiche_du_basilic = fiche_complete(&basilic);
         assert!(
             fiche_du_basilic.contains(
                 &"Évolution : Basilic royal dès le niveau 22, après un combat sous la canicule"
@@ -608,7 +634,7 @@ mod tests {
         );
         let fiche = |id: &str| {
             let espece = contenu.espece(&EspeceId::new(id)).unwrap();
-            crate::partie::fiche_d_espece(&espece, &contenu)
+            fiche_complete(&espece)
                 .into_iter()
                 .find(|ligne| ligne.starts_with("Évolution"))
                 .unwrap()
@@ -625,6 +651,88 @@ mod tests {
             fiche("cerf-blanc"),
             "Évolution : Cerf de lune avec une pierre de lune"
         );
+    }
+
+    #[test]
+    fn la_fiche_ne_devoile_ni_l_evolution_pas_capturee_ni_l_apotre_pas_abattu() {
+        let contenu = ContenuV1::new();
+        let evolution = |id: &str, codex: &Codex, apotres: &[EspeceId]| {
+            let espece = contenu.espece(&EspeceId::new(id)).unwrap();
+            crate::partie::fiche_d_espece(&espece, codex, apotres, &contenu)
+                .into_iter()
+                .find(|ligne| ligne.starts_with("Évolution"))
+                .unwrap()
+        };
+        let mut codex = Codex::default();
+        assert_eq!(
+            evolution("loup", &codex, &[]),
+            "Évolution : ??? dès le niveau 16, après un combat de nuit"
+        );
+        // Rencontrée ne suffit pas : il faut l'avoir capturée.
+        codex.noter_rencontre(&EspeceId::new("warg"));
+        assert_eq!(
+            evolution("loup", &codex, &[]),
+            "Évolution : ??? dès le niveau 16, après un combat de nuit"
+        );
+        codex.noter_capture(&EspeceId::new("warg"));
+        assert_eq!(
+            evolution("loup", &codex, &[]),
+            "Évolution : Warg dès le niveau 16, après un combat de nuit"
+        );
+        assert_eq!(
+            evolution("squelette", &codex, &[]),
+            "Évolution : ???, condition inconnue"
+        );
+        codex.noter_capture(&EspeceId::new("chevalier-squelette"));
+        assert_eq!(
+            evolution("squelette", &codex, &[EspeceId::new("abbesse-ecorchee")]),
+            "Évolution : Chevalier squelette, condition inconnue"
+        );
+        assert_eq!(
+            evolution("squelette", &codex, &[EspeceId::new("baron-pendu")]),
+            "Évolution : Chevalier squelette dès le niveau 20, une fois l'Apôtre Baron pendu vaincu"
+        );
+    }
+
+    #[test]
+    fn la_fiche_signale_l_attaque_d_evolution_et_les_capsules() {
+        let contenu = ContenuV1::new();
+        let fiche = |id: &str| {
+            let espece = contenu.espece(&EspeceId::new(id)).unwrap();
+            crate::partie::fiche_d_espece(&espece, &Codex::default(), &[], &contenu)
+        };
+        let warg = fiche("warg");
+        let evolution: Vec<&String> = warg
+            .iter()
+            .filter(|ligne| ligne.contains("(évolution)"))
+            .collect();
+        assert_eq!(evolution.len(), 1, "{warg:?}");
+        assert!(
+            evolution[0].starts_with("  niv. 16 (évolution) : "),
+            "{warg:?}"
+        );
+        // Le Loup n'évolue de rien : aucune attaque d'évolution.
+        assert!(
+            !fiche("loup")
+                .iter()
+                .any(|ligne| ligne.contains("(évolution)"))
+        );
+        // Chaque capsule de son type, sauf celles que l'espèce apprend déjà.
+        for espece in contenu.especes() {
+            let lignes = fiche(espece.id().as_str());
+            for capsule in contenu.capsules() {
+                let ligne = format!("  {}", decrire_attaque(capsule.attaque()));
+                let attendue =
+                    capsule.convient_a(espece) && espece.attaque_apprise(capsule.id()).is_none();
+                assert_eq!(
+                    lignes.contains(&ligne),
+                    attendue,
+                    "{} : {}",
+                    espece.nom(),
+                    capsule.attaque().nom()
+                );
+            }
+        }
     }
 
     #[test]
