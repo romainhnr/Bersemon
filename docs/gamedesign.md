@@ -199,6 +199,9 @@ Chaque monstre possède :
 - une habileté unique (équivalent des talents de Pokémon), qui a un effet secondaire lors des expéditions, des combats, etc. Les habiletés sont hors V1 ; elles arrivent à l'étape 28 (section 5.9) ;
 - une faible chance d'être "shiny", 1 sur 512 pour un monstre sauvage comme pour le monstre de départ : sa couleur change, sans incidence sur les stats. Dans la console, un shiny est signalé par la mention "(shiny)" après son nom. Depuis l'étape 28 (19/10/2026), un shiny a 31 dans chaque valeur interne : ses valeurs internes ne sont plus tirées, et les shiny des sauvegardes antérieures passent à 31 à leur reprise ;
 - un sprite (une image), pour rendre le jeu plus vivant. La console de la V1 n'affiche pas d'image, et le jeu reste textuel sur Discord pour l'instant : les sprites viendront plus tard, une fois décidées la source des images et leurs droits.
+- Décidé le 26/10/2026, pour les étapes 152 à 154 (choix de l'utilisateur, Q64) : chaque espèce a un sprite en pixel art, dessiné par Claude, de 24 x 24 pixels, avec un contour sombre, la lumière en haut à gauche et le profil tourné vers la gauche. Le shiny a son propre sprite : le même dessin, avec une autre palette. Pas de droits à régler : le jeu les possède. Format et liste dans docs/contenu-v1.md, section 42.
+  - Sur Discord, le sprite est joint au message, agrandi six fois (144 pixels de côté) : l'adversaire actif en combat, en duel ou en groupe ; le monstre rare pacifique, la prise de la pêche et la capture qui attend une place ; le monstre qui vient de rejoindre l'équipe ou le camp ; au camp, l'espèce de la fiche ouverte du codex et le monstre choisi dans la gestion. Un monstre shiny montre son sprite shiny ; la fiche du codex, le sprite normal.
+  - La console reste textuelle : elle n'affiche aucun sprite.
 
 ### 5.2 Types
 
@@ -1206,7 +1209,6 @@ Les questions Q16 et suivantes ont été relevées le 17/10/2026 lors du découp
 
 Les questions Q59 et suivantes ont été relevées le 18/10/2026 lors du découpage de l'adaptation à Discord en étapes : 9 déroulement de la partie commun à la console et au bot, 10 squelette du bot, 11 une partie par joueur Discord, 12 jeu complet sur Discord, 13 déploiement.
 
-- Q64. (Après l'étape 12) Sprites des monstres (section 5.1) : source des images et droits d'utilisation.
 
 Les questions Q65 et suivantes ont été relevées le 18/10/2026 lors de la conception des expéditions automatiques, découpées en étapes : 14 règles du noyau, 15 déroulement et sauvegarde en version 3, 16 console, 17 bot Discord.
 
@@ -1286,6 +1288,10 @@ Les questions Q101 et suivantes ont été relevées le 24/10/2026 lors de la con
 Les questions Q102 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 103 filets dans le noyau, avec la sauvegarde en version 27, 104 vente par Malvoise et fabrication par Gunther, 105 écrans de la console, 106 écrans du bot Discord.
 
 Les questions Q103 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 107 carnet de traque du codex et 108 Philtre chromatique.
+
+Les questions Q115 et suivantes ont été relevées le 26/10/2026 lors de la conception des étapes 152 format des sprites et encodeur PNG, 153 affichage sur Discord, 154 sprites de toutes les espèces.
+
+- Q115. (Étapes 152 à 154) Hypothèses retenues, à confirmer : un seul sprite à la fois, celui de l'adversaire actif en combat (pas celui du monstre du joueur) ; le monstre qui vient de rejoindre l'équipe ou le camp l'emporte sur la fiche ouverte au camp ; aucun sprite pour un humain, ni pour l'annonce d'un combat ; un sprite sans palette shiny complète est refusé. Dessins, couleurs et palettes shiny proposés par Claude : style validé par l'utilisateur sur les cinq premiers, à vérifier espèce par espèce.
 
 Les questions Q114 et suivantes ont été relevées le 26/10/2026 lors de la conception des étapes 145 second type des classes, 146 mesure de la Fosse aux damnés, 147 PV du héros, 148 paliers rapprochés, 149 attaques du second type, 150 bouton Multijoueur et attaque d'évolution au codex, et 151 adversaires miroirs.
 
@@ -1884,4 +1890,11 @@ Les questions Q104 et suivantes ont été relevées le 25/10/2026 lors de la con
 - Claude a relevé que l'attaque d'évolution n'était déjà que sur la page de l'espèce d'arrivée, signalée "(évolution)" ; l'utilisateur a choisi une mention plus claire.
 - Claude a relevé, en mesurant, que les attaques du second type rendaient certains paliers de la Fosse impossibles à gagner pour certaines classes, le Templier ne pouvant pas dépasser le palier 7. Choix de l'utilisateur : les paliers 7, 9 et 10 prennent la classe du héros (section 9.8 ; docs/equilibrage.md, section 13).
 - Hypothèses retenues, à confirmer : Q114.
+
+26/10/2026 (conception des étapes 152 à 154, sprites des monstres) :
+
+- Demande de l'utilisateur : ajouter les sprites. Choix de l'utilisateur (Q64) : du pixel art dessiné par Claude, affiché sur Discord en combat, au codex, sur la fiche d'un monstre et à la rencontre ou la capture ; rien dans la console ; un sprite shiny obligatoire pour chaque espèce, fait d'une autre palette sur le même dessin (section 5.1).
+- Style validé par l'utilisateur sur une planche de cinq espèces : 24 x 24 pixels, agrandis six fois sur Discord.
+- Le bot écrit lui-même les PNG, sans crate : image à palette, non compressée.
+- Hypothèses retenues, à confirmer : Q115.
 

@@ -1,0 +1,42 @@
+# Chat noir
+palette
+o 0c0a10
+b 35303f
+c 221e2a
+d 4d4759
+r 8a4a5a
+y f2c230
+z fff2a0
+shiny
+o 0c0a10
+b 6a6f80
+c 484c5a
+d 8c92a6
+r c07a8a
+y 5ae0d0
+z d0fff8
+dessin
+........................
+........................
+......o....o............
+.....oco..oco...........
+.....oro..ocro..........
+....odbcoodbco..........
+....odbbddbbco..........
+....ocbbbbbbco..........
+.....odzbbzbco......oo..
+....ocbybbybbco....odco.
+.....odbbbbbco.....odco.
+....orcbbbbbbcooo..odco.
+.....ooccbbbbbddco.odbco
+.......oodbbbbbbbcoocbco
+........odbbbbbbbco.odco
+........odbbbbbbbco.odco
+.......ocbbbbbbbbbcodbco
+........odbbbbbbbcodbco.
+........odbbbbbbbbdbbco.
+........odbbbbbbbbbbco..
+........odbcbbcccbbco...
+........occoccooocco....
+.........oo.oo...oo.....
+........................

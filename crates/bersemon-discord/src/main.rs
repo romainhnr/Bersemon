@@ -29,6 +29,7 @@ mod message;
 mod messages_prives;
 #[cfg(test)]
 mod simulation;
+mod sprites;
 
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
