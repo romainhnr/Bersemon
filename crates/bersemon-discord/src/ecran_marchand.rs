@@ -20,17 +20,18 @@ use bersemon_presentation::marchand::{
 use bersemon_presentation::monstres::decrire_attaque;
 use bersemon_presentation::partie::argent;
 use bersemon_presentation::rite::{etat_du_rite, service_du_rite};
-use bersemon_presentation::soins::{le_soin, soins};
+use bersemon_presentation::soins::{effet_du_soin, le_soin, soins};
 
-use crate::composants::{BEHERIT, Cle, Vue};
+use crate::composants::{BEHERIT, Cle, Vue, lot_de_soins_en_texte};
 use crate::ecran_camp::{menus_de_monstres_decrits, retour};
 use crate::message::{
     DANGER, OptionDeMenu, PRINCIPAL, Question, Rangee, SECONDAIRE, bouton, menu, rangees,
 };
 
-/// Soins achetés d'un bouton, par 1 ou par 5 ; l'élixir et le grand élixir,
-/// chers, par 1 seulement : au plus 8 boutons, que complètent les 2 filets
-/// en vente pour remplir deux rangées (section 14.4).
+/// Soins achetés par 1 ou par 5 ; l'élixir et le grand élixir, chers, par 1
+/// seulement (section 14.4). Avec la panacée, leurs boutons et ceux des
+/// filets dépasseraient deux rangées : les soins se choisissent dans un
+/// menu.
 const LOTS_DE_SOINS: [u32; 2] = [1, 5];
 /// Filets achetés d'un bouton : le lot que forge Gunther (section 13.5).
 const LOT_DE_FILETS: u32 = 5;
@@ -39,7 +40,7 @@ pub fn etal(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Que
     if !partie.marchand_au_camp() {
         return sans_marchand();
     }
-    let mut achats: Vec<_> = partie
+    let lots_de_soins: Vec<OptionDeMenu> = partie
         .soins_en_vente()
         .into_iter()
         .flat_map(|soin| {
@@ -50,15 +51,17 @@ pub fn etal(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Que
             };
             lots.iter().map(move |nombre| (soin, *nombre))
         })
-        .map(|(soin, nombre)| {
-            let libelle = format!(
-                "Acheter {} ({})",
+        .map(|(soin, nombre)| OptionDeMenu {
+            libelle: format!(
+                "{} : {}",
                 soins(soin, nombre),
                 argent(nombre * prix_du_soin(soin))
-            );
-            bouton(Cle::AcheterSoins(soin, nombre), &libelle, PRINCIPAL)
+            ),
+            valeur: lot_de_soins_en_texte(soin, nombre),
+            description: Some(effet_du_soin(soin).to_string()),
         })
         .collect();
+    let mut achats = Vec::new();
     for filet in partie.filets_en_vente() {
         let Some(prix) = prix_du_filet(filet) else {
             continue;
@@ -75,6 +78,7 @@ pub fn etal(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Que
         ));
     }
     let mut lignes: Vec<Rangee> = rangees(achats);
+    lignes.extend(menu(Cle::AcheterSoins, "Acheter des soins", lots_de_soins));
     let capsules = capsules_en_vente(partie, contenu.capsules())
         .into_iter()
         .map(|capsule| OptionDeMenu {

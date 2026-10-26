@@ -1052,6 +1052,8 @@ Premier marchand, après la V1 :
 - Ces soins s'utilisent comme la potion : en combat, comme action du tour, ou entre deux étapes. Ils se rangent dans le sac et le coffre, se perdent avec le sac et ne se trouvent pas dans les coffres. Comme une potion sur un monstre qui a tous ses PV, un soin sans effet (un remède sur un monstre sans statut, un élixir sur un monstre qui n'est pas KO) demande confirmation et serait consommé pour rien. Une potion, une grande potion ou un remède ne relève pas un monstre KO.
 - Décidé le 25/10/2026, pour l'étape 134 (choix de l'utilisateur) : le grand élixir, 400 pièces d'argent, relève un monstre KO avec tous ses PV max, comme le Rappel max de Pokémon. Malvoise le vend avec l'élixir, une fois l'âme d'Ulrich recueillie ; il s'utilise comme lui. Précisé à l'étape 134, en codant : sauvegarde en version 32 ; sur Discord, l'élixir et le grand élixir s'achètent par 1 seulement, et non plus aussi par 5, pour que l'étal de Malvoise garde ses boutons sur deux rangées ; le menu des objets à jeter d'un sac plein gagne une option.
 - Depuis l'étape 130, les potions, grandes potions et remèdes servent aussi sur le héros quand il a perdu des PV ou subi un statut ; les élixirs ne servent que sur les monstres (section 4.4).
+- Décidé le 26/10/2026, pour l'étape 142 (contenu proposé par Claude, sans validation, Q113) : la panacée, 120 pièces d'argent, rend tous les PV max et guérit le poison ou la paralysie, comme la Guérison de Pokémon ; elle ne relève pas un monstre KO. Malvoise la vend une fois recueillie l'âme de Hilde, la marchande morte du Désert de sel (sections 9.1 et 14.2) : il fallait un nouvel objet à ce marchand mort, que l'utilisateur a choisi pour la zone. Elle s'utilise comme une potion, sur un monstre comme sur le héros, et n'est sans effet que sur une cible qui a tous ses PV et aucun statut. Sauvegarde en version 34.
+  - Précisé en codant : sur Discord, l'étal n'a plus la place d'un bouton de plus, ses deux rangées de boutons d'achat étant pleines avec le grand élixir. Les soins s'y achètent désormais dans un menu "Acheter des soins", une option par lot (par 1 et par 5, l'élixir et le grand élixir par 1), avec l'effet du soin en description ; les filets gardent leurs boutons.
 
 ### 14.5 Montants (après la V1)
 
@@ -1251,9 +1253,9 @@ Les questions Q102 et suivantes ont été relevées le 25/10/2026 lors de la con
 
 Les questions Q103 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 107 carnet de traque du codex et 108 Philtre chromatique.
 
-Les questions Q113 et suivantes ont été relevées le 26/10/2026 lors de la conception de l'étape 140, fiche du codex.
+Les questions Q113 et suivantes ont été relevées le 26/10/2026 lors de la conception des étapes 140 fiche du codex, 141 suite de la piste et 142 panacée.
 
-- Q113. (Étape 140) Hypothèses retenues, à confirmer : les capsules que l'espèce apprend déjà par niveau ne sont pas répétées parmi ses capsules possibles ; une évolution seulement rencontrée reste "???" ; la condition masquée cache aussi le niveau ; la fiche d'un Apôtre abattu suit les mêmes règles.
+- Q113. (Étapes 140 à 142) Hypothèses retenues, à confirmer : les capsules que l'espèce apprend déjà par niveau ne sont pas répétées parmi ses capsules possibles ; une évolution seulement rencontrée reste "???" ; la condition masquée cache aussi le niveau ; la fiche d'un Apôtre abattu suit les mêmes règles. La panacée et son prix, 120 pièces d'argent, sont proposés sans validation, comme le menu des soins de l'étal sur Discord.
 
 Les questions Q112 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 128 type Humain, 129 armes et armures de classe, 130 héros combattant dans le noyau, 131 héros des humains, des duels et du groupe, 132 écrans de la console, 133 écrans du bot Discord, 134 grand élixir, 135 Fosse aux damnés dans le noyau, 136 et 137 ses écrans, 138 arène entre joueurs, 139 outil d'équilibrage.
 

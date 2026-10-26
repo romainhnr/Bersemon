@@ -1,8 +1,9 @@
 //! Soins du joueur (section 14.4) : la potion de la V1, puis le remède, la
 //! grande potion et l'élixir, vendus par Malvoise une fois l'âme de leur
-//! marchand recueillie (section 14.2), et le grand élixir, ajouté à l'étape
-//! 134, avec l'élixir. Ils s'utilisent en combat, comme action du tour, ou
-//! entre deux étapes d'une expédition.
+//! marchand recueillie (section 14.2), le grand élixir, ajouté à l'étape
+//! 134, avec l'élixir, et la panacée, ajoutée à l'étape 142 avec Hilde, la
+//! marchande morte du Désert de sel. Ils s'utilisent en combat, comme
+//! action du tour, ou entre deux étapes d'une expédition.
 
 use std::fmt;
 
@@ -27,15 +28,19 @@ pub enum Soin {
     /// Relève un monstre KO avec tous ses PV, comme le Rappel max de Pokémon
     /// (section 14.4).
     GrandElixir,
+    /// Rend tous les PV et guérit le poison ou la paralysie, comme la
+    /// Guérison de Pokémon, sans relever un monstre KO (section 14.4).
+    Panacee,
 }
 
 impl Soin {
-    pub const TOUS: [Soin; 5] = [
+    pub const TOUS: [Soin; 6] = [
         Soin::Potion,
         Soin::Remede,
         Soin::GrandePotion,
         Soin::Elixir,
         Soin::GrandElixir,
+        Soin::Panacee,
     ];
 
     fn position(self) -> usize {
@@ -45,6 +50,7 @@ impl Soin {
             Soin::GrandePotion => 2,
             Soin::Elixir => 3,
             Soin::GrandElixir => 4,
+            Soin::Panacee => 5,
         }
     }
 
@@ -65,7 +71,7 @@ impl Soin {
 
 /// Le nombre de chaque soin, dans le sac, le coffre du camp ou un combat.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub struct Soins([u32; 5]);
+pub struct Soins([u32; 6]);
 
 impl Soins {
     pub fn nombre(&self, soin: Soin) -> u32 {
@@ -107,6 +113,8 @@ pub enum EffetDuSoin {
     PvRendus(u32),
     /// Le remède a guéri ce statut, ou rien.
     StatutGueri(Option<Statut>),
+    /// La panacée a rendu ces PV et guéri ce statut.
+    ToutGueri { pv: u32, statut: Option<Statut> },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -147,6 +155,7 @@ pub fn soin_sans_effet(soin: Soin, monstre: &Monstre) -> bool {
         Soin::Potion | Soin::GrandePotion => monstre.pv_actuels() >= monstre.stats().pv,
         Soin::Remede => monstre.statut().is_none(),
         Soin::Elixir | Soin::GrandElixir => !monstre.est_ko(),
+        Soin::Panacee => monstre.pv_actuels() >= monstre.stats().pv && monstre.statut().is_none(),
     }
 }
 
@@ -164,6 +173,10 @@ pub(crate) fn appliquer_soin(
             Soin::Potion | Soin::GrandePotion | Soin::Elixir | Soin::GrandElixir => {
                 EffetDuSoin::PvRendus(0)
             }
+            Soin::Panacee => EffetDuSoin::ToutGueri {
+                pv: 0,
+                statut: None,
+            },
         };
     }
     match soin {
@@ -183,6 +196,13 @@ pub(crate) fn appliquer_soin(
             EffetDuSoin::PvRendus(monstre.relever(pv))
         }
         Soin::GrandElixir => EffetDuSoin::PvRendus(monstre.relever(monstre.stats().pv)),
+        Soin::Panacee => {
+            let pv = monstre.soigner(monstre.stats().pv);
+            EffetDuSoin::ToutGueri {
+                pv,
+                statut: monstre.guerir_statut(),
+            }
+        }
     }
 }
 
@@ -232,6 +252,33 @@ mod tests {
             EffetDuSoin::PvRendus(20)
         );
         assert_eq!(Soin::GrandElixir.vendu_avec(), Soin::Elixir);
+    }
+
+    /// Section 14.4, décidée le 26/10/2026 pour l'étape 142.
+    #[test]
+    fn une_panacee_rend_tous_les_pv_et_guerit_le_statut_sans_relever() {
+        let mut monstre = blesse(5);
+        monstre.infliger_statut(Statut::Paralysie);
+        assert!(!soin_sans_effet(Soin::Panacee, &monstre));
+        assert_eq!(
+            appliquer(Soin::Panacee, &mut monstre, &[]),
+            EffetDuSoin::ToutGueri {
+                pv: 15,
+                statut: Some(Statut::Paralysie)
+            }
+        );
+        assert_eq!(monstre.pv_actuels(), 20);
+        assert_eq!(monstre.statut(), None);
+        assert!(soin_sans_effet(Soin::Panacee, &monstre));
+        // Un statut seul suffit à lui donner un effet.
+        monstre.infliger_statut(Statut::Poison);
+        assert!(!soin_sans_effet(Soin::Panacee, &monstre));
+        let ko = blesse(0);
+        assert_eq!(
+            verifier_cible(Soin::Panacee, &ko),
+            Err(ErreurSoin::MonstreKo)
+        );
+        assert_eq!(Soin::Panacee.vendu_avec(), Soin::Panacee);
     }
 
     #[test]

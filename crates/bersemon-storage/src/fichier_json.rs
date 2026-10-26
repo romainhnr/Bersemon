@@ -413,6 +413,7 @@ mod tests {
                 .avec_soins(Soin::GrandePotion, 1)
                 .avec_soins(Soin::Elixir, 3)
                 .avec_soins(Soin::GrandElixir, 1)
+                .avec_soins(Soin::Panacee, 2)
                 .avec_capsules_d_habilete(2)
                 .avec_ressources(croc(), 4)
                 .avec_pierres(PierreDEvolution::Lune, 2)

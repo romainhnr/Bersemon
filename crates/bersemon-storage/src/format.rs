@@ -48,7 +48,7 @@ use bersemon_core::zone::{Zone, ZoneId};
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 33;
+pub(crate) const VERSION: u64 = 34;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -343,6 +343,9 @@ struct InventaireV7 {
     /// Depuis la version 32 (section 14.4).
     #[serde(default)]
     grands_elixirs: u32,
+    /// Depuis la version 34 (section 14.4).
+    #[serde(default)]
+    panacees: u32,
     /// Identifiants de leurs attaques.
     #[serde(default)]
     capsules: Vec<String>,
@@ -804,6 +807,7 @@ fn depuis_inventaire(inventaire: &Inventaire) -> InventaireV7 {
         grandes_potions: inventaire.soins().nombre(Soin::GrandePotion),
         elixirs: inventaire.soins().nombre(Soin::Elixir),
         grands_elixirs: inventaire.soins().nombre(Soin::GrandElixir),
+        panacees: inventaire.soins().nombre(Soin::Panacee),
         capsules: inventaire
             .capsules()
             .iter()
@@ -865,6 +869,7 @@ fn vers_inventaire(
         .avec_soins(Soin::GrandePotion, inventaire.grandes_potions)
         .avec_soins(Soin::Elixir, inventaire.elixirs)
         .avec_soins(Soin::GrandElixir, inventaire.grands_elixirs)
+        .avec_soins(Soin::Panacee, inventaire.panacees)
         .avec_capsules_d_habilete(inventaire.capsules_d_habilete);
     // Une ressource disparue du jeu ne se vend plus : elle est oubliée,
     // comme une âme dont le marchand a disparu.

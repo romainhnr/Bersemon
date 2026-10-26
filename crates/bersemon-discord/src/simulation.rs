@@ -28,7 +28,9 @@ use bersemon_core::types::{Efficacite, efficacite};
 use bersemon_core::zone::ZoneId;
 use bersemon_presentation::marchand::ressources_a_vendre;
 
-use crate::composants::{BEHERIT, Choisis, Cle, Commande, Composant, ECLIPSE, RETIRER, Vue};
+use crate::composants::{
+    BEHERIT, Choisis, Cle, Commande, Composant, ECLIPSE, RETIRER, Vue, lot_de_soins_en_texte,
+};
 use crate::joueurs::{IdJoueur, Joueurs, Session};
 use crate::message::{
     BOUTONS_PAR_RANGEE, LONGUEUR_MAX, Message, OPTIONS_PAR_MENU, RANGEES_MAX, Rangee, message,
@@ -241,9 +243,11 @@ fn visite_au_marchand(session: &Session, message: &Message, visite: Visite) -> O
             Some(cliquer(message, |cle| *cle == Cle::Afficher(Vue::Coffre)))
         }
         (Vue::Camp, _) => Some(cliquer(message, |cle| *cle == Cle::Afficher(Vue::Marchand))),
-        (Vue::Marchand, Visite::AFaire) => Some(cliquer(message, |cle| {
-            *cle == Cle::AcheterSoins(Soin::Potion, 1)
-        })),
+        (Vue::Marchand, Visite::AFaire) => choisir_dans(
+            message,
+            |cle| *cle == Cle::AcheterSoins,
+            &lot_de_soins_en_texte(Soin::Potion, 1),
+        ),
         (Vue::Marchand, Visite::PotionAchetee) => {
             Some(cliquer(message, |cle| *cle == Cle::Afficher(Vue::Vente)))
         }
@@ -1861,6 +1865,7 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
             Soin::GrandePotion,
             Soin::Elixir,
             Soin::GrandElixir,
+            Soin::Panacee,
         ] {
             inventaire = inventaire.avec_soins(soin, 7);
         }
@@ -1970,11 +1975,11 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
                 _ => None,
             })
             .collect();
-        // 5 soins, 3 filets, les capsules d'habileté, 2 pierres, 6
+        // 6 soins, 3 filets, les capsules d'habileté, 2 pierres, 6
         // boosters, les Philtres chromatiques et les charmes de garde.
         assert_eq!(
             menus,
-            vec![(&Cle::Jeter, 19), (&Cle::JeterUneRessource, sortes.len())]
+            vec![(&Cle::Jeter, 20), (&Cle::JeterUneRessource, sortes.len())]
         );
         verifier_les_limites(&Message {
             texte: sac_plein.texte,

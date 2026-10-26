@@ -1540,3 +1540,9 @@ Décidée le 26/10/2026, pour l'étape 140 (gamedesign.md, section 5.6). Libell�
 | Capsules | Capsules d'attaque possibles : / puis une ligne par capsule : "Sentence (Ténèbres, spéciale, puissance 80, précision 95 %)" ; ou "Capsules d'attaque possibles : aucune" |
 
 L'attaque d'œuf et le moment de sortie suivent, comme avant.
+
+## 39. Panacée
+
+Décidée le 26/10/2026, pour l'étape 142 (gamedesign.md, section 14.4) : panacée (identifiant panacee), 120 pièces d'argent, rend tous les PV max et guérit le poison ou la paralysie, sans relever un monstre KO. Vendue par Malvoise une fois l'âme de Hilde recueillie (section 40).
+
+Textes proposés sans validation (gamedesign.md, Q113) : Panacée ; 1 panacée, 3 panacées ; La panacée ; rend tous les PV max et guérit le poison ou la paralysie ; {monstre} récupère {pv} PV. ; {monstre} récupère {pv} PV et guérit du poison. (ou de la paralysie) ; La panacée guérit {monstre} du poison. (ou de la paralysie, quand il a tous ses PV) ; {monstre} a déjà tous ses PV, sans poison ni paralysie : la panacée serait perdue. L'utiliser quand même ? ; Vous n'avez plus de panacée. Sur Discord, le menu de l'étal : "Acheter des soins", options "5 potions : 100 pièces d'argent", avec l'effet du soin en description.

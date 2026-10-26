@@ -291,7 +291,8 @@ pub enum Cle {
     },
     Accueillir(ZoneId),
     Rappeler(ZoneId),
-    AcheterSoins(Soin, u32),
+    /// Menu des lots de soins en vente (section 14.4).
+    AcheterSoins,
     /// Un lot de filets, chez Malvoise (section 14.2).
     AcheterFilets(Filet, u32),
     /// Menu des capsules en vente.
@@ -531,7 +532,10 @@ impl Cle {
             }),
             Cle::Accueillir(zone) => jouer(Choix::AccueillirExpeditionAutomatique(zone.clone())),
             Cle::Rappeler(zone) => jouer(Choix::RappelerExpeditionAutomatique(zone.clone())),
-            Cle::AcheterSoins(soin, nombre) => jouer(Choix::AcheterSoins(*soin, *nombre)),
+            Cle::AcheterSoins => {
+                let (soin, nombre) = lire_lot_de_soins(valeur?)?;
+                jouer(Choix::AcheterSoins(soin, nombre))
+            }
             Cle::AcheterFilets(filet, nombre) => jouer(Choix::AcheterFilets(*filet, *nombre)),
             Cle::AcheterCapsule => jouer(Choix::AcheterCapsule(AttaqueId::new(valeur?))),
             // Les âmes des Apôtres se donnent ensemble, depuis le même menu
@@ -743,9 +747,7 @@ impl Cle {
             }
             Cle::Accueillir(zone) => format!("accueillir:{}", zone.as_str()),
             Cle::Rappeler(zone) => format!("rappeler:{}", zone.as_str()),
-            Cle::AcheterSoins(soin, nombre) => {
-                format!("acheter-soins:{}:{nombre}", soin_en_texte(*soin))
-            }
+            Cle::AcheterSoins => "acheter-soins".to_string(),
             Cle::AcheterFilets(filet, nombre) => {
                 format!("acheter-filets:{}:{nombre}", filet.id())
             }
@@ -923,6 +925,7 @@ impl Cle {
             "reclamer-codex" => Cle::ReclamerRecompenseDuCodex,
             "fabriquer" => Cle::Fabriquer,
             "se-suicider" => Cle::SeSuicider,
+            "acheter-soins" => Cle::AcheterSoins,
             "acheter-capsule" => Cle::AcheterCapsule,
             "acheter-capsule-d-habilete" => Cle::AcheterCapsuleDHabilete,
             "acheter-monstre" => Cle::AcheterMonstre,
@@ -1039,10 +1042,6 @@ impl Cle {
                     }
                     "accueillir" => Cle::Accueillir(ZoneId::new(parametre)),
                     "rappeler" => Cle::Rappeler(ZoneId::new(parametre)),
-                    "acheter-soins" => {
-                        let (soin, nombre) = parametre.split_once(':')?;
-                        Cle::AcheterSoins(lire_soin(soin)?, nombre.parse().ok()?)
-                    }
                     "acheter-filets" => {
                         let (filet, nombre) = parametre.split_once(':')?;
                         Cle::AcheterFilets(Filet::depuis_id(filet)?, nombre.parse().ok()?)
@@ -1182,6 +1181,7 @@ pub fn soin_en_texte(soin: Soin) -> &'static str {
         Soin::GrandePotion => "grande-potion",
         Soin::Elixir => "elixir",
         Soin::GrandElixir => "grand-elixir",
+        Soin::Panacee => "panacee",
     }
 }
 
@@ -1200,6 +1200,16 @@ pub fn soin_et_position_en_texte(soin: Soin, index: usize) -> String {
 fn lire_soin_et_position(texte: &str) -> Option<(Soin, usize)> {
     let (soin, index) = texte.split_once(':')?;
     Some((lire_soin(soin)?, index.parse().ok()?))
+}
+
+/// Valeur d'option du menu des soins de l'étal : le soin, puis le nombre.
+pub fn lot_de_soins_en_texte(soin: Soin, nombre: u32) -> String {
+    format!("{}:{nombre}", soin_en_texte(soin))
+}
+
+fn lire_lot_de_soins(texte: &str) -> Option<(Soin, u32)> {
+    let (soin, nombre) = texte.split_once(':')?;
+    Some((lire_soin(soin)?, nombre.parse().ok()?))
 }
 
 /// Valeur d'option des menus du coffre : `soins:` suivi du soin et de la
@@ -1423,8 +1433,7 @@ mod tests {
             Cle::Afficher(Vue::Marchand),
             Cle::Afficher(Vue::Vente),
             Cle::Afficher(Vue::Attaques(Emplacement::Camp(29))),
-            Cle::AcheterSoins(Soin::Potion, 5),
-            Cle::AcheterSoins(Soin::GrandePotion, 1),
+            Cle::AcheterSoins,
             Cle::AcheterFilets(Filet::Chanvre, 5),
             Cle::AcheterFilets(Filet::Leste, 5),
             Cle::AcheterCapsule,
@@ -1745,6 +1754,10 @@ mod tests {
             Some(Commande::Jouer(Choix::Vendre(Emplacement::Camp(12))))
         );
         assert_eq!(Cle::AcheterCapsule.commande(None, None), None);
+        assert_eq!(
+            Cle::AcheterSoins.commande(Some(&lot_de_soins_en_texte(Soin::Panacee, 5)), None),
+            Some(Commande::Jouer(Choix::AcheterSoins(Soin::Panacee, 5)))
+        );
     }
 
     #[test]
