@@ -110,6 +110,10 @@ pub struct AdversaireDeLArene {
     ia: IaHumain,
     presentation: String,
     recompense: RecompenseDeLArene,
+    /// Pour un adversaire miroir, l'arme de chaque classe : il prend la
+    /// classe du héros qui l'affronte, pour un combat à chances égales que
+    /// les affinités de types ne décident pas d'avance (section 9.8).
+    armes_du_miroir: Vec<ObjetDEquipement>,
 }
 
 impl AdversaireDeLArene {
@@ -133,7 +137,32 @@ impl AdversaireDeLArene {
             ia,
             presentation: presentation.into(),
             recompense,
+            armes_du_miroir: Vec::new(),
         }
+    }
+
+    pub fn en_miroir(mut self, armes: Vec<ObjetDEquipement>) -> Self {
+        self.armes_du_miroir = armes;
+        self
+    }
+
+    pub fn est_un_miroir(&self) -> bool {
+        !self.armes_du_miroir.is_empty()
+    }
+
+    /// Tel que l'affronte un héros de cette classe : un adversaire miroir
+    /// prend sa classe et l'arme de sa classe ; les autres ne changent pas.
+    pub fn face_a(&self, classe: Classe) -> AdversaireDeLArene {
+        let mut adversaire = self.clone();
+        if let Some(arme) = self
+            .armes_du_miroir
+            .iter()
+            .find(|arme| arme.classe() == Some(classe))
+        {
+            adversaire.classe = classe;
+            adversaire.arme = Some(arme.clone());
+        }
+        adversaire
     }
 
     pub fn id(&self) -> &HumainId {

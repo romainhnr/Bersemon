@@ -252,3 +252,46 @@ Mesuré avant le choix de l'utilisateur, sur 100 parties par classe et 200 comba
 
 Constats : plus de PV allongent les combats entre humains, un peu moins qu'en proportion des PV gagnés (avec x2, un héros de niveau 35 a 1,56 fois plus de PV et ses combats durent environ 1,45 fois plus longtemps) ; ils ne changent pas qui gagne à la Fosse, où un héros de 5 niveaux de plus gagne toujours et un héros de 5 niveaux de moins perd toujours, quels que soient les PV. Dans les expéditions, les écarts sont de l'ordre du bruit : les défaites un peu plus nombreuses et la Pythie un peu plus dure avec x2 ne se retrouvent ni avec x1,5 ni avec x3. L'utilisateur a retenu x2.
 
+## 13. Paliers rapprochés, attaques du second type et adversaires miroirs (étapes 148 à 151)
+
+Mesuré sur 100 parties par classe et 200 combats par case de la Fosse. Avec les niveaux fixés de l'étape 148 (10, 13, 16, 18, 21, 24, 27, 29, 32, 35) et les attaques du second type de l'étape 149, chaque palier d'équipement fait gagner un palier de plus ou deux, mais les affinités de types décidaient de certains combats d'avance, quel que soit le niveau :
+
+| Palier | Classes qui ne le gagnaient pas au niveau 35 |
+|---|---|
+| 7, Sorcière des cendres (Mage, 27) | Templier (0 %, 88 % au niveau 40) ; le Guerrier gagnait 37 % |
+| 9, Gladiateur (Guerrier, 32) | Templier et Assassin (0 %, même au niveau 40) |
+| 10, Champion de la Fosse (Assassin, 35) | Mage et Templier (0 %, même au niveau 40) |
+
+Le niveau 40 demande l'arme du palier 4, récompense du palier 10 : un Templier ne pouvait pas dépasser le palier 7. Après l'étape 151, où ces trois adversaires prennent la classe du héros, part de victoires selon le niveau de combat du héros, moyenne des quatre classes :
+
+| Palier | Adversaire (classe, niveau, types) | 10 | 15 | 20 | 25 | 30 | 35 | 40 | Tours |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | Le Gueux (Guerrier, 10, Humain) | 18 % | 100 % | 100 % | 100 % | 100 % | 100 % | 100 % | 2,0 |
+| 2 | Le Coupe-jarret (Assassin, 13, Humain) | 9 % | 100 % | 100 % | 100 % | 100 % | 100 % | 100 % | 2,1 |
+| 3 | Le Novice de l'ordre (Templier, 16, Humain) | 0 % | 19 % | 100 % | 100 % | 100 % | 100 % | 100 % | 3,3 |
+| 4 | L'Apprenti nécromant (Mage, 18, Humain) | 0 % | 0 % | 75 % | 100 % | 100 % | 100 % | 100 % | 2,0 |
+| 5 | Le Mercenaire (Guerrier, 21, Humain) | 0 % | 0 % | 4 % | 99 % | 100 % | 100 % | 100 % | 2,3 |
+| 6 | La Lame noire (Assassin, 24, Humain) | 0 % | 0 % | 1 % | 50 % | 73 % | 100 % | 100 % | 1,9 |
+| 7 | La Sorcière des cendres (classe du héros, 27) | 0 % | 0 % | 0 % | 0 % | 100 % | 100 % | 100 % | 3,6 |
+| 8 | Le Templier renégat (Templier, 29, Humain, Lumière) | 0 % | 0 % | 0 % | 75 % | 100 % | 100 % | 100 % | 4,0 |
+| 9 | Le Gladiateur (classe du héros, 32) | 0 % | 0 % | 0 % | 0 % | 1 % | 100 % | 100 % | 3,8 |
+| 10 | Le Champion de la Fosse (classe du héros, 35) | 0 % | 0 % | 0 % | 0 % | 0 % | 51 % | 100 % | 3,6 |
+
+Niveau de combat à partir duquel chaque classe gagne au moins une fois sur deux :
+
+| Palier | Guerrier | Mage | Templier | Assassin |
+|---|---|---|---|---|
+| 6 | 25 | 35 | 30 | 25 |
+| 7 | 30 | 30 | 30 | 30 |
+| 8 | 25 | 25 | 30 | 25 |
+| 9 | 35 | 35 | 35 | 35 |
+| 10 | 35 (52 %) | 35 (49 %) | 35 (48 %) | 35 (54 %) |
+
+Dans les expéditions, à peine plus dur qu'à la section 12 : 13,3, 14,3, 10,0 et 10,3 défaites par partie ; 1,9 tentative et 46 % au premier essai pour l'Inquisiteur, 2,2 et 47 % pour le Porte-étendard, 2,8 et 38 % pour la Pythie, dont les héros ont désormais l'attaque du second type contre les monstres du joueur.
+
+Constats :
+
+- Chaque classe peut finir la Fosse : chaque palier se gagne au niveau 35 au plus, le dernier une fois sur deux environ, à chances égales entre les classes.
+- Un combat miroir se décide presque entièrement au niveau : 3 niveaux d'avance le gagnent toujours, 2 de retard le perdent toujours. Les paliers à classe fixe restent marqués par les affinités : la Lame noire (palier 6) résiste au Mage jusqu'au niveau 35.
+- Le Templier reste le plus faible face aux humains : son attaque Lumière ne fait que x0,5 à un humain, x0,25 à un Templier. C'est vrai aussi à l'arène entre joueurs, qui n'a pas d'adversaire miroir.
+

@@ -39,7 +39,8 @@ const TOURS_MAX: u32 = 300;
 pub struct MesureDuPalier {
     pub numero: u8,
     pub adversaire: String,
-    pub classe: Classe,
+    /// "classe du héros" pour un adversaire miroir (section 9.8).
+    pub classe: String,
     pub niveau: u8,
     pub types: String,
     /// Pour chaque classe du héros, la part de victoires, en pourcentage,
@@ -63,11 +64,12 @@ pub fn mesurer_la_fosse(contenu: &ContenuV1, avec_second_type: bool) -> Vec<Mesu
     let mut mesures = Vec::new();
     for (position, adversaire) in contenu.fosse().adversaires().iter().enumerate() {
         let numero = u8::try_from(position + 1).expect("10 paliers");
-        let en_face = typer(adversaire.generer_heros());
         let mut victoires = Vec::new();
         let mut tours = 0u64;
         let mut combats = 0u64;
         for classe in Classe::TOUTES {
+            // Un adversaire miroir prend la classe du héros qui l'affronte.
+            let en_face = typer(adversaire.face_a(classe).generer_heros());
             let mut parts = Vec::new();
             for (niveau, arme, armure) in EQUIPEMENTS {
                 let heros = typer(heros_equipe(contenu, classe, arme, armure));
@@ -88,19 +90,30 @@ pub fn mesurer_la_fosse(contenu: &ContenuV1, avec_second_type: bool) -> Vec<Mesu
             }
             victoires.push((classe, parts));
         }
-        let types: Vec<&str> = en_face
-            .espece()
-            .types()
-            .liste()
-            .iter()
-            .map(|type_monstre| type_monstre.nom())
-            .collect();
+        let en_face = adversaire.generer_heros();
+        let (classe, types) = if adversaire.est_un_miroir() {
+            let types = if en_face.espece().types().liste().len() > 1 {
+                "Humain et son second type"
+            } else {
+                "Humain"
+            };
+            ("classe du héros".to_string(), types.to_string())
+        } else {
+            let types: Vec<&str> = en_face
+                .espece()
+                .types()
+                .liste()
+                .iter()
+                .map(|type_monstre| type_monstre.nom())
+                .collect();
+            (adversaire.classe().nom().to_string(), types.join(", "))
+        };
         mesures.push(MesureDuPalier {
             numero,
             adversaire: adversaire.nom().to_string(),
-            classe: adversaire.classe(),
-            niveau: en_face.niveau().valeur(),
-            types: types.join(", "),
+            classe,
+            niveau: adversaire.niveau().valeur(),
+            types,
             victoires,
             tours: tours as f64 / combats as f64,
         });

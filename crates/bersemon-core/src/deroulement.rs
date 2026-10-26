@@ -1441,7 +1441,7 @@ impl EnJeu {
                     .map_err(ErreurChoix::Arene)?;
                 self.arene = Some(PalierEnCours {
                     palier,
-                    adversaire: adversaire.clone(),
+                    adversaire,
                     combat: None,
                 });
                 Ok(Reponse::Faite)
@@ -6381,10 +6381,24 @@ mod tests {
         let partie = Partie::restaurer(etat).unwrap();
         let (palier, champion) = partie.palier_a_affronter(contenu.fosse()).unwrap();
         assert_eq!((palier, champion.nom()), (10, "Le Champion de la Fosse"));
+        // Adversaire miroir : il prend la classe du héros, Mage, et son arme
+        // du palier 3 (section 9.8).
+        assert_eq!(champion.classe(), Classe::Mage);
+        let attaques: Vec<String> = champion
+            .generer_heros()
+            .attaques()
+            .liste()
+            .iter()
+            .map(|attaque| attaque.id().as_str().to_string())
+            .collect();
+        assert_eq!(
+            attaques,
+            ["rayon-occulte", "onde-engourdissante", "emprise-mentale"]
+        );
         let mut partie = partie;
         let recompense = partie.vaincre_le_palier(
             palier,
-            champion,
+            &champion,
             contenu.arme_du_champion(Classe::Mage),
             &mut crate::aleatoire::GenerateurAleatoire::new(1),
         );

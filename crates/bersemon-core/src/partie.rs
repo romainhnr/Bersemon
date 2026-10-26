@@ -590,10 +590,12 @@ impl Partie {
     /// Le palier à affronter : celui qui suit le dernier vaincu. Refusé si
     /// la Fosse est fermée ou conquise, ou s'il donne un monstre que ni
     /// l'équipe ni le camp ne peuvent accueillir (section 9.8, Q112).
-    pub fn palier_a_affronter<'f>(
+    /// L'adversaire est tel que l'affronte le héros : un adversaire miroir
+    /// prend sa classe (section 9.8).
+    pub fn palier_a_affronter(
         &self,
-        fosse: &'f FosseAuxDamnes,
-    ) -> Result<(u8, &'f AdversaireDeLArene), ErreurArene> {
+        fosse: &FosseAuxDamnes,
+    ) -> Result<(u8, AdversaireDeLArene), ErreurArene> {
         if !self.fosse_ouverte(fosse) {
             return Err(ErreurArene::FosseFermee);
         }
@@ -602,7 +604,7 @@ impl Partie {
         if adversaire.recompense().monstre.is_some() && !self.collection.a_de_la_place() {
             return Err(ErreurArene::PlusDePlace);
         }
-        Ok((palier, adversaire))
+        Ok((palier, adversaire.face_a(self.heros.classe())))
     }
 
     /// Le héros, avec tous ses PV, seul contre l'adversaire du palier : ni

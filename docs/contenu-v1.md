@@ -1473,6 +1473,8 @@ Lieu : la Fosse aux damnés (identifiant fosse-aux-damnes), hors des zones de la
 
 Niveaux fixés le 26/10/2026, à l'étape 148 (choix de l'utilisateur, gamedesign.md, section 9.8) : ils venaient de l'équipement (10, 15, 15, 20, 20, 25, 30, 30, 35, 35), et les armures ne servaient qu'à les donner ; elles sont retirées. Les monstres offerts suivent le niveau de leur palier (le Basilic était de niveau 15, le Molosse 20, la Chimère 30). Second type de la classe aux paliers 7 à 10 (section 41).
 
+Adversaires miroirs, décidés le 26/10/2026 à l'étape 151 (choix de l'utilisateur, gamedesign.md, section 9.8) : la Sorcière des cendres (palier 7), le Gladiateur (9) et le Champion de la Fosse (10) prennent la classe du héros qui les affronte, avec l'arme du palier 3 de cette classe (Espadon des cendres, Lames de cendre, Sceptre des cendres ou Encensoir maudit) ; la classe du tableau est celle qu'ils montrent hors combat. Leur texte de présentation ne nomme pas de classe.
+
 L'argent va au coffre du camp.
 
 Espèces exclusives à la Fosse (rares, ni sauvages, ni vendues, ni louées, sans évolution, sans ressource, sans capsule ; au codex après les espèces existantes) :

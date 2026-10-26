@@ -426,11 +426,7 @@ pub fn rapport_de_la_fosse(avec: &[MesureDuPalier], sans: &[MesureDuPalier]) -> 
     for palier in avec {
         let mut ligne = format!(
             "| {} | {} ({}, {}, {}) |",
-            palier.numero,
-            palier.adversaire,
-            palier.classe.nom(),
-            palier.niveau,
-            palier.types
+            palier.numero, palier.adversaire, palier.classe, palier.niveau, palier.types
         );
         for part in parts_moyennes(palier) {
             ligne.push_str(&format!(" {part:.0} % |"));

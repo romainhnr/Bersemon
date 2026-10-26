@@ -4409,6 +4409,9 @@ struct FicheDAdversaire {
     argent: u32,
     /// Au niveau du palier.
     monstre: Option<(&'static str, u8)>,
+    /// Il prend la classe du héros qui l'affronte, avec l'arme de sa classe
+    /// au palier de la sienne (section 9.8).
+    miroir: bool,
 }
 
 const ADVERSAIRES_DE_LA_FOSSE: [FicheDAdversaire; 10] = [
@@ -4422,6 +4425,7 @@ const ADVERSAIRES_DE_LA_FOSSE: [FicheDAdversaire; 10] = [
         presentation: "Un vagabond en haillons, un gourdin à la main. Il n'a plus rien à perdre.",
         argent: 40,
         monstre: None,
+        miroir: false,
     },
     FicheDAdversaire {
         id: "coupe-jarret",
@@ -4433,6 +4437,7 @@ const ADVERSAIRES_DE_LA_FOSSE: [FicheDAdversaire; 10] = [
         presentation: "Il tourne autour de vous en souriant, une lame courte dans chaque main.",
         argent: 60,
         monstre: None,
+        miroir: false,
     },
     FicheDAdversaire {
         id: "novice-de-l-ordre",
@@ -4444,6 +4449,7 @@ const ADVERSAIRES_DE_LA_FOSSE: [FicheDAdversaire; 10] = [
         presentation: "Un jeune frère en armure trop grande, qui prie à voix basse en levant sa masse.",
         argent: 80,
         monstre: Some(("basilic", 16)),
+        miroir: false,
     },
     FicheDAdversaire {
         id: "apprenti-necromant",
@@ -4455,6 +4461,7 @@ const ADVERSAIRES_DE_LA_FOSSE: [FicheDAdversaire; 10] = [
         presentation: "Sa robe sent la tombe ; une lueur malsaine danse au bout de ses doigts.",
         argent: 100,
         monstre: None,
+        miroir: false,
     },
     FicheDAdversaire {
         id: "mercenaire",
@@ -4466,6 +4473,7 @@ const ADVERSAIRES_DE_LA_FOSSE: [FicheDAdversaire; 10] = [
         presentation: "Il a vendu son épée à tous les seigneurs du royaume, et leur a survécu à tous.",
         argent: 120,
         monstre: Some(("molosse-des-fosses", 21)),
+        miroir: false,
     },
     FicheDAdversaire {
         id: "lame-noire",
@@ -4477,6 +4485,7 @@ const ADVERSAIRES_DE_LA_FOSSE: [FicheDAdversaire; 10] = [
         presentation: "Une silhouette encapuchonnée, dont on dit qu'elle n'a jamais raté une gorge.",
         argent: 150,
         monstre: None,
+        miroir: false,
     },
     FicheDAdversaire {
         id: "sorciere-des-cendres",
@@ -4488,6 +4497,7 @@ const ADVERSAIRES_DE_LA_FOSSE: [FicheDAdversaire; 10] = [
         presentation: "Elle sort des ruines de l'Abbaye, la peau grise de cendre, les yeux brûlants.",
         argent: 180,
         monstre: Some(("chimere", 27)),
+        miroir: true,
     },
     FicheDAdversaire {
         id: "templier-renegat",
@@ -4499,6 +4509,7 @@ const ADVERSAIRES_DE_LA_FOSSE: [FicheDAdversaire; 10] = [
         presentation: "Il a renié son ordre, mais pas sa foi ni son armure.",
         argent: 210,
         monstre: None,
+        miroir: false,
     },
     FicheDAdversaire {
         id: "gladiateur",
@@ -4510,6 +4521,7 @@ const ADVERSAIRES_DE_LA_FOSSE: [FicheDAdversaire; 10] = [
         presentation: "La foule scande son nom. Il salue les gradins avant de vous faire face.",
         argent: 250,
         monstre: None,
+        miroir: true,
     },
     FicheDAdversaire {
         id: "champion-de-la-fosse",
@@ -4521,6 +4533,7 @@ const ADVERSAIRES_DE_LA_FOSSE: [FicheDAdversaire; 10] = [
         presentation: "Personne ne l'a jamais vu saigner. Les gradins se taisent quand il entre.",
         argent: 400,
         monstre: Some(("taureau-d-airain", 35)),
+        miroir: true,
     },
 ];
 
@@ -4538,7 +4551,7 @@ fn creer_la_fosse(trouver: &dyn Fn(&str) -> Espece) -> FosseAuxDamnes {
                     .map(|(espece, niveau_offert)| (trouver(espece), niveau(niveau_offert))),
                 arme_du_champion: position + 1 == ADVERSAIRES_DE_LA_FOSSE.len(),
             };
-            AdversaireDeLArene::new(
+            let adversaire = AdversaireDeLArene::new(
                 HumainId::new(fiche.id),
                 fiche.nom,
                 fiche.classe,
@@ -4547,7 +4560,25 @@ fn creer_la_fosse(trouver: &dyn Fn(&str) -> Espece) -> FosseAuxDamnes {
                 fiche.ia,
                 fiche.presentation,
                 recompense,
-            )
+            );
+            if !fiche.miroir {
+                return adversaire;
+            }
+            let palier = fiche.arme.map_or(1, |id| objet(id).palier());
+            let armes = Classe::TOUTES
+                .iter()
+                .map(|classe| {
+                    PLANS_DE_FABRICATION
+                        .iter()
+                        .find(|arme| {
+                            arme.sorte == SorteDObjet::Arme
+                                && arme.classe == Some((*classe, palier))
+                        })
+                        .map(creer_objet)
+                        .expect("une arme par classe et par palier")
+                })
+                .collect();
+            adversaire.en_miroir(armes)
         })
         .collect();
     FosseAuxDamnes::new(adversaires, HumainId::new("brigand"))
@@ -5455,6 +5486,31 @@ mod tests {
                 (35, 2)
             ]
         );
+        // Les paliers 7, 9 et 10 prennent la classe du héros, avec l'arme
+        // de sa classe au palier de la leur (étape 151).
+        let miroirs: Vec<bool> = contenu
+            .fosse()
+            .adversaires()
+            .iter()
+            .map(AdversaireDeLArene::est_un_miroir)
+            .collect();
+        assert_eq!(
+            miroirs,
+            [
+                false, false, false, false, false, false, true, false, true, true
+            ]
+        );
+        let champion = contenu.fosse().adversaire(10).unwrap();
+        for classe in Classe::TOUTES {
+            let face = champion.face_a(classe);
+            assert_eq!(face.classe(), classe);
+            let heros = face.generer_heros();
+            assert_eq!(heros.niveau().valeur(), 35);
+            assert_eq!(heros.espece().types().liste()[1], classe.second_type());
+            assert_eq!(heros.attaques().liste().len(), 3);
+        }
+        let novice = contenu.fosse().adversaire(3).unwrap();
+        assert_eq!(novice.face_a(Classe::Mage).classe(), Classe::Templier);
         // Le monstre offert est au niveau de son palier.
         for adversaire in contenu.fosse().adversaires() {
             if let Some((_, niveau)) = &adversaire.recompense().monstre {
