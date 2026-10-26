@@ -166,7 +166,7 @@ const AVANT_LA_PYTHIE: &str = "Au cœur du désert, parmi les ruines d'une ville
 
 const APRES_LA_PYTHIE: &str = "La Pythie s'effondre dans le sel, un dernier mot aux lèvres.";
 
-const AVANT_LE_CONTREBANDIER: &str = "Sur le quai, entre des caisses éventrées, un contrebandier compte ses pièces à la lueur d'une lanterne. Il siffle : trois bêtes surgissent de l'eau noire. Personne n'approche de la jetée sans payer.";
+const AVANT_LE_CONTREBANDIER: &str = "Sur le quai, entre des caisses éventrées, un contrebandier compte ses pièces à la lueur d'une lanterne. Il siffle : deux bêtes surgissent de l'eau noire. Personne n'approche de la jetée sans payer.";
 
 const APRES_LE_CONTREBANDIER: &str =
     "Le contrebandier s'effondre sur les pavés mouillés, sa bourse répandue dans une flaque.";
@@ -4353,8 +4353,8 @@ const ESPECES: [FicheEspece; 77] = [
             (1, "charge-spectrale"),
             (1, "frappe-d-os"),
             (30, "corde-du-gibet"),
-            (62, "coup-de-pioche"),
             (50, "griffes-spectrales"),
+            (62, "coup-de-pioche"),
         ],
         evolution: None,
     },

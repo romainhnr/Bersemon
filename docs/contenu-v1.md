@@ -1291,12 +1291,12 @@ Décidé le 25/10/2026, pour les étapes 121 à 123 (gamedesign.md, section 9.7)
 
 | Météo | Identifiant | Types renforcés (+20 %) | Zones | Texte au départ |
 |---|---|---|---|---|
-| Pluie | pluie | Eau, Plante | Lisière, Marais, Vallée, Abbaye, mer à venir | Une pluie froide tombe sans relâche. |
-| Tempête | tempete | Électrique, Vol | toutes, mer et désert à venir compris | L'orage gronde : le ciel se déchire d'éclairs. |
-| Grêle | grele | Glace, Roche | Vallée, Col | La grêle crépite sur les pierres et les armures. |
-| Tempête de sable | tempete-de-sable | Sol, Roche | désert à venir | Le sable vole, cinglant comme une lame. |
-| Cyclone | cyclone | Eau, Vol | mer à venir | Le cyclone hurle, et les vagues montent à l'assaut des côtes. |
-| Canicule | canicule | Feu, Sol | Lisière, Marais, Abbaye, désert à venir | Une chaleur écrasante pèse sur la terre. |
+| Pluie | pluie | Eau, Plante | Lisière, Marais, Vallée, Abbaye, Port des Noyés | Une pluie froide tombe sans relâche. |
+| Tempête | tempete | Électrique, Vol | toutes sauf le Désert de sel | L'orage gronde : le ciel se déchire d'éclairs. |
+| Grêle | grele | Glace, Roche | Vallée, Col, Mines de Fer-Noir | La grêle crépite sur les pierres et les armures. |
+| Tempête de sable | tempete-de-sable | Sol, Roche | Désert de sel | Le sable vole, cinglant comme une lame. |
+| Cyclone | cyclone | Eau, Vol | Port des Noyés, seule zone de mer | Le cyclone hurle, et les vagues montent à l'assaut des côtes. |
+| Canicule | canicule | Feu, Sol | Lisière, Marais, Abbaye, Désert de sel | Une chaleur écrasante pèse sur la terre. |
 
 Chaque zone a 1 chance sur 3, par créneau de 30 minutes, d'avoir une de ses météos ; sinon, temps calme.
 
@@ -1342,7 +1342,7 @@ Stats de base des classes, dans l'ordre PV / Attaque / Défense / Attaque spéci
 
 PV de base doublés le 26/10/2026, à l'étape 147 (choix de l'utilisateur, gamedesign.md, section 4.4) : ils étaient de 90, 70, 95 et 70, pour un total de 450 par classe. Un Guerrier a 33 PV au niveau 5, 128 au niveau 25 et 176 au niveau 35 (24, 83 et 113 avant).
 
-Niveau de combat : 5, plus 5 par palier de l'arme et 5 par palier de l'armure (5 à 40).
+Niveau de combat : 5, plus 5 par palier de l'arme et 5 par palier de l'armure (5 à 40 ; 55 depuis l'étape 163, avec les paliers 4 et 5 de la section 44).
 
 Attaques du héros, de type Humain :
 
@@ -1700,3 +1700,164 @@ Textes :
 - confirmation du service : "Faire rendre votre héros shiny par Malvoise contre un Philtre chromatique ? Seule sa couleur changera." ;
 - héros rendu shiny : "Malvoise vous fait boire le Philtre chromatique ; votre sang s'altère, et une lueur nouvelle vous enveloppe. Vous êtes désormais shiny." ;
 - monstre rendu shiny avec une place libre, à la suite du texte existant : "Il apprend Rayon chromatique."
+
+## 44. Port des Noyés, Mines de Fer-Noir et leurs annexes
+
+Décidés le 27/10/2026, pour l'étape 163, premier lot de la suite de l'aventure (gamedesign.md, sections 4.3, 9.1, 9.4, 9.9 et 10.7). Les zones, leurs niveaux, les Apôtres, les humains gardiens, les noms des espèces et leurs types, les annexes et leur ouverture sont des choix de l'utilisateur ou ont été validés par lui (lot 1) ; les valeurs (stats, attaques, rendements, coûts), les textes et les réglages issus de la mesure sont proposés par Claude sans validation (gamedesign.md, Q118). Stats et attaques réglées avec l'outil d'équilibrage (equilibrage.md, section 14).
+
+Zones :
+
+| Identifiant | Nom | Niveaux | Étapes | Taille des groupes | Espèces | Monstre rare | Humain | Apôtre |
+|---|---|---|---|---|---|---|---|---|
+| port-des-noyes | Port des Noyés | 46 à 51 | 5 | 1 à 3 | Crabe nécrophage, Sirène putride, Goéland charognard | Hydre des marées (hostile) | Contrebandier | Amiral noyé (53) |
+| mines-de-fer-noir | Mines de Fer-Noir | 52 à 57 | 5 | 1 à 3 | Golem de fer noir, Mineur possédé, Grisou ardent | Dragon de rouille (hostile) | Contremaître | Prévôt des fosses (59) |
+
+Le Schnoz se cache dans les deux, comme partout. Pas de marchand mort ni de pêcheur. Météos : pluie, tempête et cyclone au Port, seule zone de mer ; grêle et tempête dans les Mines. La Sirène putride et le Mineur possédé sont nocturnes, le Goéland charognard diurne.
+
+| Zone | Expédition automatique (durée de base, dégâts, XP, potions, argent) | Coffres (argent) | Capsules des coffres (prix chez Malvoise) |
+|---|---|---|---|
+| Port des Noyés | 7 h, 340 à 650, 3800 à 5600, 1 à 3, 280 à 460 | 220 à 340 | Marée noire, Pince broyeuse, Chant des noyés (600) |
+| Mines de Fer-Noir | 8 h, 400 à 760, 4600 à 6800, 1 à 3, 330 à 540 | 260 à 400 | Marteau de forge, Coup de grisou, Coup de pioche (650) |
+
+Espèces (stats dans l'ordre PV / Attaque / Défense / Attaque spéciale / Défense spéciale / Vitesse). Au codex, elles viennent après le Dragon des brumes, dans l'ordre du tableau. Aucune n'évolue.
+
+| Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP | Rareté | Habiletés | Attaques apprises |
+|---|---|---|---|---|---|---|---|---|
+| crabe-necrophage | Crabe nécrophage | Eau, Acier | soutien | 72 / 78 / 90 / 30 / 60 / 30 (360) | 145 | commune | Carapace, Férocité | Plongeon (1), Coup de garde (1), Déferlante (25), Taille d'acier (35), Pince broyeuse (58) |
+| sirene-putride | Sirène putride | Eau, Spectre | offensif | 58 / 35 / 48 / 92 / 70 / 64 (367) | 145 | commune | Sorcellerie, Instinct | Lueur trompeuse (1), Frisson d'outre-tombe (1), Lamentation (30), Chant des noyés (40), Marée noire (58) |
+| goeland-charognard | Goéland charognard | Vol, Ténèbres | offensif | 61 / 92 / 48 / 38 / 47 / 104 (390) | 145 | commune | Célérité, Traqueur | Coup de bec (1), Morsure (1), Pique (25), Croc noir (35), Bec funeste (45), Rapine (58) |
+| hydre-des-marees | Hydre des marées | Eau, Dragon | offensif | 80 / 85 / 76 / 88 / 72 / 64 (465) | 250 | rare, hostile | Affinité, Férocité | Souffle draconique (1), Lame de fond (1), Furie draconique (30), Trombe (40), Déluge draconique (60) |
+| nautile-des-abysses | Nautile des abysses | Eau, Roche | soutien | 80 / 62 / 112 / 76 / 99 / 36 (465) | 245 | rare, pacifique (Épave) | Carapace, Volonté | Jet d'encre (1), Chute de pierres (1), Éboulement (35), Marée noire (60) |
+| amiral-noye | Amiral noyé | Obscur | offensif | 96 / 103 / 90 / 93 / 86 / 62 (530) | 360 | Apôtre | Férocité, Carapace | Étreinte obscure (1), Lame de fond (1), Hurlement des abysses (20), Trombe (35), Ancre des damnés (45), Abîme liquide (52) |
+| golem-de-fer-noir | Golem de fer noir | Acier, Roche | soutien | 76 / 82 / 90 / 30 / 55 / 20 (353) | 160 | commune | Carapace, Volonté | Coup de garde (1), Chute de pierres (1), Taille d'acier (30), Éboulement (40), Marteau de forge (62) |
+| mineur-possede | Mineur possédé | Spectre, Combat | offensif | 67 / 93 / 59 / 46 / 54 / 71 (390) | 160 | commune | Férocité, Traqueur | Charge spectrale (1), Frappe d'os (1), Corde du gibet (30), Griffes spectrales (50), Coup de pioche (62) |
+| grisou-ardent | Grisou ardent | Feu, Poison | offensif | 52 / 40 / 49 / 92 / 55 / 84 (372) | 160 | commune | Sorcellerie, Célérité | Crachat de braises (1), Spores putrides (1), Brasier (30), Venin noir (40), Coup de grisou (62) |
+| dragon-de-rouille | Dragon de rouille | Dragon, Acier | offensif | 78 / 85 / 80 / 66 / 66 / 55 (430) | 275 | rare, hostile | Affinité, Carapace | Souffle draconique (1), Coup de garde (1), Furie draconique (30), Taille d'acier (40), Souffle de rouille (64) |
+| gemmame | Gemmâme | Roche, Féérique | soutien | 66 / 50 / 100 / 82 / 100 / 42 (440) | 270 | rare, pacifique (Filon) | Volonté, Instinct | Poussière d'elfe (1), Chute de pierres (1), Rayon de lune (35), Éclat de gemme (64) |
+| prevot-des-fosses | Prévôt des fosses | Obscur | offensif | 98 / 108 / 98 / 84 / 90 / 62 (540) | 400 | Apôtre | Férocité, Volonté | Étreinte obscure (1), Chute de pierres (1), Hurlement des abysses (20), Séisme (40), Chaîne du prévôt (50), Gouffre sans fond (58) |
+
+Les attaques de puissance 90 et plus des communes et des rares ne s'apprennent qu'après leur zone (niveaux 58 à 64) : elles récompensent le joueur qui capture et entraîne ces espèces, sans durcir les combats de la zone (equilibrage.md, section 14). Le rendement d'XP suit la courbe en n x n x n : environ 3 fois le niveau moyen de la zone, contre 2,8 dans le Désert.
+
+Attaques nouvelles :
+
+| Identifiant | Nom | Type | Cat. | Puissance | Précision | Effet |
+|---|---|---|---|---|---|---|
+| pince-broyeuse | Pince broyeuse | Eau | P | 90 | 90 | |
+| chant-des-noyes | Chant des noyés | Spectre | S | 80 | 100 | paralysie 20 % |
+| maree-noire | Marée noire | Eau | S | 90 | 95 | |
+| rapine | Rapine | Ténèbres | P | 90 | 95 | |
+| deluge-draconique | Déluge draconique | Dragon | S | 100 | 85 | |
+| jet-d-encre | Jet d'encre | Eau | S | 65 | 100 | paralysie 10 % |
+| ancre-des-damnes | Ancre des damnés | Obscur | P | 90 | 95 | |
+| abime-liquide | Abîme liquide | Obscur | S | 95 | 90 | paralysie 10 % |
+| marteau-de-forge | Marteau de forge | Acier | P | 95 | 90 | |
+| coup-de-pioche | Coup de pioche | Combat | P | 90 | 95 | |
+| coup-de-grisou | Coup de grisou | Feu | S | 100 | 85 | |
+| souffle-de-rouille | Souffle de rouille | Acier | S | 95 | 90 | poison 20 % |
+| eclat-de-gemme | Éclat de gemme | Roche | S | 90 | 95 | |
+| chaine-du-prevot | Chaîne du prévôt | Obscur | P | 90 | 95 | paralysie 20 % |
+| gouffre-sans-fond | Gouffre sans fond | Obscur | S | 95 | 90 | |
+
+Attaques d'œuf, sur le modèle de la section 28 :
+
+| Famille | Identifiant | Nom | Type | Cat. | Puissance | Précision | Effet |
+|---|---|---|---|---|---|---|---|
+| Crabe nécrophage | pince-etau | Pince-étau | Acier | P | 80 | 100 | |
+| Sirène putride | lamento-des-abysses | Lamento des abysses | Spectre | S | 80 | 100 | |
+| Goéland charognard | pique-du-charognard | Pique du charognard | Vol | P | 80 | 100 | |
+| Hydre des marées | morsure-des-sept-tetes | Morsure des sept têtes | Dragon | P | 80 | 100 | |
+| Nautile des abysses | spirale-abyssale | Spirale abyssale | Eau | S | 80 | 100 | |
+| Golem de fer noir | poing-de-fer-noir | Poing de fer noir | Acier | P | 80 | 100 | |
+| Mineur possédé | hantise-du-filon | Hantise du filon | Spectre | P | 75 | 100 | paralysie 20 % |
+| Grisou ardent | etincelle-de-grisou | Étincelle de grisou | Feu | S | 80 | 100 | |
+| Dragon de rouille | ecaille-rouillee | Écaille rouillée | Acier | P | 75 | 100 | poison 30 % |
+| Gemmâme | prisme-feerique | Prisme féerique | Féérique | S | 80 | 100 | |
+
+Ressources : Carapace de crabe (carapace-de-crabe), Écaille de sirène (ecaille-de-sirene), Plume de goéland (plume-de-goeland), Éclat de fer noir (eclat-de-fer-noir), Pioche maudite (pioche-maudite) et Fiole de grisou (fiole-de-grisou), 5 pièces d'argent chacune ; Croc d'hydre (croc-d-hydre) et Écaille de rouille (ecaille-de-rouille), 15. Le Nautile et la Gemmâme, pacifiques, n'en ont pas.
+
+Humains gardiens. Leur héros combat au niveau maximal de la zone, à part de son équipement, qui ne lui donne que ses attaques et ses bonus ; IA relevée ; valeurs internes de leurs monstres à 15, première habileté de leur espèce :
+
+| Identifiant | Nom | Classe | Héros (niveau, arme, armure) | Monstres | Victoire |
+|---|---|---|---|---|---|
+| contrebandier | Contrebandier | Assassin | 51, Crocs du champion, Manteau de cendre | Sirène putride (51), Hydre des marées (52) | 600 pièces d'argent, puis l'indice 9 |
+| contremaitre | Contremaître | Guerrier | 57, Hache de fer noir, Cuirasse des abysses | Golem de fer noir (57), Mineur possédé (57), Dragon de rouille (58) | 700 pièces d'argent, puis l'indice 11 |
+
+Le Contrebandier n'a que deux monstres : avec trois, un Assassin de son niveau en dernier faisait de lui un mur (21 % de victoires au premier essai, contre 39 % avec deux ; equilibrage.md, section 14).
+
+Annexes (gamedesign.md, section 9.9). Trois étapes, combat 60 %, coffre 30 %, monstre rare 10 % ; les espèces et les météos de leur zone ; le Schnoz caché ; ni humain, ni Apôtre, ni marchand mort, ni expédition automatique. Leurs coffres ont l'argent indiqué, les capsules de leur zone, et un trésor à coup sûr :
+
+| Identifiant | Nom | Ouverte depuis | Niveaux | Monstre rare | Coffres (argent) |
+|---|---|---|---|---|---|
+| epave-du-leviathan | Épave du Léviathan | Port des Noyés | 50 à 53 | Nautile des abysses (pacifique) | 300 à 450 |
+| filon-ecarlate | Filon écarlate | Mines de Fer-Noir | 56 à 59 | Gemmâme (pacifique) | 340 à 500 |
+
+Trésor d'un coffre d'annexe, tiré selon son poids sur 100 : Philtre chromatique 5, capsule d'habileté 35, Pierre de braise 15, Pierre de lune 15, chacun des six boosters 5.
+
+Équipement (gamedesign.md, section 4.3). Bonus aux monstres : +12 % d'Attaque et d'Attaque spéciale pour les armes du palier 5 ; +20 % puis +25 % de Défense et de Défense spéciale pour les armures des paliers 4 et 5. Chaque arme donne l'attaque principale de son palier, celle de sa classe et celle du second type de sa classe (section 41). Niveau de combat : 45 avec l'arme et l'armure du palier 4, 55 au palier 5.
+
+| Identifiant | Objet | Classe | Palier | Coût | Durée |
+|---|---|---|---|---|---|
+| hache-de-fer-noir | Hache de fer noir (arme) | Guerrier | 5 | 8 Éclat de fer noir, 6 Pioche maudite, 1 Écaille de rouille | 12 h |
+| dagues-de-fer-noir | Dagues de fer noir (arme) | Assassin | 5 | 8 Éclat de fer noir, 6 Pioche maudite, 1 Écaille de rouille | 12 h |
+| baton-de-grisou | Bâton de grisou (arme) | Mage | 5 | 8 Fiole de grisou, 6 Pioche maudite, 1 Écaille de rouille | 12 h |
+| masse-de-fer-noir | Masse de fer noir (arme) | Templier | 5 | 8 Fiole de grisou, 6 Pioche maudite, 1 Écaille de rouille | 12 h |
+| cuirasse-des-abysses | Cuirasse des abysses (armure) | Guerrier | 4 | 10 Carapace de crabe, 6 Écaille de sirène, 1 Croc d'hydre | 10 h |
+| cuir-de-requin | Cuir de requin (armure) | Assassin | 4 | idem | 10 h |
+| robe-des-marees | Robe des marées (armure) | Mage | 4 | idem | 10 h |
+| plates-nacrees | Plates nacrées (armure) | Templier | 4 | idem | 10 h |
+| plates-de-fer-noir | Plates de fer noir (armure) | Guerrier | 5 | 10 Éclat de fer noir, 6 Carapace de crabe, 1 Écaille de rouille | 14 h |
+| maille-de-fer-noir | Maille de fer noir (armure) | Assassin | 5 | idem | 14 h |
+| robe-de-grisou | Robe de grisou (armure) | Mage | 5 | idem | 14 h |
+| harnois-de-fer-noir | Harnois de fer noir (armure) | Templier | 5 | idem | 14 h |
+
+Attaques principales du palier 5, de type Humain, puissance 85, précision 100 : Fend-armure (fend-armure, Guerrier, P), Coup mortel (coup-mortel, Assassin, P), Tempête arcanique (tempete-arcanique, Mage, S), Colère du ciel (colere-du-ciel, Templier, S).
+
+Sprites : un par espèce, normal et shiny, et un par humain gardien (section 42).
+
+Textes :
+
+> Indice 8 (remplace le texte de la section 40) : la Pythie vaincue a parlé avant de se taire : un autre Apôtre a reçu la marque du Démiurge. Il attend au-delà du désert, sur la côte où la mer rend ses morts : le Port des Noyés.
+
+> Indice 9 : le contrebandier vaincu a parlé : l'Amiral noyé attend au bout de la jetée, sur le pont d'un vaisseau coulé que la marée découvre chaque nuit.
+
+> Indice 10 : dans la cabine de l'Amiral, un livre de bord scellé du même sceau : à l'est, les Mines de Fer-Noir, où les mineurs creusent encore après leur mort. Un cinquième Apôtre y règne.
+
+> Indice 11 : le contremaître vaincu a parlé : le Prévôt des fosses juge les damnés au fond du dernier puits, là où le fer noir saigne.
+
+Contrebandier, avant le combat, puis après la victoire :
+
+> Sur le quai, entre des caisses éventrées, un contrebandier compte ses pièces à la lueur d'une lanterne. Il siffle : deux bêtes surgissent de l'eau noire. Personne n'approche de la jetée sans payer.
+
+> Le contrebandier s'effondre sur les pavés mouillés, sa bourse répandue dans une flaque.
+
+Contremaître, avant le combat, puis après la victoire :
+
+> Au fond de la galerie, un contremaître au fouet de chaîne surveille des mineurs qui ne respirent plus. Trois bêtes sortent de l'ombre des boisages à son signal.
+
+> Le contremaître tombe à genoux, et les mineurs morts lâchent enfin leurs pioches.
+
+Amiral noyé, avant le combat, épilogue, âme et carnet :
+
+> Au bout de la jetée, la marée se retire sur l'épave d'un vaisseau de guerre. Sur le pont, un officier aux poumons pleins d'eau se dresse : l'Amiral noyé, Apôtre du Démiurge, qui a mené son équipage par le fond. Il n'y aura pas de fuite.
+
+> L'Amiral noyé s'effondre sur le pont, et la mer reprend son navire. Le même sceau, une main ouverte, est gravé sur la barre. Quatre Apôtres sont tombés ; le Démiurge, lui, attend toujours. Votre traque continue.
+
+> L'âme de l'Amiral noyé s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.
+
+> Amiral noyé, abattu au Port des Noyés.
+
+Prévôt des fosses, avant le combat, épilogue, âme et carnet :
+
+> Au fond du dernier puits, sur un trône taillé dans le fer noir, un juge enchaîné à ses condamnés lève la tête : le Prévôt des fosses, Apôtre du Démiurge. Il n'y aura pas de fuite.
+
+> Le Prévôt des fosses s'effondre, et ses chaînes se brisent avec lui. Le même sceau, une main ouverte, est gravé dans le fer de son trône. Cinq Apôtres sont tombés ; le Démiurge, lui, attend toujours. Votre traque continue.
+
+> L'âme du Prévôt des fosses s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.
+
+> Prévôt des fosses, abattu dans les Mines de Fer-Noir.
+
+Cartes des annexes, trouvées dans un coffre, suivies de "Un nouveau lieu s'ouvre : " et du nom de l'annexe :
+
+> Épave du Léviathan : Au fond du coffre, une carte marine détrempée marque d'une croix une épave au large du port, là où une bête immense aurait sombré avec un navire.
+
+> Filon écarlate : Au fond du coffre, un plan de mine griffonné montre une galerie murée, où le filon brille d'un rouge de sang.

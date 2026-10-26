@@ -4,11 +4,12 @@ Ce document décrit l'outil d'équilibrage, la stratégie du joueur automatique 
 
 ## 1. L'outil
 
-- Le crate `bersemon-equilibrage` fait jouer des parties complètes par un joueur automatique, avec le noyau seul : ni interface, ni sauvegarde. Chaque partie va de la création du héros à la chute du troisième Apôtre, le Margrave de givre ; depuis l'étape 144, elle continue jusqu'à la chute de l'humain de la dernière zone de la carte, la Pythie de sel, au bout du Désert de sel (section 10).
+- Le crate `bersemon-equilibrage` fait jouer des parties complètes par un joueur automatique, avec le noyau seul : ni interface, ni sauvegarde. Chaque partie va de la création du héros à la chute du troisième Apôtre, le Margrave de givre ; depuis l'étape 144, elle continue jusqu'à la chute de l'humain de la dernière zone de la carte, la Pythie de sel, au bout du Désert de sel (section 10) ; depuis l'étape 163, jusqu'à la chute du dernier Apôtre de la piste et de l'humain de la dernière zone, quel que soit le contenu (section 14).
 - Commande : `cargo run --release -p bersemon-equilibrage -- [parties par classe] [classe]`. Sans argument, 25 parties par classe ; avec une classe, seule celle-ci est jouée. Le rapport s'écrit en Markdown sur la sortie standard.
 - Une partie se rejoue à l'identique avec la même graine. En release, 100 parties par classe se jouent en 5 secondes environ.
 - Pour mesurer un réglage, on change la valeur dans le noyau, on relance, et on compare les deux rapports. Toute modification du jeu change la suite des tirages : des écarts de 1 à 3 expéditions sur la médiane sont de l'ordre du bruit.
 - Depuis l'étape 146, le rapport finit par la Fosse aux damnés, simulée à part : le héros de chaque classe, à chaque niveau de combat que donne son équipement, contre l'adversaire de chaque palier, 200 combats par case, avec et sans le second type des classes (section 11). Elle se joue en moins d'une seconde.
+- Depuis l'étape 163, deux mesures à part suivent la Fosse : les humains de fin de zone contre des équipes tirées au hasard, et les espèces sauvages en un contre un (section 14).
 - Le crate ne dépend que du noyau, sans crate externe. Il est hors de ce que joue le joueur : ni la console ni le bot Discord n'en dépendent.
 
 ## 2. Le joueur automatique
@@ -16,7 +17,7 @@ Ce document décrit l'outil d'équilibrage, la stratégie du joueur automatique 
 Sa stratégie est simple et constante, pour que les écarts d'une zone à l'autre viennent des valeurs du jeu :
 
 - il part dans la zone la plus avancée où le niveau de ses meilleurs monstres a passé le premier tiers des niveaux de la zone ;
-- il emmène ses monstres de plus haut niveau ; quand un Apôtre l'attend au bout de la zone, ceux qui valent le plus face à lui, selon la table des types, ses stats et ses PV ;
+- il emmène ses monstres de plus haut niveau ; quand un Apôtre l'attend au bout de la zone, ceux qui valent le plus face à lui, selon la table des types, ses stats et ses PV. Depuis l'étape 163, il compose toujours son équipe ainsi, face à l'Apôtre, à l'équipe de l'humain gardien ou aux espèces sauvages de la zone, parmi ses monstres à 5 niveaux au plus du meilleur, 10 contre un Apôtre (section 14) ;
 - en combat, il envoie le monstre qui vaut au moins deux fois plus que le monstre actif face à l'adversaire, attaque avec l'attaque aux dégâts attendus les plus hauts, lance un filet sur une espèce qu'il n'a pas quand la chance atteint 50 %, et fuit quand son dernier monstre debout a perdu la moitié de ses PV. Contre un humain ou un Apôtre, il donne l'ordre du héros et soigne son monstre sous 35 % de ses PV ;
 - entre deux étapes, il soigne un monstre sous la moitié de ses PV, rentre quand la moitié de l'équipe est KO ou qu'il ne lui reste que la moitié de ses PV, et n'affronte le combat de fin de zone qu'avec tous ses monstres debout et 80 % de ses PV ;
 - au camp, il donne les âmes à Malvoise, réclame les récompenses du codex, fait agrandir l'équipe puis forger l'objet d'équipement aux plus gros bonus, puis améliorer les filets, porte ses meilleurs objets, range argent et ressources au coffre, et emporte 6 potions et 10 filets.
@@ -295,3 +296,56 @@ Constats :
 - Un combat miroir se décide presque entièrement au niveau : 3 niveaux d'avance le gagnent toujours, 2 de retard le perdent toujours. Les paliers à classe fixe restent marqués par les affinités : la Lame noire (palier 6) résiste au Mage jusqu'au niveau 35.
 - Le Templier reste le plus faible face aux humains : son attaque Lumière ne fait que x0,5 à un humain, x0,25 à un Templier. C'est vrai aussi à l'arène entre joueurs, qui n'a pas d'adversaire miroir.
 
+
+## 14. Port des Noyés et Mines de Fer-Noir (étape 163)
+
+Premier lot de la suite de l'aventure (gamedesign.md, section 9.1 ; docs/contenu-v1.md, section 44). Cible : environ 12 expéditions par zone (choix de l'utilisateur, 27/10/2026).
+
+Changements de l'outil :
+
+- La partie va jusqu'à la chute du dernier Apôtre de la piste et de l'humain de la dernière zone de la carte, quel que soit le contenu : le Prévôt des fosses et le Contremaître depuis cette étape.
+- Le joueur automatique compose son équipe selon ce qui l'attend dans la zone visée : l'Apôtre au bout, sinon l'équipe de l'humain qui la garde encore, sinon ses espèces sauvages à son niveau moyen, selon la valeur déjà employée contre les Apôtres (table des types, stats, PV). Seuls entrent dans ce choix les monstres à 5 niveaux au plus du meilleur, 10 contre un Apôtre. Avant, il emmenait ses monstres de plus haut niveau, sauf contre un Apôtre, où il prenait les meilleurs quels que soient leurs niveaux : au Port, il partait avec un Phénix de niveau 40 et une Sylphe de niveau 34, et rentrait dès la première étape. Les zones des sections précédentes en sont à peine changées (voir le tableau final).
+- Deux mesures à part, écrites à la fin du rapport, qui ne dépendent pas des équipes du joueur automatique : chaque humain de fin de zone contre 100 équipes de trois monstres tirées au hasard parmi les espèces que le joueur a pu garder avant sa zone (formes évoluées comprises, 380 au moins au total), au niveau maximal de la zone, avec un héros Mage équipé au mieux sans dépasser ce niveau ; chaque espèce sauvage en un contre un, au niveau 50, contre toutes les espèces sauvages de 380 à 500 au total. Ce sont elles qui ont trouvé les causes, plus sûrement que les parties.
+
+Mesures et réglages successifs (25 parties par classe, sauf la dernière ligne, 100) :
+
+| Version | Expéditions au Port | Aux Mines | Contrebandier (tentatives, premier essai) | Cause relevée |
+|---|---|---|---|---|
+| Contenu proposé au lot 1 | 89,4 | 69,3 | 7,0 ; 10 % | communes de 445 à 465 au total, rares de 520 à 560 |
+| Communes ramenées à 410-420, rendements d'XP à 3 fois le niveau | 66,1 | 45,9 | 6,5 ; 19 % | équipe du joueur automatique faible contre l'Eau |
+| Équipe composée selon les types | 39,9 à 55 | 19,6 à 56 | 5,1 à 6,3 ; 16 à 20 % | grand bruit d'une version à l'autre |
+| Attaques de 90 et plus après la zone ; espèces recalées sur le Désert | 39,9 | 31,1 | 4,7 ; 21 % | héros Assassin de niveau 51 en dernier |
+| Contrebandier à deux monstres ; Amiral et Prévôt au gabarit du Margrave | 31,4 | 15,4 | 3,1 ; 39 % | Amiral |
+| Final, 100 parties par classe | 29,3 | 15,2 | 2,7 ; 45 % | Amiral |
+
+Constats :
+
+1. Les espèces proposées au lot 1 étaient bien plus fortes que leurs aînées à niveau égal. En un contre un au niveau 50, le Crabe nécrophage, à 390 au total, gagnait 62 % de ses combats grâce à son typage Eau et Acier, et les rares du lot 61 à 85 %, contre 30 à 44 % pour les communes du Désert et 59 à 63 % pour ses rares. Recalées : communes de 353 à 390 au total (42 à 53 %), rares de 430 à 465 (53 à 66 %). Le typage Acier pèse plus que le total : le Golem de fer noir gagne 53 % avec 353.
+2. Les attaques de puissance 90 et plus, apprises aux niveaux 45 à 55, durcissaient tous les combats de la zone. Elles s'apprennent désormais aux niveaux 58 à 64 : elles servent au joueur qui capture ces espèces, pas aux monstres sauvages de la zone.
+3. Le niveau du héros d'un humain pèse peu (2 à 3 points de victoires pour 5 niveaux), sa classe beaucoup : à niveau 51, un héros Assassin en dernier, rapide et aux PV doublés, laissait 22 % de victoires contre des équipes au hasard, un Guerrier ou un Templier 37 %. Son arme ne change rien. Le Contrebandier garde sa classe et son niveau, mais n'a plus que deux monstres, comme le brigand : 47 % contre des équipes au hasard (Bourreau 53 %, Inquisiteur 58 %, Porte-étendard 63 %, Pythie 60 %), et 45 % au premier essai dans les parties.
+4. Le Contremaître reste à 34 % contre des équipes au hasard, mais se gagne à 58 % au premier essai dans les parties (2,1 tentatives), où le joueur compose son équipe contre lui.
+5. L'Amiral noyé reste le combat le plus dur du lot : 4,5 tentatives, 59 % au premier essai mais 18 à 30 % des tentatives suivantes, quel que soit l'écart de niveau. Le joueur automatique lui oppose ses monstres Lumière, dont le Phénix blanc, que son attaque Eau (Trombe) frappe x2, et ne change jamais d'équipe après une défaite. Le Prévôt des fosses suit (3,9 tentatives). Hypothèse, non vérifiable avec l'outil : un joueur qui change d'équipe après une défaite le bat en 2 ou 3 tentatives, comme le Margrave.
+6. Le Port gagne 0,27 niveau par expédition, les Mines 0,30, contre 0,54 dans le Désert : ses espèces, surtout Eau, punissent les captures du Désert (Sol, Roche, Feu), et 69 % des expéditions y sont rentrées avant la fin. Les Mines, plus courtes à traverser après le Port, sont dans la cible.
+
+| Zone | Expéditions par partie | Menées au bout | Défaites | Rentrées | Niveau à la première | Niveaux gagnés |
+|---|---|---|---|---|---|---|
+| Lisière du Bois-Sombre (3 à 7) | 12,1 | 22 % | 6 % | 73 % | 5,0 | 0,35 |
+| Marais des Pendus (8 à 13) | 10,5 | 44 % | 14 % | 43 % | 9,3 | 0,66 |
+| Vallée des Brumes (14 à 20) | 9,3 | 53 % | 20 % | 26 % | 16,2 | 0,75 |
+| Abbaye des Cendres (21 à 27) | 12,2 | 24 % | 21 % | 55 % | 23,2 | 0,64 |
+| Col du Givre-Noir (28 à 36) | 14,2 | 31 % | 20 % | 50 % | 31,0 | 0,61 |
+| Désert de sel (37 à 45) | 14,6 | 31 % | 10 % | 59 % | 39,6 | 0,54 |
+| Port des Noyés (46 à 51) | 29,3 | 12 % | 19 % | 69 % | 47,4 | 0,27 |
+| Mines de Fer-Noir (52 à 57) | 15,2 | 13 % | 27 % | 59 % | 55,4 | 0,30 |
+
+| Combat | Tentatives par partie | Victoires au premier essai | Niveau de l'équipe à la victoire |
+|---|---|---|---|
+| Pythie de sel (Désert, 45) | 2,0 | 49 % | 44,7 |
+| Contrebandier (Port, 51) | 2,7 | 45 % | 51,7 |
+| Amiral noyé (Port, 53) | 4,5 | 59 % | 54,3 |
+| Contremaître (Mines, 57) | 2,1 | 58 % | 57,6 |
+| Prévôt des fosses (Mines, 59) | 3,9 | 59 % | 59,6 |
+
+Parties complètes, jusqu'au Prévôt : 104 à 115 expéditions (médiane selon la classe), 17 à 28 défaites, équipe finale au niveau 59 à 61.
+
+Le Port dépasse donc la cible de 12 expéditions de plus du double avec le joueur automatique ; les Mines y sont. Aucun réglage n'est fait au-delà de ceux du tableau : le reste tient à l'Amiral et aux types de l'équipe que ce joueur emmène, à vérifier en jouant (gamedesign.md, Q118). Leviers possibles, mesurés ou non : l'Amiral sans attaque Eau (Trombe), ou un rendement d'XP plus haut au Port.
