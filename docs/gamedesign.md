@@ -180,6 +180,7 @@ Décidé le 25/10/2026, pour les étapes 128 à 133 (choix de l'utilisateur) :
   - Le second type compte comme celui d'un monstre, dans les deux sens de la table des types (section 5.2). Les attaques du héros restent toutes de type Humain : le second type ne change que ses faiblesses et ses résistances. Le Spectre a été écarté : il rendrait un humain insensible aux attaques Humain.
   - Conséquence acceptée par l'utilisateur : une attaque Humain ne fait que x0,5 à un humain à double type (x1 pour l'Humain, x0,5 pour le second type). Entre deux héros de niveau 25 ou plus, les dégâts sont divisés par deux et les combats durent plus longtemps ; un héros de niveau 25 face à un héros plus faible ne subit que la moitié de ses coups.
   - Écrans : la fiche du héros dit ses types ("Aldric, Guerrier, Humain, Combat, niveau de combat 25") et, sous le niveau 25, "Au niveau de combat 25, il prendra aussi le type Combat." En combat, un héros adverse montre ses deux types, comme avant le sien. La sauvegarde ne change pas : les types se déduisent de la classe et de l'équipement.
+- Décidé le 26/10/2026, pour l'étape 147 (choix de l'utilisateur, d'après la mesure de l'étape 146) : les PV de base des classes doublent, de 90, 70, 95 et 70 à 180 (Guerrier), 140 (Mage), 190 (Templier) et 140 (Assassin) ; les autres stats ne changent pas (docs/contenu-v1.md, section 34). Les humains de l'IA, qui ont les mêmes classes, en profitent aussi. Un Guerrier a 176 PV au niveau 35, au lieu de 113. Mesuré avant le choix (docs/equilibrage.md, section 12) : les combats de la Fosse durent 2,2 à 6,4 tours au lieu de 1,6 à 4,4, sans changer qui gagne ; les expéditions ne bougent guère. Les sauvegardes ne changent pas : les PV perdus du héros se comptent sur ses nouveaux PV max.
 
 ## 5. Les monstres
 
@@ -1279,7 +1280,7 @@ Les questions Q103 et suivantes ont été relevées le 25/10/2026 lors de la con
 
 Les questions Q114 et suivantes ont été relevées le 26/10/2026 lors de la conception des étapes 145 second type des classes et 146 mesure de la Fosse aux damnés.
 
-- Q114. (Étapes 145 et 146) Hypothèses retenues, à confirmer : le seuil se lit sur le niveau de combat, quelle que soit la façon d'y arriver (arme du palier 3 et armure du palier 1, ou arme du palier 4 seule, comptent comme le palier 2 partout) ; la ligne du héros du joueur en combat ne montre toujours pas ses types, seule sa fiche les dit. Libellés proposés sans validation (docs/contenu-v1.md, section 41). À trancher, d'après la mesure de l'étape 146 (docs/equilibrage.md, section 11) : les combats de la Fosse ne durent que 2 à 4 tours, et chaque palier se gagne ou se perd presque à coup sûr selon que le héros a 5 niveaux de plus ou de moins ; faut-il des combats plus longs (plus de PV pour les héros, par exemple), ou des paliers plus rapprochés ?
+- Q114. (Étapes 145 et 146) Hypothèses retenues, à confirmer : le seuil se lit sur le niveau de combat, quelle que soit la façon d'y arriver (arme du palier 3 et armure du palier 1, ou arme du palier 4 seule, comptent comme le palier 2 partout) ; la ligne du héros du joueur en combat ne montre toujours pas ses types, seule sa fiche les dit. Libellés proposés sans validation (docs/contenu-v1.md, section 41). D'après la mesure de l'étape 146 (docs/equilibrage.md, section 11), les combats de la Fosse ne duraient que 2 à 4 tours : l'utilisateur a doublé les PV de base des héros à l'étape 147. Reste à trancher : chaque palier se gagne ou se perd presque à coup sûr selon que le héros a 5 niveaux de plus ou de moins, et plus de PV n'y change rien ; faut-il des paliers plus rapprochés ?
 
 Les questions Q113 et suivantes ont été relevées le 26/10/2026 lors de la conception des étapes 140 fiche du codex, 141 suite de la piste, 142 panacée, 143 Désert de sel et Dragon des brumes, et 144 mesure de l'équilibrage.
 
@@ -1859,3 +1860,10 @@ Les questions Q104 et suivantes ont été relevées le 25/10/2026 lors de la con
 - Claude a relevé qu'un second type Spectre rendrait le héros insensible aux attaques Humain, et qu'une attaque Humain ne fait plus que x0,5 à un humain à double type : les combats entre héros de niveau 25 ou plus durent deux fois plus longtemps. L'utilisateur garde la règle des types.
 - Mesuré à l'étape 146 (docs/equilibrage.md, section 11) : la Fosse est un contrôle de niveau, gagnée à coup sûr 5 niveaux au-dessus de l'adversaire et perdue à coup sûr 5 niveaux au-dessous ; ses combats ne durent que 2 à 4 tours. Le second type allonge de moitié ceux des paliers 6 à 10 sans changer qui gagne, et ne change rien, au-delà du bruit, aux humains de fin de zone. Aucun réglage.
 - Hypothèses retenues, à confirmer : Q114.
+
+26/10/2026 (conception de l'étape 147, PV du héros) :
+
+- Demande de l'utilisateur : plus de PV pour le héros.
+- Claude a mesuré trois variantes avec l'outil d'équilibrage : PV de base x1,5, x2 et x3. Dans les trois, les combats de la Fosse durent plus longtemps sans changer qui gagne, l'écart de 5 niveaux d'un palier à l'autre décidant toujours ; les expéditions ne bougent pas au-delà du bruit.
+- Choix de l'utilisateur : PV de base x2 (section 4.4 ; docs/contenu-v1.md, section 34 ; docs/equilibrage.md, section 12).
+- Précisé en codant : la question posée à l'utilisateur donnait 168 PV pour un Guerrier de niveau 35 ; le calcul donne 176.

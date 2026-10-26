@@ -237,3 +237,18 @@ Constats :
 - La Fosse est un contrôle de niveau : un héros de 5 niveaux au-dessus de l'adversaire gagne toujours, 5 niveaux au-dessous perd toujours ; au même niveau, il gagne une fois sur deux environ, selon les classes. Chaque palier attend donc un palier d'équipement de plus, ce qu'il récompense d'autant.
 - Les combats sont très courts : 2 à 4 tours. Hypothèse, non mesurée : avec le bonus de type sur ses attaques Humain, neutres contre un humain à type simple, chaque coup emporte une grande part des PV adverses, et le plus rapide frappe le premier. Le second type allonge les combats de haut niveau de moitié environ, sans changer qui gagne.
 - Le joueur automatique de la Fosse n'emploie que l'attaque la plus forte : le poison et la paralysie des attaques de classe n'y pèsent pas, alors qu'ils pèseraient davantage dans des combats plus longs. Aucun réglage n'est fait ; la durée des combats et l'écart de 5 niveaux d'un palier à l'autre sont à trancher (gamedesign.md, Q114).
+
+## 12. PV du héros (étape 147)
+
+Mesuré avant le choix de l'utilisateur, sur 100 parties par classe et 200 combats par case de la Fosse, en relevant les PV de base des quatre classes (90, 70, 95 et 70 jusqu'ici), ceux des humains de l'IA compris :
+
+| Mesure | Avant | PV x1,5 | PV x2 (retenu) | PV x3 |
+|---|---|---|---|---|
+| Durée d'un combat de la Fosse, paliers 1, 4, 6, 8 et 10 (tours) | 1,6, 2,1, 3,0, 4,4, 2,9 | 2,0, 2,5, 3,6, 5,4, 3,5 | 2,2, 2,9, 4,2, 6,4, 4,2 | 2,7, 3,7, 5,3, 8,6, 5,4 |
+| Fosse : part de victoires au niveau de l'adversaire, paliers 6 à 10 | 66, 51, 40, 35, 66 % | 65, 57, 38, 37, 66 % | 62, 57, 36, 37, 66 % | 64, 58, 36, 38, 64 % |
+| Expéditions jusqu'à la Pythie (médiane : Guerrier, Mage, Templier, Assassin) | 64, 64, 71, 68 | 62, 63, 73, 68 | 64, 66, 70, 70 | 62, 65, 72, 68 |
+| Défaites (moyenne) | 10,5, 13,1, 8,7, 9,4 | 11,2, 13,1, 9,2, 9,1 | 12,6, 14,6, 10,0, 9,6 | 11,3, 13,5, 9,1, 10,2 |
+| Pythie de sel : tentatives, 1er essai | 2,2, 46 % | 2,2, 50 % | 2,7, 38 % | 2,5, 43 % |
+
+Constats : plus de PV allongent les combats entre humains, un peu moins qu'en proportion des PV gagnés (avec x2, un héros de niveau 35 a 1,56 fois plus de PV et ses combats durent environ 1,45 fois plus longtemps) ; ils ne changent pas qui gagne à la Fosse, où un héros de 5 niveaux de plus gagne toujours et un héros de 5 niveaux de moins perd toujours, quels que soient les PV. Dans les expéditions, les écarts sont de l'ordre du bruit : les défaites un peu plus nombreuses et la Pythie un peu plus dure avec x2 ne se retrouvent ni avec x1,5 ni avec x3. L'utilisateur a retenu x2.
+

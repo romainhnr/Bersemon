@@ -408,7 +408,7 @@ mod tests {
             .avec_heros(Cote::Adversaire, brigand.generer_heros().unwrap());
         let texte = etat(&combat, &Codex::default());
         assert!(
-            texte.contains("  > Aldric (héros, niv. 5) : 24/24 PV"),
+            texte.contains("  > Aldric (héros, niv. 5) : 33/33 PV"),
             "{texte}"
         );
         assert!(

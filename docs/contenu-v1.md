@@ -1335,10 +1335,12 @@ Stats de base des classes, dans l'ordre PV / Attaque / Défense / Attaque spéci
 
 | Classe | Stats de base (total) |
 |---|---|
-| Guerrier | 90 / 100 / 85 / 40 / 65 / 70 (450) |
-| Mage | 70 / 40 / 55 / 110 / 90 / 85 (450) |
-| Templier | 95 / 45 / 100 / 75 / 95 / 40 (450) |
-| Assassin | 70 / 105 / 55 / 40 / 60 / 120 (450) |
+| Guerrier | 180 / 100 / 85 / 40 / 65 / 70 (540) |
+| Mage | 140 / 40 / 55 / 110 / 90 / 85 (520) |
+| Templier | 190 / 45 / 100 / 75 / 95 / 40 (545) |
+| Assassin | 140 / 105 / 55 / 40 / 60 / 120 (520) |
+
+PV de base doublés le 26/10/2026, à l'étape 147 (choix de l'utilisateur, gamedesign.md, section 4.4) : ils étaient de 90, 70, 95 et 70, pour un total de 450 par classe. Un Guerrier a 33 PV au niveau 5, 128 au niveau 25 et 176 au niveau 35 (24, 83 et 113 avant).
 
 Niveau de combat : 5, plus 5 par palier de l'arme et 5 par palier de l'armure (5 à 40).
 

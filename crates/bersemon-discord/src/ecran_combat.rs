@@ -324,7 +324,7 @@ mod tests {
         assert_eq!(libelles, ["Potion (2) : Aldric"]);
         assert_eq!(
             options[0].description.as_deref(),
-            Some("Aldric (héros, niv. 5) : 24/24 PV")
+            Some("Aldric (héros, niv. 5) : 33/33 PV")
         );
     }
 }

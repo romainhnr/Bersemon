@@ -86,7 +86,8 @@ impl Classe {
     }
 
     /// Celles du héros qui combat, comme celles d'une espèce
-    /// (docs/contenu-v1.md, section 34).
+    /// (docs/contenu-v1.md, section 34). Ses PV de base ont doublé à l'étape
+    /// 147, pour des combats moins expéditifs entre humains (section 4.4).
     pub fn stats_de_base(self) -> StatsDeBase {
         let [
             pv,
@@ -96,10 +97,10 @@ impl Classe {
             defense_speciale,
             vitesse,
         ] = match self {
-            Classe::Guerrier => [90, 100, 85, 40, 65, 70],
-            Classe::Mage => [70, 40, 55, 110, 90, 85],
-            Classe::Templier => [95, 45, 100, 75, 95, 40],
-            Classe::Assassin => [70, 105, 55, 40, 60, 120],
+            Classe::Guerrier => [180, 100, 85, 40, 65, 70],
+            Classe::Mage => [140, 40, 55, 110, 90, 85],
+            Classe::Templier => [190, 45, 100, 75, 95, 40],
+            Classe::Assassin => [140, 105, 55, 40, 60, 120],
         };
         Stats {
             pv,
@@ -393,9 +394,9 @@ mod tests {
         assert_eq!(combattant.niveau().valeur(), 5);
         assert_eq!(combattant.attaques().liste(), [coup_de_poing()]);
         assert_eq!(combattant.habilete(), None);
-        // Base 90 au niveau 5, valeurs internes à 15 : (180 + 15) x 5 / 100
+        // Base 180 au niveau 5, valeurs internes à 15 : (360 + 15) x 5 / 100
         // + 5 + 10.
-        assert_eq!(combattant.stats().pv, 24);
+        assert_eq!(combattant.stats().pv, 33);
     }
 
     /// Section 4.4, décidée le 26/10/2026 pour l'étape 145.
