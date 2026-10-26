@@ -35,11 +35,12 @@ use bersemon_core::horodatage::Horodatage;
 use bersemon_core::inventaire::Objet;
 use bersemon_core::marchand::{prix_du_filet, prix_du_soin};
 use bersemon_core::monstre::Monstre;
+use bersemon_core::niveau::Niveau;
 use bersemon_core::partie::Partie;
 use bersemon_core::recompenses_du_codex::especes_capturees;
 use bersemon_core::sauvegarde::{ErreurSauvegarde, SauvegardeRepository};
 use bersemon_core::soin::Soin;
-use bersemon_core::stats::BonusDeStats;
+use bersemon_core::stats::{BonusDeStats, ValeursInternes};
 use bersemon_core::types::{Efficacite, efficacite};
 use bersemon_core::zone::{Zone, ZoneId};
 
@@ -52,9 +53,6 @@ const POTIONS_EMPORTEES: u32 = 6;
 const FILETS_EMPORTES: u32 = 10;
 /// Il ne lance un filet qu'avec au moins cette chance, en pourcentage.
 const CHANCE_MINIMALE_DU_FILET: u32 = 50;
-/// La partie s'arrête à la chute du troisième Apôtre, le Margrave de givre,
-/// puis de l'humain de la dernière zone de la carte, la Pythie de sel.
-const APOTRES_A_VAINCRE: usize = 3;
 /// Hypothèse : le temps réel qui passe à chaque choix du joueur, pauses
 /// comprises. Il règle ce que les travaux de Gunther, de 30 minutes à 8
 /// heures, laissent faire d'expéditions pendant qu'ils durent.
@@ -67,6 +65,11 @@ const PART_DES_NIVEAUX_AVANT_D_ENTRER: u8 = 3;
 const PV_AVANT_LE_BOSS: u32 = 80;
 /// En combat de fin de zone, il soigne le monstre actif sous ces PV.
 const PV_DU_SOIN_EN_COMBAT: u32 = 35;
+/// Il ne compose son équipe, selon les types, qu'avec des monstres à ce nombre
+/// de niveaux au plus de son meilleur ; contre un Apôtre, l'avantage des types
+/// compte davantage.
+const ECART_DE_NIVEAU_DE_L_EQUIPE: u8 = 5;
+const ECART_DE_NIVEAU_CONTRE_L_APOTRE: u8 = 10;
 /// Il ne change de monstre que pour un monstre qui vaut au moins deux fois
 /// plus face à l'adversaire : changer coûte une attaque subie. Une marge de
 /// 1,5 multipliait les défaites dans les premières zones, une de 3 ne
@@ -227,7 +230,9 @@ pub fn jouer_une_partie(contenu: &ContenuV1, classe: Classe, graine: u64) -> Bil
         if en_cours.is_none()
             && matches!(deroulement.attente(), Attente::Camp)
             && deroulement.partie().is_some_and(|partie| {
-                partie.apotres_vaincus().len() >= APOTRES_A_VAINCRE
+                // La partie s'arrête à la chute du dernier Apôtre de la piste
+                // et de l'humain de la dernière zone de la carte.
+                partie.apotres_vaincus().len() >= contenu.piste().apotres().count()
                     && derniere_zone_menee_au_bout(partie, contenu)
             })
         {
@@ -576,8 +581,11 @@ fn s_equiper(partie: &Partie) -> Option<Choix> {
     })
 }
 
-/// Les monstres se classent par niveau, ou, si un Apôtre attend au bout de
-/// la zone visée, par ce qu'ils valent face à lui. Une place libre dans
+/// Les monstres se classent par ce qu'ils valent face à ce qui attend dans
+/// la zone visée : l'Apôtre au bout de la zone, sinon l'équipe de l'humain
+/// qui la garde encore, sinon ses espèces sauvages, à son niveau moyen.
+/// Depuis l'étape 163, seuls comptent ainsi les monstres à 5 niveaux au plus
+/// du meilleur, 10 contre un Apôtre ; les autres viennent après, par niveau. Une place libre dans
 /// l'équipe accueille le meilleur du camp ; sinon, le moins bon de l'équipe
 /// lui cède sa place, s'il vaut moins. Contre l'Apôtre, le meilleur de
 /// l'équipe passe en tête.
@@ -593,11 +601,45 @@ fn meilleure_equipe(partie: &Partie, contenu: &ContenuV1) -> Option<ActionDeGest
             partie.apotres_vaincus(),
         )
         .map(|apotre| apotre.generer(&mut GenerateurAleatoire::new(0)));
-    let valeur = |monstre: &Monstre| match &apotre {
-        Some(apotre) => valeur_face_a(monstre, apotre),
-        None => f64::from(monstre.niveau().valeur()),
+    let adversaires: Vec<Monstre> = match (&apotre, zone.humain()) {
+        (Some(apotre), _) => vec![apotre.clone()],
+        (None, Some(humain)) if !partie.humains_vaincus().contains(humain.id()) => {
+            humain.generer_equipe()
+        }
+        _ => {
+            let (min, max) = zone.niveaux();
+            let moyen = Niveau::new((min.valeur() + max.valeur()) / 2).expect("niveau de la zone");
+            zone.especes()
+                .iter()
+                .filter_map(|espece| {
+                    Monstre::creer(espece.clone(), moyen, ValeursInternes::default(), false).ok()
+                })
+                .collect()
+        }
     };
     let collection = partie.collection();
+    let niveau_du_meilleur = collection
+        .equipe()
+        .iter()
+        .chain(collection.camp())
+        .map(|monstre| monstre.niveau().valeur())
+        .max()
+        .unwrap_or(1);
+    let valeur = |monstre: &Monstre| {
+        let niveau = monstre.niveau().valeur();
+        let ecart = if apotre.is_some() {
+            ECART_DE_NIVEAU_CONTRE_L_APOTRE
+        } else {
+            ECART_DE_NIVEAU_DE_L_EQUIPE
+        };
+        if niveau.saturating_add(ecart) < niveau_du_meilleur {
+            return f64::from(niveau) - 1_000.0;
+        }
+        adversaires
+            .iter()
+            .map(|adversaire| valeur_face_a(monstre, adversaire))
+            .sum::<f64>()
+    };
     let meilleur_du_camp = collection
         .camp()
         .iter()

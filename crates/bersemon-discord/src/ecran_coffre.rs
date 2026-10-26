@@ -20,8 +20,8 @@ use bersemon_presentation::soins::soins;
 use crate::composants::{Cle, Vue, objet_en_texte};
 use crate::ecran_camp::retour;
 use crate::message::{
-    LONGUEUR_MAX, OPTIONS_PAR_MENU, OptionDeMenu, PRINCIPAL, Question, Rangee, SECONDAIRE, bouton,
-    menu, rangees,
+    LONGUEUR_MAX, OPTIONS_PAR_MENU, OptionDeMenu, PRINCIPAL, Question, RANGEES_MAX, Rangee,
+    SECONDAIRE, bouton, menu, menus, rangees,
 };
 
 /// Quantités proposées en plus de tout ce qu'il y en a. Un seul lot pour
@@ -48,12 +48,12 @@ pub fn coffre(partie: &Partie) -> Question {
         options(partie.sac(), true),
     ));
     lignes.extend(menu(
-        Cle::SortirRessourcesDuCoffre,
+        Cle::SortirRessourcesDuCoffre(0),
         "Prendre d'autres objets dans le coffre",
         options_d_objets(partie.coffre_du_camp()),
     ));
     lignes.extend(menu(
-        Cle::RangerRessourcesAuCoffre,
+        Cle::RangerRessourcesAuCoffre(0),
         "Ranger d'autres objets dans le coffre",
         options_d_objets(partie.sac()),
     ));
@@ -171,16 +171,21 @@ fn options(inventaire: &Inventaire, avec_capsules: bool) -> Vec<OptionDeMenu> {
 /// Les ressources du sac et du coffre (section 14.3). Les mêmes clés que les
 /// autres objets du coffre, qui sont sur un autre écran.
 pub fn ressources(partie: &Partie) -> Question {
-    let mut lignes: Vec<Rangee> = Vec::new();
-    lignes.extend(menu(
+    // Une rangée pour les boutons, quatre pour les menus : ceux du coffre
+    // d'abord, puis ceux du sac dans les rangées qui restent. Au-delà, le
+    // sac se range en entier par "Tout ranger" (section 14.3).
+    let mut lignes = menus(
         Cle::SortirRessourcesDuCoffre,
         "Prendre des ressources dans le coffre",
         options_de_ressources(partie.coffre_du_camp()),
-    ));
-    lignes.extend(menu(
+        RANGEES_MAX - 1,
+    );
+    let restantes = RANGEES_MAX - 1 - lignes.len();
+    lignes.extend(menus(
         Cle::RangerRessourcesAuCoffre,
         "Ranger des ressources dans le coffre",
         options_de_ressources(partie.sac()),
+        restantes,
     ));
     lignes.extend(rangees(vec![
         bouton(Cle::Afficher(Vue::Coffre), "Retour au coffre", SECONDAIRE),
@@ -249,7 +254,7 @@ fn options_d_objets(inventaire: &Inventaire) -> Vec<OptionDeMenu> {
 /// Toutes celles d'une sorte pour chaque ressource : 17 sortes dans le
 /// contenu.
 fn options_de_ressources(inventaire: &Inventaire) -> Vec<OptionDeMenu> {
-    let mut options: Vec<OptionDeMenu> = inventaire
+    inventaire
         .ressources()
         .iter()
         .map(|(ressource, nombre)| {
@@ -259,9 +264,7 @@ fn options_de_ressources(inventaire: &Inventaire) -> Vec<OptionDeMenu> {
                 Some("Tout".to_string()),
             )
         })
-        .collect();
-    options.truncate(OPTIONS_PAR_MENU);
-    options
+        .collect()
 }
 
 fn option(objet: Objet, libelle: String, description: Option<String>) -> OptionDeMenu {

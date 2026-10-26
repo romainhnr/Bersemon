@@ -26,9 +26,9 @@ pub enum Meteo {
     Pluie,
     Tempete,
     Grele,
-    /// Seulement dans un désert, que le jeu n'a pas encore.
+    /// Seulement dans un désert.
     TempeteDeSable,
-    /// Seulement dans une zone de mer, que le jeu n'a pas encore.
+    /// Seulement dans une zone de mer.
     Cyclone,
     Canicule,
 }

@@ -1,0 +1,50 @@
+# Gemmâme
+palette
+o 1b1420
+a 6a6058
+e 46403a
+f 8a8078
+b d8304a
+c 941a30
+d ff7a90
+w d8f0ff
+x 9ac0e0
+k 1b1420
+y fff0a0
+shiny
+o 1b1420
+a 6a6058
+e 46403a
+f 8a8078
+b 30b0d8
+c 1a7294
+d 80e8ff
+w ffe0f0
+x e0a0c0
+k 1b1420
+y fff0a0
+dessin
+....................o...
+...................oyo..
+...oo...........o...oxo.
+..oxyo....oo...oco.owwxo
+.owwxo...odco.odcoowwwwx
+owwwwxo.odbcoodbdoowwwwx
+owwwwxo.oddcoodbdcoxwwwx
+oxwwwxoodbdbcodbdcooxwxo
+.oxwxo.odbdbcodbdco.oxo.
+..oxoooodbdbbdbbdco.oo..
+.o.oodcodbdbbbbbdcooco..
+oyoodbcodbkbkbbddoodco..
+.o.odbbdbbdbcbbdcodbco..
+...odbbbcbkkkdbdcodbco..
+...odbbcoddcodbdbdbco...
+...ocbbcoddcodbdcbbco...
+....odbcoddbdbbdodbco...
+....odbcoddbbbbddbbco...
+....occcfccccccccccco...
+.....ofaaaaaaaaaaaeo....
+....oeaaaaaaaaaaaaaeo...
+.....oeaaaaaaaaaaaeo....
+......oeeeeeaeeeeeo.....
+.......oooooeooooo......

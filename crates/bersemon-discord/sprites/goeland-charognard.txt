@@ -1,0 +1,52 @@
+# Goéland charognard
+palette
+o 1b1420
+b d8d8d0
+c a0a098
+d f4f4ee
+a 3a3a44
+e 24242c
+f 5a5a66
+y e8c040
+r d03030
+v b08020
+k 1b1420
+w e8e0cc
+shiny
+o 1b1420
+b 3a3444
+c 24202e
+d 5a5468
+a e8e4f0
+e b8b4c4
+f ffffff
+y 50d0e0
+r f0f040
+v 3090a0
+k f04040
+w e8e0cc
+dessin
+..................ooofeo
+................oofffeo.
+...............offaaaeo.
+..............ofaaaaaeo.
+..............ofaeaaeo..
+......ooooo..ofaaeaaeo..
+.....oddddco.ofaeaaeo...
+...ooodkbbco.ofaeaaeo...
+.ooyycbbbbbcofaaeaaeo...
+oyyyyodbbbcoofaaeaeo....
+oyrooocccbbdeaaeaaeo....
+ovo...ooodbbceaeaeo.....
+.o......odbbbceaeco.....
+.......ocbbbbbcedcco....
+........odbbbbbdcaaooo..
+........ocbbbbbbcaaaaao.
+.........occcbcccooaao..
+..........oyocyoo..oo...
+..........oyooyo........
+....o....oyo.oyo...o....
+...owoooooyoooyoooowo...
+....owwwwwwwwwwwwwwo....
+...owoooooooooooooowo...
+....o..............o....

@@ -4896,7 +4896,7 @@ pub(crate) mod tests {
             .apotres()
             .map(|apotre| apotre.espece().id().clone())
             .collect();
-        assert_eq!(partie.ames_d_apotres().len(), 3);
+        assert_eq!(partie.ames_d_apotres().len(), piste.apotres().count());
         // Tous ceux de la piste ne suffisent pas : le Béhérit attend les
         // âmes des 13 Apôtres de la traque complète (section 9.4).
         assert_eq!(

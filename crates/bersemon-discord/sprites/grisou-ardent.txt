@@ -1,0 +1,44 @@
+# Grisou ardent
+palette
+o 1b1420
+b 8ab040
+c 5a7a24
+d b4d470
+f ff7a20
+j fff0a0
+k 1b1420
+y f04040
+shiny
+o 1b1420
+b 8a60c0
+c 5e3c8a
+d b490e0
+f 40c0ff
+j e0fcff
+k 1b1420
+y f0f040
+dessin
+........................
+........................
+.....................o..
+...o................ofo.
+..ofo................o..
+...oooooo..oo...ooooo...
+...oddddcooffoooddddco..
+..odbbbbbddffdddbbbbbco.
+..odbbbbbbffffbbbbbbbco.
+.ocbbbbbbbbfffbbbbbbbbco
+..odbbbykbfffffykbbbbco.
+..ocbbbbbffjjjffbbbbbco.
+...ocbbbbffjjjffbbbbco..
+....odbbbffjjjffbbbco...
+..o.ocbbbbfjjjfbbbbco...
+.ofo.odbbbbfffbbbbco..o.
+..o..odbbbkkkkkbbbbcoofo
+....ocbbbbbbbbbbbbbbcoo.
+.....ocbbbbbccbbbbbco...
+......occbccooccbcco....
+.......oocoo..oocoo.....
+.........o......o.......
+........................
+........................

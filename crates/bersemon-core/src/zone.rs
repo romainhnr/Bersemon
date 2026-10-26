@@ -68,6 +68,13 @@ impl Repartition {
         combat: 80,
         coffre: 15,
     };
+
+    /// Celle des zones annexes : combat 60 %, coffre 30 %, monstre rare
+    /// 10 % (section 9.9).
+    pub const DES_ANNEXES: Repartition = Repartition {
+        combat: 60,
+        coffre: 30,
+    };
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

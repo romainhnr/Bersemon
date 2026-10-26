@@ -1,0 +1,42 @@
+# Golem de fer noir
+palette
+o 1b1420
+b 3a3a44
+c 24242c
+d 5a5a66
+a 8a8a96
+f ff7a20
+j fff0a0
+shiny
+o 1b1420
+b 6a5a40
+c 463a28
+d 8e7c5a
+a d8c890
+f 40c0ff
+j e0fcff
+dessin
+........................
+.........ooooooo........
+........oddddddco.......
+........odbbbbbco.......
+........odffbbbco.......
+........odbbbbbco.......
+......ooodbbbbbcooo.....
+..oooodddbbbbbbbddcoooo.
+.oddddbabbbbbbbbbabdddco
+.odabbbbbbbbbcbbbbbbabco
+.odbbbbbbbbbfccbbbbbbbco
+.odbbbbbbbbfffcbbbbbbbco
+.odbbbbbcbffjffcbbbbbbco
+.odbbbbbbcbfffbcbbbbbbco
+.odbbbbbbbcbfbbbbbbbbbco
+odbbbbbbbbbbbbbbbbbbbbbc
+odbbbbbabbbbbbbbbabbbbbc
+odbbbbcbbbbcccbbbbcbbbbc
+odbbbcodbbcooodbbcoccccc
+occcccodbbco.odbbcoooooo
+.oooooodbbco.odbbco.....
+......odbbco.odbbco.....
+......occcco.occcco.....
+.......oooo...oooo......

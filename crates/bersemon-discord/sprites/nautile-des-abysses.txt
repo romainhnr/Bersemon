@@ -1,0 +1,52 @@
+# Nautile des abysses
+palette
+o 1b1420
+b e0c8a0
+c b09870
+d f4e6cc
+a a0522a
+e 6a3418
+s c87a6a
+u 985448
+v e8a090
+k 1b1420
+y f0f0a0
+z 8ab8e8
+shiny
+o 1b1420
+b 4a4a6a
+c 303048
+d 6a6a90
+a 40d0e0
+e 208090
+s 8ac8a0
+u 5a9874
+v b0e8c4
+k 1b1420
+y f0f0a0
+z 8ab8e8
+dessin
+........................
+........................
+....o...................
+...ozo......ooooo.......
+..o.o.....ooddddcooo....
+.ozo.....oadbabbadcao...
+..o.....odabbabbabbao...
+.o.....odbabbabcabbaco..
+ozo....odaabacccccaaco..
+.o....odbabbaceeecabbco.
+......odbabbcceeeccbbco.
+....ooudbabbaceeecabbco.
+...ovvsvuabbacccccabbco.
+...oykssuabbabbcbbabbco.
+..ousssssubaabaabaabco..
+.oosvsssubbabbabbabbco..
+ossosusuucbabbabbabco...
+soosoososocabbabbaco....
+o.osoososooocccccoo.....
+.oso.ososso.ooooo.......
+.osooso.oso.............
+oso.oso.oso.............
+.o..oso..o..............
+.....o..................

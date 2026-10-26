@@ -1,0 +1,50 @@
+# Hydre des marées
+palette
+o 1b1420
+b 2a7a6a
+c 1a5246
+d 48a490
+m 9ad0a8
+r f0d040
+g f0ece0
+k 1b1420
+w 3a6ab0
+x 24488a
+z 8ab8e8
+shiny
+o 1b1420
+b 8a3a5a
+c 5e243c
+d b45a7e
+m e8a8c0
+r 60ff80
+g f0ece0
+k 1b1420
+w 3a6ab0
+x 24488a
+z 8ab8e8
+dessin
+........................
+...............o........
+..........ooooomo.......
+........ooddrdmo........
+.......occbbbbco........
+....oooookkkbbco........
+..ooddrdmooodco........o
+.occbbbbco.odbco..ooooom
+..okkkbbco.ocbcoooddrdmo
+...ooodco...odcoccbbbbco
+.....odco...odbcokkkbbco
+.....odco...ocbcoooodco.
+.....odco....odco..odco.
+.....odco....odco..odco.
+.....odco...odbco..odco.
+.....ocbco..odbco.odbco.
+......odbcooodcooodbco..
+......ocbbdddbbdcodbco..
+......oodbbbbbbbbdbco...
+..oooozcbbbbbbbbbbbcooo.
+.ozzzzwwccbbbbbbbcczzzxo
+oxwwwwwwwwcccccccwwwwwwx
+.oxxxxwwwwwwwwwwwwwxxxxo
+..ooooxxxxxxxxxxxxxoooo.

@@ -1,0 +1,50 @@
+# Dragon de rouille
+palette
+o 1b1420
+b a8582a
+c 74381a
+d cc7e48
+a 8a5a40
+e 5e3a28
+f b07a5a
+s 9aa0a8
+m 5a7a74
+r f0d040
+w e8e0cc
+shiny
+o 1b1420
+b 5a7aa0
+c 3a5274
+d 7ea0c8
+a 4a5a7a
+e 303c54
+f 6a7aa0
+s e0c060
+m c0e0f0
+r ff4060
+w e8e0cc
+dessin
+..................oooo..
+...............ooofffeo.
+....o..o......offfaaeo..
+...osooso....ofeaaaaeo..
+..ossoso.....ofeaaaeeo..
+..osdso......ofeaaeeo...
+oodbbbco....ofaeaaeeo...
+ddbrbbbco...ofeaaaeeo...
+dccbbbco....ofeaaeaaeo..
+coocbbco...oeaeaaeeeo...
+wowodbco....oeeaeeoo....
+o.oodbbcoooooooeeo......
+...ocbbcoddddddddco.....
+....odbbdsbbsbbsbbco....
+....odbbbsbbsbmsbbbco...
+....occbbsmbssbssmbco...
+.....oocbbsbbsbbsbbcoo..
+.......odbsbbsbbsbbbdco.
+.......odbbcccccbbbcbbco
+.......odbcooooodbcocbbc
+.......odbco...odbcooccc
+.......occco...occco.ooc
+........ooo.....ooo....o
+........................

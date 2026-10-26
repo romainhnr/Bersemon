@@ -25,7 +25,7 @@ use crate::catalogue::Catalogue;
 use crate::equipement::{ObjetDEquipement, ObjetDEquipementId, SorteDObjet};
 use crate::espece::{AttaqueApprise, Espece, EspeceId, Rarete, Role};
 use crate::evolution::{ConditionEvolution, Evolution};
-use crate::expedition::ParametresCoffre;
+use crate::expedition::{ParametresCoffre, Tresor};
 use crate::expedition_automatique::ParametresExpeditionAutomatique;
 use crate::filet::Filet;
 use crate::habilete::Habilete;
@@ -46,7 +46,7 @@ use crate::tour::TourSansFond;
 use crate::traque::{Apotre, Chapitre, Indice, Piste};
 use crate::tutoriel::Conseil;
 use crate::types::{Type, TypesMonstre};
-use crate::zone::{EspeceRare, Zone, ZoneId};
+use crate::zone::{EspeceRare, Repartition, Zone, ZoneId};
 
 use Categorie::{Physique, Speciale};
 use Statut::{Paralysie, Poison};
@@ -92,7 +92,15 @@ const INDICE_6: &str = "le porte-étendard vaincu a parlé : le Margrave attend 
 
 const INDICE_7: &str = "dans la forteresse du Margrave, une carte de cuir marquée du même sceau : au sud, au-delà des cols, le Désert de sel, où une ville entière a été changée en sel. Une prophétesse y attendait des nouvelles du Margrave.";
 
-const INDICE_8: &str = "la Pythie vaincue a parlé avant de se taire : un autre Apôtre a reçu la marque du Démiurge. Il attend au-delà du désert, là où la route s'efface sous le sel. Elle n'a pas su dire où.";
+const INDICE_8: &str = "la Pythie vaincue a parlé avant de se taire : un autre Apôtre a reçu la marque du Démiurge. Il attend au-delà du désert, sur la côte où la mer rend ses morts : le Port des Noyés.";
+
+// Port des Noyés et Mines de Fer-Noir, section 44 de docs/contenu-v1.md
+// (étape 163).
+const INDICE_9: &str = "le contrebandier vaincu a parlé : l'Amiral noyé attend au bout de la jetée, sur le pont d'un vaisseau coulé que la marée découvre chaque nuit.";
+
+const INDICE_10: &str = "dans la cabine de l'Amiral, un livre de bord scellé du même sceau : à l'est, les Mines de Fer-Noir, où les mineurs creusent encore après leur mort. Un cinquième Apôtre y règne.";
+
+const INDICE_11: &str = "le contremaître vaincu a parlé : le Prévôt des fosses juge les damnés au fond du dernier puits, là où le fer noir saigne.";
 
 /// Au bout de la première expédition menée au bout, quand le joueur porte
 /// l'âme de Bertrand (section 14.2).
@@ -158,6 +166,29 @@ const AVANT_LA_PYTHIE: &str = "Au cœur du désert, parmi les ruines d'une ville
 
 const APRES_LA_PYTHIE: &str = "La Pythie s'effondre dans le sel, un dernier mot aux lèvres.";
 
+const AVANT_LE_CONTREBANDIER: &str = "Sur le quai, entre des caisses éventrées, un contrebandier compte ses pièces à la lueur d'une lanterne. Il siffle : trois bêtes surgissent de l'eau noire. Personne n'approche de la jetée sans payer.";
+
+const APRES_LE_CONTREBANDIER: &str =
+    "Le contrebandier s'effondre sur les pavés mouillés, sa bourse répandue dans une flaque.";
+
+const AVANT_LE_CONTREMAITRE: &str = "Au fond de la galerie, un contremaître au fouet de chaîne surveille des mineurs qui ne respirent plus. Trois bêtes sortent de l'ombre des boisages à son signal.";
+
+const APRES_LE_CONTREMAITRE: &str =
+    "Le contremaître tombe à genoux, et les mineurs morts lâchent enfin leurs pioches.";
+
+const AVANT_L_AMIRAL: &str = "Au bout de la jetée, la marée se retire sur l'épave d'un vaisseau de guerre. Sur le pont, un officier aux poumons pleins d'eau se dresse : l'Amiral noyé, Apôtre du Démiurge, qui a mené son équipage par le fond. Il n'y aura pas de fuite.";
+
+const EPILOGUE_DE_L_AMIRAL: &str = "L'Amiral noyé s'effondre sur le pont, et la mer reprend son navire. Le même sceau, une main ouverte, est gravé sur la barre. Quatre Apôtres sont tombés ; le Démiurge, lui, attend toujours. Votre traque continue.";
+
+const AVANT_LE_PREVOT: &str = "Au fond du dernier puits, sur un trône taillé dans le fer noir, un juge enchaîné à ses condamnés lève la tête : le Prévôt des fosses, Apôtre du Démiurge. Il n'y aura pas de fuite.";
+
+const EPILOGUE_DU_PREVOT: &str = "Le Prévôt des fosses s'effondre, et ses chaînes se brisent avec lui. Le même sceau, une main ouverte, est gravé dans le fer de son trône. Cinq Apôtres sont tombés ; le Démiurge, lui, attend toujours. Votre traque continue.";
+
+// La carte d'une annexe, trouvée dans un coffre de sa zone (section 9.9).
+const DECOUVERTE_DE_L_EPAVE: &str = "Au fond du coffre, une carte marine détrempée marque d'une croix une épave au large du port, là où une bête immense aurait sombré avec un navire.";
+
+const DECOUVERTE_DU_FILON: &str = "Au fond du coffre, un plan de mine griffonné montre une galerie murée, où le filon brille d'un rouge de sang.";
+
 const AVANT_LE_MARGRAVE: &str = "Au sommet, sur un trône de glace entouré de soldats figés, le Margrave de givre se lève. Apôtre du Démiurge, il a offert son armée au froid. Il n'y aura pas de fuite.";
 
 const EPILOGUE_DU_MARGRAVE: &str = "Le Margrave de givre se brise sur son trône. Le même sceau, une main ouverte, est gravé dans la glace. Trois Apôtres sont tombés ; le Démiurge, lui, attend toujours. Votre traque continue.";
@@ -173,6 +204,8 @@ const EPILOGUE_DE_L_ABBESSE: &str = "L'Abbesse écorchée s'effondre sur l'autel
 const CARNET_DU_BARON: &str = "Baron pendu, abattu dans la Vallée des Brumes.";
 const CARNET_DE_L_ABBESSE: &str = "Abbesse écorchée, abattue dans l'Abbaye des Cendres.";
 const CARNET_DU_MARGRAVE: &str = "Margrave de givre, abattu dans le Col du Givre-Noir.";
+const CARNET_DE_L_AMIRAL: &str = "Amiral noyé, abattu au Port des Noyés.";
+const CARNET_DU_PREVOT: &str = "Prévôt des fosses, abattu dans les Mines de Fer-Noir.";
 const CARNET_DU_DEMIURGE: &str = "Démiurge, abattu dans l'Éclipse.";
 
 const AME_DU_BARON: &str =
@@ -183,6 +216,12 @@ const AME_DE_L_ABBESSE: &str =
 
 const AME_DU_MARGRAVE: &str =
     "L'âme du Margrave de givre s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.";
+
+const AME_DE_L_AMIRAL: &str =
+    "L'âme de l'Amiral noyé s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.";
+
+const AME_DU_PREVOT: &str =
+    "L'âme du Prévôt des fosses s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.";
 
 /// L'Éclipse et le Démiurge, section 23 de docs/contenu-v1.md (étapes 88 à
 /// 90).
@@ -621,6 +660,154 @@ impl ContenuV1 {
                 .avec_meteos(vec![Meteo::TempeteDeSable, Meteo::Canicule])
         })
         .expect("Désert de sel conforme aux règles");
+        // Au service de l'Amiral noyé, il garde le Port. Dès le Port, le
+        // héros d'un humain gardien combat au niveau maximal de sa zone, à
+        // part de son équipement (section 10.7, étape 163).
+        let contrebandier = Humain::new(
+            HumainId::new("contrebandier"),
+            "Contrebandier",
+            vec![
+                (trouver("sirene-putride"), niveau(51)),
+                (trouver("hydre-des-marees"), niveau(52)),
+            ],
+            600,
+            AVANT_LE_CONTREBANDIER,
+            APRES_LE_CONTREBANDIER,
+        )
+        .expect("Contrebandier conforme aux règles")
+        .avec_heros(
+            Classe::Assassin,
+            Some(objet("crocs-du-champion")),
+            Some(objet("manteau-de-cendre")),
+        )
+        .avec_niveau_du_heros(niveau(51))
+        .avec_ia(IaHumain::Relevee);
+        // La seule zone de mer, où souffle le cyclone (section 9.7).
+        let meteos_du_port = vec![Meteo::Pluie, Meteo::Tempete, Meteo::Cyclone];
+        // Ouvert par l'indice que laisse la Pythie (section 9.4).
+        let port = Zone::new(
+            ZoneId::new("port-des-noyes"),
+            "Port des Noyés",
+            (niveau(46), niveau(51)),
+            5,
+            3,
+            vec![
+                trouver("crabe-necrophage"),
+                trouver("sirene-putride"),
+                trouver("goeland-charognard"),
+            ],
+            vec![EspeceRare {
+                espece: trouver("hydre-des-marees"),
+                pacifique: false,
+            }],
+            expedition_automatique(7, 340..=650, 3800..=5600, 1..=3, 280..=460),
+            coffre(220..=340, capsules_de("port-des-noyes")),
+        )
+        .and_then(|zone| zone.avec_monstre_cache(schnoz()))
+        .map(|zone| {
+            zone.avec_humain(contrebandier)
+                .avec_meteos(meteos_du_port.clone())
+        })
+        .expect("Port des Noyés conforme aux règles");
+        // Au service du Prévôt des fosses, il garde les Mines (section
+        // 10.7).
+        let contremaitre = Humain::new(
+            HumainId::new("contremaitre"),
+            "Contremaître",
+            vec![
+                (trouver("golem-de-fer-noir"), niveau(57)),
+                (trouver("mineur-possede"), niveau(57)),
+                (trouver("dragon-de-rouille"), niveau(58)),
+            ],
+            700,
+            AVANT_LE_CONTREMAITRE,
+            APRES_LE_CONTREMAITRE,
+        )
+        .expect("Contremaître conforme aux règles")
+        .avec_heros(
+            Classe::Guerrier,
+            Some(objet("hache-de-fer-noir")),
+            Some(objet("cuirasse-des-abysses")),
+        )
+        .avec_niveau_du_heros(niveau(57))
+        .avec_ia(IaHumain::Relevee);
+        let meteos_des_mines = vec![Meteo::Grele, Meteo::Tempete];
+        // Ouvertes par l'indice que laisse l'Amiral noyé (section 9.4).
+        let mines = Zone::new(
+            ZoneId::new("mines-de-fer-noir"),
+            "Mines de Fer-Noir",
+            (niveau(52), niveau(57)),
+            5,
+            3,
+            vec![
+                trouver("golem-de-fer-noir"),
+                trouver("mineur-possede"),
+                trouver("grisou-ardent"),
+            ],
+            vec![EspeceRare {
+                espece: trouver("dragon-de-rouille"),
+                pacifique: false,
+            }],
+            expedition_automatique(8, 400..=760, 4600..=6800, 1..=3, 330..=540),
+            coffre(260..=400, capsules_de("mines-de-fer-noir")),
+        )
+        .and_then(|zone| zone.avec_monstre_cache(schnoz()))
+        .map(|zone| {
+            zone.avec_humain(contremaitre)
+                .avec_meteos(meteos_des_mines.clone())
+        })
+        .expect("Mines de Fer-Noir conforme aux règles");
+        // Les annexes, ouvertes par une carte trouvée dans un coffre de leur
+        // zone : un peu plus hautes, avec les espèces de leur zone, une
+        // espèce rare qui ne vit que là et des coffres plus riches, qui
+        // gardent les capsules de leur zone (section 9.9). Leurs paramètres
+        // d'expédition automatique ne servent jamais.
+        let annexe = |zone: Result<Zone, _>, de: &Zone, meteos: Vec<Meteo>, decouverte: &str| {
+            zone.and_then(|zone: Zone| zone.avec_repartition(Repartition::DES_ANNEXES))
+                .and_then(|zone| zone.avec_monstre_cache(schnoz()))
+                .map(|zone| Annexe::new(zone.avec_meteos(meteos), de.id().clone(), decouverte))
+        };
+        let epave = annexe(
+            Zone::new(
+                ZoneId::new("epave-du-leviathan"),
+                "Épave du Léviathan",
+                (niveau(50), niveau(53)),
+                3,
+                3,
+                port.especes().to_vec(),
+                vec![EspeceRare {
+                    espece: trouver("nautile-des-abysses"),
+                    pacifique: true,
+                }],
+                port.expedition_automatique().clone(),
+                coffre(300..=450, capsules_de("port-des-noyes")).avec_tresors(tresors_d_annexe()),
+            ),
+            &port,
+            meteos_du_port,
+            DECOUVERTE_DE_L_EPAVE,
+        )
+        .expect("Épave du Léviathan conforme aux règles");
+        let filon = annexe(
+            Zone::new(
+                ZoneId::new("filon-ecarlate"),
+                "Filon écarlate",
+                (niveau(56), niveau(59)),
+                3,
+                3,
+                mines.especes().to_vec(),
+                vec![EspeceRare {
+                    espece: trouver("gemmame"),
+                    pacifique: true,
+                }],
+                mines.expedition_automatique().clone(),
+                coffre(340..=500, capsules_de("mines-de-fer-noir"))
+                    .avec_tresors(tresors_d_annexe()),
+            ),
+            &mines,
+            meteos_des_mines,
+            DECOUVERTE_DU_FILON,
+        )
+        .expect("Filon écarlate conforme aux règles");
         // Le Baron pendu attend au fond de la Vallée, que le second indice,
         // donné par le Bourreau, ouvre. Premier Apôtre, il combat au niveau
         // maximal de la Vallée, 20, et ne connaît qu'une attaque Obscur
@@ -673,14 +860,50 @@ impl ContenuV1 {
         .expect("chapitre du Margrave conforme aux règles");
         // Le septième indice se trouve au bout de l'expédition qui abat le
         // Margrave, dans le Col, et ouvre le Désert ; le huitième, laissé par
-        // la Pythie, n'ouvre encore rien (section 9.4).
+        // la Pythie, ouvre le Port, où le Contrebandier laisse le neuvième
+        // (section 9.4).
+        let amiral = Apotre::new(
+            trouver("amiral-noye"),
+            &port,
+            AVANT_L_AMIRAL,
+            EPILOGUE_DE_L_AMIRAL,
+        )
+        .expect("Amiral noyé conforme aux règles")
+        .avec_recit_de_l_ame(AME_DE_L_AMIRAL)
+        .avec_ligne_du_carnet(CARNET_DE_L_AMIRAL);
+        let chapitre_de_l_amiral = Chapitre::new(
+            vec![
+                indice(&col, INDICE_7),
+                indice(&desert, INDICE_8),
+                indice(&port, INDICE_9),
+            ],
+            amiral,
+        )
+        .expect("chapitre de l'Amiral conforme aux règles");
+        // Le dixième indice se trouve au bout de l'expédition qui abat
+        // l'Amiral, au Port, et ouvre les Mines (section 9.4).
+        let prevot = Apotre::new(
+            trouver("prevot-des-fosses"),
+            &mines,
+            AVANT_LE_PREVOT,
+            EPILOGUE_DU_PREVOT,
+        )
+        .expect("Prévôt des fosses conforme aux règles")
+        .avec_recit_de_l_ame(AME_DU_PREVOT)
+        .avec_ligne_du_carnet(CARNET_DU_PREVOT);
+        let chapitre_du_prevot = Chapitre::new(
+            vec![indice(&port, INDICE_10), indice(&mines, INDICE_11)],
+            prevot,
+        )
+        .expect("chapitre du Prévôt conforme aux règles");
         let piste = Piste::new(vec![
             chapitre_du_baron,
             chapitre_de_l_abbesse,
             chapitre_du_margrave,
+            chapitre_de_l_amiral,
+            chapitre_du_prevot,
         ])
         .expect("piste conforme aux règles")
-        .avec_suite(vec![indice(&col, INDICE_7), indice(&desert, INDICE_8)])
         // Le Béhérit attend les âmes des 13 Apôtres de la traque complète
         // (section 9.4).
         .avec_apotres_attendus(APOTRES_DE_LA_TRAQUE);
@@ -750,7 +973,7 @@ impl ContenuV1 {
         .expect("Démiurge conforme aux règles")
         .avec_ligne_du_carnet(CARNET_DU_DEMIURGE);
         let invocation = Invocation::new(eclipse, demiurge, FORGE_DU_BEHERIT, SACRIFICE);
-        let zones = vec![lisiere, marais, vallee, abbaye, col, desert];
+        let zones = vec![lisiere, marais, vallee, abbaye, col, desert, port, mines];
         let tour = TourSansFond::new(
             ZoneId::new("tour-sans-fond"),
             "Tour sans fond",
@@ -806,7 +1029,7 @@ impl ContenuV1 {
             invocation,
             tour,
             fosse,
-            annexes: Vec::new(),
+            annexes: vec![epave, filon],
             zones_legendaires: Vec::new(),
         }
     }
@@ -1077,7 +1300,7 @@ const fn avec_effet(fiche: FicheAttaque, statut: Statut, chance: u8) -> FicheAtt
 /// Section 34 de docs/contenu-v1.md : les attaques que les armes donnent au
 /// héros, toutes de type Humain, classe par classe. Coup de poing, celle du
 /// héros sans arme, est dans le module du héros.
-const ATTAQUES_DES_HEROS: [FicheAttaque; 24] = [
+const ATTAQUES_DES_HEROS: [FicheAttaque; 28] = [
     fiche("taille", "Taille", Type::Humain, Physique, 40, 100),
     fiche("estoc", "Estoc", Type::Humain, Physique, 50, 100),
     fiche("pourfendre", "Pourfendre", Type::Humain, Physique, 60, 100),
@@ -1180,8 +1403,42 @@ const ATTAQUES_DES_HEROS: [FicheAttaque; 24] = [
         Statut::Paralysie,
         30,
     ),
+    // L'attaque principale du palier 5 de chaque classe (étape 163,
+    // section 4.3).
+    fiche(
+        "fend-armure",
+        "Fend-armure",
+        Type::Humain,
+        Physique,
+        85,
+        100,
+    ),
+    fiche(
+        "coup-mortel",
+        "Coup mortel",
+        Type::Humain,
+        Physique,
+        85,
+        100,
+    ),
+    fiche(
+        "tempete-arcanique",
+        "Tempête arcanique",
+        Type::Humain,
+        Speciale,
+        85,
+        100,
+    ),
+    fiche(
+        "colere-du-ciel",
+        "Colère du ciel",
+        Type::Humain,
+        Speciale,
+        85,
+        100,
+    ),
     // L'attaque du second type de chaque classe, des armes des paliers 2 à
-    // 4 (étape 149, section 4.4).
+    // 5 (étapes 149 et 163, section 4.4).
     fiche(
         "coup-de-pommeau",
         "Coup de pommeau",
@@ -1217,7 +1474,7 @@ const ATTAQUES_DES_HEROS: [FicheAttaque; 24] = [
 ];
 
 /// Section 1 de docs/contenu-v1.md, dans le même ordre.
-const ATTAQUES: [FicheAttaque; 150] = [
+const ATTAQUES: [FicheAttaque; 175] = [
     fiche(
         "souffle-chaud",
         "Souffle chaud",
@@ -2327,6 +2584,208 @@ const ATTAQUES: [FicheAttaque; 150] = [
         80,
         100,
     ),
+    // Port des Noyés et Mines de Fer-Noir, section 44 (étape 163).
+    fiche(
+        "pince-broyeuse",
+        "Pince broyeuse",
+        Type::Eau,
+        Physique,
+        90,
+        90,
+    ),
+    avec_effet(
+        fiche(
+            "chant-des-noyes",
+            "Chant des noyés",
+            Type::Spectre,
+            Speciale,
+            80,
+            100,
+        ),
+        Paralysie,
+        20,
+    ),
+    fiche("maree-noire", "Marée noire", Type::Eau, Speciale, 90, 95),
+    fiche("rapine", "Rapine", Type::Tenebres, Physique, 90, 95),
+    fiche(
+        "deluge-draconique",
+        "Déluge draconique",
+        Type::Dragon,
+        Speciale,
+        100,
+        85,
+    ),
+    avec_effet(
+        fiche("jet-d-encre", "Jet d'encre", Type::Eau, Speciale, 65, 100),
+        Paralysie,
+        10,
+    ),
+    fiche(
+        "ancre-des-damnes",
+        "Ancre des damnés",
+        Type::Obscur,
+        Physique,
+        90,
+        95,
+    ),
+    avec_effet(
+        fiche(
+            "abime-liquide",
+            "Abîme liquide",
+            Type::Obscur,
+            Speciale,
+            95,
+            90,
+        ),
+        Paralysie,
+        10,
+    ),
+    fiche(
+        "marteau-de-forge",
+        "Marteau de forge",
+        Type::Acier,
+        Physique,
+        95,
+        90,
+    ),
+    fiche(
+        "coup-de-pioche",
+        "Coup de pioche",
+        Type::Combat,
+        Physique,
+        90,
+        95,
+    ),
+    fiche(
+        "coup-de-grisou",
+        "Coup de grisou",
+        Type::Feu,
+        Speciale,
+        100,
+        85,
+    ),
+    avec_effet(
+        fiche(
+            "souffle-de-rouille",
+            "Souffle de rouille",
+            Type::Acier,
+            Speciale,
+            95,
+            90,
+        ),
+        Poison,
+        20,
+    ),
+    fiche(
+        "eclat-de-gemme",
+        "Éclat de gemme",
+        Type::Roche,
+        Speciale,
+        90,
+        95,
+    ),
+    avec_effet(
+        fiche(
+            "chaine-du-prevot",
+            "Chaîne du prévôt",
+            Type::Obscur,
+            Physique,
+            90,
+            95,
+        ),
+        Paralysie,
+        20,
+    ),
+    fiche(
+        "gouffre-sans-fond",
+        "Gouffre sans fond",
+        Type::Obscur,
+        Speciale,
+        95,
+        90,
+    ),
+    // Leurs attaques d'œuf (section 13.11).
+    fiche("pince-etau", "Pince-étau", Type::Acier, Physique, 80, 100),
+    fiche(
+        "lamento-des-abysses",
+        "Lamento des abysses",
+        Type::Spectre,
+        Speciale,
+        80,
+        100,
+    ),
+    fiche(
+        "pique-du-charognard",
+        "Pique du charognard",
+        Type::Vol,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "morsure-des-sept-tetes",
+        "Morsure des sept têtes",
+        Type::Dragon,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "spirale-abyssale",
+        "Spirale abyssale",
+        Type::Eau,
+        Speciale,
+        80,
+        100,
+    ),
+    fiche(
+        "poing-de-fer-noir",
+        "Poing de fer noir",
+        Type::Acier,
+        Physique,
+        80,
+        100,
+    ),
+    avec_effet(
+        fiche(
+            "hantise-du-filon",
+            "Hantise du filon",
+            Type::Spectre,
+            Physique,
+            75,
+            100,
+        ),
+        Paralysie,
+        20,
+    ),
+    fiche(
+        "etincelle-de-grisou",
+        "Étincelle de grisou",
+        Type::Feu,
+        Speciale,
+        80,
+        100,
+    ),
+    avec_effet(
+        fiche(
+            "ecaille-rouillee",
+            "Écaille rouillée",
+            Type::Acier,
+            Physique,
+            75,
+            100,
+        ),
+        Poison,
+        30,
+    ),
+    fiche(
+        "prisme-feerique",
+        "Prisme féerique",
+        Type::Feerique,
+        Speciale,
+        80,
+        100,
+    ),
 ];
 
 struct FicheCapsule {
@@ -2337,7 +2796,7 @@ struct FicheCapsule {
 }
 
 /// Section 6 de docs/contenu-v1.md, dans le même ordre.
-const CAPSULES: [FicheCapsule; 18] = [
+const CAPSULES: [FicheCapsule; 24] = [
     FicheCapsule {
         attaque: "brasier",
         prix: 150,
@@ -2427,6 +2886,36 @@ const CAPSULES: [FicheCapsule; 18] = [
         attaque: "vent-de-sable",
         prix: 500,
         zone: "desert-de-sel",
+    },
+    FicheCapsule {
+        attaque: "maree-noire",
+        prix: 600,
+        zone: "port-des-noyes",
+    },
+    FicheCapsule {
+        attaque: "pince-broyeuse",
+        prix: 600,
+        zone: "port-des-noyes",
+    },
+    FicheCapsule {
+        attaque: "chant-des-noyes",
+        prix: 600,
+        zone: "port-des-noyes",
+    },
+    FicheCapsule {
+        attaque: "marteau-de-forge",
+        prix: 650,
+        zone: "mines-de-fer-noir",
+    },
+    FicheCapsule {
+        attaque: "coup-de-grisou",
+        prix: 650,
+        zone: "mines-de-fer-noir",
+    },
+    FicheCapsule {
+        attaque: "coup-de-pioche",
+        prix: 650,
+        zone: "mines-de-fer-noir",
     },
 ];
 
@@ -2552,7 +3041,7 @@ const MARCHAND_ZOMBIE: FicheEspece = FicheEspece {
 /// Section 2 de docs/contenu-v1.md, dans l'ordre du codex : les monstres de
 /// départ, les communs, les rares, l'Apôtre, le monstre caché, puis les
 /// formes évoluées de la section 8.
-const ESPECES: [FicheEspece; 65] = [
+const ESPECES: [FicheEspece; 77] = [
     FicheEspece {
         id: "salamandre",
         nom: "Salamandre",
@@ -3722,6 +4211,225 @@ const ESPECES: [FicheEspece; 65] = [
         ],
         evolution: None,
     },
+    // Espèces du Port des Noyés et de l'Épave du Léviathan, puis des Mines
+    // de Fer-Noir et du Filon écarlate (section 44, étape 163).
+    FicheEspece {
+        id: "crabe-necrophage",
+        nom: "Crabe nécrophage",
+        types: &[Type::Eau, Type::Acier],
+        role: Role::Soutien,
+        stats_de_base: [72, 78, 90, 30, 60, 30],
+        rendement_experience: 145,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Carapace, Habilete::Ferocite],
+        apprentissage: &[
+            (1, "plongeon"),
+            (1, "coup-de-garde"),
+            (25, "deferlante"),
+            (35, "taille-d-acier"),
+            (58, "pince-broyeuse"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "sirene-putride",
+        nom: "Sirène putride",
+        types: &[Type::Eau, Type::Spectre],
+        role: Role::Offensif,
+        stats_de_base: [58, 35, 48, 92, 70, 64],
+        rendement_experience: 145,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Sorcellerie, Habilete::Instinct],
+        apprentissage: &[
+            (1, "lueur-trompeuse"),
+            (1, "frisson-d-outre-tombe"),
+            (30, "lamentation"),
+            (40, "chant-des-noyes"),
+            (58, "maree-noire"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "goeland-charognard",
+        nom: "Goéland charognard",
+        types: &[Type::Vol, Type::Tenebres],
+        role: Role::Offensif,
+        stats_de_base: [61, 92, 48, 38, 47, 104],
+        rendement_experience: 145,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Celerite, Habilete::Traqueur],
+        apprentissage: &[
+            (1, "coup-de-bec"),
+            (1, "morsure"),
+            (25, "pique"),
+            (35, "croc-noir"),
+            (45, "bec-funeste"),
+            (58, "rapine"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "hydre-des-marees",
+        nom: "Hydre des marées",
+        types: &[Type::Eau, Type::Dragon],
+        role: Role::Offensif,
+        stats_de_base: [80, 85, 76, 88, 72, 64],
+        rendement_experience: 250,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Affinite, Habilete::Ferocite],
+        apprentissage: &[
+            (1, "souffle-draconique"),
+            (1, "lame-de-fond"),
+            (30, "furie-draconique"),
+            (40, "trombe"),
+            (60, "deluge-draconique"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "nautile-des-abysses",
+        nom: "Nautile des abysses",
+        types: &[Type::Eau, Type::Roche],
+        role: Role::Soutien,
+        stats_de_base: [80, 62, 112, 76, 99, 36],
+        rendement_experience: 245,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Carapace, Habilete::Volonte],
+        apprentissage: &[
+            (1, "jet-d-encre"),
+            (1, "chute-de-pierres"),
+            (35, "eboulement"),
+            (60, "maree-noire"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "amiral-noye",
+        nom: "Amiral noyé",
+        types: &[Type::Obscur],
+        role: Role::Offensif,
+        stats_de_base: [96, 103, 90, 93, 86, 62],
+        rendement_experience: 360,
+        rarete: Rarete::Apotre,
+        habiletes: &[Habilete::Ferocite, Habilete::Carapace],
+        apprentissage: &[
+            (1, "etreinte-obscure"),
+            (1, "lame-de-fond"),
+            (20, "hurlement-des-abysses"),
+            (35, "trombe"),
+            (45, "ancre-des-damnes"),
+            (52, "abime-liquide"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "golem-de-fer-noir",
+        nom: "Golem de fer noir",
+        types: &[Type::Acier, Type::Roche],
+        role: Role::Soutien,
+        stats_de_base: [76, 82, 90, 30, 55, 20],
+        rendement_experience: 160,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Carapace, Habilete::Volonte],
+        apprentissage: &[
+            (1, "coup-de-garde"),
+            (1, "chute-de-pierres"),
+            (30, "taille-d-acier"),
+            (40, "eboulement"),
+            (62, "marteau-de-forge"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "mineur-possede",
+        nom: "Mineur possédé",
+        types: &[Type::Spectre, Type::Combat],
+        role: Role::Offensif,
+        stats_de_base: [67, 93, 59, 46, 54, 71],
+        rendement_experience: 160,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Ferocite, Habilete::Traqueur],
+        apprentissage: &[
+            (1, "charge-spectrale"),
+            (1, "frappe-d-os"),
+            (30, "corde-du-gibet"),
+            (62, "coup-de-pioche"),
+            (50, "griffes-spectrales"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "grisou-ardent",
+        nom: "Grisou ardent",
+        types: &[Type::Feu, Type::Poison],
+        role: Role::Offensif,
+        stats_de_base: [52, 40, 49, 92, 55, 84],
+        rendement_experience: 160,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Sorcellerie, Habilete::Celerite],
+        apprentissage: &[
+            (1, "crachat-de-braises"),
+            (1, "spores-putrides"),
+            (30, "brasier"),
+            (40, "venin-noir"),
+            (62, "coup-de-grisou"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "dragon-de-rouille",
+        nom: "Dragon de rouille",
+        types: &[Type::Dragon, Type::Acier],
+        role: Role::Offensif,
+        stats_de_base: [78, 85, 80, 66, 66, 55],
+        rendement_experience: 275,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Affinite, Habilete::Carapace],
+        apprentissage: &[
+            (1, "souffle-draconique"),
+            (1, "coup-de-garde"),
+            (30, "furie-draconique"),
+            (40, "taille-d-acier"),
+            (64, "souffle-de-rouille"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "gemmame",
+        nom: "Gemmâme",
+        types: &[Type::Roche, Type::Feerique],
+        role: Role::Soutien,
+        stats_de_base: [66, 50, 100, 82, 100, 42],
+        rendement_experience: 270,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Volonte, Habilete::Instinct],
+        apprentissage: &[
+            (1, "poussiere-d-elfe"),
+            (1, "chute-de-pierres"),
+            (35, "rayon-de-lune"),
+            (64, "eclat-de-gemme"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "prevot-des-fosses",
+        nom: "Prévôt des fosses",
+        types: &[Type::Obscur],
+        role: Role::Offensif,
+        stats_de_base: [98, 108, 98, 84, 90, 62],
+        rendement_experience: 400,
+        rarete: Rarete::Apotre,
+        habiletes: &[Habilete::Ferocite, Habilete::Volonte],
+        apprentissage: &[
+            (1, "etreinte-obscure"),
+            (1, "chute-de-pierres"),
+            (20, "hurlement-des-abysses"),
+            (40, "seisme"),
+            (50, "chaine-du-prevot"),
+            (58, "gouffre-sans-fond"),
+        ],
+        evolution: None,
+    },
 ];
 
 /// Section 15 de docs/contenu-v1.md : la ligne est prête 2 h après avoir
@@ -3977,7 +4685,7 @@ struct FicheObjet {
     heures: u64,
 }
 
-const PLANS_DE_FABRICATION: [FicheObjet; 29] = [
+const PLANS_DE_FABRICATION: [FicheObjet; 41] = [
     FicheObjet {
         id: "lame-de-milicien",
         nom: "Lame de milicien",
@@ -4130,6 +4838,67 @@ const PLANS_DE_FABRICATION: [FicheObjet; 29] = [
         ],
         heures: 6,
     },
+    // Palier 5, aux ressources des Mines de Fer-Noir (étape 163).
+    FicheObjet {
+        id: "hache-de-fer-noir",
+        nom: "Hache de fer noir",
+        sorte: SorteDObjet::Arme,
+        bonus: [12, 0, 12, 0, 0],
+        classe: Some((Classe::Guerrier, 5)),
+        attaques: &["fend-armure", "frappe-brutale", "coup-de-pommeau"],
+        cout: &[
+            ("eclat-de-fer-noir", 8),
+            ("pioche-maudite", 6),
+            ("ecaille-de-rouille", 1),
+        ],
+        heures: 12,
+    },
+    FicheObjet {
+        id: "dagues-de-fer-noir",
+        nom: "Dagues de fer noir",
+        sorte: SorteDObjet::Arme,
+        bonus: [12, 0, 12, 0, 0],
+        classe: Some((Classe::Assassin, 5)),
+        attaques: &["coup-mortel", "lame-empoisonnee", "lame-des-tenebres"],
+        cout: &[
+            ("eclat-de-fer-noir", 8),
+            ("pioche-maudite", 6),
+            ("ecaille-de-rouille", 1),
+        ],
+        heures: 12,
+    },
+    FicheObjet {
+        id: "baton-de-grisou",
+        nom: "Bâton de grisou",
+        sorte: SorteDObjet::Arme,
+        bonus: [12, 0, 12, 0, 0],
+        classe: Some((Classe::Mage, 5)),
+        attaques: &[
+            "tempete-arcanique",
+            "onde-engourdissante",
+            "emprise-mentale",
+        ],
+        cout: &[
+            ("fiole-de-grisou", 8),
+            ("pioche-maudite", 6),
+            ("ecaille-de-rouille", 1),
+        ],
+        heures: 12,
+    },
+    FicheObjet {
+        id: "masse-de-fer-noir",
+        nom: "Masse de fer noir",
+        sorte: SorteDObjet::Arme,
+        bonus: [12, 0, 12, 0, 0],
+        classe: Some((Classe::Templier, 5)),
+        attaques: &["colere-du-ciel", "sceau-d-entrave", "rayon-de-foi"],
+        cout: &[
+            ("fiole-de-grisou", 8),
+            ("pioche-maudite", 6),
+            ("ecaille-de-rouille", 1),
+        ],
+        heures: 12,
+    },
     FicheObjet {
         id: "gambison",
         nom: "Gambison",
@@ -4281,6 +5050,120 @@ const PLANS_DE_FABRICATION: [FicheObjet; 29] = [
             ("crin-de-chimere", 1),
         ],
         heures: 8,
+    },
+    // Palier 4, aux ressources du Port des Noyés, puis palier 5, à celles
+    // des Mines de Fer-Noir (étape 163).
+    FicheObjet {
+        id: "cuirasse-des-abysses",
+        nom: "Cuirasse des abysses",
+        sorte: SorteDObjet::Armure,
+        bonus: [0, 20, 0, 20, 0],
+        classe: Some((Classe::Guerrier, 4)),
+        attaques: &[],
+        cout: &[
+            ("carapace-de-crabe", 10),
+            ("ecaille-de-sirene", 6),
+            ("croc-d-hydre", 1),
+        ],
+        heures: 10,
+    },
+    FicheObjet {
+        id: "cuir-de-requin",
+        nom: "Cuir de requin",
+        sorte: SorteDObjet::Armure,
+        bonus: [0, 20, 0, 20, 0],
+        classe: Some((Classe::Assassin, 4)),
+        attaques: &[],
+        cout: &[
+            ("carapace-de-crabe", 10),
+            ("ecaille-de-sirene", 6),
+            ("croc-d-hydre", 1),
+        ],
+        heures: 10,
+    },
+    FicheObjet {
+        id: "robe-des-marees",
+        nom: "Robe des marées",
+        sorte: SorteDObjet::Armure,
+        bonus: [0, 20, 0, 20, 0],
+        classe: Some((Classe::Mage, 4)),
+        attaques: &[],
+        cout: &[
+            ("carapace-de-crabe", 10),
+            ("ecaille-de-sirene", 6),
+            ("croc-d-hydre", 1),
+        ],
+        heures: 10,
+    },
+    FicheObjet {
+        id: "plates-nacrees",
+        nom: "Plates nacrées",
+        sorte: SorteDObjet::Armure,
+        bonus: [0, 20, 0, 20, 0],
+        classe: Some((Classe::Templier, 4)),
+        attaques: &[],
+        cout: &[
+            ("carapace-de-crabe", 10),
+            ("ecaille-de-sirene", 6),
+            ("croc-d-hydre", 1),
+        ],
+        heures: 10,
+    },
+    FicheObjet {
+        id: "plates-de-fer-noir",
+        nom: "Plates de fer noir",
+        sorte: SorteDObjet::Armure,
+        bonus: [0, 25, 0, 25, 0],
+        classe: Some((Classe::Guerrier, 5)),
+        attaques: &[],
+        cout: &[
+            ("eclat-de-fer-noir", 10),
+            ("carapace-de-crabe", 6),
+            ("ecaille-de-rouille", 1),
+        ],
+        heures: 14,
+    },
+    FicheObjet {
+        id: "maille-de-fer-noir",
+        nom: "Maille de fer noir",
+        sorte: SorteDObjet::Armure,
+        bonus: [0, 25, 0, 25, 0],
+        classe: Some((Classe::Assassin, 5)),
+        attaques: &[],
+        cout: &[
+            ("eclat-de-fer-noir", 10),
+            ("carapace-de-crabe", 6),
+            ("ecaille-de-rouille", 1),
+        ],
+        heures: 14,
+    },
+    FicheObjet {
+        id: "robe-de-grisou",
+        nom: "Robe de grisou",
+        sorte: SorteDObjet::Armure,
+        bonus: [0, 25, 0, 25, 0],
+        classe: Some((Classe::Mage, 5)),
+        attaques: &[],
+        cout: &[
+            ("eclat-de-fer-noir", 10),
+            ("carapace-de-crabe", 6),
+            ("ecaille-de-rouille", 1),
+        ],
+        heures: 14,
+    },
+    FicheObjet {
+        id: "harnois-de-fer-noir",
+        nom: "Harnois de fer noir",
+        sorte: SorteDObjet::Armure,
+        bonus: [0, 25, 0, 25, 0],
+        classe: Some((Classe::Templier, 5)),
+        attaques: &[],
+        cout: &[
+            ("eclat-de-fer-noir", 10),
+            ("carapace-de-crabe", 6),
+            ("ecaille-de-rouille", 1),
+        ],
+        heures: 14,
     },
     FicheObjet {
         id: "croc-tresse",
@@ -4669,7 +5552,7 @@ const PRIX_D_UNE_RESSOURCE_RARE: u32 = 15;
 
 /// Espèce, identifiant et nom de chaque ressource : seules les espèces
 /// sauvages qui se combattent en ont une (section 14.3).
-const RESSOURCES: [(&str, &str, &str); 25] = [
+const RESSOURCES: [(&str, &str, &str); 33] = [
     ("loup", "croc-de-loup", "Croc de loup"),
     ("corbeau", "plume-de-corbeau", "Plume de corbeau"),
     ("vipere", "ecaille-de-vipere", "Écaille de vipère"),
@@ -4705,6 +5588,22 @@ const RESSOURCES: [(&str, &str, &str); 25] = [
     ("momie-de-sel", "bandelette-de-sel", "Bandelette de sel"),
     ("ver-des-salines", "anneau-de-ver", "Anneau de ver"),
     ("sphinx-des-sables", "griffe-de-sphinx", "Griffe de sphinx"),
+    ("crabe-necrophage", "carapace-de-crabe", "Carapace de crabe"),
+    ("sirene-putride", "ecaille-de-sirene", "Écaille de sirène"),
+    ("goeland-charognard", "plume-de-goeland", "Plume de goéland"),
+    ("hydre-des-marees", "croc-d-hydre", "Croc d'hydre"),
+    (
+        "golem-de-fer-noir",
+        "eclat-de-fer-noir",
+        "Éclat de fer noir",
+    ),
+    ("mineur-possede", "pioche-maudite", "Pioche maudite"),
+    ("grisou-ardent", "fiole-de-grisou", "Fiole de grisou"),
+    (
+        "dragon-de-rouille",
+        "ecaille-de-rouille",
+        "Écaille de rouille",
+    ),
 ];
 
 /// Section 32 de docs/contenu-v1.md : les météos de la Lisière, du Marais
@@ -4715,7 +5614,7 @@ const METEOS_COMMUNES: [Meteo; 3] = [Meteo::Pluie, Meteo::Tempete, Meteo::Canicu
 /// Section 31 de docs/contenu-v1.md : les espèces qui ne sortent, dans les
 /// groupes sauvages des zones, que la nuit ou que le jour (section 9.6).
 /// Chaque zone en garde au moins deux à chaque moment.
-const ACTIVITES: [(&str, Activite); 13] = [
+const ACTIVITES: [(&str, Activite); 16] = [
     ("loup", Activite::Nocturne),
     ("feu-follet", Activite::Nocturne),
     ("fee-noire", Activite::Nocturne),
@@ -4729,11 +5628,14 @@ const ACTIVITES: [(&str, Activite); 13] = [
     ("harpie-des-orages", Activite::Diurne),
     ("scarabee-solaire", Activite::Diurne),
     ("momie-de-sel", Activite::Nocturne),
+    ("sirene-putride", Activite::Nocturne),
+    ("goeland-charognard", Activite::Diurne),
+    ("mineur-possede", Activite::Nocturne),
 ];
 
 /// Section 28 de docs/contenu-v1.md : l'attaque d'œuf de chaque famille
 /// d'évolution, par sa forme de base (section 13.11).
-const ATTAQUES_D_OEUF: [(&str, &str); 40] = [
+const ATTAQUES_D_OEUF: [(&str, &str); 50] = [
     ("salamandre", "souffle-des-forges"),
     ("crapaud", "ressac"),
     ("mandragore", "seve-maudite"),
@@ -4774,6 +5676,16 @@ const ATTAQUES_D_OEUF: [(&str, &str); 40] = [
     ("ver-des-salines", "charge-des-dunes"),
     ("sphinx-des-sables", "enigme-du-sphinx"),
     ("phenix-blanc", "aile-d-aurore"),
+    ("crabe-necrophage", "pince-etau"),
+    ("sirene-putride", "lamento-des-abysses"),
+    ("goeland-charognard", "pique-du-charognard"),
+    ("hydre-des-marees", "morsure-des-sept-tetes"),
+    ("nautile-des-abysses", "spirale-abyssale"),
+    ("golem-de-fer-noir", "poing-de-fer-noir"),
+    ("mineur-possede", "hantise-du-filon"),
+    ("grisou-ardent", "etincelle-de-grisou"),
+    ("dragon-de-rouille", "ecaille-rouillee"),
+    ("gemmame", "prisme-feerique"),
 ];
 
 /// La forme de base de la famille de cette espèce : celle qu'aucune autre
@@ -4838,6 +5750,20 @@ fn expedition_automatique(
 /// Coffres de la section 3 de docs/contenu-v1.md.
 fn coffre(argent: RangeInclusive<u32>, capsules: Vec<Capsule>) -> ParametresCoffre {
     ParametresCoffre::new(argent, capsules).expect("coffre conforme aux règles")
+}
+
+/// Section 44 de docs/contenu-v1.md : le trésor de chaque coffre d'une
+/// annexe, avec son poids sur 100 (section 9.9). Le Philtre chromatique
+/// reste rare.
+fn tresors_d_annexe() -> Vec<(Tresor, u32)> {
+    let mut tresors = vec![
+        (Tresor::PhiltreChromatique, 5),
+        (Tresor::CapsuleDHabilete, 35),
+        (Tresor::Pierre(PierreDEvolution::Braise), 15),
+        (Tresor::Pierre(PierreDEvolution::Lune), 15),
+    ];
+    tresors.extend(Booster::TOUS.map(|booster| (Tresor::Booster(booster), 5)));
+    tresors
 }
 
 #[cfg(test)]
@@ -4995,8 +5921,8 @@ mod tests {
         let mut uniques = vues.clone();
         uniques.sort_by(|a, b| a.as_str().cmp(b.as_str()));
         uniques.dedup();
-        assert_eq!(vues.len(), 40);
-        assert_eq!(uniques.len(), 40);
+        assert_eq!(vues.len(), 50);
+        assert_eq!(uniques.len(), 50);
     }
 
     #[test]
@@ -5005,13 +5931,13 @@ mod tests {
 
         let contenu = ContenuV1::new();
         let au_codex = especes_au_codex(contenu.especes());
-        assert_eq!(au_codex, 60);
+        assert_eq!(au_codex, 70);
         let seuils: Vec<u32> = contenu
             .recompenses_du_codex()
             .iter()
             .map(|recompense| recompense.palier.seuil(au_codex))
             .collect();
-        assert_eq!(seuils, vec![10, 20, 30, 40, 50, 60]);
+        assert_eq!(seuils, vec![10, 20, 30, 40, 50, 70]);
         let complet = contenu.recompenses_du_codex().last().unwrap();
         assert_eq!(complet.palier, PalierDuCodex::Complet);
         let sceau = complet.objet_unique.as_ref().unwrap();
@@ -5022,7 +5948,7 @@ mod tests {
     #[test]
     fn chaque_capsule_sert_a_une_espece_qui_ne_l_apprend_pas() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.capsules().len(), 18);
+        assert_eq!(contenu.capsules().len(), 24);
         for capsule in contenu.capsules() {
             let utile = contenu.especes().iter().any(|espece| {
                 capsule.convient_a(espece) && espece.attaque_apprise(capsule.id()).is_none()
@@ -5066,17 +5992,32 @@ mod tests {
             ids(&contenu.zones()[5]),
             vec!["chant-des-dunes", "eclat-du-zenith", "vent-de-sable"]
         );
+        assert_eq!(
+            ids(&contenu.zones()[6]),
+            vec!["maree-noire", "pince-broyeuse", "chant-des-noyes"]
+        );
+        assert_eq!(
+            ids(&contenu.zones()[7]),
+            vec!["marteau-de-forge", "coup-de-grisou", "coup-de-pioche"]
+        );
+        // Les coffres d'une annexe gardent les capsules de sa zone.
+        for annexe in contenu.annexes() {
+            let zone = contenu.zone(annexe.de()).unwrap();
+            assert_eq!(ids(annexe.zone()), ids(&zone), "{}", annexe.zone().nom());
+        }
     }
 
     #[test]
     fn contenu_conforme_aux_regles() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.especes().len(), 65);
-        assert_eq!(contenu.zones().len(), 6);
-        assert_eq!(contenu.piste().indices().count(), 8);
-        // Toute espèce rencontrée en zone se retrouve au chargement d'une
-        // sauvegarde.
-        for zone in contenu.zones() {
+        assert_eq!(contenu.especes().len(), 77);
+        assert_eq!(contenu.zones().len(), 8);
+        assert_eq!(contenu.annexes().len(), 2);
+        assert_eq!(contenu.piste().indices().count(), 11);
+        // Toute espèce rencontrée en zone, annexes comprises, se retrouve au
+        // chargement d'une sauvegarde.
+        let annexes = contenu.annexes().iter().map(Annexe::zone);
+        for zone in contenu.zones().iter().chain(annexes) {
             let rares = zone
                 .rares()
                 .iter()
@@ -5153,6 +6094,7 @@ mod tests {
         let rares: Vec<&EspeceId> = contenu
             .zones()
             .iter()
+            .chain(contenu.annexes().iter().map(Annexe::zone))
             .flat_map(|zone| zone.rares().iter().chain(zone.monstre_cache()))
             .map(|rare| rare.espece.id())
             .chain([contenu.peche().rare().id()])
@@ -5233,7 +6175,7 @@ mod tests {
                 par_sorte(SorteDObjet::Armure),
                 par_sorte(SorteDObjet::Talisman)
             ),
-            (12, 12, 5)
+            (16, 20, 5)
         );
         let ids: std::collections::HashSet<_> = plans
             .iter()
@@ -5247,21 +6189,23 @@ mod tests {
             assert_eq!(objet.bonus().pv, 0, "{}", objet.nom());
             assert_ne!(objet.bonus(), Stats::default(), "{}", objet.nom());
             let heures = plan.duree().as_secs() / 3_600;
-            assert!((1..=8).contains(&heures), "{}", objet.nom());
+            assert!((1..=14).contains(&heures), "{}", objet.nom());
             for (ressource, _) in plan.cout() {
                 assert_eq!(contenu.ressource(ressource.id()).as_ref(), Some(ressource));
             }
             assert_eq!(contenu.objet_d_equipement(objet.id()).as_ref(), Some(objet));
         }
         // Pour chaque classe, une arme et une armure par palier, que la
-        // conversion des anciens objets retrouve ; une arme du palier 4.
+        // conversion des anciens objets retrouve ; une arme du palier 4, qui
+        // ne se forge pas, et depuis l'étape 163 une armure du palier 4.
         for classe in Classe::TOUTES {
             let siens = contenu.plans_de_fabrication_pour(classe);
-            assert_eq!(siens.len(), 11, "{}", classe.nom());
-            for palier in 1..=3 {
+            assert_eq!(siens.len(), 14, "{}", classe.nom());
+            for palier in 1..=5 {
                 for sorte in [SorteDObjet::Arme, SorteDObjet::Armure] {
                     let objet = contenu.objet_de_classe(classe, sorte, palier).unwrap();
-                    assert!(siens.iter().any(|plan| plan.objet() == &objet));
+                    let forge = siens.iter().any(|plan| plan.objet() == &objet);
+                    assert_eq!(forge, (sorte, palier) != (SorteDObjet::Arme, 4));
                 }
             }
             let champion = contenu.arme_du_champion(classe);
@@ -5315,7 +6259,7 @@ mod tests {
         }
         let contenu = ContenuV1::new();
         for classe in Classe::TOUTES {
-            let puissances: Vec<u16> = (1..=4)
+            let puissances: Vec<u16> = (1..=5)
                 .map(|palier| {
                     let arme = match palier {
                         4 => contenu.arme_du_champion(classe).clone(),
@@ -5337,7 +6281,7 @@ mod tests {
                     attaques[0].puissance()
                 })
                 .collect();
-            assert_eq!(puissances, [40, 50, 60, 75], "{}", classe.nom());
+            assert_eq!(puissances, [40, 50, 60, 75, 85], "{}", classe.nom());
         }
     }
     #[test]
@@ -5406,10 +6350,12 @@ mod tests {
             .apotres()
             .map(Apotre::recit_de_l_ame)
             .collect();
-        assert_eq!(recits.len(), 3);
+        assert_eq!(recits.len(), 5);
         assert!(recits[0].starts_with("L'âme du Baron pendu"));
         assert!(recits[1].starts_with("L'âme de l'Abbesse écorchée"));
         assert!(recits[2].starts_with("L'âme du Margrave de givre"));
+        assert!(recits[3].starts_with("L'âme de l'Amiral noyé"));
+        assert!(recits[4].starts_with("L'âme du Prévôt des fosses"));
     }
 
     #[test]
@@ -5423,7 +6369,10 @@ mod tests {
             .iter()
             .map(|zone| zone.pecheur().map(Pecheur::etape))
             .collect();
-        assert_eq!(etapes, vec![None, Some(2), None, None, None, None]);
+        assert_eq!(
+            etapes,
+            vec![None, Some(2), None, None, None, None, None, None]
+        );
         let ids: Vec<&str> = peche
             .especes()
             .iter()
@@ -5605,6 +6554,10 @@ mod tests {
                 ("inquisiteur", Classe::Mage, 25),
                 ("porte-etendard", Classe::Templier, 35),
                 ("pythie-de-sel", Classe::Mage, 40),
+                // Au niveau maximal de leur zone, à part de leur équipement
+                // (étape 163).
+                ("contrebandier", Classe::Assassin, 51),
+                ("contremaitre", Classe::Guerrier, 57),
             ]
         );
         assert_eq!(heros[0].3, ["entaille", "lame-empoisonnee"]);
@@ -5677,7 +6630,7 @@ mod tests {
             ids
         }
         let contenu = ContenuV1::new();
-        let attendu: [(&str, &[&str], &[&str]); 5] = [
+        let attendu: [(&str, &[&str], &[&str]); 7] = [
             ("lisiere", &["corbeau", "vipere"], &["loup", "corbeau"]),
             (
                 "marais",
@@ -5710,6 +6663,16 @@ mod tests {
                     "chevalier-noir",
                 ],
             ),
+            (
+                "port-des-noyes",
+                &["crabe-necrophage", "goeland-charognard"],
+                &["crabe-necrophage", "sirene-putride"],
+            ),
+            (
+                "mines-de-fer-noir",
+                &["golem-de-fer-noir", "grisou-ardent"],
+                &["golem-de-fer-noir", "mineur-possede", "grisou-ardent"],
+            ),
         ];
         for (id, de_jour, de_nuit) in attendu {
             let zone = contenu.zone(&ZoneId::new(id)).unwrap();
@@ -5740,33 +6703,37 @@ mod tests {
     fn chaque_zone_a_ses_meteos() {
         use Meteo::*;
         let contenu = ContenuV1::new();
-        let attendu: [(&str, &[Meteo]); 6] = [
+        let attendu: [(&str, &[Meteo]); 8] = [
             ("lisiere", &[Pluie, Tempete, Canicule]),
             ("marais", &[Pluie, Tempete, Canicule]),
             ("vallee", &[Pluie, Tempete, Grele]),
             ("abbaye", &[Pluie, Tempete, Canicule]),
             ("col-du-givre-noir", &[Grele, Tempete]),
             ("desert-de-sel", &[TempeteDeSable, Canicule]),
+            ("port-des-noyes", &[Pluie, Tempete, Cyclone]),
+            ("mines-de-fer-noir", &[Grele, Tempete]),
         ];
         for (id, meteos) in attendu {
             let zone = contenu.zone(&ZoneId::new(id)).unwrap();
             assert_eq!(zone.meteos(), meteos, "{id}");
         }
-        // Le cyclone attend une zone de mer ; la tempête de sable ne souffle
-        // que sur le désert.
-        assert!(
+        // Une annexe a les météos de sa zone.
+        for annexe in contenu.annexes() {
+            let zone = contenu.zone(annexe.de()).unwrap();
+            assert_eq!(annexe.zone().meteos(), zone.meteos());
+        }
+        // Le cyclone ne souffle qu'en mer, la tempête de sable que sur le
+        // désert.
+        let zones_ou = |meteo: Meteo| -> Vec<&str> {
             contenu
                 .zones()
                 .iter()
-                .all(|zone| !zone.meteos().contains(&Cyclone))
-        );
-        let sable: Vec<&str> = contenu
-            .zones()
-            .iter()
-            .filter(|zone| zone.meteos().contains(&TempeteDeSable))
-            .map(|zone| zone.id().as_str())
-            .collect();
-        assert_eq!(sable, ["desert-de-sel"]);
+                .filter(|zone| zone.meteos().contains(&meteo))
+                .map(|zone| zone.id().as_str())
+                .collect()
+        };
+        assert_eq!(zones_ou(Cyclone), ["port-des-noyes"]);
+        assert_eq!(zones_ou(TempeteDeSable), ["desert-de-sel"]);
     }
 
     #[test]
@@ -5968,7 +6935,7 @@ mod tests {
             ("hilde", Soin::Panacee)
         );
         // Le septième indice, au Col, une fois le Margrave abattu, ouvre le
-        // Désert ; le huitième, au Désert, n'ouvre plus rien.
+        // Désert ; depuis l'étape 163, le huitième, au Désert, ouvre le Port.
         let piste = contenu.piste();
         let vaincus: Vec<EspeceId> = piste
             .apotres()
@@ -5981,14 +6948,10 @@ mod tests {
         assert!(piste.zone_ouverte(desert.id(), 7));
         let huitieme = piste.indice_suivant(7, &vaincus).unwrap();
         assert_eq!(huitieme.zone.as_str(), "desert-de-sel");
-        assert!(huitieme.texte.contains("un autre Apôtre"));
-        assert_eq!(piste.indice_suivant(8, &vaincus), None);
-        assert!(
-            contenu
-                .zones()
-                .iter()
-                .all(|zone| piste.zone_ouverte(zone.id(), 8))
-        );
+        assert!(huitieme.texte.contains("le Port des Noyés"));
+        let port = ZoneId::new("port-des-noyes");
+        assert!(!piste.zone_ouverte(&port, 7));
+        assert!(piste.zone_ouverte(&port, 8));
         // La tempête de sable et la canicule renforcent le Sol, la Roche et
         // le Feu de ses espèces.
         assert_eq!(desert.meteos(), &[Meteo::TempeteDeSable, Meteo::Canicule]);
@@ -6102,7 +7065,155 @@ mod tests {
                 "abbaye",
                 "col-du-givre-noir",
                 "col-du-givre-noir",
-                "desert-de-sel"
+                "desert-de-sel",
+                "port-des-noyes",
+                "port-des-noyes",
+                "mines-de-fer-noir"
+            ]
+        );
+    }
+
+    /// Section 44 de docs/contenu-v1.md (étape 163) : le Contrebandier
+    /// localise l'Amiral noyé, dont la chute ouvre les Mines, où le
+    /// Contremaître localise le Prévôt des fosses.
+    #[test]
+    fn le_port_et_les_mines_menent_a_l_amiral_et_au_prevot() {
+        let contenu = ContenuV1::new();
+        let piste = contenu.piste();
+        let vaincus: Vec<EspeceId> = piste
+            .apotres()
+            .map(|apotre| apotre.espece().id().clone())
+            .collect();
+        let port = &contenu.zones()[6];
+        let mines = &contenu.zones()[7];
+        assert_eq!(port.niveaux(), (niveau(46), niveau(51)));
+        assert_eq!(mines.niveaux(), (niveau(52), niveau(57)));
+        let neuvieme = piste.indice_suivant(8, &vaincus[..3]).unwrap();
+        assert_eq!(&neuvieme.zone, port.id());
+        assert!(
+            piste
+                .apotre_en_attente(port.id(), 8, &vaincus[..3])
+                .is_none()
+        );
+        let amiral = piste
+            .apotre_en_attente(port.id(), 9, &vaincus[..3])
+            .unwrap();
+        assert_eq!(amiral.espece().id().as_str(), "amiral-noye");
+        assert_eq!(amiral.niveau(), niveau(53));
+        // Le dixième, au Port, attend la chute de l'Amiral.
+        assert_eq!(piste.indice_suivant(9, &vaincus[..3]), None);
+        let dixieme = piste.indice_suivant(9, &vaincus[..4]).unwrap();
+        assert_eq!(&dixieme.zone, port.id());
+        assert!(!piste.zone_ouverte(mines.id(), 9));
+        assert!(piste.zone_ouverte(mines.id(), 10));
+        let onzieme = piste.indice_suivant(10, &vaincus[..4]).unwrap();
+        assert_eq!(&onzieme.zone, mines.id());
+        let prevot = piste
+            .apotre_en_attente(mines.id(), 11, &vaincus[..4])
+            .unwrap();
+        assert_eq!(prevot.espece().id().as_str(), "prevot-des-fosses");
+        assert_eq!(prevot.niveau(), niveau(59));
+        assert_eq!(piste.indice_suivant(11, &vaincus), None);
+        // Obscurs, ils combattent avec trois attaques Obscur et une de leur
+        // zone.
+        let attaques = |apotre: &Apotre| -> Vec<String> {
+            assert_eq!(apotre.espece().types().liste(), &[Type::Obscur]);
+            let monstre = creer(
+                &contenu,
+                apotre.espece().id().as_str(),
+                apotre.niveau().valeur(),
+            );
+            monstre
+                .attaques()
+                .liste()
+                .iter()
+                .map(|attaque| attaque.id().as_str().to_string())
+                .collect()
+        };
+        assert_eq!(
+            attaques(amiral),
+            [
+                "hurlement-des-abysses",
+                "trombe",
+                "ancre-des-damnes",
+                "abime-liquide"
+            ]
+        );
+        assert_eq!(
+            attaques(prevot),
+            [
+                "hurlement-des-abysses",
+                "seisme",
+                "chaine-du-prevot",
+                "gouffre-sans-fond"
+            ]
+        );
+        let humains: Vec<(&str, u32)> = [port, mines]
+            .iter()
+            .map(|zone| {
+                let humain = zone.humain().unwrap();
+                (humain.id().as_str(), humain.argent())
+            })
+            .collect();
+        assert_eq!(humains, [("contrebandier", 600), ("contremaitre", 700)]);
+    }
+
+    /// Sections 9.9 et 44 de docs/contenu-v1.md (étape 163) : une annexe par
+    /// zone d'Apôtre, un peu plus haute, avec les espèces de sa zone, une
+    /// rare pacifique qui ne vit que là et un trésor dans chaque coffre.
+    #[test]
+    fn chaque_annexe_suit_sa_zone_avec_sa_rare_et_ses_tresors() {
+        let contenu = ContenuV1::new();
+        let annexes: Vec<(&str, &str, (u8, u8), &str)> = contenu
+            .annexes()
+            .iter()
+            .map(|annexe| {
+                let zone = annexe.zone();
+                assert_eq!(zone.etapes(), 3);
+                assert_eq!(zone.repartition(), Repartition::DES_ANNEXES);
+                assert!(zone.humain().is_none());
+                assert_eq!(zone.monstre_cache().unwrap().espece.id().as_str(), "schnoz");
+                let de = contenu.zone(annexe.de()).unwrap();
+                assert_eq!(zone.especes(), de.especes());
+                let [rare] = zone.rares() else {
+                    panic!("une seule rare dans {}", zone.nom());
+                };
+                assert!(rare.pacifique);
+                assert!(rare.espece.ressource().is_none());
+                let ailleurs = contenu
+                    .zones()
+                    .iter()
+                    .flat_map(|zone| {
+                        zone.especes()
+                            .iter()
+                            .chain(zone.rares().iter().map(|rare| &rare.espece))
+                    })
+                    .any(|espece| espece.id() == rare.espece.id());
+                assert!(!ailleurs, "{}", rare.espece.nom());
+                // Le Philtre chromatique, 5 fois sur 100.
+                let tresors = zone.coffre().tresors();
+                assert_eq!(tresors.iter().map(|(_, poids)| poids).sum::<u32>(), 100);
+                assert!(tresors.contains(&(Tresor::PhiltreChromatique, 5)));
+                assert!(!annexe.decouverte().is_empty());
+                let (min, max) = zone.niveaux();
+                (
+                    zone.id().as_str(),
+                    annexe.de().as_str(),
+                    (min.valeur(), max.valeur()),
+                    rare.espece.id().as_str(),
+                )
+            })
+            .collect();
+        assert_eq!(
+            annexes,
+            [
+                (
+                    "epave-du-leviathan",
+                    "port-des-noyes",
+                    (50, 53),
+                    "nautile-des-abysses"
+                ),
+                ("filon-ecarlate", "mines-de-fer-noir", (56, 59), "gemmame"),
             ]
         );
     }

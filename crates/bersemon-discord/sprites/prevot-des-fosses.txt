@@ -1,0 +1,56 @@
+# Prévôt des fosses
+palette
+o 1b1420
+b 2a2430
+c 18141e
+d 403848
+v e8e0d0
+u b0a898
+m 6a6a74
+n 44444c
+l 8e8e9a
+h 1e1a24
+i 100e14
+r ff3030
+w 9aa0a8
+g b08a40
+shiny
+o 1b1420
+b 6a1e24
+c 461216
+d 903038
+v f0e8c8
+u c0b490
+m b89a50
+n 8a6e30
+l e0c070
+h e8e0d0
+i b8b0a0
+r 40e0ff
+w d8d8e0
+g e8e8f0
+dessin
+........ohhhhhhio.......
+........ohhhhhhio.......
+........oiiiiiiio.......
+.........ollmlno........
+.........olmmmno........
+........onrrmrrno.......
+.........olmmmno........
+........oonnnnno........
+.......oddddnddco.......
+.......odbvvvvuco.......
+......obbbuuuuubbo......
+.....obbbbbbgbbbcbo.....
+.....oodbbbgggbbcobo....
+....owodbbbbgbbbcooo....
+....ooodbbbbgbbbcoowo...
+...owodbbbbbgbbbbcooo...
+...ooodbbbbbgbbbbcoowo..
+..owoodbbbbbggbbbco.oo..
+...o.odbbbbbggbbbco.owo.
+..owoodbbbbbbbbbbco..o..
+..ooodbbbbbbbbbbbbcoowo.
+.owoocccccccccccccco.oo.
+..o..oooooooooooooo..owo
+......................o.

@@ -25,7 +25,8 @@ use bersemon_presentation::soins::{effet_du_soin, le_soin, soins};
 use crate::composants::{BEHERIT, Cle, Vue, lot_de_soins_en_texte};
 use crate::ecran_camp::{menus_de_monstres_decrits, retour};
 use crate::message::{
-    DANGER, OptionDeMenu, PRINCIPAL, Question, Rangee, SECONDAIRE, bouton, menu, rangees,
+    DANGER, OptionDeMenu, PRINCIPAL, Question, RANGEES_MAX, Rangee, SECONDAIRE, bouton, menu,
+    menus, rangees,
 };
 
 /// Soins achetés par 1 ou par 5 ; l'élixir et le grand élixir, chers, par 1
@@ -171,7 +172,9 @@ pub fn vente(partie: &Partie) -> Question {
         |_| true,
         offre_de_rachat,
     );
-    // Neuf sortes au plus : le menu reste loin de ses 25 options.
+    // Au-delà de 25 sortes, plusieurs menus, dans les rangées que laissent
+    // les monstres et les boutons ; les sortes au-delà attendent qu'une
+    // autre soit vendue.
     let ressources = ressources_a_vendre(partie)
         .into_iter()
         .map(|(ressource, nombre)| OptionDeMenu {
@@ -180,10 +183,12 @@ pub fn vente(partie: &Partie) -> Question {
             description: Some("Toutes celles du sac et du coffre".to_string()),
         })
         .collect();
-    lignes.extend(menu(
+    let restantes = RANGEES_MAX.saturating_sub(lignes.len() + 1);
+    lignes.extend(menus(
         Cle::VendreRessources,
         "Vendre des ressources",
         ressources,
+        restantes,
     ));
     // La dernière rangée de l'étal est pleine : l'achat et la location de
     // monstres passent par la vente (section 14.2).

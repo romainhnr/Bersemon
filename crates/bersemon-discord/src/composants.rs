@@ -333,11 +333,12 @@ pub enum Cle {
     /// Menu de ce que contient le sac.
     RangerAuCoffre,
     /// Menus des ressources du coffre et du sac, à part pour que les autres
-    /// menus restent sous la limite de 25 options (section 14.3).
-    SortirRessourcesDuCoffre,
-    RangerRessourcesAuCoffre,
-    /// Menu des ressources que Malvoise rachète, toutes celles d'une sorte.
-    VendreRessources,
+    /// menus restent sous la limite de 25 options (section 14.3) ; au-delà
+    /// de 25 sortes, numérotés comme les suites du codex.
+    SortirRessourcesDuCoffre(u8),
+    RangerRessourcesAuCoffre(u8),
+    /// Menus des ressources que Malvoise rachète, toutes celles d'une sorte.
+    VendreRessources(u8),
     ToutRanger,
     /// Quand le sac déborde, menus de ce qu'il contient, un exemplaire à la
     /// fois : les ressources à part, pour rester sous les 25 options
@@ -570,9 +571,9 @@ impl Cle {
             Cle::Trier(tri) => gerer(ActionDeGestion::TrierLeCamp(*tri)),
             Cle::SortirDuCoffre => jouer(Choix::SortirDuCoffre(lire_objet(valeur?)?)),
             Cle::RangerAuCoffre => jouer(Choix::RangerAuCoffre(lire_objet(valeur?)?)),
-            Cle::SortirRessourcesDuCoffre => jouer(Choix::SortirDuCoffre(lire_objet(valeur?)?)),
-            Cle::RangerRessourcesAuCoffre => jouer(Choix::RangerAuCoffre(lire_objet(valeur?)?)),
-            Cle::VendreRessources => jouer(Choix::VendreRessources(RessourceId::new(valeur?))),
+            Cle::SortirRessourcesDuCoffre(_) => jouer(Choix::SortirDuCoffre(lire_objet(valeur?)?)),
+            Cle::RangerRessourcesAuCoffre(_) => jouer(Choix::RangerAuCoffre(lire_objet(valeur?)?)),
+            Cle::VendreRessources(_) => jouer(Choix::VendreRessources(RessourceId::new(valeur?))),
             Cle::ToutRanger => jouer(Choix::ToutRangerAuCoffre),
             Cle::Jeter | Cle::JeterUneRessource => jouer(Choix::Jeter(lire_objet(valeur?)?)),
             Cle::SeSuicider => jouer(Choix::SeSuicider),
@@ -789,9 +790,9 @@ impl Cle {
             Cle::Trier(TriDuCamp::Type) => "trier:type".to_string(),
             Cle::SortirDuCoffre => "sortir-du-coffre".to_string(),
             Cle::RangerAuCoffre => "ranger-au-coffre".to_string(),
-            Cle::SortirRessourcesDuCoffre => "sortir-ressources".to_string(),
-            Cle::RangerRessourcesAuCoffre => "ranger-ressources".to_string(),
-            Cle::VendreRessources => "vendre-ressources".to_string(),
+            Cle::SortirRessourcesDuCoffre(numero) => format!("sortir-ressources:{numero}"),
+            Cle::RangerRessourcesAuCoffre(numero) => format!("ranger-ressources:{numero}"),
+            Cle::VendreRessources(numero) => format!("vendre-ressources:{numero}"),
             Cle::ToutRanger => "tout-ranger".to_string(),
             Cle::Jeter => "jeter".to_string(),
             Cle::JeterUneRessource => "jeter-ressource".to_string(),
@@ -880,9 +881,10 @@ impl Cle {
             "vue:ressources" => Cle::Afficher(Vue::Ressources),
             "sortir-du-coffre" => Cle::SortirDuCoffre,
             "ranger-au-coffre" => Cle::RangerAuCoffre,
-            "sortir-ressources" => Cle::SortirRessourcesDuCoffre,
-            "ranger-ressources" => Cle::RangerRessourcesAuCoffre,
-            "vendre-ressources" => Cle::VendreRessources,
+            // Ceux des messages affichés avant l'étape 163, sans numéro.
+            "sortir-ressources" => Cle::SortirRessourcesDuCoffre(0),
+            "ranger-ressources" => Cle::RangerRessourcesAuCoffre(0),
+            "vendre-ressources" => Cle::VendreRessources(0),
             "tout-ranger" => Cle::ToutRanger,
             "jeter" => Cle::Jeter,
             "jeter-ressource" => Cle::JeterUneRessource,
@@ -1064,6 +1066,9 @@ impl Cle {
                     "ameliorer" => Cle::Ameliorer(lire_amelioration(parametre)?),
                     "equiper" => Cle::Equiper(lire_place(parametre)?),
                     "fiche" => Cle::Fiche(numero()?),
+                    "sortir-ressources" => Cle::SortirRessourcesDuCoffre(numero()?),
+                    "ranger-ressources" => Cle::RangerRessourcesAuCoffre(numero()?),
+                    "vendre-ressources" => Cle::VendreRessources(numero()?),
                     "apprendre" => {
                         let (emplacement, oubliee) = parametre.split_once(':')?;
                         let oubliee = match oubliee {
@@ -1472,9 +1477,9 @@ mod tests {
             Cle::Afficher(Vue::Ressources),
             Cle::SortirDuCoffre,
             Cle::RangerAuCoffre,
-            Cle::SortirRessourcesDuCoffre,
-            Cle::RangerRessourcesAuCoffre,
-            Cle::VendreRessources,
+            Cle::SortirRessourcesDuCoffre(0),
+            Cle::RangerRessourcesAuCoffre(1),
+            Cle::VendreRessources(2),
             Cle::ToutRanger,
             Cle::Jeter,
             Cle::JeterUneRessource,
@@ -1705,7 +1710,7 @@ mod tests {
             }))
         );
         assert_eq!(
-            Cle::SortirRessourcesDuCoffre.commande(
+            Cle::SortirRessourcesDuCoffre(1).commande(
                 Some(&objet_en_texte(&Objet::Boosters(Booster::FioleDeSang, 2))),
                 None
             ),
@@ -1715,7 +1720,7 @@ mod tests {
             ))))
         );
         assert_eq!(
-            Cle::RangerRessourcesAuCoffre
+            Cle::RangerRessourcesAuCoffre(0)
                 .commande(Some(&objet_en_texte(&Objet::PhiltresChromatiques(1))), None),
             Some(Commande::Jouer(Choix::RangerAuCoffre(
                 Objet::PhiltresChromatiques(1)

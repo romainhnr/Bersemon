@@ -7,6 +7,7 @@ use bersemon_core::contenu::ContenuV1;
 use bersemon_core::heros::Classe;
 
 use crate::arene::{COMBATS_PAR_CASE, EQUIPEMENTS, MesureDuPalier};
+use crate::gardiens::{ForceDEspece, MesureDuGardien};
 use crate::joueur::{Bilan, ExpeditionJouee, Issue};
 
 fn moyenne(valeurs: impl IntoIterator<Item = f64>) -> f64 {
@@ -48,7 +49,7 @@ pub fn rapport(contenu: &ContenuV1, bilans: &[Bilan], parties_par_classe: u64) -
     let _ = writeln!(texte, "# Équilibrage de Bersemon\n");
     let _ = writeln!(
         texte,
-        "{parties_par_classe} parties par classe, du héros à la chute de la Pythie de sel, au bout du Désert de sel, après celle du Margrave de givre, jouées par le joueur automatique (crates/bersemon-equilibrage). Le niveau de l'équipe est la moyenne des monstres de plus haut niveau, équipe et camp réunis, autant qu'en compte l'équipe.\n"
+        "{parties_par_classe} parties par classe, du héros à la chute du dernier Apôtre de la piste et de l'humain de la dernière zone de la carte, jouées par le joueur automatique (crates/bersemon-equilibrage). Le niveau de l'équipe est la moyenne des monstres de plus haut niveau, équipe et camp réunis, autant qu'en compte l'équipe.\n"
     );
     parties(&mut texte, bilans);
     zones(&mut texte, contenu, bilans);
@@ -394,6 +395,57 @@ fn ressources(texte: &mut String, bilans: &[Bilan]) {
 /// La Fosse aux damnés, palier par palier : la part de victoires du héros
 /// selon son niveau de combat, le niveau où chaque classe gagne une fois sur
 /// deux, puis l'effet du second type des classes (section 4.4).
+/// Section 14 de docs/equilibrage.md (étape 163).
+pub fn rapport_des_gardiens(gardiens: &[MesureDuGardien], especes: &[ForceDEspece]) -> String {
+    let mut texte = String::new();
+    let _ = writeln!(
+        texte,
+        "## Humains de fin de zone, à part
+"
+    );
+    let _ = writeln!(
+        texte,
+        "Chaque humain contre 100 équipes de trois monstres tirées au hasard parmi les espèces des zones d'avant, formes évoluées comprises, de 380 au moins au total, au niveau maximal de sa zone, 30 combats par équipe, avec un héros Mage équipé au mieux sans dépasser ce niveau. Part de victoires du joueur.\n"
+    );
+    let _ = writeln!(
+        texte,
+        "| Zone | Humain (niveau) | Héros du joueur | Victoires |"
+    );
+    let _ = writeln!(texte, "|---|---|---|---|");
+    for gardien in gardiens {
+        let _ = writeln!(
+            texte,
+            "| {} | {} ({}) | {} | {:.0} % |",
+            gardien.zone,
+            gardien.humain,
+            gardien.niveau,
+            gardien.heros_du_joueur,
+            gardien.victoires
+        );
+    }
+    let _ = writeln!(texte);
+    let _ = writeln!(
+        texte,
+        "## Espèces sauvages en un contre un
+"
+    );
+    let _ = writeln!(
+        texte,
+        "Chaque espèce des zones de la carte et des annexes au niveau 50, contre chaque espèce sauvage de 380 à 500 au total au même niveau, 4 combats chacune. Part de victoires.\n"
+    );
+    let _ = writeln!(texte, "| Zone | Espèce (total) | Victoires |");
+    let _ = writeln!(texte, "|---|---|---|");
+    for force in especes {
+        let _ = writeln!(
+            texte,
+            "| {} | {} ({}) | {:.0} % |",
+            force.zone, force.espece, force.total, force.victoires
+        );
+    }
+    let _ = writeln!(texte);
+    texte
+}
+
 pub fn rapport_de_la_fosse(avec: &[MesureDuPalier], sans: &[MesureDuPalier]) -> String {
     let mut texte = String::new();
     let equipements: Vec<String> = EQUIPEMENTS

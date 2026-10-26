@@ -1,8 +1,9 @@
 //! Outil d'équilibrage de Bersemon : un joueur automatique mène des parties
 //! complètes avec le noyau, sans interface ni sauvegarde, de la création du
-//! héros à la chute du troisième Apôtre et de l'humain de la dernière zone,
-//! et le programme écrit leurs statistiques en Markdown, puis celles de la
-//! Fosse aux damnés, simulée palier par palier. Il sert à régler les
+//! héros à la chute du dernier Apôtre de la piste et de l'humain de la
+//! dernière zone, et le programme écrit leurs statistiques en Markdown, puis
+//! celles de la Fosse aux damnés, simulée palier par palier, des humains de
+//! fin de zone et des espèces sauvages, simulés à part. Il sert à régler les
 //! valeurs du jeu et ne fait pas partie de ce que joue le joueur.
 //!
 //! Usage : `cargo run --release -p bersemon-equilibrage -- [parties par classe] [classe]`.
@@ -10,6 +11,7 @@
 //! rejouent à l'identique.
 
 mod arene;
+mod gardiens;
 mod joueur;
 mod rapport;
 
@@ -43,6 +45,13 @@ fn main() {
     let avec = arene::mesurer_la_fosse(&contenu, true);
     let sans = arene::mesurer_la_fosse(&contenu, false);
     print!("{}", rapport::rapport_de_la_fosse(&avec, &sans));
+    print!(
+        "{}",
+        rapport::rapport_des_gardiens(
+            &gardiens::mesurer_les_gardiens(&contenu),
+            &gardiens::mesurer_les_especes(&contenu)
+        )
+    );
 }
 
 #[cfg(test)]
@@ -52,7 +61,7 @@ mod tests {
     /// Le joueur automatique doit pouvoir finir une partie : sinon, le
     /// rapport mesurerait sa stratégie plutôt que le jeu.
     #[test]
-    fn une_partie_se_joue_jusqu_a_la_chute_de_la_pythie() {
+    fn une_partie_se_joue_jusqu_au_dernier_apotre_de_la_piste() {
         let contenu = ContenuV1::new();
         let bilan = joueur::jouer_une_partie(&contenu, Classe::Guerrier, 1);
         assert!(bilan.terminee, "{} expéditions", bilan.expeditions.len());

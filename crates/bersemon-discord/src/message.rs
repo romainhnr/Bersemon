@@ -548,6 +548,34 @@ pub fn menu(cle: Cle, indication: &str, options: Vec<OptionDeMenu>) -> Option<Ra
     }))
 }
 
+/// Des menus de 25 options au plus, numérotés à partir de 0, `menus_max`
+/// au plus : les options au-delà attendent qu'une place se libère. Chaque
+/// suite le dit, comme celles du codex.
+pub fn menus(
+    cle: impl Fn(u8) -> Cle,
+    indication: &str,
+    options: Vec<OptionDeMenu>,
+    menus_max: usize,
+) -> Vec<Rangee> {
+    options
+        .chunks(OPTIONS_PAR_MENU)
+        .take(menus_max)
+        .enumerate()
+        .filter_map(|(numero, options)| {
+            let indication = if numero == 0 {
+                indication.to_string()
+            } else {
+                format!("{indication} (suite {numero})")
+            };
+            menu(
+                cle(u8::try_from(numero).ok()?),
+                &indication,
+                options.to_vec(),
+            )
+        })
+        .collect()
+}
+
 /// Coupe un texte trop long pour Discord plutôt que de voir le message
 /// refusé.
 pub fn couper(texte: &str, longueur_max: usize) -> String {
