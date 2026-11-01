@@ -1291,12 +1291,12 @@ Décidé le 25/10/2026, pour les étapes 121 à 123 (gamedesign.md, section 9.7)
 
 | Météo | Identifiant | Types renforcés (+20 %) | Zones | Texte au départ |
 |---|---|---|---|---|
-| Pluie | pluie | Eau, Plante | Lisière, Marais, Vallée, Abbaye, Port des Noyés | Une pluie froide tombe sans relâche. |
+| Pluie | pluie | Eau, Plante | Lisière, Marais, Vallée, Abbaye, Port des Noyés, Sylve, Catacombes | Une pluie froide tombe sans relâche. |
 | Tempête | tempete | Électrique, Vol | toutes sauf le Désert de sel | L'orage gronde : le ciel se déchire d'éclairs. |
 | Grêle | grele | Glace, Roche | Vallée, Col, Mines de Fer-Noir | La grêle crépite sur les pierres et les armures. |
 | Tempête de sable | tempete-de-sable | Sol, Roche | Désert de sel | Le sable vole, cinglant comme une lame. |
 | Cyclone | cyclone | Eau, Vol | Port des Noyés, seule zone de mer | Le cyclone hurle, et les vagues montent à l'assaut des côtes. |
-| Canicule | canicule | Feu, Sol | Lisière, Marais, Abbaye, Désert de sel | Une chaleur écrasante pèse sur la terre. |
+| Canicule | canicule | Feu, Sol | Lisière, Marais, Abbaye, Désert de sel, Sylve | Une chaleur écrasante pèse sur la terre. |
 
 Chaque zone a 1 chance sur 3, par créneau de 30 minutes, d'avoir une de ses météos ; sinon, temps calme.
 
@@ -1342,7 +1342,7 @@ Stats de base des classes, dans l'ordre PV / Attaque / Défense / Attaque spéci
 
 PV de base doublés le 26/10/2026, à l'étape 147 (choix de l'utilisateur, gamedesign.md, section 4.4) : ils étaient de 90, 70, 95 et 70, pour un total de 450 par classe. Un Guerrier a 33 PV au niveau 5, 128 au niveau 25 et 176 au niveau 35 (24, 83 et 113 avant).
 
-Niveau de combat : 5, plus 5 par palier de l'arme et 5 par palier de l'armure (5 à 40 ; 55 depuis l'étape 163, avec les paliers 4 et 5 de la section 44).
+Niveau de combat : 5, plus 5 par palier de l'arme et 5 par palier de l'armure (5 à 40 ; 55 depuis l'étape 163, avec les paliers 4 et 5 de la section 44 ; 65 depuis l'étape 165, avec le palier 6 de la section 45).
 
 Attaques du héros, de type Humain :
 
@@ -1861,3 +1861,153 @@ Cartes des annexes, trouvées dans un coffre, suivies de "Un nouveau lieu s'ouvr
 > Épave du Léviathan : Au fond du coffre, une carte marine détrempée marque d'une croix une épave au large du port, là où une bête immense aurait sombré avec un navire.
 
 > Filon écarlate : Au fond du coffre, un plan de mine griffonné montre une galerie murée, où le filon brille d'un rouge de sang.
+
+## 45. Sylve écarlate, Catacombes de Sainte-Ombre et leurs annexes
+
+Décidés le 01/11/2026, pour l'étape 165, deuxième lot de la suite de l'aventure (gamedesign.md, sections 4.3, 9.1, 9.4, 9.9 et 10.7). Les zones, leurs niveaux, les Apôtres et les humains gardiens viennent du fil validé ; les noms et les types des espèces, les rares, les annexes et les classes des humains ont été validés par l'utilisateur (lot 2) ; les valeurs, les textes et les réglages issus de la mesure sont proposés par Claude sans validation (gamedesign.md, Q118 ; equilibrage.md, section 15). Mêmes règles qu'au lot 1 (section 44) : espèces recalées à niveau égal sur les précédentes, attaques de puissance 90 et plus après la zone, rendement d'XP d'environ 3 fois le niveau moyen de la zone.
+
+Zones :
+
+| Identifiant | Nom | Niveaux | Étapes | Taille des groupes | Espèces | Monstre rare | Humain | Apôtre |
+|---|---|---|---|---|---|---|---|---|
+| sylve-ecarlate | Sylve écarlate | 58 à 62 | 5 | 1 à 3 | Ronce vampire, Mante écarlate, Sanglier enragé | Dryade sanglante (hostile) | Chasseresse | Duchesse sanguine (64) |
+| catacombes-de-sainte-ombre | Catacombes de Sainte-Ombre | 63 à 67 | 5 | 1 à 3 | Rat des ossuaires, Moine psalmodiant, Araignée des cryptes | Liche (hostile) | Fossoyeur | Évêque des os (69) |
+
+Le Schnoz se cache dans les deux. Pas de marchand mort ni de pêcheur. Météos : pluie, tempête et canicule dans la Sylve ; pluie et tempête dans les Catacombes. La Mante écarlate est diurne, le Sanglier enragé et le Moine psalmodiant nocturnes.
+
+| Zone | Expédition automatique (durée de base, dégâts, XP, potions, argent) | Coffres (argent) | Capsules des coffres (prix chez Malvoise) |
+|---|---|---|---|
+| Sylve écarlate | 9 h, 460 à 870, 5600 à 8200, 1 à 3, 380 à 620 | 300 à 460 | Faux de mante, Charge du sanglier, Étreinte sanguine (700) |
+| Catacombes de Sainte-Ombre | 10 h, 520 à 980, 6600 à 9600, 1 à 3, 430 à 700 | 340 à 520 | Peste noire, Requiem, Morsure de l'araignée (750) |
+
+Espèces (stats dans l'ordre PV / Attaque / Défense / Attaque spéciale / Défense spéciale / Vitesse). Au codex, elles viennent après le Prévôt des fosses, dans l'ordre du tableau. Aucune n'évolue.
+
+| Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP | Rareté | Habiletés | Attaques apprises |
+|---|---|---|---|---|---|---|---|---|
+| ronce-vampire | Ronce vampire | Plante, Poison | soutien | 84 / 74 / 88 / 62 / 72 / 15 (395) | 180 | commune | Carapace, Sorcellerie | Feuille tranchante (1), Morsure venimeuse (1), Ronces (30), Lianes étrangleuses (40), Croc de venin (50), Étreinte sanguine (68) |
+| mante-ecarlate | Mante écarlate | Insecte, Combat | offensif | 62 / 100 / 60 / 40 / 48 / 75 (385) | 180 | commune | Férocité, Célérité | Bourdonnement (1), Frappe d'os (1), Nuée (30), Épée des morts (40), Faux de mante (45), Déchiquetage (66) |
+| sanglier-enrage | Sanglier enragé | Normal, Sol | offensif | 85 / 95 / 70 / 30 / 45 / 60 (385) | 180 | commune | Férocité, Volonté | Ruade (1), Secousse (1), Curée (30), Charge du sanglier (45), Séisme (66) |
+| dryade-sanglante | Dryade sanglante | Plante, Psychique | offensif | 78 / 52 / 74 / 115 / 88 / 73 (480) | 305 | rare, hostile | Sorcellerie, Affinité | Feuille tranchante (1), Onde psychique (1), Hurlement de mandragore (35), Ronces maudites (45), Sève écarlate (68) |
+| phalene-d-aube | Phalène d'aube | Insecte, Féérique | soutien | 70 / 45 / 75 / 95 / 95 / 70 (450) | 300 | rare, pacifique (Autel) | Instinct, Volonté | Bourdonnement (1), Poussière d'elfe (1), Lumière d'aube (35), Rayon de lune (45), Aile poudrée (70) |
+| duchesse-sanguine | Duchesse sanguine | Obscur | offensif | 96 / 92 / 88 / 112 / 92 / 65 (545) | 430 | Apôtre | Sorcellerie, Férocité | Étreinte obscure (1), Morsure (1), Hurlement des abysses (20), Ronces maudites (35), Baiser de sang (45), Psaume impie (60) |
+| rat-des-ossuaires | Rat des ossuaires | Normal, Poison | offensif | 70 / 90 / 58 / 40 / 52 / 85 (395) | 195 | commune | Célérité, Pillard | Griffure (1), Morsure venimeuse (1), Curée (30), Croc de venin (40), Peste noire (71) |
+| moine-psalmodiant | Moine psalmodiant | Son, Spectre | soutien | 80 / 45 / 75 / 85 / 85 / 15 (385) | 195 | commune | Volonté, Sorcellerie | Glas (1), Lueur trompeuse (1), Lamentation (30), Tocsin (40), Flamme funèbre (50), Requiem (71) |
+| araignee-des-cryptes | Araignée des cryptes | Insecte, Roche | offensif | 70 / 92 / 85 / 35 / 55 / 48 (385) | 195 | commune | Traqueur, Carapace | Bourdonnement (1), Griffe de pierre (1), Chute de pierres (30), Morsure de l'araignée (40), Éboulement (71) |
+| liche | Liche | Psychique, Spectre | offensif | 66 / 42 / 62 / 108 / 90 / 67 (435) | 330 | rare, hostile | Sorcellerie, Volonté | Onde psychique (1), Lueur trompeuse (1), Flamme funèbre (35), Malédiction mortelle (50), Jugement (72) |
+| ange-de-pierre | Ange de pierre | Roche, Lumière | soutien | 85 / 75 / 110 / 60 / 100 / 20 (450) | 325 | rare, pacifique (Crypte) | Carapace, Volonté | Lueur sacrée (1), Griffe de pierre (1), Lance de lumière (35), Chute de pierres (45), Jugement de pierre (74) |
+| eveque-des-os | Évêque des os | Obscur | offensif | 100 / 110 / 98 / 95 / 90 / 57 (550) | 465 | Apôtre | Volonté, Carapace | Étreinte obscure (1), Frappe d'os (1), Hurlement des abysses (20), Épée des morts (35), Flagellation (50), Ossuaire sacré (65) |
+
+Attaques nouvelles :
+
+| Identifiant | Nom | Type | Cat. | Puissance | Précision | Effet |
+|---|---|---|---|---|---|---|
+| etreinte-sanguine | Étreinte sanguine | Plante | P | 90 | 95 | |
+| faux-de-mante | Faux de mante | Insecte | P | 85 | 95 | |
+| charge-du-sanglier | Charge du sanglier | Normal | P | 85 | 95 | |
+| seve-ecarlate | Sève écarlate | Plante | S | 95 | 90 | |
+| aile-poudree | Aile poudrée | Insecte | S | 90 | 95 | paralysie 10 % |
+| baiser-de-sang | Baiser de sang | Obscur | S | 90 | 95 | |
+| peste-noire | Peste noire | Poison | P | 90 | 95 | poison 30 % |
+| requiem | Requiem | Son | S | 95 | 90 | |
+| morsure-de-l-araignee | Morsure de l'araignée | Insecte | P | 80 | 100 | poison 20 % |
+| malediction-mortelle | Malédiction mortelle | Spectre | S | 85 | 95 | |
+| jugement-de-pierre | Jugement de pierre | Roche | P | 95 | 90 | |
+| ossuaire-sacre | Ossuaire sacré | Obscur | P | 95 | 90 | |
+
+Attaques d'œuf, sur le modèle de la section 28 :
+
+| Famille | Identifiant | Nom | Type | Cat. | Puissance | Précision | Effet |
+|---|---|---|---|---|---|---|---|
+| Ronce vampire | racines-assoiffees | Racines assoiffées | Plante | P | 80 | 100 | |
+| Mante écarlate | danse-de-la-mante | Danse de la mante | Insecte | P | 80 | 100 | |
+| Sanglier enragé | coup-de-boutoir | Coup de boutoir | Sol | P | 80 | 100 | |
+| Dryade sanglante | chant-de-la-dryade | Chant de la dryade | Psychique | S | 80 | 100 | |
+| Phalène d'aube | poudre-d-aube | Poudre d'aube | Féérique | S | 75 | 100 | paralysie 20 % |
+| Rat des ossuaires | nuee-de-rats | Nuée de rats | Normal | P | 80 | 100 | |
+| Moine psalmodiant | psalmodie | Psalmodie | Son | S | 80 | 100 | |
+| Araignée des cryptes | toile-des-cryptes | Toile des cryptes | Insecte | P | 75 | 100 | paralysie 20 % |
+| Liche | phylactere | Phylactère | Psychique | S | 80 | 100 | |
+| Ange de pierre | aube-de-pierre | Aube de pierre | Lumière | S | 80 | 100 | |
+
+Ressources : Épine de ronce (epine-de-ronce), Lame de mante (lame-de-mante), Défense de sanglier (defense-de-sanglier), Queue de rat (queue-de-rat), Chapelet d'os (chapelet-d-os) et Soie des cryptes (soie-des-cryptes), 5 pièces d'argent chacune ; Sève de dryade (seve-de-dryade) et Phylactère brisé (phylactere-brise), 15.
+
+Humains gardiens. Héros au niveau maximal de la zone, à part de son équipement ; IA relevée ; valeurs internes de leurs monstres à 15, première habileté de leur espèce :
+
+| Identifiant | Nom | Classe | Héros (niveau, arme, armure) | Monstres | Victoire |
+|---|---|---|---|---|---|
+| chasseresse | Chasseresse | Assassin | 62, Dagues de fer noir, Maille de fer noir | Mante écarlate (62), Dryade sanglante (63) | 800 pièces d'argent, puis l'indice 13 |
+| fossoyeur | Fossoyeur | Mage | 67, Crosse des catacombes, Robe de grisou | Rat des ossuaires (67), Moine psalmodiant (67), Liche (68) | 900 pièces d'argent, puis l'indice 15 |
+
+La Chasseresse, Assassin comme le Contrebandier, n'a que deux monstres (section 44).
+
+Annexes (gamedesign.md, section 9.9), sur le modèle de la section 44 :
+
+| Identifiant | Nom | Ouverte depuis | Niveaux | Monstre rare | Coffres (argent) |
+|---|---|---|---|---|---|
+| autel-des-ronces | Autel des ronces | Sylve écarlate | 61 à 64 | Phalène d'aube (pacifique) | 400 à 600 |
+| crypte-des-saints | Crypte des saints | Catacombes de Sainte-Ombre | 66 à 69 | Ange de pierre (pacifique) | 450 à 680 |
+
+Équipement du palier 6 (gamedesign.md, section 4.3) : +14 % d'Attaque et d'Attaque spéciale pour les armes, +30 % de Défense et de Défense spéciale pour les armures ; niveau de combat 65 avec l'arme et l'armure du palier 6.
+
+| Identifiant | Objet | Classe | Coût | Durée |
+|---|---|---|---|---|
+| hache-du-bourreau-d-os | Hache du bourreau d'os (arme) | Guerrier | 8 Soie des cryptes, 6 Lame de mante, 1 Phylactère brisé | 14 h |
+| lames-de-soie | Lames de soie (arme) | Assassin | 8 Soie des cryptes, 6 Lame de mante, 1 Phylactère brisé | 14 h |
+| crosse-des-catacombes | Crosse des catacombes (arme) | Mage | 8 Chapelet d'os, 6 Épine de ronce, 1 Phylactère brisé | 14 h |
+| masse-ecarlate | Masse écarlate (arme) | Templier | 8 Chapelet d'os, 6 Épine de ronce, 1 Phylactère brisé | 14 h |
+| plates-du-sanglier | Plates du sanglier (armure) | Guerrier | 10 Défense de sanglier, 6 Queue de rat, 1 Sève de dryade | 16 h |
+| cuir-ecarlate | Cuir écarlate (armure) | Assassin | idem | 16 h |
+| robe-de-ronces | Robe de ronces (armure) | Mage | idem | 16 h |
+| harnois-des-saints | Harnois des saints (armure) | Templier | idem | 16 h |
+
+Attaques principales du palier 6, de type Humain, puissance 95, précision 100 : Décapitation (decapitation, Guerrier, P), Lame fantôme (lame-fantome, Assassin, P), Arcane interdit (arcane-interdit, Mage, S), Jugement dernier (jugement-dernier, Templier, S).
+
+Sprites : un par espèce, normal et shiny, et un par humain gardien (section 42).
+
+Textes :
+
+> Indice 12 : dans la geôle du Prévôt, un registre de condamnés scellé du même sceau : au nord, la Sylve écarlate, où les arbres boivent le sang des voyageurs. Une sixième Apôtre y tient sa cour.
+
+> Indice 13 : la chasseresse vaincue a parlé : la Duchesse sanguine attend au cœur de la Sylve, dans un manoir que les ronces ont dévoré.
+
+> Indice 14 : parmi les parures de la Duchesse, une bague gravée du même sceau : sous la ville morte de Sainte-Ombre, des catacombes où un évêque bénit encore les os. Un septième Apôtre y prêche.
+
+> Indice 15 : le fossoyeur vaincu a parlé : l'Évêque des os officie au fond des catacombes, dans une chapelle bâtie de crânes.
+
+Chasseresse, avant le combat, puis après la victoire :
+
+> Une flèche se plante dans l'écorce, à un doigt de votre visage. Entre les troncs rouges, une chasseresse encoche déjà la suivante. Deux bêtes surgissent des fourrés à son sifflement.
+
+> La chasseresse tombe à genoux parmi les feuilles rouges, son arc brisé.
+
+Fossoyeur, avant le combat, puis après la victoire :
+
+> Entre deux rangées de niches funéraires, un fossoyeur appuyé sur sa pelle murmure des noms. Les morts qu'il a enterrés se relèvent, et trois bêtes sortent des tombes.
+
+> Le fossoyeur s'effondre dans la fosse qu'il venait de creuser.
+
+Duchesse sanguine, avant le combat, épilogue, âme et carnet :
+
+> Au cœur du manoir dévoré par les ronces, une femme en robe de bal boit dans une coupe pleine de sang. La Duchesse sanguine, Apôtre du Démiurge, repose la coupe et sourit. Il n'y aura pas de fuite.
+
+> La Duchesse sanguine s'effondre, et les ronces se flétrissent autour d'elle. Le même sceau, une main ouverte, est gravé sur sa coupe. Six Apôtres sont tombés ; le Démiurge, lui, attend toujours. Votre traque continue.
+
+> L'âme de la Duchesse sanguine s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.
+
+> Duchesse sanguine, abattue dans la Sylve écarlate.
+
+Évêque des os, avant le combat, épilogue, âme et carnet :
+
+> Dans la chapelle de crânes, un prélat aux os nus sous sa chasuble lève sa crosse : l'Évêque des os, Apôtre du Démiurge, bénit son troupeau de morts. Il n'y aura pas de fuite.
+
+> L'Évêque des os se disloque au pied de son autel, et le silence retombe sur les catacombes. Le même sceau, une main ouverte, est gravé sur sa crosse. Sept Apôtres sont tombés ; le Démiurge, lui, attend toujours. Votre traque continue.
+
+> L'âme de l'Évêque des os s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.
+
+> Évêque des os, abattu dans les Catacombes de Sainte-Ombre.
+
+Cartes des annexes :
+
+> Autel des ronces : Au fond du coffre, un parchemin taché de sang montre le chemin d'une clairière cachée, où un autel de ronces attend ses offrandes.
+
+> Crypte des saints : Au fond du coffre, une clé de bronze et un plan jauni mènent à une crypte scellée, où reposeraient les saints de Sainte-Ombre.

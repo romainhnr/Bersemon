@@ -102,6 +102,16 @@ const INDICE_10: &str = "dans la cabine de l'Amiral, un livre de bord scellé du
 
 const INDICE_11: &str = "le contremaître vaincu a parlé : le Prévôt des fosses juge les damnés au fond du dernier puits, là où le fer noir saigne.";
 
+// Sylve écarlate et Catacombes de Sainte-Ombre, section 45 de
+// docs/contenu-v1.md (étape 165).
+const INDICE_12: &str = "dans la geôle du Prévôt, un registre de condamnés scellé du même sceau : au nord, la Sylve écarlate, où les arbres boivent le sang des voyageurs. Une sixième Apôtre y tient sa cour.";
+
+const INDICE_13: &str = "la chasseresse vaincue a parlé : la Duchesse sanguine attend au cœur de la Sylve, dans un manoir que les ronces ont dévoré.";
+
+const INDICE_14: &str = "parmi les parures de la Duchesse, une bague gravée du même sceau : sous la ville morte de Sainte-Ombre, des catacombes où un évêque bénit encore les os. Un septième Apôtre y prêche.";
+
+const INDICE_15: &str = "le fossoyeur vaincu a parlé : l'Évêque des os officie au fond des catacombes, dans une chapelle bâtie de crânes.";
+
 /// Au bout de la première expédition menée au bout, quand le joueur porte
 /// l'âme de Bertrand (section 14.2).
 pub const MALVOISE_ET_L_AME: &str = "Sur le chemin du camp, un homme en robe noire vous attend, un crâne posé au creux du bras. \"Je t'ai vu recueillir cette âme. Elle m'intéresse, si tu ne sais pas quoi en faire. Je suis Malvoise, et les marchands morts sur ces routes ont encore des choses à vendre.\" Il vous suit jusqu'au camp et s'y installe.";
@@ -189,6 +199,27 @@ const DECOUVERTE_DE_L_EPAVE: &str = "Au fond du coffre, une carte marine détrem
 
 const DECOUVERTE_DU_FILON: &str = "Au fond du coffre, un plan de mine griffonné montre une galerie murée, où le filon brille d'un rouge de sang.";
 
+const AVANT_LA_CHASSERESSE: &str = "Une flèche se plante dans l'écorce, à un doigt de votre visage. Entre les troncs rouges, une chasseresse encoche déjà la suivante. Deux bêtes surgissent des fourrés à son sifflement.";
+
+const APRES_LA_CHASSERESSE: &str =
+    "La chasseresse tombe à genoux parmi les feuilles rouges, son arc brisé.";
+
+const AVANT_LE_FOSSOYEUR: &str = "Entre deux rangées de niches funéraires, un fossoyeur appuyé sur sa pelle murmure des noms. Les morts qu'il a enterrés se relèvent, et trois bêtes sortent des tombes.";
+
+const APRES_LE_FOSSOYEUR: &str = "Le fossoyeur s'effondre dans la fosse qu'il venait de creuser.";
+
+const AVANT_LA_DUCHESSE: &str = "Au cœur du manoir dévoré par les ronces, une femme en robe de bal boit dans une coupe pleine de sang. La Duchesse sanguine, Apôtre du Démiurge, repose la coupe et sourit. Il n'y aura pas de fuite.";
+
+const EPILOGUE_DE_LA_DUCHESSE: &str = "La Duchesse sanguine s'effondre, et les ronces se flétrissent autour d'elle. Le même sceau, une main ouverte, est gravé sur sa coupe. Six Apôtres sont tombés ; le Démiurge, lui, attend toujours. Votre traque continue.";
+
+const AVANT_L_EVEQUE: &str = "Dans la chapelle de crânes, un prélat aux os nus sous sa chasuble lève sa crosse : l'Évêque des os, Apôtre du Démiurge, bénit son troupeau de morts. Il n'y aura pas de fuite.";
+
+const EPILOGUE_DE_L_EVEQUE: &str = "L'Évêque des os se disloque au pied de son autel, et le silence retombe sur les catacombes. Le même sceau, une main ouverte, est gravé sur sa crosse. Sept Apôtres sont tombés ; le Démiurge, lui, attend toujours. Votre traque continue.";
+
+const DECOUVERTE_DE_L_AUTEL: &str = "Au fond du coffre, un parchemin taché de sang montre le chemin d'une clairière cachée, où un autel de ronces attend ses offrandes.";
+
+const DECOUVERTE_DE_LA_CRYPTE: &str = "Au fond du coffre, une clé de bronze et un plan jauni mènent à une crypte scellée, où reposeraient les saints de Sainte-Ombre.";
+
 const AVANT_LE_MARGRAVE: &str = "Au sommet, sur un trône de glace entouré de soldats figés, le Margrave de givre se lève. Apôtre du Démiurge, il a offert son armée au froid. Il n'y aura pas de fuite.";
 
 const EPILOGUE_DU_MARGRAVE: &str = "Le Margrave de givre se brise sur son trône. Le même sceau, une main ouverte, est gravé dans la glace. Trois Apôtres sont tombés ; le Démiurge, lui, attend toujours. Votre traque continue.";
@@ -206,6 +237,8 @@ const CARNET_DE_L_ABBESSE: &str = "Abbesse écorchée, abattue dans l'Abbaye des
 const CARNET_DU_MARGRAVE: &str = "Margrave de givre, abattu dans le Col du Givre-Noir.";
 const CARNET_DE_L_AMIRAL: &str = "Amiral noyé, abattu au Port des Noyés.";
 const CARNET_DU_PREVOT: &str = "Prévôt des fosses, abattu dans les Mines de Fer-Noir.";
+const CARNET_DE_LA_DUCHESSE: &str = "Duchesse sanguine, abattue dans la Sylve écarlate.";
+const CARNET_DE_L_EVEQUE: &str = "Évêque des os, abattu dans les Catacombes de Sainte-Ombre.";
 const CARNET_DU_DEMIURGE: &str = "Démiurge, abattu dans l'Éclipse.";
 
 const AME_DU_BARON: &str =
@@ -222,6 +255,11 @@ const AME_DE_L_AMIRAL: &str =
 
 const AME_DU_PREVOT: &str =
     "L'âme du Prévôt des fosses s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.";
+
+const AME_DE_LA_DUCHESSE: &str = "L'âme de la Duchesse sanguine s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.";
+
+const AME_DE_L_EVEQUE: &str =
+    "L'âme de l'Évêque des os s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.";
 
 /// L'Éclipse et le Démiurge, section 23 de docs/contenu-v1.md (étapes 88 à
 /// 90).
@@ -808,6 +846,143 @@ impl ContenuV1 {
             DECOUVERTE_DU_FILON,
         )
         .expect("Filon écarlate conforme aux règles");
+        // Au service de la Duchesse sanguine, elle garde la Sylve, avec
+        // deux bêtes seulement, comme le Contrebandier (section 10.7).
+        let chasseresse = Humain::new(
+            HumainId::new("chasseresse"),
+            "Chasseresse",
+            vec![
+                (trouver("mante-ecarlate"), niveau(62)),
+                (trouver("dryade-sanglante"), niveau(63)),
+            ],
+            800,
+            AVANT_LA_CHASSERESSE,
+            APRES_LA_CHASSERESSE,
+        )
+        .expect("Chasseresse conforme aux règles")
+        .avec_heros(
+            Classe::Assassin,
+            Some(objet("dagues-de-fer-noir")),
+            Some(objet("maille-de-fer-noir")),
+        )
+        .avec_niveau_du_heros(niveau(62))
+        .avec_ia(IaHumain::Relevee);
+        // Ouverte par l'indice que laisse le Prévôt des fosses (section
+        // 9.4).
+        let sylve = Zone::new(
+            ZoneId::new("sylve-ecarlate"),
+            "Sylve écarlate",
+            (niveau(58), niveau(62)),
+            5,
+            3,
+            vec![
+                trouver("ronce-vampire"),
+                trouver("mante-ecarlate"),
+                trouver("sanglier-enrage"),
+            ],
+            vec![EspeceRare {
+                espece: trouver("dryade-sanglante"),
+                pacifique: false,
+            }],
+            expedition_automatique(9, 460..=870, 5600..=8200, 1..=3, 380..=620),
+            coffre(300..=460, capsules_de("sylve-ecarlate")),
+        )
+        .and_then(|zone| zone.avec_monstre_cache(schnoz()))
+        .map(|zone| {
+            zone.avec_humain(chasseresse)
+                .avec_meteos(METEOS_COMMUNES.to_vec())
+        })
+        .expect("Sylve écarlate conforme aux règles");
+        // Au service de l'Évêque des os, il garde les Catacombes (section
+        // 10.7).
+        let fossoyeur = Humain::new(
+            HumainId::new("fossoyeur"),
+            "Fossoyeur",
+            vec![
+                (trouver("rat-des-ossuaires"), niveau(67)),
+                (trouver("moine-psalmodiant"), niveau(67)),
+                (trouver("liche"), niveau(68)),
+            ],
+            900,
+            AVANT_LE_FOSSOYEUR,
+            APRES_LE_FOSSOYEUR,
+        )
+        .expect("Fossoyeur conforme aux règles")
+        .avec_heros(
+            Classe::Mage,
+            Some(objet("crosse-des-catacombes")),
+            Some(objet("robe-de-grisou")),
+        )
+        .avec_niveau_du_heros(niveau(67))
+        .avec_ia(IaHumain::Relevee);
+        let meteos_des_catacombes = vec![Meteo::Pluie, Meteo::Tempete];
+        // Ouvertes par l'indice que laisse la Duchesse sanguine (section
+        // 9.4).
+        let catacombes = Zone::new(
+            ZoneId::new("catacombes-de-sainte-ombre"),
+            "Catacombes de Sainte-Ombre",
+            (niveau(63), niveau(67)),
+            5,
+            3,
+            vec![
+                trouver("rat-des-ossuaires"),
+                trouver("moine-psalmodiant"),
+                trouver("araignee-des-cryptes"),
+            ],
+            vec![EspeceRare {
+                espece: trouver("liche"),
+                pacifique: false,
+            }],
+            expedition_automatique(10, 520..=980, 6600..=9600, 1..=3, 430..=700),
+            coffre(340..=520, capsules_de("catacombes-de-sainte-ombre")),
+        )
+        .and_then(|zone| zone.avec_monstre_cache(schnoz()))
+        .map(|zone| {
+            zone.avec_humain(fossoyeur)
+                .avec_meteos(meteos_des_catacombes.clone())
+        })
+        .expect("Catacombes de Sainte-Ombre conformes aux règles");
+        let autel = annexe(
+            Zone::new(
+                ZoneId::new("autel-des-ronces"),
+                "Autel des ronces",
+                (niveau(61), niveau(64)),
+                3,
+                3,
+                sylve.especes().to_vec(),
+                vec![EspeceRare {
+                    espece: trouver("phalene-d-aube"),
+                    pacifique: true,
+                }],
+                sylve.expedition_automatique().clone(),
+                coffre(400..=600, capsules_de("sylve-ecarlate")).avec_tresors(tresors_d_annexe()),
+            ),
+            &sylve,
+            METEOS_COMMUNES.to_vec(),
+            DECOUVERTE_DE_L_AUTEL,
+        )
+        .expect("Autel des ronces conforme aux règles");
+        let crypte = annexe(
+            Zone::new(
+                ZoneId::new("crypte-des-saints"),
+                "Crypte des saints",
+                (niveau(66), niveau(69)),
+                3,
+                3,
+                catacombes.especes().to_vec(),
+                vec![EspeceRare {
+                    espece: trouver("ange-de-pierre"),
+                    pacifique: true,
+                }],
+                catacombes.expedition_automatique().clone(),
+                coffre(450..=680, capsules_de("catacombes-de-sainte-ombre"))
+                    .avec_tresors(tresors_d_annexe()),
+            ),
+            &catacombes,
+            meteos_des_catacombes,
+            DECOUVERTE_DE_LA_CRYPTE,
+        )
+        .expect("Crypte des saints conforme aux règles");
         // Le Baron pendu attend au fond de la Vallée, que le second indice,
         // donné par le Bourreau, ouvre. Premier Apôtre, il combat au niveau
         // maximal de la Vallée, 20, et ne connaît qu'une attaque Obscur
@@ -896,12 +1071,47 @@ impl ContenuV1 {
             prevot,
         )
         .expect("chapitre du Prévôt conforme aux règles");
+        // Le douzième indice se trouve au bout de l'expédition qui abat le
+        // Prévôt, dans les Mines, et ouvre la Sylve ; la Chasseresse laisse
+        // le treizième (section 9.4).
+        let duchesse = Apotre::new(
+            trouver("duchesse-sanguine"),
+            &sylve,
+            AVANT_LA_DUCHESSE,
+            EPILOGUE_DE_LA_DUCHESSE,
+        )
+        .expect("Duchesse sanguine conforme aux règles")
+        .avec_recit_de_l_ame(AME_DE_LA_DUCHESSE)
+        .avec_ligne_du_carnet(CARNET_DE_LA_DUCHESSE);
+        let chapitre_de_la_duchesse = Chapitre::new(
+            vec![indice(&mines, INDICE_12), indice(&sylve, INDICE_13)],
+            duchesse,
+        )
+        .expect("chapitre de la Duchesse conforme aux règles");
+        // Le quatorzième indice se trouve au bout de l'expédition qui abat
+        // la Duchesse, dans la Sylve, et ouvre les Catacombes (section 9.4).
+        let eveque = Apotre::new(
+            trouver("eveque-des-os"),
+            &catacombes,
+            AVANT_L_EVEQUE,
+            EPILOGUE_DE_L_EVEQUE,
+        )
+        .expect("Évêque des os conforme aux règles")
+        .avec_recit_de_l_ame(AME_DE_L_EVEQUE)
+        .avec_ligne_du_carnet(CARNET_DE_L_EVEQUE);
+        let chapitre_de_l_eveque = Chapitre::new(
+            vec![indice(&sylve, INDICE_14), indice(&catacombes, INDICE_15)],
+            eveque,
+        )
+        .expect("chapitre de l'Évêque conforme aux règles");
         let piste = Piste::new(vec![
             chapitre_du_baron,
             chapitre_de_l_abbesse,
             chapitre_du_margrave,
             chapitre_de_l_amiral,
             chapitre_du_prevot,
+            chapitre_de_la_duchesse,
+            chapitre_de_l_eveque,
         ])
         .expect("piste conforme aux règles")
         // Le Béhérit attend les âmes des 13 Apôtres de la traque complète
@@ -973,7 +1183,9 @@ impl ContenuV1 {
         .expect("Démiurge conforme aux règles")
         .avec_ligne_du_carnet(CARNET_DU_DEMIURGE);
         let invocation = Invocation::new(eclipse, demiurge, FORGE_DU_BEHERIT, SACRIFICE);
-        let zones = vec![lisiere, marais, vallee, abbaye, col, desert, port, mines];
+        let zones = vec![
+            lisiere, marais, vallee, abbaye, col, desert, port, mines, sylve, catacombes,
+        ];
         let tour = TourSansFond::new(
             ZoneId::new("tour-sans-fond"),
             "Tour sans fond",
@@ -1029,7 +1241,7 @@ impl ContenuV1 {
             invocation,
             tour,
             fosse,
-            annexes: vec![epave, filon],
+            annexes: vec![epave, filon, autel, crypte],
             zones_legendaires: Vec::new(),
         }
     }
@@ -1300,7 +1512,7 @@ const fn avec_effet(fiche: FicheAttaque, statut: Statut, chance: u8) -> FicheAtt
 /// Section 34 de docs/contenu-v1.md : les attaques que les armes donnent au
 /// héros, toutes de type Humain, classe par classe. Coup de poing, celle du
 /// héros sans arme, est dans le module du héros.
-const ATTAQUES_DES_HEROS: [FicheAttaque; 28] = [
+const ATTAQUES_DES_HEROS: [FicheAttaque; 32] = [
     fiche("taille", "Taille", Type::Humain, Physique, 40, 100),
     fiche("estoc", "Estoc", Type::Humain, Physique, 50, 100),
     fiche("pourfendre", "Pourfendre", Type::Humain, Physique, 60, 100),
@@ -1437,6 +1649,39 @@ const ATTAQUES_DES_HEROS: [FicheAttaque; 28] = [
         85,
         100,
     ),
+    // Celle du palier 6 (étape 165).
+    fiche(
+        "decapitation",
+        "Décapitation",
+        Type::Humain,
+        Physique,
+        95,
+        100,
+    ),
+    fiche(
+        "lame-fantome",
+        "Lame fantôme",
+        Type::Humain,
+        Physique,
+        95,
+        100,
+    ),
+    fiche(
+        "arcane-interdit",
+        "Arcane interdit",
+        Type::Humain,
+        Speciale,
+        95,
+        100,
+    ),
+    fiche(
+        "jugement-dernier",
+        "Jugement dernier",
+        Type::Humain,
+        Speciale,
+        95,
+        100,
+    ),
     // L'attaque du second type de chaque classe, des armes des paliers 2 à
     // 5 (étapes 149 et 163, section 4.4).
     fiche(
@@ -1474,7 +1719,7 @@ const ATTAQUES_DES_HEROS: [FicheAttaque; 28] = [
 ];
 
 /// Section 1 de docs/contenu-v1.md, dans le même ordre.
-const ATTAQUES: [FicheAttaque; 175] = [
+const ATTAQUES: [FicheAttaque; 197] = [
     fiche(
         "souffle-chaud",
         "Souffle chaud",
@@ -2786,6 +3031,184 @@ const ATTAQUES: [FicheAttaque; 175] = [
         80,
         100,
     ),
+    // Sylve écarlate et Catacombes de Sainte-Ombre, section 45 (étape
+    // 165).
+    fiche(
+        "etreinte-sanguine",
+        "Étreinte sanguine",
+        Type::Plante,
+        Physique,
+        90,
+        95,
+    ),
+    fiche(
+        "faux-de-mante",
+        "Faux de mante",
+        Type::Insecte,
+        Physique,
+        85,
+        95,
+    ),
+    fiche(
+        "charge-du-sanglier",
+        "Charge du sanglier",
+        Type::Normal,
+        Physique,
+        85,
+        95,
+    ),
+    fiche(
+        "seve-ecarlate",
+        "Sève écarlate",
+        Type::Plante,
+        Speciale,
+        95,
+        90,
+    ),
+    avec_effet(
+        fiche(
+            "aile-poudree",
+            "Aile poudrée",
+            Type::Insecte,
+            Speciale,
+            90,
+            95,
+        ),
+        Paralysie,
+        10,
+    ),
+    fiche(
+        "baiser-de-sang",
+        "Baiser de sang",
+        Type::Obscur,
+        Speciale,
+        90,
+        95,
+    ),
+    avec_effet(
+        fiche("peste-noire", "Peste noire", Type::Poison, Physique, 90, 95),
+        Poison,
+        30,
+    ),
+    fiche("requiem", "Requiem", Type::Son, Speciale, 95, 90),
+    avec_effet(
+        fiche(
+            "morsure-de-l-araignee",
+            "Morsure de l'araignée",
+            Type::Insecte,
+            Physique,
+            80,
+            100,
+        ),
+        Poison,
+        20,
+    ),
+    fiche(
+        "malediction-mortelle",
+        "Malédiction mortelle",
+        Type::Spectre,
+        Speciale,
+        85,
+        95,
+    ),
+    fiche(
+        "jugement-de-pierre",
+        "Jugement de pierre",
+        Type::Roche,
+        Physique,
+        95,
+        90,
+    ),
+    fiche(
+        "ossuaire-sacre",
+        "Ossuaire sacré",
+        Type::Obscur,
+        Physique,
+        95,
+        90,
+    ),
+    // Leurs attaques d'œuf (section 13.11).
+    fiche(
+        "racines-assoiffees",
+        "Racines assoiffées",
+        Type::Plante,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "danse-de-la-mante",
+        "Danse de la mante",
+        Type::Insecte,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "coup-de-boutoir",
+        "Coup de boutoir",
+        Type::Sol,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "chant-de-la-dryade",
+        "Chant de la dryade",
+        Type::Psychique,
+        Speciale,
+        80,
+        100,
+    ),
+    avec_effet(
+        fiche(
+            "poudre-d-aube",
+            "Poudre d'aube",
+            Type::Feerique,
+            Speciale,
+            75,
+            100,
+        ),
+        Paralysie,
+        20,
+    ),
+    fiche(
+        "nuee-de-rats",
+        "Nuée de rats",
+        Type::Normal,
+        Physique,
+        80,
+        100,
+    ),
+    fiche("psalmodie", "Psalmodie", Type::Son, Speciale, 80, 100),
+    avec_effet(
+        fiche(
+            "toile-des-cryptes",
+            "Toile des cryptes",
+            Type::Insecte,
+            Physique,
+            75,
+            100,
+        ),
+        Paralysie,
+        20,
+    ),
+    fiche(
+        "phylactere",
+        "Phylactère",
+        Type::Psychique,
+        Speciale,
+        80,
+        100,
+    ),
+    fiche(
+        "aube-de-pierre",
+        "Aube de pierre",
+        Type::Lumiere,
+        Speciale,
+        80,
+        100,
+    ),
 ];
 
 struct FicheCapsule {
@@ -2796,7 +3219,7 @@ struct FicheCapsule {
 }
 
 /// Section 6 de docs/contenu-v1.md, dans le même ordre.
-const CAPSULES: [FicheCapsule; 24] = [
+const CAPSULES: [FicheCapsule; 30] = [
     FicheCapsule {
         attaque: "brasier",
         prix: 150,
@@ -2916,6 +3339,36 @@ const CAPSULES: [FicheCapsule; 24] = [
         attaque: "coup-de-pioche",
         prix: 650,
         zone: "mines-de-fer-noir",
+    },
+    FicheCapsule {
+        attaque: "faux-de-mante",
+        prix: 700,
+        zone: "sylve-ecarlate",
+    },
+    FicheCapsule {
+        attaque: "charge-du-sanglier",
+        prix: 700,
+        zone: "sylve-ecarlate",
+    },
+    FicheCapsule {
+        attaque: "etreinte-sanguine",
+        prix: 700,
+        zone: "sylve-ecarlate",
+    },
+    FicheCapsule {
+        attaque: "peste-noire",
+        prix: 750,
+        zone: "catacombes-de-sainte-ombre",
+    },
+    FicheCapsule {
+        attaque: "requiem",
+        prix: 750,
+        zone: "catacombes-de-sainte-ombre",
+    },
+    FicheCapsule {
+        attaque: "morsure-de-l-araignee",
+        prix: 750,
+        zone: "catacombes-de-sainte-ombre",
     },
 ];
 
@@ -3041,7 +3494,7 @@ const MARCHAND_ZOMBIE: FicheEspece = FicheEspece {
 /// Section 2 de docs/contenu-v1.md, dans l'ordre du codex : les monstres de
 /// départ, les communs, les rares, l'Apôtre, le monstre caché, puis les
 /// formes évoluées de la section 8.
-const ESPECES: [FicheEspece; 77] = [
+const ESPECES: [FicheEspece; 89] = [
     FicheEspece {
         id: "salamandre",
         nom: "Salamandre",
@@ -4430,6 +4883,230 @@ const ESPECES: [FicheEspece; 77] = [
         ],
         evolution: None,
     },
+    // Espèces de la Sylve écarlate et de l'Autel des ronces, puis des
+    // Catacombes de Sainte-Ombre et de la Crypte des saints (section 45,
+    // étape 165).
+    FicheEspece {
+        id: "ronce-vampire",
+        nom: "Ronce vampire",
+        types: &[Type::Plante, Type::Poison],
+        role: Role::Soutien,
+        stats_de_base: [84, 74, 88, 62, 72, 15],
+        rendement_experience: 180,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Carapace, Habilete::Sorcellerie],
+        apprentissage: &[
+            (1, "feuille-tranchante"),
+            (1, "morsure-venimeuse"),
+            (30, "ronces"),
+            (40, "lianes-etrangleuses"),
+            (50, "croc-de-venin"),
+            (68, "etreinte-sanguine"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "mante-ecarlate",
+        nom: "Mante écarlate",
+        types: &[Type::Insecte, Type::Combat],
+        role: Role::Offensif,
+        stats_de_base: [62, 100, 60, 40, 48, 75],
+        rendement_experience: 180,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Ferocite, Habilete::Celerite],
+        apprentissage: &[
+            (1, "bourdonnement"),
+            (1, "frappe-d-os"),
+            (30, "nuee"),
+            (40, "epee-des-morts"),
+            (45, "faux-de-mante"),
+            (66, "dechiquetage"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "sanglier-enrage",
+        nom: "Sanglier enragé",
+        types: &[Type::Normal, Type::Sol],
+        role: Role::Offensif,
+        stats_de_base: [85, 95, 70, 30, 45, 60],
+        rendement_experience: 180,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Ferocite, Habilete::Volonte],
+        apprentissage: &[
+            (1, "ruade"),
+            (1, "secousse"),
+            (30, "curee"),
+            (45, "charge-du-sanglier"),
+            (66, "seisme"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "dryade-sanglante",
+        nom: "Dryade sanglante",
+        types: &[Type::Plante, Type::Psychique],
+        role: Role::Offensif,
+        stats_de_base: [78, 52, 74, 115, 88, 73],
+        rendement_experience: 305,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Sorcellerie, Habilete::Affinite],
+        apprentissage: &[
+            (1, "feuille-tranchante"),
+            (1, "onde-psychique"),
+            (35, "hurlement-de-mandragore"),
+            (45, "ronces-maudites"),
+            (68, "seve-ecarlate"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "phalene-d-aube",
+        nom: "Phalène d'aube",
+        types: &[Type::Insecte, Type::Feerique],
+        role: Role::Soutien,
+        stats_de_base: [70, 45, 75, 95, 95, 70],
+        rendement_experience: 300,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Instinct, Habilete::Volonte],
+        apprentissage: &[
+            (1, "bourdonnement"),
+            (1, "poussiere-d-elfe"),
+            (35, "lumiere-d-aube"),
+            (45, "rayon-de-lune"),
+            (70, "aile-poudree"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "duchesse-sanguine",
+        nom: "Duchesse sanguine",
+        types: &[Type::Obscur],
+        role: Role::Offensif,
+        stats_de_base: [96, 92, 88, 112, 92, 65],
+        rendement_experience: 430,
+        rarete: Rarete::Apotre,
+        habiletes: &[Habilete::Sorcellerie, Habilete::Ferocite],
+        apprentissage: &[
+            (1, "etreinte-obscure"),
+            (1, "morsure"),
+            (20, "hurlement-des-abysses"),
+            (35, "ronces-maudites"),
+            (45, "baiser-de-sang"),
+            (60, "psaume-impie"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "rat-des-ossuaires",
+        nom: "Rat des ossuaires",
+        types: &[Type::Normal, Type::Poison],
+        role: Role::Offensif,
+        stats_de_base: [70, 90, 58, 40, 52, 85],
+        rendement_experience: 195,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Celerite, Habilete::Pillard],
+        apprentissage: &[
+            (1, "griffure"),
+            (1, "morsure-venimeuse"),
+            (30, "curee"),
+            (40, "croc-de-venin"),
+            (71, "peste-noire"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "moine-psalmodiant",
+        nom: "Moine psalmodiant",
+        types: &[Type::Son, Type::Spectre],
+        role: Role::Soutien,
+        stats_de_base: [80, 45, 75, 85, 85, 15],
+        rendement_experience: 195,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Volonte, Habilete::Sorcellerie],
+        apprentissage: &[
+            (1, "glas"),
+            (1, "lueur-trompeuse"),
+            (30, "lamentation"),
+            (40, "tocsin"),
+            (50, "flamme-funebre"),
+            (71, "requiem"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "araignee-des-cryptes",
+        nom: "Araignée des cryptes",
+        types: &[Type::Insecte, Type::Roche],
+        role: Role::Offensif,
+        stats_de_base: [70, 92, 85, 35, 55, 48],
+        rendement_experience: 195,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Traqueur, Habilete::Carapace],
+        apprentissage: &[
+            (1, "bourdonnement"),
+            (1, "griffe-de-pierre"),
+            (30, "chute-de-pierres"),
+            (40, "morsure-de-l-araignee"),
+            (71, "eboulement"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "liche",
+        nom: "Liche",
+        types: &[Type::Psychique, Type::Spectre],
+        role: Role::Offensif,
+        stats_de_base: [66, 42, 62, 108, 90, 67],
+        rendement_experience: 330,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Sorcellerie, Habilete::Volonte],
+        apprentissage: &[
+            (1, "onde-psychique"),
+            (1, "lueur-trompeuse"),
+            (35, "flamme-funebre"),
+            (50, "malediction-mortelle"),
+            (72, "jugement"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "ange-de-pierre",
+        nom: "Ange de pierre",
+        types: &[Type::Roche, Type::Lumiere],
+        role: Role::Soutien,
+        stats_de_base: [85, 75, 110, 60, 100, 20],
+        rendement_experience: 325,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Carapace, Habilete::Volonte],
+        apprentissage: &[
+            (1, "lueur-sacree"),
+            (1, "griffe-de-pierre"),
+            (35, "lance-de-lumiere"),
+            (45, "chute-de-pierres"),
+            (74, "jugement-de-pierre"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "eveque-des-os",
+        nom: "Évêque des os",
+        types: &[Type::Obscur],
+        role: Role::Offensif,
+        stats_de_base: [100, 110, 98, 95, 90, 57],
+        rendement_experience: 465,
+        rarete: Rarete::Apotre,
+        habiletes: &[Habilete::Volonte, Habilete::Carapace],
+        apprentissage: &[
+            (1, "etreinte-obscure"),
+            (1, "frappe-d-os"),
+            (20, "hurlement-des-abysses"),
+            (35, "epee-des-morts"),
+            (50, "flagellation"),
+            (65, "ossuaire-sacre"),
+        ],
+        evolution: None,
+    },
 ];
 
 /// Section 15 de docs/contenu-v1.md : la ligne est prête 2 h après avoir
@@ -4685,7 +5362,7 @@ struct FicheObjet {
     heures: u64,
 }
 
-const PLANS_DE_FABRICATION: [FicheObjet; 41] = [
+const PLANS_DE_FABRICATION: [FicheObjet; 49] = [
     FicheObjet {
         id: "lame-de-milicien",
         nom: "Lame de milicien",
@@ -4898,6 +5575,64 @@ const PLANS_DE_FABRICATION: [FicheObjet; 41] = [
             ("ecaille-de-rouille", 1),
         ],
         heures: 12,
+    },
+    // Palier 6, aux ressources de la Sylve écarlate et des Catacombes
+    // (étape 165).
+    FicheObjet {
+        id: "hache-du-bourreau-d-os",
+        nom: "Hache du bourreau d'os",
+        sorte: SorteDObjet::Arme,
+        bonus: [14, 0, 14, 0, 0],
+        classe: Some((Classe::Guerrier, 6)),
+        attaques: &["decapitation", "frappe-brutale", "coup-de-pommeau"],
+        cout: &[
+            ("soie-des-cryptes", 8),
+            ("lame-de-mante", 6),
+            ("phylactere-brise", 1),
+        ],
+        heures: 14,
+    },
+    FicheObjet {
+        id: "lames-de-soie",
+        nom: "Lames de soie",
+        sorte: SorteDObjet::Arme,
+        bonus: [14, 0, 14, 0, 0],
+        classe: Some((Classe::Assassin, 6)),
+        attaques: &["lame-fantome", "lame-empoisonnee", "lame-des-tenebres"],
+        cout: &[
+            ("soie-des-cryptes", 8),
+            ("lame-de-mante", 6),
+            ("phylactere-brise", 1),
+        ],
+        heures: 14,
+    },
+    FicheObjet {
+        id: "crosse-des-catacombes",
+        nom: "Crosse des catacombes",
+        sorte: SorteDObjet::Arme,
+        bonus: [14, 0, 14, 0, 0],
+        classe: Some((Classe::Mage, 6)),
+        attaques: &["arcane-interdit", "onde-engourdissante", "emprise-mentale"],
+        cout: &[
+            ("chapelet-d-os", 8),
+            ("epine-de-ronce", 6),
+            ("phylactere-brise", 1),
+        ],
+        heures: 14,
+    },
+    FicheObjet {
+        id: "masse-ecarlate",
+        nom: "Masse écarlate",
+        sorte: SorteDObjet::Arme,
+        bonus: [14, 0, 14, 0, 0],
+        classe: Some((Classe::Templier, 6)),
+        attaques: &["jugement-dernier", "sceau-d-entrave", "rayon-de-foi"],
+        cout: &[
+            ("chapelet-d-os", 8),
+            ("epine-de-ronce", 6),
+            ("phylactere-brise", 1),
+        ],
+        heures: 14,
     },
     FicheObjet {
         id: "gambison",
@@ -5164,6 +5899,63 @@ const PLANS_DE_FABRICATION: [FicheObjet; 41] = [
             ("ecaille-de-rouille", 1),
         ],
         heures: 14,
+    },
+    // Palier 6 (étape 165).
+    FicheObjet {
+        id: "plates-du-sanglier",
+        nom: "Plates du sanglier",
+        sorte: SorteDObjet::Armure,
+        bonus: [0, 30, 0, 30, 0],
+        classe: Some((Classe::Guerrier, 6)),
+        attaques: &[],
+        cout: &[
+            ("defense-de-sanglier", 10),
+            ("queue-de-rat", 6),
+            ("seve-de-dryade", 1),
+        ],
+        heures: 16,
+    },
+    FicheObjet {
+        id: "cuir-ecarlate",
+        nom: "Cuir écarlate",
+        sorte: SorteDObjet::Armure,
+        bonus: [0, 30, 0, 30, 0],
+        classe: Some((Classe::Assassin, 6)),
+        attaques: &[],
+        cout: &[
+            ("defense-de-sanglier", 10),
+            ("queue-de-rat", 6),
+            ("seve-de-dryade", 1),
+        ],
+        heures: 16,
+    },
+    FicheObjet {
+        id: "robe-de-ronces",
+        nom: "Robe de ronces",
+        sorte: SorteDObjet::Armure,
+        bonus: [0, 30, 0, 30, 0],
+        classe: Some((Classe::Mage, 6)),
+        attaques: &[],
+        cout: &[
+            ("defense-de-sanglier", 10),
+            ("queue-de-rat", 6),
+            ("seve-de-dryade", 1),
+        ],
+        heures: 16,
+    },
+    FicheObjet {
+        id: "harnois-des-saints",
+        nom: "Harnois des saints",
+        sorte: SorteDObjet::Armure,
+        bonus: [0, 30, 0, 30, 0],
+        classe: Some((Classe::Templier, 6)),
+        attaques: &[],
+        cout: &[
+            ("defense-de-sanglier", 10),
+            ("queue-de-rat", 6),
+            ("seve-de-dryade", 1),
+        ],
+        heures: 16,
     },
     FicheObjet {
         id: "croc-tresse",
@@ -5552,7 +6344,7 @@ const PRIX_D_UNE_RESSOURCE_RARE: u32 = 15;
 
 /// Espèce, identifiant et nom de chaque ressource : seules les espèces
 /// sauvages qui se combattent en ont une (section 14.3).
-const RESSOURCES: [(&str, &str, &str); 33] = [
+const RESSOURCES: [(&str, &str, &str); 41] = [
     ("loup", "croc-de-loup", "Croc de loup"),
     ("corbeau", "plume-de-corbeau", "Plume de corbeau"),
     ("vipere", "ecaille-de-vipere", "Écaille de vipère"),
@@ -5604,6 +6396,22 @@ const RESSOURCES: [(&str, &str, &str); 33] = [
         "ecaille-de-rouille",
         "Écaille de rouille",
     ),
+    ("ronce-vampire", "epine-de-ronce", "Épine de ronce"),
+    ("mante-ecarlate", "lame-de-mante", "Lame de mante"),
+    (
+        "sanglier-enrage",
+        "defense-de-sanglier",
+        "Défense de sanglier",
+    ),
+    ("dryade-sanglante", "seve-de-dryade", "Sève de dryade"),
+    ("rat-des-ossuaires", "queue-de-rat", "Queue de rat"),
+    ("moine-psalmodiant", "chapelet-d-os", "Chapelet d'os"),
+    (
+        "araignee-des-cryptes",
+        "soie-des-cryptes",
+        "Soie des cryptes",
+    ),
+    ("liche", "phylactere-brise", "Phylactère brisé"),
 ];
 
 /// Section 32 de docs/contenu-v1.md : les météos de la Lisière, du Marais
@@ -5614,7 +6422,7 @@ const METEOS_COMMUNES: [Meteo; 3] = [Meteo::Pluie, Meteo::Tempete, Meteo::Canicu
 /// Section 31 de docs/contenu-v1.md : les espèces qui ne sortent, dans les
 /// groupes sauvages des zones, que la nuit ou que le jour (section 9.6).
 /// Chaque zone en garde au moins deux à chaque moment.
-const ACTIVITES: [(&str, Activite); 16] = [
+const ACTIVITES: [(&str, Activite); 19] = [
     ("loup", Activite::Nocturne),
     ("feu-follet", Activite::Nocturne),
     ("fee-noire", Activite::Nocturne),
@@ -5631,11 +6439,14 @@ const ACTIVITES: [(&str, Activite); 16] = [
     ("sirene-putride", Activite::Nocturne),
     ("goeland-charognard", Activite::Diurne),
     ("mineur-possede", Activite::Nocturne),
+    ("mante-ecarlate", Activite::Diurne),
+    ("sanglier-enrage", Activite::Nocturne),
+    ("moine-psalmodiant", Activite::Nocturne),
 ];
 
 /// Section 28 de docs/contenu-v1.md : l'attaque d'œuf de chaque famille
 /// d'évolution, par sa forme de base (section 13.11).
-const ATTAQUES_D_OEUF: [(&str, &str); 50] = [
+const ATTAQUES_D_OEUF: [(&str, &str); 60] = [
     ("salamandre", "souffle-des-forges"),
     ("crapaud", "ressac"),
     ("mandragore", "seve-maudite"),
@@ -5686,6 +6497,16 @@ const ATTAQUES_D_OEUF: [(&str, &str); 50] = [
     ("grisou-ardent", "etincelle-de-grisou"),
     ("dragon-de-rouille", "ecaille-rouillee"),
     ("gemmame", "prisme-feerique"),
+    ("ronce-vampire", "racines-assoiffees"),
+    ("mante-ecarlate", "danse-de-la-mante"),
+    ("sanglier-enrage", "coup-de-boutoir"),
+    ("dryade-sanglante", "chant-de-la-dryade"),
+    ("phalene-d-aube", "poudre-d-aube"),
+    ("rat-des-ossuaires", "nuee-de-rats"),
+    ("moine-psalmodiant", "psalmodie"),
+    ("araignee-des-cryptes", "toile-des-cryptes"),
+    ("liche", "phylactere"),
+    ("ange-de-pierre", "aube-de-pierre"),
 ];
 
 /// La forme de base de la famille de cette espèce : celle qu'aucune autre
@@ -5921,8 +6742,8 @@ mod tests {
         let mut uniques = vues.clone();
         uniques.sort_by(|a, b| a.as_str().cmp(b.as_str()));
         uniques.dedup();
-        assert_eq!(vues.len(), 50);
-        assert_eq!(uniques.len(), 50);
+        assert_eq!(vues.len(), 60);
+        assert_eq!(uniques.len(), 60);
     }
 
     #[test]
@@ -5931,13 +6752,13 @@ mod tests {
 
         let contenu = ContenuV1::new();
         let au_codex = especes_au_codex(contenu.especes());
-        assert_eq!(au_codex, 70);
+        assert_eq!(au_codex, 80);
         let seuils: Vec<u32> = contenu
             .recompenses_du_codex()
             .iter()
             .map(|recompense| recompense.palier.seuil(au_codex))
             .collect();
-        assert_eq!(seuils, vec![10, 20, 30, 40, 50, 70]);
+        assert_eq!(seuils, vec![10, 20, 30, 40, 50, 80]);
         let complet = contenu.recompenses_du_codex().last().unwrap();
         assert_eq!(complet.palier, PalierDuCodex::Complet);
         let sceau = complet.objet_unique.as_ref().unwrap();
@@ -5948,7 +6769,7 @@ mod tests {
     #[test]
     fn chaque_capsule_sert_a_une_espece_qui_ne_l_apprend_pas() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.capsules().len(), 24);
+        assert_eq!(contenu.capsules().len(), 30);
         for capsule in contenu.capsules() {
             let utile = contenu.especes().iter().any(|espece| {
                 capsule.convient_a(espece) && espece.attaque_apprise(capsule.id()).is_none()
@@ -6000,6 +6821,14 @@ mod tests {
             ids(&contenu.zones()[7]),
             vec!["marteau-de-forge", "coup-de-grisou", "coup-de-pioche"]
         );
+        assert_eq!(
+            ids(&contenu.zones()[8]),
+            vec!["faux-de-mante", "charge-du-sanglier", "etreinte-sanguine"]
+        );
+        assert_eq!(
+            ids(&contenu.zones()[9]),
+            vec!["peste-noire", "requiem", "morsure-de-l-araignee"]
+        );
         // Les coffres d'une annexe gardent les capsules de sa zone.
         for annexe in contenu.annexes() {
             let zone = contenu.zone(annexe.de()).unwrap();
@@ -6010,10 +6839,10 @@ mod tests {
     #[test]
     fn contenu_conforme_aux_regles() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.especes().len(), 77);
-        assert_eq!(contenu.zones().len(), 8);
-        assert_eq!(contenu.annexes().len(), 2);
-        assert_eq!(contenu.piste().indices().count(), 11);
+        assert_eq!(contenu.especes().len(), 89);
+        assert_eq!(contenu.zones().len(), 10);
+        assert_eq!(contenu.annexes().len(), 4);
+        assert_eq!(contenu.piste().indices().count(), 15);
         // Toute espèce rencontrée en zone, annexes comprises, se retrouve au
         // chargement d'une sauvegarde.
         let annexes = contenu.annexes().iter().map(Annexe::zone);
@@ -6175,7 +7004,7 @@ mod tests {
                 par_sorte(SorteDObjet::Armure),
                 par_sorte(SorteDObjet::Talisman)
             ),
-            (16, 20, 5)
+            (20, 24, 5)
         );
         let ids: std::collections::HashSet<_> = plans
             .iter()
@@ -6189,7 +7018,7 @@ mod tests {
             assert_eq!(objet.bonus().pv, 0, "{}", objet.nom());
             assert_ne!(objet.bonus(), Stats::default(), "{}", objet.nom());
             let heures = plan.duree().as_secs() / 3_600;
-            assert!((1..=14).contains(&heures), "{}", objet.nom());
+            assert!((1..=16).contains(&heures), "{}", objet.nom());
             for (ressource, _) in plan.cout() {
                 assert_eq!(contenu.ressource(ressource.id()).as_ref(), Some(ressource));
             }
@@ -6200,8 +7029,8 @@ mod tests {
         // ne se forge pas, et depuis l'étape 163 une armure du palier 4.
         for classe in Classe::TOUTES {
             let siens = contenu.plans_de_fabrication_pour(classe);
-            assert_eq!(siens.len(), 14, "{}", classe.nom());
-            for palier in 1..=5 {
+            assert_eq!(siens.len(), 16, "{}", classe.nom());
+            for palier in 1..=6 {
                 for sorte in [SorteDObjet::Arme, SorteDObjet::Armure] {
                     let objet = contenu.objet_de_classe(classe, sorte, palier).unwrap();
                     let forge = siens.iter().any(|plan| plan.objet() == &objet);
@@ -6259,7 +7088,7 @@ mod tests {
         }
         let contenu = ContenuV1::new();
         for classe in Classe::TOUTES {
-            let puissances: Vec<u16> = (1..=5)
+            let puissances: Vec<u16> = (1..=6)
                 .map(|palier| {
                     let arme = match palier {
                         4 => contenu.arme_du_champion(classe).clone(),
@@ -6281,7 +7110,7 @@ mod tests {
                     attaques[0].puissance()
                 })
                 .collect();
-            assert_eq!(puissances, [40, 50, 60, 75, 85], "{}", classe.nom());
+            assert_eq!(puissances, [40, 50, 60, 75, 85, 95], "{}", classe.nom());
         }
     }
     #[test]
@@ -6350,12 +7179,14 @@ mod tests {
             .apotres()
             .map(Apotre::recit_de_l_ame)
             .collect();
-        assert_eq!(recits.len(), 5);
+        assert_eq!(recits.len(), 7);
         assert!(recits[0].starts_with("L'âme du Baron pendu"));
         assert!(recits[1].starts_with("L'âme de l'Abbesse écorchée"));
         assert!(recits[2].starts_with("L'âme du Margrave de givre"));
         assert!(recits[3].starts_with("L'âme de l'Amiral noyé"));
         assert!(recits[4].starts_with("L'âme du Prévôt des fosses"));
+        assert!(recits[5].starts_with("L'âme de la Duchesse sanguine"));
+        assert!(recits[6].starts_with("L'âme de l'Évêque des os"));
     }
 
     #[test]
@@ -6371,7 +7202,18 @@ mod tests {
             .collect();
         assert_eq!(
             etapes,
-            vec![None, Some(2), None, None, None, None, None, None]
+            vec![
+                None,
+                Some(2),
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None
+            ]
         );
         let ids: Vec<&str> = peche
             .especes()
@@ -6558,6 +7400,8 @@ mod tests {
                 // (étape 163).
                 ("contrebandier", Classe::Assassin, 51),
                 ("contremaitre", Classe::Guerrier, 57),
+                ("chasseresse", Classe::Assassin, 62),
+                ("fossoyeur", Classe::Mage, 67),
             ]
         );
         assert_eq!(heros[0].3, ["entaille", "lame-empoisonnee"]);
@@ -6630,7 +7474,7 @@ mod tests {
             ids
         }
         let contenu = ContenuV1::new();
-        let attendu: [(&str, &[&str], &[&str]); 7] = [
+        let attendu: [(&str, &[&str], &[&str]); 9] = [
             ("lisiere", &["corbeau", "vipere"], &["loup", "corbeau"]),
             (
                 "marais",
@@ -6673,6 +7517,20 @@ mod tests {
                 &["golem-de-fer-noir", "grisou-ardent"],
                 &["golem-de-fer-noir", "mineur-possede", "grisou-ardent"],
             ),
+            (
+                "sylve-ecarlate",
+                &["ronce-vampire", "mante-ecarlate"],
+                &["ronce-vampire", "sanglier-enrage"],
+            ),
+            (
+                "catacombes-de-sainte-ombre",
+                &["rat-des-ossuaires", "araignee-des-cryptes"],
+                &[
+                    "rat-des-ossuaires",
+                    "moine-psalmodiant",
+                    "araignee-des-cryptes",
+                ],
+            ),
         ];
         for (id, de_jour, de_nuit) in attendu {
             let zone = contenu.zone(&ZoneId::new(id)).unwrap();
@@ -6703,7 +7561,7 @@ mod tests {
     fn chaque_zone_a_ses_meteos() {
         use Meteo::*;
         let contenu = ContenuV1::new();
-        let attendu: [(&str, &[Meteo]); 8] = [
+        let attendu: [(&str, &[Meteo]); 10] = [
             ("lisiere", &[Pluie, Tempete, Canicule]),
             ("marais", &[Pluie, Tempete, Canicule]),
             ("vallee", &[Pluie, Tempete, Grele]),
@@ -6712,6 +7570,8 @@ mod tests {
             ("desert-de-sel", &[TempeteDeSable, Canicule]),
             ("port-des-noyes", &[Pluie, Tempete, Cyclone]),
             ("mines-de-fer-noir", &[Grele, Tempete]),
+            ("sylve-ecarlate", &[Pluie, Tempete, Canicule]),
+            ("catacombes-de-sainte-ombre", &[Pluie, Tempete]),
         ];
         for (id, meteos) in attendu {
             let zone = contenu.zone(&ZoneId::new(id)).unwrap();
@@ -7068,7 +7928,11 @@ mod tests {
                 "desert-de-sel",
                 "port-des-noyes",
                 "port-des-noyes",
-                "mines-de-fer-noir"
+                "mines-de-fer-noir",
+                "mines-de-fer-noir",
+                "sylve-ecarlate",
+                "sylve-ecarlate",
+                "catacombes-de-sainte-ombre"
             ]
         );
     }
@@ -7113,7 +7977,8 @@ mod tests {
             .unwrap();
         assert_eq!(prevot.espece().id().as_str(), "prevot-des-fosses");
         assert_eq!(prevot.niveau(), niveau(59));
-        assert_eq!(piste.indice_suivant(11, &vaincus), None);
+        // Le douzième, aux Mines, attend la chute du Prévôt.
+        assert_eq!(piste.indice_suivant(11, &vaincus[..4]), None);
         // Obscurs, ils combattent avec trois attaques Obscur et une de leur
         // zone.
         let attaques = |apotre: &Apotre| -> Vec<String> {
@@ -7156,6 +8021,91 @@ mod tests {
             })
             .collect();
         assert_eq!(humains, [("contrebandier", 600), ("contremaitre", 700)]);
+    }
+
+    /// Section 45 de docs/contenu-v1.md (étape 165) : la chute du Prévôt
+    /// ouvre la Sylve, où la Chasseresse localise la Duchesse sanguine, dont
+    /// la chute ouvre les Catacombes, où le Fossoyeur localise l'Évêque des
+    /// os.
+    #[test]
+    fn la_sylve_et_les_catacombes_menent_a_la_duchesse_et_a_l_eveque() {
+        let contenu = ContenuV1::new();
+        let piste = contenu.piste();
+        let vaincus: Vec<EspeceId> = piste
+            .apotres()
+            .map(|apotre| apotre.espece().id().clone())
+            .collect();
+        let sylve = &contenu.zones()[8];
+        let catacombes = &contenu.zones()[9];
+        assert_eq!(sylve.niveaux(), (niveau(58), niveau(62)));
+        assert_eq!(catacombes.niveaux(), (niveau(63), niveau(67)));
+        let douzieme = piste.indice_suivant(11, &vaincus[..5]).unwrap();
+        assert_eq!(douzieme.zone.as_str(), "mines-de-fer-noir");
+        assert!(!piste.zone_ouverte(sylve.id(), 11));
+        assert!(piste.zone_ouverte(sylve.id(), 12));
+        let treizieme = piste.indice_suivant(12, &vaincus[..5]).unwrap();
+        assert_eq!(&treizieme.zone, sylve.id());
+        let duchesse = piste
+            .apotre_en_attente(sylve.id(), 13, &vaincus[..5])
+            .unwrap();
+        assert_eq!(duchesse.espece().id().as_str(), "duchesse-sanguine");
+        assert_eq!(duchesse.niveau(), niveau(64));
+        assert_eq!(piste.indice_suivant(13, &vaincus[..5]), None);
+        let quatorzieme = piste.indice_suivant(13, &vaincus[..6]).unwrap();
+        assert_eq!(&quatorzieme.zone, sylve.id());
+        assert!(piste.zone_ouverte(catacombes.id(), 14));
+        let quinzieme = piste.indice_suivant(14, &vaincus[..6]).unwrap();
+        assert_eq!(&quinzieme.zone, catacombes.id());
+        let eveque = piste
+            .apotre_en_attente(catacombes.id(), 15, &vaincus[..6])
+            .unwrap();
+        assert_eq!(eveque.espece().id().as_str(), "eveque-des-os");
+        assert_eq!(eveque.niveau(), niveau(69));
+        assert_eq!(piste.indice_suivant(15, &vaincus), None);
+        let attaques = |apotre: &Apotre| -> Vec<String> {
+            assert_eq!(apotre.espece().types().liste(), &[Type::Obscur]);
+            creer(
+                &contenu,
+                apotre.espece().id().as_str(),
+                apotre.niveau().valeur(),
+            )
+            .attaques()
+            .liste()
+            .iter()
+            .map(|attaque| attaque.id().as_str().to_string())
+            .collect()
+        };
+        assert_eq!(
+            attaques(duchesse),
+            [
+                "hurlement-des-abysses",
+                "ronces-maudites",
+                "baiser-de-sang",
+                "psaume-impie"
+            ]
+        );
+        assert_eq!(
+            attaques(eveque),
+            [
+                "hurlement-des-abysses",
+                "epee-des-morts",
+                "flagellation",
+                "ossuaire-sacre"
+            ]
+        );
+        // La Chasseresse n'a que deux monstres, comme le Contrebandier.
+        let equipes: Vec<(&str, usize, u32)> = [sylve, catacombes]
+            .iter()
+            .map(|zone| {
+                let humain = zone.humain().unwrap();
+                (
+                    humain.id().as_str(),
+                    humain.generer_equipe().len(),
+                    humain.argent(),
+                )
+            })
+            .collect();
+        assert_eq!(equipes, [("chasseresse", 2, 800), ("fossoyeur", 3, 900)]);
     }
 
     /// Sections 9.9 et 44 de docs/contenu-v1.md (étape 163) : une annexe par
@@ -7214,6 +8164,18 @@ mod tests {
                     "nautile-des-abysses"
                 ),
                 ("filon-ecarlate", "mines-de-fer-noir", (56, 59), "gemmame"),
+                (
+                    "autel-des-ronces",
+                    "sylve-ecarlate",
+                    (61, 64),
+                    "phalene-d-aube"
+                ),
+                (
+                    "crypte-des-saints",
+                    "catacombes-de-sainte-ombre",
+                    (66, 69),
+                    "ange-de-pierre"
+                ),
             ]
         );
     }

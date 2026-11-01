@@ -1,0 +1,42 @@
+# Mante écarlate
+palette
+o 1b1420
+b b02a2a
+c 741a1a
+d d85050
+a e8a0a0
+y f0e040
+w e8e0cc
+shiny
+o 1b1420
+b 3a9a5a
+c 246a3a
+d 60c080
+a c0f0c8
+y f04080
+w e8e0cc
+dessin
+.....oco..oco...........
+......oco.oco...........
+......ocooco............
+......oocdco............
+.....ocdbbyo............
+..o...oybco.............
+.owo..ocbco.............
+.owwo..ocbco............
+..owo...odco.........o..
+..owoooobbbco.......oao.
+..owwbbbbbbbo......oaoo.
+...owbbbbbbbo.....oaoaao
+...owwbobbbcooooooaaaao.
+....owobbbdbdddddaacoo..
+.....owbbocbbbbbbddbdco.
+.....obbo.odbbbbbbbbbco.
+......oo..occbbbbbbbcco.
+...........oocccccccoo..
+...........occoocoocco..
+...........oco.oco.oco..
+...........oco.oco.oco..
+..........occo.oco.occo.
+..........oco..oco..oco.
+...........o....o....o..

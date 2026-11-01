@@ -226,6 +226,7 @@ pub fn jouer_une_partie(contenu: &ContenuV1, classe: Classe, graine: u64) -> Bil
     let mut en_cours: Option<EnCours> = None;
     let mut refus = 0;
     let mut secondes = 0;
+    let mut defaites_de_suite = 0;
     while bilan.expeditions.len() < LIMITE_D_EXPEDITIONS {
         if en_cours.is_none()
             && matches!(deroulement.attente(), Attente::Camp)
@@ -241,7 +242,7 @@ pub fn jouer_une_partie(contenu: &ContenuV1, classe: Classe, graine: u64) -> Bil
         }
         let maintenant = Horodatage::depuis_secondes(secondes);
         let choix = if refus == 0 {
-            choisir(&deroulement, contenu, classe, maintenant)
+            choisir(&deroulement, contenu, classe, maintenant, defaites_de_suite)
         } else {
             repli(&deroulement, contenu)
         };
@@ -296,9 +297,15 @@ pub fn jouer_une_partie(contenu: &ContenuV1, classe: Classe, graine: u64) -> Bil
                     if finie {
                         let expedition = en_cours.take().expect("expédition suivie");
                         let partie = deroulement.partie().expect("partie en cours");
-                        bilan
-                            .expeditions
-                            .push(conclure(expedition, partie, contenu));
+                        let jouee = conclure(expedition, partie, contenu);
+                        if let Some(boss) = &jouee.boss {
+                            defaites_de_suite = if boss.vaincu {
+                                0
+                            } else {
+                                defaites_de_suite + 1
+                            };
+                        }
+                        bilan.expeditions.push(jouee);
                     }
                 }
             }
@@ -407,11 +414,14 @@ fn repli(deroulement: &Deroulement, contenu: &ContenuV1) -> Choix {
     }
 }
 
+/// `defaites_de_suite` : contre le combat de fin de zone, depuis la
+/// dernière victoire.
 fn choisir(
     deroulement: &Deroulement,
     contenu: &ContenuV1,
     classe: Classe,
     maintenant: Horodatage,
+    defaites_de_suite: u32,
 ) -> Choix {
     match deroulement.attente() {
         Attente::Reprise(_) => Choix::ReprendreLaPartie,
@@ -420,7 +430,7 @@ fn choisir(
         Attente::Classe => Choix::Classe(classe),
         Attente::Camp => {
             let partie = deroulement.partie().expect("partie au camp");
-            au_camp(partie, contenu, maintenant)
+            au_camp(partie, contenu, maintenant, defaites_de_suite)
         }
         Attente::EntreDeuxEtapes => {
             let partie = deroulement.partie().expect("partie en expédition");
@@ -476,7 +486,12 @@ fn choisir(
 /// Dans l'ordre : les âmes à Malvoise, les récompenses du codex, le travail
 /// de Gunther, l'équipement, la meilleure équipe, l'argent et les
 /// ressources à l'abri, les potions et les filets du sac, puis le départ.
-fn au_camp(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Choix {
+fn au_camp(
+    partie: &Partie,
+    contenu: &ContenuV1,
+    maintenant: Horodatage,
+    defaites_de_suite: u32,
+) -> Choix {
     if partie.marchand_au_camp() {
         if let Some(ame) = partie.ames_portees().first() {
             return Choix::DonnerAme(ame.id().clone());
@@ -494,7 +509,7 @@ fn au_camp(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Choi
     if let Some(choix) = s_equiper(partie) {
         return choix;
     }
-    if let Some(gestion) = meilleure_equipe(partie, contenu) {
+    if let Some(gestion) = meilleure_equipe(partie, contenu, defaites_de_suite) {
         return Choix::Gerer(gestion);
     }
     // Le butin rejoint le coffre : le sac, limité, ne repart qu'avec les
@@ -588,8 +603,14 @@ fn s_equiper(partie: &Partie) -> Option<Choix> {
 /// du meilleur, 10 contre un Apôtre ; les autres viennent après, par niveau. Une place libre dans
 /// l'équipe accueille le meilleur du camp ; sinon, le moins bon de l'équipe
 /// lui cède sa place, s'il vaut moins. Contre l'Apôtre, le meilleur de
-/// l'équipe passe en tête.
-fn meilleure_equipe(partie: &Partie, contenu: &ContenuV1) -> Option<ActionDeGestion> {
+/// l'équipe passe en tête ; sinon, le moins avancé. Après une défaite
+/// contre le combat de fin de zone, il alterne avec ses monstres de plus
+/// haut niveau.
+fn meilleure_equipe(
+    partie: &Partie,
+    contenu: &ContenuV1,
+    defaites_de_suite: u32,
+) -> Option<ActionDeGestion> {
     let zone = zone_visee(partie, contenu);
     // Un tirage à part, qui ne touche pas à celui de la partie : seules
     // comptent l'espèce, le niveau et les valeurs internes, fixes.
@@ -625,8 +646,16 @@ fn meilleure_equipe(partie: &Partie, contenu: &ContenuV1) -> Option<ActionDeGest
         .map(|monstre| monstre.niveau().valeur())
         .max()
         .unwrap_or(1);
+    // Après une défaite contre le combat de fin de zone, il essaie
+    // l'autre équipe : ses monstres de plus haut niveau, puis de nouveau
+    // ceux qui valent le plus selon les types, et ainsi de suite (étape
+    // 165).
+    let par_niveau = defaites_de_suite % 2 == 1;
     let valeur = |monstre: &Monstre| {
         let niveau = monstre.niveau().valeur();
+        if par_niveau {
+            return f64::from(niveau);
+        }
         let ecart = if apotre.is_some() {
             ECART_DE_NIVEAU_CONTRE_L_APOTRE
         } else {
@@ -659,13 +688,31 @@ fn meilleure_equipe(partie: &Partie, contenu: &ContenuV1) -> Option<ActionDeGest
             return Some(ActionDeGestion::Echanger { equipe, camp });
         }
     }
-    apotre.as_ref()?;
-    let (tete, _) = collection
-        .equipe()
-        .iter()
-        .enumerate()
-        .max_by(|(_, un), (_, autre)| valeur(un).total_cmp(&valeur(autre)))?;
-    (tete != 0).then_some(ActionDeGestion::ChangerLOrdre { de: tete, vers: 0 })
+    // Contre l'Apôtre, le meilleur mène. Sinon, depuis l'étape 165, le
+    // moins avancé mène les combats, pour gagner l'XP qu'un monstre trop
+    // fort pour la zone prendrait seul ; la règle du changement fait entrer
+    // les autres au besoin.
+    let (tete, _) = if apotre.is_some() {
+        collection
+            .equipe()
+            .iter()
+            .enumerate()
+            .max_by(|(_, un), (_, autre)| valeur(un).total_cmp(&valeur(autre)))?
+    } else {
+        collection
+            .equipe()
+            .iter()
+            .enumerate()
+            .min_by_key(|(_, monstre)| monstre.niveau().valeur())?
+    };
+    // À égalité avec le monstre de tête, il le laisse : deux monstres de
+    // même valeur s'échangeraient sans fin.
+    let premier = collection.equipe().first()?;
+    let mieux = match &apotre {
+        Some(_) => valeur(&collection.equipe()[tete]) > valeur(premier),
+        None => collection.equipe()[tete].niveau() < premier.niveau(),
+    };
+    (tete != 0 && mieux).then_some(ActionDeGestion::ChangerLOrdre { de: tete, vers: 0 })
 }
 
 /// Quand le sac déborde : ce que ce joueur n'emploie pas d'abord (pierres,

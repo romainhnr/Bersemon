@@ -1,0 +1,48 @@
+# Ronce vampire
+palette
+o 1b1420
+b 3a6a34
+c 24461e
+d 5a9048
+e 4a3428
+f 2e2018
+r c02030
+w e8e0cc
+y f0d040
+k 1b1420
+shiny
+o 1b1420
+b 6a3a6a
+c 462446
+d 905a90
+e 4a3428
+f 2e2018
+r 30a0e0
+w e8e0cc
+y f0f0ff
+k 1b1420
+dessin
+........................
+........................
+........................
+........................
+..............o......o..
+...o......o..oro....oro.
+..oro....owooryro..oryro
+.oryro..ooddddroo...orco
+..orco.oddbbbbbdcoo.odco
+..odcoodbbbbbbbbbcroodco
+..odcorwbbbbbbkbbryrodco
+..odcorrwrbbbbbbbcroodco
+.owdcorrbwbbbbbbbbcoodwo
+..odcorwbbbbbbbbbbcoodco
+..odbcodbbbbbbbbbbcodbco
+..ocbcodbbbbbbbbbbcodco.
+...odwodbbbbbbbcbbcwdco.
+...odcocbbcccccodbcodco.
+...odcoodcoooooodcoodco.
+...odcoodceeeeefdcoodco.
+...odceedceeeeeedceedco.
+..ofcceecceeeeeecceecco.
+...offfffeeeeeeefffffo..
+....ooooofffffffooooo...

@@ -66,37 +66,86 @@ pub fn mesurer_les_gardiens(contenu: &ContenuV1) -> Vec<MesureDuGardien> {
         let niveau = zone.niveaux().1;
         let reserve = especes_gardees(contenu, &contenu.zones()[..position]);
         let heros = heros_du_joueur(contenu, niveau.valeur());
-        let mut tirage = GenerateurAleatoire::new(position as u64);
-        let mut gagnes = 0u64;
-        for numero in 0..EQUIPES_AU_HASARD {
-            let equipe: Vec<Monstre> = (0..3)
-                .map(|_| {
-                    let index = tirage.tirer(0..=(reserve.len() as u32 - 1)) as usize;
-                    creer(&reserve[index], niveau)
-                })
-                .collect();
-            for graine in 0..COMBATS_PAR_EQUIPE {
-                let mut combat = Combat::new(equipe.clone(), humain.generer_equipe())
-                    .expect("équipes valides")
-                    .avec_heros(Cote::Joueur, heros.clone())
-                    .contre_un_humain(humain.ia());
-                if let Some(heros_adverse) = humain.generer_heros() {
-                    combat = combat.avec_heros(Cote::Adversaire, heros_adverse);
-                }
-                let graine = u64::from(numero) * 1_000 + graine;
-                gagnes += u64::from(combattre(combat, graine));
+        let victoires = contre_des_equipes_au_hasard(&reserve, niveau, position as u64, |equipe| {
+            let combat = Combat::new(equipe, humain.generer_equipe())
+                .expect("équipes valides")
+                .avec_heros(Cote::Joueur, heros.clone())
+                .contre_un_humain(humain.ia());
+            match humain.generer_heros() {
+                Some(heros_adverse) => combat.avec_heros(Cote::Adversaire, heros_adverse),
+                None => combat,
             }
-        }
+        });
         mesures.push(MesureDuGardien {
             zone: zone.nom().to_string(),
             humain: humain.nom().to_string(),
             niveau: niveau.valeur(),
             heros_du_joueur: heros.niveau().valeur(),
-            victoires: gagnes as f64 * 100.0
-                / (f64::from(EQUIPES_AU_HASARD) * COMBATS_PAR_EQUIPE as f64),
+            victoires,
         });
     }
     mesures
+}
+
+/// Chaque Apôtre de la piste, à son niveau, contre des équipes tirées
+/// parmi les espèces des zones jusqu'à la sienne comprise, que le joueur a
+/// pu capturer avant de l'affronter.
+pub fn mesurer_les_apotres(contenu: &ContenuV1) -> Vec<MesureDuGardien> {
+    let mut mesures = Vec::new();
+    for apotre in contenu.piste().apotres() {
+        let Some(position) = contenu
+            .zones()
+            .iter()
+            .position(|zone| zone.id() == apotre.zone())
+        else {
+            continue;
+        };
+        let zone = &contenu.zones()[position];
+        let niveau = apotre.niveau();
+        let reserve = especes_gardees(contenu, &contenu.zones()[..=position]);
+        let heros = heros_du_joueur(contenu, zone.niveaux().1.valeur());
+        let victoires = contre_des_equipes_au_hasard(&reserve, niveau, position as u64, |equipe| {
+            // Valeurs internes et habileté fixes : seul le shiny se tire.
+            let adversaire = apotre.generer(&mut GenerateurAleatoire::new(0));
+            Combat::new(equipe, vec![adversaire])
+                .expect("équipes valides")
+                .avec_heros(Cote::Joueur, heros.clone())
+                .contre_un_apotre()
+        });
+        mesures.push(MesureDuGardien {
+            zone: zone.nom().to_string(),
+            humain: apotre.espece().nom().to_string(),
+            niveau: niveau.valeur(),
+            heros_du_joueur: heros.niveau().valeur(),
+            victoires,
+        });
+    }
+    mesures
+}
+
+/// Part de victoires du joueur, en pourcentage, avec des équipes de trois
+/// monstres de la réserve au niveau donné.
+fn contre_des_equipes_au_hasard(
+    reserve: &[Espece],
+    niveau: Niveau,
+    graine: u64,
+    creer_combat: impl Fn(Vec<Monstre>) -> Combat,
+) -> f64 {
+    let mut tirage = GenerateurAleatoire::new(graine);
+    let mut gagnes = 0u64;
+    for numero in 0..EQUIPES_AU_HASARD {
+        let equipe: Vec<Monstre> = (0..3)
+            .map(|_| {
+                let index = tirage.tirer(0..=(reserve.len() as u32 - 1)) as usize;
+                creer(&reserve[index], niveau)
+            })
+            .collect();
+        for graine in 0..COMBATS_PAR_EQUIPE {
+            let graine = u64::from(numero) * 1_000 + graine;
+            gagnes += u64::from(combattre(creer_combat(equipe.clone()), graine));
+        }
+    }
+    gagnes as f64 * 100.0 / (f64::from(EQUIPES_AU_HASARD) * COMBATS_PAR_EQUIPE as f64)
 }
 
 /// Les espèces sauvages des zones de la carte puis des annexes, dans leur

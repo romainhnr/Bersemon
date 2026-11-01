@@ -349,3 +349,44 @@ Constats :
 Parties complètes, jusqu'au Prévôt : 104 à 115 expéditions (médiane selon la classe), 17 à 28 défaites, équipe finale au niveau 59 à 61.
 
 Le Port dépasse donc la cible de 12 expéditions de plus du double avec le joueur automatique ; les Mines y sont. Aucun réglage n'est fait au-delà de ceux du tableau : le reste tient à l'Amiral et aux types de l'équipe que ce joueur emmène, à vérifier en jouant (gamedesign.md, Q118). Leviers possibles, mesurés ou non : l'Amiral sans attaque Eau (Trombe), ou un rendement d'XP plus haut au Port.
+
+## 15. Sylve écarlate et Catacombes de Sainte-Ombre (étape 165)
+
+Deuxième lot de la suite de l'aventure (docs/contenu-v1.md, section 45), chiffré selon les constats de la section 14 : espèces recalées à niveau égal sur les précédentes, attaques de puissance 90 et plus après la zone, rendement d'XP d'environ 3 fois le niveau moyen de la zone, une humaine Assassin à deux monstres.
+
+Changements de l'outil, nécessaires pour que les parties se terminent :
+
+- Le joueur automatique met en tête de son équipe le monstre de plus bas niveau, sauf face à un Apôtre, où le meilleur mène. Avant, un monstre que les espèces d'une zone ne pouvaient presque pas toucher (un Chevalier noir, Acier et Spectre, dans la Sylve) gagnait tous les combats seul et prenait toute l'XP : il montait au niveau 100 pendant que les deux autres restaient au niveau 42, le niveau de référence n'atteignait jamais le seuil d'entrée de la zone suivante, et 3 parties sur 100 tournaient en rond jusqu'à la limite de 1500 expéditions. La règle du changement de monstre fait entrer les plus forts au besoin, et chaque monstre actif reçoit l'XP du monstre vaincu.
+- Après une défaite contre un combat de fin de zone, il change d'équipe : ses monstres de plus haut niveau, puis de nouveau ceux qui valent le plus selon les types, et ainsi de suite. Sans cela, un Templier perdait sans fin contre la Duchesse sanguine avec la même équipe.
+- À égalité de valeur avec le monstre de tête, il le laisse en tête : deux monstres de même valeur s'échangeaient sans fin.
+- Une troisième mesure à part : chaque Apôtre, à son niveau, contre 100 équipes tirées au hasard parmi les espèces des zones jusqu'à la sienne comprise, avec le même héros que pour les humains.
+
+Mesuré sur 100 parties par classe ; toutes se terminent, à la chute de l'Évêque des os, en 150 à 156 expéditions (médiane selon la classe), avec 27 à 39 défaites :
+
+| Zone | Expéditions par partie | Menées au bout | Défaites | Rentrées | Niveau à la première | Niveaux gagnés |
+|---|---|---|---|---|---|---|
+| Lisière du Bois-Sombre (3 à 7) | 11,7 | 13 % | 5 % | 83 % | 5,0 | 0,40 |
+| Marais des Pendus (8 à 13) | 10,9 | 16 % | 15 % | 69 % | 9,7 | 0,65 |
+| Vallée des Brumes (14 à 20) | 10,5 | 43 % | 17 % | 40 % | 16,7 | 0,62 |
+| Abbaye des Cendres (21 à 27) | 14,2 | 23 % | 22 % | 55 % | 23,2 | 0,54 |
+| Col du Givre-Noir (28 à 36) | 19,1 | 22 % | 23 % | 55 % | 30,8 | 0,48 |
+| Désert de sel (37 à 45) | 16,5 | 22 % | 12 % | 65 % | 40,0 | 0,47 |
+| Port des Noyés (46 à 51) | 32,7 | 8 % | 18 % | 74 % | 47,8 | 0,29 |
+| Mines de Fer-Noir (52 à 57) | 17,4 | 16 % | 24 % | 60 % | 57,3 | 0,32 |
+| Sylve écarlate (58 à 62) | 14,6 | 19 % | 39 % | 41 % | 62,9 | 0,33 |
+| Catacombes de Sainte-Ombre (63 à 67) | 11,3 | 18 % | 33 % | 49 % | 67,7 | 0,35 |
+
+| Combat | Tentatives par partie | Victoires au premier essai | Contre des équipes au hasard |
+|---|---|---|---|
+| Chasseresse (Sylve, 62) | 1,4 | 76 % | 50 % |
+| Duchesse sanguine (Sylve, 64) | 6,3 | 54 % | 77 % |
+| Fossoyeur (Catacombes, 67) | 1,9 | 64 % | 40 % |
+| Évêque des os (Catacombes, 69) | 3,9 | 62 % | 58 % |
+
+Contre des équipes au hasard, les Apôtres se gagnent de 55 à 77 % du temps (Abbesse 55 %, Margrave 70 %, Amiral 66 %, Prévôt 57 %, Duchesse 77 %, Évêque 58 %) ; le Baron pendu, au niveau maximal de sa zone, 99 %. En un contre un au niveau 50, les communes du lot gagnent 32 à 50 % de leurs combats, les rares 50 à 60 %, comme celles du Désert et du lot 1.
+
+Constats :
+
+1. La Sylve et les Catacombes sont dans la cible (14,6 et 11,3 expéditions). Les zones des sections précédentes s'allongent de 1 à 5 expéditions avec la nouvelle tête d'équipe, dont les défaites pèsent davantage (Col 19,1, Port 32,7) : un joueur réel choisit lui-même quand faire mener ses monstres faibles.
+2. La Duchesse sanguine est la plus facile des Apôtres contre des équipes au hasard, mais la plus longue dans les parties (6,3 tentatives, 12 % des tentatives gagnées avec 3 niveaux d'avance ou plus) : le joueur automatique lui oppose des équipes de types Psychique, Spectre ou Lumière, que ses attaques Plante et Obscur punissent, et alterne entre deux équipes seulement. Remplacer Psaume impie par Sentence (Ténèbres) la rendait plus dure à la fois dans les parties (8,2 tentatives) et contre des équipes au hasard (64 %) : Psaume impie est gardé.
+3. Les tentatives contre les Apôtres restent la limite de la mesure : elles dépendent d'un joueur qui ne lit pas les attaques adverses. Les mesures à part disent que leur difficulté est homogène.

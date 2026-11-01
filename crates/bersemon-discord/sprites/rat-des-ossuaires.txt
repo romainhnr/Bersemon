@@ -1,0 +1,44 @@
+# Rat des ossuaires
+palette
+o 1b1420
+b 6a6058
+c 46403a
+d 8a8078
+p d8a0a0
+r e02020
+w e8e0cc
+x b0a890
+shiny
+o 1b1420
+b d8d4cc
+c a8a49c
+d f4f0ea
+p f0c060
+r 30a0f0
+w e8e0cc
+x b0a890
+dessin
+........................
+........................
+........................
+........................
+........................
+........................
+.......................o
+......................op
+......................op
+......................op
+......ooo....o.......opo
+.....opppoooocoooo...opo
+....oopppddddbdddco..opo
+..ooddpppbbbbbbbbbcoopo.
+.oddbrbbbbbbbbbbbbbcppo.
+ocbbbbbbbbbbbbbbbbbcpo..
+opccbbbbbbbbbbbbbbbpo...
+.owocccccbbbbbbbbbco....
+..owooooopcccbcpcco.....
+...oooowppwwwcwppxooo...
+...owxwwpwwwwwxwpwwwxo..
+..oxwwwwwxwwwwwwwwxwwxo.
+...oxxxwwwwwwwwwwwxxxo..
+....oooxxxxxxxxxxxooo...

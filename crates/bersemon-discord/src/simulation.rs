@@ -1336,7 +1336,7 @@ fn le_beherit_attend_les_ames_des_13_apotres_a_travers_les_ecrans_du_bot() {
     cliquer_sur(&mut joueurs, Cle::ReprendreLaPartie);
     let camp = afficher(&mut joueurs);
     assert!(camp.texte.contains(
-        "Âmes d'Apôtres : Baron pendu, Abbesse écorchée, Margrave de givre, Amiral noyé et Prévôt des fosses."
+        "Âmes d'Apôtres : Baron pendu, Abbesse écorchée, Margrave de givre, Amiral noyé, Prévôt des fosses, Duchesse sanguine et Évêque des os."
     ));
     assert!(choisir_dans(&camp, |cle| *cle == Cle::Partir, ECLIPSE).is_none());
     cliquer_sur(&mut joueurs, Cle::Afficher(Vue::Marchand));
@@ -1445,6 +1445,21 @@ fn malvoise_vend_et_loue_des_monstres_a_travers_les_ecrans_du_bot() {
     };
     cliquer_sur(&mut joueurs, Cle::ReprendreLaPartie);
     cliquer_sur(&mut joueurs, Cle::Afficher(Vue::Marchand));
+    // Les capsules ont leur écran depuis l'étape 165, en menus de 25.
+    cliquer_sur(&mut joueurs, Cle::Afficher(Vue::Capsules));
+    let capsules = afficher(&mut joueurs);
+    let en_vente: Vec<usize> = capsules
+        .rangees
+        .iter()
+        .filter_map(|rangee| match rangee {
+            Rangee::Menu(menu) if matches!(menu.cle, Cle::AcheterCapsule(_)) => {
+                Some(menu.options.len())
+            }
+            _ => None,
+        })
+        .collect();
+    assert_eq!(en_vente, [25, contenu.capsules().len() - 25]);
+    cliquer_sur(&mut joueurs, Cle::Afficher(Vue::Marchand));
     cliquer_sur(&mut joueurs, Cle::Afficher(Vue::Vente));
     cliquer_sur(&mut joueurs, Cle::Afficher(Vue::Achats));
     let affiche = afficher(&mut joueurs);
@@ -1458,10 +1473,12 @@ fn malvoise_vend_et_loue_des_monstres_a_travers_les_ecrans_du_bot() {
             })
             .unwrap_or(0)
     };
-    assert_eq!(options(Cle::AcheterMonstre), 24);
-    assert_eq!(options(Cle::LouerMonstre), 13);
+    // Plus de 25 espèces en vente depuis l'étape 165 : deux menus.
+    assert_eq!(options(Cle::AcheterMonstre(0)), 25);
+    assert_eq!(options(Cle::AcheterMonstre(1)), 5);
+    assert_eq!(options(Cle::LouerMonstre), 15);
     assert!(!propose(&affiche, |cle| *cle == Cle::RendreLeMonstreLoue));
-    let clic = choisir_dans(&affiche, |cle| *cle == Cle::AcheterMonstre, "loup").unwrap();
+    let clic = choisir_dans(&affiche, |cle| *cle == Cle::AcheterMonstre(0), "loup").unwrap();
     let achat = jouer(&mut joueurs, clic);
     assert!(matches!(&achat[..], [Evenement::MonstreAchete { .. }, ..]));
     let affiche = afficher(&mut joueurs);
@@ -2467,7 +2484,8 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         crate::ecran_camp::question(&partie, Vue::Camp, &contenu, Horodatage::depuis_secondes(0));
     assert!(camp.rangees.iter().any(|rangee| matches!(
         rangee,
-        Rangee::Menu(menu) if menu.cle == Cle::PartirAilleurs && menu.options.len() == 2
+        Rangee::Menu(menu) if menu.cle == Cle::PartirAilleurs
+            && menu.options.len() == contenu.annexes().len()
     )));
     assert_eq!(camp.rangees.len(), crate::message::RANGEES_MAX);
     afficher(&partie, Vue::Marchand);
@@ -2503,7 +2521,7 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
     assert!(
         derniere
             .texte
-            .ends_with("  6. Démiurge, abattu dans l'Éclipse.")
+            .ends_with("  8. Démiurge, abattu dans l'Éclipse.")
     );
     assert!(!derniere.texte.contains("Apôtre vaincu"));
     let premiere = crate::ecran_camp::question(

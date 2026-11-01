@@ -49,6 +49,7 @@ fn main() {
         "{}",
         rapport::rapport_des_gardiens(
             &gardiens::mesurer_les_gardiens(&contenu),
+            &gardiens::mesurer_les_apotres(&contenu),
             &gardiens::mesurer_les_especes(&contenu)
         )
     );

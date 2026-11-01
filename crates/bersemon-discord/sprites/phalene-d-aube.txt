@@ -1,0 +1,48 @@
+# Phalène d'aube
+palette
+o 1b1420
+a f0e0c0
+e c8b090
+f fff8e8
+g e09040
+b c0a080
+c 907050
+d e0c8a8
+k 1b1420
+y fff0a0
+shiny
+o 1b1420
+a b0c8f0
+e 7890c0
+f e0f0ff
+g f060a0
+b 7080a8
+c 485878
+d 98a8d0
+k 1b1420
+y f0b0ff
+dessin
+............o...........
+........o..oyo..o.......
+..o....oco..o..oco...o..
+.oeo....oco...oco...oeo.
+.ofeo...occo.occo..ofeo.
+.ofaeo...ocoooco.oofaeo.
+.ofaaeoo..ocbco.offaaeo.
+ofaagggeo.okbboofagggeo.
+ofaagkgaeoobbbofaagkgaeo
+ofaagggaaeodbcfaaagggaeo
+ofaaaaaaaaedbcaaaaaaaaeo
+oeaaaaaaaaedbcaaaaaaaaeo
+.oeaaaaaaaedbcaaaaaaeeo.
+..oeeaaeaaedbcaaeaaeoo..
+...ooeeofaedbcaeofeo....
+.....offaaedbcaafeo.....
+....oeaaaaedbcaaaaeo....
+...o.ofaaeocbcaaaeo..o..
+..oyoofaeo.ocoeaaeo.oyo.
+...o.oeeo...o.oeaeo..o..
+......oo.......oeo......
+................o.......
+........................
+........................

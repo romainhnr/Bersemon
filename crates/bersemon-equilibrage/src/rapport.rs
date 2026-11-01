@@ -396,13 +396,13 @@ fn ressources(texte: &mut String, bilans: &[Bilan]) {
 /// selon son niveau de combat, le niveau où chaque classe gagne une fois sur
 /// deux, puis l'effet du second type des classes (section 4.4).
 /// Section 14 de docs/equilibrage.md (étape 163).
-pub fn rapport_des_gardiens(gardiens: &[MesureDuGardien], especes: &[ForceDEspece]) -> String {
+pub fn rapport_des_gardiens(
+    gardiens: &[MesureDuGardien],
+    apotres: &[MesureDuGardien],
+    especes: &[ForceDEspece],
+) -> String {
     let mut texte = String::new();
-    let _ = writeln!(
-        texte,
-        "## Humains de fin de zone, à part
-"
-    );
+    let _ = writeln!(texte, "## Humains de fin de zone, à part\n");
     let _ = writeln!(
         texte,
         "Chaque humain contre 100 équipes de trois monstres tirées au hasard parmi les espèces des zones d'avant, formes évoluées comprises, de 380 au moins au total, au niveau maximal de sa zone, 30 combats par équipe, avec un héros Mage équipé au mieux sans dépasser ce niveau. Part de victoires du joueur.\n"
@@ -424,11 +424,25 @@ pub fn rapport_des_gardiens(gardiens: &[MesureDuGardien], especes: &[ForceDEspec
         );
     }
     let _ = writeln!(texte);
+    let _ = writeln!(texte, "## Apôtres, à part\n");
     let _ = writeln!(
         texte,
-        "## Espèces sauvages en un contre un
-"
+        "Chaque Apôtre, à son niveau, contre 100 équipes de trois monstres à ce niveau, tirées de même parmi les espèces des zones jusqu'à la sienne comprise, avec le même héros. Part de victoires du joueur.\n"
     );
+    let _ = writeln!(
+        texte,
+        "| Zone | Apôtre (niveau) | Héros du joueur | Victoires |"
+    );
+    let _ = writeln!(texte, "|---|---|---|---|");
+    for apotre in apotres {
+        let _ = writeln!(
+            texte,
+            "| {} | {} ({}) | {} | {:.0} % |",
+            apotre.zone, apotre.humain, apotre.niveau, apotre.heros_du_joueur, apotre.victoires
+        );
+    }
+    let _ = writeln!(texte);
+    let _ = writeln!(texte, "## Espèces sauvages en un contre un\n");
     let _ = writeln!(
         texte,
         "Chaque espèce des zones de la carte et des annexes au niveau 50, contre chaque espèce sauvage de 380 à 500 au total au même niveau, 4 combats chacune. Part de victoires.\n"

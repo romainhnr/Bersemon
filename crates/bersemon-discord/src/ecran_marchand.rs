@@ -14,8 +14,8 @@ use bersemon_core::pierre::PierreDEvolution;
 use bersemon_presentation::beherit::{FORGER_LE_BEHERIT, peut_forger_le_beherit};
 use bersemon_presentation::filets::filets;
 use bersemon_presentation::marchand::{
-    capsules_en_vente, etal as texte_de_l_etal, location_en_cours, offre_d_achat,
-    offre_de_location, offre_de_rachat, offre_de_ressources, ressources_a_vendre,
+    capsules_en_vente, capsules_obtenues, etal as texte_de_l_etal, location_en_cours,
+    offre_d_achat, offre_de_location, offre_de_rachat, offre_de_ressources, ressources_a_vendre,
 };
 use bersemon_presentation::monstres::decrire_attaque;
 use bersemon_presentation::partie::argent;
@@ -78,21 +78,17 @@ pub fn etal(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Que
             PRINCIPAL,
         ));
     }
+    // Plus de 25 capsules depuis l'étape 165 : elles ont leur écran, que
+    // ce bouton ouvre, à côté des filets.
+    if !capsules_en_vente(partie, contenu.capsules()).is_empty() {
+        achats.push(bouton(
+            Cle::Afficher(Vue::Capsules),
+            "Capsules d'attaque",
+            PRINCIPAL,
+        ));
+    }
     let mut lignes: Vec<Rangee> = rangees(achats);
     lignes.extend(menu(Cle::AcheterSoins, "Acheter des soins", lots_de_soins));
-    let capsules = capsules_en_vente(partie, contenu.capsules())
-        .into_iter()
-        .map(|capsule| OptionDeMenu {
-            libelle: format!("{} : {}", capsule.attaque().nom(), argent(capsule.prix())),
-            valeur: capsule.id().as_str().to_string(),
-            description: Some(decrire_attaque(capsule.attaque())),
-        })
-        .collect();
-    lignes.extend(menu(
-        Cle::AcheterCapsule,
-        "Acheter une capsule d'attaque",
-        capsules,
-    ));
     // Au plus une âme par zone : le menu reste loin de ses 25 options. Les
     // âmes des Apôtres s'y donnent ensemble, pour forger le Béhérit (section
     // 9.4).
@@ -156,6 +152,44 @@ pub fn etal(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Que
     );
     Question {
         texte,
+        rangees: lignes,
+    }
+}
+
+/// Les capsules que le joueur n'a pas encore, en menus de 25 au plus, avec
+/// leur prix et l'attaque qu'elles enseignent (section 14.2).
+pub fn capsules(partie: &Partie, contenu: &ContenuV1) -> Question {
+    if !partie.marchand_au_camp() {
+        return sans_marchand();
+    }
+    let options = capsules_en_vente(partie, contenu.capsules())
+        .into_iter()
+        .map(|capsule| OptionDeMenu {
+            libelle: format!("{} : {}", capsule.attaque().nom(), argent(capsule.prix())),
+            valeur: capsule.id().as_str().to_string(),
+            description: Some(decrire_attaque(capsule.attaque())),
+        })
+        .collect();
+    let mut lignes = menus(
+        Cle::AcheterCapsule,
+        "Acheter une capsule d'attaque",
+        options,
+        RANGEES_MAX - 1,
+    );
+    lignes.extend(rangees(vec![
+        bouton(
+            Cle::Afficher(Vue::Marchand),
+            "Retour à Malvoise",
+            SECONDAIRE,
+        ),
+        retour(),
+    ]));
+    Question {
+        texte: format!(
+            "Malvoise vend les capsules d'attaque, qui servent sans s'user. Vous avez {}.\n{}",
+            argent(partie.argent()),
+            capsules_obtenues(partie)
+        ),
         rangees: lignes,
     }
 }
@@ -229,7 +263,14 @@ pub fn achats(partie: &Partie, contenu: &ContenuV1) -> Question {
         .iter()
         .map(|offre| option(offre, offre_d_achat(offre)))
         .collect();
-    lignes.extend(menu(Cle::AcheterMonstre, "Acheter un monstre", a_vendre));
+    // Une rangée pour la location, une pour les boutons : les espèces en
+    // vente se partagent les autres, 25 par menu.
+    lignes.extend(menus(
+        Cle::AcheterMonstre,
+        "Acheter un monstre",
+        a_vendre,
+        RANGEES_MAX - 2,
+    ));
     let a_louer = partie
         .offres_de_location(contenu.zones(), contenu.piste())
         .iter()

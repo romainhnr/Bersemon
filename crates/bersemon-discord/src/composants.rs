@@ -58,6 +58,9 @@ pub enum Vue {
     Vente,
     /// Les monstres que Malvoise vend et loue (section 14.2).
     Achats,
+    /// Les capsules d'attaque que Malvoise vend, en menus de 25 au plus
+    /// (section 14.2, étape 165).
+    Capsules,
     /// L'Éclipse : le sacrifice à faire, ou le départ (section 9.4).
     Eclipse,
     /// Les attaques que ce monstre connaît et celles qu'il peut apprendre
@@ -298,8 +301,8 @@ pub enum Cle {
     AcheterSoins,
     /// Un lot de filets, chez Malvoise (section 14.2).
     AcheterFilets(Filet, u32),
-    /// Menu des capsules en vente.
-    AcheterCapsule,
+    /// Menus numérotés des capsules en vente.
+    AcheterCapsule(u8),
     /// Menu des âmes portées, à donner à Malvoise (section 14.2).
     DonnerAme,
     /// Menu de monstres numéroté, avec leur prix.
@@ -317,8 +320,9 @@ pub enum Cle {
     RendreLeHerosShiny,
     /// Une capsule d'habileté, chez Malvoise.
     AcheterCapsuleDHabilete,
-    /// Menu des espèces que Malvoise vend (section 14.2).
-    AcheterMonstre,
+    /// Menus numérotés des espèces que Malvoise vend (section 14.2) : plus
+    /// de 25 depuis l'étape 165.
+    AcheterMonstre(u8),
     /// Menu des espèces que Malvoise loue.
     LouerMonstre,
     RendreLeMonstreLoue,
@@ -546,7 +550,7 @@ impl Cle {
                 jouer(Choix::AcheterSoins(soin, nombre))
             }
             Cle::AcheterFilets(filet, nombre) => jouer(Choix::AcheterFilets(*filet, *nombre)),
-            Cle::AcheterCapsule => jouer(Choix::AcheterCapsule(AttaqueId::new(valeur?))),
+            Cle::AcheterCapsule(_) => jouer(Choix::AcheterCapsule(AttaqueId::new(valeur?))),
             // Les âmes des Apôtres se donnent ensemble, depuis le même menu
             // que celles des marchands (section 9.4).
             Cle::DonnerAme if valeur? == BEHERIT => jouer(Choix::ForgerLeBeherit),
@@ -561,7 +565,7 @@ impl Cle {
             Cle::RendreShiny(emplacement) => jouer(Choix::RendreShiny(*emplacement)),
             Cle::RendreLeHerosShiny => jouer(Choix::RendreLeHerosShiny),
             Cle::AcheterCapsuleDHabilete => jouer(Choix::AcheterCapsulesDHabilete(1)),
-            Cle::AcheterMonstre => jouer(Choix::AcheterMonstre(EspeceId::new(valeur?))),
+            Cle::AcheterMonstre(_) => jouer(Choix::AcheterMonstre(EspeceId::new(valeur?))),
             Cle::LouerMonstre => jouer(Choix::LouerMonstre(EspeceId::new(valeur?))),
             Cle::RendreLeMonstreLoue => jouer(Choix::RendreLeMonstreLoue),
             Cle::AcheterPierre(pierre) => jouer(Choix::AcheterPierres(*pierre, 1)),
@@ -678,6 +682,7 @@ impl Cle {
             Cle::Afficher(Vue::Marchand) => "vue:marchand".to_string(),
             Cle::Afficher(Vue::Vente) => "vue:vente".to_string(),
             Cle::Afficher(Vue::Achats) => "vue:achats".to_string(),
+            Cle::Afficher(Vue::Capsules) => "vue:capsules".to_string(),
             Cle::Afficher(Vue::Eclipse) => "vue:eclipse".to_string(),
             Cle::Afficher(Vue::Attaques(emplacement)) => {
                 format!("vue:attaques:{}", emplacement_en_texte(*emplacement))
@@ -762,7 +767,7 @@ impl Cle {
             Cle::AcheterFilets(filet, nombre) => {
                 format!("acheter-filets:{}:{nombre}", filet.id())
             }
-            Cle::AcheterCapsule => "acheter-capsule".to_string(),
+            Cle::AcheterCapsule(numero) => format!("acheter-capsule:{numero}"),
             Cle::DonnerAme => "donner-ame".to_string(),
             Cle::Vendre(numero) => format!("vendre:{numero}"),
             Cle::ChangerDHabilete(emplacement) => {
@@ -775,7 +780,7 @@ impl Cle {
                 format!("rendre-shiny:{}", emplacement_en_texte(*emplacement))
             }
             Cle::AcheterCapsuleDHabilete => "acheter-capsule-d-habilete".to_string(),
-            Cle::AcheterMonstre => "acheter-monstre".to_string(),
+            Cle::AcheterMonstre(numero) => format!("acheter-monstre:{numero}"),
             Cle::LouerMonstre => "louer-monstre".to_string(),
             Cle::RendreLeMonstreLoue => "rendre-le-monstre-loue".to_string(),
             Cle::RendreLeHerosShiny => "rendre-le-heros-shiny".to_string(),
@@ -882,6 +887,7 @@ impl Cle {
             "vue:marchand" => Cle::Afficher(Vue::Marchand),
             "vue:vente" => Cle::Afficher(Vue::Vente),
             "vue:achats" => Cle::Afficher(Vue::Achats),
+            "vue:capsules" => Cle::Afficher(Vue::Capsules),
             "vue:eclipse" => Cle::Afficher(Vue::Eclipse),
             "partir-vers-l-eclipse" => Cle::PartirVersLEclipse,
             "vue:coffre" => Cle::Afficher(Vue::Coffre),
@@ -940,9 +946,10 @@ impl Cle {
             "fabriquer" => Cle::Fabriquer,
             "se-suicider" => Cle::SeSuicider,
             "acheter-soins" => Cle::AcheterSoins,
-            "acheter-capsule" => Cle::AcheterCapsule,
+            // Celui des messages affichés avant l'étape 165, sans numéro.
+            "acheter-capsule" => Cle::AcheterCapsule(0),
             "acheter-capsule-d-habilete" => Cle::AcheterCapsuleDHabilete,
-            "acheter-monstre" => Cle::AcheterMonstre,
+            "acheter-monstre" => Cle::AcheterMonstre(0),
             "louer-monstre" => Cle::LouerMonstre,
             "rendre-le-monstre-loue" => Cle::RendreLeMonstreLoue,
             "rendre-le-heros-shiny" => Cle::RendreLeHerosShiny,
@@ -1073,6 +1080,8 @@ impl Cle {
                     "ameliorer" => Cle::Ameliorer(lire_amelioration(parametre)?),
                     "equiper" => Cle::Equiper(lire_place(parametre)?),
                     "fiche" => Cle::Fiche(numero()?),
+                    "acheter-capsule" => Cle::AcheterCapsule(numero()?),
+                    "acheter-monstre" => Cle::AcheterMonstre(numero()?),
                     "sortir-ressources" => Cle::SortirRessourcesDuCoffre(numero()?),
                     "ranger-ressources" => Cle::RangerRessourcesAuCoffre(numero()?),
                     "vendre-ressources" => Cle::VendreRessources(numero()?),
@@ -1455,7 +1464,8 @@ mod tests {
             Cle::AcheterSoins,
             Cle::AcheterFilets(Filet::Chanvre, 5),
             Cle::AcheterFilets(Filet::Leste, 5),
-            Cle::AcheterCapsule,
+            Cle::AcheterCapsule(0),
+            Cle::AcheterCapsule(1),
             Cle::DonnerAme,
             Cle::Vendre(2),
             Cle::VendreCeMonstre(Emplacement::Equipe(2)),
@@ -1464,10 +1474,12 @@ mod tests {
             Cle::RendreShiny(Emplacement::Equipe(3)),
             Cle::RendreLeHerosShiny,
             Cle::AcheterCapsuleDHabilete,
-            Cle::AcheterMonstre,
+            Cle::AcheterMonstre(0),
+            Cle::AcheterMonstre(1),
             Cle::LouerMonstre,
             Cle::RendreLeMonstreLoue,
             Cle::Afficher(Vue::Achats),
+            Cle::Afficher(Vue::Capsules),
             Cle::AcheterPierre(PierreDEvolution::Braise),
             Cle::AcheterPierre(PierreDEvolution::Lune),
             Cle::Apprendre {
@@ -1773,7 +1785,7 @@ mod tests {
             Cle::Vendre(1).commande(Some("c12"), None),
             Some(Commande::Jouer(Choix::Vendre(Emplacement::Camp(12))))
         );
-        assert_eq!(Cle::AcheterCapsule.commande(None, None), None);
+        assert_eq!(Cle::AcheterCapsule(0).commande(None, None), None);
         assert_eq!(
             Cle::AcheterSoins.commande(Some(&lot_de_soins_en_texte(Soin::Panacee, 5)), None),
             Some(Commande::Jouer(Choix::AcheterSoins(Soin::Panacee, 5)))
