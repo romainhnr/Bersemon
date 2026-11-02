@@ -1,0 +1,12 @@
+# Sauvegarde quotidienne des parties. Persistent rattrape le passage manqué si
+# la VM était éteinte à l'heure prévue.
+
+[Unit]
+Description=Sauvegarde quotidienne des parties de Bersemon
+
+[Timer]
+OnCalendar=*-*-* 04:00:00 Europe/Paris
+Persistent=true
+
+[Install]
+WantedBy=timers.target

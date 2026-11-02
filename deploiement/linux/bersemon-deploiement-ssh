@@ -1,0 +1,19 @@
+#!/bin/sh
+# Commande forcée du compte deploiement, déclarée dans son authorized_keys :
+# quelle que soit la commande envoyée par SSH, seul ce script s'exécute.
+#
+# Attend "<prod|dev> <commit>" dans SSH_ORIGINAL_COMMAND, envoyé par GitHub
+# Actions, et le transmet au script de déploiement, seule commande que
+# sudoers autorise à ce compte. Les arguments sont vérifiés là-bas, en root.
+
+set -eu
+# Sans expansion des jokers, le découpage en mots ne peut produire que les
+# mots reçus.
+set -f
+# shellcheck disable=SC2086
+set -- ${SSH_ORIGINAL_COMMAND:-}
+if [ "$#" -ne 2 ]; then
+    echo "Usage : ssh deploiement@<vm> \"<prod|dev> <commit>\"" >&2
+    exit 2
+fi
+exec sudo -n /usr/local/sbin/bersemon-deployer "$1" "$2"

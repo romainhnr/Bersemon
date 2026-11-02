@@ -1,0 +1,53 @@
+# Modèle des services bersemon-prod et bersemon-dev : installer-vm.sh remplace
+# @ENV@ par prod ou dev et installe le résultat dans /etc/systemd/system.
+# Voir docs/deploiement.md.
+
+[Unit]
+Description=Bot Discord Bersemon (@ENV@)
+Wants=network-online.target
+After=network-online.target
+# Avant le premier déploiement, pas de binaire : le service attend sans
+# boucler sur des échecs.
+ConditionPathExists=/srv/bersemon/@ENV@/bin/bersemon-discord
+# Relancé sans limite : une longue coupure réseau ne doit pas l'arrêter pour
+# de bon.
+StartLimitIntervalSec=0
+
+[Service]
+Type=exec
+User=bersemon-@ENV@
+Group=bersemon-@ENV@
+EnvironmentFile=/etc/bersemon/@ENV@.env
+WorkingDirectory=/srv/bersemon/@ENV@/parties
+# Les deux environnements ne partagent jamais un dossier de parties : le
+# service refuse de démarrer si BERSEMON_DONNEES désigne un autre dossier que
+# le sien, le seul où il a le droit d'écrire.
+ExecStartPre=/bin/sh -c 'test "$$BERSEMON_DONNEES" = /srv/bersemon/@ENV@/parties || { echo "BERSEMON_DONNEES doit valoir /srv/bersemon/@ENV@/parties dans /etc/bersemon/@ENV@.env." >&2; exit 1; }'
+ExecStart=/srv/bersemon/@ENV@/bin/bersemon-discord
+Restart=always
+RestartSec=10
+
+# Le bot n'écrit que dans son dossier de parties : ni son binaire, ni son
+# code, ni le reste du système.
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=/srv/bersemon/@ENV@/parties
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+LockPersonality=yes
+# AF_NETLINK peut servir à la résolution des noms par la glibc.
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+UMask=0027
+
+[Install]
+WantedBy=multi-user.target

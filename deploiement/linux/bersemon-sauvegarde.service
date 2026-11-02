@@ -1,0 +1,19 @@
+# Sauvegarde des parties des deux bots, lancée chaque jour par
+# bersemon-sauvegarde.timer. Voir docs/deploiement.md.
+
+[Unit]
+Description=Sauvegarde des parties de Bersemon
+
+[Service]
+Type=oneshot
+# Nombre d'archives gardées par environnement.
+Environment=BERSEMON_CONSERVATION=14
+ExecStart=/usr/local/sbin/bersemon-sauvegarder
+Nice=10
+IOSchedulingClass=idle
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=/var/backups/bersemon
+ProtectHome=yes
+PrivateTmp=yes
+PrivateNetwork=yes

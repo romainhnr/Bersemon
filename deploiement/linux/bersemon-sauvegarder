@@ -1,0 +1,61 @@
+#!/bin/bash
+# Sauvegarde quotidienne des parties des bots, lancée par le timer systemd
+# bersemon-sauvegarde : une archive par environnement et par jour dans
+# /var/backups/bersemon/<env>/, les plus anciennes supprimées au-delà de
+# BERSEMON_CONSERVATION archives (14 par défaut).
+#
+# Lisibles par le groupe bersemon-sauvegarde, dont fait partie le compte
+# d'administration, pour pouvoir les copier hors de la VM.
+# Voir docs/deploiement.md.
+
+set -euo pipefail
+
+readonly RACINE=/srv/bersemon
+readonly DESTINATION=/var/backups/bersemon
+readonly GROUPE=bersemon-sauvegarde
+readonly CONSERVATION=${BERSEMON_CONSERVATION:-14}
+
+[[ $EUID -eq 0 ]] || { echo "Ce script doit être lancé en root." >&2; exit 1; }
+[[ $CONSERVATION =~ ^[1-9][0-9]*$ ]] || { echo "BERSEMON_CONSERVATION doit être un entier positif." >&2; exit 1; }
+
+date_du_jour=$(date +%Y-%m-%d)
+code_de_sortie=0
+
+for environnement in prod dev; do
+    parties="$RACINE/$environnement/parties"
+    if [[ ! -d $parties ]]; then
+        continue
+    fi
+    cible="$DESTINATION/$environnement"
+    install -d -o root -g "$GROUPE" -m 2750 "$DESTINATION" "$cible"
+    archive="$cible/parties-$environnement-$date_du_jour.tar.gz"
+
+    # Le bot continue de tourner : chaque partie est écrite dans un fichier
+    # temporaire puis renommée, donc chaque fichier archivé est complet. Les
+    # fichiers temporaires sont exclus. Le code 1 de tar signale seulement
+    # qu'un fichier a changé pendant la lecture.
+    resultat=0
+    tar --create --gzip --file "$archive.partiel" --exclude='*.tmp' \
+        --directory "$RACINE/$environnement" parties || resultat=$?
+    if [[ $resultat -gt 1 ]]; then
+        rm -f "$archive.partiel"
+        echo "Sauvegarde de $environnement échouée (tar : code $resultat)." >&2
+        code_de_sortie=1
+        continue
+    fi
+    chgrp "$GROUPE" "$archive.partiel"
+    chmod 0640 "$archive.partiel"
+    mv -f "$archive.partiel" "$archive"
+    echo "Sauvegarde de $environnement : $archive."
+
+    # Rotation par nombre et non par âge : si la VM a été éteinte longtemps,
+    # les dernières archives restent.
+    find "$cible" -maxdepth 1 -name "parties-$environnement-*.tar.gz" -printf '%f\n' \
+        | sort -r \
+        | tail -n +"$((CONSERVATION + 1))" \
+        | while read -r ancienne; do
+            rm -f -- "$cible/$ancienne"
+        done
+done
+
+exit "$code_de_sortie"
