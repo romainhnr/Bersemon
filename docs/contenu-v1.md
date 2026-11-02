@@ -990,7 +990,7 @@ Décidés le 20/10/2026, pour les étapes 83 à 86 (gamedesign.md, section 14.2)
 
 Décidés le 21/10/2026, pour les étapes 88 à 92 (gamedesign.md, section 9.4), contenu proposé par Claude et validé par l'utilisateur.
 
-Le Démiurge a deux formes, au niveau 42, à valeurs internes fixes de 31 ; la seconde se relève quand la première tombe KO. Depuis l'étape 162 (27/10/2026), combat final au niveau 100, après les 13 Apôtres, aux stats de base de 120 / 130 / 110 / 130 / 110 / 100 (700) et 135 / 145 / 120 / 150 / 120 / 110 (780), rendements d'XP 420 et 480 ; valeurs provisoires, à mesurer au dernier lot (gamedesign.md, Q118). Dans les menus : "Niveau 100 : le Démiurge". Les textes du Béhérit ne disent plus "trois" âmes : "Malvoise dépose les âmes des Apôtres au creux de ses mains", "Donner à Malvoise les âmes des Apôtres pour forger le Béhérit pourpre ? Elles seront perdues.", "Il vous faut les âmes des 13 Apôtres." Une rareté à part, "Démiurge" ; elles n'ont pas de ressource et ne se capturent pas. Au codex, elles viennent après les stades 3.
+Le Démiurge a deux formes, au niveau 42, à valeurs internes fixes de 31 ; la seconde se relève quand la première tombe KO. Depuis l'étape 162 (27/10/2026), combat final au niveau 100, après les 13 Apôtres, aux stats de base de 120 / 130 / 110 / 130 / 110 / 100 (700) et 135 / 145 / 120 / 150 / 120 / 110 (780), rendements d'XP 420 et 480 ; valeurs provisoires, à mesurer au dernier lot (gamedesign.md, Q118). Depuis l'étape 169, mesurées : 85 / 93 / 79 / 93 / 79 / 71 (500) et 97 / 104 / 86 / 108 / 86 / 79 (560), aux proportions d'avant (section 49 ; equilibrage.md, section 19). Dans les menus : "Niveau 100 : le Démiurge". Les textes du Béhérit ne disent plus "trois" âmes : "Malvoise dépose les âmes des Apôtres au creux de ses mains", "Donner à Malvoise les âmes des Apôtres pour forger le Béhérit pourpre ? Elles seront perdues.", "Il vous faut les âmes des 13 Apôtres." Une rareté à part, "Démiurge" ; elles n'ont pas de ressource et ne se capturent pas. Au codex, elles viennent après les stades 3.
 
 | Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP | Habiletés | Attaques apprises |
 |---|---|---|---|---|---|---|---|
@@ -1291,12 +1291,12 @@ Décidé le 25/10/2026, pour les étapes 121 à 123 (gamedesign.md, section 9.7)
 
 | Météo | Identifiant | Types renforcés (+20 %) | Zones | Texte au départ |
 |---|---|---|---|---|
-| Pluie | pluie | Eau, Plante | Lisière, Marais, Vallée, Abbaye, Port des Noyés, Sylve, Catacombes, Palais de Chair, Puits du Monde | Une pluie froide tombe sans relâche. |
-| Tempête | tempete | Électrique, Vol | toutes sauf le Désert de sel et le Palais de Chair | L'orage gronde : le ciel se déchire d'éclairs. |
-| Grêle | grele | Glace, Roche | Vallée, Col, Mines de Fer-Noir, Haute-Cité déchue, Pics Foudroyés | La grêle crépite sur les pierres et les armures. |
-| Tempête de sable | tempete-de-sable | Sol, Roche | Désert de sel | Le sable vole, cinglant comme une lame. |
-| Cyclone | cyclone | Eau, Vol | Port des Noyés, seule zone de mer | Le cyclone hurle, et les vagues montent à l'assaut des côtes. |
-| Canicule | canicule | Feu, Sol | Lisière, Marais, Abbaye, Désert de sel, Sylve, Plaine du Massacre, Gorge de Braise, Palais de Chair | Une chaleur écrasante pèse sur la terre. |
+| Pluie | pluie | Eau, Plante | Lisière, Marais, Vallée, Abbaye, Port des Noyés, Sylve, Catacombes, Palais de Chair, Puits du Monde, Abysses | Une pluie froide tombe sans relâche. |
+| Tempête | tempete | Électrique, Vol | toutes sauf le Désert de sel, le Palais de Chair, les Abysses et les Terres arides | L'orage gronde : le ciel se déchire d'éclairs. |
+| Grêle | grele | Glace, Roche | Vallée, Col, Mines de Fer-Noir, Haute-Cité déchue, Pics Foudroyés, Ciel déchiré | La grêle crépite sur les pierres et les armures. |
+| Tempête de sable | tempete-de-sable | Sol, Roche | Désert de sel, Terres arides | Le sable vole, cinglant comme une lame. |
+| Cyclone | cyclone | Eau, Vol | Port des Noyés et Abysses, zones de mer | Le cyclone hurle, et les vagues montent à l'assaut des côtes. |
+| Canicule | canicule | Feu, Sol | Lisière, Marais, Abbaye, Désert de sel, Sylve, Plaine du Massacre, Gorge de Braise, Palais de Chair, Terres arides | Une chaleur écrasante pèse sur la terre. |
 
 Chaque zone a 1 chance sur 3, par créneau de 30 minutes, d'avoir une de ses météos ; sinon, temps calme.
 
@@ -2449,3 +2449,63 @@ Cartes des annexes :
 > Jardin de la Reine : Au fond du coffre, un ruban de soie rouge noue une clé de jardin : derrière le palais, la Reine cultiverait des fleurs qui boivent le sang.
 
 > Racines du monde : Au fond du coffre, une lanterne de racines tressées éclaire un passage qui descend le long des racines du monde.
+
+## 49. Le Démiurge réglé et les zones légendaires
+
+Décidés le 02/11/2026, pour l'étape 169 (gamedesign.md, sections 5.6, 9.4 et 9.10). Validés par l'utilisateur : les trois légendaires, leurs types, environ 600 au total des stats, des zones peuplées d'espèces existantes de même thème, leur place au codex et la difficulté visée pour le Démiurge, environ 3 tentatives. Les autres valeurs et les textes sont proposés par Claude sans validation (gamedesign.md, Q118 ; equilibrage.md, section 19).
+
+Le Démiurge garde ses types, ses attaques et ses rendements d'XP ; ses deux formes passent, aux mêmes proportions, de 700 et 780 à 500 et 560 au total des stats :
+
+| Identifiant | Stats de base (total) |
+|---|---|
+| demiurge | 85 / 93 / 79 / 93 / 79 / 71 (500) |
+| demiurge-eveille | 97 / 104 / 86 / 108 / 86 / 79 (560) |
+
+Zones légendaires, ouvertes à la chute du Démiurge, dans cet ordre. Niveau 100, 5 étapes, groupes de 1 à 3, coffres de 640 à 960 pièces d'argent, sans capsule ; ni Schnoz, ni marchand mort, ni pêcheur, ni expédition automatique (elles ne comptent pas comme explorées). Le légendaire attend à la dernière étape (section 9.10) :
+
+| Identifiant | Nom | Espèces | Monstre rare | Météos | Légendaire |
+|---|---|---|---|---|---|
+| abysses | Abysses | Sirène putride, Crabe nécrophage | Hydre des marées (hostile) | pluie, cyclone | Léviathan |
+| terres-arides | Terres arides | Crotale des salines, Ver des salines, Scarabée solaire | aucun | tempête de sable, canicule | Béhémoth |
+| ciel-dechire | Ciel déchiré | Harpie des orages, Aigle-tonnerre, Feu de Saint-Elme | aucun | tempête, grêle | Ziz |
+
+Légendaires, au niveau 100, à valeurs internes fixes de 31, à l'IA avancée, 1 chance sur 512 d'être shiny (section 9.10). Rareté "rare", comptés au codex, après le Roi sans visage ; ni ressource, ni évolution :
+
+| Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP | Habiletés | Attaques apprises |
+|---|---|---|---|---|---|---|---|
+| leviathan | Léviathan | Eau, Dragon | offensif | 115 / 90 / 100 / 100 / 100 / 95 (600) | 500 | Volonté, Carapace | Déferlante (1), Souffle draconique (1), Marée noire (40), Souffle des brumes (60), Déluge draconique (80), Abîme des mers (100) |
+| behemoth | Béhémoth | Sol, Combat | offensif | 130 / 125 / 115 / 55 / 95 / 80 (600) | 500 | Férocité, Carapace | Secousse (1), Frappe d'os (1), Coup de pioche (40), Engloutissement (60), Déchiquetage (80), Piétinement du monde (100) |
+| ziz | Ziz | Vol, Lumière | offensif | 95 / 70 / 85 / 120 / 95 / 135 (600) | 500 | Célérité, Éclaireur | Bourrasque (1), Lueur sacrée (1), Aube éclatante (40), Flamme blanche (60), Ouragan céleste (80), Aile de l'aube (100) |
+
+Attaques nouvelles :
+
+| Identifiant | Nom | Type | Cat. | Puissance | Précision |
+|---|---|---|---|---|---|
+| abime-des-mers | Abîme des mers | Eau | S | 100 | 90 |
+| pietinement-du-monde | Piétinement du monde | Sol | P | 100 | 90 |
+| ouragan-celeste | Ouragan céleste | Vol | S | 95 | 90 |
+| aile-de-l-aube | Aile de l'aube | Lumière | S | 100 | 90 |
+
+Attaques d'œuf, sur le modèle de la section 28, pour suivre la règle de chaque famille, bien qu'un légendaire, seul de son espèce, ne puisse pas passer par le rite :
+
+| Famille | Identifiant | Nom | Type | Cat. | Puissance | Précision |
+|---|---|---|---|---|---|---|
+| Léviathan | ecaille-abyssale | Écaille abyssale | Dragon | P | 80 | 100 |
+| Béhémoth | corne-primordiale | Corne primordiale | Combat | P | 80 | 100 |
+| Ziz | plume-celeste | Plume céleste | Vol | S | 80 | 100 |
+
+Sprites : un par légendaire, normal et shiny (section 42).
+
+Textes, avant le combat puis à la capture :
+
+> Léviathan : Au plus profond des Abysses, la mer elle-même se soulève : un serpent immense, couvert d'écailles noires, ouvre une gueule où s'engouffrent les courants. Léviathan, maître des eaux, vous barre la route.
+
+> Léviathan s'effondre dans un remous et se laisse approcher. Le maître des eaux vous suit désormais.
+
+> Béhémoth : Au cœur des Terres arides, le sol tremble à chaque pas : une bête colossale aux cornes de pierre se dresse entre les dunes. Béhémoth, premier-né de la terre, charge.
+
+> Béhémoth plie les genoux dans la poussière et baisse ses cornes. Le premier-né de la terre vous suit désormais.
+
+> Ziz : Au-dessus des nuages déchirés, une ombre couvre le soleil : un oiseau si grand que ses ailes cachent le ciel plonge vers vous. Ziz, roi des airs, pousse un cri.
+
+> Ziz se pose devant vous, les ailes repliées, et incline la tête. Le roi des airs vous suit désormais.

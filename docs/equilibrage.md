@@ -524,3 +524,31 @@ Constats :
 1. Les dix zones des cinq lots demandent 149,9 expéditions par partie, soit 15,0 par zone en moyenne, au-dessus de la cible d'environ 12 ; les six zones d'avant en demandent 82,3, soit 13,7 par zone. L'écart vient des zones qui portent la montée de niveau vers la suivante (Port 22,9, Gorge 18,0, Palais 17,9) et du Puits (21,1) : près du niveau 100, chaque niveau coûte beaucoup d'XP et le joueur n'en gagne que 0,19 par expédition. Le rendement d'XP suit pourtant la règle (environ 3 fois le niveau moyen de la zone) ; levier possible, à juger en jouant : un rendement plus haut dans les zones les plus longues.
 2. Les Apôtres du lot se prennent dès le premier essai ou presque (Reine-mère 98 %, Roi sans visage 93 %), comme ceux du lot 4 : le joueur automatique les aborde avec 1 à 3 niveaux d'avance et les bons types. À part, la Reine-mère se gagne 81 % du temps, plus facile que ses aînés ; le Roi sans visage, 56 %, dans leur fourchette.
 3. Contre des équipes au hasard, les humains gardiens des derniers lots se gagnent de 17 à 37 % du temps, mais en 1,1 à 1,7 tentative dans les parties.
+
+## 19. Le Démiurge et les légendaires (étape 169)
+
+Le combat final et les trois légendaires se mesurent à part, comme les humains et les Apôtres (section 14), au niveau 100, avec un héros Mage équipé au plus haut (niveau de combat 85) ; 100 équipes de trois monstres, 30 combats par équipe. Le Démiurge enchaîne ses deux formes, sans soin entre les deux. La cible, choisie par l'utilisateur, est d'environ 3 tentatives, soit environ une victoire sur trois.
+
+Le joueur automatique ne joue pas le combat final. Essayé : forger le Béhérit, sacrifier, entrer dans l'Éclipse et affronter le Démiurge jusqu'à sa chute. Les parties se coupaient en deux : 26 à 44 % gagnaient au premier essai, les autres ne gagnaient presque jamais, même contre un Démiurge ramené à 480 et 540 au total des stats. Tracé, un de ces combats : chaque coup du Démiurge met presque un monstre KO (240 PV d'un Gardien du gouffre de niveau 100 en un coup), pendant que l'équipe (Gardien du gouffre, Ver des abysses, Écho du vide) ne lui prend que le tiers de ses PV. L'Obscur frappe double presque tous les types et leur résiste (section 5.2) : sans monstres qu'il ne frappe pas double, l'équipe ne peut pas gagner. Le joueur automatique, qui ne visite pas les annexes où vivent les rares Féérique et Lumière, ne s'y prépare pas ; un joueur qui arrive au combat final, lui, le fera. Le Démiurge se mesure donc contre des équipes préparées : tirées parmi les espèces de toutes les zones et des annexes que l'Obscur ne frappe pas double.
+
+| Démiurge (totaux des deux formes) | Contre des équipes préparées |
+|---|---|
+| 700 et 780 (provisoires, étape 162) | 0 % |
+| 620 et 700 | 1 % |
+| 560 et 620 | 6 % |
+| 500 et 560 (retenu) | 31 % |
+| 460 et 520 | 52 % |
+
+À titre de comparaison, contre des équipes tirées parmi toutes les espèces, sans préparation, il se gagne 1 % du temps à 540 et 600, 15 % à 400 et 460. Retenu : 500 et 560, aux proportions d'avant. Chacune de ses formes a moins de stats que les derniers Apôtres (540 à 552) : c'est leur enchaînement, sans soin, qui en fait le combat le plus dur du jeu.
+
+Légendaires, contre des équipes tirées parmi toutes les espèces des zones et des annexes, sans préparation :
+
+| Légendaire | Victoires |
+|---|---|
+| Léviathan (Abysses, 100) | 26 % |
+| Béhémoth (Terres arides, 100) | 37 % |
+| Ziz (Ciel déchiré, 100) | 36 % |
+
+Le Léviathan, d'abord à 17 %, cède 15 points d'attaque spéciale à ses PV et à sa Vitesse (600 au total, inchangé). Les légendaires sont plus durs que les Apôtres (44 à 81 % dans la même mesure), comme il sied à des combats optionnels d'après le jeu.
+
+Limites : ces mesures à part ne connaissent ni les soins, ni les changements de monstre, ni les ordres du héros, et les monstres y ont des valeurs internes à 0 ; un joueur qui s'en sert gagnera plus souvent. La préparation retenue (aucun type que l'Obscur frappe double) est une hypothèse (gamedesign.md, Q118).
