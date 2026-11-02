@@ -17,7 +17,7 @@ Ce document décrit l'outil d'équilibrage, la stratégie du joueur automatique 
 Sa stratégie est simple et constante, pour que les écarts d'une zone à l'autre viennent des valeurs du jeu :
 
 - il part dans la zone la plus avancée où le niveau de ses meilleurs monstres a passé le premier tiers des niveaux de la zone ;
-- il emmène ses monstres de plus haut niveau ; quand un Apôtre l'attend au bout de la zone, ceux qui valent le plus face à lui, selon la table des types, ses stats et ses PV. Depuis l'étape 163, il compose toujours son équipe ainsi, face à l'Apôtre, à l'équipe de l'humain gardien ou aux espèces sauvages de la zone, parmi ses monstres à 5 niveaux au plus du meilleur, 10 contre un Apôtre (section 14) ;
+- il emmène ses monstres de plus haut niveau ; quand un Apôtre l'attend au bout de la zone, ceux qui valent le plus face à lui, selon la table des types, ses stats et ses PV. Depuis l'étape 163, il compose toujours son équipe ainsi, face à l'Apôtre, à l'équipe de l'humain gardien ou aux espèces sauvages de la zone, parmi ses monstres à 5 niveaux au plus du meilleur, 10 contre un Apôtre (section 14) ; depuis l'étape 167, à ces écarts du plus bas entre son meilleur monstre et l'adversaire le plus fort (section 17) ;
 - en combat, il envoie le monstre qui vaut au moins deux fois plus que le monstre actif face à l'adversaire, attaque avec l'attaque aux dégâts attendus les plus hauts, lance un filet sur une espèce qu'il n'a pas quand la chance atteint 50 %, et fuit quand son dernier monstre debout a perdu la moitié de ses PV, ou, depuis l'étape 166, quand aucune de ses attaques ne blesse l'adversaire (section 16). Contre un humain ou un Apôtre, il donne l'ordre du héros et soigne son monstre sous 35 % de ses PV ;
 - entre deux étapes, il soigne un monstre sous la moitié de ses PV, rentre quand la moitié de l'équipe est KO ou qu'il ne lui reste que la moitié de ses PV, et n'affronte le combat de fin de zone qu'avec tous ses monstres debout et 80 % de ses PV ;
 - au camp, il donne les âmes à Malvoise, réclame les récompenses du codex, fait agrandir l'équipe puis forger l'objet d'équipement aux plus gros bonus, puis améliorer les filets, porte ses meilleurs objets, range argent et ressources au coffre, et emporte 6 potions et 10 filets ;
@@ -436,3 +436,47 @@ Constats :
 1. La Plaine et la Haute-Cité sont dans la cible (15,3 et 11,1 expéditions), et le Port, sans être retouché, passe de 32,7 à 24,1 : l'essentiel de l'écart venait du joueur automatique, qui ne renouvelait plus son équipe.
 2. Contre des équipes au hasard, le Connétable (44 %) et l'Archiviste (22 %) sont les plus durs de leur sorte, mais se prennent vite dans les parties (4,1 et 1,4 tentatives). La mesure à part tire ses équipes parmi les espèces de 380 au moins au total : les communes de la Plaine et l'Automate, recalés sous ce seuil, en sont sortis, ce qui a fait passer l'Archiviste de 44 à 22 % sans qu'il ait changé. Écart laissé à juger en jouant (gamedesign.md, Q118).
 3. Les communes du lot ont beaucoup de types faibles face à l'Obscur, très efficace contre l'Acier, l'Électrique, le Vol, le Sol, le Combat et le Normal : un joueur qui n'emmène que les espèces de ces deux zones contre leurs Apôtres le paie. Les espèces Psychique de la Haute-Cité, très efficaces contre l'Obscur, et les rares Féérique des annexes, qui y résistent, sont les contre-mesures du lot.
+
+## 17. Gorge de Braise et Pics Foudroyés (étape 167)
+
+Quatrième lot de la suite de l'aventure (docs/contenu-v1.md, section 47), chiffré selon les mêmes règles qu'aux sections 14 à 16.
+
+Première mesure : 25,5 expéditions dans la Gorge et 29,0 dans les Pics, 13,9 tentatives contre le Sénéchal des orages, et 4 parties sur 400 qui n'allaient pas au bout, alors que le Sénéchal, à part, se gagnait 78 % du temps.
+
+Changement de l'outil : le joueur automatique jugeait selon les types ses monstres à 10 niveaux au plus de son meilleur, contre un Apôtre, et les autres au niveau seul. Avec un monstre au niveau 100, il n'emmenait donc contre le Sénéchal, au niveau 89, que ses monstres de plus haut niveau, tous très faibles contre l'Obscur (Géant des orages, Aigle-tonnerre), sans regarder les types de ceux du niveau de l'Apôtre. La référence est désormais le plus bas entre son meilleur monstre et l'adversaire le plus fort. Toutes les zones en profitent : les défaites tombent de 24 à 42 par partie à 19 à 27, et les Apôtres des lots précédents se prennent en 1,2 à 2,8 tentatives.
+
+Réglages du contenu, après la mesure : stats de base revues à la hausse pour le Wyrm de magma (436 à 456, 42 % en un contre un, sous les autres rares), à la baisse pour le Feu de Saint-Elme (394 à 386) et l'Ifrit (448 à 432). Le Forgeron calciné, le Wyrm de magma et l'Ifrit n'apprennent pas Coup de heaume, Piqué draconique ni Énigme du sphinx, attaques d'œuf d'autres familles, mais Lame rouillée, Brasier et Festin d'encre.
+
+Mesuré sur 100 parties par classe ; toutes se terminent, à la chute du Sénéchal des orages, en 184 à 193 expéditions (médiane selon la classe), avec 19 à 27 défaites :
+
+| Zone | Expéditions par partie | Menées au bout | Défaites | Rentrées | Niveau à la première | Niveaux gagnés |
+|---|---|---|---|---|---|---|
+| Lisière du Bois-Sombre (3 à 7) | 11,7 | 13 % | 5 % | 83 % | 5,0 | 0,40 |
+| Marais des Pendus (8 à 13) | 10,7 | 16 % | 14 % | 70 % | 9,7 | 0,66 |
+| Vallée des Brumes (14 à 20) | 10,9 | 44 % | 15 % | 41 % | 16,7 | 0,60 |
+| Abbaye des Cendres (21 à 27) | 14,4 | 24 % | 20 % | 56 % | 23,2 | 0,53 |
+| Col du Givre-Noir (28 à 36) | 18,0 | 25 % | 16 % | 59 % | 30,8 | 0,49 |
+| Désert de sel (37 à 45) | 16,6 | 22 % | 9 % | 68 % | 39,6 | 0,48 |
+| Port des Noyés (46 à 51) | 22,9 | 12 % | 8 % | 80 % | 47,6 | 0,32 |
+| Mines de Fer-Noir (52 à 57) | 16,2 | 17 % | 17 % | 66 % | 54,9 | 0,38 |
+| Sylve écarlate (58 à 62) | 10,1 | 29 % | 15 % | 57 % | 61,0 | 0,47 |
+| Catacombes de Sainte-Ombre (63 à 67) | 10,5 | 28 % | 8 % | 64 % | 65,8 | 0,44 |
+| Plaine du Massacre (68 à 72) | 13,9 | 20 % | 6 % | 74 % | 70,4 | 0,39 |
+| Haute-Cité déchue (73 à 77) | 9,9 | 32 % | 6 % | 62 % | 75,9 | 0,48 |
+| Gorge de Braise (78 à 82) | 18,0 | 16 % | 10 % | 74 % | 80,6 | 0,30 |
+| Pics Foudroyés (83 à 87) | 7,8 | 26 % | 8 % | 66 % | 86,0 | 0,51 |
+
+| Combat | Tentatives par partie | Victoires au premier essai | Contre des équipes au hasard |
+|---|---|---|---|
+| Pyromancien (Gorge, 82) | 1,4 | 68 % | 17 % |
+| Prince de braise (Gorge, 84) | 1,1 | 95 % | 58 % |
+| Héraut de l'orage (Pics, 87) | 1,1 | 90 % | 82 % |
+| Sénéchal des orages (Pics, 89) | 1,5 | 86 % | 78 % |
+
+En un contre un au niveau 50, les communes du lot gagnent 40 à 56 % de leurs combats, les rares 48 à 59 %.
+
+Constats :
+
+1. La Gorge et les Pics font 25,8 expéditions à eux deux, comme la Plaine et la Haute-Cité (23,8), mais la Gorge en prend 18 : le joueur y gagne les niveaux qui l'amènent au haut des Pics, où il entre au niveau 86. Plus le niveau approche de 100, plus il coûte d'XP ; le rendement d'XP suit la règle des lots précédents (environ 3 fois le niveau moyen de la zone), sans correction. Levier possible, à juger en jouant : un rendement plus haut dans la Gorge.
+2. Les Apôtres se prennent désormais en 1,1 à 2,8 tentatives : les tentatives d'avant tenaient surtout aux équipes mal choisies par le joueur automatique. Le Prince de braise, pris au premier essai 95 % du temps avec 1 niveau d'avance, est peut-être trop facile ; à part, il se gagne 58 % du temps, dans la fourchette des autres.
+3. Comme l'Archiviste, le Pyromancien, Mage, ne se gagne que 17 % du temps à part, mais en 1,4 tentative dans les parties.

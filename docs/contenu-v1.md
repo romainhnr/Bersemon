@@ -1293,10 +1293,10 @@ Décidé le 25/10/2026, pour les étapes 121 à 123 (gamedesign.md, section 9.7)
 |---|---|---|---|---|
 | Pluie | pluie | Eau, Plante | Lisière, Marais, Vallée, Abbaye, Port des Noyés, Sylve, Catacombes | Une pluie froide tombe sans relâche. |
 | Tempête | tempete | Électrique, Vol | toutes sauf le Désert de sel | L'orage gronde : le ciel se déchire d'éclairs. |
-| Grêle | grele | Glace, Roche | Vallée, Col, Mines de Fer-Noir, Haute-Cité déchue | La grêle crépite sur les pierres et les armures. |
+| Grêle | grele | Glace, Roche | Vallée, Col, Mines de Fer-Noir, Haute-Cité déchue, Pics Foudroyés | La grêle crépite sur les pierres et les armures. |
 | Tempête de sable | tempete-de-sable | Sol, Roche | Désert de sel | Le sable vole, cinglant comme une lame. |
 | Cyclone | cyclone | Eau, Vol | Port des Noyés, seule zone de mer | Le cyclone hurle, et les vagues montent à l'assaut des côtes. |
-| Canicule | canicule | Feu, Sol | Lisière, Marais, Abbaye, Désert de sel, Sylve, Plaine du Massacre | Une chaleur écrasante pèse sur la terre. |
+| Canicule | canicule | Feu, Sol | Lisière, Marais, Abbaye, Désert de sel, Sylve, Plaine du Massacre, Gorge de Braise | Une chaleur écrasante pèse sur la terre. |
 
 Chaque zone a 1 chance sur 3, par créneau de 30 minutes, d'avoir une de ses météos ; sinon, temps calme.
 
@@ -1342,7 +1342,7 @@ Stats de base des classes, dans l'ordre PV / Attaque / Défense / Attaque spéci
 
 PV de base doublés le 26/10/2026, à l'étape 147 (choix de l'utilisateur, gamedesign.md, section 4.4) : ils étaient de 90, 70, 95 et 70, pour un total de 450 par classe. Un Guerrier a 33 PV au niveau 5, 128 au niveau 25 et 176 au niveau 35 (24, 83 et 113 avant).
 
-Niveau de combat : 5, plus 5 par palier de l'arme et 5 par palier de l'armure (5 à 40 ; 55 depuis l'étape 163, avec les paliers 4 et 5 de la section 44 ; 65 depuis l'étape 165, avec le palier 6 de la section 45 ; 75 depuis l'étape 166, avec le palier 7 de la section 46).
+Niveau de combat : 5, plus 5 par palier de l'arme et 5 par palier de l'armure (5 à 40 ; 55 depuis l'étape 163, avec les paliers 4 et 5 de la section 44 ; 65 depuis l'étape 165, avec le palier 6 de la section 45 ; 75 depuis l'étape 166, avec le palier 7 de la section 46 ; 85 depuis l'étape 167, avec le palier 8 de la section 47).
 
 Attaques du héros, de type Humain :
 
@@ -2164,3 +2164,153 @@ Cartes des annexes :
 > Tertre des héros : Au fond du coffre, une carte d'état-major indique un tertre où les héros de l'ancienne guerre ont été enterrés avec leurs montures.
 
 > Bibliothèque interdite : Au fond du coffre, une clé gravée d'un œil ouvre, d'après son étiquette, la bibliothèque interdite de la Haute-Cité.
+
+## 47. Gorge de Braise, Pics Foudroyés et leurs annexes
+
+Décidés le 02/11/2026, pour l'étape 167, quatrième lot de la suite de l'aventure (gamedesign.md, sections 4.3, 9.1, 9.4, 9.9 et 10.7). Les zones, leurs niveaux, les Apôtres et les humains gardiens viennent du fil validé ; les noms et les types des espèces, les rares, les annexes, les classes des humains, les météos et le palier 8 de l'équipement (bonus, durées, noms des attaques) ont été validés par l'utilisateur (lot 4) ; les autres valeurs, les textes et les réglages issus de la mesure sont proposés par Claude sans validation (gamedesign.md, Q118 ; equilibrage.md, section 17). Mêmes règles qu'aux lots précédents (sections 44 à 46).
+
+Zones :
+
+| Identifiant | Nom | Niveaux | Étapes | Taille des groupes | Espèces | Monstre rare | Humain | Apôtre |
+|---|---|---|---|---|---|---|---|---|
+| gorge-de-braise | Gorge de Braise | 78 à 82 | 5 | 1 à 3 | Golem de magma, Chien des scories, Forgeron calciné | Wyrm de magma (hostile) | Pyromancien | Prince de braise (84) |
+| pics-foudroyes | Pics Foudroyés | 83 à 87 | 5 | 1 à 3 | Aigle-tonnerre, Bélier de granit, Feu de Saint-Elme | Géant des orages (hostile) | Héraut de l'orage | Sénéchal des orages (89) |
+
+Le Schnoz se cache dans les deux. Pas de marchand mort ni de pêcheur. Météos : canicule et tempête dans la Gorge ; tempête et grêle dans les Pics. Le Chien des scories et le Feu de Saint-Elme sont nocturnes, le Forgeron calciné et l'Aigle-tonnerre diurnes.
+
+| Zone | Expédition automatique (durée de base, dégâts, XP, potions, argent) | Coffres (argent) | Capsules des coffres (prix chez Malvoise) |
+|---|---|---|---|
+| Gorge de Braise | 13 h, 710 à 1360, 10300 à 14500, 1 à 3, 610 à 940 | 460 à 700 | Coulée de lave, Crocs de braise, Marteau ardent (900) |
+| Pics Foudroyés | 14 h, 770 à 1490, 11700 à 16300, 1 à 3, 670 à 1020 | 500 à 760 | Serres foudroyantes, Coup de cornes, Feu errant (950) |
+
+Espèces (stats dans l'ordre PV / Attaque / Défense / Attaque spéciale / Défense spéciale / Vitesse). Au codex, elles viennent après le Chancelier aux mille yeux, dans l'ordre du tableau. Aucune n'évolue.
+
+| Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP | Rareté | Habiletés | Attaques apprises |
+|---|---|---|---|---|---|---|---|---|
+| golem-de-magma | Golem de magma | Feu, Roche | soutien | 82 / 74 / 92 / 60 / 60 / 18 (386) | 240 | commune | Carapace, Volonté | Crachat de braises (1), Griffe de pierre (1), Chute de pierres (30), Brasier (40), Coulée de lave (50), Éboulement (86) |
+| chien-des-scories | Chien des scories | Feu, Ténèbres | offensif | 70 / 90 / 58 / 45 / 50 / 75 (388) | 240 | commune | Férocité, Célérité | Morsure (1), Crachat de braises (1), Croc noir (30), Griffe d'ombre (40), Crocs de braise (50), Rapine (86) |
+| forgeron-calcine | Forgeron calciné | Feu, Acier | offensif | 78 / 90 / 82 / 30 / 52 / 46 (378) | 240 | commune | Férocité, Carapace | Coup de garde (1), Crachat de braises (1), Taille d'acier (30), Lame rouillée (40), Marteau ardent (50), Marteau de forge (86) |
+| wyrm-de-magma | Wyrm de magma | Feu, Dragon | offensif | 80 / 96 / 76 / 72 / 64 / 68 (456) | 405 | rare, hostile | Férocité, Affinité | Crachat de braises (1), Souffle draconique (1), Brasier (35), Furie draconique (45), Souffle de magma (88) |
+| ifrit | Ifrit | Feu, Psychique | soutien | 70 / 50 / 68 / 92 / 88 / 64 (432) | 400 | rare, pacifique (Cœur du volcan) | Sorcellerie, Instinct | Crachat de braises (1), Onde psychique (1), Jet de lave (35), Festin d'encre (45), Flamme astrale (88) |
+| prince-de-braise | Prince de braise | Obscur | offensif | 100 / 106 / 96 / 92 / 90 / 58 (542) | 565 | Apôtre | Férocité, Volonté | Étreinte obscure (1), Crachat de braises (1), Hurlement des abysses (20), Jet de lave (35), Flagellation (50), Couronne de braise (75) |
+| aigle-tonnerre | Aigle-tonnerre | Vol, Électrique | offensif | 68 / 86 / 55 / 50 / 52 / 82 (393) | 255 | commune | Traqueur, Célérité | Coup de bec (1), Étincelle (1), Piqué (30), Bec funeste (40), Serres foudroyantes (50), Plongeon d'acier (90) |
+| belier-de-granit | Bélier de granit | Roche, Combat | offensif | 80 / 90 / 85 / 30 / 50 / 46 (381) | 255 | commune | Férocité, Carapace | Griffe de pierre (1), Frappe d'os (1), Chute de pierres (30), Épée des morts (40), Coup de cornes (50), Déchiquetage (90) |
+| feu-de-saint-elme | Feu de Saint-Elme | Électrique, Spectre | soutien | 64 / 38 / 60 / 92 / 74 / 58 (386) | 255 | commune | Sorcellerie, Instinct | Étincelle (1), Lueur trompeuse (1), Onde de choc (30), Flamme funèbre (40), Feu errant (50), Foudre (90) |
+| geant-des-orages | Géant des orages | Électrique, Combat | offensif | 85 / 98 / 78 / 58 / 60 / 55 (434) | 435 | rare, hostile | Férocité, Volonté | Étincelle (1), Frappe d'os (1), Onde de choc (35), Épée des morts (45), Poing du tonnerre (92) |
+| pegase-d-orage | Pégase d'orage | Vol, Féérique | soutien | 70 / 58 / 66 / 85 / 90 / 76 (445) | 430 | rare, pacifique (Aire) | Volonté, Éclaireur | Coup de bec (1), Poussière d'elfe (1), Bourrasque (35), Rayon de lune (45), Ailes célestes (92) |
+| senechal-des-orages | Sénéchal des orages | Obscur | offensif | 98 / 82 / 92 / 110 / 96 / 64 (542) | 595 | Apôtre | Sorcellerie, Volonté | Étreinte obscure (1), Étincelle (1), Hurlement des abysses (20), Onde de choc (35), Foudre (50), Tempête noire (75) |
+
+Le type Feu n'avait aucune attaque physique : le Golem de magma, le Chien des scories et le Forgeron calciné en reçoivent chacun une de puissance 85, le Wyrm de magma une de puissance 95.
+
+Attaques nouvelles :
+
+| Identifiant | Nom | Type | Cat. | Puissance | Précision | Effet |
+|---|---|---|---|---|---|---|
+| coulee-de-lave | Coulée de lave | Feu | P | 85 | 95 | |
+| crocs-de-braise | Crocs de braise | Feu | P | 85 | 95 | |
+| marteau-ardent | Marteau ardent | Feu | P | 85 | 95 | |
+| souffle-de-magma | Souffle de magma | Feu | P | 95 | 90 | |
+| flamme-astrale | Flamme astrale | Psychique | S | 95 | 90 | |
+| couronne-de-braise | Couronne de braise | Obscur | P | 95 | 90 | |
+| serres-foudroyantes | Serres foudroyantes | Électrique | P | 85 | 95 | |
+| coup-de-cornes | Coup de cornes | Roche | P | 85 | 95 | |
+| feu-errant | Feu errant | Électrique | S | 85 | 95 | |
+| poing-du-tonnerre | Poing du tonnerre | Électrique | P | 95 | 90 | |
+| ailes-celestes | Ailes célestes | Féérique | S | 95 | 90 | |
+| tempete-noire | Tempête noire | Obscur | S | 95 | 90 | |
+
+Attaques d'œuf, sur le modèle de la section 28 :
+
+| Famille | Identifiant | Nom | Type | Cat. | Puissance | Précision | Effet |
+|---|---|---|---|---|---|---|---|
+| Golem de magma | magma-bouillonnant | Magma bouillonnant | Feu | P | 80 | 100 | |
+| Chien des scories | croc-des-ombres | Croc des ombres | Ténèbres | P | 80 | 100 | |
+| Forgeron calciné | enclume | Enclume | Acier | P | 80 | 100 | |
+| Wyrm de magma | ecaille-ardente | Écaille ardente | Dragon | P | 80 | 100 | |
+| Ifrit | mirage-ardent | Mirage ardent | Psychique | S | 80 | 100 | |
+| Aigle-tonnerre | cri-du-tonnerre | Cri du tonnerre | Électrique | S | 80 | 100 | |
+| Bélier de granit | charge-du-belier | Charge du bélier | Combat | P | 80 | 100 | |
+| Feu de Saint-Elme | lueur-d-orage | Lueur d'orage | Spectre | S | 75 | 100 | paralysie 20 % |
+| Géant des orages | poing-du-geant | Poing du géant | Combat | P | 80 | 100 | |
+| Pégase d'orage | galop-celeste | Galop céleste | Vol | P | 80 | 100 | |
+
+Ressources : Scorie de magma (scorie-de-magma), Croc calciné (croc-calcine), Lingot noirci (lingot-noirci), Plume d'orage (plume-d-orage), Corne de granit (corne-de-granit) et Étincelle captive (etincelle-captive), 5 pièces d'argent chacune ; Écaille de magma (ecaille-de-magma) et Cœur de tonnerre (coeur-de-tonnerre), 15.
+
+Humains gardiens. Héros au niveau maximal de la zone, à part de son équipement ; IA relevée ; valeurs internes de leurs monstres à 15, première habileté de leur espèce :
+
+| Identifiant | Nom | Classe | Héros (niveau, arme, armure) | Monstres | Victoire |
+|---|---|---|---|---|---|
+| pyromancien | Pyromancien | Mage | 82, Sceptre d'éther, Robe des archives | Forgeron calciné (82), Chien des scories (82), Wyrm de magma (83) | 1200 pièces d'argent, puis l'indice 21 |
+| heraut-de-l-orage | Héraut de l'orage | Templier | 87, Marteau du griffon, Plates de la cité | Bélier de granit (87), Aigle-tonnerre (87), Géant des orages (88) | 1300 pièces d'argent, puis l'indice 23 |
+
+Annexes (gamedesign.md, section 9.9), sur le modèle de la section 44 :
+
+| Identifiant | Nom | Ouverte depuis | Niveaux | Monstre rare | Coffres (argent) |
+|---|---|---|---|---|---|
+| coeur-du-volcan | Cœur du volcan | Gorge de Braise | 81 à 84 | Ifrit (pacifique) | 620 à 920 |
+| aire-des-pegases | Aire des pégases | Pics Foudroyés | 86 à 89 | Pégase d'orage (pacifique) | 680 à 1000 |
+
+Équipement du palier 8, le dernier (gamedesign.md, section 4.3) : +18 % d'Attaque et d'Attaque spéciale pour les armes, +40 % de Défense et de Défense spéciale pour les armures ; niveau de combat 85 avec l'arme et l'armure du palier 8.
+
+| Identifiant | Objet | Classe | Coût | Durée |
+|---|---|---|---|---|
+| hache-de-magma | Hache de magma (arme) | Guerrier | 8 Corne de granit, 6 Croc calciné, 1 Cœur de tonnerre | 18 h |
+| dagues-foudroyees | Dagues foudroyées (arme) | Assassin | 8 Corne de granit, 6 Croc calciné, 1 Cœur de tonnerre | 18 h |
+| baton-des-orages | Bâton des orages (arme) | Mage | 8 Étincelle captive, 6 Scorie de magma, 1 Cœur de tonnerre | 18 h |
+| marteau-de-lave | Marteau de lave (arme) | Templier | 8 Étincelle captive, 6 Scorie de magma, 1 Cœur de tonnerre | 18 h |
+| plates-de-magma | Plates de magma (armure) | Guerrier | 10 Lingot noirci, 6 Plume d'orage, 1 Écaille de magma | 20 h |
+| cuir-d-orage | Cuir d'orage (armure) | Assassin | idem | 20 h |
+| robe-de-cendre | Robe de cendre (armure) | Mage | idem | 20 h |
+| harnois-foudroye | Harnois foudroyé (armure) | Templier | idem | 20 h |
+
+Attaques principales du palier 8, de type Humain, puissance 115, précision 100 : Ravage (ravage, Guerrier, P), Mort silencieuse (mort-silencieuse, Assassin, P), Apocalypse (apocalypse, Mage, S), Glaive céleste (glaive-celeste, Templier, S).
+
+Sprites : un par espèce, normal et shiny, et un par humain gardien (section 42).
+
+Textes :
+
+> Indice 20 : dans les archives du Chancelier, une carte scellée du même sceau : au sud, la Gorge de Braise, où la terre saigne du feu. Un dixième Apôtre y règne.
+
+> Indice 21 : le pyromancien vaincu a parlé : le Prince de braise trône au fond de la gorge, sur un siège de lave refroidie.
+
+> Indice 22 : dans les cendres du Prince, une lettre scellée du même sceau : au-delà de la gorge, les Pics Foudroyés, où l'orage ne s'arrête jamais. Un onzième Apôtre y monte la garde.
+
+> Indice 23 : le héraut de l'orage vaincu a parlé : le Sénéchal des orages attend au sommet du plus haut pic, là où tombe la foudre.
+
+Pyromancien, avant le combat, puis après la victoire :
+
+> Au bord d'une coulée de lave, un pyromancien aux mains brûlées jusqu'à l'os fait danser les flammes. Il vous montre du doigt, et trois bêtes surgissent de la fournaise.
+
+> Le pyromancien s'effondre, et les flammes qu'il tenait s'éteignent avec lui.
+
+Héraut de l'orage, avant le combat, puis après la victoire :
+
+> Sur un ressaut battu par l'orage, un héraut en armure lève une bannière foudroyée et sonne du cor. Trois bêtes répondent à son appel, portées par le vent.
+
+> Le héraut s'écroule, et sa bannière s'envole dans la tempête.
+
+Prince de braise, avant le combat, épilogue, âme et carnet :
+
+> Sur un trône de lave refroidie, un jeune prince à la peau craquelée de braises vous regarde approcher. Le Prince de braise, Apôtre du Démiurge, sourit : tout ce qu'il touche finit en cendres. Il n'y aura pas de fuite.
+
+> Le Prince de braise s'effondre, et la lave se fige autour de son trône. Le même sceau, une main ouverte, est gravé sur sa couronne. Dix Apôtres sont tombés ; le Démiurge, lui, attend toujours. Votre traque continue.
+
+> L'âme du Prince de braise s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.
+
+> Prince de braise, abattu dans la Gorge de Braise.
+
+Sénéchal des orages, avant le combat, épilogue, âme et carnet :
+
+> Au sommet du plus haut pic, un chevalier vêtu d'orage tient une lance où la foudre vient mourir. Le Sénéchal des orages, Apôtre du Démiurge, abaisse sa visière. Il n'y aura pas de fuite.
+
+> Le Sénéchal des orages s'effondre, et pour la première fois le ciel des Pics se tait. Le même sceau, une main ouverte, est gravé sur sa lance. Onze Apôtres sont tombés ; le Démiurge, lui, attend toujours. Votre traque continue.
+
+> L'âme du Sénéchal des orages s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.
+
+> Sénéchal des orages, abattu dans les Pics Foudroyés.
+
+Cartes des annexes :
+
+> Cœur du volcan : Au fond du coffre, une carte roussie par le feu indique un passage vers le cœur du volcan, là où la lave est la plus ancienne.
+
+> Aire des pégases : Au fond du coffre, une plume d'argent et un croquis mènent à une aire au-dessus des nuages, où se poseraient les pégases d'orage.
