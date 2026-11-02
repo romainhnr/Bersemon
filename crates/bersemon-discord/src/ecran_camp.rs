@@ -51,8 +51,8 @@ use crate::composants::{
 };
 use crate::echanges::TableauDesEchanges;
 use crate::message::{
-    Bouton, DANGER, OPTIONS_PAR_MENU, OptionDeMenu, PRINCIPAL, Question, Rangee, SECONDAIRE,
-    SUCCES, bouton, menu, rangees,
+    Bouton, DANGER, LONGUEUR_MAX, OPTIONS_PAR_MENU, OptionDeMenu, PRINCIPAL, Question, Rangee,
+    SECONDAIRE, SUCCES, bouton, menu, rangees,
 };
 use crate::{
     ecran_coffre, ecran_echanges, ecran_eclipse, ecran_expeditions_automatiques, ecran_marchand,
@@ -567,7 +567,9 @@ fn options() -> Question {
 /// dernière page (section 5.6).
 /// Avec plus de 40 espèces, la liste et une fiche ne tiennent plus ensemble
 /// dans un message : une fiche ouverte remplace la liste, qu'un bouton
-/// rouvre.
+/// rouvre. Avec plus de 100, les menus des fiches de tout le codex
+/// dépassent les rangées d'un message : ils ne proposent que celles de la
+/// page, et une fiche ouverte garde la page de son espèce (étape 166).
 /// Assez peu pour qu'une page de la liste tienne dans un message, avec les
 /// noms d'espèces les plus longs.
 const ESPECES_PAR_PAGE: usize = 30;
@@ -579,7 +581,37 @@ fn codex(partie: &Partie, fiche: Option<usize>, page: usize, contenu: &ContenuV1
         .and_then(|position| especes.get(position))
         .filter(|espece| codex.etat(espece.id()) == EtatCodex::Capturee);
     let liste: Vec<(usize, &Espece)> = especes_du_codex(especes).collect();
-    let pages = liste.len().div_ceil(ESPECES_PAR_PAGE);
+    let pages_d_especes = liste.len().div_ceil(ESPECES_PAR_PAGE);
+    let page_de_la_liste = |page: usize| -> Vec<String> {
+        let mut lignes = vec!["Codex :".to_string(), progression_du_codex(partie, contenu)];
+        for (numero, (_, espece)) in liste
+            .iter()
+            .enumerate()
+            .skip(page * ESPECES_PAR_PAGE)
+            .take(ESPECES_PAR_PAGE)
+        {
+            lignes.push(format!(
+                "  {}. {}",
+                numero + 1,
+                ligne_du_codex(codex, espece)
+            ));
+        }
+        lignes
+    };
+    // Le carnet de traque suit la dernière page de la liste, ou prend une
+    // page à lui quand il n'y tient plus (étape 166).
+    let carnet = carnet_de_traque(partie, contenu);
+    let derniere = pages_d_especes.saturating_sub(1);
+    let carnet_a_part = !carnet.is_empty() && {
+        let mut lignes = page_de_la_liste(derniere);
+        lignes.extend(carnet.iter().cloned());
+        lignes.join("\n").chars().count() > LONGUEUR_MAX
+    };
+    let pages = pages_d_especes + usize::from(carnet_a_part);
+    let page = fiche
+        .filter(|_| ouverte.is_some())
+        .and_then(|position| liste.iter().position(|(autre, _)| *autre == position))
+        .map_or(page, |rang| rang / ESPECES_PAR_PAGE);
     let mut lignes = Vec::new();
     match ouverte {
         Some(espece) => {
@@ -592,28 +624,16 @@ fn codex(partie: &Partie, fiche: Option<usize>, page: usize, contenu: &ContenuV1
             ));
         }
         None => {
-            lignes.push("Codex :".to_string());
-            lignes.push(progression_du_codex(partie, contenu));
-            for (numero, (_, espece)) in liste
-                .iter()
-                .enumerate()
-                .skip(page * ESPECES_PAR_PAGE)
-                .take(ESPECES_PAR_PAGE)
-            {
-                lignes.push(format!(
-                    "  {}. {}",
-                    numero + 1,
-                    ligne_du_codex(codex, espece)
-                ));
-            }
+            lignes.extend(page_de_la_liste(page));
             if page + 1 >= pages {
-                lignes.extend(carnet_de_traque(partie, contenu));
+                lignes.extend(carnet);
             }
         }
     }
-    let capturees: Vec<OptionDeMenu> = especes
+    let capturees: Vec<OptionDeMenu> = liste
         .iter()
-        .enumerate()
+        .skip(page * ESPECES_PAR_PAGE)
+        .take(ESPECES_PAR_PAGE)
         .filter(|(_, espece)| codex.etat(espece.id()) == EtatCodex::Capturee)
         .map(|(position, espece)| OptionDeMenu {
             libelle: espece.nom().to_string(),
@@ -621,8 +641,7 @@ fn codex(partie: &Partie, fiche: Option<usize>, page: usize, contenu: &ContenuV1
             description: None,
         })
         .collect();
-    // 25 options au plus par menu : avec les formes évoluées, le codex
-    // dépasse 25 espèces (section 5.4).
+    // 25 options au plus par menu : une page compte plus de 25 espèces.
     let mut rangees_du_codex: Vec<Rangee> = capturees
         .chunks(OPTIONS_PAR_MENU)
         .enumerate()
@@ -647,19 +666,17 @@ fn codex(partie: &Partie, fiche: Option<usize>, page: usize, contenu: &ContenuV1
             SUCCES,
         ));
     }
+    let vers_la_page = |page: usize| match page {
+        0 => Some(Cle::Afficher(Vue::Codex(None))),
+        _ => u8::try_from(page)
+            .ok()
+            .map(|page| Cle::Afficher(Vue::PageDuCodex(page))),
+    };
     if ouverte.is_some() {
-        boutons.push(bouton(
-            Cle::Afficher(Vue::Codex(None)),
-            "Liste du codex",
-            SECONDAIRE,
-        ));
+        if let Some(cle) = vers_la_page(page) {
+            boutons.push(bouton(cle, "Liste du codex", SECONDAIRE));
+        }
     } else {
-        let vers_la_page = |page: usize| match page {
-            0 => Some(Cle::Afficher(Vue::Codex(None))),
-            _ => u8::try_from(page)
-                .ok()
-                .map(|page| Cle::Afficher(Vue::PageDuCodex(page))),
-        };
         if let Some(cle) = page.checked_sub(1).and_then(vers_la_page) {
             boutons.push(bouton(cle, "Page précédente", SECONDAIRE));
         }

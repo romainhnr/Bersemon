@@ -1,0 +1,48 @@
+# Œil errant
+palette
+o 1b1420
+b 6a4a6a
+c 463046
+d 8e6a8e
+w f0ece0
+x c8c0b0
+g e0a020
+h a06a10
+k 1b1420
+r c02030
+shiny
+o 1b1420
+b 3a5a6a
+c 243a46
+d 5a808e
+w f0ece0
+x c8c0b0
+g 40c0f0
+h 2080b0
+k 1b1420
+r 3040c0
+dessin
+........................
+........................
+........................
+.o....................o.
+oco..................oco
+odco......ooooo.....odco
+odbco....owwwwxo...odbco
+odbbco..owwwwwwxo.odbbco
+dbbbbcoowwwhwwwrxodbbbbc
+dbbbbbcwwggkghwwwxbbbbbc
+dbccbbbwwggkghwwwxbbccbc
+ccoocbcwhggkgghwwxbcoocc
+oo..odcwwggkghwwwxco..oo
+....occxwhhkhhwwrxco....
+.....ooorwwhwwwwxoo.....
+........oxwwwwwxo.......
+.........oxxxrxo........
+..........oooro.........
+............orro........
+.............oro........
+.............oro........
+............oro.........
+............oro.........
+...........oro..........

@@ -1,0 +1,50 @@
+# Vautour des charniers
+palette
+o 1b1420
+b 4a3a34
+c 2e2420
+d 6a5a50
+w e8e0cc
+x b0a890
+n d08a7a
+m a06050
+k 3a3030
+y d8b040
+r e02020
+shiny
+o 1b1420
+b d8d4c8
+c a8a498
+d f4f0e8
+w e8e0cc
+x b0a890
+n 303030
+m 181818
+k 3a3030
+y d8b040
+r 40e0ff
+dessin
+........................
+....ooo.................
+..oonrmo................
+.okmnnnmo...............
+okoommmo................
+oyo.ooomo...............
+.o.....omooooo..........
+.......owmwwwcooo.......
+......owwwwwwwddcooo....
+.......owwwwwbbbccccoo..
+.......odbbbbbbbcccccco.
+.......odbbbbbbbcccccco.
+.......odbbbbbbbcccccco.
+......ocbbbbbbbbcccccco.
+.......odbbbbbbbccccco..
+.......odbbbbbbbccccco..
+.......ocbbbbbbbccccco..
+........ocbbbbbbccccco..
+.........ocycbcycoccco..
+....ooooowyywcwyyoooo...
+...owwwwwwywwwwwywwwxo..
+..oxwwwwwwwwwwwwwwwwwxo.
+...oxxxxxwwwwwwwxxxxxo..
+....oooooxxxxxxxooooo...

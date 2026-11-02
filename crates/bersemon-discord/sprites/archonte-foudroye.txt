@@ -1,0 +1,50 @@
+# Archonte foudroyé
+palette
+o 1b1420
+a e8e4d8
+e b8b4a8
+f ffffff
+b 4a5a8a
+c 303c60
+d 6a7cb0
+g e8c040
+w e8e0cc
+x b0a890
+y fff060
+shiny
+o 1b1420
+a 3a3440
+e 24202a
+f 5a5462
+b 8a2a4a
+c 601a30
+d b04a6a
+g c0c0d0
+w e8e0cc
+x b0a890
+y c080ff
+dessin
+...o......ooo.o.....o...
+..oeo....ogggogo...oeo..
+.ofaeo...oggggo...ofaeo.
+.ofaaeo...owwxo..ofaaeo.
+.ofaaaeo.owwwwxoofaaaeo.
+oeaaaaaeoowywyxofaaaaaeo
+.oeaaaaaeoxwwwxfaaaaaeo.
+..oeaaaaaeoxxxfaaaaaeo..
+...oeaaaadddddcaaaaeo...
+....ofaaedbbgbcfaaeo....
+...ofaaeedbbgbceeaaeo...
+..ofeeeodbbbgbcooeeeeo..
+.oeeoooodbbbgbbcooooeeo.
+..oo.o.odbbbgbbco...oo..
+....oyoodbbbgbbco..o....
+.....ooodbbbgbbco.oyo...
+.....oyodbbbgbbco.oo....
+.....ooodbbbgbbcooyo....
+....oyodbbbbgbbco.oo....
+.....oodbbbbgbbbcooyo...
+.....oydbbbbgbbbco.o....
+......occcccgcccco......
+.......oooooooooo.......
+........................

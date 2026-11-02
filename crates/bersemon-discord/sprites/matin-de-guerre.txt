@@ -1,0 +1,48 @@
+# Mâtin de guerre
+palette
+o 1b1420
+b 6a5038
+c 463424
+d 8a6e52
+a 8a8e96
+e 5a5e66
+f c0c4cc
+p 3a2a20
+w f0ece0
+r e02020
+shiny
+o 1b1420
+b 2a2a30
+c 18181e
+d 44444c
+a c8a040
+e 8a6a20
+f f0d070
+p 3a2a20
+w f0ece0
+r 40f080
+dessin
+........................
+........................
+........................
+........................
+........................
+........................
+.......................o
+....ooooo.oooooooooo..ob
+..ooddddcofffffffffeoobo
+.oddbbbfppfaaaaaaaaeoobo
+odbbbrbbppaaaaaaaaaaebo.
+odbbbbbbppeeeeeeeeeeeo..
+odbbbbbfppbbbbbbbbbbbco.
+occcbbbbppbbbbbbbbbbbco.
+.owowcccppbbbbbbbbbbbco.
+..o.oooofbbbbbbbbbbbbco.
+.......odbbbbbbbbbbcbco.
+.......odbbcbbcccbcodco.
+.......odbcodcooodcodco.
+.......odbcodco.odcodco.
+.......odbcodco.odcocco.
+.......occcocco.occooo..
+........ooo.oo...oo.....
+........................

@@ -1,0 +1,46 @@
+# Licorne des cendres
+palette
+o 1b1420
+b 8a8480
+c 5e5854
+d b0aaa6
+y f0d040
+r e05020
+q ffa040
+k 2a2420
+g fff0c0
+shiny
+o 1b1420
+b e8e4ec
+c b8b4c4
+d ffffff
+y a0e0ff
+r 6040e0
+q b090ff
+k 2a2420
+g c0ffff
+dessin
+.oyo....................
+.oyyo...................
+..oro..o................
+..oyyooqo...............
+...oyoro.o..............
+..odbcoroqo.............
+.odbbcooro.o............
+.odbgbcooroqo.o.........
+.ocbbbco.orooocoooo.....
+..occbbcoodrddbdddcooo..
+...oocbbddbbbbbbbbbdcro.
+.....ocbbbbbbbbbbbbbcro.
+......ocbbbbbbbbbbbbbcqo
+.......odbbbbbbbbbbbcoro
+.......ocbbbbbbbbbbccoro
+........odccbcbccbcocoor
+........ocoococoocoocoor
+........ocoocoo.ocooco.o
+.......odcooco..occocco.
+.......oco.oco...ocooco.
+.......oco.oco...ocooco.
+.......oco.oco...ocooco.
+.......oko.oko...okooko.
+........o...o.....o..o..

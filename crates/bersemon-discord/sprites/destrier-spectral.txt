@@ -1,0 +1,46 @@
+# Destrier spectral
+palette
+o 1b1420
+b 8aa8c8
+c 5a7898
+d b8d0e8
+a c8d8e8
+f 4080f0
+g a0d0ff
+y f0ffff
+p 5a4030
+shiny
+o 1b1420
+b b89ac8
+c 886a98
+d dcc4ec
+a e0d0ec
+f 30d080
+g a0ffc8
+y fff0a0
+p 5a4030
+dessin
+........................
+........................
+......o.................
+.....ogoo...............
+...oofoogo..............
+..ocoofooo..............
+.odbcooffgoo............
+.odybcooffogo.o.........
+odbbbbcooofooocoooo...o.
+ocbbbpbcoodfpdbdddcooogo
+.occcbbbddbbpbbbbbbdcfo.
+..ooocbbbbbbpbbbbbbbcffo
+.....ocbbbbbppbbbbbbbcfg
+......ocbbbbbpbbbbbbcofo
+.......occbbbpbbbbbccoff
+........obccbpbccbcoboof
+........oboobocooboobo.o
+........obooboo.oboobo..
+.......obo.obo...oboobo.
+.......obo.obo...oboobo.
+.......obo.obo...oboobo.
+.......oao.oao...oaooao.
+......oao.oao...oaooao..
+.......o...o.....o..o...

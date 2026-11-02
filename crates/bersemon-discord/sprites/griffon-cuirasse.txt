@@ -1,0 +1,46 @@
+# Griffon cuirassé
+palette
+o 1b1420
+a a0a4ac
+e 6a6e76
+f d0d4dc
+b b08a50
+c 7a5e34
+d d0aa70
+y e8c040
+r e02020
+shiny
+o 1b1420
+a d8b050
+e 9a7a28
+f f8e090
+b f0ece0
+c c0bcb0
+d ffffff
+y e8c040
+r 3080ff
+dessin
+.................ooo....
+................offeooo.
+...............ofeaaffeo
+..............ofaaeaaeo.
+.....ooo.....ofaaaaeaeo.
+....offeo....ofaaaaaeeo.
+...ofeaaeo..ofaaaaaaeeo.
+..oferfaaeooeaaaaaaeoo..
+.oyfafaaaeo.oeaaaaeo....
+oyyeaaaaaeo..oeaaeo.....
+oyyoeaaaeoooooceeoo.....
+oyo.oeaaafedddbdddcoo...
+.o...ofaaaebbbbbbbbdco..
+.....oeaaaebbbbbbbbbcbo.
+......ofaaebbbbbbbbbbbbo
+......oeeaebbbbbbbbbcobo
+.......odeebbbbbbbbbcobo
+......oydbbcccbcccbbcobb
+......oydbyooocooodbcoob
+.....oyydbyo..o..odbco.o
+.....oyodbyo.....odbco..
+.....oyoccyo.....occco..
+......o.ooo.......ooo...
+........................

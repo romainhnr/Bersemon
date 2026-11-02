@@ -112,6 +112,16 @@ const INDICE_14: &str = "parmi les parures de la Duchesse, une bague gravée du 
 
 const INDICE_15: &str = "le fossoyeur vaincu a parlé : l'Évêque des os officie au fond des catacombes, dans une chapelle bâtie de crânes.";
 
+// Plaine du Massacre et Haute-Cité déchue, section 46 de
+// docs/contenu-v1.md (étape 166).
+const INDICE_16: &str = "sous l'autel de l'Évêque, une liste de recrues scellée du même sceau : à l'ouest, la Plaine du Massacre, où deux armées se battent encore après leur mort. Un huitième Apôtre y commande.";
+
+const INDICE_17: &str = "le capitaine mercenaire vaincu a parlé : le Connétable boucher dresse son camp au centre de la plaine, sur une colline de cadavres.";
+
+const INDICE_18: &str = "dans la tente du Connétable, un ordre de marche scellé du même sceau : au-delà de la plaine, la Haute-Cité déchue, dont les tours regardent encore le ciel. Un neuvième Apôtre y gouverne.";
+
+const INDICE_19: &str = "l'archiviste vaincu a parlé : le Chancelier aux mille yeux siège au sommet de la plus haute tour, dans une salle tapissée de regards.";
+
 /// Au bout de la première expédition menée au bout, quand le joueur porte
 /// l'âme de Bertrand (section 14.2).
 pub const MALVOISE_ET_L_AME: &str = "Sur le chemin du camp, un homme en robe noire vous attend, un crâne posé au creux du bras. \"Je t'ai vu recueillir cette âme. Elle m'intéresse, si tu ne sais pas quoi en faire. Je suis Malvoise, et les marchands morts sur ces routes ont encore des choses à vendre.\" Il vous suit jusqu'au camp et s'y installe.";
@@ -220,6 +230,28 @@ const DECOUVERTE_DE_L_AUTEL: &str = "Au fond du coffre, un parchemin taché de s
 
 const DECOUVERTE_DE_LA_CRYPTE: &str = "Au fond du coffre, une clé de bronze et un plan jauni mènent à une crypte scellée, où reposeraient les saints de Sainte-Ombre.";
 
+const AVANT_LE_CAPITAINE: &str = "Au milieu des lances plantées dans la boue, un capitaine mercenaire compte ses gages sur le cadavre d'un chevalier. Il range sa bourse, lève sa hache, et trois bêtes de guerre se dressent derrière lui.";
+
+const APRES_LE_CAPITAINE: &str =
+    "Le capitaine mercenaire s'écroule sur sa bourse, que personne ne viendra réclamer.";
+
+const AVANT_LE_CONNETABLE: &str = "Au sommet d'une colline de cadavres, un colosse en armure rouillée essuie son couperet sur une bannière déchirée. Le Connétable boucher, Apôtre du Démiurge, a fait de la guerre un abattoir. Il n'y aura pas de fuite.";
+
+const EPILOGUE_DU_CONNETABLE: &str = "Le Connétable boucher s'effondre sur sa colline de cadavres, et les armées mortes se couchent enfin. Le même sceau, une main ouverte, est gravé sur son couperet. Huit Apôtres sont tombés ; le Démiurge, lui, attend toujours. Votre traque continue.";
+
+const DECOUVERTE_DU_TERTRE: &str = "Au fond du coffre, une carte d'état-major indique un tertre où les héros de l'ancienne guerre ont été enterrés avec leurs montures.";
+
+const AVANT_L_ARCHIVISTE: &str = "Entre deux rayonnages effondrés, un archiviste aux yeux cousus feuillette un registre. Il referme le livre d'un coup sec : votre nom vient d'y être écrit. Trois créatures surgissent des étagères.";
+
+const APRES_L_ARCHIVISTE: &str =
+    "L'archiviste s'effondre, et son registre se referme sur une page blanche.";
+
+const AVANT_LE_CHANCELIER: &str = "Dans la salle tapissée de regards, une silhouette drapée de pourpre lève la tête : sous sa capuche, des centaines d'yeux s'ouvrent à la fois. Le Chancelier aux mille yeux, Apôtre du Démiurge, sait déjà tout de vous. Il n'y aura pas de fuite.";
+
+const EPILOGUE_DU_CHANCELIER: &str = "Le Chancelier aux mille yeux s'effondre, et tous les regards des murs se ferment d'un coup. Le même sceau, une main ouverte, est gravé sur sa chevalière. Neuf Apôtres sont tombés ; le Démiurge, lui, attend toujours. Votre traque continue.";
+
+const DECOUVERTE_DE_LA_BIBLIOTHEQUE: &str = "Au fond du coffre, une clé gravée d'un œil ouvre, d'après son étiquette, la bibliothèque interdite de la Haute-Cité.";
+
 const AVANT_LE_MARGRAVE: &str = "Au sommet, sur un trône de glace entouré de soldats figés, le Margrave de givre se lève. Apôtre du Démiurge, il a offert son armée au froid. Il n'y aura pas de fuite.";
 
 const EPILOGUE_DU_MARGRAVE: &str = "Le Margrave de givre se brise sur son trône. Le même sceau, une main ouverte, est gravé dans la glace. Trois Apôtres sont tombés ; le Démiurge, lui, attend toujours. Votre traque continue.";
@@ -239,6 +271,8 @@ const CARNET_DE_L_AMIRAL: &str = "Amiral noyé, abattu au Port des Noyés.";
 const CARNET_DU_PREVOT: &str = "Prévôt des fosses, abattu dans les Mines de Fer-Noir.";
 const CARNET_DE_LA_DUCHESSE: &str = "Duchesse sanguine, abattue dans la Sylve écarlate.";
 const CARNET_DE_L_EVEQUE: &str = "Évêque des os, abattu dans les Catacombes de Sainte-Ombre.";
+const CARNET_DU_CONNETABLE: &str = "Connétable boucher, abattu dans la Plaine du Massacre.";
+const CARNET_DU_CHANCELIER: &str = "Chancelier aux mille yeux, abattu dans la Haute-Cité déchue.";
 const CARNET_DU_DEMIURGE: &str = "Démiurge, abattu dans l'Éclipse.";
 
 const AME_DU_BARON: &str =
@@ -260,6 +294,11 @@ const AME_DE_LA_DUCHESSE: &str = "L'âme de la Duchesse sanguine s'arrache de sa
 
 const AME_DE_L_EVEQUE: &str =
     "L'âme de l'Évêque des os s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.";
+
+const AME_DU_CONNETABLE: &str =
+    "L'âme du Connétable boucher s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.";
+
+const AME_DU_CHANCELIER: &str = "L'âme du Chancelier aux mille yeux s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.";
 
 /// L'Éclipse et le Démiurge, section 23 de docs/contenu-v1.md (étapes 88 à
 /// 90).
@@ -983,6 +1022,143 @@ impl ContenuV1 {
             DECOUVERTE_DE_LA_CRYPTE,
         )
         .expect("Crypte des saints conforme aux règles");
+        // Au service du Connétable boucher, il garde la Plaine (section 10.7).
+        let capitaine = Humain::new(
+            HumainId::new("capitaine-mercenaire"),
+            "Capitaine mercenaire",
+            vec![
+                (trouver("vautour-des-charniers"), niveau(72)),
+                (trouver("matin-de-guerre"), niveau(72)),
+                (trouver("griffon-cuirasse"), niveau(73)),
+            ],
+            1000,
+            AVANT_LE_CAPITAINE,
+            APRES_LE_CAPITAINE,
+        )
+        .expect("Capitaine mercenaire conforme aux règles")
+        .avec_heros(
+            Classe::Guerrier,
+            Some(objet("hache-du-bourreau-d-os")),
+            Some(objet("plates-du-sanglier")),
+        )
+        .avec_niveau_du_heros(niveau(72))
+        .avec_ia(IaHumain::Relevee);
+        let meteos_de_la_plaine = vec![Meteo::Tempete, Meteo::Canicule];
+        // Ouverte par l'indice que laisse l'Évêque des os (section 9.4).
+        let plaine = Zone::new(
+            ZoneId::new("plaine-du-massacre"),
+            "Plaine du Massacre",
+            (niveau(68), niveau(72)),
+            5,
+            3,
+            vec![
+                trouver("destrier-spectral"),
+                trouver("vautour-des-charniers"),
+                trouver("matin-de-guerre"),
+            ],
+            vec![EspeceRare {
+                espece: trouver("griffon-cuirasse"),
+                pacifique: false,
+            }],
+            expedition_automatique(11, 590..=1100, 7800..=11200, 1..=3, 490..=780),
+            coffre(380..=580, capsules_de("plaine-du-massacre")),
+        )
+        .and_then(|zone| zone.avec_monstre_cache(schnoz()))
+        .map(|zone| {
+            zone.avec_humain(capitaine)
+                .avec_meteos(meteos_de_la_plaine.clone())
+        })
+        .expect("Plaine du Massacre conforme aux règles");
+        let tertre = annexe(
+            Zone::new(
+                ZoneId::new("tertre-des-heros"),
+                "Tertre des héros",
+                (niveau(71), niveau(74)),
+                3,
+                3,
+                plaine.especes().to_vec(),
+                vec![EspeceRare {
+                    espece: trouver("licorne-des-cendres"),
+                    pacifique: true,
+                }],
+                plaine.expedition_automatique().clone(),
+                coffre(500..=760, capsules_de("plaine-du-massacre"))
+                    .avec_tresors(tresors_d_annexe()),
+            ),
+            &plaine,
+            meteos_de_la_plaine,
+            DECOUVERTE_DU_TERTRE,
+        )
+        .expect("Tertre des héros conforme aux règles");
+        // Au service du Chancelier aux mille yeux, il garde la Haute-Cité
+        // (section 10.7).
+        let archiviste = Humain::new(
+            HumainId::new("archiviste"),
+            "Archiviste",
+            vec![
+                (trouver("automate-brise"), niveau(77)),
+                (trouver("bibliophage"), niveau(77)),
+                (trouver("archonte-foudroye"), niveau(78)),
+            ],
+            1100,
+            AVANT_L_ARCHIVISTE,
+            APRES_L_ARCHIVISTE,
+        )
+        .expect("Archiviste conforme aux règles")
+        .avec_heros(
+            Classe::Mage,
+            Some(objet("crosse-des-catacombes")),
+            Some(objet("robe-de-ronces")),
+        )
+        .avec_niveau_du_heros(niveau(77))
+        .avec_ia(IaHumain::Relevee);
+        let meteos_de_la_cite = vec![Meteo::Tempete, Meteo::Grele];
+        // Ouverte par l'indice que laisse le Connétable boucher (section 9.4).
+        let cite = Zone::new(
+            ZoneId::new("haute-cite-dechue"),
+            "Haute-Cité déchue",
+            (niveau(73), niveau(77)),
+            5,
+            3,
+            vec![
+                trouver("automate-brise"),
+                trouver("bibliophage"),
+                trouver("oeil-errant"),
+            ],
+            vec![EspeceRare {
+                espece: trouver("archonte-foudroye"),
+                pacifique: false,
+            }],
+            expedition_automatique(12, 650..=1230, 9000..=12800, 1..=3, 550..=860),
+            coffre(420..=640, capsules_de("haute-cite-dechue")),
+        )
+        .and_then(|zone| zone.avec_monstre_cache(schnoz()))
+        .map(|zone| {
+            zone.avec_humain(archiviste)
+                .avec_meteos(meteos_de_la_cite.clone())
+        })
+        .expect("Haute-Cité déchue conforme aux règles");
+        let bibliotheque = annexe(
+            Zone::new(
+                ZoneId::new("bibliotheque-interdite"),
+                "Bibliothèque interdite",
+                (niveau(76), niveau(79)),
+                3,
+                3,
+                cite.especes().to_vec(),
+                vec![EspeceRare {
+                    espece: trouver("muse-de-cristal"),
+                    pacifique: true,
+                }],
+                cite.expedition_automatique().clone(),
+                coffre(560..=840, capsules_de("haute-cite-dechue"))
+                    .avec_tresors(tresors_d_annexe()),
+            ),
+            &cite,
+            meteos_de_la_cite,
+            DECOUVERTE_DE_LA_BIBLIOTHEQUE,
+        )
+        .expect("Bibliothèque interdite conforme aux règles");
         // Le Baron pendu attend au fond de la Vallée, que le second indice,
         // donné par le Bourreau, ouvre. Premier Apôtre, il combat au niveau
         // maximal de la Vallée, 20, et ne connaît qu'une attaque Obscur
@@ -1104,6 +1280,39 @@ impl ContenuV1 {
             eveque,
         )
         .expect("chapitre de l'Évêque conforme aux règles");
+        // Le seizième indice se trouve au bout de l'expédition qui abat
+        // l'Évêque, dans les Catacombes, et ouvre la Plaine ; le Capitaine
+        // mercenaire laisse le dix-septième (section 9.4).
+        let connetable = Apotre::new(
+            trouver("connetable-boucher"),
+            &plaine,
+            AVANT_LE_CONNETABLE,
+            EPILOGUE_DU_CONNETABLE,
+        )
+        .expect("Connétable boucher conforme aux règles")
+        .avec_recit_de_l_ame(AME_DU_CONNETABLE)
+        .avec_ligne_du_carnet(CARNET_DU_CONNETABLE);
+        let chapitre_du_connetable = Chapitre::new(
+            vec![indice(&catacombes, INDICE_16), indice(&plaine, INDICE_17)],
+            connetable,
+        )
+        .expect("chapitre du Connétable conforme aux règles");
+        // Le dix-huitième indice se trouve au bout de l'expédition qui abat
+        // le Connétable, dans la Plaine, et ouvre la Haute-Cité (section 9.4).
+        let chancelier = Apotre::new(
+            trouver("chancelier-aux-mille-yeux"),
+            &cite,
+            AVANT_LE_CHANCELIER,
+            EPILOGUE_DU_CHANCELIER,
+        )
+        .expect("Chancelier aux mille yeux conforme aux règles")
+        .avec_recit_de_l_ame(AME_DU_CHANCELIER)
+        .avec_ligne_du_carnet(CARNET_DU_CHANCELIER);
+        let chapitre_du_chancelier = Chapitre::new(
+            vec![indice(&plaine, INDICE_18), indice(&cite, INDICE_19)],
+            chancelier,
+        )
+        .expect("chapitre du Chancelier conforme aux règles");
         let piste = Piste::new(vec![
             chapitre_du_baron,
             chapitre_de_l_abbesse,
@@ -1112,6 +1321,8 @@ impl ContenuV1 {
             chapitre_du_prevot,
             chapitre_de_la_duchesse,
             chapitre_de_l_eveque,
+            chapitre_du_connetable,
+            chapitre_du_chancelier,
         ])
         .expect("piste conforme aux règles")
         // Le Béhérit attend les âmes des 13 Apôtres de la traque complète
@@ -1184,7 +1395,8 @@ impl ContenuV1 {
         .avec_ligne_du_carnet(CARNET_DU_DEMIURGE);
         let invocation = Invocation::new(eclipse, demiurge, FORGE_DU_BEHERIT, SACRIFICE);
         let zones = vec![
-            lisiere, marais, vallee, abbaye, col, desert, port, mines, sylve, catacombes,
+            lisiere, marais, vallee, abbaye, col, desert, port, mines, sylve, catacombes, plaine,
+            cite,
         ];
         let tour = TourSansFond::new(
             ZoneId::new("tour-sans-fond"),
@@ -1241,7 +1453,7 @@ impl ContenuV1 {
             invocation,
             tour,
             fosse,
-            annexes: vec![epave, filon, autel, crypte],
+            annexes: vec![epave, filon, autel, crypte, tertre, bibliotheque],
             zones_legendaires: Vec::new(),
         }
     }
@@ -1512,7 +1724,7 @@ const fn avec_effet(fiche: FicheAttaque, statut: Statut, chance: u8) -> FicheAtt
 /// Section 34 de docs/contenu-v1.md : les attaques que les armes donnent au
 /// héros, toutes de type Humain, classe par classe. Coup de poing, celle du
 /// héros sans arme, est dans le module du héros.
-const ATTAQUES_DES_HEROS: [FicheAttaque; 32] = [
+const ATTAQUES_DES_HEROS: [FicheAttaque; 36] = [
     fiche("taille", "Taille", Type::Humain, Physique, 40, 100),
     fiche("estoc", "Estoc", Type::Humain, Physique, 50, 100),
     fiche("pourfendre", "Pourfendre", Type::Humain, Physique, 60, 100),
@@ -1682,6 +1894,25 @@ const ATTAQUES_DES_HEROS: [FicheAttaque; 32] = [
         95,
         100,
     ),
+    // Celle du palier 7 (étape 166).
+    fiche("brise-ost", "Brise-ost", Type::Humain, Physique, 105, 100),
+    fiche(
+        "mille-coupures",
+        "Mille coupures",
+        Type::Humain,
+        Physique,
+        105,
+        100,
+    ),
+    fiche("cataclysme", "Cataclysme", Type::Humain, Speciale, 105, 100),
+    fiche(
+        "lumiere-divine",
+        "Lumière divine",
+        Type::Humain,
+        Speciale,
+        105,
+        100,
+    ),
     // L'attaque du second type de chaque classe, des armes des paliers 2 à
     // 5 (étapes 149 et 163, section 4.4).
     fiche(
@@ -1719,7 +1950,7 @@ const ATTAQUES_DES_HEROS: [FicheAttaque; 32] = [
 ];
 
 /// Section 1 de docs/contenu-v1.md, dans le même ordre.
-const ATTAQUES: [FicheAttaque; 197] = [
+const ATTAQUES: [FicheAttaque; 222] = [
     fiche(
         "souffle-chaud",
         "Souffle chaud",
@@ -3209,6 +3440,196 @@ const ATTAQUES: [FicheAttaque; 197] = [
         80,
         100,
     ),
+    // Plaine du Massacre et Haute-Cité déchue, section 46 (étape 166).
+    fiche(
+        "galop-funebre",
+        "Galop funèbre",
+        Type::Normal,
+        Physique,
+        85,
+        95,
+    ),
+    fiche(
+        "charge-des-morts",
+        "Charge des morts",
+        Type::Spectre,
+        Physique,
+        95,
+        90,
+    ),
+    fiche(
+        "serres-de-poussiere",
+        "Serres de poussière",
+        Type::Sol,
+        Physique,
+        85,
+        95,
+    ),
+    fiche(
+        "crocs-d-acier",
+        "Crocs d'acier",
+        Type::Acier,
+        Physique,
+        85,
+        95,
+    ),
+    fiche(
+        "plongeon-d-acier",
+        "Plongeon d'acier",
+        Type::Vol,
+        Physique,
+        95,
+        90,
+    ),
+    fiche(
+        "corne-de-cendre",
+        "Corne de cendre",
+        Type::Feu,
+        Speciale,
+        95,
+        90,
+    ),
+    fiche("boucherie", "Boucherie", Type::Obscur, Physique, 95, 90),
+    fiche(
+        "decharge-mecanique",
+        "Décharge mécanique",
+        Type::Electrique,
+        Physique,
+        85,
+        95,
+    ),
+    fiche(
+        "festin-d-encre",
+        "Festin d'encre",
+        Type::Psychique,
+        Speciale,
+        85,
+        95,
+    ),
+    avec_effet(
+        fiche(
+            "regard-hypnotique",
+            "Regard hypnotique",
+            Type::Psychique,
+            Speciale,
+            80,
+            100,
+        ),
+        Paralysie,
+        20,
+    ),
+    fiche(
+        "rayon-d-ether",
+        "Rayon d'éther",
+        Type::Psychique,
+        Speciale,
+        95,
+        90,
+    ),
+    fiche(
+        "eclair-de-l-archonte",
+        "Éclair de l'archonte",
+        Type::Electrique,
+        Speciale,
+        85,
+        95,
+    ),
+    fiche(
+        "chant-de-cristal",
+        "Chant de cristal",
+        Type::Son,
+        Speciale,
+        95,
+        90,
+    ),
+    avec_effet(
+        fiche(
+            "regard-des-mille-yeux",
+            "Regard des mille yeux",
+            Type::Obscur,
+            Speciale,
+            90,
+            95,
+        ),
+        Paralysie,
+        10,
+    ),
+    fiche(
+        "secret-interdit",
+        "Secret interdit",
+        Type::Obscur,
+        Speciale,
+        95,
+        90,
+    ),
+    // Leurs attaques d'œuf (section 13.11).
+    fiche(
+        "sabots-fantomes",
+        "Sabots fantômes",
+        Type::Spectre,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "curee-des-sables",
+        "Curée des sables",
+        Type::Sol,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "morsure-de-fer",
+        "Morsure de fer",
+        Type::Acier,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "serres-du-griffon",
+        "Serres du griffon",
+        Type::Vol,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "flamme-de-licorne",
+        "Flamme de licorne",
+        Type::Feerique,
+        Speciale,
+        80,
+        100,
+    ),
+    avec_effet(
+        fiche("engrenage", "Engrenage", Type::Acier, Physique, 75, 100),
+        Paralysie,
+        20,
+    ),
+    fiche(
+        "page-maudite",
+        "Page maudite",
+        Type::Psychique,
+        Speciale,
+        80,
+        100,
+    ),
+    avec_effet(
+        fiche("oeillade", "Œillade", Type::Psychique, Speciale, 75, 100),
+        Paralysie,
+        20,
+    ),
+    fiche(
+        "arc-electrique",
+        "Arc électrique",
+        Type::Electrique,
+        Speciale,
+        80,
+        100,
+    ),
+    fiche("harmonie", "Harmonie", Type::Son, Speciale, 80, 100),
 ];
 
 struct FicheCapsule {
@@ -3219,7 +3640,7 @@ struct FicheCapsule {
 }
 
 /// Section 6 de docs/contenu-v1.md, dans le même ordre.
-const CAPSULES: [FicheCapsule; 30] = [
+const CAPSULES: [FicheCapsule; 36] = [
     FicheCapsule {
         attaque: "brasier",
         prix: 150,
@@ -3370,6 +3791,36 @@ const CAPSULES: [FicheCapsule; 30] = [
         prix: 750,
         zone: "catacombes-de-sainte-ombre",
     },
+    FicheCapsule {
+        attaque: "galop-funebre",
+        prix: 800,
+        zone: "plaine-du-massacre",
+    },
+    FicheCapsule {
+        attaque: "serres-de-poussiere",
+        prix: 800,
+        zone: "plaine-du-massacre",
+    },
+    FicheCapsule {
+        attaque: "crocs-d-acier",
+        prix: 800,
+        zone: "plaine-du-massacre",
+    },
+    FicheCapsule {
+        attaque: "decharge-mecanique",
+        prix: 850,
+        zone: "haute-cite-dechue",
+    },
+    FicheCapsule {
+        attaque: "festin-d-encre",
+        prix: 850,
+        zone: "haute-cite-dechue",
+    },
+    FicheCapsule {
+        attaque: "regard-hypnotique",
+        prix: 850,
+        zone: "haute-cite-dechue",
+    },
 ];
 
 struct FicheEspece {
@@ -3494,7 +3945,7 @@ const MARCHAND_ZOMBIE: FicheEspece = FicheEspece {
 /// Section 2 de docs/contenu-v1.md, dans l'ordre du codex : les monstres de
 /// départ, les communs, les rares, l'Apôtre, le monstre caché, puis les
 /// formes évoluées de la section 8.
-const ESPECES: [FicheEspece; 89] = [
+const ESPECES: [FicheEspece; 101] = [
     FicheEspece {
         id: "salamandre",
         nom: "Salamandre",
@@ -5107,6 +5558,232 @@ const ESPECES: [FicheEspece; 89] = [
         ],
         evolution: None,
     },
+    // Espèces de la Plaine du Massacre et du Tertre des héros, puis de la
+    // Haute-Cité déchue et de la Bibliothèque interdite (section 46, étape
+    // 166).
+    FicheEspece {
+        id: "destrier-spectral",
+        nom: "Destrier spectral",
+        types: &[Type::Normal, Type::Spectre],
+        role: Role::Offensif,
+        stats_de_base: [72, 86, 58, 40, 50, 68],
+        rendement_experience: 210,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Celerite, Habilete::Ferocite],
+        apprentissage: &[
+            (1, "ruade"),
+            (1, "charge-spectrale"),
+            (30, "secousse"),
+            (40, "griffes-spectrales"),
+            (50, "galop-funebre"),
+            (76, "charge-des-morts"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "vautour-des-charniers",
+        nom: "Vautour des charniers",
+        types: &[Type::Vol, Type::Sol],
+        role: Role::Offensif,
+        stats_de_base: [70, 80, 56, 36, 52, 66],
+        rendement_experience: 210,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Traqueur, Habilete::Pillard],
+        apprentissage: &[
+            (1, "coup-de-bec"),
+            (1, "secousse"),
+            (30, "pique"),
+            (40, "bec-funeste"),
+            (50, "serres-de-poussiere"),
+            (76, "seisme"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "matin-de-guerre",
+        nom: "Mâtin de guerre",
+        types: &[Type::Combat, Type::Acier],
+        role: Role::Offensif,
+        stats_de_base: [78, 86, 80, 30, 52, 46],
+        rendement_experience: 210,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Ferocite, Habilete::Carapace],
+        apprentissage: &[
+            (1, "morsure"),
+            (1, "coup-de-garde"),
+            (30, "taille-d-acier"),
+            (40, "epee-des-morts"),
+            (50, "crocs-d-acier"),
+            (76, "dechiquetage"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "griffon-cuirasse",
+        nom: "Griffon cuirassé",
+        types: &[Type::Vol, Type::Acier],
+        role: Role::Offensif,
+        stats_de_base: [75, 88, 78, 45, 60, 70],
+        rendement_experience: 355,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Ferocite, Habilete::Affinite],
+        apprentissage: &[
+            (1, "coup-de-bec"),
+            (1, "coup-de-garde"),
+            (35, "bec-funeste"),
+            (45, "taille-d-acier"),
+            (78, "plongeon-d-acier"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "licorne-des-cendres",
+        nom: "Licorne des cendres",
+        types: &[Type::Feu, Type::Feerique],
+        role: Role::Soutien,
+        stats_de_base: [75, 55, 70, 90, 95, 65],
+        rendement_experience: 350,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Volonte, Habilete::Instinct],
+        apprentissage: &[
+            (1, "crachat-de-braises"),
+            (1, "poussiere-d-elfe"),
+            (35, "lumiere-d-aube"),
+            (45, "brasier"),
+            (55, "rayon-de-lune"),
+            (80, "corne-de-cendre"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "connetable-boucher",
+        nom: "Connétable boucher",
+        types: &[Type::Obscur],
+        role: Role::Offensif,
+        stats_de_base: [100, 105, 98, 85, 90, 62],
+        rendement_experience: 500,
+        rarete: Rarete::Apotre,
+        habiletes: &[Habilete::Ferocite, Habilete::Volonte],
+        apprentissage: &[
+            (1, "etreinte-obscure"),
+            (1, "frappe-d-os"),
+            (20, "hurlement-des-abysses"),
+            (35, "dechiquetage"),
+            (50, "flagellation"),
+            (70, "boucherie"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "automate-brise",
+        nom: "Automate brisé",
+        types: &[Type::Acier, Type::Electrique],
+        role: Role::Soutien,
+        stats_de_base: [78, 68, 86, 66, 58, 18],
+        rendement_experience: 225,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Carapace, Habilete::Volonte],
+        apprentissage: &[
+            (1, "coup-de-garde"),
+            (1, "etincelle"),
+            (30, "onde-de-choc"),
+            (40, "taille-d-acier"),
+            (50, "decharge-mecanique"),
+            (80, "foudre"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "bibliophage",
+        nom: "Bibliophage",
+        types: &[Type::Insecte, Type::Psychique],
+        role: Role::Offensif,
+        stats_de_base: [66, 55, 62, 102, 70, 45],
+        rendement_experience: 225,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Sorcellerie, Habilete::Fouineur],
+        apprentissage: &[
+            (1, "bourdonnement"),
+            (1, "onde-psychique"),
+            (30, "nuee"),
+            (45, "festin-d-encre"),
+            (80, "jugement"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "oeil-errant",
+        nom: "Œil errant",
+        types: &[Type::Psychique, Type::Vol],
+        role: Role::Offensif,
+        stats_de_base: [58, 38, 52, 100, 66, 76],
+        rendement_experience: 225,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Instinct, Habilete::Eclaireur],
+        apprentissage: &[
+            (1, "regard-funeste"),
+            (1, "onde-psychique"),
+            (30, "bourrasque"),
+            (40, "regard-hypnotique"),
+            (80, "rayon-d-ether"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "archonte-foudroye",
+        nom: "Archonte foudroyé",
+        types: &[Type::Electrique, Type::Psychique],
+        role: Role::Offensif,
+        stats_de_base: [72, 48, 66, 105, 85, 72],
+        rendement_experience: 380,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Sorcellerie, Habilete::Affinite],
+        apprentissage: &[
+            (1, "etincelle"),
+            (1, "onde-psychique"),
+            (35, "onde-de-choc"),
+            (45, "eclair-de-l-archonte"),
+            (82, "jugement"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "muse-de-cristal",
+        nom: "Muse de cristal",
+        types: &[Type::Son, Type::Feerique],
+        role: Role::Soutien,
+        stats_de_base: [70, 45, 70, 95, 95, 65],
+        rendement_experience: 375,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Volonte, Habilete::Instinct],
+        apprentissage: &[
+            (1, "glas"),
+            (1, "poussiere-d-elfe"),
+            (35, "tocsin"),
+            (45, "rayon-de-lune"),
+            (82, "chant-de-cristal"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "chancelier-aux-mille-yeux",
+        nom: "Chancelier aux mille yeux",
+        types: &[Type::Obscur],
+        role: Role::Offensif,
+        stats_de_base: [96, 80, 90, 110, 98, 66],
+        rendement_experience: 530,
+        rarete: Rarete::Apotre,
+        habiletes: &[Habilete::Sorcellerie, Habilete::Volonte],
+        apprentissage: &[
+            (1, "etreinte-obscure"),
+            (1, "onde-psychique"),
+            (20, "hurlement-des-abysses"),
+            (35, "jugement"),
+            (50, "regard-des-mille-yeux"),
+            (75, "secret-interdit"),
+        ],
+        evolution: None,
+    },
 ];
 
 /// Section 15 de docs/contenu-v1.md : la ligne est prête 2 h après avoir
@@ -5362,7 +6039,7 @@ struct FicheObjet {
     heures: u64,
 }
 
-const PLANS_DE_FABRICATION: [FicheObjet; 49] = [
+const PLANS_DE_FABRICATION: [FicheObjet; 57] = [
     FicheObjet {
         id: "lame-de-milicien",
         nom: "Lame de milicien",
@@ -5633,6 +6310,63 @@ const PLANS_DE_FABRICATION: [FicheObjet; 49] = [
             ("phylactere-brise", 1),
         ],
         heures: 14,
+    },
+    // Palier 7 (étape 166).
+    FicheObjet {
+        id: "fendoir-de-guerre",
+        nom: "Fendoir de guerre",
+        sorte: SorteDObjet::Arme,
+        bonus: [16, 0, 16, 0, 0],
+        classe: Some((Classe::Guerrier, 7)),
+        attaques: &["brise-ost", "frappe-brutale", "coup-de-pommeau"],
+        cout: &[
+            ("collier-a-pointes", 8),
+            ("crin-spectral", 6),
+            ("eclat-d-archonte", 1),
+        ],
+        heures: 16,
+    },
+    FicheObjet {
+        id: "dagues-du-massacre",
+        nom: "Dagues du massacre",
+        sorte: SorteDObjet::Arme,
+        bonus: [16, 0, 16, 0, 0],
+        classe: Some((Classe::Assassin, 7)),
+        attaques: &["mille-coupures", "lame-empoisonnee", "lame-des-tenebres"],
+        cout: &[
+            ("collier-a-pointes", 8),
+            ("crin-spectral", 6),
+            ("eclat-d-archonte", 1),
+        ],
+        heures: 16,
+    },
+    FicheObjet {
+        id: "sceptre-d-ether",
+        nom: "Sceptre d'éther",
+        sorte: SorteDObjet::Arme,
+        bonus: [16, 0, 16, 0, 0],
+        classe: Some((Classe::Mage, 7)),
+        attaques: &["cataclysme", "onde-engourdissante", "emprise-mentale"],
+        cout: &[
+            ("encre-vivante", 8),
+            ("cristallin", 6),
+            ("eclat-d-archonte", 1),
+        ],
+        heures: 16,
+    },
+    FicheObjet {
+        id: "marteau-du-griffon",
+        nom: "Marteau du griffon",
+        sorte: SorteDObjet::Arme,
+        bonus: [16, 0, 16, 0, 0],
+        classe: Some((Classe::Templier, 7)),
+        attaques: &["lumiere-divine", "sceau-d-entrave", "rayon-de-foi"],
+        cout: &[
+            ("encre-vivante", 8),
+            ("cristallin", 6),
+            ("eclat-d-archonte", 1),
+        ],
+        heures: 16,
     },
     FicheObjet {
         id: "gambison",
@@ -5956,6 +6690,63 @@ const PLANS_DE_FABRICATION: [FicheObjet; 49] = [
             ("seve-de-dryade", 1),
         ],
         heures: 16,
+    },
+    // Palier 7 (étape 166).
+    FicheObjet {
+        id: "cuirasse-du-griffon",
+        nom: "Cuirasse du griffon",
+        sorte: SorteDObjet::Armure,
+        bonus: [0, 35, 0, 35, 0],
+        classe: Some((Classe::Guerrier, 7)),
+        attaques: &[],
+        cout: &[
+            ("rouage-brise", 10),
+            ("plume-de-vautour", 6),
+            ("serre-de-griffon", 1),
+        ],
+        heures: 18,
+    },
+    FicheObjet {
+        id: "cuir-du-vautour",
+        nom: "Cuir du vautour",
+        sorte: SorteDObjet::Armure,
+        bonus: [0, 35, 0, 35, 0],
+        classe: Some((Classe::Assassin, 7)),
+        attaques: &[],
+        cout: &[
+            ("rouage-brise", 10),
+            ("plume-de-vautour", 6),
+            ("serre-de-griffon", 1),
+        ],
+        heures: 18,
+    },
+    FicheObjet {
+        id: "robe-des-archives",
+        nom: "Robe des archives",
+        sorte: SorteDObjet::Armure,
+        bonus: [0, 35, 0, 35, 0],
+        classe: Some((Classe::Mage, 7)),
+        attaques: &[],
+        cout: &[
+            ("rouage-brise", 10),
+            ("plume-de-vautour", 6),
+            ("serre-de-griffon", 1),
+        ],
+        heures: 18,
+    },
+    FicheObjet {
+        id: "plates-de-la-cite",
+        nom: "Plates de la cité",
+        sorte: SorteDObjet::Armure,
+        bonus: [0, 35, 0, 35, 0],
+        classe: Some((Classe::Templier, 7)),
+        attaques: &[],
+        cout: &[
+            ("rouage-brise", 10),
+            ("plume-de-vautour", 6),
+            ("serre-de-griffon", 1),
+        ],
+        heures: 18,
     },
     FicheObjet {
         id: "croc-tresse",
@@ -6344,7 +7135,7 @@ const PRIX_D_UNE_RESSOURCE_RARE: u32 = 15;
 
 /// Espèce, identifiant et nom de chaque ressource : seules les espèces
 /// sauvages qui se combattent en ont une (section 14.3).
-const RESSOURCES: [(&str, &str, &str); 41] = [
+const RESSOURCES: [(&str, &str, &str); 49] = [
     ("loup", "croc-de-loup", "Croc de loup"),
     ("corbeau", "plume-de-corbeau", "Plume de corbeau"),
     ("vipere", "ecaille-de-vipere", "Écaille de vipère"),
@@ -6412,6 +7203,18 @@ const RESSOURCES: [(&str, &str, &str); 41] = [
         "Soie des cryptes",
     ),
     ("liche", "phylactere-brise", "Phylactère brisé"),
+    ("destrier-spectral", "crin-spectral", "Crin spectral"),
+    (
+        "vautour-des-charniers",
+        "plume-de-vautour",
+        "Plume de vautour",
+    ),
+    ("matin-de-guerre", "collier-a-pointes", "Collier à pointes"),
+    ("griffon-cuirasse", "serre-de-griffon", "Serre de griffon"),
+    ("automate-brise", "rouage-brise", "Rouage brisé"),
+    ("bibliophage", "encre-vivante", "Encre vivante"),
+    ("oeil-errant", "cristallin", "Cristallin"),
+    ("archonte-foudroye", "eclat-d-archonte", "Éclat d'archonte"),
 ];
 
 /// Section 32 de docs/contenu-v1.md : les météos de la Lisière, du Marais
@@ -6422,7 +7225,7 @@ const METEOS_COMMUNES: [Meteo; 3] = [Meteo::Pluie, Meteo::Tempete, Meteo::Canicu
 /// Section 31 de docs/contenu-v1.md : les espèces qui ne sortent, dans les
 /// groupes sauvages des zones, que la nuit ou que le jour (section 9.6).
 /// Chaque zone en garde au moins deux à chaque moment.
-const ACTIVITES: [(&str, Activite); 19] = [
+const ACTIVITES: [(&str, Activite); 22] = [
     ("loup", Activite::Nocturne),
     ("feu-follet", Activite::Nocturne),
     ("fee-noire", Activite::Nocturne),
@@ -6442,11 +7245,14 @@ const ACTIVITES: [(&str, Activite); 19] = [
     ("mante-ecarlate", Activite::Diurne),
     ("sanglier-enrage", Activite::Nocturne),
     ("moine-psalmodiant", Activite::Nocturne),
+    ("destrier-spectral", Activite::Nocturne),
+    ("vautour-des-charniers", Activite::Diurne),
+    ("oeil-errant", Activite::Nocturne),
 ];
 
 /// Section 28 de docs/contenu-v1.md : l'attaque d'œuf de chaque famille
 /// d'évolution, par sa forme de base (section 13.11).
-const ATTAQUES_D_OEUF: [(&str, &str); 60] = [
+const ATTAQUES_D_OEUF: [(&str, &str); 70] = [
     ("salamandre", "souffle-des-forges"),
     ("crapaud", "ressac"),
     ("mandragore", "seve-maudite"),
@@ -6507,6 +7313,16 @@ const ATTAQUES_D_OEUF: [(&str, &str); 60] = [
     ("araignee-des-cryptes", "toile-des-cryptes"),
     ("liche", "phylactere"),
     ("ange-de-pierre", "aube-de-pierre"),
+    ("destrier-spectral", "sabots-fantomes"),
+    ("vautour-des-charniers", "curee-des-sables"),
+    ("matin-de-guerre", "morsure-de-fer"),
+    ("griffon-cuirasse", "serres-du-griffon"),
+    ("licorne-des-cendres", "flamme-de-licorne"),
+    ("automate-brise", "engrenage"),
+    ("bibliophage", "page-maudite"),
+    ("oeil-errant", "oeillade"),
+    ("archonte-foudroye", "arc-electrique"),
+    ("muse-de-cristal", "harmonie"),
 ];
 
 /// La forme de base de la famille de cette espèce : celle qu'aucune autre
@@ -6596,6 +7412,44 @@ mod tests {
     fn creer(contenu: &ContenuV1, id: &str, valeur: u8) -> Monstre {
         let espece = contenu.espece(&EspeceId::new(id)).unwrap();
         Monstre::creer(espece, niveau(valeur), ValeursInternes::default(), false).unwrap()
+    }
+
+    /// Deux espèces d'une même zone, à son niveau maximal, peuvent toujours
+    /// se blesser l'une l'autre : sinon, quand le joueur a capturé l'une, le
+    /// combat contre l'autre ne finit jamais (étape 166).
+    #[test]
+    fn deux_especes_d_une_meme_zone_peuvent_se_blesser() {
+        use crate::types::{Efficacite, efficacite};
+
+        let contenu = ContenuV1::new();
+        let blesse = |attaquant: &Monstre, defenseur: &Monstre| {
+            attaquant.attaques().liste().iter().any(|attaque| {
+                attaque.puissance() > 0
+                    && efficacite(attaque.type_attaque(), defenseur.espece().types())
+                        != Efficacite::Nulle
+            })
+        };
+        let annexes = contenu.annexes().iter().map(Annexe::zone);
+        for zone in contenu.zones().iter().chain(annexes) {
+            let (_, maximum) = zone.niveaux();
+            let monstres: Vec<Monstre> = zone
+                .especes()
+                .iter()
+                .chain(zone.rares().iter().map(|rare| &rare.espece))
+                .map(|espece| creer(&contenu, espece.id().as_str(), maximum.valeur()))
+                .collect();
+            for un in &monstres {
+                for autre in &monstres {
+                    assert!(
+                        blesse(un, autre) || blesse(autre, un),
+                        "{} et {} dans {}",
+                        un.espece().nom(),
+                        autre.espece().nom(),
+                        zone.nom()
+                    );
+                }
+            }
+        }
     }
 
     #[test]
@@ -6742,8 +7596,8 @@ mod tests {
         let mut uniques = vues.clone();
         uniques.sort_by(|a, b| a.as_str().cmp(b.as_str()));
         uniques.dedup();
-        assert_eq!(vues.len(), 60);
-        assert_eq!(uniques.len(), 60);
+        assert_eq!(vues.len(), 70);
+        assert_eq!(uniques.len(), 70);
     }
 
     #[test]
@@ -6752,13 +7606,13 @@ mod tests {
 
         let contenu = ContenuV1::new();
         let au_codex = especes_au_codex(contenu.especes());
-        assert_eq!(au_codex, 80);
+        assert_eq!(au_codex, 90);
         let seuils: Vec<u32> = contenu
             .recompenses_du_codex()
             .iter()
             .map(|recompense| recompense.palier.seuil(au_codex))
             .collect();
-        assert_eq!(seuils, vec![10, 20, 30, 40, 50, 80]);
+        assert_eq!(seuils, vec![10, 20, 30, 40, 50, 90]);
         let complet = contenu.recompenses_du_codex().last().unwrap();
         assert_eq!(complet.palier, PalierDuCodex::Complet);
         let sceau = complet.objet_unique.as_ref().unwrap();
@@ -6769,7 +7623,7 @@ mod tests {
     #[test]
     fn chaque_capsule_sert_a_une_espece_qui_ne_l_apprend_pas() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.capsules().len(), 30);
+        assert_eq!(contenu.capsules().len(), 36);
         for capsule in contenu.capsules() {
             let utile = contenu.especes().iter().any(|espece| {
                 capsule.convient_a(espece) && espece.attaque_apprise(capsule.id()).is_none()
@@ -6829,6 +7683,14 @@ mod tests {
             ids(&contenu.zones()[9]),
             vec!["peste-noire", "requiem", "morsure-de-l-araignee"]
         );
+        assert_eq!(
+            ids(&contenu.zones()[10]),
+            vec!["galop-funebre", "serres-de-poussiere", "crocs-d-acier"]
+        );
+        assert_eq!(
+            ids(&contenu.zones()[11]),
+            vec!["decharge-mecanique", "festin-d-encre", "regard-hypnotique"]
+        );
         // Les coffres d'une annexe gardent les capsules de sa zone.
         for annexe in contenu.annexes() {
             let zone = contenu.zone(annexe.de()).unwrap();
@@ -6839,10 +7701,10 @@ mod tests {
     #[test]
     fn contenu_conforme_aux_regles() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.especes().len(), 89);
-        assert_eq!(contenu.zones().len(), 10);
-        assert_eq!(contenu.annexes().len(), 4);
-        assert_eq!(contenu.piste().indices().count(), 15);
+        assert_eq!(contenu.especes().len(), 101);
+        assert_eq!(contenu.zones().len(), 12);
+        assert_eq!(contenu.annexes().len(), 6);
+        assert_eq!(contenu.piste().indices().count(), 19);
         // Toute espèce rencontrée en zone, annexes comprises, se retrouve au
         // chargement d'une sauvegarde.
         let annexes = contenu.annexes().iter().map(Annexe::zone);
@@ -7004,7 +7866,7 @@ mod tests {
                 par_sorte(SorteDObjet::Armure),
                 par_sorte(SorteDObjet::Talisman)
             ),
-            (20, 24, 5)
+            (24, 28, 5)
         );
         let ids: std::collections::HashSet<_> = plans
             .iter()
@@ -7018,7 +7880,7 @@ mod tests {
             assert_eq!(objet.bonus().pv, 0, "{}", objet.nom());
             assert_ne!(objet.bonus(), Stats::default(), "{}", objet.nom());
             let heures = plan.duree().as_secs() / 3_600;
-            assert!((1..=16).contains(&heures), "{}", objet.nom());
+            assert!((1..=18).contains(&heures), "{}", objet.nom());
             for (ressource, _) in plan.cout() {
                 assert_eq!(contenu.ressource(ressource.id()).as_ref(), Some(ressource));
             }
@@ -7029,8 +7891,8 @@ mod tests {
         // ne se forge pas, et depuis l'étape 163 une armure du palier 4.
         for classe in Classe::TOUTES {
             let siens = contenu.plans_de_fabrication_pour(classe);
-            assert_eq!(siens.len(), 16, "{}", classe.nom());
-            for palier in 1..=6 {
+            assert_eq!(siens.len(), 18, "{}", classe.nom());
+            for palier in 1..=7 {
                 for sorte in [SorteDObjet::Arme, SorteDObjet::Armure] {
                     let objet = contenu.objet_de_classe(classe, sorte, palier).unwrap();
                     let forge = siens.iter().any(|plan| plan.objet() == &objet);
@@ -7088,7 +7950,7 @@ mod tests {
         }
         let contenu = ContenuV1::new();
         for classe in Classe::TOUTES {
-            let puissances: Vec<u16> = (1..=6)
+            let puissances: Vec<u16> = (1..=7)
                 .map(|palier| {
                     let arme = match palier {
                         4 => contenu.arme_du_champion(classe).clone(),
@@ -7110,7 +7972,12 @@ mod tests {
                     attaques[0].puissance()
                 })
                 .collect();
-            assert_eq!(puissances, [40, 50, 60, 75, 85, 95], "{}", classe.nom());
+            assert_eq!(
+                puissances,
+                [40, 50, 60, 75, 85, 95, 105],
+                "{}",
+                classe.nom()
+            );
         }
     }
     #[test]
@@ -7179,7 +8046,7 @@ mod tests {
             .apotres()
             .map(Apotre::recit_de_l_ame)
             .collect();
-        assert_eq!(recits.len(), 7);
+        assert_eq!(recits.len(), 9);
         assert!(recits[0].starts_with("L'âme du Baron pendu"));
         assert!(recits[1].starts_with("L'âme de l'Abbesse écorchée"));
         assert!(recits[2].starts_with("L'âme du Margrave de givre"));
@@ -7187,6 +8054,8 @@ mod tests {
         assert!(recits[4].starts_with("L'âme du Prévôt des fosses"));
         assert!(recits[5].starts_with("L'âme de la Duchesse sanguine"));
         assert!(recits[6].starts_with("L'âme de l'Évêque des os"));
+        assert!(recits[7].starts_with("L'âme du Connétable boucher"));
+        assert!(recits[8].starts_with("L'âme du Chancelier aux mille yeux"));
     }
 
     #[test]
@@ -7200,21 +8069,9 @@ mod tests {
             .iter()
             .map(|zone| zone.pecheur().map(Pecheur::etape))
             .collect();
-        assert_eq!(
-            etapes,
-            vec![
-                None,
-                Some(2),
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-                None
-            ]
-        );
+        let mut attendu = vec![None; contenu.zones().len()];
+        attendu[1] = Some(2);
+        assert_eq!(etapes, attendu);
         let ids: Vec<&str> = peche
             .especes()
             .iter()
@@ -7402,6 +8259,8 @@ mod tests {
                 ("contremaitre", Classe::Guerrier, 57),
                 ("chasseresse", Classe::Assassin, 62),
                 ("fossoyeur", Classe::Mage, 67),
+                ("capitaine-mercenaire", Classe::Guerrier, 72),
+                ("archiviste", Classe::Mage, 77),
             ]
         );
         assert_eq!(heros[0].3, ["entaille", "lame-empoisonnee"]);
@@ -7474,7 +8333,7 @@ mod tests {
             ids
         }
         let contenu = ContenuV1::new();
-        let attendu: [(&str, &[&str], &[&str]); 9] = [
+        let attendu: [(&str, &[&str], &[&str]); 11] = [
             ("lisiere", &["corbeau", "vipere"], &["loup", "corbeau"]),
             (
                 "marais",
@@ -7531,6 +8390,16 @@ mod tests {
                     "araignee-des-cryptes",
                 ],
             ),
+            (
+                "plaine-du-massacre",
+                &["vautour-des-charniers", "matin-de-guerre"],
+                &["destrier-spectral", "matin-de-guerre"],
+            ),
+            (
+                "haute-cite-dechue",
+                &["automate-brise", "bibliophage"],
+                &["automate-brise", "bibliophage", "oeil-errant"],
+            ),
         ];
         for (id, de_jour, de_nuit) in attendu {
             let zone = contenu.zone(&ZoneId::new(id)).unwrap();
@@ -7561,7 +8430,7 @@ mod tests {
     fn chaque_zone_a_ses_meteos() {
         use Meteo::*;
         let contenu = ContenuV1::new();
-        let attendu: [(&str, &[Meteo]); 10] = [
+        let attendu: [(&str, &[Meteo]); 12] = [
             ("lisiere", &[Pluie, Tempete, Canicule]),
             ("marais", &[Pluie, Tempete, Canicule]),
             ("vallee", &[Pluie, Tempete, Grele]),
@@ -7572,6 +8441,8 @@ mod tests {
             ("mines-de-fer-noir", &[Grele, Tempete]),
             ("sylve-ecarlate", &[Pluie, Tempete, Canicule]),
             ("catacombes-de-sainte-ombre", &[Pluie, Tempete]),
+            ("plaine-du-massacre", &[Tempete, Canicule]),
+            ("haute-cite-dechue", &[Tempete, Grele]),
         ];
         for (id, meteos) in attendu {
             let zone = contenu.zone(&ZoneId::new(id)).unwrap();
@@ -7932,7 +8803,11 @@ mod tests {
                 "mines-de-fer-noir",
                 "sylve-ecarlate",
                 "sylve-ecarlate",
-                "catacombes-de-sainte-ombre"
+                "catacombes-de-sainte-ombre",
+                "catacombes-de-sainte-ombre",
+                "plaine-du-massacre",
+                "plaine-du-massacre",
+                "haute-cite-dechue"
             ]
         );
     }
@@ -8061,7 +8936,8 @@ mod tests {
             .unwrap();
         assert_eq!(eveque.espece().id().as_str(), "eveque-des-os");
         assert_eq!(eveque.niveau(), niveau(69));
-        assert_eq!(piste.indice_suivant(15, &vaincus), None);
+        // Le seizième, aux Catacombes, attend la chute de l'Évêque.
+        assert_eq!(piste.indice_suivant(15, &vaincus[..6]), None);
         let attaques = |apotre: &Apotre| -> Vec<String> {
             assert_eq!(apotre.espece().types().liste(), &[Type::Obscur]);
             creer(
@@ -8106,6 +8982,96 @@ mod tests {
             })
             .collect();
         assert_eq!(equipes, [("chasseresse", 2, 800), ("fossoyeur", 3, 900)]);
+    }
+
+    /// Section 46 de docs/contenu-v1.md (étape 166) : la chute de l'Évêque
+    /// ouvre la Plaine du Massacre, où le Capitaine mercenaire localise le
+    /// Connétable boucher, dont la chute ouvre la Haute-Cité déchue, où
+    /// l'Archiviste localise le Chancelier aux mille yeux.
+    #[test]
+    fn la_plaine_et_la_haute_cite_menent_au_connetable_et_au_chancelier() {
+        let contenu = ContenuV1::new();
+        let piste = contenu.piste();
+        let vaincus: Vec<EspeceId> = piste
+            .apotres()
+            .map(|apotre| apotre.espece().id().clone())
+            .collect();
+        let plaine = &contenu.zones()[10];
+        let cite = &contenu.zones()[11];
+        assert_eq!(plaine.niveaux(), (niveau(68), niveau(72)));
+        assert_eq!(cite.niveaux(), (niveau(73), niveau(77)));
+        let seizieme = piste.indice_suivant(15, &vaincus[..7]).unwrap();
+        assert_eq!(seizieme.zone.as_str(), "catacombes-de-sainte-ombre");
+        assert!(!piste.zone_ouverte(plaine.id(), 15));
+        assert!(piste.zone_ouverte(plaine.id(), 16));
+        let dix_septieme = piste.indice_suivant(16, &vaincus[..7]).unwrap();
+        assert_eq!(&dix_septieme.zone, plaine.id());
+        let connetable = piste
+            .apotre_en_attente(plaine.id(), 17, &vaincus[..7])
+            .unwrap();
+        assert_eq!(connetable.espece().id().as_str(), "connetable-boucher");
+        assert_eq!(connetable.niveau(), niveau(74));
+        assert_eq!(piste.indice_suivant(17, &vaincus[..7]), None);
+        let dix_huitieme = piste.indice_suivant(17, &vaincus[..8]).unwrap();
+        assert_eq!(&dix_huitieme.zone, plaine.id());
+        assert!(piste.zone_ouverte(cite.id(), 18));
+        let dix_neuvieme = piste.indice_suivant(18, &vaincus[..8]).unwrap();
+        assert_eq!(&dix_neuvieme.zone, cite.id());
+        let chancelier = piste
+            .apotre_en_attente(cite.id(), 19, &vaincus[..8])
+            .unwrap();
+        assert_eq!(
+            chancelier.espece().id().as_str(),
+            "chancelier-aux-mille-yeux"
+        );
+        assert_eq!(chancelier.niveau(), niveau(79));
+        assert_eq!(piste.indice_suivant(19, &vaincus), None);
+        let attaques = |apotre: &Apotre| -> Vec<String> {
+            assert_eq!(apotre.espece().types().liste(), &[Type::Obscur]);
+            creer(
+                &contenu,
+                apotre.espece().id().as_str(),
+                apotre.niveau().valeur(),
+            )
+            .attaques()
+            .liste()
+            .iter()
+            .map(|attaque| attaque.id().as_str().to_string())
+            .collect()
+        };
+        assert_eq!(
+            attaques(connetable),
+            [
+                "hurlement-des-abysses",
+                "dechiquetage",
+                "flagellation",
+                "boucherie"
+            ]
+        );
+        assert_eq!(
+            attaques(chancelier),
+            [
+                "hurlement-des-abysses",
+                "jugement",
+                "regard-des-mille-yeux",
+                "secret-interdit"
+            ]
+        );
+        let equipes: Vec<(&str, usize, u32)> = [plaine, cite]
+            .iter()
+            .map(|zone| {
+                let humain = zone.humain().unwrap();
+                (
+                    humain.id().as_str(),
+                    humain.generer_equipe().len(),
+                    humain.argent(),
+                )
+            })
+            .collect();
+        assert_eq!(
+            equipes,
+            [("capitaine-mercenaire", 3, 1000), ("archiviste", 3, 1100)]
+        );
     }
 
     /// Sections 9.9 et 44 de docs/contenu-v1.md (étape 163) : une annexe par
@@ -8175,6 +9141,18 @@ mod tests {
                     "catacombes-de-sainte-ombre",
                     (66, 69),
                     "ange-de-pierre"
+                ),
+                (
+                    "tertre-des-heros",
+                    "plaine-du-massacre",
+                    (71, 74),
+                    "licorne-des-cendres"
+                ),
+                (
+                    "bibliotheque-interdite",
+                    "haute-cite-dechue",
+                    (76, 79),
+                    "muse-de-cristal"
                 ),
             ]
         );

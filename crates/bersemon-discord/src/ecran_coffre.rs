@@ -191,12 +191,14 @@ pub fn ressources(partie: &Partie) -> Question {
         bouton(Cle::Afficher(Vue::Coffre), "Retour au coffre", SECONDAIRE),
         retour(),
     ]));
-    let detaille = coffre_du_camp(partie);
-    let texte = if detaille.chars().count() <= LONGUEUR_MAX {
-        detaille
-    } else {
-        ressources_du_sac_et_du_coffre(partie)
-    };
+    // Avec les ressources de la Haute-Cité, même leur liste seule peut
+    // dépasser un message : elles se comptent alors par sortes, et les
+    // menus les détaillent (étape 166).
+    let tient = |texte: &String| texte.chars().count() <= LONGUEUR_MAX;
+    let texte = Some(coffre_du_camp(partie))
+        .filter(tient)
+        .or_else(|| Some(ressources_du_sac_et_du_coffre(partie)).filter(tient))
+        .unwrap_or_else(|| coffre_du_camp_abrege(partie));
     Question {
         texte,
         rangees: lignes,

@@ -22,7 +22,7 @@ use bersemon_core::amelioration::Amelioration;
 use bersemon_core::attaque::Categorie;
 use bersemon_core::catalogue::Catalogue;
 use bersemon_core::codex::EtatCodex;
-use bersemon_core::collection::Tailles;
+use bersemon_core::collection::{Emplacement, Tailles};
 use bersemon_core::combat::{Action, Combat, Cote};
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::{
@@ -470,7 +470,24 @@ fn choisir(
             }
         }
         Attente::Evolution { .. } => Choix::Evoluer,
-        Attente::PlaceManquante(_) => Choix::RelacherLaCapture,
+        // Le camp plein, il relâche son monstre le plus faible pour une
+        // capture de plus haut niveau, comme un joueur qui fait de la place
+        // (étape 166) : sans cela, en fin de partie, plus aucune capture
+        // n'entrait dans l'équipe.
+        Attente::PlaceManquante(capture) => {
+            let partie = deroulement.partie().expect("partie en expédition");
+            partie
+                .collection()
+                .camp()
+                .iter()
+                .enumerate()
+                .filter(|(_, monstre)| !monstre.est_loue())
+                .min_by_key(|(_, monstre)| monstre.niveau().valeur())
+                .filter(|(_, monstre)| monstre.niveau() < capture.niveau())
+                .map_or(Choix::RelacherLaCapture, |(camp, _)| {
+                    Choix::RelacherPourLaCapture(Emplacement::Camp(camp))
+                })
+        }
         Attente::Annonce(_) => Choix::Poursuivre,
         Attente::Confirmation(_) => Choix::Oui,
         Attente::CombatDeGroupe | Attente::AttenteDuGroupe => {
@@ -871,7 +888,13 @@ fn en_combat(combat: &Combat, partie: &Partie) -> Choix {
     if let Some(filet) = filet_a_lancer(combat, partie) {
         return Choix::Combat(Action::LancerFilet(filet));
     }
-    Choix::Combat(Action::Attaquer(meilleure_attaque(combat)))
+    let attaque = meilleure_attaque(combat);
+    // Aucune de ses attaques ne blesse l'adversaire et aucun changement
+    // n'aide : il fuit, sans quoi le combat ne finirait pas (étape 166).
+    if degats_attendus(combat, attaque) == 0 && combat.fuite_possible() {
+        return Choix::Combat(Action::Fuir);
+    }
+    Choix::Combat(Action::Attaquer(attaque))
 }
 
 /// Quand la fuite est permise, il fuit dès que son dernier monstre debout
@@ -985,17 +1008,24 @@ fn filet_a_lancer(combat: &Combat, partie: &Partie) -> Option<Filet> {
         .map(|(filet, _)| filet)
 }
 
-/// Les dégâts moyens attendus, précision comprise.
+/// Celle aux dégâts moyens attendus les plus hauts.
 fn meilleure_attaque(combat: &Combat) -> usize {
     let attaquant = combat.monstre(combat.actif(Cote::Joueur));
     (0..attaquant.attaques().liste().len())
-        .max_by_key(|index| {
-            let precision = attaquant.attaques().liste()[*index].precision();
-            combat.apercu_attaque(*index).map_or(0, |apercu| {
-                (apercu.degats_min + apercu.degats_max) * u32::from(precision)
-            })
-        })
+        .max_by_key(|index| degats_attendus(combat, *index))
         .unwrap_or(0)
+}
+
+/// Les dégâts moyens attendus d'une attaque du monstre actif, précision
+/// comprise, à un facteur près.
+fn degats_attendus(combat: &Combat, index: usize) -> u32 {
+    let attaquant = combat.monstre(combat.actif(Cote::Joueur));
+    let Some(attaque) = attaquant.attaques().liste().get(index) else {
+        return 0;
+    };
+    combat.apercu_attaque(index).map_or(0, |apercu| {
+        (apercu.degats_min + apercu.degats_max) * u32::from(attaque.precision())
+    })
 }
 
 /// Le monstre valide qui vaut le plus face à l'adversaire actif.
