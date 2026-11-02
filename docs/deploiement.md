@@ -62,7 +62,7 @@ Les intitulés de la console Oracle peuvent changer.
 
 1. Sur le PC Windows, créer une clé SSH d'administration, dans PowerShell : `ssh-keygen -t ed25519 -f "$env:USERPROFILE\.ssh\bersemon-admin"`. Une phrase de passe est conseillée.
 2. Dans la console Oracle Cloud, Compute, Instances, Create instance :
-   - image : Canonical Ubuntu 24.04, dans sa version aarch64, proposée avec la forme Ampere ;
+   - image : Canonical Ubuntu 24.04, dans sa version aarch64, proposée avec la forme Ampere. La version Minimal convient aussi, mais il lui manque des outils (section 3.2) ;
    - forme : VM.Standard.A1.Flex, par exemple 2 OCPU et 12 Go de mémoire. Le quota Always Free des instances Ampere A1 est, à ma connaissance, de 4 OCPU et 24 Go au total : le vérifier sur la page Always Free Resources d'Oracle ;
    - réseau : une adresse IP publique ;
    - clé SSH : coller le contenu de `bersemon-admin.pub`.
@@ -78,7 +78,17 @@ Le script d'installation étant rejouable, une VM perdue se reconstruit en quelq
 
 ### 3.2 Lancer le script d'installation
 
-Sur la VM :
+Sur la VM, installer d'abord git et un éditeur, qui manquent parfois aux images Minimal (sans effet s'ils sont déjà là) :
+
+```bash
+sudo apt-get update
+```
+
+```bash
+sudo apt-get install -y git nano
+```
+
+Puis :
 
 ```bash
 git clone https://github.com/romainhnr/Bersemon.git
