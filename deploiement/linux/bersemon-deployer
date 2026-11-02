@@ -56,15 +56,20 @@ readonly REGLAGES="/etc/bersemon/$ENVIRONNEMENT.env"
 [[ -f $REGLAGES ]] || echec "$REGLAGES est absent : lancer installer-vm.sh."
 
 # Deux déploiements du même environnement ne se chevauchent pas ; prod et dev
-# restent indépendants.
-exec 9>"/run/lock/bersemon-deploiement-$ENVIRONNEMENT.lock"
+# restent indépendants. Le verrou est dans un dossier de root : /run/lock est
+# ouvert en écriture à tous.
+install -d -o root -g root -m 0700 /run/bersemon
+exec 9>"/run/bersemon/deploiement-$ENVIRONNEMENT.lock"
 flock --wait 1800 9 || echec "un autre déploiement de $ENVIRONNEMENT est toujours en cours."
 
 chemin_de_compilation=$CHEMIN_SYSTEME
 
-# Git et cargo tournent sous le compte de l'environnement, avec un
-# environnement minimal : le code compilé, build.rs des dépendances compris,
-# n'accède qu'aux fichiers de cet environnement.
+# Git, cargo et toute opération sur les fichiers de l'environnement tournent
+# sous son compte, avec un environnement minimal. Le code compilé, build.rs
+# des dépendances compris, n'accède qu'aux fichiers de cet environnement ; et
+# root ne lit ni n'écrit rien dans ses dossiers, où ce code pourrait avoir
+# placé un lien symbolique vers un fichier du système ou de l'autre
+# environnement.
 en_tant_que_service() {
     runuser -u "$UTILISATEUR" -- env -i \
         HOME="$DOSSIER" \
@@ -91,7 +96,7 @@ en_tant_que_service git checkout --quiet --force --detach "$COMMIT"
 # La toolchain suit la rust-version du workspace, comme la CI. La valeur vient
 # du dépôt : elle est vérifiée avant d'être passée à rustup, qui ne télécharge
 # que des versions officielles.
-version_rust=$(sed -n 's/^rust-version = "\([^"]*\)"$/\1/p' Cargo.toml | head -n 1)
+version_rust=$(en_tant_que_service sed -n 's/^rust-version = "\([^"]*\)"$/\1/p' Cargo.toml | head -n 1)
 [[ $version_rust =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]] \
     || echec "rust-version illisible dans Cargo.toml : \"$version_rust\"."
 rustup_systeme() {
@@ -113,17 +118,15 @@ en_tant_que_service cargo build --release --locked -p bersemon-discord
 
 # Le binaire précédent est gardé pour revenir en arrière si le nouveau ne se
 # connecte pas.
-if [[ -f $BINAIRE ]]; then
-    cp --preserve=mode,ownership,timestamps "$BINAIRE" "$BINAIRE.precedent"
-    if [[ -f $DOSSIER/bin/version ]]; then
-        cp --preserve=mode,ownership "$DOSSIER/bin/version" "$DOSSIER/bin/version.precedent"
+if en_tant_que_service test -f "$BINAIRE"; then
+    en_tant_que_service cp -p "$BINAIRE" "$BINAIRE.precedent"
+    if en_tant_que_service test -f "$DOSSIER/bin/version"; then
+        en_tant_que_service cp -p "$DOSSIER/bin/version" "$DOSSIER/bin/version.precedent"
     fi
 fi
-install -o "$UTILISATEUR" -g "$UTILISATEUR" -m 0755 \
-    "$CODE/target/release/bersemon-discord" "$BINAIRE.nouveau"
-mv -f "$BINAIRE.nouveau" "$BINAIRE"
-echo "$COMMIT" >"$DOSSIER/bin/version"
-chown "$UTILISATEUR:$UTILISATEUR" "$DOSSIER/bin/version"
+en_tant_que_service install -m 0755 "$CODE/target/release/bersemon-discord" "$BINAIRE.nouveau"
+en_tant_que_service mv -f "$BINAIRE.nouveau" "$BINAIRE"
+printf '%s\n' "$COMMIT" | en_tant_que_service tee "$DOSSIER/bin/version" >/dev/null
 
 if ! grep -Eq '^DISCORD_TOKEN=.+' "$REGLAGES"; then
     echo "Binaire installé, mais le service n'est pas redémarré : DISCORD_TOKEN est vide dans $REGLAGES." >&2
@@ -161,12 +164,12 @@ journalctl --unit "$SERVICE" --since "@$debut" --output cat --no-pager -n 30 >&2
 # Un binaire qui ne s'est jamais connecté n'a enregistré aucune partie : le
 # précédent peut reprendre sans risque de lire un format de sauvegarde plus
 # récent que le sien.
-if [[ -f $BINAIRE.precedent ]]; then
-    mv -f "$BINAIRE.precedent" "$BINAIRE"
-    if [[ -f $DOSSIER/bin/version.precedent ]]; then
-        mv -f "$DOSSIER/bin/version.precedent" "$DOSSIER/bin/version"
+if en_tant_que_service test -f "$BINAIRE.precedent"; then
+    en_tant_que_service mv -f "$BINAIRE.precedent" "$BINAIRE"
+    if en_tant_que_service test -f "$DOSSIER/bin/version.precedent"; then
+        en_tant_que_service mv -f "$DOSSIER/bin/version.precedent" "$DOSSIER/bin/version"
     fi
     systemctl restart "$SERVICE"
-    echo "Retour au binaire précédent ($(cat "$DOSSIER/bin/version" 2>/dev/null || echo "version inconnue"))." >&2
+    echo "Retour au binaire précédent." >&2
 fi
 exit 1

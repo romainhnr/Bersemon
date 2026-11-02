@@ -131,9 +131,13 @@ for environnement in "${ENVIRONNEMENTS[@]}"; do
         echo "Compte $utilisateur créé."
     fi
     # Chaque environnement a ses propres code, compilation, cache cargo,
-    # binaire et parties, illisibles par l'autre.
-    install -d -o "$utilisateur" -g "$utilisateur" -m 0750 \
-        "$dossier" "$dossier/cargo" "$dossier/bin" "$dossier/parties"
+    # binaire et parties, illisibles par l'autre. Seul le dossier principal,
+    # dans un dossier de root, est créé par root : les sous-dossiers le sont
+    # sous le compte de l'environnement, pour que root ne suive jamais un lien
+    # symbolique qu'y aurait placé le code compilé.
+    install -d -o "$utilisateur" -g "$utilisateur" -m 0750 "$dossier"
+    en_tant_que "$utilisateur" "$dossier" mkdir -p cargo bin parties
+    en_tant_que "$utilisateur" "$dossier" chmod 0750 cargo bin parties
 
     if [[ -d $dossier/code/.git ]]; then
         en_tant_que "$utilisateur" "$dossier" git -C "$dossier/code" remote set-url origin "$DEPOT"
