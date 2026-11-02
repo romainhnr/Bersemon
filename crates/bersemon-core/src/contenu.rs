@@ -132,6 +132,16 @@ const INDICE_22: &str = "dans les cendres du Prince, une lettre scellée du mêm
 
 const INDICE_23: &str = "le héraut de l'orage vaincu a parlé : le Sénéchal des orages attend au sommet du plus haut pic, là où tombe la foudre.";
 
+// Palais de Chair et Puits du Monde, section 48 de docs/contenu-v1.md
+// (étape 168).
+const INDICE_24: &str = "sous la lance du Sénéchal, une invitation scellée du même sceau : au cœur du royaume, le Palais de Chair, dont les murs respirent. Un douzième Apôtre y tient sa cour.";
+
+const INDICE_25: &str = "la favorite vaincue a parlé : la Reine-mère de chair repose dans la salle du trône, au milieu de sa couvée.";
+
+const INDICE_26: &str = "dans la couche de la Reine-mère, une carte scellée du même sceau : sous le palais, le Puits du Monde descend jusqu'au fond des choses. Le dernier Apôtre y attend.";
+
+const INDICE_27: &str = "le chevalier-crâne vaincu a parlé : le Roi sans visage règne au fond du Puits, sur un trône taillé dans la dernière pierre du monde.";
+
 /// Au bout de la première expédition menée au bout, quand le joueur porte
 /// l'âme de Bertrand (section 14.2).
 pub const MALVOISE_ET_L_AME: &str = "Sur le chemin du camp, un homme en robe noire vous attend, un crâne posé au creux du bras. \"Je t'ai vu recueillir cette âme. Elle m'intéresse, si tu ne sais pas quoi en faire. Je suis Malvoise, et les marchands morts sur ces routes ont encore des choses à vendre.\" Il vous suit jusqu'au camp et s'y installe.";
@@ -283,6 +293,28 @@ const EPILOGUE_DU_SENECHAL: &str = "Le Sénéchal des orages s'effondre, et pour
 
 const DECOUVERTE_DE_L_AIRE: &str = "Au fond du coffre, une plume d'argent et un croquis mènent à une aire au-dessus des nuages, où se poseraient les pégases d'orage.";
 
+const AVANT_LA_FAVORITE: &str = "Sur un lit de soie tachée, une favorite aux yeux fardés vous sourit en remplissant deux coupes. Elle laisse tomber la sienne : deux créatures sortent des tentures.";
+
+const APRES_LA_FAVORITE: &str =
+    "La favorite s'effondre sur les coussins, et son sourire ne la quitte pas.";
+
+const AVANT_LA_REINE: &str = "Dans la salle du trône, une masse de chair coiffée d'une couronne se soulève, et cent bouches s'ouvrent à la fois. La Reine-mère de chair, Apôtre du Démiurge, couve le royaume entier. Il n'y aura pas de fuite.";
+
+const EPILOGUE_DE_LA_REINE: &str = "La Reine-mère de chair s'affaisse, et les murs du palais cessent de respirer. Le même sceau, une main ouverte, est gravé sur son sceptre. Douze Apôtres sont tombés ; le Démiurge, lui, attend toujours. Votre traque continue.";
+
+const DECOUVERTE_DU_JARDIN: &str = "Au fond du coffre, un ruban de soie rouge noue une clé de jardin : derrière le palais, la Reine cultiverait des fleurs qui boivent le sang.";
+
+const AVANT_LE_CHEVALIER_CRANE: &str = "Sur la dernière corniche avant le gouffre, un chevalier dont le heaume est un crâne immense barre le passage, l'épée plantée devant lui. Trois bêtes montent du Puits à son côté.";
+
+const APRES_LE_CHEVALIER_CRANE: &str =
+    "Le chevalier-crâne bascule dans le vide, et le Puits avale son épée.";
+
+const AVANT_LE_ROI: &str = "Au fond du Puits, sur un trône taillé dans la dernière pierre du monde, un roi drapé d'ombre lève la tête : à la place du visage, il n'y a rien. Le Roi sans visage, dernier Apôtre du Démiurge, se lève. Il n'y aura pas de fuite.";
+
+const EPILOGUE_DU_ROI: &str = "Le Roi sans visage s'effondre, et le Puits se tait. Le même sceau, une main ouverte, est gravé sur son trône. Les treize Apôtres sont tombés ; il ne reste que le Démiurge. Rapportez leurs âmes à Malvoise.";
+
+const DECOUVERTE_DES_RACINES: &str = "Au fond du coffre, une lanterne de racines tressées éclaire un passage qui descend le long des racines du monde.";
+
 const AVANT_LE_MARGRAVE: &str = "Au sommet, sur un trône de glace entouré de soldats figés, le Margrave de givre se lève. Apôtre du Démiurge, il a offert son armée au froid. Il n'y aura pas de fuite.";
 
 const EPILOGUE_DU_MARGRAVE: &str = "Le Margrave de givre se brise sur son trône. Le même sceau, une main ouverte, est gravé dans la glace. Trois Apôtres sont tombés ; le Démiurge, lui, attend toujours. Votre traque continue.";
@@ -306,6 +338,8 @@ const CARNET_DU_CONNETABLE: &str = "Connétable boucher, abattu dans la Plaine d
 const CARNET_DU_CHANCELIER: &str = "Chancelier aux mille yeux, abattu dans la Haute-Cité déchue.";
 const CARNET_DU_PRINCE: &str = "Prince de braise, abattu dans la Gorge de Braise.";
 const CARNET_DU_SENECHAL: &str = "Sénéchal des orages, abattu dans les Pics Foudroyés.";
+const CARNET_DE_LA_REINE: &str = "Reine-mère de chair, abattue dans le Palais de Chair.";
+const CARNET_DU_ROI: &str = "Roi sans visage, abattu dans le Puits du Monde.";
 const CARNET_DU_DEMIURGE: &str = "Démiurge, abattu dans l'Éclipse.";
 
 const AME_DU_BARON: &str =
@@ -337,6 +371,11 @@ const AME_DU_PRINCE: &str =
     "L'âme du Prince de braise s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.";
 
 const AME_DU_SENECHAL: &str = "L'âme du Sénéchal des orages s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.";
+
+const AME_DE_LA_REINE: &str = "L'âme de la Reine-mère de chair s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.";
+
+const AME_DU_ROI: &str =
+    "L'âme du Roi sans visage s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.";
 
 /// L'Éclipse et le Démiurge, section 23 de docs/contenu-v1.md (étapes 88 à
 /// 90).
@@ -1332,6 +1371,140 @@ impl ContenuV1 {
             DECOUVERTE_DE_L_AIRE,
         )
         .expect("Aire des pégases conforme aux règles");
+        // Au service de la Reine-mère de chair, elle garde le Palais, avec
+        // deux monstres seulement, comme les autres Assassins (section 10.7).
+        let favorite = Humain::new(
+            HumainId::new("favorite"),
+            "Favorite",
+            vec![
+                (trouver("devoreur-de-chair"), niveau(92)),
+                (trouver("idole-de-chair"), niveau(93)),
+            ],
+            1400,
+            AVANT_LA_FAVORITE,
+            APRES_LA_FAVORITE,
+        )
+        .expect("Favorite conforme aux règles")
+        .avec_heros(
+            Classe::Assassin,
+            Some(objet("dagues-foudroyees")),
+            Some(objet("cuir-d-orage")),
+        )
+        .avec_niveau_du_heros(niveau(92))
+        .avec_ia(IaHumain::Relevee);
+        let meteos_du_palais = vec![Meteo::Pluie, Meteo::Canicule];
+        // Ouvert par l'indice que laisse le Sénéchal des orages (section 9.4).
+        let palais = Zone::new(
+            ZoneId::new("palais-de-chair"),
+            "Palais de Chair",
+            (niveau(88), niveau(92)),
+            5,
+            3,
+            vec![
+                trouver("larve-de-chair"),
+                trouver("devoreur-de-chair"),
+                trouver("valet-ecorche"),
+            ],
+            vec![EspeceRare {
+                espece: trouver("idole-de-chair"),
+                pacifique: false,
+            }],
+            expedition_automatique(15, 830..=1620, 13200..=18200, 1..=3, 730..=1100),
+            coffre(540..=820, capsules_de("palais-de-chair")),
+        )
+        .and_then(|zone| zone.avec_monstre_cache(schnoz()))
+        .map(|zone| {
+            zone.avec_humain(favorite)
+                .avec_meteos(meteos_du_palais.clone())
+        })
+        .expect("Palais de Chair conforme aux règles");
+        let jardin = annexe(
+            Zone::new(
+                ZoneId::new("jardin-de-la-reine"),
+                "Jardin de la Reine",
+                (niveau(91), niveau(94)),
+                3,
+                3,
+                palais.especes().to_vec(),
+                vec![EspeceRare {
+                    espece: trouver("lys-de-sang"),
+                    pacifique: true,
+                }],
+                palais.expedition_automatique().clone(),
+                coffre(740..=1080, capsules_de("palais-de-chair")).avec_tresors(tresors_d_annexe()),
+            ),
+            &palais,
+            meteos_du_palais,
+            DECOUVERTE_DU_JARDIN,
+        )
+        .expect("Jardin de la Reine conforme aux règles");
+        // Au service du Roi sans visage, il garde le Puits (section 10.7).
+        let chevalier_crane = Humain::new(
+            HumainId::new("chevalier-crane"),
+            "Chevalier-Crâne",
+            vec![
+                (trouver("rampant-du-puits"), niveau(98)),
+                (trouver("ver-des-abysses"), niveau(98)),
+                (trouver("gardien-du-gouffre"), niveau(99)),
+            ],
+            1500,
+            AVANT_LE_CHEVALIER_CRANE,
+            APRES_LE_CHEVALIER_CRANE,
+        )
+        .expect("Chevalier-Crâne conforme aux règles")
+        .avec_heros(
+            Classe::Guerrier,
+            Some(objet("hache-de-magma")),
+            Some(objet("plates-de-magma")),
+        )
+        .avec_niveau_du_heros(niveau(98))
+        .avec_ia(IaHumain::Relevee);
+        let meteos_du_puits = vec![Meteo::Tempete, Meteo::Pluie];
+        // Ouvert par l'indice que laisse la Reine-mère de chair (section 9.4).
+        let puits = Zone::new(
+            ZoneId::new("puits-du-monde"),
+            "Puits du Monde",
+            (niveau(93), niveau(98)),
+            5,
+            3,
+            vec![
+                trouver("rampant-du-puits"),
+                trouver("echo-du-vide"),
+                trouver("ver-des-abysses"),
+            ],
+            vec![EspeceRare {
+                espece: trouver("gardien-du-gouffre"),
+                pacifique: false,
+            }],
+            expedition_automatique(16, 890..=1760, 14800..=20200, 1..=3, 790..=1180),
+            coffre(580..=880, capsules_de("puits-du-monde")),
+        )
+        .and_then(|zone| zone.avec_monstre_cache(schnoz()))
+        .map(|zone| {
+            zone.avec_humain(chevalier_crane)
+                .avec_meteos(meteos_du_puits.clone())
+        })
+        .expect("Puits du Monde conforme aux règles");
+        let racines = annexe(
+            Zone::new(
+                ZoneId::new("racines-du-monde"),
+                "Racines du monde",
+                (niveau(96), niveau(99)),
+                3,
+                3,
+                puits.especes().to_vec(),
+                vec![EspeceRare {
+                    espece: trouver("germe-du-monde"),
+                    pacifique: true,
+                }],
+                puits.expedition_automatique().clone(),
+                coffre(800..=1160, capsules_de("puits-du-monde")).avec_tresors(tresors_d_annexe()),
+            ),
+            &puits,
+            meteos_du_puits,
+            DECOUVERTE_DES_RACINES,
+        )
+        .expect("Racines du monde conforme aux règles");
         // Le Baron pendu attend au fond de la Vallée, que le second indice,
         // donné par le Bourreau, ouvre. Premier Apôtre, il combat au niveau
         // maximal de la Vallée, 20, et ne connaît qu'une attaque Obscur
@@ -1519,6 +1692,39 @@ impl ContenuV1 {
             senechal,
         )
         .expect("chapitre du Sénéchal conforme aux règles");
+        // Le vingt-quatrième indice se trouve au bout de l'expédition qui
+        // abat le Sénéchal, dans les Pics, et ouvre le Palais ; la Favorite
+        // laisse le vingt-cinquième (section 9.4).
+        let reine = Apotre::new(
+            trouver("reine-mere-de-chair"),
+            &palais,
+            AVANT_LA_REINE,
+            EPILOGUE_DE_LA_REINE,
+        )
+        .expect("Reine-mère de chair conforme aux règles")
+        .avec_recit_de_l_ame(AME_DE_LA_REINE)
+        .avec_ligne_du_carnet(CARNET_DE_LA_REINE);
+        let chapitre_de_la_reine = Chapitre::new(
+            vec![indice(&pics, INDICE_24), indice(&palais, INDICE_25)],
+            reine,
+        )
+        .expect("chapitre de la Reine-mère conforme aux règles");
+        // Le vingt-sixième indice se trouve au bout de l'expédition qui abat
+        // la Reine-mère, dans le Palais, et ouvre le Puits (section 9.4).
+        let roi = Apotre::new(
+            trouver("roi-sans-visage"),
+            &puits,
+            AVANT_LE_ROI,
+            EPILOGUE_DU_ROI,
+        )
+        .expect("Roi sans visage conforme aux règles")
+        .avec_recit_de_l_ame(AME_DU_ROI)
+        .avec_ligne_du_carnet(CARNET_DU_ROI);
+        let chapitre_du_roi = Chapitre::new(
+            vec![indice(&palais, INDICE_26), indice(&puits, INDICE_27)],
+            roi,
+        )
+        .expect("chapitre du Roi conforme aux règles");
         let piste = Piste::new(vec![
             chapitre_du_baron,
             chapitre_de_l_abbesse,
@@ -1531,6 +1737,8 @@ impl ContenuV1 {
             chapitre_du_chancelier,
             chapitre_du_prince,
             chapitre_du_senechal,
+            chapitre_de_la_reine,
+            chapitre_du_roi,
         ])
         .expect("piste conforme aux règles")
         // Le Béhérit attend les âmes des 13 Apôtres de la traque complète
@@ -1604,7 +1812,7 @@ impl ContenuV1 {
         let invocation = Invocation::new(eclipse, demiurge, FORGE_DU_BEHERIT, SACRIFICE);
         let zones = vec![
             lisiere, marais, vallee, abbaye, col, desert, port, mines, sylve, catacombes, plaine,
-            cite, gorge, pics,
+            cite, gorge, pics, palais, puits,
         ];
         let tour = TourSansFond::new(
             ZoneId::new("tour-sans-fond"),
@@ -1670,6 +1878,8 @@ impl ContenuV1 {
                 bibliotheque,
                 coeur,
                 aire,
+                jardin,
+                racines,
             ],
             zones_legendaires: Vec::new(),
         }
@@ -2186,7 +2396,7 @@ const ATTAQUES_DES_HEROS: [FicheAttaque; 40] = [
 ];
 
 /// Section 1 de docs/contenu-v1.md, dans le même ordre.
-const ATTAQUES: [FicheAttaque; 244] = [
+const ATTAQUES: [FicheAttaque; 266] = [
     fiche(
         "souffle-chaud",
         "Souffle chaud",
@@ -4041,6 +4251,147 @@ const ATTAQUES: [FicheAttaque; 244] = [
         80,
         100,
     ),
+    // Palais de Chair et Puits du Monde, section 48 (étape 168).
+    avec_effet(
+        fiche(
+            "spore-de-chair",
+            "Spore de chair",
+            Type::Poison,
+            Speciale,
+            85,
+            95,
+        ),
+        Poison,
+        20,
+    ),
+    fiche(
+        "festin-de-chair",
+        "Festin de chair",
+        Type::Normal,
+        Physique,
+        85,
+        95,
+    ),
+    fiche("ecorchure", "Écorchure", Type::Combat, Physique, 85, 95),
+    fiche(
+        "extase-charnelle",
+        "Extase charnelle",
+        Type::Psychique,
+        Speciale,
+        95,
+        90,
+    ),
+    fiche(
+        "floraison-sanglante",
+        "Floraison sanglante",
+        Type::Plante,
+        Speciale,
+        95,
+        90,
+    ),
+    fiche(
+        "couvee-immonde",
+        "Couvée immonde",
+        Type::Obscur,
+        Speciale,
+        95,
+        90,
+    ),
+    fiche(
+        "chute-sans-fin",
+        "Chute sans fin",
+        Type::Roche,
+        Physique,
+        85,
+        95,
+    ),
+    fiche("cri-du-neant", "Cri du néant", Type::Son, Speciale, 85, 95),
+    fiche(
+        "morsure-des-abysses",
+        "Morsure des abysses",
+        Type::Dragon,
+        Physique,
+        85,
+        95,
+    ),
+    fiche(
+        "couperet-du-gouffre",
+        "Couperet du gouffre",
+        Type::Acier,
+        Physique,
+        95,
+        90,
+    ),
+    fiche(
+        "seve-originelle",
+        "Sève originelle",
+        Type::Plante,
+        Speciale,
+        95,
+        90,
+    ),
+    fiche("effacement", "Effacement", Type::Obscur, Speciale, 95, 90),
+    // Leurs attaques d'œuf (section 13.11).
+    fiche(
+        "ponte-grouillante",
+        "Ponte grouillante",
+        Type::Insecte,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "gueule-beante",
+        "Gueule béante",
+        Type::Normal,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "lambeaux-de-peau",
+        "Lambeaux de peau",
+        Type::Spectre,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "murmure-charnel",
+        "Murmure charnel",
+        Type::Psychique,
+        Speciale,
+        80,
+        100,
+    ),
+    avec_effet(
+        fiche(
+            "parfum-de-sang",
+            "Parfum de sang",
+            Type::Feerique,
+            Speciale,
+            75,
+            100,
+        ),
+        Paralysie,
+        20,
+    ),
+    fiche("reptation", "Reptation", Type::Tenebres, Physique, 80, 100),
+    fiche("repercussion", "Répercussion", Type::Son, Speciale, 80, 100),
+    fiche("fouissement", "Fouissement", Type::Sol, Physique, 80, 100),
+    avec_effet(
+        fiche(
+            "garde-du-gouffre",
+            "Garde du gouffre",
+            Type::Acier,
+            Physique,
+            75,
+            100,
+        ),
+        Paralysie,
+        20,
+    ),
+    fiche("eclosion", "Éclosion", Type::Lumiere, Speciale, 80, 100),
 ];
 
 struct FicheCapsule {
@@ -4051,7 +4402,7 @@ struct FicheCapsule {
 }
 
 /// Section 6 de docs/contenu-v1.md, dans le même ordre.
-const CAPSULES: [FicheCapsule; 42] = [
+const CAPSULES: [FicheCapsule; 48] = [
     FicheCapsule {
         attaque: "brasier",
         prix: 150,
@@ -4262,6 +4613,36 @@ const CAPSULES: [FicheCapsule; 42] = [
         prix: 950,
         zone: "pics-foudroyes",
     },
+    FicheCapsule {
+        attaque: "spore-de-chair",
+        prix: 1000,
+        zone: "palais-de-chair",
+    },
+    FicheCapsule {
+        attaque: "festin-de-chair",
+        prix: 1000,
+        zone: "palais-de-chair",
+    },
+    FicheCapsule {
+        attaque: "ecorchure",
+        prix: 1000,
+        zone: "palais-de-chair",
+    },
+    FicheCapsule {
+        attaque: "chute-sans-fin",
+        prix: 1050,
+        zone: "puits-du-monde",
+    },
+    FicheCapsule {
+        attaque: "cri-du-neant",
+        prix: 1050,
+        zone: "puits-du-monde",
+    },
+    FicheCapsule {
+        attaque: "morsure-des-abysses",
+        prix: 1050,
+        zone: "puits-du-monde",
+    },
 ];
 
 struct FicheEspece {
@@ -4386,7 +4767,7 @@ const MARCHAND_ZOMBIE: FicheEspece = FicheEspece {
 /// Section 2 de docs/contenu-v1.md, dans l'ordre du codex : les monstres de
 /// départ, les communs, les rares, l'Apôtre, le monstre caché, puis les
 /// formes évoluées de la section 8.
-static ESPECES: [FicheEspece; 113] = [
+static ESPECES: [FicheEspece; 125] = [
     FicheEspece {
         id: "salamandre",
         nom: "Salamandre",
@@ -6451,6 +6832,231 @@ static ESPECES: [FicheEspece; 113] = [
         ],
         evolution: None,
     },
+    // Espèces du Palais de Chair et du Jardin de la Reine, puis du Puits du
+    // Monde et des Racines du monde (section 48, étape 168).
+    FicheEspece {
+        id: "larve-de-chair",
+        nom: "Larve de chair",
+        types: &[Type::Insecte, Type::Poison],
+        role: Role::Soutien,
+        stats_de_base: [84, 62, 86, 66, 74, 20],
+        rendement_experience: 270,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Carapace, Habilete::Volonte],
+        apprentissage: &[
+            (1, "bourdonnement"),
+            (1, "morsure-venimeuse"),
+            (30, "nuee"),
+            (40, "croc-de-venin"),
+            (50, "spore-de-chair"),
+            (94, "peste-noire"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "devoreur-de-chair",
+        nom: "Dévoreur de chair",
+        types: &[Type::Normal, Type::Tenebres],
+        role: Role::Offensif,
+        stats_de_base: [76, 92, 60, 40, 52, 72],
+        rendement_experience: 270,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Ferocite, Habilete::Pillard],
+        apprentissage: &[
+            (1, "morsure"),
+            (1, "griffure"),
+            (30, "curee"),
+            (40, "croc-noir"),
+            (50, "festin-de-chair"),
+            (94, "rapine"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "valet-ecorche",
+        nom: "Valet écorché",
+        types: &[Type::Combat, Type::Spectre],
+        role: Role::Offensif,
+        stats_de_base: [72, 92, 70, 40, 52, 64],
+        rendement_experience: 270,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Ferocite, Habilete::Traqueur],
+        apprentissage: &[
+            (1, "frappe-d-os"),
+            (1, "charge-spectrale"),
+            (30, "corde-du-gibet"),
+            (40, "griffes-spectrales"),
+            (50, "ecorchure"),
+            (94, "charge-des-morts"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "idole-de-chair",
+        nom: "Idole de chair",
+        types: &[Type::Psychique, Type::Poison],
+        role: Role::Offensif,
+        stats_de_base: [78, 50, 70, 104, 88, 66],
+        rendement_experience: 460,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Sorcellerie, Habilete::Affinite],
+        apprentissage: &[
+            (1, "onde-psychique"),
+            (1, "morsure-venimeuse"),
+            (35, "regard-hypnotique"),
+            (45, "festin-d-encre"),
+            (96, "extase-charnelle"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "lys-de-sang",
+        nom: "Lys de sang",
+        types: &[Type::Plante, Type::Feerique],
+        role: Role::Soutien,
+        stats_de_base: [72, 50, 70, 90, 96, 66],
+        rendement_experience: 455,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Volonte, Habilete::Instinct],
+        apprentissage: &[
+            (1, "feuille-tranchante"),
+            (1, "poussiere-d-elfe"),
+            (35, "ronces"),
+            (45, "rayon-de-lune"),
+            (96, "floraison-sanglante"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "reine-mere-de-chair",
+        nom: "Reine-mère de chair",
+        types: &[Type::Obscur],
+        role: Role::Offensif,
+        stats_de_base: [104, 90, 100, 104, 98, 48],
+        rendement_experience: 630,
+        rarete: Rarete::Apotre,
+        habiletes: &[Habilete::Volonte, Habilete::Sorcellerie],
+        apprentissage: &[
+            (1, "etreinte-obscure"),
+            (1, "morsure-venimeuse"),
+            (20, "hurlement-des-abysses"),
+            (35, "peste-noire"),
+            (50, "baiser-de-sang"),
+            (75, "couvee-immonde"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "rampant-du-puits",
+        nom: "Rampant du Puits",
+        types: &[Type::Roche, Type::Tenebres],
+        role: Role::Offensif,
+        stats_de_base: [76, 92, 82, 36, 54, 50],
+        rendement_experience: 285,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Ferocite, Habilete::Carapace],
+        apprentissage: &[
+            (1, "griffe-de-pierre"),
+            (1, "morsure"),
+            (30, "chute-de-pierres"),
+            (40, "griffe-d-ombre"),
+            (50, "chute-sans-fin"),
+            (99, "eboulement"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "echo-du-vide",
+        nom: "Écho du vide",
+        types: &[Type::Son, Type::Psychique],
+        role: Role::Soutien,
+        stats_de_base: [68, 38, 64, 96, 80, 46],
+        rendement_experience: 285,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Sorcellerie, Habilete::Instinct],
+        apprentissage: &[
+            (1, "glas"),
+            (1, "onde-psychique"),
+            (30, "lamentation"),
+            (40, "tocsin"),
+            (50, "cri-du-neant"),
+            (99, "requiem"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "ver-des-abysses",
+        nom: "Ver des abysses",
+        types: &[Type::Sol, Type::Dragon],
+        role: Role::Offensif,
+        stats_de_base: [84, 94, 74, 40, 52, 48],
+        rendement_experience: 285,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Ferocite, Habilete::Volonte],
+        apprentissage: &[
+            (1, "secousse"),
+            (1, "souffle-draconique"),
+            (30, "furie-draconique"),
+            (50, "morsure-des-abysses"),
+            (99, "engloutissement"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "gardien-du-gouffre",
+        nom: "Gardien du gouffre",
+        types: &[Type::Acier, Type::Tenebres],
+        role: Role::Offensif,
+        stats_de_base: [82, 94, 92, 44, 66, 50],
+        rendement_experience: 485,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Carapace, Habilete::Ferocite],
+        apprentissage: &[
+            (1, "coup-de-garde"),
+            (1, "morsure"),
+            (35, "taille-d-acier"),
+            (45, "griffe-d-ombre"),
+            (99, "couperet-du-gouffre"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "germe-du-monde",
+        nom: "Germe du monde",
+        types: &[Type::Plante, Type::Lumiere],
+        role: Role::Soutien,
+        stats_de_base: [78, 50, 76, 92, 98, 56],
+        rendement_experience: 480,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Volonte, Habilete::Carapace],
+        apprentissage: &[
+            (1, "feuille-tranchante"),
+            (1, "lueur-sacree"),
+            (35, "eclat-du-zenith"),
+            (45, "ronces-maudites"),
+            (99, "seve-originelle"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "roi-sans-visage",
+        nom: "Roi sans visage",
+        types: &[Type::Obscur],
+        role: Role::Offensif,
+        stats_de_base: [100, 98, 96, 102, 96, 60],
+        rendement_experience: 670,
+        rarete: Rarete::Apotre,
+        habiletes: &[Habilete::Sorcellerie, Habilete::Volonte],
+        apprentissage: &[
+            (1, "etreinte-obscure"),
+            (1, "onde-psychique"),
+            (20, "hurlement-des-abysses"),
+            (35, "jugement"),
+            (50, "gouffre-sans-fond"),
+            (75, "effacement"),
+        ],
+        evolution: None,
+    },
 ];
 
 /// Section 15 de docs/contenu-v1.md : la ligne est prête 2 h après avoir
@@ -7916,7 +8522,7 @@ const PRIX_D_UNE_RESSOURCE_RARE: u32 = 15;
 
 /// Espèce, identifiant et nom de chaque ressource : seules les espèces
 /// sauvages qui se combattent en ont une (section 14.3).
-const RESSOURCES: [(&str, &str, &str); 57] = [
+const RESSOURCES: [(&str, &str, &str); 65] = [
     ("loup", "croc-de-loup", "Croc de loup"),
     ("corbeau", "plume-de-corbeau", "Plume de corbeau"),
     ("vipere", "ecaille-de-vipere", "Écaille de vipère"),
@@ -8008,6 +8614,18 @@ const RESSOURCES: [(&str, &str, &str); 57] = [
         "Étincelle captive",
     ),
     ("geant-des-orages", "coeur-de-tonnerre", "Cœur de tonnerre"),
+    ("larve-de-chair", "chair-grouillante", "Chair grouillante"),
+    ("devoreur-de-chair", "dent-du-devoreur", "Dent du dévoreur"),
+    ("valet-ecorche", "peau-ecorchee", "Peau écorchée"),
+    ("idole-de-chair", "oeil-de-l-idole", "Œil de l'idole"),
+    ("rampant-du-puits", "eclat-du-puits", "Éclat du puits"),
+    ("echo-du-vide", "cristal-d-echo", "Cristal d'écho"),
+    (
+        "ver-des-abysses",
+        "anneau-des-abysses",
+        "Anneau des abysses",
+    ),
+    ("gardien-du-gouffre", "fer-du-gouffre", "Fer du gouffre"),
 ];
 
 /// Section 32 de docs/contenu-v1.md : les météos de la Lisière, du Marais
@@ -8018,7 +8636,7 @@ const METEOS_COMMUNES: [Meteo; 3] = [Meteo::Pluie, Meteo::Tempete, Meteo::Canicu
 /// Section 31 de docs/contenu-v1.md : les espèces qui ne sortent, dans les
 /// groupes sauvages des zones, que la nuit ou que le jour (section 9.6).
 /// Chaque zone en garde au moins deux à chaque moment.
-const ACTIVITES: [(&str, Activite); 26] = [
+const ACTIVITES: [(&str, Activite); 28] = [
     ("loup", Activite::Nocturne),
     ("feu-follet", Activite::Nocturne),
     ("fee-noire", Activite::Nocturne),
@@ -8045,11 +8663,13 @@ const ACTIVITES: [(&str, Activite); 26] = [
     ("forgeron-calcine", Activite::Diurne),
     ("aigle-tonnerre", Activite::Diurne),
     ("feu-de-saint-elme", Activite::Nocturne),
+    ("devoreur-de-chair", Activite::Nocturne),
+    ("rampant-du-puits", Activite::Nocturne),
 ];
 
 /// Section 28 de docs/contenu-v1.md : l'attaque d'œuf de chaque famille
 /// d'évolution, par sa forme de base (section 13.11).
-const ATTAQUES_D_OEUF: [(&str, &str); 80] = [
+const ATTAQUES_D_OEUF: [(&str, &str); 90] = [
     ("salamandre", "souffle-des-forges"),
     ("crapaud", "ressac"),
     ("mandragore", "seve-maudite"),
@@ -8130,6 +8750,16 @@ const ATTAQUES_D_OEUF: [(&str, &str); 80] = [
     ("feu-de-saint-elme", "lueur-d-orage"),
     ("geant-des-orages", "poing-du-geant"),
     ("pegase-d-orage", "galop-celeste"),
+    ("larve-de-chair", "ponte-grouillante"),
+    ("devoreur-de-chair", "gueule-beante"),
+    ("valet-ecorche", "lambeaux-de-peau"),
+    ("idole-de-chair", "murmure-charnel"),
+    ("lys-de-sang", "parfum-de-sang"),
+    ("rampant-du-puits", "reptation"),
+    ("echo-du-vide", "repercussion"),
+    ("ver-des-abysses", "fouissement"),
+    ("gardien-du-gouffre", "garde-du-gouffre"),
+    ("germe-du-monde", "eclosion"),
 ];
 
 /// La forme de base de la famille de cette espèce : celle qu'aucune autre
@@ -8403,8 +9033,8 @@ mod tests {
         let mut uniques = vues.clone();
         uniques.sort_by(|a, b| a.as_str().cmp(b.as_str()));
         uniques.dedup();
-        assert_eq!(vues.len(), 80);
-        assert_eq!(uniques.len(), 80);
+        assert_eq!(vues.len(), 90);
+        assert_eq!(uniques.len(), 90);
     }
 
     #[test]
@@ -8413,13 +9043,13 @@ mod tests {
 
         let contenu = ContenuV1::new();
         let au_codex = especes_au_codex(contenu.especes());
-        assert_eq!(au_codex, 100);
+        assert_eq!(au_codex, 110);
         let seuils: Vec<u32> = contenu
             .recompenses_du_codex()
             .iter()
             .map(|recompense| recompense.palier.seuil(au_codex))
             .collect();
-        assert_eq!(seuils, vec![10, 20, 30, 40, 50, 100]);
+        assert_eq!(seuils, vec![10, 20, 30, 40, 50, 110]);
         let complet = contenu.recompenses_du_codex().last().unwrap();
         assert_eq!(complet.palier, PalierDuCodex::Complet);
         let sceau = complet.objet_unique.as_ref().unwrap();
@@ -8430,7 +9060,7 @@ mod tests {
     #[test]
     fn chaque_capsule_sert_a_une_espece_qui_ne_l_apprend_pas() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.capsules().len(), 42);
+        assert_eq!(contenu.capsules().len(), 48);
         for capsule in contenu.capsules() {
             let utile = contenu.especes().iter().any(|espece| {
                 capsule.convient_a(espece) && espece.attaque_apprise(capsule.id()).is_none()
@@ -8506,6 +9136,14 @@ mod tests {
             ids(&contenu.zones()[13]),
             vec!["serres-foudroyantes", "coup-de-cornes", "feu-errant"]
         );
+        assert_eq!(
+            ids(&contenu.zones()[14]),
+            vec!["spore-de-chair", "festin-de-chair", "ecorchure"]
+        );
+        assert_eq!(
+            ids(&contenu.zones()[15]),
+            vec!["chute-sans-fin", "cri-du-neant", "morsure-des-abysses"]
+        );
         // Les coffres d'une annexe gardent les capsules de sa zone.
         for annexe in contenu.annexes() {
             let zone = contenu.zone(annexe.de()).unwrap();
@@ -8516,10 +9154,10 @@ mod tests {
     #[test]
     fn contenu_conforme_aux_regles() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.especes().len(), 113);
-        assert_eq!(contenu.zones().len(), 14);
-        assert_eq!(contenu.annexes().len(), 8);
-        assert_eq!(contenu.piste().indices().count(), 23);
+        assert_eq!(contenu.especes().len(), 125);
+        assert_eq!(contenu.zones().len(), 16);
+        assert_eq!(contenu.annexes().len(), 10);
+        assert_eq!(contenu.piste().indices().count(), 27);
         // Toute espèce rencontrée en zone, annexes comprises, se retrouve au
         // chargement d'une sauvegarde.
         let annexes = contenu.annexes().iter().map(Annexe::zone);
@@ -8861,7 +9499,7 @@ mod tests {
             .apotres()
             .map(Apotre::recit_de_l_ame)
             .collect();
-        assert_eq!(recits.len(), 11);
+        assert_eq!(recits.len(), 13);
         assert!(recits[0].starts_with("L'âme du Baron pendu"));
         assert!(recits[1].starts_with("L'âme de l'Abbesse écorchée"));
         assert!(recits[2].starts_with("L'âme du Margrave de givre"));
@@ -8873,6 +9511,8 @@ mod tests {
         assert!(recits[8].starts_with("L'âme du Chancelier aux mille yeux"));
         assert!(recits[9].starts_with("L'âme du Prince de braise"));
         assert!(recits[10].starts_with("L'âme du Sénéchal des orages"));
+        assert!(recits[11].starts_with("L'âme de la Reine-mère de chair"));
+        assert!(recits[12].starts_with("L'âme du Roi sans visage"));
     }
 
     #[test]
@@ -9080,6 +9720,8 @@ mod tests {
                 ("archiviste", Classe::Mage, 77),
                 ("pyromancien", Classe::Mage, 82),
                 ("heraut-de-l-orage", Classe::Templier, 87),
+                ("favorite", Classe::Assassin, 92),
+                ("chevalier-crane", Classe::Guerrier, 98),
             ]
         );
         assert_eq!(heros[0].3, ["entaille", "lame-empoisonnee"]);
@@ -9152,7 +9794,7 @@ mod tests {
             ids
         }
         let contenu = ContenuV1::new();
-        let attendu: [(&str, &[&str], &[&str]); 13] = [
+        let attendu: [(&str, &[&str], &[&str]); 15] = [
             ("lisiere", &["corbeau", "vipere"], &["loup", "corbeau"]),
             (
                 "marais",
@@ -9229,6 +9871,16 @@ mod tests {
                 &["aigle-tonnerre", "belier-de-granit"],
                 &["belier-de-granit", "feu-de-saint-elme"],
             ),
+            (
+                "palais-de-chair",
+                &["larve-de-chair", "valet-ecorche"],
+                &["larve-de-chair", "devoreur-de-chair", "valet-ecorche"],
+            ),
+            (
+                "puits-du-monde",
+                &["echo-du-vide", "ver-des-abysses"],
+                &["rampant-du-puits", "echo-du-vide", "ver-des-abysses"],
+            ),
         ];
         for (id, de_jour, de_nuit) in attendu {
             let zone = contenu.zone(&ZoneId::new(id)).unwrap();
@@ -9259,7 +9911,7 @@ mod tests {
     fn chaque_zone_a_ses_meteos() {
         use Meteo::*;
         let contenu = ContenuV1::new();
-        let attendu: [(&str, &[Meteo]); 14] = [
+        let attendu: [(&str, &[Meteo]); 16] = [
             ("lisiere", &[Pluie, Tempete, Canicule]),
             ("marais", &[Pluie, Tempete, Canicule]),
             ("vallee", &[Pluie, Tempete, Grele]),
@@ -9274,6 +9926,8 @@ mod tests {
             ("haute-cite-dechue", &[Tempete, Grele]),
             ("gorge-de-braise", &[Canicule, Tempete]),
             ("pics-foudroyes", &[Tempete, Grele]),
+            ("palais-de-chair", &[Pluie, Canicule]),
+            ("puits-du-monde", &[Tempete, Pluie]),
         ];
         for (id, meteos) in attendu {
             let zone = contenu.zone(&ZoneId::new(id)).unwrap();
@@ -9642,7 +10296,11 @@ mod tests {
                 "haute-cite-dechue",
                 "gorge-de-braise",
                 "gorge-de-braise",
-                "pics-foudroyes"
+                "pics-foudroyes",
+                "pics-foudroyes",
+                "palais-de-chair",
+                "palais-de-chair",
+                "puits-du-monde"
             ]
         );
     }
@@ -9819,6 +10477,99 @@ mod tests {
         assert_eq!(equipes, [("chasseresse", 2, 800), ("fossoyeur", 3, 900)]);
     }
 
+    /// Section 48 de docs/contenu-v1.md (étape 168) : la chute du Sénéchal
+    /// ouvre le Palais de Chair, où la Favorite localise la Reine-mère de
+    /// chair, dont la chute ouvre le Puits du Monde, où le Chevalier-Crâne
+    /// localise le Roi sans visage, le treizième et dernier Apôtre, au
+    /// niveau 100.
+    #[test]
+    fn le_palais_et_le_puits_menent_a_la_reine_mere_et_au_roi() {
+        let contenu = ContenuV1::new();
+        let piste = contenu.piste();
+        let vaincus: Vec<EspeceId> = piste
+            .apotres()
+            .map(|apotre| apotre.espece().id().clone())
+            .collect();
+        assert_eq!(vaincus.len(), 13);
+        assert_eq!(piste.apotres_attendus(), 13);
+        let palais = &contenu.zones()[14];
+        let puits = &contenu.zones()[15];
+        assert_eq!(palais.niveaux(), (niveau(88), niveau(92)));
+        assert_eq!(puits.niveaux(), (niveau(93), niveau(98)));
+        let vingt_quatrieme = piste.indice_suivant(23, &vaincus[..11]).unwrap();
+        assert_eq!(vingt_quatrieme.zone.as_str(), "pics-foudroyes");
+        assert!(!piste.zone_ouverte(palais.id(), 23));
+        assert!(piste.zone_ouverte(palais.id(), 24));
+        let vingt_cinquieme = piste.indice_suivant(24, &vaincus[..11]).unwrap();
+        assert_eq!(&vingt_cinquieme.zone, palais.id());
+        let reine = piste
+            .apotre_en_attente(palais.id(), 25, &vaincus[..11])
+            .unwrap();
+        assert_eq!(reine.espece().id().as_str(), "reine-mere-de-chair");
+        assert_eq!(reine.niveau(), niveau(94));
+        assert_eq!(piste.indice_suivant(25, &vaincus[..11]), None);
+        let vingt_sixieme = piste.indice_suivant(25, &vaincus[..12]).unwrap();
+        assert_eq!(&vingt_sixieme.zone, palais.id());
+        assert!(piste.zone_ouverte(puits.id(), 26));
+        let vingt_septieme = piste.indice_suivant(26, &vaincus[..12]).unwrap();
+        assert_eq!(&vingt_septieme.zone, puits.id());
+        let roi = piste
+            .apotre_en_attente(puits.id(), 27, &vaincus[..12])
+            .unwrap();
+        assert_eq!(roi.espece().id().as_str(), "roi-sans-visage");
+        assert_eq!(roi.niveau(), niveau(100));
+        // Plus aucun indice après le dernier Apôtre : le Béhérit prend le
+        // relais (section 9.4).
+        assert_eq!(piste.indice_suivant(27, &vaincus), None);
+        let attaques = |apotre: &Apotre| -> Vec<String> {
+            assert_eq!(apotre.espece().types().liste(), &[Type::Obscur]);
+            creer(
+                &contenu,
+                apotre.espece().id().as_str(),
+                apotre.niveau().valeur(),
+            )
+            .attaques()
+            .liste()
+            .iter()
+            .map(|attaque| attaque.id().as_str().to_string())
+            .collect()
+        };
+        assert_eq!(
+            attaques(reine),
+            [
+                "hurlement-des-abysses",
+                "peste-noire",
+                "baiser-de-sang",
+                "couvee-immonde"
+            ]
+        );
+        assert_eq!(
+            attaques(roi),
+            [
+                "hurlement-des-abysses",
+                "jugement",
+                "gouffre-sans-fond",
+                "effacement"
+            ]
+        );
+        // La Favorite, Assassin, n'a que deux monstres.
+        let equipes: Vec<(&str, usize, u32)> = [palais, puits]
+            .iter()
+            .map(|zone| {
+                let humain = zone.humain().unwrap();
+                (
+                    humain.id().as_str(),
+                    humain.generer_equipe().len(),
+                    humain.argent(),
+                )
+            })
+            .collect();
+        assert_eq!(
+            equipes,
+            [("favorite", 2, 1400), ("chevalier-crane", 3, 1500)]
+        );
+    }
+
     /// Section 47 de docs/contenu-v1.md (étape 167) : la chute du Chancelier
     /// ouvre la Gorge de Braise, où le Pyromancien localise le Prince de
     /// braise, dont la chute ouvre les Pics Foudroyés, où le Héraut de
@@ -9857,7 +10608,8 @@ mod tests {
             .unwrap();
         assert_eq!(senechal.espece().id().as_str(), "senechal-des-orages");
         assert_eq!(senechal.niveau(), niveau(89));
-        assert_eq!(piste.indice_suivant(23, &vaincus), None);
+        // Le vingt-quatrième, dans les Pics, attend la chute du Sénéchal.
+        assert_eq!(piste.indice_suivant(23, &vaincus[..10]), None);
         let attaques = |apotre: &Apotre| -> Vec<String> {
             assert_eq!(apotre.espece().types().liste(), &[Type::Obscur]);
             creer(
@@ -10083,6 +10835,18 @@ mod tests {
                     "pics-foudroyes",
                     (86, 89),
                     "pegase-d-orage"
+                ),
+                (
+                    "jardin-de-la-reine",
+                    "palais-de-chair",
+                    (91, 94),
+                    "lys-de-sang"
+                ),
+                (
+                    "racines-du-monde",
+                    "puits-du-monde",
+                    (96, 99),
+                    "germe-du-monde"
                 ),
             ]
         );

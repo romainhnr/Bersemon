@@ -1234,11 +1234,13 @@ fn le_heros_devient_shiny_depuis_son_equipement() {
     let _ = fs::remove_dir_all(dossier);
 }
 
-/// Les trois premiers Apôtres vaincus ne suffisent plus : le Béhérit attend
-/// les âmes des 13 Apôtres de la traque, et Malvoise ne propose pas de le
-/// forger (section 9.4).
+/// Les 13 Apôtres de la traque vaincus, depuis l'étape 168 : Malvoise forge
+/// le Béhérit depuis le menu des âmes, l'Éclipse se choisit dans le menu des
+/// expéditions, le Béhérit prend le Loup de niveau 30, puis le Démiurge tombe
+/// sous ses deux formes (section 9.4).
 #[test]
-fn le_beherit_attend_les_ames_des_13_apotres_a_travers_les_ecrans_du_bot() {
+fn le_demiurge_s_affronte_a_travers_les_ecrans_du_bot() {
+    use bersemon_core::beherit::EtatDuBeherit;
     use bersemon_core::catalogue::Catalogue;
     use bersemon_core::heros::Heros;
     use bersemon_core::niveau::Niveau;
@@ -1342,15 +1344,72 @@ fn le_beherit_attend_les_ames_des_13_apotres_a_travers_les_ecrans_du_bot() {
         let clic = cliquer(&affiche, |propose| *propose == cle);
         jouer(joueurs, clic)
     };
+    let choisir = |joueurs: &mut Joueurs, voulu: fn(&Cle) -> bool, valeur: &str| {
+        let affiche = afficher(joueurs);
+        let clic = choisir_dans(&affiche, voulu, valeur)
+            .unwrap_or_else(|| panic!("{valeur} absent : {}", affiche.texte));
+        jouer(joueurs, clic)
+    };
     cliquer_sur(&mut joueurs, Cle::ReprendreLaPartie);
     let camp = afficher(&mut joueurs);
     assert!(camp.texte.contains(
-        "Âmes d'Apôtres : Baron pendu, Abbesse écorchée, Margrave de givre, Amiral noyé, Prévôt des fosses, Duchesse sanguine, Évêque des os, Connétable boucher, Chancelier aux mille yeux, Prince de braise et Sénéchal des orages."
+        "Âmes d'Apôtres : Baron pendu, Abbesse écorchée, Margrave de givre, Amiral noyé, Prévôt des fosses, Duchesse sanguine, Évêque des os, Connétable boucher, Chancelier aux mille yeux, Prince de braise, Sénéchal des orages, Reine-mère de chair et Roi sans visage."
     ));
     assert!(choisir_dans(&camp, |cle| *cle == Cle::Partir, ECLIPSE).is_none());
     cliquer_sur(&mut joueurs, Cle::Afficher(Vue::Marchand));
-    let marchand = afficher(&mut joueurs);
-    assert!(choisir_dans(&marchand, |cle| *cle == Cle::DonnerAme, BEHERIT).is_none());
+    choisir(&mut joueurs, |cle| *cle == Cle::DonnerAme, BEHERIT);
+    let forge = cliquer_sur(&mut joueurs, Cle::Oui);
+    assert!(matches!(&forge[..], [Evenement::BeheritForge(_), ..]));
+    cliquer_sur(&mut joueurs, Cle::Afficher(Vue::Camp));
+    let camp = afficher(&mut joueurs);
+    assert!(
+        camp.texte
+            .contains("Béhérit pourpre : il attend son sacrifice.")
+    );
+    choisir(&mut joueurs, |cle| *cle == Cle::Partir, ECLIPSE);
+    let eclipse = afficher(&mut joueurs);
+    assert!(eclipse.texte.contains("réclame un sacrifice"));
+    // Seuls les monstres de niveau 30 ou plus, qui ne vident pas l'équipe.
+    assert!(choisir_dans(&eclipse, |cle| matches!(cle, Cle::Sacrifier(_)), "e2").is_some());
+    choisir(&mut joueurs, |cle| matches!(cle, Cle::Sacrifier(_)), "c0");
+    let mut vus = cliquer_sur(&mut joueurs, Cle::Oui);
+    assert!(matches!(&vus[..], [Evenement::Sacrifice(recit), ..] if recit.contains("Loup")));
+    let mut tour = TOUR_DU_CAMP;
+    // Combat final au niveau 100 : après une défaite, l'Éclipse reste
+    // ouverte, et le joueur y repart sans nouveau sacrifice (section 9.4).
+    for _ in 0..60 {
+        for _ in 0..500 {
+            let session = joueurs.session(JOUEUR, &contenu);
+            if session.deroulement.attente() == Attente::Camp {
+                break;
+            }
+            let affiche = message(session, &vus, None, &contenu, maintenant);
+            verifier_les_limites(&affiche);
+            let clic = jouer_un_coup(session, &affiche, &mut tour, true, Visite::Faite);
+            vus.extend(jouer(&mut joueurs, clic));
+        }
+        if vus.contains(&Evenement::RecompenseDuDemiurge) {
+            break;
+        }
+        // Après une défaite, le bot montre le camp lui-même.
+        let affiche = afficher(&mut joueurs);
+        if propose(&affiche, |cle| *cle == Cle::Afficher(Vue::Camp)) {
+            cliquer_sur(&mut joueurs, Cle::Afficher(Vue::Camp));
+        }
+        choisir(&mut joueurs, |cle| *cle == Cle::Partir, ECLIPSE);
+        vus.extend(cliquer_sur(&mut joueurs, Cle::PartirVersLEclipse));
+    }
+    assert!(vus.contains(&Evenement::RecompenseDuDemiurge));
+    let session = joueurs.session(JOUEUR, &contenu);
+    let partie = session.deroulement.partie().unwrap();
+    assert_eq!(partie.beherit(), EtatDuBeherit::DemiurgeVaincu);
+    assert_eq!(partie.sac().philtres_chromatiques(), 3);
+    let camp = afficher(&mut joueurs);
+    assert!(
+        camp.texte
+            .contains("Béhérit pourpre : l'Éclipse s'est refermée.")
+    );
+    assert!(choisir_dans(&camp, |cle| *cle == Cle::Partir, ECLIPSE).is_none());
     let _ = fs::remove_dir_all(dossier);
 }
 
@@ -1484,8 +1543,8 @@ fn malvoise_vend_et_loue_des_monstres_a_travers_les_ecrans_du_bot() {
     };
     // Plus de 25 espèces en vente depuis l'étape 165 : deux menus.
     assert_eq!(options(Cle::AcheterMonstre(0)), 25);
-    assert_eq!(options(Cle::AcheterMonstre(1)), 17);
-    assert_eq!(options(Cle::LouerMonstre), 19);
+    assert_eq!(options(Cle::AcheterMonstre(1)), 23);
+    assert_eq!(options(Cle::LouerMonstre), 21);
     assert!(!propose(&affiche, |cle| *cle == Cle::RendreLeMonstreLoue));
     let clic = choisir_dans(&affiche, |cle| *cle == Cle::AcheterMonstre(0), "loup").unwrap();
     let achat = jouer(&mut joueurs, clic);

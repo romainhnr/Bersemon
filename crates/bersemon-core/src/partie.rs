@@ -4897,13 +4897,16 @@ pub(crate) mod tests {
             .map(|apotre| apotre.espece().id().clone())
             .collect();
         assert_eq!(partie.ames_d_apotres().len(), piste.apotres().count());
-        // Tous ceux de la piste ne suffisent pas : le Béhérit attend les
-        // âmes des 13 Apôtres de la traque complète (section 9.4).
+        // Depuis l'étape 168, la piste a ses 13 Apôtres, ceux de la traque
+        // complète : il n'en manque aucun. Avec une âme de moins, le
+        // Béhérit ne se forge pas (section 9.4).
+        let derniere = partie.apotres_vaincus.pop().unwrap();
         assert_eq!(
             partie.forger_le_beherit(piste),
             Err(ErreurBeherit::AmesManquantes)
         );
-        partie.apotres_vaincus = ames_des_13_apotres(piste);
+        partie.apotres_vaincus.push(derniere);
+        assert_eq!(partie.apotres_vaincus, ames_des_13_apotres(piste));
         partie.marchand_au_camp = false;
         assert_eq!(
             partie.forger_le_beherit(piste),

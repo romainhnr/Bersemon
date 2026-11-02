@@ -163,9 +163,10 @@ pub fn contenu(inventaire: &Inventaire) -> String {
     contenu_detaille(inventaire, true)
 }
 
-/// Les ressources se comptent par sortes quand `ressources_detaillees` est
-/// faux : "17 sortes de ressources".
-fn contenu_detaille(inventaire: &Inventaire, ressources_detaillees: bool) -> String {
+/// Les ressources se comptent par sortes quand `detaille` est faux : "17
+/// sortes de ressources" ; depuis l'étape 168, les capsules d'attaque aussi,
+/// au-delà d'une : "48 capsules d'attaque".
+fn contenu_detaille(inventaire: &Inventaire, detaille: bool) -> String {
     let mut elements = liste_de_soins(inventaire.soins());
     elements.extend(liste_de_filets(inventaire.filets()));
     if inventaire.argent() > 0 {
@@ -176,6 +177,9 @@ fn contenu_detaille(inventaire: &Inventaire, ressources_detaillees: bool) -> Str
     match inventaire.capsules() {
         [] => {}
         [seule] => elements.push(capsule(seule)),
+        plusieurs if !detaille => {
+            elements.push(format!("{} capsules d'attaque", plusieurs.len()));
+        }
         plusieurs => {
             let noms: Vec<&str> = plusieurs
                 .iter()
@@ -188,7 +192,7 @@ fn contenu_detaille(inventaire: &Inventaire, ressources_detaillees: bool) -> Str
         elements.push(capsules_d_habilete(inventaire.capsules_d_habilete()));
     }
     let sortes = inventaire.ressources().len();
-    if ressources_detaillees {
+    if detaille {
         elements.extend(
             inventaire
                 .ressources()
@@ -878,5 +882,16 @@ mod tests {
         );
         let une = Inventaire::default().avec_ressources(ressource("os", "Os de squelette"), 3);
         assert_eq!(contenu_detaille(&une, false), "1 sorte de ressource");
+        // Les capsules d'attaque se comptent aussi, au-delà d'une (étape 168).
+        let contenu_v1 = bersemon_core::contenu::ContenuV1::new();
+        let mut avec_capsules = Inventaire::default();
+        for capsule in contenu_v1.capsules().iter().take(2) {
+            avec_capsules.ajouter_capsule(capsule.clone());
+        }
+        assert_eq!(
+            contenu_detaille(&avec_capsules, false),
+            "2 capsules d'attaque"
+        );
+        assert!(contenu(&avec_capsules).starts_with("les capsules d'attaque ("));
     }
 }

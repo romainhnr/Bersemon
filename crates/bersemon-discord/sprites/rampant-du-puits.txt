@@ -1,0 +1,42 @@
+# Rampant du Puits
+palette
+o 1b1420
+b 3a3a44
+c 24242c
+d 565662
+a 6a6a78
+y c040ff
+w e8e0cc
+shiny
+o 1b1420
+b 8a7a5a
+c 5e523a
+d b0a07a
+a d0c098
+y 40ff80
+w e8e0cc
+dessin
+........................
+........................
+........................
+........................
+........................
+........................
+........................
+........................
+........................
+.......................o
+....ooo......o........ob
+...oddcooooooaooooo..obo
+..odybyddadddddddacoobo.
+.ocbbbbbbdbbbbbbbdbcbo..
+.owwbbbbbbbbcbbbbbbbco..
+..owwcbbbbbcadbbbbbbbco.
+...ooocbbbbbdbbbbbbbco..
+......ocbbbbbbbbbbbcco..
+.....ococcbccbccbccocco.
+....odcooocoocoocco.oco.
+....oco.odco.o..oco.occo
+...oco..oco.....oco..oco
+..owo..owo.....owo..owo.
+...o....o.......o....o..

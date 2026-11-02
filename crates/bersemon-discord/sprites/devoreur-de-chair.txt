@@ -1,0 +1,42 @@
+# Dévoreur de chair
+palette
+o 1b1420
+b 8a4a44
+c 5e2e2a
+d b0706a
+r 601018
+w f0ece0
+y f0e040
+shiny
+o 1b1420
+b 4a5a4a
+c 2e3a2e
+d 6a806a
+r 1a3a1a
+w f0ece0
+y ff60a0
+dessin
+........................
+........................
+........................
+........................
+........................
+........................
+.....ooooo..o..o..o..o..
+....odddycoowoowoowoowo.
+...odbbybbcowoowoowoowo.
+..odbbbbbbbwoowcowoowo..
+.orwbbbbbbbwddwbdwdcwo..
+.orrrwbbbbbbbbbbbbbbco..
+.orrrrrwbbbbbbbbbbbbbco.
+.orrrwbbbbbbbbbbbbbbbco.
+.orwcbbbbbbbbbbbbbbbbbco
+..oooccccbbbbbbbbbbbbco.
+.....oooocbbbbbbbbbbbco.
+.........odbbbbbbbbbbco.
+.........odbbccbcccbbco.
+.........odbcoocooodbco.
+.........odbco.o..odbco.
+.........occco....occco.
+..........ooo......ooo..
+........................

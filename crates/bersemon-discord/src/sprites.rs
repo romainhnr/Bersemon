@@ -32,7 +32,7 @@ const CASES_MAX: usize = 4;
 const COULEURS_MAX: usize = 63;
 
 /// Identifiant de l'espèce et texte de son sprite, dans l'ordre du codex.
-const SPRITES: [(&str, &str); 113] = [
+const SPRITES: [(&str, &str); 125] = [
     ("salamandre", include_str!("../sprites/salamandre.txt")),
     ("crapaud", include_str!("../sprites/crapaud.txt")),
     ("mandragore", include_str!("../sprites/mandragore.txt")),
@@ -365,12 +365,54 @@ const SPRITES: [(&str, &str); 113] = [
         "senechal-des-orages",
         include_str!("../sprites/senechal-des-orages.txt"),
     ),
+    (
+        "larve-de-chair",
+        include_str!("../sprites/larve-de-chair.txt"),
+    ),
+    (
+        "devoreur-de-chair",
+        include_str!("../sprites/devoreur-de-chair.txt"),
+    ),
+    (
+        "valet-ecorche",
+        include_str!("../sprites/valet-ecorche.txt"),
+    ),
+    (
+        "idole-de-chair",
+        include_str!("../sprites/idole-de-chair.txt"),
+    ),
+    ("lys-de-sang", include_str!("../sprites/lys-de-sang.txt")),
+    (
+        "reine-mere-de-chair",
+        include_str!("../sprites/reine-mere-de-chair.txt"),
+    ),
+    (
+        "rampant-du-puits",
+        include_str!("../sprites/rampant-du-puits.txt"),
+    ),
+    ("echo-du-vide", include_str!("../sprites/echo-du-vide.txt")),
+    (
+        "ver-des-abysses",
+        include_str!("../sprites/ver-des-abysses.txt"),
+    ),
+    (
+        "gardien-du-gouffre",
+        include_str!("../sprites/gardien-du-gouffre.txt"),
+    ),
+    (
+        "germe-du-monde",
+        include_str!("../sprites/germe-du-monde.txt"),
+    ),
+    (
+        "roi-sans-visage",
+        include_str!("../sprites/roi-sans-visage.txt"),
+    ),
 ];
 
 /// Identifiant de l'espèce du combattant et texte de son sprite : les
 /// classes des héros des joueurs, puis les humains de l'IA, ceux des zones
 /// puis ceux de la Fosse aux damnés (section 5.1).
-const SPRITES_DES_HUMAINS: [(&str, &str); 27] = [
+const SPRITES_DES_HUMAINS: [(&str, &str); 29] = [
     (
         "heros-guerrier",
         include_str!("../sprites/heros/guerrier.txt"),
@@ -435,6 +477,14 @@ const SPRITES_DES_HUMAINS: [(&str, &str); 27] = [
     (
         "humain-heraut-de-l-orage",
         include_str!("../sprites/humains/heraut-de-l-orage.txt"),
+    ),
+    (
+        "humain-favorite",
+        include_str!("../sprites/humains/favorite.txt"),
+    ),
+    (
+        "humain-chevalier-crane",
+        include_str!("../sprites/humains/chevalier-crane.txt"),
     ),
     ("humain-gueux", include_str!("../sprites/humains/gueux.txt")),
     (

@@ -1,0 +1,48 @@
+# Reine-mère de chair
+palette
+o 1b1420
+a 4a2a2a
+e 2e1818
+b c88078
+c 985450
+d e8a8a0
+r 801020
+k 1b1420
+y f0e040
+g d8b040
+shiny
+o 1b1420
+a 2a2a3a
+e 181824
+b 8a7ab0
+c 5e4e84
+d b0a0d8
+r 20a060
+k 1b1420
+y 60ffd0
+g e8e8f0
+dessin
+............o...........
+..o......o.ogo.o........
+.oro....ogooooogo.......
+orrro...ogggggggo.......
+.oro.....ooddcoo........
+.ogo.....odbbbco........
+.ogo.....odkbkco........
+.ogo....oodbbbcoo.......
+.ogo..oodddrrrddcoo.....
+.ogo.oddbbbbbbbbbdco....
+.ogoodbbbbbbbbbbbbbco...
+.ogodydbbbbbbcbbbbbcco..
+.ogdbdbbbbbbcydbbbcydco.
+.ogdbbbcccbbbdbbbbbdbco.
+.ogdbbcrrrdbbbbbbbbbbco.
+.ogdbbbckdbbbbbbcccbbco.
+.ogcbbbbdbbbbbbcrrrdbco.
+.ogocbbbbbbcccbbckdbco..
+..oaacbbbbcrrrdbbdbcaeo.
+..oaaaccbbbckdbbbccaaeo.
+..oaaaaaccccdccccaaaaeo.
+..oaaaaaaaaacaaaaaaaaeo.
+..oeeeeeeeeeeeeeeeeeeeo.
+...ooooooooooooooooooo..
