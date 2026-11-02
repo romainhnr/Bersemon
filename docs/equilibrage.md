@@ -18,9 +18,10 @@ Sa stratégie est simple et constante, pour que les écarts d'une zone à l'autr
 
 - il part dans la zone la plus avancée où le niveau de ses meilleurs monstres a passé le premier tiers des niveaux de la zone ;
 - il emmène ses monstres de plus haut niveau ; quand un Apôtre l'attend au bout de la zone, ceux qui valent le plus face à lui, selon la table des types, ses stats et ses PV. Depuis l'étape 163, il compose toujours son équipe ainsi, face à l'Apôtre, à l'équipe de l'humain gardien ou aux espèces sauvages de la zone, parmi ses monstres à 5 niveaux au plus du meilleur, 10 contre un Apôtre (section 14) ;
-- en combat, il envoie le monstre qui vaut au moins deux fois plus que le monstre actif face à l'adversaire, attaque avec l'attaque aux dégâts attendus les plus hauts, lance un filet sur une espèce qu'il n'a pas quand la chance atteint 50 %, et fuit quand son dernier monstre debout a perdu la moitié de ses PV. Contre un humain ou un Apôtre, il donne l'ordre du héros et soigne son monstre sous 35 % de ses PV ;
+- en combat, il envoie le monstre qui vaut au moins deux fois plus que le monstre actif face à l'adversaire, attaque avec l'attaque aux dégâts attendus les plus hauts, lance un filet sur une espèce qu'il n'a pas quand la chance atteint 50 %, et fuit quand son dernier monstre debout a perdu la moitié de ses PV, ou, depuis l'étape 166, quand aucune de ses attaques ne blesse l'adversaire (section 16). Contre un humain ou un Apôtre, il donne l'ordre du héros et soigne son monstre sous 35 % de ses PV ;
 - entre deux étapes, il soigne un monstre sous la moitié de ses PV, rentre quand la moitié de l'équipe est KO ou qu'il ne lui reste que la moitié de ses PV, et n'affronte le combat de fin de zone qu'avec tous ses monstres debout et 80 % de ses PV ;
-- au camp, il donne les âmes à Malvoise, réclame les récompenses du codex, fait agrandir l'équipe puis forger l'objet d'équipement aux plus gros bonus, puis améliorer les filets, porte ses meilleurs objets, range argent et ressources au coffre, et emporte 6 potions et 10 filets.
+- au camp, il donne les âmes à Malvoise, réclame les récompenses du codex, fait agrandir l'équipe puis forger l'objet d'équipement aux plus gros bonus, puis améliorer les filets, porte ses meilleurs objets, range argent et ressources au coffre, et emporte 6 potions et 10 filets ;
+- le camp plein, il relâche son monstre le plus faible du camp pour une capture de plus haut niveau, et sinon la capture (étape 166, section 16).
 
 Il n'emploie pas les expéditions automatiques, la cour d'entraînement, les pièges, le rite, les capsules, les habiletés, les pierres, les boosters ni la Tour sans fond, et ne revient pas dans une zone pour y chercher une ressource. Il mesure donc une progression sans ces aides : un joueur qui s'en sert ira plus vite. Hypothèse : chaque choix prend une minute de temps réel, pauses comprises, ce qui règle la durée des travaux de Gunther en nombre d'expéditions.
 
@@ -390,3 +391,48 @@ Constats :
 1. La Sylve et les Catacombes sont dans la cible (14,6 et 11,3 expéditions). Les zones des sections précédentes s'allongent de 1 à 5 expéditions avec la nouvelle tête d'équipe, dont les défaites pèsent davantage (Col 19,1, Port 32,7) : un joueur réel choisit lui-même quand faire mener ses monstres faibles.
 2. La Duchesse sanguine est la plus facile des Apôtres contre des équipes au hasard, mais la plus longue dans les parties (6,3 tentatives, 12 % des tentatives gagnées avec 3 niveaux d'avance ou plus) : le joueur automatique lui oppose des équipes de types Psychique, Spectre ou Lumière, que ses attaques Plante et Obscur punissent, et alterne entre deux équipes seulement. Remplacer Psaume impie par Sentence (Ténèbres) la rendait plus dure à la fois dans les parties (8,2 tentatives) et contre des équipes au hasard (64 %) : Psaume impie est gardé.
 3. Les tentatives contre les Apôtres restent la limite de la mesure : elles dépendent d'un joueur qui ne lit pas les attaques adverses. Les mesures à part disent que leur difficulté est homogène.
+
+## 16. Plaine du Massacre et Haute-Cité déchue (étape 166)
+
+Troisième lot de la suite de l'aventure (docs/contenu-v1.md, section 46), chiffré selon les mêmes règles qu'aux sections 14 et 15.
+
+Première mesure, avant tout réglage : 31,6 expéditions dans la Plaine et 36,6 dans la Haute-Cité, où le Chancelier aux mille yeux demandait 21 tentatives en moyenne (jusqu'à 120 dans une partie, 5 % des tentatives gagnées quel que soit le niveau). En un contre un, plusieurs espèces dépassaient celles des lots précédents (Vautour des charniers 70 %, Griffon cuirassé 82 %, Archonte foudroyé 76 %) et le Connétable boucher, à part, ne se gagnait que 34 % du temps.
+
+Changements de l'outil :
+
+- Le camp plein, le joueur automatique relâche son monstre le plus faible du camp pour garder une capture de plus haut niveau, comme un joueur qui fait de la place. Avant, son camp de 30 places était plein en fin de partie : chaque capture était relâchée, l'équipe ne se renouvelait plus, et il affrontait le Chancelier, au niveau 79, avec un monstre au niveau 100 et deux restés vers 64. La même limite allongeait les zones précédentes : le Port des Noyés passe de 32,7 à 24,1 expéditions, la Sylve de 14,6 à 10,3.
+- Quand aucune attaque de son monstre ne blesse l'adversaire et qu'aucun changement n'aide, il fuit. Avec la correction précédente, une partie ne finissait plus : deux Destriers spectraux, Normal et Spectre, insensibles à toutes leurs attaques, se faisaient face sans fin. C'était aussi un défaut du contenu : le Destrier apprend désormais Secousse (Sol) au niveau 30, au lieu de Curée, et un test vérifie que deux espèces d'une même zone, à son niveau maximal, peuvent toujours se blesser.
+
+Réglages du contenu, après la mesure : stats de base revues à la baisse pour le Destrier spectral (390 à 374), le Vautour des charniers (395 à 360), le Mâtin de guerre (395 à 372), le Griffon cuirassé (475 à 416), l'Automate brisé (390 à 374), l'Archonte foudroyé (480 à 448) et la Muse de cristal (450 à 440), à la hausse pour le Bibliophage (390 à 400) ; le Connétable boucher (555 à 540) et le Chancelier aux mille yeux (560 à 540) perdent surtout de l'attaque principale. Le Vautour, Vol et Sol, et le Griffon, Vol et Acier, doivent à leurs types de résister à beaucoup d'attaques : à total égal, ils gagnent plus que les autres.
+
+Mesuré sur 100 parties par classe ; toutes se terminent, à la chute du Chancelier aux mille yeux, en 159 à 166 expéditions (médiane selon la classe), avec 24 à 42 défaites :
+
+| Zone | Expéditions par partie | Menées au bout | Défaites | Rentrées | Niveau à la première | Niveaux gagnés |
+|---|---|---|---|---|---|---|
+| Lisière du Bois-Sombre (3 à 7) | 11,7 | 13 % | 5 % | 83 % | 5,0 | 0,40 |
+| Marais des Pendus (8 à 13) | 10,7 | 16 % | 14 % | 70 % | 9,7 | 0,66 |
+| Vallée des Brumes (14 à 20) | 10,5 | 43 % | 16 % | 41 % | 16,7 | 0,62 |
+| Abbaye des Cendres (21 à 27) | 14,4 | 22 % | 22 % | 56 % | 23,2 | 0,53 |
+| Col du Givre-Noir (28 à 36) | 18,9 | 22 % | 22 % | 56 % | 30,9 | 0,48 |
+| Désert de sel (37 à 45) | 15,4 | 21 % | 12 % | 67 % | 40,0 | 0,51 |
+| Port des Noyés (46 à 51) | 24,1 | 11 % | 14 % | 76 % | 47,8 | 0,33 |
+| Mines de Fer-Noir (52 à 57) | 16,2 | 15 % | 25 % | 60 % | 55,8 | 0,38 |
+| Sylve écarlate (58 à 62) | 10,3 | 26 % | 24 % | 50 % | 62,0 | 0,48 |
+| Catacombes de Sainte-Ombre (63 à 67) | 10,4 | 26 % | 19 % | 55 % | 66,9 | 0,46 |
+| Plaine du Massacre (68 à 72) | 15,3 | 16 % | 22 % | 62 % | 71,6 | 0,37 |
+| Haute-Cité déchue (73 à 77) | 11,1 | 18 % | 24 % | 58 % | 77,2 | 0,42 |
+
+| Combat | Tentatives par partie | Victoires au premier essai | Contre des équipes au hasard |
+|---|---|---|---|
+| Capitaine mercenaire (Plaine, 72) | 1,3 | 82 % | 43 % |
+| Connétable boucher (Plaine, 74) | 4,1 | 62 % | 44 % |
+| Archiviste (Haute-Cité, 77) | 1,4 | 74 % | 22 % |
+| Chancelier aux mille yeux (Haute-Cité, 79) | 3,2 | 74 % | 72 % |
+
+Les Apôtres des lots précédents se prennent désormais en 2,3 à 4,2 tentatives (Amiral 3,3, Prévôt 4,2, Duchesse 3,2, Évêque 2,3). En un contre un au niveau 50, les communes du lot gagnent 30 à 54 % de leurs combats, les rares 58 à 65 %.
+
+Constats :
+
+1. La Plaine et la Haute-Cité sont dans la cible (15,3 et 11,1 expéditions), et le Port, sans être retouché, passe de 32,7 à 24,1 : l'essentiel de l'écart venait du joueur automatique, qui ne renouvelait plus son équipe.
+2. Contre des équipes au hasard, le Connétable (44 %) et l'Archiviste (22 %) sont les plus durs de leur sorte, mais se prennent vite dans les parties (4,1 et 1,4 tentatives). La mesure à part tire ses équipes parmi les espèces de 380 au moins au total : les communes de la Plaine et l'Automate, recalés sous ce seuil, en sont sortis, ce qui a fait passer l'Archiviste de 44 à 22 % sans qu'il ait changé. Écart laissé à juger en jouant (gamedesign.md, Q118).
+3. Les communes du lot ont beaucoup de types faibles face à l'Obscur, très efficace contre l'Acier, l'Électrique, le Vol, le Sol, le Combat et le Normal : un joueur qui n'emmène que les espèces de ces deux zones contre leurs Apôtres le paie. Les espèces Psychique de la Haute-Cité, très efficaces contre l'Obscur, et les rares Féérique des annexes, qui y résistent, sont les contre-mesures du lot.

@@ -1293,10 +1293,10 @@ Décidé le 25/10/2026, pour les étapes 121 à 123 (gamedesign.md, section 9.7)
 |---|---|---|---|---|
 | Pluie | pluie | Eau, Plante | Lisière, Marais, Vallée, Abbaye, Port des Noyés, Sylve, Catacombes | Une pluie froide tombe sans relâche. |
 | Tempête | tempete | Électrique, Vol | toutes sauf le Désert de sel | L'orage gronde : le ciel se déchire d'éclairs. |
-| Grêle | grele | Glace, Roche | Vallée, Col, Mines de Fer-Noir | La grêle crépite sur les pierres et les armures. |
+| Grêle | grele | Glace, Roche | Vallée, Col, Mines de Fer-Noir, Haute-Cité déchue | La grêle crépite sur les pierres et les armures. |
 | Tempête de sable | tempete-de-sable | Sol, Roche | Désert de sel | Le sable vole, cinglant comme une lame. |
 | Cyclone | cyclone | Eau, Vol | Port des Noyés, seule zone de mer | Le cyclone hurle, et les vagues montent à l'assaut des côtes. |
-| Canicule | canicule | Feu, Sol | Lisière, Marais, Abbaye, Désert de sel, Sylve | Une chaleur écrasante pèse sur la terre. |
+| Canicule | canicule | Feu, Sol | Lisière, Marais, Abbaye, Désert de sel, Sylve, Plaine du Massacre | Une chaleur écrasante pèse sur la terre. |
 
 Chaque zone a 1 chance sur 3, par créneau de 30 minutes, d'avoir une de ses météos ; sinon, temps calme.
 
@@ -1342,7 +1342,7 @@ Stats de base des classes, dans l'ordre PV / Attaque / Défense / Attaque spéci
 
 PV de base doublés le 26/10/2026, à l'étape 147 (choix de l'utilisateur, gamedesign.md, section 4.4) : ils étaient de 90, 70, 95 et 70, pour un total de 450 par classe. Un Guerrier a 33 PV au niveau 5, 128 au niveau 25 et 176 au niveau 35 (24, 83 et 113 avant).
 
-Niveau de combat : 5, plus 5 par palier de l'arme et 5 par palier de l'armure (5 à 40 ; 55 depuis l'étape 163, avec les paliers 4 et 5 de la section 44 ; 65 depuis l'étape 165, avec le palier 6 de la section 45).
+Niveau de combat : 5, plus 5 par palier de l'arme et 5 par palier de l'armure (5 à 40 ; 55 depuis l'étape 163, avec les paliers 4 et 5 de la section 44 ; 65 depuis l'étape 165, avec le palier 6 de la section 45 ; 75 depuis l'étape 166, avec le palier 7 de la section 46).
 
 Attaques du héros, de type Humain :
 
@@ -2011,3 +2011,156 @@ Cartes des annexes :
 > Autel des ronces : Au fond du coffre, un parchemin taché de sang montre le chemin d'une clairière cachée, où un autel de ronces attend ses offrandes.
 
 > Crypte des saints : Au fond du coffre, une clé de bronze et un plan jauni mènent à une crypte scellée, où reposeraient les saints de Sainte-Ombre.
+
+## 46. Plaine du Massacre, Haute-Cité déchue et leurs annexes
+
+Décidés le 02/11/2026, pour l'étape 166, troisième lot de la suite de l'aventure (gamedesign.md, sections 4.3, 9.1, 9.4, 9.9 et 10.7). Les zones, leurs niveaux, les Apôtres et les humains gardiens viennent du fil validé ; les noms et les types des espèces, les rares, les annexes, les classes des humains et le palier 7 de l'équipement ont été validés par l'utilisateur (lot 3) ; les valeurs, les textes et les réglages issus de la mesure sont proposés par Claude sans validation (gamedesign.md, Q118 ; equilibrage.md, section 16). Mêmes règles qu'aux lots 1 et 2 (sections 44 et 45).
+
+Zones :
+
+| Identifiant | Nom | Niveaux | Étapes | Taille des groupes | Espèces | Monstre rare | Humain | Apôtre |
+|---|---|---|---|---|---|---|---|---|
+| plaine-du-massacre | Plaine du Massacre | 68 à 72 | 5 | 1 à 3 | Destrier spectral, Vautour des charniers, Mâtin de guerre | Griffon cuirassé (hostile) | Capitaine mercenaire | Connétable boucher (74) |
+| haute-cite-dechue | Haute-Cité déchue | 73 à 77 | 5 | 1 à 3 | Automate brisé, Bibliophage, Œil errant | Archonte foudroyé (hostile) | Archiviste | Chancelier aux mille yeux (79) |
+
+Le Schnoz se cache dans les deux. Pas de marchand mort ni de pêcheur. Météos : tempête et canicule dans la Plaine ; tempête et grêle dans la Haute-Cité. Le Destrier spectral et l'Œil errant sont nocturnes, le Vautour des charniers diurne.
+
+| Zone | Expédition automatique (durée de base, dégâts, XP, potions, argent) | Coffres (argent) | Capsules des coffres (prix chez Malvoise) |
+|---|---|---|---|
+| Plaine du Massacre | 11 h, 590 à 1100, 7800 à 11200, 1 à 3, 490 à 780 | 380 à 580 | Galop funèbre, Serres de poussière, Crocs d'acier (800) |
+| Haute-Cité déchue | 12 h, 650 à 1230, 9000 à 12800, 1 à 3, 550 à 860 | 420 à 640 | Décharge mécanique, Festin d'encre, Regard hypnotique (850) |
+
+Espèces (stats dans l'ordre PV / Attaque / Défense / Attaque spéciale / Défense spéciale / Vitesse). Au codex, elles viennent après l'Évêque des os, dans l'ordre du tableau. Aucune n'évolue.
+
+| Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP | Rareté | Habiletés | Attaques apprises |
+|---|---|---|---|---|---|---|---|---|
+| destrier-spectral | Destrier spectral | Normal, Spectre | offensif | 72 / 86 / 58 / 40 / 50 / 68 (374) | 210 | commune | Célérité, Férocité | Ruade (1), Charge spectrale (1), Secousse (30), Griffes spectrales (40), Galop funèbre (50), Charge des morts (76) |
+| vautour-des-charniers | Vautour des charniers | Vol, Sol | offensif | 70 / 80 / 56 / 36 / 52 / 66 (360) | 210 | commune | Traqueur, Pillard | Coup de bec (1), Secousse (1), Piqué (30), Bec funeste (40), Serres de poussière (50), Séisme (76) |
+| matin-de-guerre | Mâtin de guerre | Combat, Acier | offensif | 78 / 86 / 80 / 30 / 52 / 46 (372) | 210 | commune | Férocité, Carapace | Morsure (1), Coup de garde (1), Taille d'acier (30), Épée des morts (40), Crocs d'acier (50), Déchiquetage (76) |
+| griffon-cuirasse | Griffon cuirassé | Vol, Acier | offensif | 75 / 88 / 78 / 45 / 60 / 70 (416) | 355 | rare, hostile | Férocité, Affinité | Coup de bec (1), Coup de garde (1), Bec funeste (35), Taille d'acier (45), Plongeon d'acier (78) |
+| licorne-des-cendres | Licorne des cendres | Feu, Féérique | soutien | 75 / 55 / 70 / 90 / 95 / 65 (450) | 350 | rare, pacifique (Tertre) | Volonté, Instinct | Crachat de braises (1), Poussière d'elfe (1), Lumière d'aube (35), Brasier (45), Rayon de lune (55), Corne de cendre (80) |
+| connetable-boucher | Connétable boucher | Obscur | offensif | 100 / 105 / 98 / 85 / 90 / 62 (540) | 500 | Apôtre | Férocité, Volonté | Étreinte obscure (1), Frappe d'os (1), Hurlement des abysses (20), Déchiquetage (35), Flagellation (50), Boucherie (70) |
+| automate-brise | Automate brisé | Acier, Électrique | soutien | 78 / 68 / 86 / 66 / 58 / 18 (374) | 225 | commune | Carapace, Volonté | Coup de garde (1), Étincelle (1), Onde de choc (30), Taille d'acier (40), Décharge mécanique (50), Foudre (80) |
+| bibliophage | Bibliophage | Insecte, Psychique | offensif | 66 / 55 / 62 / 102 / 70 / 45 (400) | 225 | commune | Sorcellerie, Fouineur | Bourdonnement (1), Onde psychique (1), Nuée (30), Festin d'encre (45), Jugement (80) |
+| oeil-errant | Œil errant | Psychique, Vol | offensif | 58 / 38 / 52 / 100 / 66 / 76 (390) | 225 | commune | Instinct, Éclaireur | Regard funeste (1), Onde psychique (1), Bourrasque (30), Regard hypnotique (40), Rayon d'éther (80) |
+| archonte-foudroye | Archonte foudroyé | Électrique, Psychique | offensif | 72 / 48 / 66 / 105 / 85 / 72 (448) | 380 | rare, hostile | Sorcellerie, Affinité | Étincelle (1), Onde psychique (1), Onde de choc (35), Éclair de l'archonte (45), Jugement (82) |
+| muse-de-cristal | Muse de cristal | Son, Féérique | soutien | 70 / 45 / 70 / 95 / 95 / 65 (440) | 375 | rare, pacifique (Bibliothèque) | Volonté, Instinct | Glas (1), Poussière d'elfe (1), Tocsin (35), Rayon de lune (45), Chant de cristal (82) |
+| chancelier-aux-mille-yeux | Chancelier aux mille yeux | Obscur | offensif | 96 / 80 / 90 / 110 / 98 / 66 (540) | 530 | Apôtre | Sorcellerie, Volonté | Étreinte obscure (1), Onde psychique (1), Hurlement des abysses (20), Jugement (35), Regard des mille yeux (50), Secret interdit (75) |
+
+Le Destrier spectral, Normal et Spectre, est insensible aux deux types ; il apprend Secousse (Sol) au niveau 30, pour que deux Destriers puissent se blesser (étape 166, voir equilibrage.md, section 16).
+
+Attaques nouvelles :
+
+| Identifiant | Nom | Type | Cat. | Puissance | Précision | Effet |
+|---|---|---|---|---|---|---|
+| galop-funebre | Galop funèbre | Normal | P | 85 | 95 | |
+| charge-des-morts | Charge des morts | Spectre | P | 95 | 90 | |
+| serres-de-poussiere | Serres de poussière | Sol | P | 85 | 95 | |
+| crocs-d-acier | Crocs d'acier | Acier | P | 85 | 95 | |
+| plongeon-d-acier | Plongeon d'acier | Vol | P | 95 | 90 | |
+| corne-de-cendre | Corne de cendre | Feu | S | 95 | 90 | |
+| boucherie | Boucherie | Obscur | P | 95 | 90 | |
+| decharge-mecanique | Décharge mécanique | Électrique | P | 85 | 95 | |
+| festin-d-encre | Festin d'encre | Psychique | S | 85 | 95 | |
+| regard-hypnotique | Regard hypnotique | Psychique | S | 80 | 100 | paralysie 20 % |
+| rayon-d-ether | Rayon d'éther | Psychique | S | 95 | 90 | |
+| eclair-de-l-archonte | Éclair de l'archonte | Électrique | S | 85 | 95 | |
+| chant-de-cristal | Chant de cristal | Son | S | 95 | 90 | |
+| regard-des-mille-yeux | Regard des mille yeux | Obscur | S | 90 | 95 | paralysie 10 % |
+| secret-interdit | Secret interdit | Obscur | S | 95 | 90 | |
+
+Attaques d'œuf, sur le modèle de la section 28 :
+
+| Famille | Identifiant | Nom | Type | Cat. | Puissance | Précision | Effet |
+|---|---|---|---|---|---|---|---|
+| Destrier spectral | sabots-fantomes | Sabots fantômes | Spectre | P | 80 | 100 | |
+| Vautour des charniers | curee-des-sables | Curée des sables | Sol | P | 80 | 100 | |
+| Mâtin de guerre | morsure-de-fer | Morsure de fer | Acier | P | 80 | 100 | |
+| Griffon cuirassé | serres-du-griffon | Serres du griffon | Vol | P | 80 | 100 | |
+| Licorne des cendres | flamme-de-licorne | Flamme de licorne | Féérique | S | 80 | 100 | |
+| Automate brisé | engrenage | Engrenage | Acier | P | 75 | 100 | paralysie 20 % |
+| Bibliophage | page-maudite | Page maudite | Psychique | S | 80 | 100 | |
+| Œil errant | oeillade | Œillade | Psychique | S | 75 | 100 | paralysie 20 % |
+| Archonte foudroyé | arc-electrique | Arc électrique | Électrique | S | 80 | 100 | |
+| Muse de cristal | harmonie | Harmonie | Son | S | 80 | 100 | |
+
+Ressources : Crin spectral (crin-spectral), Plume de vautour (plume-de-vautour), Collier à pointes (collier-a-pointes), Rouage brisé (rouage-brise), Encre vivante (encre-vivante) et Cristallin (cristallin), 5 pièces d'argent chacune ; Serre de griffon (serre-de-griffon) et Éclat d'archonte (eclat-d-archonte), 15.
+
+Humains gardiens. Héros au niveau maximal de la zone, à part de son équipement ; IA relevée ; valeurs internes de leurs monstres à 15, première habileté de leur espèce :
+
+| Identifiant | Nom | Classe | Héros (niveau, arme, armure) | Monstres | Victoire |
+|---|---|---|---|---|---|
+| capitaine-mercenaire | Capitaine mercenaire | Guerrier | 72, Hache du bourreau d'os, Plates du sanglier | Vautour des charniers (72), Mâtin de guerre (72), Griffon cuirassé (73) | 1000 pièces d'argent, puis l'indice 17 |
+| archiviste | Archiviste | Mage | 77, Crosse des catacombes, Robe de ronces | Automate brisé (77), Bibliophage (77), Archonte foudroyé (78) | 1100 pièces d'argent, puis l'indice 19 |
+
+Annexes (gamedesign.md, section 9.9), sur le modèle de la section 44 :
+
+| Identifiant | Nom | Ouverte depuis | Niveaux | Monstre rare | Coffres (argent) |
+|---|---|---|---|---|---|
+| tertre-des-heros | Tertre des héros | Plaine du Massacre | 71 à 74 | Licorne des cendres (pacifique) | 500 à 760 |
+| bibliotheque-interdite | Bibliothèque interdite | Haute-Cité déchue | 76 à 79 | Muse de cristal (pacifique) | 560 à 840 |
+
+Équipement du palier 7 (gamedesign.md, section 4.3) : +16 % d'Attaque et d'Attaque spéciale pour les armes, +35 % de Défense et de Défense spéciale pour les armures ; niveau de combat 75 avec l'arme et l'armure du palier 7.
+
+| Identifiant | Objet | Classe | Coût | Durée |
+|---|---|---|---|---|
+| fendoir-de-guerre | Fendoir de guerre (arme) | Guerrier | 8 Collier à pointes, 6 Crin spectral, 1 Éclat d'archonte | 16 h |
+| dagues-du-massacre | Dagues du massacre (arme) | Assassin | 8 Collier à pointes, 6 Crin spectral, 1 Éclat d'archonte | 16 h |
+| sceptre-d-ether | Sceptre d'éther (arme) | Mage | 8 Encre vivante, 6 Cristallin, 1 Éclat d'archonte | 16 h |
+| marteau-du-griffon | Marteau du griffon (arme) | Templier | 8 Encre vivante, 6 Cristallin, 1 Éclat d'archonte | 16 h |
+| cuirasse-du-griffon | Cuirasse du griffon (armure) | Guerrier | 10 Rouage brisé, 6 Plume de vautour, 1 Serre de griffon | 18 h |
+| cuir-du-vautour | Cuir du vautour (armure) | Assassin | idem | 18 h |
+| robe-des-archives | Robe des archives (armure) | Mage | idem | 18 h |
+| plates-de-la-cite | Plates de la cité (armure) | Templier | idem | 18 h |
+
+Attaques principales du palier 7, de type Humain, puissance 105, précision 100 : Brise-ost (brise-ost, Guerrier, P), Mille coupures (mille-coupures, Assassin, P), Cataclysme (cataclysme, Mage, S), Lumière divine (lumiere-divine, Templier, S).
+
+Sprites : un par espèce, normal et shiny, et un par humain gardien (section 42).
+
+Textes :
+
+> Indice 16 : sous l'autel de l'Évêque, une liste de recrues scellée du même sceau : à l'ouest, la Plaine du Massacre, où deux armées se battent encore après leur mort. Un huitième Apôtre y commande.
+
+> Indice 17 : le capitaine mercenaire vaincu a parlé : le Connétable boucher dresse son camp au centre de la plaine, sur une colline de cadavres.
+
+> Indice 18 : dans la tente du Connétable, un ordre de marche scellé du même sceau : au-delà de la plaine, la Haute-Cité déchue, dont les tours regardent encore le ciel. Un neuvième Apôtre y gouverne.
+
+> Indice 19 : l'archiviste vaincu a parlé : le Chancelier aux mille yeux siège au sommet de la plus haute tour, dans une salle tapissée de regards.
+
+Capitaine mercenaire, avant le combat, puis après la victoire :
+
+> Au milieu des lances plantées dans la boue, un capitaine mercenaire compte ses gages sur le cadavre d'un chevalier. Il range sa bourse, lève sa hache, et trois bêtes de guerre se dressent derrière lui.
+
+> Le capitaine mercenaire s'écroule sur sa bourse, que personne ne viendra réclamer.
+
+Archiviste, avant le combat, puis après la victoire :
+
+> Entre deux rayonnages effondrés, un archiviste aux yeux cousus feuillette un registre. Il referme le livre d'un coup sec : votre nom vient d'y être écrit. Trois créatures surgissent des étagères.
+
+> L'archiviste s'effondre, et son registre se referme sur une page blanche.
+
+Connétable boucher, avant le combat, épilogue, âme et carnet :
+
+> Au sommet d'une colline de cadavres, un colosse en armure rouillée essuie son couperet sur une bannière déchirée. Le Connétable boucher, Apôtre du Démiurge, a fait de la guerre un abattoir. Il n'y aura pas de fuite.
+
+> Le Connétable boucher s'effondre sur sa colline de cadavres, et les armées mortes se couchent enfin. Le même sceau, une main ouverte, est gravé sur son couperet. Huit Apôtres sont tombés ; le Démiurge, lui, attend toujours. Votre traque continue.
+
+> L'âme du Connétable boucher s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.
+
+> Connétable boucher, abattu dans la Plaine du Massacre.
+
+Chancelier aux mille yeux, avant le combat, épilogue, âme et carnet :
+
+> Dans la salle tapissée de regards, une silhouette drapée de pourpre lève la tête : sous sa capuche, des centaines d'yeux s'ouvrent à la fois. Le Chancelier aux mille yeux, Apôtre du Démiurge, sait déjà tout de vous. Il n'y aura pas de fuite.
+
+> Le Chancelier aux mille yeux s'effondre, et tous les regards des murs se ferment d'un coup. Le même sceau, une main ouverte, est gravé sur sa chevalière. Neuf Apôtres sont tombés ; le Démiurge, lui, attend toujours. Votre traque continue.
+
+> L'âme du Chancelier aux mille yeux s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.
+
+> Chancelier aux mille yeux, abattu dans la Haute-Cité déchue.
+
+Cartes des annexes :
+
+> Tertre des héros : Au fond du coffre, une carte d'état-major indique un tertre où les héros de l'ancienne guerre ont été enterrés avec leurs montures.
+
+> Bibliothèque interdite : Au fond du coffre, une clé gravée d'un œil ouvre, d'après son étiquette, la bibliothèque interdite de la Haute-Cité.
