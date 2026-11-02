@@ -480,3 +480,47 @@ Constats :
 1. La Gorge et les Pics font 25,8 expéditions à eux deux, comme la Plaine et la Haute-Cité (23,8), mais la Gorge en prend 18 : le joueur y gagne les niveaux qui l'amènent au haut des Pics, où il entre au niveau 86. Plus le niveau approche de 100, plus il coûte d'XP ; le rendement d'XP suit la règle des lots précédents (environ 3 fois le niveau moyen de la zone), sans correction. Levier possible, à juger en jouant : un rendement plus haut dans la Gorge.
 2. Les Apôtres se prennent désormais en 1,1 à 2,8 tentatives : les tentatives d'avant tenaient surtout aux équipes mal choisies par le joueur automatique. Le Prince de braise, pris au premier essai 95 % du temps avec 1 niveau d'avance, est peut-être trop facile ; à part, il se gagne 58 % du temps, dans la fourchette des autres.
 3. Comme l'Archiviste, le Pyromancien, Mage, ne se gagne que 17 % du temps à part, mais en 1,4 tentative dans les parties.
+
+## 18. Palais de Chair et Puits du Monde (étape 168)
+
+Cinquième et dernier lot de la suite de l'aventure (docs/contenu-v1.md, section 48), chiffré selon les mêmes règles qu'aux sections 14 à 17. Les parties vont désormais jusqu'à la chute du Roi sans visage, le treizième Apôtre, au niveau 100. Le combat contre le Démiurge n'est pas joué par l'outil.
+
+Première mesure : 34,2 expéditions dans le Palais et 23,6 dans le Puits ; la Favorite demandait 7,1 tentatives, 5 % des tentatives gagnées avec 3 niveaux d'avance ou plus, et 4 parties sur 400 n'allaient pas au bout. Le joueur automatique y arrivait avec des équipes Psychique et Spectre (Liche, Archonte foudroyé, Feu de Saint-Elme), très faibles contre le Valet écorché, Combat et Spectre.
+
+Réglages du contenu, après la mesure : la Favorite emmène un Dévoreur de chair au lieu du Valet écorché ; le Gardien du gouffre perd de l'attaque (446 à 428), et le Germe du monde, attaquant spécial qui n'avait que des attaques physiques au niveau 50, apprend Éclat du zénith et Ronces maudites (stats ramenées de 446 à 450 après essai à 468).
+
+Mesuré sur 100 parties par classe ; toutes se terminent, à la chute du Roi sans visage, en 224 à 231 expéditions (médiane selon la classe), avec 20 à 29 défaites, l'équipe au niveau 99 :
+
+| Zone | Expéditions par partie | Menées au bout | Défaites | Rentrées | Niveau à la première | Niveaux gagnés |
+|---|---|---|---|---|---|---|
+| Lisière du Bois-Sombre (3 à 7) | 11,7 | 13 % | 5 % | 83 % | 5,0 | 0,40 |
+| Marais des Pendus (8 à 13) | 10,7 | 16 % | 14 % | 70 % | 9,7 | 0,66 |
+| Vallée des Brumes (14 à 20) | 10,9 | 44 % | 15 % | 41 % | 16,7 | 0,60 |
+| Abbaye des Cendres (21 à 27) | 14,4 | 24 % | 20 % | 56 % | 23,2 | 0,53 |
+| Col du Givre-Noir (28 à 36) | 18,0 | 25 % | 16 % | 59 % | 30,8 | 0,49 |
+| Désert de sel (37 à 45) | 16,6 | 22 % | 9 % | 68 % | 39,6 | 0,48 |
+| Port des Noyés (46 à 51) | 22,9 | 12 % | 8 % | 80 % | 47,6 | 0,32 |
+| Mines de Fer-Noir (52 à 57) | 16,2 | 17 % | 17 % | 66 % | 54,9 | 0,38 |
+| Sylve écarlate (58 à 62) | 10,1 | 29 % | 15 % | 57 % | 61,0 | 0,47 |
+| Catacombes de Sainte-Ombre (63 à 67) | 10,5 | 28 % | 8 % | 64 % | 65,8 | 0,44 |
+| Plaine du Massacre (68 à 72) | 13,9 | 20 % | 6 % | 74 % | 70,4 | 0,39 |
+| Haute-Cité déchue (73 à 77) | 9,9 | 32 % | 6 % | 62 % | 75,9 | 0,48 |
+| Gorge de Braise (78 à 82) | 18,0 | 16 % | 10 % | 74 % | 80,6 | 0,30 |
+| Pics Foudroyés (83 à 87) | 9,4 | 35 % | 7 % | 58 % | 86,0 | 0,47 |
+| Palais de Chair (88 à 92) | 17,9 | 18 % | 6 % | 77 % | 90,4 | 0,27 |
+| Puits du Monde (93 à 98) | 21,1 | 9 % | 5 % | 85 % | 95,3 | 0,19 |
+
+| Combat | Tentatives par partie | Victoires au premier essai | Contre des équipes au hasard |
+|---|---|---|---|
+| Favorite (Palais, 92) | 1,7 | 63 % | 27 % |
+| Reine-mère de chair (Palais, 94) | 1,0 | 98 % | 81 % |
+| Chevalier-Crâne (Puits, 98) | 1,4 | 80 % | 37 % |
+| Roi sans visage (Puits, 100) | 1,2 | 93 % | 56 % |
+
+En un contre un au niveau 50, les communes du lot gagnent 27 à 51 % de leurs combats, les rares 51 à 65 %.
+
+Constats :
+
+1. Les dix zones des cinq lots demandent 149,9 expéditions par partie, soit 15,0 par zone en moyenne, au-dessus de la cible d'environ 12 ; les six zones d'avant en demandent 82,3, soit 13,7 par zone. L'écart vient des zones qui portent la montée de niveau vers la suivante (Port 22,9, Gorge 18,0, Palais 17,9) et du Puits (21,1) : près du niveau 100, chaque niveau coûte beaucoup d'XP et le joueur n'en gagne que 0,19 par expédition. Le rendement d'XP suit pourtant la règle (environ 3 fois le niveau moyen de la zone) ; levier possible, à juger en jouant : un rendement plus haut dans les zones les plus longues.
+2. Les Apôtres du lot se prennent dès le premier essai ou presque (Reine-mère 98 %, Roi sans visage 93 %), comme ceux du lot 4 : le joueur automatique les aborde avec 1 à 3 niveaux d'avance et les bons types. À part, la Reine-mère se gagne 81 % du temps, plus facile que ses aînés ; le Roi sans visage, 56 %, dans leur fourchette.
+3. Contre des équipes au hasard, les humains gardiens des derniers lots se gagnent de 17 à 37 % du temps, mais en 1,1 à 1,7 tentative dans les parties.

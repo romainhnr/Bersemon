@@ -1291,12 +1291,12 @@ Décidé le 25/10/2026, pour les étapes 121 à 123 (gamedesign.md, section 9.7)
 
 | Météo | Identifiant | Types renforcés (+20 %) | Zones | Texte au départ |
 |---|---|---|---|---|
-| Pluie | pluie | Eau, Plante | Lisière, Marais, Vallée, Abbaye, Port des Noyés, Sylve, Catacombes | Une pluie froide tombe sans relâche. |
-| Tempête | tempete | Électrique, Vol | toutes sauf le Désert de sel | L'orage gronde : le ciel se déchire d'éclairs. |
+| Pluie | pluie | Eau, Plante | Lisière, Marais, Vallée, Abbaye, Port des Noyés, Sylve, Catacombes, Palais de Chair, Puits du Monde | Une pluie froide tombe sans relâche. |
+| Tempête | tempete | Électrique, Vol | toutes sauf le Désert de sel et le Palais de Chair | L'orage gronde : le ciel se déchire d'éclairs. |
 | Grêle | grele | Glace, Roche | Vallée, Col, Mines de Fer-Noir, Haute-Cité déchue, Pics Foudroyés | La grêle crépite sur les pierres et les armures. |
 | Tempête de sable | tempete-de-sable | Sol, Roche | Désert de sel | Le sable vole, cinglant comme une lame. |
 | Cyclone | cyclone | Eau, Vol | Port des Noyés, seule zone de mer | Le cyclone hurle, et les vagues montent à l'assaut des côtes. |
-| Canicule | canicule | Feu, Sol | Lisière, Marais, Abbaye, Désert de sel, Sylve, Plaine du Massacre, Gorge de Braise | Une chaleur écrasante pèse sur la terre. |
+| Canicule | canicule | Feu, Sol | Lisière, Marais, Abbaye, Désert de sel, Sylve, Plaine du Massacre, Gorge de Braise, Palais de Chair | Une chaleur écrasante pèse sur la terre. |
 
 Chaque zone a 1 chance sur 3, par créneau de 30 minutes, d'avoir une de ses météos ; sinon, temps calme.
 
@@ -2314,3 +2314,138 @@ Cartes des annexes :
 > Cœur du volcan : Au fond du coffre, une carte roussie par le feu indique un passage vers le cœur du volcan, là où la lave est la plus ancienne.
 
 > Aire des pégases : Au fond du coffre, une plume d'argent et un croquis mènent à une aire au-dessus des nuages, où se poseraient les pégases d'orage.
+
+## 48. Palais de Chair, Puits du Monde et leurs annexes
+
+Décidés le 02/11/2026, pour l'étape 168, cinquième et dernier lot de la suite de l'aventure (gamedesign.md, sections 9.1, 9.4, 9.9 et 10.7). Les zones, leurs niveaux, les Apôtres et les humains gardiens viennent du fil validé ; les noms et les types des espèces, les rares, les annexes, les classes des humains, les météos et l'absence de nouveau palier d'équipement ont été validés par l'utilisateur (lot 5) ; les autres valeurs, les textes et les réglages issus de la mesure sont proposés par Claude sans validation (gamedesign.md, Q118 ; equilibrage.md, section 18). Mêmes règles qu'aux lots précédents (sections 44 à 47). Le Roi sans visage, au niveau 100, est le treizième et dernier Apôtre de la piste.
+
+Zones :
+
+| Identifiant | Nom | Niveaux | Étapes | Taille des groupes | Espèces | Monstre rare | Humain | Apôtre |
+|---|---|---|---|---|---|---|---|---|
+| palais-de-chair | Palais de Chair | 88 à 92 | 5 | 1 à 3 | Larve de chair, Dévoreur de chair, Valet écorché | Idole de chair (hostile) | Favorite | Reine-mère de chair (94) |
+| puits-du-monde | Puits du Monde | 93 à 98 | 5 | 1 à 3 | Rampant du Puits, Écho du vide, Ver des abysses | Gardien du gouffre (hostile) | Chevalier-Crâne | Roi sans visage (100) |
+
+Le Schnoz se cache dans les deux. Pas de marchand mort ni de pêcheur. Météos : pluie et canicule dans le Palais ; tempête et pluie dans le Puits. Le Dévoreur de chair et le Rampant du Puits sont nocturnes.
+
+| Zone | Expédition automatique (durée de base, dégâts, XP, potions, argent) | Coffres (argent) | Capsules des coffres (prix chez Malvoise) |
+|---|---|---|---|
+| Palais de Chair | 15 h, 830 à 1620, 13200 à 18200, 1 à 3, 730 à 1100 | 540 à 820 | Spore de chair, Festin de chair, Écorchure (1000) |
+| Puits du Monde | 16 h, 890 à 1760, 14800 à 20200, 1 à 3, 790 à 1180 | 580 à 880 | Chute sans fin, Cri du néant, Morsure des abysses (1050) |
+
+Espèces (stats dans l'ordre PV / Attaque / Défense / Attaque spéciale / Défense spéciale / Vitesse). Au codex, elles viennent après le Sénéchal des orages, dans l'ordre du tableau. Aucune n'évolue.
+
+| Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP | Rareté | Habiletés | Attaques apprises |
+|---|---|---|---|---|---|---|---|---|
+| larve-de-chair | Larve de chair | Insecte, Poison | soutien | 84 / 62 / 86 / 66 / 74 / 20 (392) | 270 | commune | Carapace, Volonté | Bourdonnement (1), Morsure venimeuse (1), Nuée (30), Croc de venin (40), Spore de chair (50), Peste noire (94) |
+| devoreur-de-chair | Dévoreur de chair | Normal, Ténèbres | offensif | 76 / 92 / 60 / 40 / 52 / 72 (392) | 270 | commune | Férocité, Pillard | Morsure (1), Griffure (1), Curée (30), Croc noir (40), Festin de chair (50), Rapine (94) |
+| valet-ecorche | Valet écorché | Combat, Spectre | offensif | 72 / 92 / 70 / 40 / 52 / 64 (390) | 270 | commune | Férocité, Traqueur | Frappe d'os (1), Charge spectrale (1), Corde du gibet (30), Griffes spectrales (40), Écorchure (50), Charge des morts (94) |
+| idole-de-chair | Idole de chair | Psychique, Poison | offensif | 78 / 50 / 70 / 104 / 88 / 66 (456) | 460 | rare, hostile | Sorcellerie, Affinité | Onde psychique (1), Morsure venimeuse (1), Regard hypnotique (35), Festin d'encre (45), Extase charnelle (96) |
+| lys-de-sang | Lys de sang | Plante, Féérique | soutien | 72 / 50 / 70 / 90 / 96 / 66 (444) | 455 | rare, pacifique (Jardin) | Volonté, Instinct | Feuille tranchante (1), Poussière d'elfe (1), Ronces (35), Rayon de lune (45), Floraison sanglante (96) |
+| reine-mere-de-chair | Reine-mère de chair | Obscur | offensif | 104 / 90 / 100 / 104 / 98 / 48 (544) | 630 | Apôtre | Volonté, Sorcellerie | Étreinte obscure (1), Morsure venimeuse (1), Hurlement des abysses (20), Peste noire (35), Baiser de sang (50), Couvée immonde (75) |
+| rampant-du-puits | Rampant du Puits | Roche, Ténèbres | offensif | 76 / 92 / 82 / 36 / 54 / 50 (390) | 285 | commune | Férocité, Carapace | Griffe de pierre (1), Morsure (1), Chute de pierres (30), Griffe d'ombre (40), Chute sans fin (50), Éboulement (99) |
+| echo-du-vide | Écho du vide | Son, Psychique | soutien | 68 / 38 / 64 / 96 / 80 / 46 (392) | 285 | commune | Sorcellerie, Instinct | Glas (1), Onde psychique (1), Lamentation (30), Tocsin (40), Cri du néant (50), Requiem (99) |
+| ver-des-abysses | Ver des abysses | Sol, Dragon | offensif | 84 / 94 / 74 / 40 / 52 / 48 (392) | 285 | commune | Férocité, Volonté | Secousse (1), Souffle draconique (1), Furie draconique (30), Morsure des abysses (50), Engloutissement (99) |
+| gardien-du-gouffre | Gardien du gouffre | Acier, Ténèbres | offensif | 82 / 94 / 92 / 44 / 66 / 50 (428) | 485 | rare, hostile | Carapace, Férocité | Coup de garde (1), Morsure (1), Taille d'acier (35), Griffe d'ombre (45), Couperet du gouffre (99) |
+| germe-du-monde | Germe du monde | Plante, Lumière | soutien | 78 / 50 / 76 / 92 / 98 / 56 (450) | 480 | rare, pacifique (Racines) | Volonté, Carapace | Feuille tranchante (1), Lueur sacrée (1), Éclat du zénith (35), Ronces maudites (45), Sève originelle (99) |
+| roi-sans-visage | Roi sans visage | Obscur | offensif | 100 / 98 / 96 / 102 / 96 / 60 (552) | 670 | Apôtre | Sorcellerie, Volonté | Étreinte obscure (1), Onde psychique (1), Hurlement des abysses (20), Jugement (35), Gouffre sans fond (50), Effacement (75) |
+
+Attaques nouvelles :
+
+| Identifiant | Nom | Type | Cat. | Puissance | Précision | Effet |
+|---|---|---|---|---|---|---|
+| spore-de-chair | Spore de chair | Poison | S | 85 | 95 | poison 20 % |
+| festin-de-chair | Festin de chair | Normal | P | 85 | 95 | |
+| ecorchure | Écorchure | Combat | P | 85 | 95 | |
+| extase-charnelle | Extase charnelle | Psychique | S | 95 | 90 | |
+| floraison-sanglante | Floraison sanglante | Plante | S | 95 | 90 | |
+| couvee-immonde | Couvée immonde | Obscur | S | 95 | 90 | |
+| chute-sans-fin | Chute sans fin | Roche | P | 85 | 95 | |
+| cri-du-neant | Cri du néant | Son | S | 85 | 95 | |
+| morsure-des-abysses | Morsure des abysses | Dragon | P | 85 | 95 | |
+| couperet-du-gouffre | Couperet du gouffre | Acier | P | 95 | 90 | |
+| seve-originelle | Sève originelle | Plante | S | 95 | 90 | |
+| effacement | Effacement | Obscur | S | 95 | 90 | |
+
+Attaques d'œuf, sur le modèle de la section 28 :
+
+| Famille | Identifiant | Nom | Type | Cat. | Puissance | Précision | Effet |
+|---|---|---|---|---|---|---|---|
+| Larve de chair | ponte-grouillante | Ponte grouillante | Insecte | P | 80 | 100 | |
+| Dévoreur de chair | gueule-beante | Gueule béante | Normal | P | 80 | 100 | |
+| Valet écorché | lambeaux-de-peau | Lambeaux de peau | Spectre | P | 80 | 100 | |
+| Idole de chair | murmure-charnel | Murmure charnel | Psychique | S | 80 | 100 | |
+| Lys de sang | parfum-de-sang | Parfum de sang | Féérique | S | 75 | 100 | paralysie 20 % |
+| Rampant du Puits | reptation | Reptation | Ténèbres | P | 80 | 100 | |
+| Écho du vide | repercussion | Répercussion | Son | S | 80 | 100 | |
+| Ver des abysses | fouissement | Fouissement | Sol | P | 80 | 100 | |
+| Gardien du gouffre | garde-du-gouffre | Garde du gouffre | Acier | P | 75 | 100 | paralysie 20 % |
+| Germe du monde | eclosion | Éclosion | Lumière | S | 80 | 100 | |
+
+Ressources : Chair grouillante (chair-grouillante), Dent du dévoreur (dent-du-devoreur), Peau écorchée (peau-ecorchee), Éclat du puits (eclat-du-puits), Cristal d'écho (cristal-d-echo) et Anneau des abysses (anneau-des-abysses), 5 pièces d'argent chacune ; Œil de l'idole (oeil-de-l-idole) et Fer du gouffre (fer-du-gouffre), 15. Le palier 8 étant le dernier, aucune ne sert à la forge : elles se vendent à Malvoise.
+
+Humains gardiens. Héros au niveau maximal de la zone, à part de son équipement ; IA relevée ; valeurs internes de leurs monstres à 15, première habileté de leur espèce :
+
+| Identifiant | Nom | Classe | Héros (niveau, arme, armure) | Monstres | Victoire |
+|---|---|---|---|---|---|
+| favorite | Favorite | Assassin | 92, Dagues foudroyées, Cuir d'orage | Dévoreur de chair (92), Idole de chair (93) | 1400 pièces d'argent, puis l'indice 25 |
+| chevalier-crane | Chevalier-Crâne | Guerrier | 98, Hache de magma, Plates de magma | Rampant du Puits (98), Ver des abysses (98), Gardien du gouffre (99) | 1500 pièces d'argent, puis l'indice 27 |
+
+La Favorite, Assassin comme le Contrebandier et la Chasseresse, n'a que deux monstres.
+
+Annexes (gamedesign.md, section 9.9), sur le modèle de la section 44 :
+
+| Identifiant | Nom | Ouverte depuis | Niveaux | Monstre rare | Coffres (argent) |
+|---|---|---|---|---|---|
+| jardin-de-la-reine | Jardin de la Reine | Palais de Chair | 91 à 94 | Lys de sang (pacifique) | 740 à 1080 |
+| racines-du-monde | Racines du monde | Puits du Monde | 96 à 99 | Germe du monde (pacifique) | 800 à 1160 |
+
+Sprites : un par espèce, normal et shiny, et un par humain gardien (section 42).
+
+Textes :
+
+> Indice 24 : sous la lance du Sénéchal, une invitation scellée du même sceau : au cœur du royaume, le Palais de Chair, dont les murs respirent. Un douzième Apôtre y tient sa cour.
+
+> Indice 25 : la favorite vaincue a parlé : la Reine-mère de chair repose dans la salle du trône, au milieu de sa couvée.
+
+> Indice 26 : dans la couche de la Reine-mère, une carte scellée du même sceau : sous le palais, le Puits du Monde descend jusqu'au fond des choses. Le dernier Apôtre y attend.
+
+> Indice 27 : le chevalier-crâne vaincu a parlé : le Roi sans visage règne au fond du Puits, sur un trône taillé dans la dernière pierre du monde.
+
+Favorite, avant le combat, puis après la victoire :
+
+> Sur un lit de soie tachée, une favorite aux yeux fardés vous sourit en remplissant deux coupes. Elle laisse tomber la sienne : deux créatures sortent des tentures.
+
+> La favorite s'effondre sur les coussins, et son sourire ne la quitte pas.
+
+Chevalier-Crâne, avant le combat, puis après la victoire :
+
+> Sur la dernière corniche avant le gouffre, un chevalier dont le heaume est un crâne immense barre le passage, l'épée plantée devant lui. Trois bêtes montent du Puits à son côté.
+
+> Le chevalier-crâne bascule dans le vide, et le Puits avale son épée.
+
+Reine-mère de chair, avant le combat, épilogue, âme et carnet :
+
+> Dans la salle du trône, une masse de chair coiffée d'une couronne se soulève, et cent bouches s'ouvrent à la fois. La Reine-mère de chair, Apôtre du Démiurge, couve le royaume entier. Il n'y aura pas de fuite.
+
+> La Reine-mère de chair s'affaisse, et les murs du palais cessent de respirer. Le même sceau, une main ouverte, est gravé sur son sceptre. Douze Apôtres sont tombés ; le Démiurge, lui, attend toujours. Votre traque continue.
+
+> L'âme de la Reine-mère de chair s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.
+
+> Reine-mère de chair, abattue dans le Palais de Chair.
+
+Roi sans visage, avant le combat, épilogue, âme et carnet :
+
+> Au fond du Puits, sur un trône taillé dans la dernière pierre du monde, un roi drapé d'ombre lève la tête : à la place du visage, il n'y a rien. Le Roi sans visage, dernier Apôtre du Démiurge, se lève. Il n'y aura pas de fuite.
+
+> Le Roi sans visage s'effondre, et le Puits se tait. Le même sceau, une main ouverte, est gravé sur son trône. Les treize Apôtres sont tombés ; il ne reste que le Démiurge. Rapportez leurs âmes à Malvoise.
+
+> L'âme du Roi sans visage s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.
+
+> Roi sans visage, abattu dans le Puits du Monde.
+
+Cartes des annexes :
+
+> Jardin de la Reine : Au fond du coffre, un ruban de soie rouge noue une clé de jardin : derrière le palais, la Reine cultiverait des fleurs qui boivent le sang.
+
+> Racines du monde : Au fond du coffre, une lanterne de racines tressées éclaire un passage qui descend le long des racines du monde.
