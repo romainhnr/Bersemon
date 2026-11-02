@@ -427,7 +427,7 @@ pub fn rapport_des_gardiens(
     let _ = writeln!(texte, "## Apôtres, à part\n");
     let _ = writeln!(
         texte,
-        "Chaque Apôtre, à son niveau, contre 100 équipes de trois monstres à ce niveau, tirées de même parmi les espèces des zones jusqu'à la sienne comprise, avec le même héros. Part de victoires du joueur.\n"
+        "Chaque Apôtre, à son niveau, contre 100 équipes de trois monstres à ce niveau, tirées de même parmi les espèces des zones jusqu'à la sienne comprise, avec le même héros. Puis le Démiurge, ses deux formes à la suite, contre des équipes préparées, tirées parmi les espèces de toutes les zones et des annexes que l'Obscur ne frappe pas double, et les légendaires, contre des équipes tirées parmi toutes ces espèces ; le héros a l'équipement le plus haut. Part de victoires du joueur.\n"
     );
     let _ = writeln!(
         texte,

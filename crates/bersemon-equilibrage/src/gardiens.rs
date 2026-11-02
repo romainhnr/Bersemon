@@ -17,6 +17,7 @@ use bersemon_core::humain::IaHumain;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::niveau::Niveau;
 use bersemon_core::stats::ValeursInternes;
+use bersemon_core::types::{Efficacite, Type, efficacite};
 use bersemon_core::zone::Zone;
 
 /// Assez pour que la part de victoires d'un humain varie de quelques points
@@ -116,6 +117,75 @@ pub fn mesurer_les_apotres(contenu: &ContenuV1) -> Vec<MesureDuGardien> {
             zone: zone.nom().to_string(),
             humain: apotre.espece().nom().to_string(),
             niveau: niveau.valeur(),
+            heros_du_joueur: heros.niveau().valeur(),
+            victoires,
+        });
+    }
+    mesures
+}
+
+/// Le Démiurge, ses deux formes à la suite, puis les légendaires, au niveau
+/// 100, contre des équipes tirées parmi les espèces de toutes les zones et
+/// des annexes (étape 169). Contre le Démiurge, des équipes préparées : des
+/// espèces que l'Obscur ne frappe pas double, comme les rares Féérique et
+/// Lumière des annexes. Le joueur automatique ne s'y prépare pas : une
+/// équipe sans elles perd même contre un Démiurge très affaibli, l'Obscur
+/// frappant double presque tous les types et leur résistant.
+pub fn mesurer_les_combats_finaux(contenu: &ContenuV1) -> Vec<MesureDuGardien> {
+    let zones: Vec<Zone> = contenu
+        .zones()
+        .iter()
+        .cloned()
+        .chain(contenu.annexes().iter().map(|annexe| annexe.zone().clone()))
+        .collect();
+    let reserve = especes_gardees(contenu, &zones);
+    let preparee: Vec<Espece> = reserve
+        .iter()
+        .filter(|espece| {
+            !matches!(
+                efficacite(Type::Obscur, espece.types()),
+                Efficacite::Forte | Efficacite::TresForte
+            )
+        })
+        .cloned()
+        .collect();
+    let heros = heros_du_joueur(contenu, Niveau::MAX);
+    let mut mesures = Vec::new();
+    let invocation = contenu.invocation();
+    let demiurge = invocation.demiurge();
+    let victoires = contre_des_equipes_au_hasard(&preparee, demiurge.niveau(), 100, |equipe| {
+        let formes = demiurge.generer_ses_formes(&mut GenerateurAleatoire::new(0));
+        Combat::new(equipe, formes)
+            .expect("équipes valides")
+            .avec_heros(Cote::Joueur, heros.clone())
+            .contre_un_apotre()
+            .en_deux_phases()
+    });
+    mesures.push(MesureDuGardien {
+        zone: invocation.eclipse().nom().to_string(),
+        humain: format!("{}, deux formes", demiurge.espece().nom()),
+        niveau: demiurge.niveau().valeur(),
+        heros_du_joueur: heros.niveau().valeur(),
+        victoires,
+    });
+    for (rang, zone) in contenu.zones_legendaires().iter().enumerate() {
+        let legendaire = zone.legendaire();
+        let victoires = contre_des_equipes_au_hasard(
+            &reserve,
+            legendaire.niveau(),
+            101 + rang as u64,
+            |equipe| {
+                let adversaire = legendaire.generer(&mut GenerateurAleatoire::new(0));
+                Combat::new(equipe, vec![adversaire])
+                    .expect("équipes valides")
+                    .avec_heros(Cote::Joueur, heros.clone())
+                    .contre_un_apotre()
+            },
+        );
+        mesures.push(MesureDuGardien {
+            zone: zone.zone().nom().to_string(),
+            humain: legendaire.espece().nom().to_string(),
+            niveau: legendaire.niveau().valeur(),
             heros_du_joueur: heros.niveau().valeur(),
             victoires,
         });

@@ -5843,7 +5843,7 @@ static ESPECES: [FicheEspece; 128] = [
         nom: "Démiurge",
         types: &[Type::Obscur],
         role: Role::Offensif,
-        stats_de_base: [120, 130, 110, 130, 110, 100],
+        stats_de_base: [85, 93, 79, 93, 79, 71],
         rendement_experience: 420,
         rarete: Rarete::Demiurge,
         habiletes: &[Habilete::Ferocite, Habilete::Volonte],
@@ -5860,7 +5860,7 @@ static ESPECES: [FicheEspece; 128] = [
         nom: "Démiurge éveillé",
         types: &[Type::Obscur],
         role: Role::Offensif,
-        stats_de_base: [135, 145, 120, 150, 120, 110],
+        stats_de_base: [97, 104, 86, 108, 86, 79],
         rendement_experience: 480,
         rarete: Rarete::Demiurge,
         habiletes: &[Habilete::Sorcellerie, Habilete::Carapace],
@@ -7193,7 +7193,7 @@ static ESPECES: [FicheEspece; 128] = [
         nom: "Léviathan",
         types: &[Type::Eau, Type::Dragon],
         role: Role::Offensif,
-        stats_de_base: [110, 90, 100, 115, 100, 85],
+        stats_de_base: [115, 90, 100, 100, 100, 95],
         rendement_experience: 500,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Volonte, Habilete::Carapace],
@@ -10429,6 +10429,14 @@ mod tests {
             demiurge.seconde_forme().map(|espece| espece.id().as_str()),
             Some("demiurge-eveille")
         );
+        // Réglés à l'étape 169 pour qu'une équipe préparée l'emporte environ
+        // une fois sur trois (docs/equilibrage.md, section 19).
+        let totaux: Vec<u32> = [demiurge.espece()]
+            .into_iter()
+            .chain(demiurge.seconde_forme())
+            .map(Espece::total_des_stats_de_base)
+            .collect();
+        assert_eq!(totaux, [500, 560]);
         let attaques = |id: &str| -> Vec<String> {
             creer(&contenu, id, 100)
                 .attaques()

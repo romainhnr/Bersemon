@@ -49,7 +49,10 @@ fn main() {
         "{}",
         rapport::rapport_des_gardiens(
             &gardiens::mesurer_les_gardiens(&contenu),
-            &gardiens::mesurer_les_apotres(&contenu),
+            &gardiens::mesurer_les_apotres(&contenu)
+                .into_iter()
+                .chain(gardiens::mesurer_les_combats_finaux(&contenu))
+                .collect::<Vec<_>>(),
             &gardiens::mesurer_les_especes(&contenu)
         )
     );
