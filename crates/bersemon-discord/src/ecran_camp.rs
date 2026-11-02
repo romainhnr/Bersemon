@@ -18,6 +18,7 @@ use bersemon_core::horodatage::Horodatage;
 use bersemon_core::marchand::prix_de_revente;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
+use bersemon_core::recompenses_du_codex::compte_au_codex;
 use bersemon_core::stats::ValeursInternes;
 use bersemon_presentation::arene::description_de_la_fosse;
 use bersemon_presentation::beherit::description_de_l_eclipse;
@@ -608,10 +609,15 @@ fn codex(partie: &Partie, fiche: Option<usize>, page: usize, contenu: &ContenuV1
         lignes.join("\n").chars().count() > LONGUEUR_MAX
     };
     let pages = pages_d_especes + usize::from(carnet_a_part);
-    let page = fiche
-        .filter(|_| ouverte.is_some())
-        .and_then(|position| liste.iter().position(|(autre, _)| *autre == position))
-        .map_or(page, |rang| rang / ESPECES_PAR_PAGE);
+    // Une fiche ouverte garde la page de son espèce, celle d'un Apôtre
+    // abattu la page du carnet.
+    let page = match fiche.filter(|_| ouverte.is_some()) {
+        Some(position) => liste
+            .iter()
+            .position(|(autre, _)| *autre == position)
+            .map_or(pages.saturating_sub(1), |rang| rang / ESPECES_PAR_PAGE),
+        None => page,
+    };
     let mut lignes = Vec::new();
     match ouverte {
         Some(espece) => {
@@ -630,10 +636,19 @@ fn codex(partie: &Partie, fiche: Option<usize>, page: usize, contenu: &ContenuV1
             }
         }
     }
+    // Les Apôtres abattus, hors de la liste, s'ouvrent depuis la page du
+    // carnet (section 5.6).
+    let du_carnet = especes
+        .iter()
+        .enumerate()
+        .filter(|(_, espece)| !compte_au_codex(espece))
+        .filter(|_| page + 1 >= pages);
     let capturees: Vec<OptionDeMenu> = liste
         .iter()
         .skip(page * ESPECES_PAR_PAGE)
         .take(ESPECES_PAR_PAGE)
+        .copied()
+        .chain(du_carnet)
         .filter(|(_, espece)| codex.etat(espece.id()) == EtatCodex::Capturee)
         .map(|(position, espece)| OptionDeMenu {
             libelle: espece.nom().to_string(),
@@ -641,7 +656,8 @@ fn codex(partie: &Partie, fiche: Option<usize>, page: usize, contenu: &ContenuV1
             description: None,
         })
         .collect();
-    // 25 options au plus par menu : une page compte plus de 25 espèces.
+    // 25 options au plus par menu : une page compte plus de 25 espèces, la
+    // dernière aussi les Apôtres abattus.
     let mut rangees_du_codex: Vec<Rangee> = capturees
         .chunks(OPTIONS_PAR_MENU)
         .enumerate()

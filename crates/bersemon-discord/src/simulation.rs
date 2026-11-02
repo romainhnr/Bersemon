@@ -2556,6 +2556,29 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         Horodatage::depuis_secondes(0),
     );
     assert!(derniere.texte.contains("Carnet de traque :"));
+    // Les fiches des Apôtres abattus s'ouvrent depuis la page du carnet, et
+    // y ramènent (section 5.6).
+    let chancelier = contenu
+        .especes()
+        .iter()
+        .position(|espece| espece.id().as_str() == "chancelier-aux-mille-yeux")
+        .unwrap();
+    let fiches = |question: &crate::message::Question| -> Vec<String> {
+        question
+            .rangees
+            .iter()
+            .filter_map(|rangee| match rangee {
+                Rangee::Menu(menu) if matches!(menu.cle, Cle::Fiche(_)) => Some(&menu.options),
+                _ => None,
+            })
+            .flatten()
+            .map(|option| option.valeur.clone())
+            .collect()
+    };
+    assert!(fiches(&derniere).contains(&chancelier.to_string()));
+    assert!(!fiches(&avant_derniere).contains(&chancelier.to_string()));
+    let cles = afficher(&partie, Vue::Codex(Some(chancelier)));
+    assert!(cles.contains(&Cle::Afficher(Vue::PageDuCodex(3))));
     assert!(
         derniere
             .texte
