@@ -1059,9 +1059,11 @@ mod tests {
         );
         // Sans palette shiny : un humain.
         assert!(Sprite::lire(&correct.replace("shiny\nb 405060\n", "")).is_ok());
-        let couleurs: String = (0..=COULEURS_MAX)
-            .map(|rang| format!("{} 000000\n", char::from(b'0' + rang as u8)))
-            .collect();
+        let mut couleurs = String::new();
+        for rang in 0..=COULEURS_MAX {
+            couleurs.push(char::from(b'0' + rang as u8));
+            couleurs.push_str(" 000000\n");
+        }
         assert_eq!(
             Sprite::lire(&format!("palette\n{couleurs}dessin\n{dessin}\n")),
             Err(ErreurSprite::TropDeCouleurs)

@@ -325,10 +325,11 @@ pub(crate) fn parties(dossier: &Path) -> Vec<(IdJoueur, PathBuf)> {
 /// Une ligne par retour : le joueur, la zone, la forge ou la pêche, et l'heure en
 /// secondes.
 fn en_lignes(references: &[Reference]) -> String {
-    references
-        .iter()
-        .map(|(joueur, cle, heure)| format!("{joueur} {cle} {}\n", heure.secondes()))
-        .collect()
+    let mut lignes = String::new();
+    for (joueur, cle, heure) in references {
+        lignes.push_str(&format!("{joueur} {cle} {}\n", heure.secondes()));
+    }
+    lignes
 }
 
 /// Un fichier absent ou une ligne illisible ne bloque rien : au pire, un
