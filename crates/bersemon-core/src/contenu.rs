@@ -8,7 +8,7 @@
 //! reçoivent de l'appelant, comme le hasard.
 
 use crate::annexe::Annexe;
-use crate::legendaire::ZoneLegendaire;
+use crate::legendaire::{Legendaire, ZoneLegendaire};
 use std::ops::RangeInclusive;
 use std::time::Duration;
 
@@ -376,6 +376,20 @@ const AME_DE_LA_REINE: &str = "L'âme de la Reine-mère de chair s'arrache de sa
 
 const AME_DU_ROI: &str =
     "L'âme du Roi sans visage s'arrache de sa dépouille, noire et brûlante. Vous la recueillez.";
+
+// Les zones légendaires et leurs gardiens, section 49 de docs/contenu-v1.md
+// (étape 169).
+const AVANT_LEVIATHAN: &str = "Au plus profond des Abysses, la mer elle-même se soulève : un serpent immense, couvert d'écailles noires, ouvre une gueule où s'engouffrent les courants. Léviathan, maître des eaux, vous barre la route.";
+
+const CAPTURE_DE_LEVIATHAN: &str = "Léviathan s'effondre dans un remous et se laisse approcher. Le maître des eaux vous suit désormais.";
+
+const AVANT_BEHEMOTH: &str = "Au cœur des Terres arides, le sol tremble à chaque pas : une bête colossale aux cornes de pierre se dresse entre les dunes. Béhémoth, premier-né de la terre, charge.";
+
+const CAPTURE_DE_BEHEMOTH: &str = "Béhémoth plie les genoux dans la poussière et baisse ses cornes. Le premier-né de la terre vous suit désormais.";
+
+const AVANT_ZIZ: &str = "Au-dessus des nuages déchirés, une ombre couvre le soleil : un oiseau si grand que ses ailes cachent le ciel plonge vers vous. Ziz, roi des airs, pousse un cri.";
+
+const CAPTURE_DE_ZIZ: &str = "Ziz se pose devant vous, les ailes repliées, et incline la tête. Le roi des airs vous suit désormais.";
 
 /// L'Éclipse et le Démiurge, section 23 de docs/contenu-v1.md (étapes 88 à
 /// 90).
@@ -1810,6 +1824,63 @@ impl ContenuV1 {
         .expect("Démiurge conforme aux règles")
         .avec_ligne_du_carnet(CARNET_DU_DEMIURGE);
         let invocation = Invocation::new(eclipse, demiurge, FORGE_DU_BEHERIT, SACRIFICE);
+        // Les zones légendaires, au niveau 100, s'ouvrent à la chute du
+        // Démiurge ; leurs monstres sauvages reprennent des espèces des
+        // zones de même thème (section 9.10). Aucune n'a d'expédition
+        // automatique, faute de compter comme explorée.
+        let zone_legendaire =
+            |id: &str,
+             nom: &str,
+             especes: &[&str],
+             rares: Vec<EspeceRare>,
+             meteos: Vec<Meteo>,
+             (gardien, avant, capture): (&str, &str, &str)| {
+                let zone = Zone::new(
+                    ZoneId::new(id),
+                    nom,
+                    (niveau(100), niveau(100)),
+                    5,
+                    3,
+                    especes.iter().map(|espece| trouver(espece)).collect(),
+                    rares,
+                    expedition_automatique(16, 890..=1760, 14800..=20200, 1..=3, 790..=1180),
+                    coffre(640..=960, Vec::new()),
+                )
+                .map(|zone| zone.avec_meteos(meteos))
+                .expect("zone légendaire conforme aux règles");
+                let legendaire = Legendaire::new(trouver(gardien), niveau(100), avant, capture)
+                    .expect("légendaire conforme aux règles");
+                ZoneLegendaire::new(zone, legendaire)
+            };
+        let zones_legendaires = vec![
+            zone_legendaire(
+                "abysses",
+                "Abysses",
+                &["sirene-putride", "crabe-necrophage"],
+                vec![EspeceRare {
+                    espece: trouver("hydre-des-marees"),
+                    pacifique: false,
+                }],
+                vec![Meteo::Pluie, Meteo::Cyclone],
+                ("leviathan", AVANT_LEVIATHAN, CAPTURE_DE_LEVIATHAN),
+            ),
+            zone_legendaire(
+                "terres-arides",
+                "Terres arides",
+                &["crotale-des-salines", "ver-des-salines", "scarabee-solaire"],
+                Vec::new(),
+                vec![Meteo::TempeteDeSable, Meteo::Canicule],
+                ("behemoth", AVANT_BEHEMOTH, CAPTURE_DE_BEHEMOTH),
+            ),
+            zone_legendaire(
+                "ciel-dechire",
+                "Ciel déchiré",
+                &["harpie-des-orages", "aigle-tonnerre", "feu-de-saint-elme"],
+                Vec::new(),
+                vec![Meteo::Tempete, Meteo::Grele],
+                ("ziz", AVANT_ZIZ, CAPTURE_DE_ZIZ),
+            ),
+        ];
         let zones = vec![
             lisiere, marais, vallee, abbaye, col, desert, port, mines, sylve, catacombes, plaine,
             cite, gorge, pics, palais, puits,
@@ -1881,7 +1952,7 @@ impl ContenuV1 {
                 jardin,
                 racines,
             ],
-            zones_legendaires: Vec::new(),
+            zones_legendaires,
         }
     }
 
@@ -2396,7 +2467,7 @@ const ATTAQUES_DES_HEROS: [FicheAttaque; 40] = [
 ];
 
 /// Section 1 de docs/contenu-v1.md, dans le même ordre.
-const ATTAQUES: [FicheAttaque; 266] = [
+const ATTAQUES: [FicheAttaque; 273] = [
     fiche(
         "souffle-chaud",
         "Souffle chaud",
@@ -4392,6 +4463,64 @@ const ATTAQUES: [FicheAttaque; 266] = [
         20,
     ),
     fiche("eclosion", "Éclosion", Type::Lumiere, Speciale, 80, 100),
+    // Les légendaires, section 49 (étape 169).
+    fiche(
+        "abime-des-mers",
+        "Abîme des mers",
+        Type::Eau,
+        Speciale,
+        100,
+        90,
+    ),
+    fiche(
+        "pietinement-du-monde",
+        "Piétinement du monde",
+        Type::Sol,
+        Physique,
+        100,
+        90,
+    ),
+    fiche(
+        "ouragan-celeste",
+        "Ouragan céleste",
+        Type::Vol,
+        Speciale,
+        95,
+        90,
+    ),
+    fiche(
+        "aile-de-l-aube",
+        "Aile de l'aube",
+        Type::Lumiere,
+        Speciale,
+        100,
+        90,
+    ),
+    // Leurs attaques d'œuf (section 13.11).
+    fiche(
+        "ecaille-abyssale",
+        "Écaille abyssale",
+        Type::Dragon,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "corne-primordiale",
+        "Corne primordiale",
+        Type::Combat,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "plume-celeste",
+        "Plume céleste",
+        Type::Vol,
+        Speciale,
+        80,
+        100,
+    ),
 ];
 
 struct FicheCapsule {
@@ -4767,7 +4896,7 @@ const MARCHAND_ZOMBIE: FicheEspece = FicheEspece {
 /// Section 2 de docs/contenu-v1.md, dans l'ordre du codex : les monstres de
 /// départ, les communs, les rares, l'Apôtre, le monstre caché, puis les
 /// formes évoluées de la section 8.
-static ESPECES: [FicheEspece; 125] = [
+static ESPECES: [FicheEspece; 128] = [
     FicheEspece {
         id: "salamandre",
         nom: "Salamandre",
@@ -7057,6 +7186,65 @@ static ESPECES: [FicheEspece; 125] = [
         ],
         evolution: None,
     },
+    // Les légendaires des zones qui s'ouvrent à la chute du Démiurge, au
+    // niveau 100 (section 49, étape 169). Ils comptent au codex.
+    FicheEspece {
+        id: "leviathan",
+        nom: "Léviathan",
+        types: &[Type::Eau, Type::Dragon],
+        role: Role::Offensif,
+        stats_de_base: [110, 90, 100, 115, 100, 85],
+        rendement_experience: 500,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Volonte, Habilete::Carapace],
+        apprentissage: &[
+            (1, "deferlante"),
+            (1, "souffle-draconique"),
+            (40, "maree-noire"),
+            (60, "souffle-des-brumes"),
+            (80, "deluge-draconique"),
+            (100, "abime-des-mers"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "behemoth",
+        nom: "Béhémoth",
+        types: &[Type::Sol, Type::Combat],
+        role: Role::Offensif,
+        stats_de_base: [130, 125, 115, 55, 95, 80],
+        rendement_experience: 500,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Ferocite, Habilete::Carapace],
+        apprentissage: &[
+            (1, "secousse"),
+            (1, "frappe-d-os"),
+            (40, "coup-de-pioche"),
+            (60, "engloutissement"),
+            (80, "dechiquetage"),
+            (100, "pietinement-du-monde"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "ziz",
+        nom: "Ziz",
+        types: &[Type::Vol, Type::Lumiere],
+        role: Role::Offensif,
+        stats_de_base: [95, 70, 85, 120, 95, 135],
+        rendement_experience: 500,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Celerite, Habilete::Eclaireur],
+        apprentissage: &[
+            (1, "bourrasque"),
+            (1, "lueur-sacree"),
+            (40, "aube-eclatante"),
+            (60, "flamme-blanche"),
+            (80, "ouragan-celeste"),
+            (100, "aile-de-l-aube"),
+        ],
+        evolution: None,
+    },
 ];
 
 /// Section 15 de docs/contenu-v1.md : la ligne est prête 2 h après avoir
@@ -8669,7 +8857,7 @@ const ACTIVITES: [(&str, Activite); 28] = [
 
 /// Section 28 de docs/contenu-v1.md : l'attaque d'œuf de chaque famille
 /// d'évolution, par sa forme de base (section 13.11).
-const ATTAQUES_D_OEUF: [(&str, &str); 90] = [
+const ATTAQUES_D_OEUF: [(&str, &str); 93] = [
     ("salamandre", "souffle-des-forges"),
     ("crapaud", "ressac"),
     ("mandragore", "seve-maudite"),
@@ -8760,6 +8948,9 @@ const ATTAQUES_D_OEUF: [(&str, &str); 90] = [
     ("ver-des-abysses", "fouissement"),
     ("gardien-du-gouffre", "garde-du-gouffre"),
     ("germe-du-monde", "eclosion"),
+    ("leviathan", "ecaille-abyssale"),
+    ("behemoth", "corne-primordiale"),
+    ("ziz", "plume-celeste"),
 ];
 
 /// La forme de base de la famille de cette espèce : celle qu'aucune autre
@@ -8867,7 +9058,8 @@ mod tests {
             })
         };
         let annexes = contenu.annexes().iter().map(Annexe::zone);
-        for zone in contenu.zones().iter().chain(annexes) {
+        let legendaires = contenu.zones_legendaires().iter().map(ZoneLegendaire::zone);
+        for zone in contenu.zones().iter().chain(annexes).chain(legendaires) {
             let (_, maximum) = zone.niveaux();
             let monstres: Vec<Monstre> = zone
                 .especes()
@@ -9033,8 +9225,8 @@ mod tests {
         let mut uniques = vues.clone();
         uniques.sort_by(|a, b| a.as_str().cmp(b.as_str()));
         uniques.dedup();
-        assert_eq!(vues.len(), 90);
-        assert_eq!(uniques.len(), 90);
+        assert_eq!(vues.len(), 93);
+        assert_eq!(uniques.len(), 93);
     }
 
     #[test]
@@ -9043,13 +9235,13 @@ mod tests {
 
         let contenu = ContenuV1::new();
         let au_codex = especes_au_codex(contenu.especes());
-        assert_eq!(au_codex, 110);
+        assert_eq!(au_codex, 113);
         let seuils: Vec<u32> = contenu
             .recompenses_du_codex()
             .iter()
             .map(|recompense| recompense.palier.seuil(au_codex))
             .collect();
-        assert_eq!(seuils, vec![10, 20, 30, 40, 50, 110]);
+        assert_eq!(seuils, vec![10, 20, 30, 40, 50, 113]);
         let complet = contenu.recompenses_du_codex().last().unwrap();
         assert_eq!(complet.palier, PalierDuCodex::Complet);
         let sceau = complet.objet_unique.as_ref().unwrap();
@@ -9154,7 +9346,7 @@ mod tests {
     #[test]
     fn contenu_conforme_aux_regles() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.especes().len(), 125);
+        assert_eq!(contenu.especes().len(), 128);
         assert_eq!(contenu.zones().len(), 16);
         assert_eq!(contenu.annexes().len(), 10);
         assert_eq!(contenu.piste().indices().count(), 27);
@@ -9251,6 +9443,13 @@ mod tests {
                     .iter()
                     .filter_map(|adversaire| adversaire.recompense().monstre.as_ref())
                     .map(|(espece, _)| espece.id()),
+            )
+            // Les légendaires des zones d'après le Démiurge (section 9.10).
+            .chain(
+                contenu
+                    .zones_legendaires()
+                    .iter()
+                    .map(|zone| zone.legendaire().espece().id()),
             )
             .collect();
         let apotres: Vec<&EspeceId> = contenu
@@ -10475,6 +10674,70 @@ mod tests {
             })
             .collect();
         assert_eq!(equipes, [("chasseresse", 2, 800), ("fossoyeur", 3, 900)]);
+    }
+
+    /// Section 49 de docs/contenu-v1.md (étape 169) : trois zones légendaires
+    /// au niveau 100, peuplées d'espèces existantes, chacune gardée par son
+    /// légendaire, qui compte au codex.
+    #[test]
+    fn les_zones_legendaires_ont_leur_legendaire_au_niveau_100() {
+        use crate::recompenses_du_codex::compte_au_codex;
+
+        let contenu = ContenuV1::new();
+        let legendaires: Vec<(&str, &str, Vec<Type>)> = contenu
+            .zones_legendaires()
+            .iter()
+            .map(|legendaire| {
+                let zone = legendaire.zone();
+                assert_eq!(zone.niveaux(), (niveau(100), niveau(100)));
+                assert_eq!(legendaire.legendaire().niveau(), niveau(100));
+                let espece = legendaire.legendaire().espece();
+                assert!(compte_au_codex(espece), "{}", espece.nom());
+                assert_eq!(espece.rarete(), Rarete::Rare);
+                assert_eq!(espece.total_des_stats_de_base(), 600, "{}", espece.nom());
+                // Ses monstres sauvages viennent d'autres zones.
+                for sauvage in zone.especes() {
+                    assert!(
+                        contenu
+                            .zones()
+                            .iter()
+                            .any(|autre| autre.especes().contains(sauvage)),
+                        "{}",
+                        sauvage.nom()
+                    );
+                }
+                assert!(!legendaire.legendaire().avant_combat().is_empty());
+                assert!(!legendaire.legendaire().capture().is_empty());
+                (
+                    zone.id().as_str(),
+                    espece.id().as_str(),
+                    espece.types().liste().to_vec(),
+                )
+            })
+            .collect();
+        assert_eq!(
+            legendaires,
+            [
+                ("abysses", "leviathan", vec![Type::Eau, Type::Dragon]),
+                ("terres-arides", "behemoth", vec![Type::Sol, Type::Combat]),
+                ("ciel-dechire", "ziz", vec![Type::Vol, Type::Lumiere]),
+            ]
+        );
+        let attaques: Vec<String> = creer(&contenu, "leviathan", 100)
+            .attaques()
+            .liste()
+            .iter()
+            .map(|attaque| attaque.id().as_str().to_string())
+            .collect();
+        assert_eq!(
+            attaques,
+            [
+                "maree-noire",
+                "souffle-des-brumes",
+                "deluge-draconique",
+                "abime-des-mers"
+            ]
+        );
     }
 
     /// Section 48 de docs/contenu-v1.md (étape 168) : la chute du Sénéchal

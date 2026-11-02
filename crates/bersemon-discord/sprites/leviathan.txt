@@ -1,0 +1,50 @@
+# Léviathan
+palette
+o 1b1420
+e 1a3a5a
+f 0e2440
+b 1e4a6a
+c 123048
+d 2e6a90
+a 60a0c0
+r b02030
+w e8f0f0
+y f0e040
+g 80c0d0
+shiny
+o 1b1420
+e 1a3a5a
+f 0e2440
+b 7a2a3a
+c 521a26
+d a04a5a
+a e0a040
+r 40e0a0
+w e8f0f0
+y 60ffff
+g f0c060
+dessin
+........o...............
+.......ogoo.............
+.......ogogoo...........
+.....oogoogogoo.........
+o..ooddgogoogogoo.......
+booddbbbdgogoogogoo.....
+bwodbybbbcogogoogogo....
+bbwbbbbbbbcoogdgoogo....
+brrrbbbbbcoodbbgcgo.....
+bboccbbbbbddbbcadgoo....
+bwoooccbdbbcbbbdbbdco...
+oo...oodbbcadbbbbbbcco..
+......odbbbdbbbbbbcadco.
+......ocbbbbbccbbbbdbco.
+.......ocbbbcoocbbbbbcwo
+........occco..ocbbbcoo.
+.........ooo....ocbbcdco
+.................odcadco
+......ooooooooooocbbdbbc
+..ooooeweeeeeeeeeedbbbcw
+.oeweeeeeeeeeeeeeeccbcco
+ofeeeeeeeeeeeeeeeeeeceef
+.offffeeeeeeeeeeeeeffffo
+..oooofffffffffffffoooo.

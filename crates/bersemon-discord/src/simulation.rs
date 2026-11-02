@@ -1983,8 +1983,8 @@ fn le_codex_complet_tient_dans_les_limites() {
         .flatten()
         .map(|option| option.valeur.as_str())
         .collect();
-    // Les espèces de sa page, et, la page étant la dernière, les Apôtres et
-    // le Démiurge, tous notés au codex ici.
+    // Les espèces de sa page, et, sur la page du carnet, les Apôtres et le
+    // Démiurge, tous notés au codex ici.
     let au_codex = contenu
         .especes()
         .iter()
@@ -1992,10 +1992,19 @@ fn le_codex_complet_tient_dans_les_limites() {
         .count();
     let page = (au_codex - 1) / crate::ecran_camp::ESPECES_PAR_PAGE;
     let sur_la_page = au_codex - page * crate::ecran_camp::ESPECES_PAR_PAGE;
-    assert_eq!(
-        proposees.len(),
-        sur_la_page + contenu.especes().len() - au_codex
-    );
+    // Les Apôtres s'y ajoutent si le carnet suit cette page, et non une
+    // page à lui.
+    let liste = question(&partie, page_du_codex(page), &contenu, maintenant);
+    let carnet_a_part = liste.rangees.iter().any(|rangee| {
+        matches!(rangee, Rangee::Boutons(boutons)
+            if boutons.iter().any(|bouton| bouton.cle == Cle::Afficher(page_du_codex(page + 1))))
+    });
+    let hors_du_codex = if carnet_a_part {
+        0
+    } else {
+        contenu.especes().len() - au_codex
+    };
+    assert_eq!(proposees.len(), sur_la_page + hors_du_codex);
     assert!(proposees.contains(&derniere.to_string().as_str()));
     let vers_la_page = Cle::Afficher(Vue::PageDuCodex(u8::try_from(page).unwrap()));
     assert!(fiche.rangees.iter().any(|rangee| matches!(
