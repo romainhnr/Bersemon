@@ -1,0 +1,42 @@
+# Géant des orages
+palette
+o 1b1420
+b 6a7a8a
+c 46525e
+d 8e9eae
+p 4a3a2a
+y fff060
+w e8e8f0
+shiny
+o 1b1420
+b 8a5a4a
+c 5e3a30
+d b07a68
+p 2a2a3a
+y 60f0ff
+w f0d090
+dessin
+...........ooo..........
+..........oddco.........
+.........odcbcco........
+.........odycyco........
+.........occccco........
+.....ooooowwwwwoooo.....
+....odddddwwwwwdddcoo...
+...obbbbbbdddddbbbcbbo..
+...obbbbbbbbbbbbbcobbo..
+..obbbdbbbbbbbbbbcobbbo.
+..obbbdbbbbbbbbbbcobbbo.
+.odybodbbbbbbbbbbcoobyco
+odbbbddbbbbbbbbbbcodbbbc
+odbbbbcbbbbbbbbbcoodbbbc
+ocbbbcodcccccccccoocbbbc
+.occcoopppppppppppooccco
+oyooo.opppppppppppo.ooyo
+oo....opppppppppppo...oo
+yoo...odddcooodddco..ooy
+ooyo..odbbco.odbbco.oyoo
+..o...odbbco.odbbco..o..
+......odbbco.odbbco.....
+......occcco.occcco.....
+.......oooo...oooo......

@@ -656,13 +656,23 @@ fn meilleure_equipe(
         }
     };
     let collection = partie.collection();
+    // Ses monstres se jugent selon les types à quelques niveaux du meilleur,
+    // ou de l'adversaire le plus fort s'il est plus bas : sans cela, un
+    // monstre au niveau 100 écartait tous ceux du niveau de l'Apôtre
+    // (étape 167).
+    let niveau_en_face = adversaires
+        .iter()
+        .map(|adversaire| adversaire.niveau().valeur())
+        .max()
+        .unwrap_or(u8::MAX);
     let niveau_du_meilleur = collection
         .equipe()
         .iter()
         .chain(collection.camp())
         .map(|monstre| monstre.niveau().valeur())
         .max()
-        .unwrap_or(1);
+        .unwrap_or(1)
+        .min(niveau_en_face);
     // Après une défaite contre le combat de fin de zone, il essaie
     // l'autre équipe : ses monstres de plus haut niveau, puis de nouveau
     // ceux qui valent le plus selon les types, et ainsi de suite (étape

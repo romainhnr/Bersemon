@@ -62,6 +62,15 @@ fn bouton(cle: Cle) -> Clic {
     }
 }
 
+/// La vue d'une page de la liste du codex, la première étant le codex
+/// lui-même.
+fn page_du_codex(numero: usize) -> Vue {
+    match numero {
+        0 => Vue::Codex(None),
+        _ => Vue::PageDuCodex(u8::try_from(numero).unwrap()),
+    }
+}
+
 fn verifier_les_limites(message: &Message) {
     assert!(
         message.texte.chars().count() <= LONGUEUR_MAX,
@@ -1336,7 +1345,7 @@ fn le_beherit_attend_les_ames_des_13_apotres_a_travers_les_ecrans_du_bot() {
     cliquer_sur(&mut joueurs, Cle::ReprendreLaPartie);
     let camp = afficher(&mut joueurs);
     assert!(camp.texte.contains(
-        "Âmes d'Apôtres : Baron pendu, Abbesse écorchée, Margrave de givre, Amiral noyé, Prévôt des fosses, Duchesse sanguine, Évêque des os, Connétable boucher et Chancelier aux mille yeux."
+        "Âmes d'Apôtres : Baron pendu, Abbesse écorchée, Margrave de givre, Amiral noyé, Prévôt des fosses, Duchesse sanguine, Évêque des os, Connétable boucher, Chancelier aux mille yeux, Prince de braise et Sénéchal des orages."
     ));
     assert!(choisir_dans(&camp, |cle| *cle == Cle::Partir, ECLIPSE).is_none());
     cliquer_sur(&mut joueurs, Cle::Afficher(Vue::Marchand));
@@ -1475,8 +1484,8 @@ fn malvoise_vend_et_loue_des_monstres_a_travers_les_ecrans_du_bot() {
     };
     // Plus de 25 espèces en vente depuis l'étape 165 : deux menus.
     assert_eq!(options(Cle::AcheterMonstre(0)), 25);
-    assert_eq!(options(Cle::AcheterMonstre(1)), 11);
-    assert_eq!(options(Cle::LouerMonstre), 17);
+    assert_eq!(options(Cle::AcheterMonstre(1)), 17);
+    assert_eq!(options(Cle::LouerMonstre), 19);
     assert!(!propose(&affiche, |cle| *cle == Cle::RendreLeMonstreLoue));
     let clic = choisir_dans(&affiche, |cle| *cle == Cle::AcheterMonstre(0), "loup").unwrap();
     let achat = jouer(&mut joueurs, clic);
@@ -1915,12 +1924,24 @@ fn le_codex_complet_tient_dans_les_limites() {
         .flatten()
         .map(|option| option.valeur.as_str())
         .collect();
-    assert_eq!(proposees.len(), 30);
+    // Les espèces de sa page, et, la page étant la dernière, les Apôtres et
+    // le Démiurge, tous notés au codex ici.
+    let au_codex = contenu
+        .especes()
+        .iter()
+        .filter(|espece| bersemon_core::recompenses_du_codex::compte_au_codex(espece))
+        .count();
+    let page = (au_codex - 1) / crate::ecran_camp::ESPECES_PAR_PAGE;
+    let sur_la_page = au_codex - page * crate::ecran_camp::ESPECES_PAR_PAGE;
+    assert_eq!(
+        proposees.len(),
+        sur_la_page + contenu.especes().len() - au_codex
+    );
     assert!(proposees.contains(&derniere.to_string().as_str()));
+    let vers_la_page = Cle::Afficher(Vue::PageDuCodex(u8::try_from(page).unwrap()));
     assert!(fiche.rangees.iter().any(|rangee| matches!(
         rangee,
-        Rangee::Boutons(boutons)
-            if boutons.iter().any(|bouton| bouton.cle == Cle::Afficher(Vue::PageDuCodex(2)))
+        Rangee::Boutons(boutons) if boutons.iter().any(|bouton| bouton.cle == vers_la_page)
     )));
 }
 
@@ -2409,12 +2430,32 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
             options(&ressources, Cle::SortirRessourcesDuCoffre),
             sortes.len()
         );
+        // Le coffre d'abord ; le sac prend les rangées qui restent, "Tout
+        // ranger" le rangeant de toute façon en entier (section 14.3).
+        let rangees_du_coffre = sortes.len().div_ceil(OPTIONS_PAR_MENU);
         assert_eq!(
             options(&ressources, Cle::RangerRessourcesAuCoffre),
-            sortes.len()
+            sortes
+                .len()
+                .min((RANGEES_MAX - 1 - rangees_du_coffre) * OPTIONS_PAR_MENU)
         );
+        // À la vente, les ressources prennent les rangées que laissent les
+        // monstres et les boutons ; les sortes au-delà attendent qu'une autre
+        // soit vendue.
         let vente = crate::ecran_marchand::vente(&partie);
-        assert_eq!(options(&vente, Cle::VendreRessources), sortes.len());
+        let rangees_des_monstres = vente
+            .rangees
+            .iter()
+            .filter(
+                |rangee| matches!(rangee, Rangee::Menu(menu) if matches!(menu.cle, Cle::Vendre(_))),
+            )
+            .count();
+        assert_eq!(
+            options(&vente, Cle::VendreRessources),
+            sortes
+                .len()
+                .min((RANGEES_MAX - 1 - rangees_des_monstres) * OPTIONS_PAR_MENU)
+        );
         afficher(&partie, Vue::Vente);
         // Malvoise, Gunther et Ansgar au camp : deux rangées de boutons
         // pleines (section 13.8).
@@ -2481,18 +2522,22 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         for fiche in [None, Some(0), Some(dernier)] {
             afficher(&partie, Vue::Codex(fiche));
         }
-        // La liste du codex se lit en pages (étape 82), trois depuis l'étape
-        // 163. Toutes les espèces capturées : la récompense du premier
-        // palier se réclame d'ici (section 5.6).
+        // La liste du codex se lit en pages (étape 82), chacune reliée à la
+        // précédente et à la suivante. Toutes les espèces capturées : la
+        // récompense du premier palier se réclame d'ici (section 5.6).
         let cles = afficher(&partie, Vue::Codex(None));
         assert!(cles.contains(&Cle::Afficher(Vue::PageDuCodex(1))));
         assert!(cles.contains(&Cle::ReclamerRecompenseDuCodex));
-        let cles = afficher(&partie, Vue::PageDuCodex(1));
-        assert!(cles.contains(&Cle::Afficher(Vue::Codex(None))));
-        assert!(cles.contains(&Cle::Afficher(Vue::PageDuCodex(2))));
-        let cles = afficher(&partie, Vue::PageDuCodex(2));
-        assert!(cles.contains(&Cle::Afficher(Vue::PageDuCodex(1))));
-        assert!(!cles.contains(&Cle::Afficher(Vue::PageDuCodex(3))));
+        let mut derniere_page = 1;
+        loop {
+            let cles = afficher(&partie, page_du_codex(derniere_page));
+            assert!(cles.contains(&Cle::Afficher(page_du_codex(derniere_page - 1))));
+            if !cles.contains(&Cle::Afficher(page_du_codex(derniere_page + 1))) {
+                break;
+            }
+            derniere_page += 1;
+        }
+        assert!(derniere_page >= 3);
     }
     // Un rite achevé : le camp gagne la rangée qui accueille le petit, et
     // l'étal en dit l'état (section 13.11).
@@ -2526,9 +2571,8 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         etal.texte
     );
     // Les Apôtres de la piste et le Démiurge abattus : le carnet de traque
-    // suit la liste, sans qu'aucun ne soit dans la liste. Depuis l'étape
-    // 166, il ne tient plus avec la dernière page d'espèces et prend une
-    // page à lui.
+    // suit la liste, sans qu'aucun ne soit dans la liste, à la dernière page
+    // d'espèces, ou sur une page à lui quand il n'y tient plus (étape 166).
     let mut abattus = etat(vec![], vec![]);
     abattus.apotres_vaincus = contenu
         .piste()
@@ -2537,24 +2581,23 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         .collect();
     abattus.beherit = bersemon_core::beherit::EtatDuBeherit::DemiurgeVaincu;
     let partie = Partie::restaurer(abattus).unwrap();
-    let cles = afficher(&partie, Vue::PageDuCodex(2));
-    assert!(cles.contains(&Cle::Afficher(Vue::PageDuCodex(3))));
-    let avant_derniere = crate::ecran_camp::question(
-        &partie,
-        Vue::PageDuCodex(2),
-        &contenu,
-        Horodatage::depuis_secondes(0),
-    );
+    let mut derniere_page = 0;
+    while afficher(&partie, page_du_codex(derniere_page))
+        .contains(&Cle::Afficher(page_du_codex(derniere_page + 1)))
+    {
+        derniere_page += 1;
+    }
+    let ecran = |numero: usize| {
+        crate::ecran_camp::question(
+            &partie,
+            page_du_codex(numero),
+            &contenu,
+            Horodatage::depuis_secondes(0),
+        )
+    };
+    let avant_derniere = ecran(derniere_page - 1);
     assert!(!avant_derniere.texte.contains("Carnet de traque"));
-    let cles = afficher(&partie, Vue::PageDuCodex(3));
-    assert!(cles.contains(&Cle::Afficher(Vue::PageDuCodex(2))));
-    assert!(!cles.contains(&Cle::Afficher(Vue::PageDuCodex(4))));
-    let derniere = crate::ecran_camp::question(
-        &partie,
-        Vue::PageDuCodex(3),
-        &contenu,
-        Horodatage::depuis_secondes(0),
-    );
+    let derniere = ecran(derniere_page);
     assert!(derniere.texte.contains("Carnet de traque :"));
     // Les fiches des Apôtres abattus s'ouvrent depuis la page du carnet, et
     // y ramènent (section 5.6).
@@ -2578,12 +2621,12 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
     assert!(fiches(&derniere).contains(&chancelier.to_string()));
     assert!(!fiches(&avant_derniere).contains(&chancelier.to_string()));
     let cles = afficher(&partie, Vue::Codex(Some(chancelier)));
-    assert!(cles.contains(&Cle::Afficher(Vue::PageDuCodex(3))));
-    assert!(
-        derniere
-            .texte
-            .ends_with("  10. Démiurge, abattu dans l'Éclipse.")
+    assert!(cles.contains(&Cle::Afficher(page_du_codex(derniere_page))));
+    let entree_du_demiurge = format!(
+        "  {}. Démiurge, abattu dans l'Éclipse.",
+        contenu.piste().apotres().count() + 1
     );
+    assert!(derniere.texte.ends_with(&entree_du_demiurge));
     assert!(!derniere.texte.contains("Apôtre vaincu"));
     let premiere = crate::ecran_camp::question(
         &partie,

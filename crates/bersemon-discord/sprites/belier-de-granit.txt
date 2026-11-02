@@ -1,0 +1,44 @@
+# Bélier de granit
+palette
+o 1b1420
+b 8a8478
+c 5e5a50
+d b0aa9e
+a 6a6a72
+e 46464c
+f 8e8e96
+k 1b1420
+shiny
+o 1b1420
+b c8b088
+c 967e5a
+d e8d4b0
+a b04040
+e 7a2a2a
+f d86060
+k 1b1420
+dessin
+........................
+........................
+.......o................
+.....ooeoo..............
+....offafeo.............
+....ofabaeo.............
+...oeabbbaeo............
+...oafabaeo...o.........
+...oaeeaeeoooocoooo.....
+..oabbbeoodddeddddcoo...
+..oabbbbddedbdbcedbdco..
+.ocbkbbbbbdbbbbbdbceco..
+..odbbbbbbbbcbbbbbbdbco.
+..ocbbbbbbbcedbbcbbbbco.
+.okkccccbbbbdbbcedbbbco.
+..oooooodbbbbbbbdbbbco..
+.......odbbbbbbbbbbcbco.
+.......odbbcbbbccbcodco.
+.......odbcodbcoodcodco.
+.......odbcodco.odcodco.
+.......odbcodco.odcocco.
+.......occcocco.occooo..
+........ooo.oo...oo.....
+........................

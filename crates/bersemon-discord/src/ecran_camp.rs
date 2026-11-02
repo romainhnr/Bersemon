@@ -573,7 +573,7 @@ fn options() -> Question {
 /// page, et une fiche ouverte garde la page de son espèce (étape 166).
 /// Assez peu pour qu'une page de la liste tienne dans un message, avec les
 /// noms d'espèces les plus longs.
-const ESPECES_PAR_PAGE: usize = 30;
+pub(crate) const ESPECES_PAR_PAGE: usize = 30;
 
 fn codex(partie: &Partie, fiche: Option<usize>, page: usize, contenu: &ContenuV1) -> Question {
     let codex = partie.codex();

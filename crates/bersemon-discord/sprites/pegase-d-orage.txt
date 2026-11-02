@@ -1,0 +1,48 @@
+# Pégase d'orage
+palette
+o 1b1420
+b e8e4ec
+c b8b4c4
+d ffffff
+a c8d8f0
+e 8aa0c8
+f f0f8ff
+g 6070c0
+y fff060
+k 1b1420
+shiny
+o 1b1420
+b 3a3440
+c 24202a
+d 5a5462
+a 6a4a8a
+e 46305e
+f 9070b0
+g e0c040
+y fff0a0
+k f0f0f0
+dessin
+...............oooeo....
+..............offfaeo...
+.............ofaaaaaeo..
+.......o.....ofeaaaaaeo.
+....o.oyo...ofaaeaaaaeo.
+...ocogo....ofaaeaaaeo..
+..odbcogoo..ofaaaeaeo...
+.odbbcoggyo.ofaaaeaeo...
+.odbkbcoggoofaaaaaeo....
+.ocbbbcoogooeeeeeeo.....
+..occbbcoogdddbdddcooo..
+...oocbbddbbbbbbbbbdcgo.
+.....ocbbbbbbbbbbbbbcggo
+......ocbbbbbbbbbbbbbcgo
+.......odbbbbbbbbbbbcogo
+.......ocbbbbbbbbbbccogg
+........odccbcbccbcocoog
+........ocoococoocooco.o
+........ocoocoo.ocooco..
+.......odcooco..occocco.
+.......oco.oco...ocooco.
+.......oco.oco...ocooco.
+.......oco.oco...ocooco.
+........o...o.....o..o..

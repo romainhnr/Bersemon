@@ -1,0 +1,46 @@
+# Aigle-tonnerre
+palette
+o 1b1420
+b 4a4a6a
+c 2e2e46
+d 6a6a90
+y fff060
+w f0ece0
+x c8c0b0
+g e8c040
+k 1b1420
+shiny
+o 1b1420
+b b08a40
+c 7a5e24
+d d8b060
+y 60f0ff
+w f0ece0
+x c8c0b0
+g e8c040
+k 1b1420
+dessin
+........................
+.o....................o.
+oco..................oco
+oyco......ooo.......odyo
+odbco....owwxo....oodbco
+dbcbcoo.owkwwxo..oddbbcc
+dcydbdcogwwwwxo.odbbbcyc
+cbdbbbbcgxwwwxoodbbbbbdc
+ycbbbbbbcoxxxoodbbbbbbcy
+oycbbbbbbcddbddbbbbbbcyo
+.oycbbbbbcbbbbbbbbbbcyo.
+..oocccbbbbbbbbbccccoo..
+....oooccbbbbbbcoooo....
+.......oodbbbbbco.......
+........odbbbbbco.......
+........ocbbbbbco.......
+.........odbbbco........
+.........occbcco........
+.........ogocogo........
+.........ogoyogo........
+........ogo.ooogo.......
+........ogo.oyogo.......
+.........o.oyo.o........
+............o...........
