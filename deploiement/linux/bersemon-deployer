@@ -15,8 +15,9 @@ set -euo pipefail
 umask 022
 
 readonly RACINE=/srv/bersemon
-readonly RUSTUP_HOME=/opt/rust/rustup
-readonly RUSTUP=/opt/rust/cargo/bin/rustup
+readonly DOSSIER_RUSTUP=/opt/rust/rustup
+readonly DOSSIER_CARGO_RUSTUP=/opt/rust/cargo
+readonly RUSTUP=$DOSSIER_CARGO_RUSTUP/bin/rustup
 readonly CHEMIN_SYSTEME=/usr/local/bin:/usr/bin:/bin
 readonly DELAI_DE_CONNEXION=90
 readonly MESSAGE_CONNECTE="Bersemon est connecté à Discord."
@@ -93,12 +94,16 @@ en_tant_que_service git checkout --quiet --force --detach "$COMMIT"
 version_rust=$(sed -n 's/^rust-version = "\([^"]*\)"$/\1/p' Cargo.toml | head -n 1)
 [[ $version_rust =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]] \
     || echec "rust-version illisible dans Cargo.toml : \"$version_rust\"."
-if ! RUSTUP_HOME=$RUSTUP_HOME "$RUSTUP" which --toolchain "$version_rust" cargo >/dev/null 2>&1; then
+rustup_systeme() {
+    RUSTUP_HOME=$DOSSIER_RUSTUP CARGO_HOME=$DOSSIER_CARGO_RUSTUP "$RUSTUP" "$@"
+}
+# rustup installerait aussi la toolchain manquante dans "rustup which", mais
+# sans rien afficher pendant le téléchargement.
+if ! rustup_systeme toolchain list | awk -v nom="$version_rust-" 'index($1, nom) == 1 { trouve = 1 } END { exit !trouve }'; then
     echo "Installation de Rust $version_rust."
-    RUSTUP_HOME=$RUSTUP_HOME CARGO_HOME=/opt/rust/cargo \
-        "$RUSTUP" toolchain install "$version_rust" --profile minimal
+    rustup_systeme toolchain install "$version_rust" --profile minimal
 fi
-cargo_de_la_toolchain=$(RUSTUP_HOME=$RUSTUP_HOME "$RUSTUP" which --toolchain "$version_rust" cargo)
+cargo_de_la_toolchain=$(rustup_systeme which --toolchain "$version_rust" cargo)
 # Les binaires de la toolchain sont appelés directement, sans les proxys de
 # rustup : le compte de l'environnement n'a pas à écrire dans /opt/rust.
 chemin_de_compilation="$(dirname "$cargo_de_la_toolchain"):$CHEMIN_SYSTEME"
@@ -123,6 +128,13 @@ chown "$UTILISATEUR:$UTILISATEUR" "$DOSSIER/bin/version"
 if ! grep -Eq '^DISCORD_TOKEN=.+' "$REGLAGES"; then
     echo "Binaire installé, mais le service n'est pas redémarré : DISCORD_TOKEN est vide dans $REGLAGES." >&2
     exit 1
+fi
+# Un service désactivé est en pause, par exemple le bot de test pendant un
+# essai sous Windows avec le même jeton : le déploiement ne le relance pas.
+if ! systemctl is-enabled --quiet "$SERVICE"; then
+    echo "Binaire installé ; $SERVICE est désactivé (en pause), il n'est pas redémarré."
+    echo "Pour le relancer : sudo systemctl enable --now $SERVICE"
+    exit 0
 fi
 
 # Un redémarrage fait perdre les expéditions en cours : chaque joueur reprend

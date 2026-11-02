@@ -110,6 +110,8 @@ async fn main() {
                     Arc::clone(&contexte.http),
                     Arc::clone(&donnees.joueurs),
                 ));
+                // Le script de déploiement de la VM attend ce message pour
+                // juger le démarrage réussi (deploiement/linux/bersemon-deployer).
                 println!("Bersemon est connecté à Discord.");
                 Ok(donnees)
             })

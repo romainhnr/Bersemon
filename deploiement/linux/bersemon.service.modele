@@ -1,5 +1,5 @@
-# Modèle des services bersemon-prod et bersemon-dev : installer-vm.sh remplace
-# @ENV@ par prod ou dev et installe le résultat dans /etc/systemd/system.
+# Modèle des services bersemon-prod et bersemon-dev : installer-vm.sh y met le
+# nom de l'environnement et installe le résultat dans /etc/systemd/system.
 # Voir docs/deploiement.md.
 
 [Unit]

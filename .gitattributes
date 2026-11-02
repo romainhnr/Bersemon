@@ -1,0 +1,3 @@
+# Les scripts et unités de la VM Linux gardent des fins de ligne LF, même
+# dans un clone Windows : bash et systemd lisent mal les CRLF.
+deploiement/linux/** text eol=lf

@@ -38,6 +38,7 @@ readonly ENVIRONNEMENTS=(prod dev)
 
 reste_a_faire=()
 a_redemarrer=()
+nouveaux_services=()
 
 etape() {
     printf '\n== %s\n' "$*"
@@ -161,6 +162,9 @@ install -o root -g root -m 0755 "$SOURCE/bersemon-deploiement-ssh" /usr/local/sb
 install -o root -g root -m 0755 "$SOURCE/bersemon-sauvegarder" /usr/local/sbin/bersemon-sauvegarder
 for environnement in "${ENVIRONNEMENTS[@]}"; do
     unite="/etc/systemd/system/bersemon-$environnement.service"
+    if [[ ! -f $unite ]]; then
+        nouveaux_services+=("bersemon-$environnement.service")
+    fi
     sed "s/@ENV@/$environnement/g" "$SOURCE/bersemon.service.modele" >"$unite.nouveau"
     chmod 0644 "$unite.nouveau"
     if remplacer_si_different "$unite.nouveau" "$unite" \
@@ -173,9 +177,14 @@ for unite in bersemon-sauvegarde.service bersemon-sauvegarde.timer; do
 done
 systemctl daemon-reload
 # Les bots démarrent au premier déploiement, une fois leur binaire compilé.
-systemctl enable --quiet bersemon-prod.service bersemon-dev.service
+# Seuls les services nouveaux sont activés : un service désactivé à la main
+# est en pause (docs/deploiement.md) et le reste.
+if [[ ${#nouveaux_services[@]} -gt 0 ]]; then
+    systemctl enable --quiet "${nouveaux_services[@]}"
+    echo "Services activés : ${nouveaux_services[*]}."
+fi
 systemctl enable --now --quiet bersemon-sauvegarde.timer
-echo "Services bersemon-prod et bersemon-dev activés, sauvegarde quotidienne programmée."
+echo "Sauvegarde quotidienne programmée."
 
 etape "Compte de déploiement"
 if ! id -u "$COMPTE_DEPLOIEMENT" >/dev/null 2>&1; then

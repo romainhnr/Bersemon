@@ -1,0 +1,91 @@
+# Vérifie le code à chaque push sur dev ou master, puis déploie le bot
+# correspondant sur la VM : dev pour le bot de test, master pour le bot en
+# service. Voir docs/deploiement.md.
+
+name: Vérification et déploiement
+
+on:
+  push:
+    branches: [dev, master]
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  verifier:
+    name: fmt, clippy et tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      # Même version que le poste Windows 10 et que la VM : la rust-version
+      # du workspace. Un nouveau clippy ne rend donc pas la CI rouge sans
+      # changement de code.
+      - name: Installer Rust
+        run: |
+          version=$(sed -n 's/^rust-version = "\([^"]*\)"$/\1/p' Cargo.toml | head -n 1)
+          test -n "$version"
+          rustup toolchain install "$version" --profile minimal --component rustfmt,clippy
+          rustup default "$version"
+          rustc --version
+          echo "VERSION_RUST=$version" >> "$GITHUB_ENV"
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            target
+          key: cargo-${{ runner.os }}-${{ env.VERSION_RUST }}-${{ hashFiles('Cargo.lock') }}
+          restore-keys: cargo-${{ runner.os }}-${{ env.VERSION_RUST }}-
+
+      - name: cargo fmt
+        run: cargo fmt --all --check
+      - name: cargo clippy
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - name: cargo test
+        run: cargo test --workspace --locked
+
+  deployer:
+    name: Déploiement sur la VM
+    needs: verifier
+    # Désactivé tant que la variable de dépôt DEPLOIEMENT_ACTIF ne vaut pas
+    # "oui" : sans VM prête, chaque push finirait en échec.
+    if: vars.DEPLOIEMENT_ACTIF == 'oui'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    # Un seul déploiement à la fois par environnement ; un push plus récent
+    # attend la fin du précédent.
+    concurrency:
+      group: deploiement-${{ github.ref_name }}
+      cancel-in-progress: false
+    steps:
+      # La VM compile et redémarre le bot elle-même : le compte deploiement ne
+      # peut lancer que son script de déploiement, qui ne prend que des
+      # commits de la branche de l'environnement.
+      - name: Déployer ${{ github.ref_name == 'master' && 'prod' || 'dev' }}
+        env:
+          HOTE: ${{ secrets.DEPLOIEMENT_HOTE }}
+          CLE_SSH: ${{ secrets.DEPLOIEMENT_CLE_SSH }}
+          HOTE_CONNU: ${{ secrets.DEPLOIEMENT_HOTE_CONNU }}
+          ENVIRONNEMENT: ${{ github.ref_name == 'master' && 'prod' || 'dev' }}
+        run: |
+          install -d -m 0700 ~/.ssh
+          printf '%s\n' "$CLE_SSH" > ~/.ssh/deploiement
+          chmod 0600 ~/.ssh/deploiement
+          # Empreinte de la VM fixée dans un secret, et non lue au moment de
+          # la connexion : une machine qui se ferait passer pour la VM serait
+          # refusée.
+          printf '%s\n' "$HOTE_CONNU" > ~/.ssh/known_hosts
+          ssh -i ~/.ssh/deploiement \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o BatchMode=yes \
+            -o ServerAliveInterval=30 \
+            "deploiement@$HOTE" "$ENVIRONNEMENT $GITHUB_SHA"
