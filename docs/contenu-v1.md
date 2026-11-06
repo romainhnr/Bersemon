@@ -2509,3 +2509,40 @@ Textes, avant le combat puis à la capture :
 > Ziz : Au-dessus des nuages déchirés, une ombre couvre le soleil : un oiseau si grand que ses ailes cachent le ciel plonge vers vous. Ziz, roi des airs, pousse un cri.
 
 > Ziz se pose devant vous, les ailes repliées, et incline la tête. Le roi des airs vous suit désormais.
+
+## 50. Quêtes du jour et de la semaine
+
+Proposé par Claude le 06/11/2026, pour les étapes 170 à 172, et codé sans validation, l'utilisateur n'étant pas là (gamedesign.md, section 13.12 et Q119).
+
+Objectifs, avec l'identifiant gardé par la sauvegarde, et leurs quêtes ; une quête de la semaine demande 5 fois plus qu'une quête du jour :
+
+| Objectif (identifiant) | Quête du jour | Quête de la semaine |
+|---|---|---|
+| vaincre-des-monstres-sauvages | Vaincre 15 monstres sauvages | Vaincre 75 monstres sauvages |
+| capturer-des-monstres | Capturer 3 monstres | Capturer 15 monstres |
+| ouvrir-des-coffres | Ouvrir 2 coffres en expédition | Ouvrir 10 coffres en expédition |
+| recolter-des-ressources | Récolter 5 ressources sur les monstres vaincus | Récolter 25 ressources sur les monstres vaincus |
+| mener-des-expeditions-au-bout | Mener 2 expéditions jusqu'au bout | Mener 10 expéditions jusqu'au bout |
+| reussir-des-expeditions-automatiques | Réussir 1 expédition automatique | Réussir 5 expéditions automatiques |
+
+Récompense, versée au coffre dès que la quête est accomplie :
+
+| Quête | Récompense | Dans la Lisière | Dans le Puits du Monde |
+|---|---|---|---|
+| Du jour | l'argent de 2 coffres de la zone ouverte la plus avancée | de 20 à 50 pièces d'argent | de 1160 à 1760 pièces d'argent |
+| De la semaine | l'argent de 5 coffres de cette zone et un booster, tiré parmi les six | de 50 à 125 pièces d'argent | de 2900 à 4400 pièces d'argent |
+
+Textes proposés sans validation :
+
+| Moment | Texte |
+|---|---|
+| Entrée du camp, console | Quêtes du jour et de la semaine |
+| Bouton du camp, Discord | Quêtes |
+| Écran, titres | Quêtes du jour (nouvelles dans {délai}) : / Quêtes de la semaine (nouvelles dans {délai}) : |
+| Écran, quête en cours | {quête} : {progrès}/{cible}. Récompense : de {minimum} à {maximum} pièces d'argent. / ... et un booster. |
+| Écran, quête accomplie | {quête} : accomplie. |
+| Écran, rappel | Une quête accomplie verse aussitôt sa récompense au coffre du camp, même en expédition. |
+| Récit | Quête du jour accomplie : {quête, en minuscule}. Récompense, au coffre : {objets}. / Quête de la semaine accomplie : ... |
+
+Le délai se dit "5 h 12", ou "3 j 4 h" au-delà d'un jour. Exemple de récit : "Quête de la semaine accomplie : capturer 15 monstres. Récompense, au coffre : 34 pièces d'argent et 1 Fiole de sang."
+

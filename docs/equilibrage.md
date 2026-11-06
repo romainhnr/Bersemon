@@ -552,3 +552,19 @@ Légendaires, contre des équipes tirées parmi toutes les espèces des zones et
 Le Léviathan, d'abord à 17 %, cède 15 points d'attaque spéciale à ses PV et à sa Vitesse (600 au total, inchangé). Les légendaires sont plus durs que les Apôtres (44 à 81 % dans la même mesure), comme il sied à des combats optionnels d'après le jeu.
 
 Limites : ces mesures à part ne connaissent ni les soins, ni les changements de monstre, ni les ordres du héros, et les monstres y ont des valeurs internes à 0 ; un joueur qui s'en sert gagnera plus souvent. La préparation retenue (aucun type que l'Obscur frappe double) est une hypothèse (gamedesign.md, Q118).
+
+## 20. Quêtes du jour et de la semaine (étape 172)
+
+Les quêtes (gamedesign.md, section 13.12) passent par le déroulement que joue le joueur automatique : il en reçoit les récompenses sans les chercher, à mesure que ses expéditions avancent les objectifs du moment. Mesuré sur 100 parties par classe, avant et après les quêtes, avec les mêmes graines :
+
+| Classe | Expéditions (médiane), avant | Après | Argent à la fin, avant | Après |
+|---|---|---|---|---|
+| Guerrier | 231 | 236 | 46871 | 61169 |
+| Mage | 224 | 230 | 42065 | 58781 |
+| Templier | 226 | 221 | 45091 | 57780 |
+| Assassin | 230 | 220 | 46682 | 57645 |
+
+La durée bouge dans les deux sens, de 5 à 10 expéditions : c'est le bruit, les récompenses changeant les achats, donc la suite des tirages (section 1). L'argent gagné par expédition, achats déduits, monte surtout au début : de 12 à 22 pièces dans la Lisière, de 29 à 47 dans le Marais, de 40 à 81 dans la Vallée, puis de 4 à 45 % selon la zone (de 423 à 566 dans le Puits du Monde). Ce surplus reste pour l'essentiel inemployé : les achats chez Malvoise varient de -130 à +1600 pièces selon la classe, quand l'argent à la fin monte de 11000 à 16700 ; l'argent ne bloquait déjà pas le joueur automatique (section 3).
+
+Limite : à un choix par minute, le joueur automatique joue toute sa partie en 5 jours simulés environ (de 4,2 à 7,2 jours sur 40 parties), soit au plus une quinzaine de quêtes du jour et six de la semaine. Un joueur réel, qui étale ses expéditions sur des semaines, en accomplit bien plus pour le même nombre d'expéditions : la mesure ne donne qu'un minimum de l'effet des quêtes, en argent comme en boosters (gamedesign.md, Q119).
+
