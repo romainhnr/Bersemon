@@ -78,6 +78,8 @@ pub enum Vue {
     Equipement,
     /// La ligne d'Ansgar, une fois au camp (section 13.8).
     Peche,
+    /// Les quêtes du jour et de la semaine (section 13.12).
+    Quetes,
     /// Les offres de don et d'échange (section 15.1), avec le joueur choisi
     /// pour une offre, puis le monstre à lui céder.
     Echanges {
@@ -696,6 +698,7 @@ impl Cle {
             Cle::Afficher(Vue::Forge) => "vue:forge".to_string(),
             Cle::Afficher(Vue::Equipement) => "vue:equipement".to_string(),
             Cle::Afficher(Vue::Peche) => "vue:peche".to_string(),
+            Cle::Afficher(Vue::Quetes) => "vue:quetes".to_string(),
             Cle::Afficher(Vue::Echanges { avec: None, .. }) => "vue:echanges".to_string(),
             Cle::Afficher(Vue::Classement) => "vue:classement".to_string(),
             Cle::Afficher(Vue::RecordsDeLaTour) => "vue:records-de-la-tour".to_string(),
@@ -914,6 +917,7 @@ impl Cle {
             "relever-pieges" => Cle::ReleverLesPieges,
             "vue:equipement" => Cle::Afficher(Vue::Equipement),
             "vue:peche" => Cle::Afficher(Vue::Peche),
+            "vue:quetes" => Cle::Afficher(Vue::Quetes),
             "lancer-ligne" => Cle::LancerLaLigne,
             "relever-ligne" => Cle::ReleverLaLigne,
             "garder-prise" => Cle::GarderLaPrise,
@@ -1539,6 +1543,7 @@ mod tests {
             Cle::ReleverLaLigne,
             Cle::GarderLaPrise,
             Cle::RelacherLaPrise,
+            Cle::Afficher(Vue::Quetes),
         ]
     }
 

@@ -2,8 +2,9 @@
 //! automatiques, codex, gestion des monstres et de leurs attaques (sections
 //! 13.2 et 13.10), coffre du camp (section 13.3), marchand, options (section
 //! 13.9), forge de Gunther, équipement du héros (sections 4.3, 13.4 et
-//! 13.5) et pêche d'Ansgar (section 13.8). Les vues ne changent rien à la partie ; seules les actions la
-//! modifient, et la sauvegardent.
+//! 13.5), pêche d'Ansgar (section 13.8) et quêtes (section 13.12). Les vues
+//! ne changent rien à la partie ; seules les actions la modifient, et la
+//! sauvegardent.
 
 use bersemon_core::amelioration::Amelioration;
 use bersemon_core::booster::Booster;
@@ -43,6 +44,7 @@ use bersemon_presentation::partie::{
     especes_du_codex, fiche_d_espece, ligne_du_codex,
 };
 use bersemon_presentation::peche::ligne_prete;
+use bersemon_presentation::quetes::ecran_des_quetes;
 use bersemon_presentation::recompenses_du_codex::{progression_du_codex, reclamer};
 use bersemon_presentation::rite::{rite_acheve, service_du_rite};
 use bersemon_presentation::tour::description_de_la_tour;
@@ -87,6 +89,7 @@ pub fn question(
         Vue::Forge => forge(partie, contenu, maintenant),
         Vue::Equipement => equipement(partie),
         Vue::Peche => ecran_peche::peche(partie, maintenant),
+        Vue::Quetes => quetes(partie, contenu, maintenant),
         // Le tableau des échanges vient des autres parties : le message le
         // prépare (`message::question`). Sans lui, l'écran n'en montre rien.
         Vue::Echanges { avec, cede } => {
@@ -208,8 +211,9 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
     ];
     // Malvoise, Gunther et Ansgar n'apparaissent qu'une fois au camp
     // (sections 13.4, 13.8 et 14.2), et l'équipement avec la forge (section
-    // 13.5) ; les autres joueurs sont toujours là (sections 15.1 et 15.3) :
-    // au plus 10 boutons, sur deux rangées pleines.
+    // 13.5) ; les autres joueurs et les quêtes sont toujours là (sections
+    // 13.12, 15.1 et 15.3) : au plus 12 boutons avec celui du rite, sur trois
+    // rangées. Avec les deux menus de départ, le camp a ses 5 rangées.
     if partie.marchand_au_camp() {
         boutons.push(bouton(Cle::Afficher(Vue::Marchand), "Malvoise", SECONDAIRE));
     }
@@ -235,6 +239,7 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
     if partie.peche().pecheur_au_camp() {
         boutons.push(bouton(Cle::Afficher(Vue::Peche), "Pêche", SECONDAIRE));
     }
+    boutons.push(bouton(Cle::Afficher(Vue::Quetes), "Quêtes", SECONDAIRE));
     boutons.push(bouton(
         Cle::Afficher(Vue::Echanges {
             avec: None,
@@ -244,17 +249,17 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
         SECONDAIRE,
     ));
     boutons.push(bouton(Cle::Afficher(Vue::Options), "Options", SECONDAIRE));
-    lignes.extend(rangees(boutons));
-    // Une rangée de plus, le temps que le petit du rite attende (section
-    // 13.11) : le camp en a alors 4.
+    // Le temps que le petit du rite attende (section 13.11), à la suite des
+    // autres boutons.
     let rite_acheve = rite_acheve(partie, maintenant);
     if rite_acheve.is_some() {
-        lignes.extend(rangees(vec![bouton(
+        boutons.push(bouton(
             Cle::AccueillirLePetit,
             "Accueillir le petit (Malvoise)",
             SUCCES,
-        )]));
+        ));
     }
+    lignes.extend(rangees(boutons));
     // Le menu des expéditions est sur cet écran : le moment du départ est
     // celui de toute l'expédition (section 9.6).
     let mut en_tete = vec![en_tete_abrege_du_camp(partie), moment_present(maintenant)];
@@ -553,6 +558,14 @@ fn equipement(partie: &Partie) -> Question {
 }
 
 /// Le déroulement demande ensuite confirmation du suicide (section 13.9).
+/// Rien à réclamer : une quête accomplie paie d'elle-même (section 13.12).
+fn quetes(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Question {
+    Question {
+        texte: ecran_des_quetes(partie, contenu, maintenant),
+        rangees: rangees(vec![retour()]),
+    }
+}
+
 fn options() -> Question {
     Question {
         texte: "Options de la partie.".to_string(),

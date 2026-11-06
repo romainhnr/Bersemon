@@ -49,6 +49,7 @@ pub mod obeissance;
 pub mod partie;
 pub mod peche;
 pub mod pierre;
+pub mod quete;
 pub mod recompenses_du_codex;
 pub mod relations;
 pub mod ressource;

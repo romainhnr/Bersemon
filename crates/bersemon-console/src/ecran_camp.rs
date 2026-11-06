@@ -1,9 +1,9 @@
 //! Camp de base : départ en expédition par la carte, expéditions
 //! automatiques, gestion des monstres (section 13.2), coffre du camp (section
 //! 13.3), codex, marchand, forge, équipement du héros (section 4.3), pêche
-//! (section 13.8) et options (section 13.9). Les monstres sont
-//! désignés par leur numéro dans la liste de la collection : l'équipe
-//! d'abord, le camp ensuite.
+//! (section 13.8), quêtes (section 13.12) et options (section 13.9). Les
+//! monstres sont désignés par leur numéro dans la liste de la collection :
+//! l'équipe d'abord, le camp ensuite.
 
 use bersemon_core::beherit::EtatDuBeherit;
 use bersemon_core::booster::Booster;
@@ -28,6 +28,7 @@ use bersemon_presentation::partie::{
     ames_d_apotres, capsules_d_habilete, collection as liste_des_monstres, en_tete_du_camp,
 };
 use bersemon_presentation::peche::ligne_prete;
+use bersemon_presentation::quetes::ecran_des_quetes;
 use bersemon_presentation::recompenses_du_codex::{progression_du_codex, reclamer};
 use bersemon_presentation::rite::rite_acheve;
 use bersemon_presentation::tour::destination_de_la_tour;
@@ -63,6 +64,7 @@ enum EntreeDuCamp {
     Equipement,
     Peche,
     Cour,
+    Quetes,
     Options,
     Quitter,
 }
@@ -148,6 +150,9 @@ pub fn choisir(
         if partie.forge().ameliorations().cour().is_some() {
             entrees.push((EntreeDuCamp::Cour, "Cour d'entraînement"));
         }
+        // Avant "Options", pour ne pas décaler les numéros des entrées
+        // courantes (section 13.12).
+        entrees.push((EntreeDuCamp::Quetes, "Quêtes du jour et de la semaine"));
         entrees.push((EntreeDuCamp::Options, "Options"));
         entrees.push((EntreeDuCamp::Quitter, "Quitter"));
         for (position, (_, libelle)) in entrees.iter().enumerate() {
@@ -179,6 +184,12 @@ pub fn choisir(
             }
             EntreeDuCamp::Peche => ecran_peche::choisir(partie, entree)?,
             EntreeDuCamp::Cour => ecran_machines::choisir_dans_la_cour(partie, contenu, entree)?,
+            EntreeDuCamp::Quetes => {
+                // Rien à réclamer : une quête accomplie paie d'elle-même.
+                println!();
+                println!("{}", ecran_des_quetes(partie, contenu, maintenant()));
+                None
+            }
             EntreeDuCamp::Options => choisir_une_option(entree)?,
             EntreeDuCamp::Quitter => return None,
         };

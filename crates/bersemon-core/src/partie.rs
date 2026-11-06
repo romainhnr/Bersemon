@@ -55,6 +55,7 @@ use crate::nom::Nom;
 use crate::obeissance::limite_d_obeissance;
 use crate::peche::{ErreurPeche, ParametresPeche, Peche, Prise};
 use crate::pierre::PierreDEvolution;
+use crate::quete::{JournalDesQuetes, Objectif, QueteAccomplie};
 use crate::recompenses_du_codex::{
     ErreurCodex, PalierDuCodex, RecompenseDuCodex, especes_au_codex, especes_capturees,
 };
@@ -148,6 +149,8 @@ pub struct Partie {
     /// (sections 9.8 et 15.6).
     arene: EtatDeLArene,
     decouvertes: Decouvertes,
+    /// L'avancement des quêtes du jour et de la semaine (section 13.12).
+    quetes: JournalDesQuetes,
 }
 
 /// Ce que le joueur a trouvé hors de la piste des Apôtres : les zones
@@ -216,6 +219,7 @@ pub struct EtatPartie {
     pub paliers_du_codex: Vec<PalierDuCodex>,
     pub arene: EtatDeLArene,
     pub decouvertes: Decouvertes,
+    pub quetes: JournalDesQuetes,
 }
 
 /// Sauvegarde lisible mais contraire aux règles des expéditions
@@ -313,6 +317,7 @@ impl Partie {
             paliers_du_codex: Vec::new(),
             arene: EtatDeLArene::default(),
             decouvertes: Decouvertes::default(),
+            quetes: JournalDesQuetes::default(),
             conseils_vus: Vec::new(),
             expeditions_automatiques: Vec::new(),
             attaques_a_choisir: Vec::new(),
@@ -961,6 +966,39 @@ impl Partie {
     /// `None` sans monstre pêché.
     pub fn relacher_la_prise(&mut self) -> Option<Monstre> {
         self.peche.prendre_la_prise()
+    }
+
+    /// Les quêtes du jour et de la semaine (section 13.12).
+    pub fn quetes(&self) -> &JournalDesQuetes {
+        &self.quetes
+    }
+
+    /// Ce que le joueur vient de faire avance les quêtes du moment. Chaque
+    /// quête accomplie verse aussitôt sa récompense au coffre, à la mesure
+    /// des coffres de la zone ouverte la plus avancée, même en expédition :
+    /// le coffre ne se perd pas (section 13.12).
+    pub(crate) fn faire_progresser_les_quetes(
+        &mut self,
+        objectif: Objectif,
+        nombre: u32,
+        maintenant: Horodatage,
+        zones: &[Zone],
+        piste: &Piste,
+    ) -> Vec<QueteAccomplie> {
+        let accomplies = self.quetes.progresser(objectif, nombre, maintenant);
+        // La première zone est toujours ouverte : seul un contenu sans zone
+        // laisserait une quête sans récompense.
+        let zone = self.zone_la_plus_avancee(zones, piste);
+        accomplies
+            .into_iter()
+            .map(|quete| {
+                let recompense = zone
+                    .map(|zone| quete.recompense(quete.periode.numero(maintenant), zone))
+                    .unwrap_or_default();
+                self.coffre_du_camp.ajouter(recompense.clone());
+                QueteAccomplie { quete, recompense }
+            })
+            .collect()
     }
 
     /// La zone ouverte de plus haut niveau, où la pêche prend ses monstres
@@ -2315,6 +2353,7 @@ impl Partie {
             paliers_du_codex: etat.paliers_du_codex,
             arene: etat.arene,
             decouvertes: etat.decouvertes,
+            quetes: etat.quetes,
         })
     }
 
@@ -4319,6 +4358,7 @@ pub(crate) mod tests {
             paliers_du_codex: partie.paliers_du_codex().to_vec(),
             arene: partie.arene(),
             decouvertes: partie.decouvertes().clone(),
+            quetes: partie.quetes().clone(),
         }
     }
 

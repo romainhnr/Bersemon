@@ -105,6 +105,7 @@ mod tests {
             paliers_du_codex: Vec::new(),
             arene: Default::default(),
             decouvertes: Default::default(),
+            quetes: Default::default(),
         })
         .unwrap()
     }

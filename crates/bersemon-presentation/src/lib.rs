@@ -27,6 +27,7 @@ pub mod mise_en_valeur;
 pub mod monstres;
 pub mod partie;
 pub mod peche;
+pub mod quetes;
 pub mod recit;
 pub mod recompenses_du_codex;
 pub mod rite;

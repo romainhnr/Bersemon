@@ -34,6 +34,7 @@ use bersemon_core::nom::Nom;
 use bersemon_core::partie::{AttaqueAChoisir, Decouvertes, EtatPartie, Partie};
 use bersemon_core::peche::Peche;
 use bersemon_core::pierre::PierreDEvolution;
+use bersemon_core::quete::{Avancement, EtatDeQuete, JournalDesQuetes, Objectif, Periode, Quete};
 use bersemon_core::recompenses_du_codex::PalierDuCodex;
 use bersemon_core::relations::{Palmares, Relations};
 use bersemon_core::ressource::RessourceId;
@@ -48,7 +49,7 @@ use bersemon_core::zone::{Zone, ZoneId};
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 36;
+pub(crate) const VERSION: u64 = 37;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -250,6 +251,75 @@ pub(crate) struct SauvegardeV14 {
     annexes_ouvertes: Vec<String>,
     #[serde(default)]
     legendaires_captures: Vec<String>,
+    /// Depuis la version 37 : l'avancement des quêtes du jour et de la
+    /// semaine (section 13.12), absent tant que le joueur ne les a pas
+    /// avancées.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    quetes_du_jour: Option<AvancementV37>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    quetes_de_la_semaine: Option<AvancementV37>,
+}
+
+/// Le numéro du jour, ou de la semaine, et ses quêtes, chacune par
+/// l'identifiant de son objectif.
+#[derive(Debug, Serialize, Deserialize)]
+struct AvancementV37 {
+    numero: u64,
+    quetes: Vec<QueteV37>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct QueteV37 {
+    objectif: String,
+    progres: u32,
+    accomplie: bool,
+}
+
+fn depuis_avancement(avancement: Option<&Avancement>) -> Option<AvancementV37> {
+    avancement.map(|avancement| AvancementV37 {
+        numero: avancement.numero,
+        quetes: avancement
+            .quetes
+            .iter()
+            .map(|etat| QueteV37 {
+                objectif: etat.quete.objectif.id().to_string(),
+                progres: etat.progres,
+                accomplie: etat.accomplie,
+            })
+            .collect(),
+    })
+}
+
+/// Un objectif disparu du jeu rend la sauvegarde illisible, comme une
+/// espèce disparue (section 13.9).
+fn vers_avancement(
+    avancement: Option<AvancementV37>,
+    periode: Periode,
+) -> Result<Option<Avancement>, ErreurSauvegarde> {
+    let Some(avancement) = avancement else {
+        return Ok(None);
+    };
+    let quetes = avancement
+        .quetes
+        .into_iter()
+        .map(|quete| {
+            let objectif = Objectif::depuis_id(&quete.objectif).ok_or_else(|| {
+                ErreurSauvegarde::Incoherente(format!(
+                    "objectif de quête inconnu : {}",
+                    quete.objectif
+                ))
+            })?;
+            Ok(EtatDeQuete {
+                quete: Quete { periode, objectif },
+                progres: quete.progres,
+                accomplie: quete.accomplie,
+            })
+        })
+        .collect::<Result<Vec<_>, ErreurSauvegarde>>()?;
+    Ok(Some(Avancement {
+        numero: avancement.numero,
+        quetes,
+    }))
 }
 
 fn cote_de_depart() -> u32 {
@@ -785,6 +855,8 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV14 {
             .iter()
             .map(|palier| palier_en_texte(*palier))
             .collect(),
+        quetes_du_jour: depuis_avancement(partie.quetes().avancement(Periode::Jour)),
+        quetes_de_la_semaine: depuis_avancement(partie.quetes().avancement(Periode::Semaine)),
     }
 }
 
@@ -1200,6 +1272,11 @@ pub(crate) fn vers_partie(
             .map(|texte| lire_palier(texte))
             .collect::<Result<Vec<_>, _>>()?
     };
+    // Avant la version 37, aucune quête avancée (section 13.12).
+    let quetes = JournalDesQuetes::new(
+        vers_avancement(sauvegarde.quetes_du_jour, Periode::Jour)?,
+        vers_avancement(sauvegarde.quetes_de_la_semaine, Periode::Semaine)?,
+    );
     let mut partie = Partie::restaurer(EtatPartie {
         heros,
         collection,
@@ -1248,6 +1325,7 @@ pub(crate) fn vers_partie(
                 .map(|id| EspeceId::new(id.as_str()))
                 .collect(),
         },
+        quetes,
     })
     .map_err(incoherente)?;
     // Avant la version 35, les shiny ne connaissaient pas le Rayon

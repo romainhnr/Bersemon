@@ -50,6 +50,7 @@ use crate::nom::{ErreurNom, Nom};
 use crate::partie::{Partie, RecompenseObtenue, creer_monstre_de_depart};
 use crate::peche::{ErreurPeche, Pecheur, Prise};
 use crate::pierre::PierreDEvolution;
+use crate::quete::{Objectif, QueteAccomplie};
 use crate::recompenses_du_codex::{ErreurCodex, RecompenseDuCodex};
 use crate::relations::IdJoueur;
 use crate::ressource::{Ressource, RessourceId};
@@ -574,6 +575,9 @@ pub enum Evenement {
     PetitNe(Box<NaissanceDuRite>),
     /// Ce qu'un palier du codex a rapporté, rangé au coffre (section 5.6).
     RecompenseDuCodex(Box<RecompenseDuCodex>),
+    /// Une quête du jour ou de la semaine vient d'être accomplie ; sa
+    /// récompense est déjà au coffre (section 13.12).
+    QueteAccomplie(Box<QueteAccomplie>),
     /// Suivi de l'XP gagnée, s'il en a gagné.
     SortieDeLEntrainement {
         monstre: Monstre,
@@ -1323,6 +1327,30 @@ fn sauvegarder(partie: &Partie, depot: &dyn SauvegardeRepository, evenements: &m
     }
 }
 
+/// Ce que le joueur vient de faire avance les quêtes du moment, celui du
+/// choix (section 13.12).
+fn faire_progresser(
+    partie: &mut Partie,
+    objectif: Objectif,
+    nombre: usize,
+    contexte: &Contexte<'_>,
+    evenements: &mut Vec<Evenement>,
+) {
+    let nombre = u32::try_from(nombre).unwrap_or(u32::MAX);
+    let accomplies = partie.faire_progresser_les_quetes(
+        objectif,
+        nombre,
+        contexte.maintenant,
+        contexte.contenu.zones(),
+        contexte.contenu.piste(),
+    );
+    evenements.extend(
+        accomplies
+            .into_iter()
+            .map(|accomplie| Evenement::QueteAccomplie(Box::new(accomplie))),
+    );
+}
+
 fn montrer_conseil(partie: &mut Partie, conseil: Conseil, evenements: &mut Vec<Evenement>) {
     if partie.noter_conseil_vu(conseil) {
         evenements.push(Evenement::Conseil(conseil));
@@ -1672,11 +1700,21 @@ impl EnJeu {
                         })
                     })
                     .collect();
+                let reussite = bilan.reussite;
                 evenements.push(Evenement::ExpeditionAutomatiqueRentree {
                     zone: expedition.zone().nom().to_string(),
                     bilan,
                 });
                 evenements.extend(experience);
+                if reussite {
+                    faire_progresser(
+                        &mut self.partie,
+                        Objectif::ReussirDesExpeditionsAutomatiques,
+                        1,
+                        contexte,
+                        evenements,
+                    );
+                }
                 // Tout de suite, pour que quitter le jeu ne permette pas de
                 // tirer de nouveau le résultat (section 12.7).
                 sauvegarder(&self.partie, contexte.depot, evenements);
@@ -2518,7 +2556,8 @@ impl EnJeu {
         let location_finie = self.partie.decompter_location();
         // L'Éclipse ne compte jamais comme explorée (section 9.4).
         let lieu_d_invocation = en_cours.expedition.zone().est_un_lieu_d_invocation();
-        if en_cours.expedition.est_reussie() && !lieu_d_invocation {
+        let menee_au_bout = en_cours.expedition.est_reussie() && !lieu_d_invocation;
+        if menee_au_bout {
             evenements.push(Evenement::ZoneExploree(
                 en_cours.expedition.zone().nom().to_string(),
             ));
@@ -2553,6 +2592,15 @@ impl EnJeu {
         }
         if let Some(nouvelle) = self.partie.zones_accessibles(zones, piste).get(avant) {
             evenements.push(Evenement::NouvelleZone(nouvelle.nom().to_string()));
+        }
+        if menee_au_bout {
+            faire_progresser(
+                &mut self.partie,
+                Objectif::MenerDesExpeditionsAuBout,
+                1,
+                contexte,
+                evenements,
+            );
         }
         montrer_conseil(&mut self.partie, Conseil::PremierRetourAuCamp, evenements);
         sauvegarder(&self.partie, contexte.depot, evenements);
@@ -3050,15 +3098,45 @@ impl EnExpedition {
         let (captures, sac_perdu) = partie
             .conclure_combat(bilan)
             .expect("le combat rend l'équipe qu'il a reçue");
+        let mut recoltees = 0;
         if fin.issue == Some(Issue::Victoire) {
             if let Some(fouineur) = partie.fouiller_apres_une_victoire(&mut *contexte.aleatoire) {
                 evenements.push(Evenement::PotionTrouvee(fouineur));
             }
             let ressources = partie.recolter_ressources(&vaincus, &mut *contexte.aleatoire);
+            recoltees = ressources.len();
             if !ressources.is_empty() {
                 evenements.push(Evenement::RessourcesTrouvees(ressources));
             }
         }
+        // Un monstre capturé est vaincu lui aussi (section 7), sauf celui
+        // d'un humain, qui n'est pas sauvage.
+        let sauvages_captures = if fin.contre_un_humain {
+            0
+        } else {
+            captures.len()
+        };
+        faire_progresser(
+            partie,
+            Objectif::VaincreDesMonstresSauvages,
+            vaincus.len() + sauvages_captures,
+            contexte,
+            evenements,
+        );
+        faire_progresser(
+            partie,
+            Objectif::CapturerDesMonstres,
+            captures.len(),
+            contexte,
+            evenements,
+        );
+        faire_progresser(
+            partie,
+            Objectif::RecolterDesRessources,
+            recoltees,
+            contexte,
+            evenements,
+        );
         let fin = FinDeCombat { sac_perdu, ..fin };
         self.placer(partie, captures.into(), Some(fin), evenements)
     }
@@ -3460,6 +3538,7 @@ impl EnExpedition {
                         texte: annexe.decouverte().to_string(),
                     });
                 }
+                faire_progresser(partie, Objectif::OuvrirDesCoffres, 1, contexte, evenements);
                 self.apres_l_etape(partie, evenements)
             }
             EvenementExpedition::Ame {
@@ -3703,6 +3782,7 @@ mod tests {
     use crate::niveau::Niveau;
     use crate::partie::EtatPartie;
     use crate::peche::Peche;
+    use crate::quete::{JournalDesQuetes, Periode, Quete};
     use crate::stats::ValeursInternes;
     use crate::types::{Efficacite, efficacite};
     use std::cell::RefCell;
@@ -3799,6 +3879,7 @@ mod tests {
             paliers_du_codex: partie.paliers_du_codex().to_vec(),
             arene: partie.arene(),
             decouvertes: partie.decouvertes().clone(),
+            quetes: partie.quetes().clone(),
         }
     }
 
@@ -4147,6 +4228,9 @@ mod tests {
         let mut etat = etat_de(deroulement.partie().unwrap());
         etat.humains_vaincus = vec![HumainId::new("brigand")];
         etat.ames_portees = vec![bertrand(&contenu)];
+        // Les quêtes du moment déjà accomplies : leurs récompenses ne
+        // s'ajoutent pas à l'argent des coffres (section 13.12).
+        etat.quetes = JournalDesQuetes::tout_accompli(Horodatage::depuis_secondes(0));
         let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
         let lisiere = Choix::PartirEnExpedition(ZoneId::new("lisiere"));
         repondre_a(
@@ -6553,7 +6637,16 @@ mod tests {
             .sum();
         assert!(trouve > 0);
         assert_eq!(sauvegarde.sac().argent(), trouve - perdu);
-        assert!(sauvegarde.coffre_du_camp().est_vide());
+        // Le coffre ne garde que les récompenses des quêtes accomplies en
+        // chemin, qu'aucune défaite ne fait perdre (section 13.12).
+        let mut recompenses = Inventaire::default();
+        for evenement in &vus {
+            if let Evenement::QueteAccomplie(accomplie) = evenement {
+                recompenses.ajouter(accomplie.recompense.clone());
+            }
+        }
+        assert!(recompenses.argent() > 0);
+        assert_eq!(sauvegarde.coffre_du_camp(), &recompenses);
         // Malvoise est rencontré une fois et reste au camp ; chaque âme
         // recueillie l'est une fois, et reste portée tant qu'elle n'est pas
         // donnée (section 14.2).
@@ -6657,6 +6750,7 @@ mod tests {
             paliers_du_codex: Vec::new(),
             arene: Default::default(),
             decouvertes: Default::default(),
+            quetes: Default::default(),
         })
         .unwrap()
     }
@@ -7237,6 +7331,148 @@ mod tests {
         );
         let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
         assert!(sauvegarde.attaques_a_choisir().is_empty());
+    }
+
+    /// Les quêtes accomplies parmi ces événements.
+    fn quetes_accomplies(evenements: &[Evenement]) -> Vec<&QueteAccomplie> {
+        evenements
+            .iter()
+            .filter_map(|evenement| match evenement {
+                Evenement::QueteAccomplie(accomplie) => Some(&**accomplie),
+                _ => None,
+            })
+            .collect()
+    }
+
+    #[test]
+    fn deux_coffres_accomplissent_la_quete_du_jour_qui_paie_au_coffre() {
+        // Le jour 0, une des quêtes du jour demande d'ouvrir 2 coffres
+        // (section 13.12).
+        let quete = Quete {
+            periode: Periode::Jour,
+            objectif: Objectif::OuvrirDesCoffres,
+        };
+        assert!(Periode::Jour.quetes(0).contains(&quete));
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        // Le brigand déjà vaincu et l'âme de Bertrand portée, la Lisière ne
+        // finit que par des coffres de 10 pièces d'argent.
+        let mut etat = etat_de(&partie(&contenu));
+        etat.humains_vaincus = vec![HumainId::new("brigand")];
+        etat.ames_portees = vec![bertrand(&contenu)];
+        let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
+        let coffre = vec![81, 1, 10, 100, 100];
+        let lisiere = Choix::PartirEnExpedition(ZoneId::new("lisiere"));
+        let premier = repondre_a(
+            &mut deroulement,
+            lisiere,
+            &contenu,
+            &depot,
+            0,
+            coffre.clone(),
+        )
+        .unwrap();
+        assert!(quetes_accomplies(&premier).is_empty());
+        let second = repondre_a(
+            &mut deroulement,
+            Choix::ContinuerLExpedition,
+            &contenu,
+            &depot,
+            0,
+            coffre.clone(),
+        )
+        .unwrap();
+        let accomplies = quetes_accomplies(&second);
+        assert_eq!(accomplies.len(), 1);
+        assert_eq!(accomplies[0].quete, quete);
+        // L'argent de 2 coffres de la Lisière, seule zone ouverte.
+        let (minimum, maximum) = quete.argent_possible(&contenu.zones()[0]);
+        let argent = accomplies[0].recompense.argent();
+        assert!((minimum..=maximum).contains(&argent), "{argent}");
+        // Au coffre dès maintenant, même en expédition ; le sac garde
+        // l'argent des coffres ouverts.
+        let partie = deroulement.partie().unwrap();
+        assert_eq!(partie.coffre_du_camp().argent(), argent);
+        assert_eq!(partie.sac().argent(), 20);
+        // Accomplie, elle ne rapporte plus rien.
+        for _ in 0..3 {
+            let evenements = repondre_a(
+                &mut deroulement,
+                Choix::ContinuerLExpedition,
+                &contenu,
+                &depot,
+                0,
+                coffre.clone(),
+            )
+            .unwrap();
+            assert!(quetes_accomplies(&evenements).is_empty());
+        }
+        repondre_sans_tirage(&mut deroulement, Choix::Poursuivre, &contenu, &depot).unwrap();
+        assert_eq!(deroulement.attente(), Attente::Camp);
+        // Le retour au camp sauvegarde la récompense et l'avancement : 2
+        // coffres sur 2 pour le jour, 5 sur 10 pour la semaine.
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert_eq!(sauvegarde.coffre_du_camp().argent(), argent);
+        let maintenant = Horodatage::depuis_secondes(0);
+        let du_jour = sauvegarde
+            .quetes()
+            .quetes(Periode::Jour, maintenant)
+            .into_iter()
+            .find(|etat| etat.quete == quete)
+            .unwrap();
+        assert_eq!((du_jour.progres, du_jour.accomplie), (2, true));
+        let de_la_semaine = sauvegarde
+            .quetes()
+            .quetes(Periode::Semaine, maintenant)
+            .into_iter()
+            .find(|etat| etat.quete.objectif == Objectif::OuvrirDesCoffres)
+            .unwrap();
+        assert_eq!((de_la_semaine.progres, de_la_semaine.accomplie), (5, false));
+    }
+
+    #[test]
+    fn une_expedition_automatique_reussie_accomplit_la_quete_du_jour() {
+        // Le jour 2, une des quêtes du jour demande de réussir une
+        // expédition automatique (section 13.12).
+        let jour = 2;
+        let quete = Quete {
+            periode: Periode::Jour,
+            objectif: Objectif::ReussirDesExpeditionsAutomatiques,
+        };
+        assert!(Periode::Jour.quetes(jour).contains(&quete));
+        let debut = jour * 24 * 3_600;
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut deroulement = au_camp(partie_pour_les_expeditions(&contenu), &contenu, &depot);
+        let marais = ZoneId::new("marais");
+        let envoi = Choix::EnvoyerEnExpeditionAutomatique {
+            zone: marais.clone(),
+            monstres: vec![Emplacement::Equipe(0), Emplacement::Equipe(1)],
+            protection: Protection::default(),
+        };
+        repondre_a(&mut deroulement, envoi, &contenu, &depot, debut, vec![]).unwrap();
+        // Les tirages de l'accueil réussi, comme dans le test précédent.
+        let evenements = repondre_a(
+            &mut deroulement,
+            Choix::AccueillirExpeditionAutomatique(marais),
+            &contenu,
+            &depot,
+            debut + 5_400,
+            vec![40, 600, 1, 55],
+        )
+        .unwrap();
+        let accomplies = quetes_accomplies(&evenements);
+        assert_eq!(accomplies.len(), 1);
+        assert_eq!(accomplies[0].quete, quete);
+        assert!(matches!(
+            evenements.last(),
+            Some(Evenement::QueteAccomplie(_))
+        ));
+        // 60 pièces de l'expédition, et la récompense, sauvegardées dès
+        // l'accueil.
+        let argent = 60 + accomplies[0].recompense.argent();
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert_eq!(sauvegarde.coffre_du_camp().argent(), argent);
     }
 
     #[test]

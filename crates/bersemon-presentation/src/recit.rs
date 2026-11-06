@@ -33,6 +33,7 @@ use crate::partie::{
     enumerer, pierres, potions, ressources,
 };
 use crate::peche;
+use crate::quetes::quete_accomplie;
 use crate::recompenses_du_codex::recompense_reclamee;
 use crate::rite::{naissance as texte_de_la_naissance, rite_lance};
 use crate::sac;
@@ -524,6 +525,7 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
         Evenement::RiteLance(apercu) => (rite_lance(apercu), false),
         Evenement::PetitNe(naissance) => (texte_de_la_naissance(naissance), false),
         Evenement::RecompenseDuCodex(recompense) => (recompense_reclamee(recompense), false),
+        Evenement::QueteAccomplie(accomplie) => (quete_accomplie(accomplie), false),
         Evenement::ObjetEquipe {
             place,
             objet,

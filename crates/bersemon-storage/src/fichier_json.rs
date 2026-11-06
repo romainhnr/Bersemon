@@ -111,6 +111,7 @@ mod tests {
     use bersemon_core::partie::{AttaqueAChoisir, EtatPartie};
     use bersemon_core::peche::Peche;
     use bersemon_core::pierre::PierreDEvolution;
+    use bersemon_core::quete::{EtatDeQuete, JournalDesQuetes, Objectif, Periode, Quete};
     use bersemon_core::recompenses_du_codex::PalierDuCodex;
     use bersemon_core::relations::{Palmares, Relations};
     use bersemon_core::ressource::{Ressource, RessourceId};
@@ -487,6 +488,7 @@ mod tests {
             paliers_du_codex: vec![PalierDuCodex::Especes(10), PalierDuCodex::Complet],
             arene: Default::default(),
             decouvertes: Default::default(),
+            quetes: Default::default(),
         };
         let mut partie = Partie::restaurer(etat(&partie, Vec::new())).unwrap();
         // Croc apprend l'attaque de la capsule, hors de la liste de son
@@ -1492,6 +1494,68 @@ mod tests {
         objet.insert("version".to_string(), 35.into());
         let ancienne = charger_texte(&valeur.to_string()).unwrap().unwrap();
         assert_eq!(ancienne.decouvertes(), &Default::default());
+    }
+
+    /// L'avancement des quêtes se relit ; avant la version 37, il n'y en a
+    /// aucun ; un objectif inconnu est refusé (section 13.12).
+    #[test]
+    fn l_avancement_des_quetes_se_relit_depuis_la_version_37() {
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        assert!(valeur.get("quetes_du_jour").is_none());
+        valeur["quetes_du_jour"] = serde_json::json!({
+            "numero": 20_398,
+            "quetes": [
+                {"objectif": "ouvrir-des-coffres", "progres": 2, "accomplie": true},
+                {"objectif": "vaincre-des-monstres-sauvages", "progres": 7, "accomplie": false}
+            ]
+        });
+        valeur["quetes_de_la_semaine"] = serde_json::json!({
+            "numero": 2_914,
+            "quetes": [{"objectif": "reussir-des-expeditions-automatiques", "progres": 1, "accomplie": false}]
+        });
+        let relue = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        let du_jour = relue.quetes().avancement(Periode::Jour).unwrap();
+        assert_eq!(du_jour.numero, 20_398);
+        assert_eq!(
+            du_jour.quetes[0],
+            EtatDeQuete {
+                quete: Quete {
+                    periode: Periode::Jour,
+                    objectif: Objectif::OuvrirDesCoffres,
+                },
+                progres: 2,
+                accomplie: true,
+            }
+        );
+        assert_eq!(du_jour.quetes[1].progres, 7);
+        let de_la_semaine = relue.quetes().avancement(Periode::Semaine).unwrap();
+        assert_eq!(
+            de_la_semaine.quetes[0].quete,
+            Quete {
+                periode: Periode::Semaine,
+                objectif: Objectif::ReussirDesExpeditionsAutomatiques,
+            }
+        );
+        let ecrite = serde_json::to_value(format::depuis_partie(&relue)).unwrap();
+        assert_eq!(ecrite["quetes_du_jour"], valeur["quetes_du_jour"]);
+        assert_eq!(
+            ecrite["quetes_de_la_semaine"],
+            valeur["quetes_de_la_semaine"]
+        );
+
+        let mut inconnu = valeur.clone();
+        inconnu["quetes_du_jour"]["quetes"][0]["objectif"] = "danser".into();
+        assert!(matches!(
+            charger_texte(&inconnu.to_string()),
+            Err(ErreurSauvegarde::Incoherente(_))
+        ));
+
+        let objet = valeur.as_object_mut().unwrap();
+        objet.remove("quetes_du_jour");
+        objet.remove("quetes_de_la_semaine");
+        objet.insert("version".to_string(), 36.into());
+        let ancienne = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        assert_eq!(ancienne.quetes(), &JournalDesQuetes::default());
     }
 
     #[test]

@@ -132,6 +132,7 @@ mod tests {
                 annexes_ouvertes,
                 legendaires_captures: Vec::new(),
             },
+            quetes: Default::default(),
         })
         .unwrap()
     }
