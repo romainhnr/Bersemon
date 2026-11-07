@@ -1684,13 +1684,13 @@ Les 4 classes et les 5 humains du récit sont dessinés à l'étape 156, style v
 
 Images composées : en combat, les deux combattants actifs face à face, celui du joueur à gauche et retourné, avec un écart de 4 pixels de la grille (312 x 144 pixels) ; au choix de la classe, les quatre classes côte à côte (648 x 144 pixels). Chaque sprite garde sa palette, d'au plus 63 couleurs.
 
-## 43. Rayon chromatique et héros shiny
+## 43. Choc chromatique et héros shiny
 
-Décidé le 26/10/2026, pour les étapes 158 à 160 (gamedesign.md, sections 4.1, 5.1 et 13.7). Nom et textes proposés par Claude sans validation (Q117).
+Décidé le 26/10/2026, pour les étapes 158 à 160 (gamedesign.md, sections 4.1, 5.1 et 13.7). Textes proposés par Claude sans validation (Q117). Renommée le 06/11/2026, pour l'étape 173 (choix de l'utilisateur) : l'attaque s'appelait Rayon chromatique, puis Choc stellaire le 06/11/2026 ; elle s'appelle Choc chromatique depuis le 07/11/2026, et son identifiant reste rayon-chromatique, pour les sauvegardes.
 
 | Identifiant | Nom | Type | Cat. | Puissance | Précision | Effet |
 |---|---|---|---|---|---|---|
-| rayon-chromatique | Rayon chromatique | Stellaire | P ou S | 80 | 100 | |
+| rayon-chromatique | Choc chromatique | Stellaire | P ou S | 80 | 100 | |
 
 La catégorie suit le monstre qui l'utilise : physique si son Attaque dépasse son Attaque spéciale, spéciale sinon. Seul un monstre shiny la connaît.
 
@@ -1699,7 +1699,7 @@ Textes :
 - héros né shiny : "Une lueur étrange émane de vous : vous êtes shiny, une chance sur 512." ;
 - confirmation du service : "Faire rendre votre héros shiny par Malvoise contre un Philtre chromatique ? Seule sa couleur changera." ;
 - héros rendu shiny : "Malvoise vous fait boire le Philtre chromatique ; votre sang s'altère, et une lueur nouvelle vous enveloppe. Vous êtes désormais shiny." ;
-- monstre rendu shiny avec une place libre, à la suite du texte existant : "Il apprend Rayon chromatique."
+- monstre rendu shiny avec une place libre, à la suite du texte existant : "Il apprend Choc chromatique."
 
 ## 44. Port des Noyés, Mines de Fer-Noir et leurs annexes
 
@@ -2546,3 +2546,205 @@ Textes proposés sans validation :
 
 Le délai se dit "5 h 12", ou "3 j 4 h" au-delà d'un jour. Exemple de récit : "Quête de la semaine accomplie : capturer 15 monstres. Récompense, au coffre : 34 pièces d'argent et 1 Fiole de sang."
 
+## 51. Succès, titres, trophées et couleurs du héros
+
+Décidé le 06/11/2026, pour les étapes 174, 176 et 177 (gamedesign.md, section 4.5). Le principe (titres, trophées des grands exploits, quatre couleurs et la royale couronnée) est un choix de l'utilisateur ; la liste, les titres, les conditions, les textes et les palettes sont proposés par Claude sans validation (Q120). Chaque succès donne son titre ; les titres conviennent à tout héros, sans accord de genre.
+
+| Identifiant | Titre | Condition | Trophée | Couleur |
+|---|---|---|---|---|
+| nomade | Nomade | mener une expédition au bout | | |
+| naturaliste | Naturaliste | capturer 30 espèces du codex | | |
+| encyclopediste | Encyclopédiste | compléter le codex | oui | |
+| oeil-de-lynx | Œil-de-lynx | avoir un monstre shiny dans l'équipe ou au camp | | |
+| porte-lueur | Porte-lueur | avoir 5 monstres shiny à la fois dans l'équipe et au camp | | Nacre |
+| lueur-incarnee | Lueur incarnée | avoir un héros shiny | | |
+| veteran | Vétéran | mener un monstre au niveau 50 | | |
+| legende-vivante | Légende vivante | mener un monstre au niveau 100 | | |
+| brise-chaines | Brise-chaînes | vaincre le Bourreau | | |
+| fleau-du-baron | Fléau du Baron | abattre le Baron pendu | oui | |
+| fleau-de-l-abbesse | Fléau de l'Abbesse | abattre l'Abbesse écorchée | oui | |
+| fleau-du-margrave | Fléau du Margrave | abattre le Margrave de givre | oui | |
+| fleau-de-l-amiral | Fléau de l'Amiral | abattre l'Amiral noyé | oui | |
+| fleau-du-prevot | Fléau du Prévôt | abattre le Prévôt des fosses | oui | |
+| fleau-de-la-duchesse | Fléau de la Duchesse | abattre la Duchesse sanguine | oui | |
+| fleau-de-l-eveque | Fléau de l'Évêque | abattre l'Évêque des os | oui | |
+| fleau-du-connetable | Fléau du Connétable | abattre le Connétable boucher | oui | |
+| fleau-du-chancelier | Fléau du Chancelier | abattre le Chancelier aux mille yeux | oui | |
+| fleau-du-prince | Fléau du Prince | abattre le Prince de braise | oui | |
+| fleau-du-senechal | Fléau du Sénéchal | abattre le Sénéchal des orages | oui | |
+| fleau-de-la-reine-mere | Fléau de la Reine-mère | abattre la Reine-mère de chair | oui | |
+| fleau-du-roi-sans-visage | Fléau du Roi sans visage | abattre le Roi sans visage | oui | |
+| deicide | Déicide | abattre le Démiurge | oui | Cendre |
+| legende-des-abysses | Légende des Abysses | capturer Léviathan | oui | |
+| legende-des-terres-arides | Légende des Terres arides | capturer Béhémoth | oui | |
+| legende-du-ciel-dechire | Légende du Ciel déchiré | capturer Ziz | oui | |
+| idole-de-la-fosse | Idole de la Fosse | vaincre le dernier palier de la Fosse aux damnés | oui | Sang |
+| ombre-de-la-tour | Ombre de la Tour | franchir 50 étapes de la Tour sans fond, seul | | Abîme |
+| duelliste | Duelliste | gagner 10 duels | | |
+| main-d-or | Main d'or | avoir 10 000 pièces d'argent, sac et coffre réunis | | |
+| architecte | Architecte | mener toutes les améliorations du camp à leur niveau maximal | | |
+| fer-de-lance | Fer de lance | porter une arme et une armure du palier 8 | | |
+| cartographe | Cartographe | ouvrir les 10 zones annexes | | |
+| complice-de-malvoise | Complice de Malvoise | accomplir les 4 quêtes de Malvoise | oui | |
+| eleve-de-gunther | Élève de Gunther | accomplir les 4 quêtes de Gunther | oui | |
+| camarade-d-ansgar | Camarade d'Ansgar | accomplir les 4 quêtes d'Ansgar | oui | |
+
+La couleur royale, or et pourpre, avec une couronne, se débloque quand les 22 trophées sont réunis.
+
+Trophées du camp :
+
+| Succès | Trophée |
+|---|---|
+| encyclopediste | Le bestiaire complet, relié de cuir noir, ouvert sur un lutrin près du feu. |
+| fleau-du-baron | La corde du Baron pendu, nouée au poteau du camp. |
+| fleau-de-l-abbesse | Le voile de l'Abbesse écorchée, tendu sur un cadre de bois. |
+| fleau-du-margrave | Un éclat de la couronne du Margrave de givre, qui ne fond jamais. |
+| fleau-de-l-amiral | Le tricorne de l'Amiral noyé, toujours ruisselant, accroché à une lance. |
+| fleau-du-prevot | Le fouet du Prévôt des fosses, enroulé sur un clou. |
+| fleau-de-la-duchesse | La coupe de la Duchesse sanguine, vide, posée sur une souche. |
+| fleau-de-l-eveque | La crosse de l'Évêque des os, plantée près de l'entrée. |
+| fleau-du-connetable | Le couperet du Connétable boucher, fiché dans un billot. |
+| fleau-du-chancelier | Le sceau du Chancelier aux mille yeux, dont aucun œil ne s'ouvre plus. |
+| fleau-du-prince | Une braise du Prince, qui couve dans une lanterne de fer. |
+| fleau-du-senechal | Le cor du Sénéchal des orages, muet, pendu à une branche. |
+| fleau-de-la-reine-mere | Une mèche de la Reine-mère de chair, tressée et séchée. |
+| fleau-du-roi-sans-visage | Le masque vide du Roi sans visage, posé face contre terre. |
+| deicide | Un fragment de l'Éclipse, pierre noire qui boit la lumière. |
+| legende-des-abysses | Une écaille de Léviathan, grande comme un bouclier. |
+| legende-des-terres-arides | Une corne de Béhémoth, dressée comme une pierre levée. |
+| legende-du-ciel-dechire | Une plume de Ziz, plus haute qu'une tente. |
+| idole-de-la-fosse | La chaîne du Champion de la Fosse, jetée au pied du feu. |
+| complice-de-malvoise | Le psautier de Frère Malvoise, ouvert à la page d'Isaure. |
+| eleve-de-gunther | La lame noire de Konrad, plantée au bord du camp. |
+| camarade-d-ansgar | Le filet de l'équipage d'Edwin, tendu entre deux pieux près de l'étang. |
+
+Couleurs du héros, dessinées pour les quatre classes à l'étape 177 (même dessin, autre palette ; la royale ajoute une couronne d'or sertie d'une pierre pourpre) : Cendre, gris de cendre et braise ; Sang, rouge sombre et noir ; Abîme, bleu de nuit et vert d'eau ; Nacre, blanc nacré et lilas ; Royale, or et pourpre.
+
+Textes :
+
+| Moment | Texte |
+|---|---|
+| Succès obtenu | Succès obtenu : {titre} ({condition}). Vous pouvez porter ce titre. |
+| Trophée en plus | Un nouveau trophée orne le camp : {trophée} |
+| Couleur débloquée | Nouvelle couleur du héros : {couleur}. |
+| Tous les trophées | Tous les trophées du camp sont réunis : la couleur royale vous revient. |
+| Plusieurs à la fois (plus de 3) | {n} succès obtenus : voyez les succès, sur l'écran du héros. |
+| Titre porté | Vous portez désormais le titre {titre}. / Vous ne portez plus de titre. |
+| Couleur portée | Votre héros prend la couleur {couleur}. / Votre héros reprend sa couleur d'origine. |
+| Écran des succès | Succès : {n}/36. Trophées du camp : {n}/22. Puis une ligne par succès : "{titre} : {condition}", suivie de " (obtenu)" pour un succès obtenu. |
+| Libellés | Héros ; Succès ; Trophées du camp ; Porter un titre ; Ne porter aucun titre ; Couleur du héros ; Couleur d'origine |
+| Refus | Ce succès n'est pas encore obtenu. / Cette couleur n'est pas encore débloquée. |
+
+## 52. Quêtes des personnages du camp
+
+Décidé le 06/11/2026, pour les étapes 175 à 177 (gamedesign.md, section 13.13). Les règles (chaîne de 4 quêtes par personnage, ressources à rapporter ou objet unique gardé, objet dans le sac, service 25 % plus court à la fin de chaque chaîne) sont des choix de l'utilisateur ; les quêtes, leurs zones, objets, gardiens, récompenses et textes sont proposés par Claude sans validation (Q121). Les récompenses vont au coffre.
+
+| Identifiant | Personnage | Quête | Ouverture | Demande | Récompense |
+|---|---|---|---|---|---|
+| lueur-du-crane | Malvoise | La lueur du crâne | Marais des Pendus ouvert | 5 Cendre de feu follet | 150 pièces d'argent, 3 potions |
+| psautier-de-malvoise | Malvoise | Le psautier de Frère Malvoise | Abbaye des Cendres ouverte | Psautier de Frère Malvoise, Abbaye, étape 3, gardé par une Goule de niveau 27 | 400, 1 Philtre chromatique |
+| prieres-pour-isaure | Malvoise | Des prières pour Isaure | Catacombes de Sainte-Ombre ouvertes | 6 Chapelet d'os | 1 000, 3 capsules d'habileté |
+| page-du-codex-mortis | Malvoise | La page du Codex Mortis | Haute-Cité déchue ouverte | Page du Codex Mortis, Haute-Cité, étape 3, gardée par un Œil errant de niveau 77 | 3 000, 1 Philtre chromatique ; rite en 1 h 30 |
+| tenailles-neuves | Gunther | Des tenailles neuves | Vallée des Brumes ouverte | 6 Fragment d'armure | 200, 1 Moelle de bête, 1 Écorce de fer |
+| marteau-de-hautefer | Gunther | Le marteau de Hautefer | Col du Givre-Noir ouvert | Marteau de Hautefer, Col, étape 3, gardé par un Troll des cavernes de niveau 36 | 600, 1 Philtre chromatique |
+| lame-pour-konrad | Gunther | Une lame pour Konrad | Mines de Fer-Noir ouvertes | 8 Éclat de fer noir | 1 200, 3 capsules d'habileté |
+| coeur-de-braise | Gunther | Le cœur de braise | Gorge de Braise ouverte | Cœur de braise, Gorge, étape 3, gardé par un Golem de magma de niveau 82 | 3 000, 1 Philtre chromatique ; travaux 25 % plus courts |
+| leurres-de-plumes | Ansgar | Des leurres de plumes | Marais des Pendus ouvert | 5 Plume de corbeau | 150, 5 filets de chanvre |
+| medaillon-d-edwin | Ansgar | Le médaillon d'Edwin | Port des Noyés ouvert | Médaillon d'Edwin, Port, étape 3, gardé par une Sirène putride de niveau 51 | 800, 1 Philtre chromatique |
+| barque-pour-edwin | Ansgar | Une barque pour Edwin | Mines de Fer-Noir ouvertes | 8 Carapace de crabe | 1 200, 3 capsules d'habileté |
+| filet-de-l-equipage | Ansgar | Le filet de l'équipage | Épave du Léviathan ouverte | Filet de l'équipage, Épave, étape 2, gardé par un Crabe nécrophage de niveau 53 | 3 000, 1 Philtre chromatique ; ligne en 1 h 30 |
+
+Chaque objet de quête a l'identifiant de sa quête.
+
+Textes, pour chaque quête : la demande, puis, pour un objet, sa rencontre et sa prise, puis la remise.
+
+Malvoise :
+
+> La lueur du crâne, demande : Malvoise fait tourner son crâne entre ses doigts. "Il s'éteint. Les feux follets du Marais brûlent de ce qui reste des noyés : rapporte-m'en cinq poignées de cendre, et il verra de nouveau clair."
+
+> Remise : Malvoise souffle la cendre dans les orbites du crâne, qui s'allument d'une lueur verte. "Il voit. C'était le crâne de mon maître, à l'Abbaye des Cendres. Il m'a appris à lire les morts ; on l'a brûlé pour cela."
+
+> Le psautier de Frère Malvoise, demande : "L'Abbaye des Cendres est ouverte, dis-tu ? J'y ai été moine. Frère Malvoise, archiviste. J'ai caché sous les dalles du chœur un psautier noté de ma main. Les goules rôdent là où l'on enterre mal : rapporte-le-moi."
+
+> Rencontre : Sous une dalle descellée du chœur, un psautier relié de cuir noir. Une goule, accroupie dessus, relève la tête et gronde.
+
+> Prise : Sur la garde du psautier, une main appliquée a écrit "Frère Malvoise". Vous le glissez dans votre sac.
+
+> Remise : Malvoise tourne les pages sans un mot, puis s'arrête sur un nom : Isaure. "Ma sœur. Elle chantait au chœur quand l'Abbesse a commencé à écorcher les novices. Je n'ai rien fait. J'ai fui avec mes livres."
+
+> Des prières pour Isaure, demande : "Les moines des Catacombes psalmodient encore, morts depuis des siècles. Leurs chapelets d'os portent des prières que plus personne ne dit. Rapporte-m'en six : il m'en faut pour retenir une âme qui ne trouve pas le repos."
+
+> Remise : Malvoise noue les chapelets autour du crâne, un à un. "Isaure ne repose pas. Je l'entends, la nuit, qui chante sous le camp. Ces prières la retiendront, le temps que je trouve le reste."
+
+> La page du Codex Mortis, demande : "La Haute-Cité avait la plus grande bibliothèque du monde. Le Codex Mortis y était enchaîné ; une de ses pages dit comment rendre le repos à une âme liée. Trouve-la, et j'achèverai ce que j'aurais dû faire il y a trente ans."
+
+> Rencontre : Dans une salle de lecture éventrée, une page arrachée flotte au-dessus d'un pupitre, couverte d'une écriture qui bouge. Un œil errant se tourne vers vous.
+
+> Prise : L'écriture cesse de bouger dès que vous touchez la page. Vous la pliez dans votre sac.
+
+> Remise : Malvoise lit la page à voix basse, puis la brûle au-dessus du crâne. Sous le camp, le chant s'arrête. "Elle dort, enfin." Il reste longtemps silencieux. "Je ne dois plus rien aux morts. Mes rites iront plus vite, désormais : mes mains ne tremblent plus."
+
+Gunther :
+
+> Des tenailles neuves, demande : Gunther essuie ses mains sur son tablier. "Le Bourreau m'a pris mes outils et ne m'a laissé que ses chaînes. Les armures hantées font un bon acier : rapporte-m'en six fragments, que je me refasse des tenailles dignes de ce nom."
+
+> Remise : Gunther fond les fragments et martèle jusqu'à la nuit. Au matin, il vous montre des tenailles neuves. "Mon fils aurait fait mieux. Konrad. Il avait la main plus fine que la mienne. Le Bourreau l'a gardé, lui aussi. Il n'est pas sorti."
+
+> Le marteau de Hautefer, demande : "Mon village était au pied du Col : Hautefer. Les trolls l'ont pris, l'hiver où les Apôtres sont venus. Le marteau de mon père est resté sur l'enclume. S'il y est encore, rapporte-le-moi."
+
+> Rencontre : Dans les ruines d'une forge, sous la neige, un marteau repose sur une enclume fendue. Un troll des cavernes en a fait son oreiller ; il se lève, furieux.
+
+> Prise : Le manche du marteau porte une marque : trois traits et une flamme. Vous le rangez dans votre sac.
+
+> Remise : Gunther soupèse le marteau et rit pour la première fois. "La marque de Hautefer. Mon père, et son père avant lui." Il le pend au-dessus de l'enclume. "Il ne servira qu'aux beaux ouvrages."
+
+> Une lame pour Konrad, demande : "On dit que le fer des Mines ne rouille jamais, parce que les morts le gardent. Il m'en faut huit éclats : je veux forger une lame pour la tombe de Konrad. Il n'en a pas, de tombe. Il aura une lame."
+
+> Remise : Gunther forge trois jours. La lame est simple, sans ornement, noire comme les nuits du Col. Il la plante en terre au bord du camp. "Voilà. Ici repose Konrad, apprenti de Hautefer."
+
+> Le cœur de braise, demande : "Au fond de la Gorge bat un cœur de braise qui ne refroidit jamais. Une forge qui en a un ne s'éteint plus. Avec lui, je travaillerai plus vite que je ne l'ai jamais fait."
+
+> Rencontre : Au bord d'une coulée, une pierre rouge palpite comme un cœur. Un golem de magma la porte dans sa poitrine ouverte.
+
+> Prise : Arraché au golem, le cœur de braise continue de battre, tiède, presque doux. Vous l'enveloppez au fond de votre sac.
+
+> Remise : Gunther pose le cœur de braise au fond du foyer. La forge s'embrase d'une flamme blanche. "Konrad aurait aimé voir ça." Il reprend le marteau de Hautefer. "Désormais, mes ouvrages iront plus vite."
+
+Ansgar :
+
+> Des leurres de plumes, demande : Ansgar ravaude un filet, les doigts gourds. "Mes leurres sont restés dans la cabane. Avec cinq plumes de corbeau, je m'en ferai de nouveaux, et le poisson de l'étang mordra mieux."
+
+> Remise : Ansgar noue les plumes avec une patience infinie. "Mon fils, Edwin, les faisait mieux que moi. Il est parti en mer, au Port. Les marins disaient que la mer y rend les noyés. Elle ne me l'a jamais rendu."
+
+> Le médaillon d'Edwin, demande : "Le Port des Noyés. Edwin y a embarqué il y a vingt ans. Il portait un médaillon d'étain où j'avais gravé mon visage, tant bien que mal. Si la mer rend les noyés, elle rend peut-être aussi ce qu'ils portaient."
+
+> Rencontre : Sur un ponton pourri, une sirène putride chante, un médaillon d'étain pendu à son cou.
+
+> Prise : Le médaillon est terni, mais le visage gravé ressemble à Ansgar, en plus jeune. Vous le glissez dans votre sac.
+
+> Remise : Ansgar serre le médaillon dans son poing, longtemps. "Elle l'avait, la sirène ? Alors il n'est pas resté seul, au fond." Il le porte désormais à son cou.
+
+> Une barque pour Edwin, demande : "Les gens du Port brûlaient une barque pour chaque noyé, pour qu'il trouve son chemin. Edwin n'en a pas eu. Avec huit carapaces de crabe pour la coque, je lui en ferai une."
+
+> Remise : Ansgar assemble une petite barque de carapaces et y couche une plume de corbeau. Au soir, il la pousse sur l'étang du camp et y met le feu. "Bon vent, mon garçon."
+
+> Le filet de l'équipage, demande : "L'Épave du Léviathan, c'était son navire, j'en suis sûr à présent. Dans la cale, il y avait le filet de l'équipage, tressé de crin de kelpie : un filet qui ne casse jamais. Rapporte-le-moi."
+
+> Rencontre : Au fond de la cale noyée, un filet aux mailles luisantes est roulé contre la coque. Un crabe nécrophage s'y est fait un nid ; il claque des pinces.
+
+> Prise : Pas une maille du filet n'a cédé. Vous le roulez au fond de votre sac.
+
+> Remise : Ansgar déplie le filet de l'équipage d'Edwin. Ses mains ne tremblent pas. "Avec ça, je ne perdrai plus une prise. Mes lignes iront plus vite au fond."
+
+Autres textes :
+
+| Moment | Texte |
+|---|---|
+| Au camp, une demande à écouter | {personnage} a une demande pour vous. |
+| Au camp, une quête à remettre | Vous pouvez remettre sa quête à {personnage}. |
+| Récompense | Vous recevez {récompense}, rangés dans le coffre. |
+| Service amélioré | Le Rite du sang mêlé dure désormais 1 h 30. / Les travaux de Gunther durent désormais 25 % de moins. / La ligne d'Ansgar est désormais prête en 1 h 30. |
+| Écran des quêtes | Pour chaque personnage au camp : "{personnage} ({n}/4 quêtes accomplies)", puis sa quête en cours, "En cours : {quête}. {objectif}", "Une demande à écouter.", "Rien à vous demander pour l'instant." ou "Toutes ses quêtes sont accomplies." |
+| Objectif | Rapporter 5 Cendre de feu follet (vous en avez 3). / Trouver le Psautier de Frère Malvoise dans l'Abbaye des Cendres. / Remettre le Psautier de Frère Malvoise. |
+| Libellés | Quêtes du camp (console), Quêtes (Discord) ; Écouter {personnage} ; Remettre à {personnage} |
+| Refus | Il vous manque 2 Cendre de feu follet. / Vous n'avez pas le Psautier de Frère Malvoise. / {personnage} n'a rien à vous demander. / {personnage} n'est pas au camp. |
