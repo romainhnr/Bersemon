@@ -10,6 +10,7 @@ use bersemon_core::monstre::{Monstre, RapportExperience};
 use bersemon_core::statut::Statut;
 use bersemon_core::types::Efficacite;
 
+use crate::atelier::appat_lance;
 use crate::equipement::decrire_bonus;
 use crate::filets::nom_du_filet;
 use crate::mise_en_valeur::important;
@@ -228,6 +229,7 @@ pub fn evenement(evenement: &Evenement, combat: &Combat) -> String {
             combat.monstre(*cible).nom()
         )),
         Evenement::CaptureRatee(cible) => format!("{} se dégage du filet.", fort(*cible)),
+        Evenement::AppatLance { appat, cible } => appat_lance(*appat, &fort(*cible)),
         Evenement::SoinUtilise { soin, cible, effet } => soin_utilise(*soin, &fort(*cible), *effet),
         Evenement::Fuite => "Vous prenez la fuite.".to_string(),
         Evenement::FinDuCombat(Issue::Victoire) => "Victoire !".to_string(),
@@ -382,6 +384,7 @@ mod tests {
             statut: None,
             habilete: loup.habilete(),
             recu_de: Some(bersemon_core::nom::Nom::new("Ysolde").unwrap()),
+            evolution_par_echange: false,
             location: None,
         })
         .unwrap()

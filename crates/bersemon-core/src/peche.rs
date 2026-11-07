@@ -11,7 +11,9 @@ use crate::espece::{Espece, EspeceId};
 use crate::horodatage::Horodatage;
 use crate::monstre::Monstre;
 use crate::niveau::Niveau;
+use crate::parfum::Parfum;
 use crate::pierre::PierreDEvolution;
+use crate::ressource::Ressource;
 use crate::stats::ValeursInternes;
 use crate::zone::{Zone, creer_monstre_sauvage, tirer_entre};
 
@@ -26,6 +28,10 @@ const JUSQU_A_LA_BOURSE: u32 = 84;
 const JUSQU_A_LA_PIERRE: u32 = 89;
 const JUSQU_A_LA_CAPSULE_D_HABILETE: u32 = 94;
 const JUSQU_AU_BOOSTER: u32 = 99;
+/// Chaque ligne relevée remonte aussi 2 à 3 matières, en plus de sa prise
+/// (docs/contenu-v1.md, section 53).
+const MATIERES_MIN: u32 = 2;
+const MATIERES_MAX: u32 = 3;
 
 /// Ce que la pêche peut remonter (docs/contenu-v1.md, section 15).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -33,6 +39,9 @@ pub struct ParametresPeche {
     duree: Duration,
     especes: Vec<Espece>,
     rare: Espece,
+    /// Les matières que remonte chaque ligne, avec leur chance sur 100, qui
+    /// font 100 ensemble (section 13.8).
+    matieres: Vec<(Ressource, u32)>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -43,6 +52,8 @@ pub enum ErreurParametresPeche {
     /// jusqu'à ce niveau : elle ne pourrait pas être pêchée dans toutes les
     /// zones.
     EspeceInvalide { espece: EspeceId, niveau: Niveau },
+    /// Les chances des matières ne font pas 100.
+    MatieresInvalides,
 }
 
 impl fmt::Display for ErreurParametresPeche {
@@ -55,6 +66,9 @@ impl fmt::Display for ErreurParametresPeche {
                 espece.as_str(),
                 niveau.valeur()
             ),
+            ErreurParametresPeche::MatieresInvalides => {
+                write!(f, "les chances des matières pêchées ne font pas 100")
+            }
         }
     }
 }
@@ -90,7 +104,57 @@ impl ParametresPeche {
             duree,
             especes,
             rare,
+            matieres: Vec::new(),
         })
+    }
+
+    /// Sans matières, la ligne ne remonte que sa prise.
+    pub fn avec_matieres(
+        mut self,
+        matieres: Vec<(Ressource, u32)>,
+    ) -> Result<Self, ErreurParametresPeche> {
+        let total: u32 = matieres.iter().map(|(_, chance)| *chance).sum();
+        if total != 100 || matieres.iter().any(|(_, chance)| *chance == 0) {
+            return Err(ErreurParametresPeche::MatieresInvalides);
+        }
+        self.matieres = matieres;
+        Ok(self)
+    }
+
+    pub fn matieres(&self) -> &[(Ressource, u32)] {
+        &self.matieres
+    }
+
+    /// Tirages, s'il y a des matières : leur nombre, puis la sorte de
+    /// chacune. Rend chaque sorte avec son nombre, dans l'ordre des
+    /// matières.
+    pub(crate) fn tirer_matieres(&self, aleatoire: &mut dyn Aleatoire) -> Vec<(Ressource, u32)> {
+        if self.matieres.is_empty() {
+            return Vec::new();
+        }
+        let mut nombres = vec![0; self.matieres.len()];
+        for _ in 0..tirer_entre(MATIERES_MIN, MATIERES_MAX, aleatoire) {
+            let mut tirage = aleatoire.tirer(1..=100);
+            let position = self
+                .matieres
+                .iter()
+                .position(|(_, chance)| {
+                    if tirage <= *chance {
+                        true
+                    } else {
+                        tirage -= chance;
+                        false
+                    }
+                })
+                .expect("les chances font 100");
+            nombres[position] += 1;
+        }
+        self.matieres
+            .iter()
+            .zip(nombres)
+            .filter(|(_, nombre)| *nombre > 0)
+            .map(|((ressource, _), nombre)| (ressource.clone(), nombre))
+            .collect()
     }
 
     /// Le temps qu'il faut à la ligne pour être prête.
@@ -132,9 +196,9 @@ impl ParametresPeche {
                 ))
             }
             tirage if tirage <= JUSQU_A_LA_PIERRE => {
-                let derniere = (PierreDEvolution::TOUTES.len() - 1) as u32;
+                let derniere = (PierreDEvolution::TROUVEES.len() - 1) as u32;
                 Prise::Pierre(
-                    PierreDEvolution::TOUTES[tirer_entre(0, derniere, aleatoire) as usize],
+                    PierreDEvolution::TROUVEES[tirer_entre(0, derniere, aleatoire) as usize],
                 )
             }
             tirage if tirage <= JUSQU_A_LA_CAPSULE_D_HABILETE => Prise::CapsuleDHabilete,
@@ -260,6 +324,9 @@ pub struct Peche {
     /// Le monstre pêché, que le joueur garde ou relâche avant toute autre
     /// action au camp.
     prise: Option<Monstre>,
+    /// Le parfum qu'Ansgar a préparé et que le héros porte jusqu'à sa
+    /// prochaine expédition dans une zone (section 9.2).
+    parfum: Option<Parfum>,
 }
 
 impl Peche {
@@ -274,7 +341,31 @@ impl Peche {
             pecheur_au_camp,
             ligne,
             prise,
+            parfum: None,
         })
+    }
+
+    /// Reprise d'une sauvegarde : le parfum porté, qu'Ansgar a forcément
+    /// préparé.
+    pub fn avec_parfum(mut self, parfum: Option<Parfum>) -> Option<Self> {
+        if parfum.is_some() && !self.pecheur_au_camp {
+            return None;
+        }
+        self.parfum = parfum;
+        Some(self)
+    }
+
+    pub fn parfum(&self) -> Option<&Parfum> {
+        self.parfum.as_ref()
+    }
+
+    pub(crate) fn porter(&mut self, parfum: Parfum) {
+        self.parfum = Some(parfum);
+    }
+
+    /// Au départ d'une expédition dans une zone, le parfum s'y répand.
+    pub(crate) fn repandre_le_parfum(&mut self) -> Option<Parfum> {
+        self.parfum.take()
     }
 
     pub fn pecheur_au_camp(&self) -> bool {

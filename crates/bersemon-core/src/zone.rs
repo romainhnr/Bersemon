@@ -17,6 +17,10 @@ use crate::jour_et_nuit::{JourOuNuit, NIVEAUX_DE_PLUS_LA_NUIT};
 use crate::meteo::Meteo;
 use crate::monstre::{Monstre, tirer_shiny, tirer_valeurs_internes};
 use crate::niveau::Niveau;
+use crate::parfum::{
+    CHANCES_DE_L_ESPECE_ATTIREE, MONSTRES_DE_PLUS, NIVEAUX_DE_PLUS as NIVEAUX_DE_PLUS_DU_PARFUM,
+    Parfum,
+};
 use crate::peche::Pecheur;
 use crate::stats::ValeursInternes;
 
@@ -159,8 +163,8 @@ pub struct Zone {
 
 impl Zone {
     /// Vérifie que chaque espèce, rares comprises, peut être créée à chaque
-    /// niveau de la zone, et jusqu'à 2 niveaux au-dessus pour la nuit : la
-    /// génération des monstres ne peut ensuite plus échouer.
+    /// niveau de la zone, et jusqu'à 5 niveaux au-dessus pour la nuit et un
+    /// parfum : la génération des monstres ne peut ensuite plus échouer.
     ///
     /// Tous les paramètres sont obligatoires, pour qu'aucune zone n'oublie
     /// une règle ; les regrouper ne servirait qu'à contourner la limite de
@@ -190,9 +194,12 @@ impl Zone {
         if especes.is_empty() {
             return Err(ErreurZone::AucuneEspece);
         }
+        // Jusqu'aux niveaux de plus de la nuit et d'un parfum (sections 9.2
+        // et 9.6).
+        let niveau_le_plus_haut = niveau_avec(niveau_max, NIVEAUX_DE_PLUS_MAX);
         let toutes = especes.iter().chain(rares.iter().map(|rare| &rare.espece));
         for espece in toutes {
-            verifier_espece(espece, niveau_min, niveau_de_nuit(niveau_max))?;
+            verifier_espece(espece, niveau_min, niveau_le_plus_haut)?;
         }
         Ok(Self {
             id,
@@ -260,12 +267,12 @@ impl Zone {
     }
 
     /// Comme les autres espèces, le monstre caché doit pouvoir être créé à
-    /// chaque niveau de la zone, nuit comprise.
+    /// chaque niveau de la zone, nuit et parfum compris.
     pub fn avec_monstre_cache(mut self, cache: EspeceRare) -> Result<Self, ErreurZone> {
         verifier_espece(
             &cache.espece,
             self.niveau_min,
-            niveau_de_nuit(self.niveau_max),
+            niveau_avec(self.niveau_max, NIVEAUX_DE_PLUS_MAX),
         )?;
         self.cache = Some(cache);
         Ok(self)
@@ -353,16 +360,47 @@ impl Zone {
         jour_ou_nuit: Option<JourOuNuit>,
         aleatoire: &mut dyn Aleatoire,
     ) -> Vec<Monstre> {
+        self.generer_groupe_attire(jour_ou_nuit, None, aleatoire)
+    }
+
+    /// Avec le parfum que porte le héros, le groupe compte un monstre de
+    /// plus, chacun a 3 niveaux de plus, et chacun est de l'espèce attirée
+    /// 1 fois sur 2, si elle est commune dans la zone, même à un moment où
+    /// elle ne sort pas (section 9.2). Tirages : taille du groupe, puis pour
+    /// chaque monstre la chance de l'espèce attirée, s'il y en a une, son
+    /// espèce si ce n'est pas elle, et ceux de `generer_monstre`.
+    pub fn generer_groupe_attire(
+        &self,
+        jour_ou_nuit: Option<JourOuNuit>,
+        parfum: Option<&Parfum>,
+        aleatoire: &mut dyn Aleatoire,
+    ) -> Vec<Monstre> {
+        let de_plus = if parfum.is_some() {
+            MONSTRES_DE_PLUS
+        } else {
+            0
+        };
         let taille = tirer_entre(
-            u32::from(self.taille_min_groupe),
-            u32::from(self.taille_max_groupe),
+            u32::from(self.taille_min_groupe + de_plus),
+            u32::from(self.taille_max_groupe + de_plus),
             aleatoire,
         );
         let especes = self.especes_qui_sortent(jour_ou_nuit);
+        let attiree = parfum.and_then(Parfum::espece_attiree).and_then(|attiree| {
+            self.especes
+                .iter()
+                .find(|espece| espece.id() == attiree.id())
+        });
+        let niveaux_de_plus = niveaux_de_plus_du_parfum(parfum);
         (0..taille)
             .map(|_| {
-                let espece = especes[tirer_position(especes.len(), aleatoire)];
-                self.generer_monstre_au_moment(espece, jour_ou_nuit, aleatoire)
+                let espece = match attiree {
+                    Some(attiree) if aleatoire.tirer(1..=CHANCES_DE_L_ESPECE_ATTIREE) == 1 => {
+                        attiree
+                    }
+                    _ => especes[tirer_position(especes.len(), aleatoire)],
+                };
+                self.generer_monstre_au_moment(espece, jour_ou_nuit, niveaux_de_plus, aleatoire)
             })
             .collect()
     }
@@ -401,13 +439,38 @@ impl Zone {
         jour_ou_nuit: Option<JourOuNuit>,
         aleatoire: &mut dyn Aleatoire,
     ) -> Option<MonstreRare> {
+        self.generer_monstre_rare_attire(jour_ou_nuit, None, aleatoire)
+    }
+
+    /// Avec un parfum, 3 niveaux de plus ; le parfum d'une espèce rare de la
+    /// zone la fait venir à coup sûr, sans tirage de l'espèce, après la
+    /// chance du monstre caché (section 9.2).
+    pub fn generer_monstre_rare_attire(
+        &self,
+        jour_ou_nuit: Option<JourOuNuit>,
+        parfum: Option<&Parfum>,
+        aleatoire: &mut dyn Aleatoire,
+    ) -> Option<MonstreRare> {
+        let attiree = parfum.and_then(Parfum::espece_attiree).and_then(|attiree| {
+            self.rares
+                .iter()
+                .find(|rare| rare.espece.id() == attiree.id())
+        });
         let rare = match &self.cache {
             Some(cache) if aleatoire.tirer(1..=CHANCES_MONSTRE_CACHE) == 1 => cache,
             _ if self.rares.is_empty() => return None,
-            _ => &self.rares[tirer_position(self.rares.len(), aleatoire)],
+            _ => match attiree {
+                Some(attiree) => attiree,
+                None => &self.rares[tirer_position(self.rares.len(), aleatoire)],
+            },
         };
         Some(MonstreRare {
-            monstre: self.generer_monstre_au_moment(&rare.espece, jour_ou_nuit, aleatoire),
+            monstre: self.generer_monstre_au_moment(
+                &rare.espece,
+                jour_ou_nuit,
+                niveaux_de_plus_du_parfum(parfum),
+                aleatoire,
+            ),
             pacifique: rare.pacifique,
         })
     }
@@ -427,16 +490,17 @@ impl Zone {
         espece: &Espece,
         aleatoire: &mut dyn Aleatoire,
     ) -> Monstre {
-        self.generer_monstre_au_moment(espece, None, aleatoire)
+        self.generer_monstre_au_moment(espece, None, 0, aleatoire)
     }
 
     /// De nuit, 2 niveaux de plus que le niveau tiré, au-delà du maximum de
-    /// la zone s'il le faut (section 9.6). Mêmes tirages que
-    /// `generer_monstre`.
+    /// la zone s'il le faut (section 9.6), puis ceux d'un parfum (section
+    /// 9.2). Mêmes tirages que `generer_monstre`.
     fn generer_monstre_au_moment(
         &self,
         espece: &Espece,
         jour_ou_nuit: Option<JourOuNuit>,
+        niveaux_de_plus: u8,
         aleatoire: &mut dyn Aleatoire,
     ) -> Monstre {
         let valeur = tirer_entre(
@@ -447,20 +511,29 @@ impl Zone {
         // Le tirage reste entre deux niveaux valides de la zone.
         let niveau = Niveau::new(valeur as u8).expect("niveau compris dans la zone");
         let niveau = if jour_ou_nuit == Some(JourOuNuit::Nuit) {
-            niveau_de_nuit(niveau)
+            niveau_avec(niveau, NIVEAUX_DE_PLUS_LA_NUIT)
         } else {
             niveau
         };
-        creer_monstre_sauvage(espece, niveau, aleatoire)
+        creer_monstre_sauvage(espece, niveau_avec(niveau, niveaux_de_plus), aleatoire)
     }
 }
 
-/// 2 niveaux de plus, sans dépasser le niveau 100.
-fn niveau_de_nuit(niveau: Niveau) -> Niveau {
-    let valeur = niveau
-        .valeur()
-        .saturating_add(NIVEAUX_DE_PLUS_LA_NUIT)
-        .min(Niveau::MAX);
+/// Ceux de la nuit et ceux d'un parfum : le plus haut niveau qu'un monstre
+/// de la zone peut avoir au-delà de son maximum.
+const NIVEAUX_DE_PLUS_MAX: u8 = NIVEAUX_DE_PLUS_LA_NUIT + NIVEAUX_DE_PLUS_DU_PARFUM;
+
+fn niveaux_de_plus_du_parfum(parfum: Option<&Parfum>) -> u8 {
+    if parfum.is_some() {
+        NIVEAUX_DE_PLUS_DU_PARFUM
+    } else {
+        0
+    }
+}
+
+/// Quelques niveaux de plus, sans dépasser le niveau 100.
+fn niveau_avec(niveau: Niveau, de_plus: u8) -> Niveau {
+    let valeur = niveau.valeur().saturating_add(de_plus).min(Niveau::MAX);
     Niveau::new(valeur).expect("niveau borné au maximum")
 }
 
@@ -593,6 +666,65 @@ mod tests {
             .generer_monstre_rare(de_nuit, &mut AleatoireScripte::new(tirages))
             .unwrap();
         assert_eq!(rare.monstre.niveau(), niveau(7));
+    }
+
+    /// Section 9.2 : le parfum d'une espèce l'attire 1 fois sur 2 dans les
+    /// groupes, et à coup sûr parmi les monstres rares.
+    #[test]
+    fn le_parfum_d_une_espece_l_attire_dans_la_zone() {
+        let basilic = EspeceRare {
+            espece: espece("basilic"),
+            pacifique: false,
+        };
+        let cerf = EspeceRare {
+            espece: espece("cerf-blanc"),
+            pacifique: true,
+        };
+        let zone = zone(
+            (5, 5),
+            1,
+            vec![espece("loup"), espece("vipere")],
+            vec![cerf, basilic],
+        )
+        .unwrap();
+        let vipere = Parfum::Espece(espece("vipere"));
+        // Deux monstres, sans tirage de la taille : le premier est attiré
+        // (1), le second non (2), et son espèce est tirée (0 : le loup).
+        let groupe = zone.generer_groupe_attire(
+            None,
+            Some(&vipere),
+            &mut AleatoireScripte::new([1, 2, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0]),
+        );
+        let especes: Vec<&str> = groupe
+            .iter()
+            .map(|monstre| monstre.espece().id().as_str())
+            .collect();
+        assert_eq!(especes, vec!["vipere", "loup"]);
+        assert!(groupe.iter().all(|monstre| monstre.niveau() == niveau(8)));
+        // Le basilic, sans tirage de l'espèce rare.
+        let rare = zone
+            .generer_monstre_rare_attire(
+                None,
+                Some(&Parfum::Espece(espece("basilic"))),
+                &mut AleatoireScripte::new([2, 0, 0, 0, 0, 0, 0]),
+            )
+            .unwrap();
+        assert_eq!(rare.monstre.espece().id().as_str(), "basilic");
+        assert_eq!(rare.monstre.niveau(), niveau(8));
+        // Une espèce qui ne vit pas dans la zone n'y vient pas : les hordes
+        // restent.
+        let ailleurs = Parfum::Espece(espece("corbeau"));
+        let groupe = zone.generer_groupe_attire(
+            None,
+            Some(&ailleurs),
+            &mut AleatoireScripte::new([1, 2, 0, 0, 0, 0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 0]),
+        );
+        assert_eq!(groupe.len(), 2);
+        assert!(
+            groupe
+                .iter()
+                .all(|monstre| monstre.espece().id().as_str() == "vipere")
+        );
     }
 
     #[test]

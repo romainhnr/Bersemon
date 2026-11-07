@@ -7,6 +7,7 @@
 //! permet pas de connaître.
 
 pub mod arene;
+pub mod atelier;
 pub mod beherit;
 pub mod boosters;
 pub mod combat;

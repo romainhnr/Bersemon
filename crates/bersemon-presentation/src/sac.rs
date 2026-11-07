@@ -4,6 +4,7 @@
 use bersemon_core::inventaire::{Inventaire, Objet};
 use bersemon_core::partie::Partie;
 
+use crate::atelier::appats;
 use crate::boosters::{boosters, philtres_chromatiques};
 use crate::filets::filets;
 use crate::partie::{capsules_d_habilete, charmes_de_garde, contenu, pierres, ressources};
@@ -56,6 +57,7 @@ impl SorteAJeter {
             Objet::PhiltresChromatiques(_) => Objet::PhiltresChromatiques(nombre),
             Objet::CharmesDeGarde(_) => Objet::CharmesDeGarde(nombre),
             Objet::Filets(filet, _) => Objet::Filets(*filet, nombre),
+            Objet::Appats(appat, _) => Objet::Appats(*appat, nombre),
             Objet::ObjetDeQuete(quete) => Objet::ObjetDeQuete(quete.clone()),
         }
     }
@@ -79,6 +81,9 @@ pub fn sortes_a_jeter(sac: &Inventaire) -> Vec<SorteAJeter> {
     }
     for (filet, nombre) in sac.filets().presents() {
         ajouter(Objet::Filets(filet, 1), nombre, filets(filet, nombre));
+    }
+    for (appat, nombre) in sac.appats().presents() {
+        ajouter(Objet::Appats(appat, 1), nombre, appats(appat, nombre));
     }
     for capsule in sac.capsules() {
         ajouter(

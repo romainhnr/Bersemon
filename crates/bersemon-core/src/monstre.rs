@@ -6,6 +6,7 @@ use crate::aleatoire::Aleatoire;
 use crate::attaque::{Attaque, AttaqueId, AttaquesMonstre, Categorie, ErreurAttaquesMonstre};
 use crate::booster::{Booster, GAIN_D_UN_BOOSTER};
 use crate::espece::Espece;
+use crate::evolution::ConditionEvolution;
 use crate::experience::experience_requise;
 use crate::habilete::{Habilete, tirer_habilete};
 use crate::niveau::Niveau;
@@ -79,6 +80,10 @@ pub struct Monstre {
     /// Le héros qui l'a cédé, pour un monstre reçu d'un autre joueur : lui
     /// seul peut désobéir (section 15.2).
     recu_de: Option<Nom>,
+    /// Reçu d'un autre joueur alors que son espèce évolue par échange : il
+    /// peut évoluer au camp sans Chaîne d'allégeance, tant qu'il ne l'a pas
+    /// fait (section 5.4).
+    evolution_par_echange: bool,
     /// Pour un monstre loué à Malvoise : les expéditions manuelles qu'il
     /// reste à sa location, au moins une (section 14.2).
     location: Option<u8>,
@@ -123,6 +128,7 @@ impl Monstre {
             statut: None,
             habilete: None,
             recu_de: None,
+            evolution_par_echange: false,
             location: None,
             couleur_du_heros: None,
         };
@@ -223,9 +229,21 @@ impl Monstre {
         self.recu_de.as_ref()
     }
 
-    /// Un nouveau don remplace la marque du précédent (section 15.1).
+    /// Un nouveau don remplace la marque du précédent (section 15.1). Une
+    /// espèce qui évolue par échange en remplit alors la condition (section
+    /// 5.4).
     pub(crate) fn marquer_recu(&mut self, heros: Nom) {
         self.recu_de = Some(heros);
+        self.evolution_par_echange = self
+            .espece
+            .evolution()
+            .is_some_and(|evolution| matches!(evolution.condition(), ConditionEvolution::Echange));
+    }
+
+    /// Reçu d'un autre joueur, il peut évoluer par échange sans Chaîne
+    /// d'allégeance (section 5.4).
+    pub fn evolue_par_echange(&self) -> bool {
+        self.evolution_par_echange
     }
 
     pub fn niveau(&self) -> Niveau {
@@ -389,6 +407,8 @@ impl Monstre {
             .and_then(|habilete| self.espece.habiletes().iter().position(|h| *h == habilete));
         let pv_max_avant = self.stats().pv;
         self.espece = vers;
+        // L'échange ne vaut que pour l'évolution qu'il permettait.
+        self.evolution_par_echange = false;
         let habiletes = self.espece.habiletes();
         if let Some(habilete) = position
             .and_then(|position| habiletes.get(position))
@@ -494,6 +514,7 @@ impl Monstre {
             statut: etat.statut,
             habilete: etat.habilete,
             recu_de: etat.recu_de,
+            evolution_par_echange: etat.evolution_par_echange,
             location: etat.location.filter(|&restantes| restantes > 0),
             couleur_du_heros: None,
         };
@@ -529,6 +550,9 @@ pub struct EtatMonstre {
     pub habilete: Option<Habilete>,
     /// Absente des sauvegardes antérieures à la version 17.
     pub recu_de: Option<Nom>,
+    /// Absente des sauvegardes antérieures à la version 39, où aucune espèce
+    /// n'évoluait par échange.
+    pub evolution_par_echange: bool,
     /// Absente des sauvegardes antérieures à la version 24 ; une location
     /// sans expédition restante est ignorée.
     pub location: Option<u8>,
@@ -905,6 +929,7 @@ mod tests {
             statut: monstre.statut(),
             habilete: monstre.habilete(),
             recu_de: monstre.recu_de().cloned(),
+            evolution_par_echange: monstre.evolue_par_echange(),
             location: monstre.expeditions_de_location(),
         }
     }

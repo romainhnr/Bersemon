@@ -11,6 +11,7 @@ use bersemon_core::marchand::EXPEDITIONS_DE_LOCATION;
 use bersemon_core::ressource::Ressource;
 
 use crate::arene;
+use crate::atelier;
 use crate::boosters::{
     HEROS_NE_SHINY, HEROS_RENDU_SHINY, PHILTRE_RAMASSE, booster_donne, boosters,
     monstre_rendu_shiny, philtres_chromatiques,
@@ -531,6 +532,10 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
         Evenement::LigneLancee { delai, .. } => (peche::lancement(*delai), false),
         Evenement::PrisePechee(prise) => (peche::prise(prise), true),
         Evenement::PriseRelachee(monstre) => (peche::prise_relachee(monstre), false),
+        Evenement::MatieresPechees(matieres) => (atelier::matieres_pechees(matieres), false),
+        Evenement::AppatPrepare(appat) => (atelier::appat_prepare(*appat), false),
+        Evenement::ParfumPrepare(parfum) => (atelier::parfum_prepare(parfum), false),
+        Evenement::ParfumRepandu(parfum) => (atelier::parfum_repandu(parfum), false),
         Evenement::FabricationLancee { plan, .. } => (lancement_de_fabrication(plan), false),
         Evenement::CharmeLance { plan, .. } => (lancement_du_charme(plan), false),
         Evenement::FiletsLances { plan, .. } => (lancement_des_filets(plan), false),

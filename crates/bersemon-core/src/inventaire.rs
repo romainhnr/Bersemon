@@ -2,11 +2,12 @@
 //! manuelle, ou dans le coffre du camp, où ils sont à l'abri (sections 13.3
 //! et 14.4) : argent, soins, capsules d'attaque, capsules d'habileté,
 //! ressources, pierres d'évolution, boosters, Philtres chromatiques, charmes de
-//! garde, filets de capture et objets de quête.
+//! garde, filets de capture, appâts et objets de quête.
 
 use std::fmt;
 
 use crate::aleatoire::Aleatoire;
+use crate::appat::{Appat, Appats};
 use crate::attaque::AttaqueId;
 use crate::booster::Booster;
 use crate::capsule::Capsule;
@@ -42,6 +43,8 @@ pub struct Inventaire {
     charmes_de_garde: u32,
     /// Chaque capture en combat en consomme un (section 11.2).
     filets: Filets,
+    /// Lancés en combat avant un filet (section 11.2).
+    appats: Appats,
     /// Sans doublon : chacun est unique et ne sert qu'à sa quête (section
     /// 13.13).
     objets_de_quete: Vec<ObjetDeQuete>,
@@ -60,6 +63,7 @@ pub enum Objet {
     PhiltresChromatiques(u32),
     CharmesDeGarde(u32),
     Filets(Filet, u32),
+    Appats(Appat, u32),
     ObjetDeQuete(QueteId),
 }
 
@@ -77,7 +81,8 @@ impl Objet {
             | Objet::Boosters(_, nombre)
             | Objet::PhiltresChromatiques(nombre)
             | Objet::CharmesDeGarde(nombre)
-            | Objet::Filets(_, nombre) => *nombre,
+            | Objet::Filets(_, nombre)
+            | Objet::Appats(_, nombre) => *nombre,
         }
     }
 }
@@ -98,6 +103,7 @@ impl Inventaire {
             philtres_chromatiques: 0,
             charmes_de_garde: 0,
             filets: Filets::default(),
+            appats: Appats::default(),
             objets_de_quete: Vec::new(),
         };
         inventaire.soins.ajouter(Soin::Potion, potions);
@@ -254,6 +260,24 @@ impl Inventaire {
         self.filets = filets;
     }
 
+    pub fn appats(&self) -> &Appats {
+        &self.appats
+    }
+
+    pub fn ajouter_appats(&mut self, appat: Appat, nombre: u32) {
+        self.appats.ajouter(appat, nombre);
+    }
+
+    pub fn avec_appats(mut self, appat: Appat, nombre: u32) -> Self {
+        self.ajouter_appats(appat, nombre);
+        self
+    }
+
+    /// Ceux qui restent après un combat (section 11.2).
+    pub(crate) fn definir_appats(&mut self, appats: Appats) {
+        self.appats = appats;
+    }
+
     /// Rend `false` sans rien changer s'il n'y en a pas.
     pub(crate) fn utiliser_charme_de_garde(&mut self) -> bool {
         self.retirer(&Objet::CharmesDeGarde(1)).is_ok()
@@ -338,6 +362,7 @@ impl Inventaire {
             && self.philtres_chromatiques == 0
             && self.charmes_de_garde == 0
             && self.filets.est_vide()
+            && self.appats.est_vide()
             && self.objets_de_quete.is_empty()
     }
 
@@ -357,6 +382,7 @@ impl Inventaire {
             self.philtres_chromatiques,
             self.charmes_de_garde,
             sommes(&mut self.filets.presents().map(|(_, nombre)| nombre)),
+            sommes(&mut self.appats.presents().map(|(_, nombre)| nombre)),
             self.objets_de_quete.len() as u32,
         ]
         .into_iter()
@@ -433,6 +459,9 @@ impl Inventaire {
         for (filet, nombre) in autre.filets.presents() {
             self.filets.ajouter(filet, nombre);
         }
+        for (appat, nombre) in autre.appats.presents() {
+            self.appats.ajouter(appat, nombre);
+        }
         for objet in autre.objets_de_quete {
             self.ajouter_objet_de_quete(objet);
         }
@@ -451,7 +480,8 @@ impl Inventaire {
             | Objet::Boosters(_, 0)
             | Objet::PhiltresChromatiques(0)
             | Objet::CharmesDeGarde(0)
-            | Objet::Filets(_, 0) => {
+            | Objet::Filets(_, 0)
+            | Objet::Appats(_, 0) => {
                 return Err(ErreurObjet::QuantiteNulle);
             }
             Objet::Argent(montant) => {
@@ -547,6 +577,12 @@ impl Inventaire {
                     return Err(ErreurObjet::Insuffisant);
                 }
                 retire.filets.ajouter(*filet, *nombre);
+            }
+            Objet::Appats(appat, nombre) => {
+                if !self.appats.retirer(*appat, *nombre) {
+                    return Err(ErreurObjet::Insuffisant);
+                }
+                retire.appats.ajouter(*appat, *nombre);
             }
             Objet::ObjetDeQuete(quete) => {
                 let position = self

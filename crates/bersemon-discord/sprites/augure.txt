@@ -1,0 +1,46 @@
+# Augure
+palette
+o 1b1420
+b 2a2636
+c 18151f
+d 443e58
+p 5a5a62
+q a08850
+r e03030
+y f070f0
+h b080ff
+shiny
+o 1b1420
+b e0dce6
+c a8a4b4
+d fafaff
+p c09030
+q 6a4a8a
+r 30b0e0
+y 30e0a0
+h ffd060
+dessin
+.................o......
+....ohhho.......ocoo....
+...oh...ho.....odbdcoo..
+....ohhho.....odbcbbdco.
+......ooo.....odbcbbbbco
+.....oddco...odbccbbbco.
+....odbybco..odbcbbbco..
+..oopbbbbbcoodbbcbbco...
+.opppbrbbbcodbbbcbcco...
+oppppbbbbbbdbbbccbcbco..
+.opppcbbbbbbbbbcbccbbco.
+..oooqqqbbbbbbbcbcccco..
+.....oodqqqbbbbbccooo...
+......odbbqbbbbbbco.....
+......ocbbqbbbbbbco.....
+.......odqbbbbbbbco.....
+.......ocqbbbbbcbbco....
+........oqpccpcocbbco...
+.........opoopo.ocbbco..
+.........opoopo..ocbco..
+.........opoopo...oco...
+........opoppopo...o....
+.........o.oo.o.........
+........................

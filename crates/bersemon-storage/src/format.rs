@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use bersemon_core::ame::{MarchandId, MarchandMort};
 use bersemon_core::amelioration::{Amelioration, Ameliorations, Chantier, Forge, Ouvrage};
+use bersemon_core::appat::Appat;
 use bersemon_core::arene::{COTE_DE_DEPART, EtatDeLArene, PALIERS_DE_LA_FOSSE};
 use bersemon_core::attaque::{Attaque, AttaqueId, AttaquesMonstre};
 use bersemon_core::beherit::EtatDuBeherit;
@@ -31,6 +32,7 @@ use bersemon_core::machines::{Entrainement, Machines, Pieges};
 use bersemon_core::monstre::{EtatMonstre, Monstre, choc_chromatique};
 use bersemon_core::niveau::Niveau;
 use bersemon_core::nom::Nom;
+use bersemon_core::parfum::Parfum;
 use bersemon_core::partie::{AttaqueAChoisir, Decouvertes, EtatPartie, Partie};
 use bersemon_core::peche::Peche;
 use bersemon_core::pierre::PierreDEvolution;
@@ -51,7 +53,7 @@ use bersemon_core::zone::{Zone, ZoneId};
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 38;
+pub(crate) const VERSION: u64 = 39;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -272,6 +274,35 @@ pub(crate) struct SauvegardeV14 {
     /// "malvoise", "gunther" ou "ansgar".
     #[serde(default)]
     services_ameliores: Vec<String>,
+    /// Depuis la version 39 : le parfum que porte le héros, absent sans
+    /// parfum (section 9.2).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    parfum: Option<ParfumV39>,
+}
+
+/// Un parfum de charogne n'a pas d'espèce ; celui d'une espèce a son
+/// identifiant.
+#[derive(Debug, Serialize, Deserialize)]
+struct ParfumV39 {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    espece: Option<String>,
+}
+
+fn depuis_parfum(parfum: Option<&Parfum>) -> Option<ParfumV39> {
+    parfum.map(|parfum| ParfumV39 {
+        espece: parfum
+            .espece_attiree()
+            .map(|espece| espece.id().as_str().to_string()),
+    })
+}
+
+/// Le parfum d'une espèce disparue du jeu s'évente : il est oublié, comme
+/// une ressource disparue.
+fn vers_parfum(parfum: Option<ParfumV39>, catalogue: &dyn Catalogue) -> Option<Parfum> {
+    match parfum?.espece {
+        None => Some(Parfum::Charogne),
+        Some(id) => catalogue.espece(&EspeceId::new(&id)).map(Parfum::Espece),
+    }
 }
 
 /// Le numéro du jour, ou de la semaine, et ses quêtes, chacune par
@@ -465,6 +496,9 @@ struct InventaireV7 {
     /// Depuis la version 27 (section 11.2).
     #[serde(default)]
     filets: Vec<FiletV27>,
+    /// Depuis la version 39 (section 11.2), au même format que les filets.
+    #[serde(default)]
+    appats: Vec<AppatV39>,
     /// Depuis la version 38 (section 13.13) : l'identifiant de leur quête.
     #[serde(default)]
     objets_de_quete: Vec<String>,
@@ -474,6 +508,17 @@ struct InventaireV7 {
 struct FiletV27 {
     filet: String,
     nombre: u32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct AppatV39 {
+    appat: String,
+    nombre: u32,
+}
+
+fn lire_appat(texte: &str) -> Result<Appat, ErreurSauvegarde> {
+    Appat::depuis_id(texte)
+        .ok_or_else(|| ErreurSauvegarde::Incoherente(format!("appât inconnu : {texte}")))
 }
 
 fn lire_filet(texte: &str) -> Result<Filet, ErreurSauvegarde> {
@@ -515,6 +560,7 @@ fn pierre_en_texte(pierre: PierreDEvolution) -> &'static str {
     match pierre {
         PierreDEvolution::Braise => "braise",
         PierreDEvolution::Lune => "lune",
+        PierreDEvolution::ChaineDAllegeance => "chaine-d-allegeance",
     }
 }
 
@@ -682,6 +728,14 @@ struct MonstreV1 {
     /// d'un monstre loué (section 14.2).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     location: Option<u8>,
+    /// Depuis la version 39 : reçu d'un autre joueur, il peut évoluer par
+    /// échange (section 5.4) ; absent sinon.
+    #[serde(default, skip_serializing_if = "est_faux")]
+    evolution_par_echange: bool,
+}
+
+fn est_faux(valeur: &bool) -> bool {
+    !*valeur
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -843,6 +897,7 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV14 {
         ansgar_au_camp: partie.peche().pecheur_au_camp(),
         ligne: partie.peche().ligne().map(Horodatage::secondes),
         prise: partie.peche().prise().map(depuis_monstre),
+        parfum: depuis_parfum(partie.parfum_porte()),
         amis: partie.relations().amis().to_vec(),
         victoires_en_duel: partie.relations().palmares().victoires,
         defaites_en_duel: partie.relations().palmares().defaites,
@@ -1011,6 +1066,14 @@ fn depuis_inventaire(inventaire: &Inventaire) -> InventaireV7 {
                 nombre,
             })
             .collect(),
+        appats: inventaire
+            .appats()
+            .presents()
+            .map(|(appat, nombre)| AppatV39 {
+                appat: appat.id().to_string(),
+                nombre,
+            })
+            .collect(),
         objets_de_quete: inventaire
             .objets_de_quete()
             .iter()
@@ -1056,6 +1119,9 @@ fn vers_inventaire(
     resultat.ajouter_charmes_de_garde(inventaire.charmes_de_garde);
     for filet in inventaire.filets {
         resultat.ajouter_filets(lire_filet(&filet.filet)?, filet.nombre);
+    }
+    for appat in inventaire.appats {
+        resultat.ajouter_appats(lire_appat(&appat.appat)?, appat.nombre);
     }
     // Un objet de quête disparu du jeu ne sert plus : il est oublié, comme
     // une ressource disparue.
@@ -1220,6 +1286,7 @@ pub(crate) fn vers_partie(
         sauvegarde.ligne.map(Horodatage::depuis_secondes),
         prise,
     )
+    .and_then(|peche| peche.avec_parfum(vers_parfum(sauvegarde.parfum, catalogue)))
     .ok_or_else(|| ErreurSauvegarde::Incoherente("pêche sans Ansgar au camp".to_string()))?;
     let collection = Collection::restaurer(equipe, camp, ameliorations.tailles())
         .map_err(|erreur| ErreurSauvegarde::Incoherente(erreur.to_string()))?;
@@ -1614,6 +1681,7 @@ fn depuis_monstre(monstre: &Monstre) -> MonstreV1 {
             .map(|habilete| nom_d_habilete(habilete).to_string()),
         recu_de: monstre.recu_de().map(|heros| heros.as_str().to_string()),
         location: monstre.expeditions_de_location(),
+        evolution_par_echange: monstre.evolue_par_echange(),
     }
 }
 
@@ -1694,6 +1762,7 @@ fn vers_monstre(
         statut,
         habilete,
         recu_de,
+        evolution_par_echange: monstre.evolution_par_echange,
         location: monstre.location,
     })
     .map_err(incoherente)

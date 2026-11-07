@@ -39,6 +39,9 @@ pub enum ConditionEvolution {
     /// Avoir atteint ce niveau, après un combat d'une expédition partie sous
     /// cette météo (section 9.7).
     Meteo { meteo: Meteo, niveau: Niveau },
+    /// Être reçu d'un autre joueur, par échange ou par don, à tout niveau
+    /// (section 15.1) ; sinon, recevoir une Chaîne d'allégeance au camp.
+    Echange,
 }
 
 /// Où en est le monstre quand on se demande s'il peut évoluer.
@@ -87,10 +90,13 @@ impl Evolution {
         &self.attaque
     }
 
-    /// La pierre qu'il faut utiliser au camp, si c'est la condition.
+    /// La pierre qu'il faut utiliser au camp, si c'est la condition ; pour
+    /// une évolution par échange, la Chaîne d'allégeance, qui n'est pas
+    /// nécessaire au monstre reçu d'un autre joueur.
     pub fn pierre(&self) -> Option<PierreDEvolution> {
         match self.condition {
             ConditionEvolution::Pierre(pierre) => Some(pierre),
+            ConditionEvolution::Echange => Some(PierreDEvolution::ChaineDAllegeance),
             ConditionEvolution::Niveau(_)
             | ConditionEvolution::Lieu { .. }
             | ConditionEvolution::ApotreVaincu { .. }
@@ -103,11 +109,13 @@ impl Evolution {
     /// après un combat, une condition de lieu seulement après un combat dans
     /// sa zone, une condition de moment ou de météo seulement après un combat
     /// d'une expédition partie à ce moment ou sous cette météo ; une pierre
-    /// ne se donne qu'au camp, sur demande du joueur.
-    fn est_remplie(&self, monstre: &Monstre, circonstances: &Circonstances<'_>) -> bool {
+    /// ne se donne qu'au camp, sur demande du joueur. Un monstre reçu d'un
+    /// autre joueur remplit la condition d'échange jusqu'à ce qu'il évolue.
+    pub(crate) fn est_remplie(&self, monstre: &Monstre, circonstances: &Circonstances<'_>) -> bool {
         match &self.condition {
             ConditionEvolution::Niveau(niveau) => monstre.niveau() >= *niveau,
             ConditionEvolution::Pierre(_) => false,
+            ConditionEvolution::Echange => monstre.evolue_par_echange(),
             ConditionEvolution::Lieu { zone, niveau } => {
                 circonstances.zone == Some(zone) && monstre.niveau() >= *niveau
             }

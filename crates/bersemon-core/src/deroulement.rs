@@ -20,11 +20,14 @@ use crate::amelioration::{
     Amelioration, Chantier, ErreurAmelioration, PlanDAmelioration, PlanDeFabrication,
     PlanDesFilets, PlanDuCharme,
 };
+use crate::appat::Appat;
 use crate::arene::{AdversaireDeLArene, ErreurArene, PALIERS_DE_LA_FOSSE};
+use crate::atelier::ErreurAtelier;
 use crate::attaque::{Attaque, AttaqueId, ErreurAttaquesMonstre};
 use crate::beherit::ErreurBeherit;
 use crate::booster::{Booster, ErreurBooster};
 use crate::capsule::{Capsule, ErreurApprentissage};
+use crate::catalogue::Catalogue;
 use crate::collection::{Emplacement, ErreurCollection, Placement, TriDuCamp};
 use crate::combat::{self, Action, BilanCombat, Combat, Cote, ErreurCombat, Issue, Phase};
 use crate::contenu::ContenuV1;
@@ -47,6 +50,7 @@ use crate::marchand::ErreurMarchand;
 use crate::meteo::Meteo;
 use crate::monstre::{Monstre, RapportExperience, tirer_shiny};
 use crate::nom::{ErreurNom, Nom};
+use crate::parfum::Parfum;
 use crate::partie::{Partie, RecompenseObtenue, creer_monstre_de_depart};
 use crate::peche::{ErreurPeche, Pecheur, Prise};
 use crate::pierre::PierreDEvolution;
@@ -175,6 +179,15 @@ pub enum Choix {
     LancerLaLigne,
     /// Au camp, une fois la ligne prête.
     ReleverLaLigne,
+    /// Au camp, sans confirmation : Ansgar prépare un appât, qui va dans le
+    /// coffre (section 13.8).
+    PreparerAppat(Appat),
+    /// Au camp, sans confirmation : Ansgar prépare un parfum de charogne,
+    /// que le héros porte aussitôt (section 9.2).
+    PreparerParfumDeCharogne,
+    /// Au camp, sans confirmation : Ansgar prépare le parfum de cette
+    /// espèce, avec la ressource qu'elle lâche, que le héros porte aussitôt.
+    PreparerParfumDEspece(EspeceId),
     /// Répond au monstre pêché : il rejoint l'équipe ou le camp.
     GarderLaPrise,
     /// Répond au monstre pêché, sans confirmation : il retourne à l'eau.
@@ -710,6 +723,16 @@ pub enum Evenement {
     /// Ce qu'a remonté la ligne : un objet est déjà dans le coffre, un
     /// monstre attend que le joueur le garde ou le relâche.
     PrisePechee(Prise),
+    /// Les matières remontées avec la prise, déjà dans le coffre, chaque
+    /// sorte avec son nombre (section 13.8).
+    MatieresPechees(Vec<(Ressource, u32)>),
+    /// Ansgar a préparé cet appât, qui est dans le coffre.
+    AppatPrepare(Appat),
+    /// Ansgar a préparé ce parfum, que le héros porte.
+    ParfumPrepare(Parfum),
+    /// Au départ, le parfum que portait le héros se répand dans la zone
+    /// (section 9.2).
+    ParfumRepandu(Parfum),
     /// Le monstre pêché retourne à l'eau.
     PriseRelachee(Monstre),
     /// L'objet porté à cette place, et celui qu'il remplace.
@@ -841,6 +864,7 @@ pub enum ErreurChoix {
     PlanInconnu,
     Equipement(ErreurEquipement),
     Peche(ErreurPeche),
+    Atelier(ErreurAtelier),
     Machine(ErreurMachine),
     Rite(ErreurRite),
     Codex(ErreurCodex),
@@ -854,6 +878,8 @@ pub enum ErreurChoix {
     /// Le contenu n'a pas ce succès.
     SuccesInconnu(SuccesId),
     Quete(ErreurQuete),
+    /// Le contenu n'a pas cette espèce.
+    EspeceInconnue(EspeceId),
 }
 
 impl fmt::Display for ErreurChoix {
@@ -884,6 +910,7 @@ impl fmt::Display for ErreurChoix {
             ErreurChoix::PlanInconnu => write!(f, "aucun plan pour ce niveau ou cet objet"),
             ErreurChoix::Equipement(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Peche(erreur) => write!(f, "{erreur}"),
+            ErreurChoix::Atelier(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Machine(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Rite(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Codex(erreur) => write!(f, "{erreur}"),
@@ -895,6 +922,9 @@ impl fmt::Display for ErreurChoix {
                 write!(f, "succès inconnu : {}", succes.as_str())
             }
             ErreurChoix::Quete(erreur) => write!(f, "{erreur}"),
+            ErreurChoix::EspeceInconnue(espece) => {
+                write!(f, "espèce inconnue : {}", espece.as_str())
+            }
         }
     }
 }
@@ -1660,6 +1690,15 @@ impl EnJeu {
                     Some(exploration) => expedition.avec_objet_de_quete(exploration.clone()),
                     None => expedition,
                 };
+                // Ni dans la Tour sans fond ni dans l'Éclipse : le parfum
+                // attend une expédition dans une zone (section 9.2).
+                let expedition = match self.partie.repandre_le_parfum() {
+                    Some(parfum) => {
+                        evenements.push(Evenement::ParfumRepandu(parfum.clone()));
+                        expedition.avec_parfum(parfum)
+                    }
+                    None => expedition,
+                };
                 self.lancer(expedition, contexte, evenements);
                 Ok(Reponse::Faite)
             }
@@ -2225,6 +2264,31 @@ impl EnJeu {
                 sauvegarder(&self.partie, contexte.depot, evenements);
                 Ok(Reponse::Faite)
             }
+            Choix::PreparerAppat(appat) => {
+                self.partie
+                    .preparer_appat(*appat, contexte.contenu.atelier())
+                    .map_err(ErreurChoix::Atelier)?;
+                evenements.push(Evenement::AppatPrepare(*appat));
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::PreparerParfumDeCharogne | Choix::PreparerParfumDEspece(_) => {
+                let parfum = match choix {
+                    Choix::PreparerParfumDEspece(id) => Parfum::Espece(
+                        contexte
+                            .contenu
+                            .espece(id)
+                            .ok_or_else(|| ErreurChoix::EspeceInconnue(id.clone()))?,
+                    ),
+                    _ => Parfum::Charogne,
+                };
+                self.partie
+                    .preparer_parfum(parfum.clone(), contexte.contenu.atelier())
+                    .map_err(ErreurChoix::Atelier)?;
+                evenements.push(Evenement::ParfumPrepare(parfum));
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
             Choix::LancerLaLigne => {
                 let fin = self
                     .partie
@@ -2243,7 +2307,7 @@ impl EnJeu {
                     .partie
                     .zone_la_plus_avancee(contenu.zones(), contenu.piste())
                     .expect("la première zone est ouverte dès le départ");
-                let prise = self
+                let releve = self
                     .partie
                     .relever_la_ligne(
                         contenu.peche(),
@@ -2252,7 +2316,10 @@ impl EnJeu {
                         &mut *contexte.aleatoire,
                     )
                     .map_err(ErreurChoix::Peche)?;
-                evenements.push(Evenement::PrisePechee(prise));
+                evenements.push(Evenement::PrisePechee(releve.prise));
+                if !releve.matieres.is_empty() {
+                    evenements.push(Evenement::MatieresPechees(releve.matieres));
+                }
                 // Tout de suite, pour que quitter le jeu ne permette pas de
                 // tirer de nouveau la prise.
                 sauvegarder(&self.partie, contexte.depot, evenements);
@@ -3243,7 +3310,9 @@ impl EnExpedition {
             if let Some(fouineur) = partie.fouiller_apres_une_victoire(&mut *contexte.aleatoire) {
                 evenements.push(Evenement::PotionTrouvee(fouineur));
             }
-            let ressources = partie.recolter_ressources(&vaincus, &mut *contexte.aleatoire);
+            let parfumee = self.expedition.parfum().is_some();
+            let ressources =
+                partie.recolter_ressources(&vaincus, parfumee, &mut *contexte.aleatoire);
             recoltees = ressources.len();
             if !ressources.is_empty() {
                 evenements.push(Evenement::RessourcesTrouvees(ressources));
@@ -7901,19 +7970,38 @@ mod tests {
             ),
             Err(ErreurChoix::Peche(ErreurPeche::PasEncorePrete(a(7_300))))
         );
+        // Après la prise, deux matières : des vers de vase (1 à 60) et de
+        // l'ambre noir (91 à 100).
+        let mut tirages = NOYE_DE_NIVEAU_6.to_vec();
+        tirages.extend([2, 1, 95]);
         let evenements = repondre_avec_tirages(
             &mut deroulement,
             Choix::ReleverLaLigne,
             &contenu,
             &depot,
             a(7_300),
-            NOYE_DE_NIVEAU_6.to_vec(),
+            tirages,
         )
         .unwrap();
         let noye = match &evenements[..] {
-            [Evenement::PrisePechee(Prise::Monstre(monstre))] => Monstre::clone(monstre),
+            [
+                Evenement::PrisePechee(Prise::Monstre(monstre)),
+                Evenement::MatieresPechees(matieres),
+            ] => {
+                let ids: Vec<(&str, u32)> = matieres
+                    .iter()
+                    .map(|(matiere, nombre)| (matiere.id().as_str(), *nombre))
+                    .collect();
+                assert_eq!(ids, vec![("vers-de-vase", 1), ("ambre-noir", 1)]);
+                Monstre::clone(monstre)
+            }
             autres => panic!("prise attendue : {autres:?}"),
         };
+        let coffre = deroulement.partie().unwrap().coffre_du_camp();
+        assert_eq!(
+            coffre.nombre_de_ressources(&RessourceId::new("ambre-noir")),
+            1
+        );
         assert_eq!(noye.espece().id().as_str(), "noye");
         assert_eq!(noye.niveau().valeur(), 6);
         assert_eq!(deroulement.attente(), Attente::Prise(&noye));
@@ -7954,9 +8042,11 @@ mod tests {
         let contenu = ContenuV1::new();
         let depot = DepotMemoire::default();
         let mut deroulement = au_camp(partie_avec_ansgar(&contenu), &contenu, &depot);
-        let pecher = |deroulement: &mut Deroulement, tirages: Vec<u32>| {
+        // Chaque ligne remonte aussi deux vers de vase, mis de côté ici.
+        let pecher = |deroulement: &mut Deroulement, mut tirages: Vec<u32>| {
             repondre_a_l_heure(deroulement, Choix::LancerLaLigne, &contenu, &depot, a(0)).unwrap();
-            repondre_avec_tirages(
+            tirages.extend([2, 1, 60]);
+            let mut evenements = repondre_avec_tirages(
                 deroulement,
                 Choix::ReleverLaLigne,
                 &contenu,
@@ -7964,7 +8054,16 @@ mod tests {
                 a(7_200),
                 tirages,
             )
-            .unwrap()
+            .unwrap();
+            match evenements.pop() {
+                Some(Evenement::MatieresPechees(matieres)) => {
+                    assert_eq!(matieres.len(), 1);
+                    assert_eq!(matieres[0].0.id().as_str(), "vers-de-vase");
+                    assert_eq!(matieres[0].1, 2);
+                }
+                autre => panic!("matières attendues : {autre:?}"),
+            }
+            evenements
         };
         let evenements = pecher(&mut deroulement, NOYE_DE_NIVEAU_6.to_vec());
         let Evenement::PrisePechee(Prise::Monstre(noye)) = &evenements[0] else {

@@ -1913,7 +1913,8 @@ fn ansgar_peche_a_travers_les_ecrans_du_bot() {
     );
     let relevee = cliquer_a(&mut joueurs, Cle::ReleverLaLigne, 8_200);
     assert!(joueurs.retours_echus(prete).is_empty());
-    let [Evenement::PrisePechee(prise)] = &relevee[..] else {
+    // La prise, puis les matières qui vont au coffre (section 13.8).
+    let [Evenement::PrisePechee(prise), Evenement::MatieresPechees(_)] = &relevee[..] else {
         panic!("prise attendue : {relevee:?}");
     };
     if let Prise::Monstre(monstre) = prise {

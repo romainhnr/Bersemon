@@ -9,6 +9,7 @@ use crate::espece::{Espece, Rarete};
 use crate::filet::Filet;
 use crate::monstre::Monstre;
 use crate::niveau::Niveau;
+use crate::pierre::PierreDEvolution;
 use crate::soin::Soin;
 
 /// En pièces d'argent (sections 14.4 et 14.5).
@@ -38,6 +39,17 @@ pub const PRIX_CAPSULE_D_HABILETE: u32 = 200;
 
 /// En pièces d'argent, pour chaque pierre (section 5.4, Q84).
 pub const PRIX_PIERRE_D_EVOLUTION: u32 = 300;
+/// En pièces d'argent : elle fait évoluer les formes les plus fortes
+/// (section 5.4, Q122).
+pub const PRIX_DE_LA_CHAINE_D_ALLEGEANCE: u32 = 500;
+
+/// Malvoise vend tous les objets d'évolution (section 5.4).
+pub fn prix_de_la_pierre(pierre: PierreDEvolution) -> u32 {
+    match pierre {
+        PierreDEvolution::Braise | PierreDEvolution::Lune => PRIX_PIERRE_D_EVOLUTION,
+        PierreDEvolution::ChaineDAllegeance => PRIX_DE_LA_CHAINE_D_ALLEGEANCE,
+    }
+}
 
 /// Le niveau multiplié par le total des stats de base est divisé par ce
 /// nombre (section 14.5).

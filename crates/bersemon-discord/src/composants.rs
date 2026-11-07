@@ -8,6 +8,7 @@
 
 use bersemon_core::ame::MarchandId;
 use bersemon_core::amelioration::Amelioration;
+use bersemon_core::appat::Appat;
 use bersemon_core::attaque::AttaqueId;
 use bersemon_core::booster::Booster;
 use bersemon_core::collection::{Emplacement, TriDuCamp};
@@ -1232,6 +1233,7 @@ fn pierre_en_texte(pierre: PierreDEvolution) -> &'static str {
     match pierre {
         PierreDEvolution::Braise => "braise",
         PierreDEvolution::Lune => "lune",
+        PierreDEvolution::ChaineDAllegeance => "chaine-d-allegeance",
     }
 }
 
@@ -1304,7 +1306,8 @@ fn lire_lot_de_soins(texte: &str) -> Option<(Soin, u32)> {
 /// suivi de la pierre et de la quantité, `boosters:` suivi du booster et de
 /// la quantité, `eclats-d-astre:` (les Philtres chromatiques, sous leur
 /// ancien nom, que gardent les messages déjà envoyés) ou `charmes-de-garde:`
-/// suivi de la quantité, `filets:` suivi du filet et de la quantité.
+/// suivi de la quantité, `filets:` suivi du filet et de la quantité,
+/// `appats:` suivi de l'appât et de la quantité.
 pub fn objet_en_texte(objet: &Objet) -> String {
     match objet {
         Objet::Soins(soin, nombre) => format!("soins:{}:{nombre}", soin_en_texte(*soin)),
@@ -1319,6 +1322,7 @@ pub fn objet_en_texte(objet: &Objet) -> String {
         Objet::PhiltresChromatiques(nombre) => format!("eclats-d-astre:{nombre}"),
         Objet::CharmesDeGarde(nombre) => format!("charmes-de-garde:{nombre}"),
         Objet::Filets(filet, nombre) => format!("filets:{}:{nombre}", filet.id()),
+        Objet::Appats(appat, nombre) => format!("appats:{}:{nombre}", appat.id()),
         Objet::ObjetDeQuete(quete) => format!("objet-de-quete:{}", quete.as_str()),
     }
 }
@@ -1351,6 +1355,13 @@ fn lire_objet(texte: &str) -> Option<Objet> {
             let (filet, nombre) = parametre.split_once(':')?;
             Some(Objet::Filets(
                 Filet::depuis_id(filet)?,
+                nombre.parse().ok()?,
+            ))
+        }
+        "appats" => {
+            let (appat, nombre) = parametre.split_once(':')?;
+            Some(Objet::Appats(
+                Appat::depuis_id(appat)?,
                 nombre.parse().ok()?,
             ))
         }

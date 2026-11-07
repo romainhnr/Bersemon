@@ -11,9 +11,11 @@ use crate::amelioration::{
     PlanDesFilets, PlanDuCharme,
 };
 use crate::annexe::Annexe;
+use crate::appat::Appat;
 use crate::arene::{
     AdversaireDeLArene, ErreurArene, EtatDeLArene, FosseAuxDamnes, generer_le_monstre_offert,
 };
+use crate::atelier::{AtelierDAnsgar, ErreurAtelier};
 use crate::attaque::{Attaque, AttaqueId, ErreurAttaquesMonstre};
 use crate::beherit::{
     ErreurBeherit, EtatDuBeherit, Invocation, NIVEAU_MINIMAL_DU_SACRIFICE, PHILTRES_DU_DEMIURGE,
@@ -21,7 +23,7 @@ use crate::beherit::{
 use crate::booster::{Booster, ErreurBooster};
 use crate::capsule::{Capsule, ErreurApprentissage, attaques_a_apprendre};
 use crate::catalogue::Catalogue;
-use crate::codex::Codex;
+use crate::codex::{Codex, EtatCodex};
 use crate::collection::{Collection, Emplacement, ErreurCollection, Placement};
 use crate::combat::{BilanCombat, Combat, Cote, ErreurCombat, Issue, Membre, ReglesDuMembre};
 use crate::equipement::{ErreurEquipement, ObjetDEquipement, ObjetDEquipementId, PlaceDEquipement};
@@ -46,7 +48,7 @@ use crate::legendaire::ZoneLegendaire;
 use crate::machines::{ErreurMachine, Machines, reste_avant_le_plafond};
 use crate::marchand::{
     EXPEDITIONS_DE_LOCATION, ErreurMarchand, OffreDeMonstre, PRIX_CAPSULE_D_HABILETE,
-    PRIX_PIERRE_D_EVOLUTION, prix_de_revente, prix_du_filet, prix_du_soin,
+    prix_de_la_pierre, prix_de_revente, prix_du_filet, prix_du_soin,
 };
 use crate::monstre::{
     Monstre, RapportExperience, choc_chromatique, tirer_shiny, tirer_valeurs_internes,
@@ -54,6 +56,7 @@ use crate::monstre::{
 use crate::niveau::Niveau;
 use crate::nom::Nom;
 use crate::obeissance::limite_d_obeissance;
+use crate::parfum::{CHANCES_DE_RESSOURCE_COMMUNE, Parfum};
 use crate::peche::{ErreurPeche, ParametresPeche, Peche, Prise};
 use crate::pierre::PierreDEvolution;
 use crate::quete::{JournalDesQuetes, Objectif, QueteAccomplie};
@@ -76,7 +79,7 @@ use crate::succes::{CouleurDuHeros, ErreurSucces, Succes, SuccesId, couleurs_deb
 use crate::tour::{RecordsDeLaTour, TourSansFond};
 use crate::traque::{Apotre, Indice, Piste};
 use crate::tutoriel::Conseil;
-use crate::zone::{Zone, ZoneId};
+use crate::zone::{Zone, ZoneId, tirer_entre};
 
 /// Un monstre sauvage battu lâche sa ressource 1 fois sur 3 (section 14.3,
 /// Q82).
@@ -171,6 +174,14 @@ pub struct Partie {
 pub struct Decouvertes {
     pub annexes_ouvertes: Vec<ZoneId>,
     pub legendaires_captures: Vec<EspeceId>,
+}
+
+/// Ce qu'a remonté la ligne d'Ansgar : sa prise, et les matières qui vont
+/// dans le coffre avec elle, chaque sorte avec son nombre (section 13.8).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReleveDeLaLigne {
+    pub prise: Prise,
+    pub matieres: Vec<(Ressource, u32)>,
 }
 
 /// Ce qu'a rapporté un palier de la Fosse aux damnés (section 9.8).
@@ -939,21 +950,27 @@ impl Partie {
     /// Relève la ligne prête, si un monstre pêché trouverait sa place dans
     /// l'équipe ou au camp, et rend la prise : un monstre, rencontré au
     /// codex, attend que le joueur le garde ou le relâche ; un objet va dans
-    /// le coffre (section 13.8). `zone` est la plus avancée que le joueur a
-    /// ouverte. Tirages : ceux de `ParametresPeche::tirer_prise`, seulement
-    /// si la ligne se relève.
+    /// le coffre (section 13.8). Les matières remontées avec elle vont aussi
+    /// dans le coffre. `zone` est la plus avancée que le joueur a ouverte.
+    /// Tirages : ceux de `ParametresPeche::tirer_prise`, puis ceux de
+    /// `ParametresPeche::tirer_matieres`, seulement si la ligne se relève.
     pub fn relever_la_ligne(
         &mut self,
         parametres: &ParametresPeche,
         zone: &Zone,
         maintenant: Horodatage,
         aleatoire: &mut dyn Aleatoire,
-    ) -> Result<Prise, ErreurPeche> {
+    ) -> Result<ReleveDeLaLigne, ErreurPeche> {
         self.peche.verifier_releve(maintenant)?;
         if !self.collection.a_de_la_place() {
             return Err(ErreurPeche::PlaceManquante);
         }
         let prise = parametres.tirer_prise(zone, aleatoire);
+        let matieres = parametres.tirer_matieres(aleatoire);
+        for (matiere, nombre) in &matieres {
+            self.coffre_du_camp
+                .ajouter_ressources(matiere.clone(), *nombre);
+        }
         self.peche.relever();
         match &prise {
             Prise::Monstre(monstre) => {
@@ -967,7 +984,101 @@ impl Partie {
             Prise::Booster(booster) => self.coffre_du_camp.ajouter_boosters(*booster, 1),
             Prise::PhiltreChromatique => self.coffre_du_camp.ajouter_philtres_chromatiques(1),
         }
-        Ok(prise)
+        Ok(ReleveDeLaLigne { prise, matieres })
+    }
+
+    /// Au camp, sans confirmation : Ansgar prépare un appât sur le moment ;
+    /// les ressources sont prises du sac d'abord, puis du coffre, et l'appât
+    /// va dans le coffre (section 13.8).
+    pub fn preparer_appat(
+        &mut self,
+        appat: Appat,
+        atelier: &AtelierDAnsgar,
+    ) -> Result<(), ErreurAtelier> {
+        let cout = atelier.cout_de_l_appat(appat);
+        self.verifier_l_atelier(cout)?;
+        self.payer_ressources(cout);
+        self.coffre_du_camp.ajouter_appats(appat, 1);
+        Ok(())
+    }
+
+    /// Au camp, sans confirmation : Ansgar prépare le parfum, que le héros
+    /// porte aussitôt jusqu'à sa prochaine expédition dans une zone ; un
+    /// seul à la fois (sections 9.2 et 13.8).
+    pub fn preparer_parfum(
+        &mut self,
+        parfum: Parfum,
+        atelier: &AtelierDAnsgar,
+    ) -> Result<(), ErreurAtelier> {
+        let cout = self.verifier_parfum(&parfum, atelier)?;
+        self.payer_ressources(&cout);
+        self.peche.porter(parfum);
+        Ok(())
+    }
+
+    /// Refuse ce que refuserait `preparer_parfum`, sans rien changer, et
+    /// rend son coût.
+    pub fn verifier_parfum(
+        &self,
+        parfum: &Parfum,
+        atelier: &AtelierDAnsgar,
+    ) -> Result<Vec<(Ressource, u32)>, ErreurAtelier> {
+        if !self.peche.pecheur_au_camp() {
+            return Err(ErreurAtelier::AucunPecheur);
+        }
+        if let Some(porte) = self.peche.parfum() {
+            return Err(ErreurAtelier::ParfumDejaPorte(Box::new(porte.clone())));
+        }
+        let cout = atelier.cout_du_parfum(parfum).ok_or_else(|| match parfum {
+            Parfum::Espece(espece) => ErreurAtelier::EspeceSansRessource(Box::new(espece.clone())),
+            Parfum::Charogne => unreachable!("le parfum de charogne a toujours sa recette"),
+        })?;
+        self.verifier_l_atelier(&cout)?;
+        Ok(cout)
+    }
+
+    fn verifier_l_atelier(&self, cout: &[(Ressource, u32)]) -> Result<(), ErreurAtelier> {
+        if !self.peche.pecheur_au_camp() {
+            return Err(ErreurAtelier::AucunPecheur);
+        }
+        let manquantes = self.ressources_manquantes(cout);
+        if !manquantes.is_empty() {
+            return Err(ErreurAtelier::RessourcesManquantes(manquantes));
+        }
+        Ok(())
+    }
+
+    /// Le parfum que porte le héros, jusqu'à sa prochaine expédition dans
+    /// une zone (section 9.2).
+    pub fn parfum_porte(&self) -> Option<&Parfum> {
+        self.peche.parfum()
+    }
+
+    /// Au départ d'une expédition dans une zone de la carte, une annexe ou
+    /// une zone légendaire, le parfum s'y répand et le héros ne le porte
+    /// plus (section 9.2).
+    pub(crate) fn repandre_le_parfum(&mut self) -> Option<Parfum> {
+        self.peche.repandre_le_parfum()
+    }
+
+    /// Les espèces dont Ansgar peut préparer le parfum maintenant : celles
+    /// qui lâchent une ressource, rencontrées au codex, dont le joueur a
+    /// assez de ressources, du sac et du coffre, pour la recette entière,
+    /// dans l'ordre de `especes` (section 13.8).
+    pub fn parfums_d_especes_possibles<'a>(
+        &self,
+        especes: &'a [Espece],
+        atelier: &AtelierDAnsgar,
+    ) -> Vec<&'a Espece> {
+        especes
+            .iter()
+            .filter(|espece| self.codex.etat(espece.id()) != EtatCodex::Inconnue)
+            .filter(|espece| {
+                atelier
+                    .cout_du_parfum(&Parfum::Espece((*espece).clone()))
+                    .is_some_and(|cout| self.ressources_manquantes(&cout).is_empty())
+            })
+            .collect()
     }
 
     /// Le monstre pêché compte comme capturé et rejoint l'équipe s'il y a de
@@ -1502,7 +1613,11 @@ impl Partie {
             .monstre_a_soi(emplacement)
             .map_err(ErreurEvolution::Collection)?;
         let evolution = monstre.espece().evolution();
-        let pierre = evolution.and_then(|evolution| evolution.pierre());
+        // Reçu d'un autre joueur, il n'a pas besoin de la Chaîne
+        // d'allégeance (section 5.4).
+        let pierre = evolution
+            .and_then(|evolution| evolution.pierre())
+            .filter(|_| !monstre.evolue_par_echange());
         let vers = match pierre {
             Some(pierre) => {
                 if self.nombre_de_pierres(pierre) == 0 {
@@ -1543,7 +1658,7 @@ impl Partie {
         if nombre == 0 {
             return Err(ErreurMarchand::QuantiteNulle);
         }
-        let prix = nombre.saturating_mul(PRIX_PIERRE_D_EVOLUTION);
+        let prix = nombre.saturating_mul(prix_de_la_pierre(pierre));
         self.payer(prix)?;
         self.coffre_du_camp.ajouter_pierres(pierre, nombre);
         Ok(prix)
@@ -2721,7 +2836,8 @@ impl Partie {
         .avec_ordre(self.heros.classe().ordre())
         .avec_filets(self.forge.ameliorations().facteur_des_filets())
         .avec_soins(*self.sac.soins())
-        .avec_reserve_de_filets(*self.sac.filets()))
+        .avec_reserve_de_filets(*self.sac.filets())
+        .avec_reserve_d_appats(*self.sac.appats()))
     }
 
     /// Combat d'une expédition en groupe : l'équipe de l'hôte, puis celle de
@@ -2751,6 +2867,7 @@ impl Partie {
         .avec_filets(hote.forge.ameliorations().facteur_des_filets())
         .avec_soins(*hote.sac.soins())
         .avec_reserve_de_filets(*hote.sac.filets())
+        .avec_reserve_d_appats(*hote.sac.appats())
         .avec_limite_d_obeissance(hote.limite_d_obeissance(zones, piste))
         .avec_regles_de_l_invite(ReglesDuMembre {
             bonus: invite.heros.bonus_en_combat(),
@@ -2759,6 +2876,7 @@ impl Partie {
             soins: *invite.sac.soins(),
             filets: *invite.sac.filets(),
             facteur_des_filets: invite.forge.ameliorations().facteur_des_filets(),
+            appats: *invite.sac.appats(),
         });
         Ok(if contre_un_gardien {
             combat.contre_un_gardien()
@@ -2803,6 +2921,7 @@ impl Partie {
         .avec_ordre(self.heros.classe().ordre())
         .avec_soins(*self.sac.soins())
         .avec_reserve_de_filets(*self.sac.filets())
+        .avec_reserve_d_appats(*self.sac.appats())
         .sans_capture())
     }
 
@@ -2870,6 +2989,7 @@ impl Partie {
         }
         self.sac.definir_soins(bilan.soins);
         self.sac.definir_filets(bilan.filets);
+        self.sac.definir_appats(bilan.appats);
         let perdu = if bilan.issue == Some(Issue::Defaite) {
             self.sac.perdre_tout()
         } else {
@@ -2939,19 +3059,27 @@ impl Partie {
 
     /// Après un combat gagné, chaque monstre sauvage mis KO et non capturé
     /// lâche sa ressource 1 fois sur 3 ; elle va dans le sac (section 14.3).
-    /// Rend ce qui est trouvé, dans l'ordre. Tirages : un par vaincu dont
-    /// l'espèce a une ressource, dans l'ordre du groupe.
+    /// Dans une expédition parfumée, 1 fois sur 2, et à coup sûr pour une
+    /// espèce rare (section 9.2). Rend ce qui est trouvé, dans l'ordre.
+    /// Tirages : un par vaincu dont l'espèce a une ressource et dont la
+    /// chance n'est pas certaine, dans l'ordre du groupe.
     pub fn recolter_ressources(
         &mut self,
         vaincus: &[Monstre],
+        parfumee: bool,
         aleatoire: &mut dyn Aleatoire,
     ) -> Vec<Ressource> {
         let mut trouvees = Vec::new();
-        for ressource in vaincus
-            .iter()
-            .filter_map(|vaincu| vaincu.espece().ressource())
-        {
-            if aleatoire.tirer(1..=CHANCES_DE_RESSOURCE) == 1 {
+        for vaincu in vaincus {
+            let Some(ressource) = vaincu.espece().ressource() else {
+                continue;
+            };
+            let chances = match (parfumee, vaincu.espece().rarete()) {
+                (false, _) => CHANCES_DE_RESSOURCE,
+                (true, Rarete::Commune) => CHANCES_DE_RESSOURCE_COMMUNE,
+                (true, _) => 1,
+            };
+            if tirer_entre(1, chances, aleatoire) == 1 {
                 self.sac.ajouter_ressources(ressource.clone(), 1);
                 trouvees.push(ressource.clone());
             }
@@ -3355,6 +3483,136 @@ pub(crate) mod tests {
         assert_eq!(sac.capsules_d_habilete(), 1);
     }
 
+    /// Section 9.2 : sous un parfum, une espèce commune lâche sa ressource 1
+    /// fois sur 2, une rare à coup sûr, sans tirage.
+    #[test]
+    fn sous_un_parfum_les_vaincus_lachent_plus_souvent() {
+        let croc = Ressource::new(RessourceId::new("croc"), "Croc", 5);
+        let ecaille = Ressource::new(RessourceId::new("ecaille"), "Écaille", 15);
+        let niveau = Niveau::new(5).unwrap();
+        let loup = Monstre::creer(
+            espece("loup").avec_ressource(croc.clone()),
+            niveau,
+            ValeursInternes::default(),
+            false,
+        )
+        .unwrap();
+        let vouivre = Monstre::creer(
+            espece("vouivre")
+                .avec_ressource(ecaille.clone())
+                .avec_rarete(Rarete::Rare),
+            niveau,
+            ValeursInternes::default(),
+            false,
+        )
+        .unwrap();
+        let mut partie = partie();
+        let trouvees = partie.recolter_ressources(
+            &[loup.clone(), vouivre, loup],
+            true,
+            &mut AleatoireScripte::new([1, 2]),
+        );
+        assert_eq!(trouvees, vec![croc, ecaille]);
+    }
+
+    /// Section 13.8 : Ansgar prépare un appât, qui va au coffre, ou un
+    /// parfum, que le héros porte jusqu'au départ suivant, un à la fois.
+    #[test]
+    fn ansgar_prepare_appats_et_parfums() {
+        let contenu = crate::contenu::ContenuV1::new();
+        let atelier = contenu.atelier();
+        let mut partie = partie();
+        assert_eq!(
+            partie.preparer_appat(Appat::Vers, atelier),
+            Err(ErreurAtelier::AucunPecheur)
+        );
+        partie.accueillir_ansgar();
+        let vers = contenu
+            .ressource(&RessourceId::new("vers-de-vase"))
+            .unwrap();
+        let chair = contenu
+            .ressource(&RessourceId::new("chair-de-noye"))
+            .unwrap();
+        assert_eq!(
+            partie.preparer_appat(Appat::Vers, atelier),
+            Err(ErreurAtelier::RessourcesManquantes(vec![(vers.clone(), 2)]))
+        );
+        partie.sac.ajouter_ressources(vers.clone(), 1);
+        partie.coffre_du_camp.ajouter_ressources(vers.clone(), 4);
+        partie.coffre_du_camp.ajouter_ressources(chair.clone(), 3);
+        assert_eq!(partie.preparer_appat(Appat::Vers, atelier), Ok(()));
+        // Le sac d'abord, puis le coffre.
+        assert_eq!(partie.sac().nombre_de_ressources(vers.id()), 0);
+        assert_eq!(partie.coffre_du_camp().nombre_de_ressources(vers.id()), 3);
+        assert_eq!(partie.coffre_du_camp().appats().nombre(Appat::Vers), 1);
+        assert_eq!(partie.preparer_parfum(Parfum::Charogne, atelier), Ok(()));
+        assert_eq!(partie.parfum_porte(), Some(&Parfum::Charogne));
+        assert_eq!(partie.coffre_du_camp().nombre_de_ressources(chair.id()), 0);
+        assert_eq!(
+            partie.preparer_parfum(Parfum::Charogne, atelier),
+            Err(ErreurAtelier::ParfumDejaPorte(Box::new(Parfum::Charogne)))
+        );
+        assert_eq!(partie.repandre_le_parfum(), Some(Parfum::Charogne));
+        assert_eq!(partie.parfum_porte(), None);
+        // L'Elfe, pacifique, ne lâche rien : rien ne l'attire.
+        let elfe = contenu.espece(&EspeceId::new("elfe")).unwrap();
+        assert_eq!(
+            partie.preparer_parfum(Parfum::Espece(elfe.clone()), atelier),
+            Err(ErreurAtelier::EspeceSansRessource(Box::new(elfe)))
+        );
+    }
+
+    /// Section 5.4 : reçu d'un autre joueur, l'Aspic évolue au camp sans
+    /// Chaîne d'allégeance ; sinon, il lui en faut une, consommée.
+    #[test]
+    fn l_aspic_evolue_par_echange_ou_avec_une_chaine() {
+        let contenu = crate::contenu::ContenuV1::new();
+        let aspic = Monstre::creer(
+            contenu.espece(&EspeceId::new("aspic")).unwrap(),
+            Niveau::new(20).unwrap(),
+            ValeursInternes::default(),
+            false,
+        )
+        .unwrap();
+        let mut seul = partie();
+        seul.collection.accueillir_capture(aspic.clone());
+        let chaine = PierreDEvolution::ChaineDAllegeance;
+        assert_eq!(
+            seul.estimer_evolution(Emplacement::Equipe(1), &contenu),
+            Err(ErreurEvolution::PierreManquante(chaine))
+        );
+        seul.coffre_du_camp.ajouter_pierres(chaine, 1);
+        let (_, vers, pierre) = seul
+            .estimer_evolution(Emplacement::Equipe(1), &contenu)
+            .unwrap();
+        assert_eq!(vers.id().as_str(), "gorgone");
+        assert_eq!(pierre, Some(chaine));
+        let (_, resultat) = seul
+            .faire_evoluer(Emplacement::Equipe(1), &contenu)
+            .unwrap();
+        assert_eq!(seul.nombre_de_pierres(chaine), 0);
+        let gorgone = &seul.collection().equipe()[1];
+        assert_eq!(gorgone.espece().id().as_str(), "gorgone");
+        // Il connaît déjà 4 attaques : l'attaque d'évolution attend son choix.
+        assert_eq!(
+            resultat.attaque_en_attente.unwrap().id().as_str(),
+            "regard-de-pierre"
+        );
+        // Reçu d'un autre joueur : sans chaîne.
+        let mut autre = partie();
+        let recu = autre.preparer_monstre_recu(aspic, &Nom::new("Ysolde").unwrap());
+        assert!(recu.evolue_par_echange());
+        autre.collection.accueillir_capture(recu);
+        let (_, vers, pierre) = autre
+            .estimer_evolution(Emplacement::Equipe(1), &contenu)
+            .unwrap();
+        assert_eq!((vers.id().as_str(), pierre), ("gorgone", None));
+        autre
+            .faire_evoluer(Emplacement::Equipe(1), &contenu)
+            .unwrap();
+        assert!(!autre.collection().equipe()[1].evolue_par_echange());
+    }
+
     #[test]
     fn le_heros_part_avec_10_filets_de_chanvre() {
         let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Guerrier);
@@ -3376,7 +3634,8 @@ pub(crate) mod tests {
         let mut partie = partie();
         // Un tirage par vaincu dont l'espèce a une ressource : 1 la lâche.
         let vaincus = [loup.clone(), creer("rat", 5), loup.clone(), loup];
-        let trouvees = partie.recolter_ressources(&vaincus, &mut AleatoireScripte::new([1, 2, 1]));
+        let trouvees =
+            partie.recolter_ressources(&vaincus, false, &mut AleatoireScripte::new([1, 2, 1]));
         assert_eq!(trouvees, vec![croc.clone(), croc.clone()]);
         assert_eq!(partie.sac().nombre_de_ressources(croc.id()), 2);
         assert_eq!(

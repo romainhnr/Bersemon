@@ -23,6 +23,7 @@ use bersemon_core::succes::Succes;
 use bersemon_core::traque::Apotre;
 use bersemon_core::zone::Zone;
 
+use crate::atelier::liste_d_appats;
 use crate::boosters::{QUESTION_SHINY_DU_HEROS, boosters, philtres_chromatiques, question_shiny};
 use crate::expeditions_automatiques::question_de_rappel;
 use crate::filets::liste_de_filets;
@@ -152,7 +153,10 @@ pub fn capsules_d_habilete(nombre: u32) -> String {
 pub fn pierres(pierre: PierreDEvolution, nombre: u32) -> String {
     let nom = pierre.nom();
     if nombre > 1 {
-        format!("{nombre} {}", nom.replacen("Pierre", "Pierres", 1))
+        let pluriel = nom
+            .replacen("Pierre", "Pierres", 1)
+            .replacen("Chaîne", "Chaînes", 1);
+        format!("{nombre} {pluriel}")
     } else {
         format!("{nombre} {nom}")
     }
@@ -170,6 +174,7 @@ pub fn contenu(inventaire: &Inventaire) -> String {
 fn contenu_detaille(inventaire: &Inventaire, detaille: bool) -> String {
     let mut elements = liste_de_soins(inventaire.soins());
     elements.extend(liste_de_filets(inventaire.filets()));
+    elements.extend(liste_d_appats(inventaire.appats()));
     if inventaire.argent() > 0 {
         elements.push(argent(inventaire.argent()));
     }
@@ -690,6 +695,9 @@ pub fn condition_d_evolution(condition: &ConditionEvolution, catalogue: &dyn Cat
             niveau.valeur(),
             meteo::sous(*meteo)
         ),
+        ConditionEvolution::Echange => {
+            "une fois reçu d'un autre joueur, ou avec une chaîne d'allégeance".to_string()
+        }
     }
 }
 

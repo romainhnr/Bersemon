@@ -16,6 +16,7 @@ use crate::jour_et_nuit::{BONUS_DE_LA_NUIT, JourOuNuit};
 use crate::legendaire::Legendaire;
 use crate::meteo::Meteo;
 use crate::monstre::Monstre;
+use crate::parfum::{POINTS_DE_RARES_EN_PLUS, Parfum};
 use crate::peche::Pecheur;
 use crate::pierre::PierreDEvolution;
 use crate::quete_du_camp::Exploration;
@@ -256,6 +257,9 @@ pub struct Expedition {
     /// La météo de son départ, qu'elle garde jusqu'au retour ; `None` par
     /// temps calme et hors des zones de la carte (section 9.7).
     meteo: Option<Meteo>,
+    /// Le parfum que portait le héros au départ, qui attire les hordes
+    /// jusqu'au retour (section 9.2).
+    parfum: Option<Parfum>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -288,6 +292,7 @@ impl Expedition {
             legendaire: None,
             jour_ou_nuit: None,
             meteo: None,
+            parfum: None,
         }
     }
 
@@ -392,6 +397,15 @@ impl Expedition {
     pub(crate) fn avec_meteo(mut self, meteo: Option<Meteo>) -> Self {
         self.meteo = meteo;
         self
+    }
+
+    pub(crate) fn avec_parfum(mut self, parfum: Parfum) -> Self {
+        self.parfum = Some(parfum);
+        self
+    }
+
+    pub fn parfum(&self) -> Option<&Parfum> {
+        self.parfum.as_ref()
     }
 
     pub fn meteo(&self) -> Option<Meteo> {
@@ -513,23 +527,35 @@ impl Expedition {
         }
         let tirable = matches!(&self.ame, Some((_, RencontreDeLAme::Tiree)));
         // Les 10 derniers tirages des combats donnent l'âme, quand elle se
-        // tire ; dans une zone de la carte, de 71 à 80 (section 14.2).
-        let repartition = self.zone.repartition();
+        // tire ; dans une zone de la carte, de 71 à 80 (section 14.2). Un
+        // parfum prend 10 points aux combats pour les monstres rares (section
+        // 9.2).
+        let mut repartition = self.zone.repartition();
+        if self.parfum.is_some() {
+            repartition.combat = repartition.combat.saturating_sub(POINTS_DE_RARES_EN_PLUS);
+        }
         let tirage = aleatoire.tirer(1..=100);
         let ame = repartition.combat.saturating_sub(9)..=repartition.combat;
+        let parfum = self.parfum.as_ref();
         let evenement = match tirage {
             _ if tirable && ame.contains(&tirage) => self.rencontrer_l_ame(aleatoire),
-            _ if tirage <= repartition.combat => {
-                EvenementExpedition::Combat(self.zone.generer_groupe(self.jour_ou_nuit, aleatoire))
-            }
+            _ if tirage <= repartition.combat => EvenementExpedition::Combat(
+                self.zone
+                    .generer_groupe_attire(self.jour_ou_nuit, parfum, aleatoire),
+            ),
             _ if tirage <= repartition.combat + repartition.coffre => {
                 self.tirer_un_coffre(aleatoire)
             }
-            _ => match self.zone.generer_monstre_rare(self.jour_ou_nuit, aleatoire) {
+            _ => match self
+                .zone
+                .generer_monstre_rare_attire(self.jour_ou_nuit, parfum, aleatoire)
+            {
                 Some(rare) => EvenementExpedition::MonstreRare(rare),
-                None => EvenementExpedition::Combat(
-                    self.zone.generer_groupe(self.jour_ou_nuit, aleatoire),
-                ),
+                None => EvenementExpedition::Combat(self.zone.generer_groupe_attire(
+                    self.jour_ou_nuit,
+                    parfum,
+                    aleatoire,
+                )),
             },
         };
         Some(evenement)
@@ -604,7 +630,7 @@ impl Expedition {
         let pierre = tirage
             .checked_sub(CHANCE_DE_CAPSULE_D_HABILETE + 1)
             .map(|rang| (rang / CHANCE_PAR_PIERRE) as usize)
-            .and_then(|rang| PierreDEvolution::TOUTES.get(rang).copied());
+            .and_then(|rang| PierreDEvolution::TROUVEES.get(rang).copied());
         let booster = tirage
             .checked_sub(PREMIER_TIRAGE_DES_BOOSTERS)
             .and_then(|rang| Booster::TOUS.get(rang as usize).copied());
@@ -872,6 +898,33 @@ mod tests {
             Some(EvenementExpedition::Coffre { argent: 10, .. })
         ));
         assert_eq!(Expedition::partir(zone(true)).jour_ou_nuit(), None);
+    }
+
+    /// Section 9.2 : un parfum prend 10 points aux combats pour les monstres
+    /// rares, et ses hordes comptent un monstre de plus, 3 niveaux au-dessus.
+    #[test]
+    fn un_parfum_attire_plus_de_monstres_rares_et_des_hordes() {
+        let mut parfumee = Expedition::partir(zone(true)).avec_parfum(Parfum::Charogne);
+        assert_eq!(parfumee.parfum(), Some(&Parfum::Charogne));
+        let mut horde = vec![70];
+        horde.extend(MONSTRE);
+        horde.extend(MONSTRE);
+        assert!(matches!(
+            parfumee.etape_suivante(&mut AleatoireScripte::new(horde)),
+            Some(EvenementExpedition::Combat(groupe))
+                if groupe.len() == 2 && groupe[0].niveau() == Niveau::new(8).unwrap()
+        ));
+        assert!(matches!(
+            parfumee.etape_suivante(&mut AleatoireScripte::new([71, 2, 47])),
+            Some(EvenementExpedition::Coffre { .. })
+        ));
+        let mut rare = vec![86];
+        rare.extend(MONSTRE);
+        assert!(matches!(
+            parfumee.etape_suivante(&mut AleatoireScripte::new(rare)),
+            Some(EvenementExpedition::MonstreRare(rare))
+                if rare.monstre.niveau() == Niveau::new(8).unwrap()
+        ));
     }
 
     /// Section 9.5 : des étapes sans fin, le gardien à l'étape 10, et

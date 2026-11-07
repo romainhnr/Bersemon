@@ -16,7 +16,9 @@ use crate::ame::{Gardien, MarchandId, MarchandMort};
 use crate::amelioration::{
     Amelioration, PlanDAmelioration, PlanDeFabrication, PlanDesFilets, PlanDuCharme,
 };
+use crate::appat::Appat;
 use crate::arene::{AdversaireDeLArene, FosseAuxDamnes, PALIERS_DE_LA_FOSSE, RecompenseDeLArene};
+use crate::atelier::AtelierDAnsgar;
 use crate::attaque::{Attaque, AttaqueId, Categorie, EffetSecondaire};
 use crate::beherit::Invocation;
 use crate::booster::Booster;
@@ -455,6 +457,8 @@ pub struct ContenuV1 {
     plan_du_charme: PlanDuCharme,
     plans_des_filets: Vec<PlanDesFilets>,
     peche: ParametresPeche,
+    /// Les recettes d'Ansgar, avec les matières de sa ligne (section 13.8).
+    atelier: AtelierDAnsgar,
     invocation: Invocation,
     tour: TourSansFond,
     fosse: FosseAuxDamnes,
@@ -1905,13 +1909,42 @@ impl ContenuV1 {
         )
         .expect("Tour sans fond conforme aux règles");
         let fosse = creer_la_fosse(&trouver);
+        let matieres: Vec<(Ressource, u32)> = MATIERES_PECHEES
+            .iter()
+            .map(|(id, nom, prix, chance)| {
+                (Ressource::new(RessourceId::new(*id), *nom, *prix), *chance)
+            })
+            .collect();
         let peche = ParametresPeche::new(
             Duration::from_secs(HEURES_DE_PECHE * 3_600),
             ESPECES_PECHEES.iter().map(|id| trouver(id)).collect(),
             trouver(ESPECE_PECHEE_RARE),
             &zones,
         )
+        .and_then(|peche| peche.avec_matieres(matieres.clone()))
         .expect("pêche conforme aux règles");
+        let matiere = |id: &str| {
+            matieres
+                .iter()
+                .map(|(matiere, _)| matiere)
+                .find(|matiere| matiere.id().as_str() == id)
+                .cloned()
+                .unwrap_or_else(|| panic!("matière {id} absente du contenu"))
+        };
+        let recette = |cout: &[(&str, u32)]| -> Vec<(Ressource, u32)> {
+            cout.iter()
+                .map(|(id, nombre)| (matiere(id), *nombre))
+                .collect()
+        };
+        let atelier = AtelierDAnsgar::new(
+            RECETTES_DES_APPATS
+                .iter()
+                .map(|(appat, cout)| (*appat, recette(cout)))
+                .collect(),
+            recette(&RECETTE_DU_PARFUM_DE_CHAROGNE),
+            recette(&BASE_DU_PARFUM_D_ESPECE),
+        )
+        .expect("atelier d'Ansgar conforme aux règles");
         let plan_du_charme = PlanDuCharme::new(
             COUT_DU_CHARME
                 .iter()
@@ -1946,6 +1979,7 @@ impl ContenuV1 {
             plans_des_filets,
             recompenses_du_codex: creer_recompenses_du_codex(),
             peche,
+            atelier,
             invocation,
             tour,
             fosse,
@@ -2134,6 +2168,11 @@ impl ContenuV1 {
         &self.peche
     }
 
+    /// Ce que prépare Ansgar (section 13.8).
+    pub fn atelier(&self) -> &AtelierDAnsgar {
+        &self.atelier
+    }
+
     pub fn capsules(&self) -> &[Capsule] {
         &self.capsules
     }
@@ -2164,10 +2203,12 @@ impl Catalogue for ContenuV1 {
             .cloned()
     }
 
+    /// Celle d'une espèce, ou une matière de la pêche (section 13.8).
     fn ressource(&self, id: &RessourceId) -> Option<Ressource> {
         self.especes
             .iter()
             .filter_map(Espece::ressource)
+            .chain(self.peche.matieres().iter().map(|(matiere, _)| matiere))
             .find(|ressource| ressource.id() == id)
             .cloned()
     }
@@ -2505,7 +2546,7 @@ const ATTAQUES_DES_HEROS: [FicheAttaque; 40] = [
 ];
 
 /// Section 1 de docs/contenu-v1.md, dans le même ordre.
-const ATTAQUES: [FicheAttaque; 273] = [
+const ATTAQUES: [FicheAttaque; 276] = [
     fiche(
         "souffle-chaud",
         "Souffle chaud",
@@ -4559,6 +4600,36 @@ const ATTAQUES: [FicheAttaque; 273] = [
         80,
         100,
     ),
+    // Attaques d'évolution des formes par échange (docs/contenu-v1.md,
+    // section 53).
+    fiche(
+        "chevauchee-sans-tete",
+        "Chevauchée sans tête",
+        Type::Spectre,
+        Physique,
+        95,
+        100,
+    ),
+    fiche(
+        "presage-funeste",
+        "Présage funeste",
+        Type::Psychique,
+        Speciale,
+        90,
+        100,
+    ),
+    avec_effet(
+        fiche(
+            "regard-de-pierre",
+            "Regard de pierre",
+            Type::Roche,
+            Speciale,
+            85,
+            90,
+        ),
+        Paralysie,
+        30,
+    ),
 ];
 
 struct FicheCapsule {
@@ -4848,6 +4919,9 @@ enum FicheCondition {
     Moment(JourOuNuit, u8),
     /// Niveau, sous une météo (section 9.7).
     Meteo(Meteo, u8),
+    /// Reçu d'un autre joueur, ou avec une Chaîne d'allégeance (section
+    /// 5.4).
+    Echange,
 }
 
 const fn par_pierre(
@@ -4858,6 +4932,16 @@ const fn par_pierre(
     Some(FicheEvolution {
         vers,
         condition: FicheCondition::Pierre(pierre),
+        attaque,
+    })
+}
+
+/// Reçu d'un autre joueur, ou avec une Chaîne d'allégeance, à tout niveau
+/// (section 5.4).
+const fn par_echange(vers: &'static str, attaque: &'static str) -> Option<FicheEvolution> {
+    Some(FicheEvolution {
+        vers,
+        condition: FicheCondition::Echange,
         attaque,
     })
 }
@@ -4934,7 +5018,7 @@ const MARCHAND_ZOMBIE: FicheEspece = FicheEspece {
 /// Section 2 de docs/contenu-v1.md, dans l'ordre du codex : les monstres de
 /// départ, les communs, les rares, l'Apôtre, le monstre caché, puis les
 /// formes évoluées de la section 8.
-static ESPECES: [FicheEspece; 128] = [
+static ESPECES: [FicheEspece; 131] = [
     FicheEspece {
         id: "salamandre",
         nom: "Salamandre",
@@ -5331,7 +5415,7 @@ static ESPECES: [FicheEspece; 128] = [
             (16, "bec-funeste"),
             (16, "bourrasque"),
         ],
-        evolution: None,
+        evolution: par_echange("augure", "presage-funeste"),
     },
     FicheEspece {
         id: "aspic",
@@ -5349,7 +5433,7 @@ static ESPECES: [FicheEspece; 128] = [
             (16, "venin-noir"),
             (16, "croc-de-venin"),
         ],
-        evolution: None,
+        evolution: par_echange("gorgone", "regard-de-pierre"),
     },
     FicheEspece {
         id: "fee-sorciere",
@@ -5447,7 +5531,7 @@ static ESPECES: [FicheEspece; 128] = [
             (18, "taille-d-acier"),
             (18, "frisson-d-outre-tombe"),
         ],
-        evolution: None,
+        evolution: par_echange("dullahan", "chevauchee-sans-tete"),
     },
     FicheEspece {
         id: "chevalier-squelette",
@@ -7283,6 +7367,70 @@ static ESPECES: [FicheEspece; 128] = [
         ],
         evolution: None,
     },
+    // Formes par échange (docs/contenu-v1.md, section 53) : elles gardent le
+    // rôle, la rareté et les habiletés de leur forme d'avant, et leur
+    // rendement d'XP vaut 1,4 fois le sien. Comme pour une pierre, leurs
+    // deux attaques d'évolution s'apprennent au niveau 1.
+    FicheEspece {
+        id: "dullahan",
+        nom: "Dullahan",
+        types: &[Type::Acier, Type::Spectre],
+        role: Role::Offensif,
+        stats_de_base: [85, 120, 115, 45, 75, 60],
+        rendement_experience: 186,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Carapace, Habilete::Ferocite],
+        apprentissage: &[
+            (1, "coup-de-garde"),
+            (1, "chevauchee-sans-tete"),
+            (1, "epee-des-morts"),
+            (8, "lame-rouillee"),
+            (11, "charge-spectrale"),
+            (18, "taille-d-acier"),
+            (18, "frisson-d-outre-tombe"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "augure",
+        nom: "Augure",
+        types: &[Type::Vol, Type::Tenebres, Type::Psychique],
+        role: Role::Offensif,
+        stats_de_base: [70, 75, 65, 110, 75, 105],
+        rendement_experience: 128,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Pillard, Habilete::Eclaireur],
+        apprentissage: &[
+            (1, "coup-de-bec"),
+            (1, "presage-funeste"),
+            (1, "malefice"),
+            (4, "pique"),
+            (8, "regard-funeste"),
+            (16, "bec-funeste"),
+            (16, "bourrasque"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "gorgone",
+        nom: "Gorgone",
+        types: &[Type::Poison, Type::Roche],
+        role: Role::Offensif,
+        stats_de_base: [80, 70, 95, 95, 85, 75],
+        rendement_experience: 133,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Celerite, Habilete::Instinct],
+        apprentissage: &[
+            (1, "morsure-venimeuse"),
+            (1, "regard-de-pierre"),
+            (1, "eboulement"),
+            (3, "regard-petrifiant"),
+            (9, "etreinte"),
+            (16, "venin-noir"),
+            (16, "croc-de-venin"),
+        ],
+        evolution: None,
+    },
 ];
 
 /// Section 15 de docs/contenu-v1.md : la ligne est prête 2 h après avoir
@@ -7290,6 +7438,22 @@ static ESPECES: [FicheEspece; 128] = [
 const HEURES_DE_PECHE: u64 = 2;
 const ESPECES_PECHEES: [&str; 3] = ["noye", "anguille-des-tourbieres", "sangsue-geante"];
 const ESPECE_PECHEE_RARE: &str = "kelpie";
+
+/// Section 53 de docs/contenu-v1.md : les matières que remonte chaque
+/// ligne, avec leur prix chez Malvoise et leur chance sur 100.
+const MATIERES_PECHEES: [(&str, &str, u32, u32); 3] = [
+    ("vers-de-vase", "Vers de vase", 5, 60),
+    ("chair-de-noye", "Chair de noyé", 10, 30),
+    ("ambre-noir", "Ambre noir", 30, 10),
+];
+const RECETTES_DES_APPATS: [(Appat, &[(&str, u32)]); 3] = [
+    (Appat::Vers, &[("vers-de-vase", 2)]),
+    (Appat::Chair, &[("vers-de-vase", 1), ("chair-de-noye", 1)]),
+    (Appat::Ambre, &[("chair-de-noye", 1), ("ambre-noir", 1)]),
+];
+const RECETTE_DU_PARFUM_DE_CHAROGNE: [(&str, u32); 2] = [("chair-de-noye", 3), ("vers-de-vase", 2)];
+/// En plus de 3 de la ressource de l'espèce.
+const BASE_DU_PARFUM_D_ESPECE: [(&str, u32); 1] = [("ambre-noir", 1)];
 
 fn creer_espece(fiche: &FicheEspece) -> Espece {
     let [
@@ -7371,6 +7535,7 @@ fn creer_evolution(fiche: &FicheEvolution) -> Evolution {
             meteo,
             niveau: niveau(valeur),
         },
+        FicheCondition::Echange => ConditionEvolution::Echange,
     };
     Evolution::new(
         EspeceId::new(fiche.vers),
@@ -9871,13 +10036,13 @@ mod tests {
 
         let contenu = ContenuV1::new();
         let au_codex = especes_au_codex(contenu.especes());
-        assert_eq!(au_codex, 113);
+        assert_eq!(au_codex, 116);
         let seuils: Vec<u32> = contenu
             .recompenses_du_codex()
             .iter()
             .map(|recompense| recompense.palier.seuil(au_codex))
             .collect();
-        assert_eq!(seuils, vec![10, 20, 30, 40, 50, 113]);
+        assert_eq!(seuils, vec![10, 20, 30, 40, 50, 116]);
         let complet = contenu.recompenses_du_codex().last().unwrap();
         assert_eq!(complet.palier, PalierDuCodex::Complet);
         let sceau = complet.objet_unique.as_ref().unwrap();
@@ -9982,7 +10147,7 @@ mod tests {
     #[test]
     fn contenu_conforme_aux_regles() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.especes().len(), 128);
+        assert_eq!(contenu.especes().len(), 131);
         assert_eq!(contenu.zones().len(), 16);
         assert_eq!(contenu.annexes().len(), 10);
         assert_eq!(contenu.piste().indices().count(), 27);
@@ -10322,7 +10487,7 @@ mod tests {
                 "{nom}"
             );
         }
-        assert_eq!(evoluees, 20);
+        assert_eq!(evoluees, 23);
         assert_eq!(sauvages, vec!["warg", "chevalier-noir"]);
     }
 
