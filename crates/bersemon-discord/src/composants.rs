@@ -21,8 +21,10 @@ use bersemon_core::filet::Filet;
 use bersemon_core::heros::Classe;
 use bersemon_core::inventaire::Objet;
 use bersemon_core::pierre::PierreDEvolution;
+use bersemon_core::quete_du_camp::{Personnage, QueteId};
 use bersemon_core::ressource::RessourceId;
 use bersemon_core::soin::Soin;
+use bersemon_core::succes::{CouleurDuHeros, SuccesId};
 use bersemon_core::zone::ZoneId;
 
 use crate::duels::ActionDeDuel;
@@ -70,8 +72,16 @@ pub enum Vue {
     Coffre,
     /// Les ressources du sac et du coffre, depuis le coffre (section 14.3).
     Ressources,
-    /// Le suicide du héros, pour recommencer (section 13.9).
-    Options,
+    /// Le héros : sa fiche, son sprite, et ce qui mène à son équipement, à
+    /// ses succès et au suicide, pour recommencer (sections 4.5 et 13.9).
+    Heros,
+    /// Une page de la liste des succès, avec le titre et la couleur à
+    /// porter (section 4.5).
+    Succes(u8),
+    /// Les trophées du camp réunis.
+    Trophees,
+    /// Les quêtes des personnages du camp (section 13.13).
+    QuetesDuCamp,
     /// La forge de Gunther, une fois libéré (section 13.4).
     Forge,
     /// Ce que porte le héros (section 4.3).
@@ -390,6 +400,15 @@ pub enum Cle {
         menu: u8,
         premier: Emplacement,
     },
+    /// Menu numéroté des titres des succès obtenus, et d'aucun titre
+    /// (section 4.5).
+    PorterTitre(u8),
+    /// Menu des couleurs débloquées, et de la couleur d'origine.
+    PorterCouleur,
+    /// La demande de ce personnage, depuis l'écran des quêtes (section
+    /// 13.13).
+    EcouterQuete(Personnage),
+    RemettreQuete(Personnage),
     /// Le petit du rite achevé, depuis le camp.
     AccueillirLePetit,
     /// La récompense du premier palier du codex atteint, depuis le codex
@@ -454,6 +473,10 @@ pub const FOSSE: &str = "fosse-aux-damnes";
 
 /// La valeur qui forge le Béhérit dans le menu des âmes de l'étal.
 pub const BEHERIT: &str = "beherit";
+
+/// La valeur d'aucun titre, ou de la couleur d'origine, dans leur menu : un
+/// identifiant n'a jamais de tiret seul.
+pub const AUCUN: &str = "-";
 
 impl Cle {
     /// `valeur` est l'option choisie dans un menu, `texte` le texte saisi
@@ -618,6 +641,16 @@ impl Cle {
             }),
             Cle::AccueillirLePetit => jouer(Choix::AccueillirLePetit),
             Cle::ReclamerRecompenseDuCodex => jouer(Choix::ReclamerRecompenseDuCodex),
+            Cle::PorterTitre(_) => jouer(Choix::PorterTitre(match valeur? {
+                AUCUN => None,
+                succes => Some(SuccesId::new(succes)),
+            })),
+            Cle::PorterCouleur => jouer(Choix::PorterCouleur(match valeur? {
+                AUCUN => None,
+                couleur => Some(CouleurDuHeros::depuis_identifiant(couleur)?),
+            })),
+            Cle::EcouterQuete(personnage) => jouer(Choix::EcouterQuete(*personnage)),
+            Cle::RemettreQuete(personnage) => jouer(Choix::RemettreQuete(*personnage)),
             Cle::Ceder { avec, .. } => Some(Commande::Afficher(Vue::Echanges {
                 avec: Some(*avec),
                 cede: Some(lire_emplacement(valeur?)?),
@@ -694,7 +727,10 @@ impl Cle {
             }
             Cle::Afficher(Vue::Coffre) => "vue:coffre".to_string(),
             Cle::Afficher(Vue::Ressources) => "vue:ressources".to_string(),
-            Cle::Afficher(Vue::Options) => "vue:options".to_string(),
+            Cle::Afficher(Vue::Heros) => "vue:heros".to_string(),
+            Cle::Afficher(Vue::Succes(page)) => format!("vue:succes:{page}"),
+            Cle::Afficher(Vue::Trophees) => "vue:trophees".to_string(),
+            Cle::Afficher(Vue::QuetesDuCamp) => "vue:quetes-du-camp".to_string(),
             Cle::Afficher(Vue::Forge) => "vue:forge".to_string(),
             Cle::Afficher(Vue::Equipement) => "vue:equipement".to_string(),
             Cle::Afficher(Vue::Peche) => "vue:peche".to_string(),
@@ -837,6 +873,12 @@ impl Cle {
             }
             Cle::AccueillirLePetit => "accueillir-le-petit".to_string(),
             Cle::ReclamerRecompenseDuCodex => "reclamer-codex".to_string(),
+            Cle::PorterTitre(numero) => format!("porter-titre:{numero}"),
+            Cle::PorterCouleur => "porter-couleur".to_string(),
+            Cle::EcouterQuete(personnage) => format!("ecouter-quete:{}", personnage.identifiant()),
+            Cle::RemettreQuete(personnage) => {
+                format!("remettre-quete:{}", personnage.identifiant())
+            }
             Cle::Ceder { menu, avec } => format!("ceder:{menu}:{avec}"),
             Cle::Demander { menu, avec, cede } => {
                 format!("demander:{menu}:{avec}:{}", emplacement_en_texte(*cede))
@@ -904,7 +946,12 @@ impl Cle {
             "tout-ranger" => Cle::ToutRanger,
             "jeter" => Cle::Jeter,
             "jeter-ressource" => Cle::JeterUneRessource,
-            "vue:options" => Cle::Afficher(Vue::Options),
+            // L'écran des options a rejoint celui du héros (section 4.5) : un
+            // bouton d'un ancien message ouvre ce dernier.
+            "vue:options" | "vue:heros" => Cle::Afficher(Vue::Heros),
+            "vue:trophees" => Cle::Afficher(Vue::Trophees),
+            "vue:quetes-du-camp" => Cle::Afficher(Vue::QuetesDuCamp),
+            "porter-couleur" => Cle::PorterCouleur,
             "vue:forge" => Cle::Afficher(Vue::Forge),
             "constater" => Cle::Constater,
             "vue:machines" => Cle::Afficher(Vue::Machines),
@@ -996,6 +1043,7 @@ impl Cle {
                                 Cle::Afficher(Vue::Attaques(lire_emplacement(parametre)?))
                             }
                             "rite" => Cle::Afficher(Vue::Rite(lire_emplacement(parametre)?)),
+                            "succes" => Cle::Afficher(Vue::Succes(parametre.parse().ok()?)),
                             "preparation" => {
                                 let (zone, choisis) = parametre.split_once(':')?;
                                 Cle::Afficher(Vue::Preparation {
@@ -1115,6 +1163,13 @@ impl Cle {
                     "remplacer" => Cle::Remplacer(position()?),
                     "capturer" => Cle::Capturer(position()?),
                     "oublier" => Cle::Oublier(position()?),
+                    "porter-titre" => Cle::PorterTitre(numero()?),
+                    "ecouter-quete" => {
+                        Cle::EcouterQuete(Personnage::depuis_identifiant(parametre)?)
+                    }
+                    "remettre-quete" => {
+                        Cle::RemettreQuete(Personnage::depuis_identifiant(parametre)?)
+                    }
                     _ => return None,
                 }
             }
@@ -1264,6 +1319,7 @@ pub fn objet_en_texte(objet: &Objet) -> String {
         Objet::PhiltresChromatiques(nombre) => format!("eclats-d-astre:{nombre}"),
         Objet::CharmesDeGarde(nombre) => format!("charmes-de-garde:{nombre}"),
         Objet::Filets(filet, nombre) => format!("filets:{}:{nombre}", filet.id()),
+        Objet::ObjetDeQuete(quete) => format!("objet-de-quete:{}", quete.as_str()),
     }
 }
 
@@ -1289,6 +1345,7 @@ fn lire_objet(texte: &str) -> Option<Objet> {
             ))
         }
         "eclats-d-astre" => Some(Objet::PhiltresChromatiques(parametre.parse().ok()?)),
+        "objet-de-quete" => Some(Objet::ObjetDeQuete(QueteId::new(parametre))),
         "charmes-de-garde" => Some(Objet::CharmesDeGarde(parametre.parse().ok()?)),
         "filets" => {
             let (filet, nombre) = parametre.split_once(':')?;
@@ -1507,7 +1564,14 @@ mod tests {
             Cle::ToutRanger,
             Cle::Jeter,
             Cle::JeterUneRessource,
-            Cle::Afficher(Vue::Options),
+            Cle::Afficher(Vue::Heros),
+            Cle::Afficher(Vue::Succes(1)),
+            Cle::Afficher(Vue::Trophees),
+            Cle::Afficher(Vue::QuetesDuCamp),
+            Cle::PorterTitre(1),
+            Cle::PorterCouleur,
+            Cle::EcouterQuete(Personnage::Ansgar),
+            Cle::RemettreQuete(Personnage::Gunther),
             Cle::SeSuicider,
             Cle::Afficher(Vue::Forge),
             Cle::Ameliorer(Amelioration::Enclos),

@@ -112,6 +112,7 @@ mod tests {
     use bersemon_core::peche::Peche;
     use bersemon_core::pierre::PierreDEvolution;
     use bersemon_core::quete::{EtatDeQuete, JournalDesQuetes, Objectif, Periode, Quete};
+    use bersemon_core::quete_du_camp::{ObjetDeQuete, Personnage, QueteId};
     use bersemon_core::recompenses_du_codex::PalierDuCodex;
     use bersemon_core::relations::{Palmares, Relations};
     use bersemon_core::ressource::{Ressource, RessourceId};
@@ -119,6 +120,7 @@ mod tests {
     use bersemon_core::soin::Soin;
     use bersemon_core::stats::{Stats, ValeursInternes};
     use bersemon_core::statut::Statut;
+    use bersemon_core::succes::{CouleurDuHeros, SuccesId};
     use bersemon_core::tour::RecordsDeLaTour;
     use bersemon_core::tutoriel::Conseil;
     use bersemon_core::types::{Type, TypesMonstre};
@@ -161,6 +163,11 @@ mod tests {
 
         fn ressource(&self, id: &RessourceId) -> Option<Ressource> {
             Some(croc()).filter(|croc| croc.id() == id)
+        }
+
+        fn objet_de_quete(&self, quete: &QueteId) -> Option<ObjetDeQuete> {
+            Some(ObjetDeQuete::new(QueteId::new("psautier"), "Psautier"))
+                .filter(|objet| objet.quete() == quete)
         }
 
         fn objet_d_equipement(&self, id: &ObjetDEquipementId) -> Option<ObjetDEquipement> {
@@ -487,6 +494,8 @@ mod tests {
             )),
             paliers_du_codex: vec![PalierDuCodex::Especes(10), PalierDuCodex::Complet],
             arene: Default::default(),
+            succes_obtenus: Vec::new(),
+            quetes_du_camp: Default::default(),
             decouvertes: Default::default(),
             quetes: Default::default(),
         };
@@ -1430,12 +1439,12 @@ mod tests {
         assert_eq!(ancienne.heros().statut(), None);
     }
 
-    /// Un héros shiny et le Rayon chromatique d'un monstre shiny se
+    /// Un héros shiny et le Choc chromatique d'un monstre shiny se
     /// relisent ; avant la version 35, aucun héros n'est shiny et les shiny
-    /// de l'équipe apprennent le Rayon à la reprise (sections 4.1 et 5.1).
+    /// de l'équipe apprennent le Choc chromatique à la reprise (sections 4.1 et 5.1).
     #[test]
-    fn le_heros_shiny_et_le_rayon_chromatique_se_relisent() {
-        let rayon = AttaqueId::new("rayon-chromatique");
+    fn le_heros_shiny_et_le_choc_chromatique_se_relisent() {
+        let choc = AttaqueId::new("rayon-chromatique");
         let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
         valeur["heros"]["shiny"] = true.into();
         valeur["equipe"][0]["shiny"] = true.into();
@@ -1446,7 +1455,7 @@ mod tests {
         let relue = charger_texte(&valeur.to_string()).unwrap().unwrap();
         assert!(relue.heros().est_shiny());
         let shiny = &relue.collection().equipe()[0];
-        assert!(shiny.est_shiny() && shiny.attaques().connait(&rayon));
+        assert!(shiny.est_shiny() && shiny.attaques().connait(&choc));
         let texte = serde_json::to_string(&format::depuis_partie(&relue)).unwrap();
         assert!(texte.contains("\"shiny\":true}"), "{texte}");
         assert!(texte.contains("rayon-chromatique"), "{texte}");
@@ -1467,8 +1476,50 @@ mod tests {
         ancienne["version"] = 34.into();
         let relue = charger_texte(&ancienne.to_string()).unwrap().unwrap();
         assert!(!relue.heros().est_shiny());
-        assert!(relue.collection().equipe()[0].attaques().connait(&rayon));
-        assert!(!relue.collection().equipe()[1].attaques().connait(&rayon));
+        assert!(relue.collection().equipe()[0].attaques().connait(&choc));
+        assert!(!relue.collection().equipe()[1].attaques().connait(&choc));
+    }
+
+    /// Les succès, le titre et la couleur du héros, les quêtes et les objets
+    /// de quête se relisent ; un titre sans son succès est oublié, comme un
+    /// objet de quête disparu du jeu (sections 4.5 et 13.13).
+    #[test]
+    fn les_succes_et_les_quetes_se_relisent() {
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        valeur["succes"] = serde_json::json!(["nomade", "deicide"]);
+        valeur["heros"]["titre"] = "deicide".into();
+        valeur["heros"]["couleur"] = "cendre".into();
+        valeur["quetes_du_camp_en_cours"] = serde_json::json!(["psautier"]);
+        valeur["quetes_du_camp_accomplies"] = serde_json::json!(["lueur"]);
+        valeur["services_ameliores"] = serde_json::json!(["gunther"]);
+        valeur["sac"]["objets_de_quete"] = serde_json::json!(["psautier", "disparu"]);
+        let relue = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        assert_eq!(
+            relue.succes_obtenus(),
+            [SuccesId::new("nomade"), SuccesId::new("deicide")]
+        );
+        assert_eq!(relue.heros().titre(), Some(&SuccesId::new("deicide")));
+        assert_eq!(relue.heros().couleur(), Some(CouleurDuHeros::Cendre));
+        assert_eq!(relue.quetes_du_camp().en_cours, [QueteId::new("psautier")]);
+        assert_eq!(relue.quetes_du_camp().accomplies, [QueteId::new("lueur")]);
+        assert!(relue.quetes_du_camp().service_ameliore(Personnage::Gunther));
+        let objets = relue.sac().objets_de_quete();
+        assert_eq!(objets.len(), 1);
+        assert_eq!(objets[0].nom(), "Psautier");
+        let texte = serde_json::to_string(&format::depuis_partie(&relue)).unwrap();
+        let relue_encore = charger_texte(&texte).unwrap().unwrap();
+        assert_eq!(relue_encore, relue);
+        // Le titre d'un succès que le joueur n'a pas est oublié.
+        let mut sans_succes = valeur.clone();
+        sans_succes["succes"] = serde_json::json!([]);
+        let relue = charger_texte(&sans_succes.to_string()).unwrap().unwrap();
+        assert_eq!(relue.heros().titre(), None);
+        let mut couleur_inconnue = valeur;
+        couleur_inconnue["heros"]["couleur"] = "turquoise".into();
+        assert!(matches!(
+            charger_texte(&couleur_inconnue.to_string()),
+            Err(ErreurSauvegarde::Incoherente(_))
+        ));
     }
 
     /// Les annexes ouvertes et les légendaires capturés se relisent ; avant

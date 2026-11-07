@@ -102,7 +102,7 @@ pub fn decrire_attaque(attaque: &Attaque) -> String {
     decrire(attaque, attaque.categorie())
 }
 
-/// Pour ce monstre : la catégorie du Rayon chromatique, qui suit ses stats,
+/// Pour ce monstre : la catégorie du Choc chromatique, qui suit ses stats,
 /// y est résolue (section 5.1).
 pub fn decrire_attaque_de(monstre: &Monstre, attaque: &Attaque) -> String {
     decrire(attaque, attaque.categorie_pour(monstre))

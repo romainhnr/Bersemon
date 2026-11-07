@@ -22,6 +22,7 @@ use bersemon_core::tour::RecordsDeLaTour;
 use bersemon_presentation::duels::{defi_a_l_arene_recu, defi_accepte, defi_recu, defi_refuse};
 use bersemon_presentation::echanges::{offre_acceptee, offre_recue, offre_refusee};
 use bersemon_presentation::groupe::{invitation_acceptee, invitation_recue, invitation_refusee};
+use bersemon_presentation::succes::nom_et_titre;
 use bersemon_storage::FichierJson;
 
 use crate::composants::Vue;
@@ -235,7 +236,8 @@ impl Joueurs {
     /// Le joueur tel que les autres le voient, s'il a une partie.
     fn autre_joueur(&mut self, joueur: IdJoueur, contenu: &ContenuV1) -> Option<AutreJoueur> {
         let partie = partie_lisible(&self.charger(joueur, contenu).deroulement)?;
-        let heros = partie.heros().nom().as_str().to_string();
+        // Son titre suit son nom, là où les autres le voient (section 4.5).
+        let heros = nom_et_titre(partie.heros(), contenu.succes());
         let palmares = partie.relations().palmares();
         let records = partie.records_de_la_tour();
         let arene = partie.arene();
@@ -1818,9 +1820,7 @@ mod tests {
         let sauvegarde = dossier.join("1.json");
         assert!(sauvegarde.exists());
         let version = joueurs.session(1, &contenu).version;
-        joueurs
-            .afficher(1, version, Vue::Options, &contenu)
-            .unwrap();
+        joueurs.afficher(1, version, Vue::Heros, &contenu).unwrap();
         repondre(&mut joueurs, 1, Choix::SeSuicider, &contenu).unwrap();
         let evenements = repondre(&mut joueurs, 1, Choix::Oui, &contenu).unwrap();
         assert_eq!(evenements, vec![Evenement::Suicide]);

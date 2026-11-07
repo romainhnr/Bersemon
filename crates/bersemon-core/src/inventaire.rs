@@ -2,7 +2,7 @@
 //! manuelle, ou dans le coffre du camp, où ils sont à l'abri (sections 13.3
 //! et 14.4) : argent, soins, capsules d'attaque, capsules d'habileté,
 //! ressources, pierres d'évolution, boosters, Philtres chromatiques, charmes de
-//! garde et filets de capture.
+//! garde, filets de capture et objets de quête.
 
 use std::fmt;
 
@@ -13,6 +13,7 @@ use crate::capsule::Capsule;
 use crate::filet::{Filet, Filets};
 use crate::monstre::Monstre;
 use crate::pierre::PierreDEvolution;
+use crate::quete_du_camp::{ObjetDeQuete, QueteId};
 use crate::ressource::{Ressource, RessourceId};
 use crate::soin::{EffetDuSoin, ErreurSoin, Soin, Soins, appliquer_soin, verifier_cible};
 
@@ -41,6 +42,9 @@ pub struct Inventaire {
     charmes_de_garde: u32,
     /// Chaque capture en combat en consomme un (section 11.2).
     filets: Filets,
+    /// Sans doublon : chacun est unique et ne sert qu'à sa quête (section
+    /// 13.13).
+    objets_de_quete: Vec<ObjetDeQuete>,
 }
 
 /// Ce que le joueur déplace entre le sac et le coffre du camp.
@@ -56,6 +60,7 @@ pub enum Objet {
     PhiltresChromatiques(u32),
     CharmesDeGarde(u32),
     Filets(Filet, u32),
+    ObjetDeQuete(QueteId),
 }
 
 impl Objet {
@@ -64,7 +69,7 @@ impl Objet {
     pub fn places(&self) -> u32 {
         match self {
             Objet::Argent(_) => 0,
-            Objet::Capsule(_) => 1,
+            Objet::Capsule(_) | Objet::ObjetDeQuete(_) => 1,
             Objet::Soins(_, nombre)
             | Objet::CapsulesDHabilete(nombre)
             | Objet::Ressources(_, nombre)
@@ -93,6 +98,7 @@ impl Inventaire {
             philtres_chromatiques: 0,
             charmes_de_garde: 0,
             filets: Filets::default(),
+            objets_de_quete: Vec::new(),
         };
         inventaire.soins.ajouter(Soin::Potion, potions);
         for capsule in capsules {
@@ -332,6 +338,7 @@ impl Inventaire {
             && self.philtres_chromatiques == 0
             && self.charmes_de_garde == 0
             && self.filets.est_vide()
+            && self.objets_de_quete.is_empty()
     }
 
     /// Les places prises dans le sac : chaque objet en prend une, l'argent
@@ -350,9 +357,33 @@ impl Inventaire {
             self.philtres_chromatiques,
             self.charmes_de_garde,
             sommes(&mut self.filets.presents().map(|(_, nombre)| nombre)),
+            self.objets_de_quete.len() as u32,
         ]
         .into_iter()
         .fold(0, u32::saturating_add)
+    }
+
+    pub fn objets_de_quete(&self) -> &[ObjetDeQuete] {
+        &self.objets_de_quete
+    }
+
+    pub fn contient_objet_de_quete(&self, quete: &QueteId) -> bool {
+        self.objets_de_quete
+            .iter()
+            .any(|objet| objet.quete() == quete)
+    }
+
+    /// Sans effet pour un objet déjà là : chacun est unique.
+    pub fn ajouter_objet_de_quete(&mut self, objet: ObjetDeQuete) {
+        if !self.contient_objet_de_quete(objet.quete()) {
+            self.objets_de_quete.push(objet);
+        }
+    }
+
+    /// Reprise d'une sauvegarde (section 13.13).
+    pub fn avec_objet_de_quete(mut self, objet: ObjetDeQuete) -> Self {
+        self.ajouter_objet_de_quete(objet);
+        self
     }
 
     pub fn contient_capsule(&self, id: &AttaqueId) -> bool {
@@ -401,6 +432,9 @@ impl Inventaire {
         self.ajouter_charmes_de_garde(autre.charmes_de_garde);
         for (filet, nombre) in autre.filets.presents() {
             self.filets.ajouter(filet, nombre);
+        }
+        for objet in autre.objets_de_quete {
+            self.ajouter_objet_de_quete(objet);
         }
     }
 
@@ -513,6 +547,16 @@ impl Inventaire {
                     return Err(ErreurObjet::Insuffisant);
                 }
                 retire.filets.ajouter(*filet, *nombre);
+            }
+            Objet::ObjetDeQuete(quete) => {
+                let position = self
+                    .objets_de_quete
+                    .iter()
+                    .position(|objet| objet.quete() == quete)
+                    .ok_or(ErreurObjet::Insuffisant)?;
+                retire
+                    .objets_de_quete
+                    .push(self.objets_de_quete.remove(position));
             }
         }
         Ok(retire)

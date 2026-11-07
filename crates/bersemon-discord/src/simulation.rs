@@ -43,6 +43,7 @@ fn portrait(monstre: &Monstre) -> Portrait {
     Portrait {
         espece: monstre.espece().id().clone(),
         shiny: monstre.est_shiny(),
+        couleur: monstre.couleur_du_heros(),
     }
 }
 
@@ -547,6 +548,8 @@ fn l_equipe_et_le_camp_pleins_tiennent_dans_les_limites() {
             rite: None,
             paliers_du_codex: Vec::new(),
             arene: Default::default(),
+            succes_obtenus: Vec::new(),
+            quetes_du_camp: Default::default(),
             decouvertes: Default::default(),
             quetes: Default::default(),
         })
@@ -574,7 +577,11 @@ fn l_equipe_et_le_camp_pleins_tiennent_dans_les_limites() {
             Vue::Attaques(Emplacement::Equipe(0)),
             Vue::Attaques(Emplacement::Camp(dernier)),
             Vue::Coffre,
-            Vue::Options,
+            Vue::Heros,
+            Vue::Succes(0),
+            Vue::Succes(1),
+            Vue::Trophees,
+            Vue::QuetesDuCamp,
             Vue::Forge,
         ];
         let mut questions: Vec<_> = vues
@@ -655,6 +662,8 @@ fn les_attaques_au_camp_se_choisissent_par_menu() {
         rite: None,
         paliers_du_codex: Vec::new(),
         arene: Default::default(),
+        succes_obtenus: Vec::new(),
+        quetes_du_camp: Default::default(),
         decouvertes: Default::default(),
         quetes: Default::default(),
     })
@@ -762,6 +771,7 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
                     .map(|classe| Portrait {
                         espece: classe.espece_du_combattant(),
                         shiny: false,
+                        couleur: None,
                     })
                     .collect();
                 assert_eq!(affiche.sprite, Some(Illustration::CoteACote(classes)));
@@ -773,6 +783,7 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
                     Some(Illustration::Seul(Portrait {
                         espece: adversaire.id().espece_du_combattant(),
                         shiny: false,
+                        couleur: None,
                     }))
                 );
                 paliers += 1;
@@ -1077,6 +1088,8 @@ fn la_fosse_montre_son_adversaire_puis_le_face_a_face() {
         rite: None,
         paliers_du_codex: Vec::new(),
         arene: Default::default(),
+        succes_obtenus: Vec::new(),
+        quetes_du_camp: Default::default(),
         decouvertes: Default::default(),
         quetes: Default::default(),
     })
@@ -1107,6 +1120,7 @@ fn la_fosse_montre_son_adversaire_puis_le_face_a_face() {
     let gueux = Portrait {
         espece: EspeceId::new("humain-gueux"),
         shiny: false,
+        couleur: None,
     };
     assert_eq!(
         jouer(Choix::EntrerDansLaFosse),
@@ -1118,6 +1132,7 @@ fn la_fosse_montre_son_adversaire_puis_le_face_a_face() {
             joueur: Some(Portrait {
                 espece: EspeceId::new("heros-mage"),
                 shiny: false,
+                couleur: None,
             }),
             adversaire: gueux,
         })
@@ -1177,6 +1192,8 @@ fn le_heros_devient_shiny_depuis_son_equipement() {
         rite: None,
         paliers_du_codex: Vec::new(),
         arene: Default::default(),
+        succes_obtenus: Vec::new(),
+        quetes_du_camp: Default::default(),
         decouvertes: Default::default(),
         quetes: Default::default(),
     })
@@ -1215,17 +1232,21 @@ fn le_heros_devient_shiny_depuis_son_equipement() {
         }
     };
     cliquer_sur(&mut joueurs, Cle::ReprendreLaPartie);
-    cliquer_sur(&mut joueurs, Cle::Afficher(Vue::Equipement));
+    cliquer_sur(&mut joueurs, Cle::Afficher(Vue::Heros));
     let templier = |shiny| {
         Some(Illustration::Seul(Portrait {
             espece: EspeceId::new("heros-templier"),
             shiny,
+            couleur: None,
         }))
     };
     assert_eq!(afficher(&mut joueurs).sprite, templier(false));
     cliquer_sur(&mut joueurs, Cle::RendreLeHerosShiny);
     let evenements = cliquer_sur(&mut joueurs, Cle::Oui);
-    assert_eq!(evenements, [Evenement::HerosRenduShiny]);
+    assert!(matches!(
+        &evenements[..],
+        [Evenement::HerosRenduShiny, Evenement::SuccesObtenus { .. }]
+    ));
     let equipement = afficher(&mut joueurs);
     assert!(
         equipement.texte.starts_with("Aldric (shiny), Templier, "),
@@ -1310,6 +1331,8 @@ fn le_demiurge_s_affronte_a_travers_les_ecrans_du_bot() {
         rite: None,
         paliers_du_codex: Vec::new(),
         arene: Default::default(),
+        succes_obtenus: Vec::new(),
+        quetes_du_camp: Default::default(),
         decouvertes: Default::default(),
         quetes: Default::default(),
     })
@@ -1478,6 +1501,8 @@ fn malvoise_vend_et_loue_des_monstres_a_travers_les_ecrans_du_bot() {
         rite: None,
         paliers_du_codex: Vec::new(),
         arene: Default::default(),
+        succes_obtenus: Vec::new(),
+        quetes_du_camp: Default::default(),
         decouvertes: Default::default(),
         quetes: Default::default(),
     })
@@ -1657,6 +1682,8 @@ fn gunther_agrandit_l_enclos_a_travers_les_ecrans_du_bot() {
         rite: None,
         paliers_du_codex: Vec::new(),
         arene: Default::default(),
+        succes_obtenus: Vec::new(),
+        quetes_du_camp: Default::default(),
         decouvertes: Default::default(),
         quetes: Default::default(),
     })
@@ -1754,6 +1781,8 @@ fn gunther_agrandit_l_enclos_a_travers_les_ecrans_du_bot() {
         "un objet possédé ne se forge plus"
     );
     cliquer_a(&mut joueurs, Cle::Afficher(Vue::Camp), 8_200);
+    // L'équipement s'ouvre depuis l'écran du héros (section 4.5).
+    cliquer_a(&mut joueurs, Cle::Afficher(Vue::Heros), 8_200);
     cliquer_a(&mut joueurs, Cle::Afficher(Vue::Equipement), 8_200);
     let place = PlaceDEquipement::PremierTalisman;
     let portee = choisir_a(&mut joueurs, Cle::Equiper(place), talisman, 8_200);
@@ -1824,6 +1853,8 @@ fn ansgar_peche_a_travers_les_ecrans_du_bot() {
         rite: None,
         paliers_du_codex: Vec::new(),
         arene: Default::default(),
+        succes_obtenus: Vec::new(),
+        quetes_du_camp: Default::default(),
         decouvertes: Default::default(),
         quetes: Default::default(),
     })
@@ -1957,6 +1988,8 @@ fn le_codex_complet_tient_dans_les_limites() {
         rite: None,
         paliers_du_codex: Vec::new(),
         arene: Default::default(),
+        succes_obtenus: Vec::new(),
+        quetes_du_camp: Default::default(),
         decouvertes: Default::default(),
         quetes: Default::default(),
     })
@@ -2101,6 +2134,8 @@ fn la_forge_et_l_equipement_tiennent_dans_les_limites() {
             rite: None,
             paliers_du_codex: Vec::new(),
             arene: Default::default(),
+            succes_obtenus: Vec::new(),
+            quetes_du_camp: Default::default(),
             decouvertes: Default::default(),
             quetes: Default::default(),
         })
@@ -2156,6 +2191,8 @@ fn toute_l_equipe_se_prepare_d_un_bouton_s_il_y_a_de_la_place_au_camp() {
             rite: None,
             paliers_du_codex: Vec::new(),
             arene: Default::default(),
+            succes_obtenus: Vec::new(),
+            quetes_du_camp: Default::default(),
             decouvertes: Default::default(),
             quetes: Default::default(),
         })
@@ -2238,6 +2275,8 @@ fn toute_l_equipe_se_prepare_d_un_bouton_s_il_y_a_de_la_place_au_camp() {
         rite: None,
         paliers_du_codex: Vec::new(),
         arene: Default::default(),
+        succes_obtenus: Vec::new(),
+        quetes_du_camp: Default::default(),
         decouvertes: Default::default(),
         quetes: Default::default(),
     })
@@ -2412,6 +2451,8 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         paliers_du_codex: Vec::new(),
         arene: Default::default(),
         // Toutes les annexes ouvertes : le camp a leur menu (section 9.9).
+        succes_obtenus: Vec::new(),
+        quetes_du_camp: Default::default(),
         decouvertes: bersemon_core::partie::Decouvertes {
             annexes_ouvertes: contenu
                 .annexes()
@@ -2538,16 +2579,20 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
                 .min((RANGEES_MAX - 1 - rangees_des_monstres) * OPTIONS_PAR_MENU)
         );
         afficher(&partie, Vue::Vente);
-        // Malvoise, Gunther et Ansgar au camp, avec les quêtes : deux
-        // rangées de boutons pleines, et un bouton sur la troisième
-        // (sections 13.8 et 13.12).
+        // Malvoise, Gunther et Ansgar au camp, avec les quêtes et le héros,
+        // les options ayant rejoint son écran : deux rangées de boutons
+        // pleines (sections 4.5, 13.8 et 13.12).
         let cles = afficher(&partie, Vue::Camp);
         assert!(cles.contains(&Cle::Afficher(Vue::Forge)));
         assert!(cles.contains(&Cle::Afficher(Vue::Peche)));
         assert!(cles.contains(&Cle::Afficher(Vue::Quetes)));
-        assert_eq!(cles.len(), 2 * BOUTONS_PAR_RANGEE + 1);
+        assert_eq!(cles.len(), 2 * BOUTONS_PAR_RANGEE);
+        // Les quêtes du jour mènent à celles des personnages (section 13.13).
         let cles = afficher(&partie, Vue::Quetes);
-        assert_eq!(cles, vec![Cle::Afficher(Vue::Camp)]);
+        assert_eq!(
+            cles,
+            vec![Cle::Afficher(Vue::QuetesDuCamp), Cle::Afficher(Vue::Camp)]
+        );
         let cles = afficher(&partie, Vue::Peche);
         assert!(cles.contains(&Cle::ReleverLaLigne));
         let cles = afficher(&partie, Vue::Forge);
@@ -2782,6 +2827,8 @@ fn les_machines_tiennent_dans_les_limites() {
         rite: None,
         paliers_du_codex: Vec::new(),
         arene: Default::default(),
+        succes_obtenus: Vec::new(),
+        quetes_du_camp: Default::default(),
         decouvertes: Default::default(),
         quetes: Default::default(),
     };
@@ -3257,7 +3304,7 @@ fn un_duel_complet_a_travers_les_ecrans_du_bot() {
     // Chacun retrouve son camp, et ses monstres tels qu'avant le duel.
     for joueur in [JOUEUR, YSOLDE] {
         let affiche = afficher_a(&mut joueurs, joueur, &contenu, 0);
-        assert!(propose(&affiche, |cle| *cle == Cle::Afficher(Vue::Options)));
+        assert!(propose(&affiche, |cle| *cle == Cle::Afficher(Vue::Heros)));
         let partie = joueurs
             .session(joueur, &contenu)
             .deroulement
@@ -3919,4 +3966,192 @@ fn le_menu_des_expeditions_dit_la_meteo() {
         .find(|maintenant| Meteo::de_la_zone(lisiere, *maintenant).is_none())
         .unwrap();
     assert_eq!(description(au_calme), "Niveaux 3 à 7");
+}
+
+/// Une quête de Malvoise écoutée puis remise depuis le bouton "Quêtes" du
+/// camp, puis un titre et une couleur portés depuis l'écran des succès du
+/// héros, qui prend sa couleur (sections 4.5 et 13.13).
+#[test]
+fn quetes_et_succes_a_travers_les_ecrans_du_bot() {
+    use bersemon_core::catalogue::Catalogue;
+    use bersemon_core::heros::Heros;
+    use bersemon_core::niveau::Niveau;
+    use bersemon_core::nom::Nom;
+    use bersemon_core::partie::Partie;
+    use bersemon_core::quete_du_camp::Personnage;
+    use bersemon_core::sauvegarde::SauvegardeRepository;
+    use bersemon_core::stats::ValeursInternes;
+    use bersemon_core::succes::CouleurDuHeros;
+    use bersemon_core::tour::RecordsDeLaTour;
+    use bersemon_storage::FichierJson;
+
+    let contenu = ContenuV1::new();
+    let loup = Monstre::creer(
+        contenu.espece(&EspeceId::new("loup")).unwrap(),
+        Niveau::new(5).unwrap(),
+        ValeursInternes::default(),
+        false,
+    )
+    .unwrap();
+    let cendre = contenu
+        .espece(&EspeceId::new("feu-follet"))
+        .unwrap()
+        .ressource()
+        .cloned()
+        .unwrap();
+    let partie = Partie::nouvelle(Heros::new(Nom::new("Aldric").unwrap(), Classe::Mage), loup);
+    let partie = Partie::restaurer(EtatPartie {
+        heros: partie.heros().clone(),
+        collection: partie.collection().clone(),
+        sac: Inventaire::default(),
+        coffre_du_camp: Inventaire::default().avec_ressources(cendre, 5),
+        marchand_au_camp: true,
+        ames_donnees: Vec::new(),
+        ames_portees: Vec::new(),
+        ames_a_retrouver: Vec::new(),
+        codex: partie.codex().clone(),
+        zones_explorees: vec![ZoneId::new("lisiere")],
+        indices_trouves: 1,
+        apotres_vaincus: Vec::new(),
+        humains_vaincus: Vec::new(),
+        conseils_vus: Vec::new(),
+        expeditions_automatiques: Vec::new(),
+        attaques_a_choisir: Vec::new(),
+        peche: Default::default(),
+        forge: Default::default(),
+        relations: Default::default(),
+        machines: Default::default(),
+        beherit: Default::default(),
+        // Assez profond pour la couleur Abîme (section 4.5).
+        records_de_la_tour: RecordsDeLaTour {
+            seul: 50,
+            a_deux: 0,
+        },
+        rite: None,
+        paliers_du_codex: Vec::new(),
+        arene: Default::default(),
+        succes_obtenus: Vec::new(),
+        quetes: Default::default(),
+        quetes_du_camp: Default::default(),
+        decouvertes: Default::default(),
+    })
+    .unwrap();
+    let dossier = dossier_de_test().join("quetes");
+    fs::create_dir_all(&dossier).unwrap();
+    FichierJson::new(dossier.join(format!("{JOUEUR}.json")))
+        .enregistrer(&partie)
+        .unwrap();
+    let mut joueurs = Joueurs::new(dossier.clone(), 2026);
+    let maintenant = Horodatage::depuis_secondes(1_000);
+    let afficher = |joueurs: &mut Joueurs| {
+        let session = joueurs.session(JOUEUR, &contenu);
+        let affiche = message(session, &[], None, &contenu, maintenant);
+        verifier_les_limites(&affiche);
+        affiche
+    };
+    let jouer = |joueurs: &mut Joueurs, clic: Clic| {
+        let version = joueurs.session(JOUEUR, &contenu).version;
+        match clic
+            .cle
+            .commande(clic.valeur.as_deref(), None)
+            .expect("composant lisible")
+        {
+            Commande::Jouer(choix) => joueurs
+                .jouer(JOUEUR, version, choix, &contenu, maintenant)
+                .unwrap(),
+            Commande::Afficher(vue) => {
+                joueurs.afficher(JOUEUR, version, vue, &contenu).unwrap();
+                Vec::new()
+            }
+            autre => panic!("{autre:?}"),
+        }
+    };
+    let cliquer_sur = |joueurs: &mut Joueurs, cle: Cle| {
+        let affiche = afficher(joueurs);
+        let clic = cliquer(&affiche, |propose| *propose == cle);
+        jouer(joueurs, clic)
+    };
+    let choisir = |joueurs: &mut Joueurs, cle: Cle, valeur: &str| {
+        let affiche = afficher(joueurs);
+        let clic = choisir_dans(&affiche, |propose| *propose == cle, valeur)
+            .unwrap_or_else(|| panic!("{valeur} absent : {}", affiche.texte));
+        jouer(joueurs, clic)
+    };
+    // La reprise constate les succès déjà atteints (section 4.5).
+    let reprise = cliquer_sur(&mut joueurs, Cle::ReprendreLaPartie);
+    assert!(
+        matches!(
+            &reprise[..],
+            [Evenement::SuccesObtenus { succes, .. }] if succes.len() == 2
+        ),
+        "{reprise:?}"
+    );
+    let camp = afficher(&mut joueurs);
+    assert!(
+        camp.texte.contains("Malvoise a une demande pour vous."),
+        "{}",
+        camp.texte
+    );
+    assert!(propose(&camp, |cle| *cle == Cle::Afficher(Vue::Heros)));
+    cliquer_sur(&mut joueurs, Cle::Afficher(Vue::Quetes));
+    cliquer_sur(&mut joueurs, Cle::Afficher(Vue::QuetesDuCamp));
+    let ecoutee = cliquer_sur(&mut joueurs, Cle::EcouterQuete(Personnage::Malvoise));
+    assert!(
+        matches!(&ecoutee[..], [Evenement::QueteEcoutee(_)]),
+        "{ecoutee:?}"
+    );
+    let remise = cliquer_sur(&mut joueurs, Cle::RemettreQuete(Personnage::Malvoise));
+    assert!(
+        matches!(&remise[..], [Evenement::QueteRemise(_)]),
+        "{remise:?}"
+    );
+    let quetes = afficher(&mut joueurs);
+    assert!(
+        quetes.texte.starts_with("Malvoise (1/4 quêtes accomplies)"),
+        "{}",
+        quetes.texte
+    );
+    cliquer_sur(&mut joueurs, Cle::Afficher(Vue::Camp));
+    cliquer_sur(&mut joueurs, Cle::Afficher(Vue::Heros));
+    cliquer_sur(&mut joueurs, Cle::Afficher(Vue::Succes(0)));
+    let titre = choisir(&mut joueurs, Cle::PorterTitre(0), "ombre-de-la-tour");
+    assert!(matches!(
+        &titre[..],
+        [Evenement::TitrePorte(Some(succes))] if succes.titre() == "Ombre de la Tour"
+    ));
+    let couleur = choisir(&mut joueurs, Cle::PorterCouleur, "abime");
+    assert_eq!(
+        couleur,
+        [Evenement::CouleurPortee(Some(CouleurDuHeros::Abime))]
+    );
+    // La royale attend tous les trophées.
+    let succes = afficher(&mut joueurs);
+    assert!(choisir_dans(&succes, |cle| *cle == Cle::PorterCouleur, "royale").is_none());
+    cliquer_sur(&mut joueurs, Cle::Afficher(Vue::Trophees));
+    let trophees = afficher(&mut joueurs);
+    assert!(
+        trophees.texte == "Aucun trophée n'orne encore le camp.",
+        "{}",
+        trophees.texte
+    );
+    cliquer_sur(&mut joueurs, Cle::Afficher(Vue::Heros));
+    let heros = afficher(&mut joueurs);
+    assert_eq!(
+        heros.sprite,
+        Some(Illustration::Seul(Portrait {
+            espece: EspeceId::new("heros-mage"),
+            shiny: false,
+            couleur: Some(CouleurDuHeros::Abime),
+        }))
+    );
+    assert!(heros.piece_jointe().is_some());
+    cliquer_sur(&mut joueurs, Cle::Afficher(Vue::Camp));
+    let camp = afficher(&mut joueurs);
+    assert!(
+        camp.texte
+            .starts_with("Camp de base (Aldric, Ombre de la Tour ; Mage)."),
+        "{}",
+        camp.texte
+    );
+    let _ = fs::remove_dir_all(dossier);
 }

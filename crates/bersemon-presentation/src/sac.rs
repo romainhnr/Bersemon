@@ -56,6 +56,7 @@ impl SorteAJeter {
             Objet::PhiltresChromatiques(_) => Objet::PhiltresChromatiques(nombre),
             Objet::CharmesDeGarde(_) => Objet::CharmesDeGarde(nombre),
             Objet::Filets(filet, _) => Objet::Filets(*filet, nombre),
+            Objet::ObjetDeQuete(quete) => Objet::ObjetDeQuete(quete.clone()),
         }
     }
 }
@@ -110,6 +111,13 @@ pub fn sortes_a_jeter(sac: &Inventaire) -> Vec<SorteAJeter> {
     );
     let nombre = sac.charmes_de_garde();
     ajouter(Objet::CharmesDeGarde(1), nombre, charmes_de_garde(nombre));
+    for objet in sac.objets_de_quete() {
+        ajouter(
+            Objet::ObjetDeQuete(objet.quete().clone()),
+            1,
+            objet.nom().to_string(),
+        );
+    }
     for (ressource, nombre) in sac.ressources() {
         ajouter(
             Objet::Ressources(ressource.id().clone(), 1),

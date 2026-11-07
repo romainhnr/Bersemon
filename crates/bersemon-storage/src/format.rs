@@ -28,13 +28,14 @@ use bersemon_core::horodatage::Horodatage;
 use bersemon_core::humain::HumainId;
 use bersemon_core::inventaire::Inventaire;
 use bersemon_core::machines::{Entrainement, Machines, Pieges};
-use bersemon_core::monstre::{EtatMonstre, Monstre, rayon_chromatique};
+use bersemon_core::monstre::{EtatMonstre, Monstre, choc_chromatique};
 use bersemon_core::niveau::Niveau;
 use bersemon_core::nom::Nom;
 use bersemon_core::partie::{AttaqueAChoisir, Decouvertes, EtatPartie, Partie};
 use bersemon_core::peche::Peche;
 use bersemon_core::pierre::PierreDEvolution;
 use bersemon_core::quete::{Avancement, EtatDeQuete, JournalDesQuetes, Objectif, Periode, Quete};
+use bersemon_core::quete_du_camp::{EtatDesQuetes, Personnage, QueteId};
 use bersemon_core::recompenses_du_codex::PalierDuCodex;
 use bersemon_core::relations::{Palmares, Relations};
 use bersemon_core::ressource::RessourceId;
@@ -43,13 +44,14 @@ use bersemon_core::sauvegarde::ErreurSauvegarde;
 use bersemon_core::soin::Soin;
 use bersemon_core::stats::{Stats, ValeursInternes};
 use bersemon_core::statut::Statut;
+use bersemon_core::succes::{CouleurDuHeros, SuccesId};
 use bersemon_core::tour::RecordsDeLaTour;
 use bersemon_core::tutoriel::Conseil;
 use bersemon_core::zone::{Zone, ZoneId};
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 37;
+pub(crate) const VERSION: u64 = 38;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -105,9 +107,9 @@ const VERSION_DES_PALIERS_DU_CODEX: u64 = 29;
 /// 13.3).
 const VERSION_DU_SAC: u64 = 30;
 
-/// La version de la sauvegarde où tout monstre shiny connaît le Rayon
+/// La version de la sauvegarde où tout monstre shiny connaît le Choc
 /// chromatique, et où le héros peut être shiny (sections 4.1 et 5.1).
-const VERSION_DU_RAYON_CHROMATIQUE: u64 = 35;
+const VERSION_DU_CHOC_CHROMATIQUE: u64 = 35;
 
 /// Ce que reçoit, au coffre, une partie qui reprend une sauvegarde
 /// antérieure aux filets (hypothèse retenue, Q102).
@@ -258,6 +260,18 @@ pub(crate) struct SauvegardeV14 {
     quetes_du_jour: Option<AvancementV37>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     quetes_de_la_semaine: Option<AvancementV37>,
+    /// Depuis la version 38 : les succès obtenus, par leur identifiant
+    /// (section 4.5), et l'avancée des quêtes des personnages du camp
+    /// (section 13.13).
+    #[serde(default)]
+    succes: Vec<String>,
+    #[serde(default)]
+    quetes_du_camp_en_cours: Vec<String>,
+    #[serde(default)]
+    quetes_du_camp_accomplies: Vec<String>,
+    /// "malvoise", "gunther" ou "ansgar".
+    #[serde(default)]
+    services_ameliores: Vec<String>,
 }
 
 /// Le numéro du jour, ou de la semaine, et ses quêtes, chacune par
@@ -451,6 +465,9 @@ struct InventaireV7 {
     /// Depuis la version 27 (section 11.2).
     #[serde(default)]
     filets: Vec<FiletV27>,
+    /// Depuis la version 38 (section 13.13) : l'identifiant de leur quête.
+    #[serde(default)]
+    objets_de_quete: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -566,6 +583,12 @@ struct HerosV1 {
     /// Depuis la version 35 (section 4.1). Avant, aucun héros n'est shiny.
     #[serde(default)]
     shiny: bool,
+    /// Depuis la version 38 (section 4.5) : l'identifiant du succès dont il
+    /// porte le titre, et sa couleur.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    titre: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    couleur: Option<String>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -693,6 +716,14 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV14 {
                 .statut()
                 .map(|statut| nom_de_statut(statut).to_string()),
             shiny: partie.heros().est_shiny(),
+            titre: partie
+                .heros()
+                .titre()
+                .map(|titre| titre.as_str().to_string()),
+            couleur: partie
+                .heros()
+                .couleur()
+                .map(|couleur| couleur.identifiant().to_string()),
         },
         equipe: collection.equipe().iter().map(depuis_monstre).collect(),
         camp: collection.camp().iter().map(depuis_monstre).collect(),
@@ -857,7 +888,41 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV14 {
             .collect(),
         quetes_du_jour: depuis_avancement(partie.quetes().avancement(Periode::Jour)),
         quetes_de_la_semaine: depuis_avancement(partie.quetes().avancement(Periode::Semaine)),
+        succes: partie
+            .succes_obtenus()
+            .iter()
+            .map(|succes| succes.as_str().to_string())
+            .collect(),
+        quetes_du_camp_en_cours: ids_de_quetes(&partie.quetes_du_camp().en_cours),
+        quetes_du_camp_accomplies: ids_de_quetes(&partie.quetes_du_camp().accomplies),
+        services_ameliores: partie
+            .quetes_du_camp()
+            .services_ameliores
+            .iter()
+            .map(|personnage| personnage.identifiant().to_string())
+            .collect(),
     }
+}
+
+fn ids_de_quetes(quetes: &[QueteId]) -> Vec<String> {
+    quetes
+        .iter()
+        .map(|quete| quete.as_str().to_string())
+        .collect()
+}
+
+fn vers_quetes(ids: &[String]) -> Vec<QueteId> {
+    ids.iter().map(|id| QueteId::new(id)).collect()
+}
+
+fn lire_couleur(texte: &str) -> Result<CouleurDuHeros, ErreurSauvegarde> {
+    CouleurDuHeros::depuis_identifiant(texte)
+        .ok_or_else(|| ErreurSauvegarde::Incoherente(format!("couleur inconnue : {texte}")))
+}
+
+fn lire_personnage(texte: &str) -> Result<Personnage, ErreurSauvegarde> {
+    Personnage::depuis_identifiant(texte)
+        .ok_or_else(|| ErreurSauvegarde::Incoherente(format!("personnage inconnu : {texte}")))
 }
 
 fn palier_en_texte(palier: PalierDuCodex) -> String {
@@ -946,6 +1011,11 @@ fn depuis_inventaire(inventaire: &Inventaire) -> InventaireV7 {
                 nombre,
             })
             .collect(),
+        objets_de_quete: inventaire
+            .objets_de_quete()
+            .iter()
+            .map(|objet| objet.quete().as_str().to_string())
+            .collect(),
     }
 }
 
@@ -987,6 +1057,13 @@ fn vers_inventaire(
     for filet in inventaire.filets {
         resultat.ajouter_filets(lire_filet(&filet.filet)?, filet.nombre);
     }
+    // Un objet de quête disparu du jeu ne sert plus : il est oublié, comme
+    // une ressource disparue.
+    for quete in inventaire.objets_de_quete {
+        if let Some(objet) = catalogue.objet_de_quete(&QueteId::new(&quete)) {
+            resultat.ajouter_objet_de_quete(objet);
+        }
+    }
     Ok(resultat)
 }
 
@@ -1007,6 +1084,34 @@ pub(crate) fn vers_partie(
             sauvegarde.heros.statut.as_deref().map(statut).transpose()?,
         )
         .avec_shiny(sauvegarde.heros.shiny);
+    let succes_obtenus: Vec<SuccesId> = sauvegarde
+        .succes
+        .iter()
+        .map(|id| SuccesId::new(id))
+        .collect();
+    // Un titre ne se porte que d'un succès obtenu (section 4.5).
+    let titre = sauvegarde
+        .heros
+        .titre
+        .as_deref()
+        .map(SuccesId::new)
+        .filter(|titre| succes_obtenus.contains(titre));
+    let couleur = sauvegarde
+        .heros
+        .couleur
+        .as_deref()
+        .map(lire_couleur)
+        .transpose()?;
+    let heros = heros.avec_apparence(titre, couleur);
+    let quetes_du_camp = EtatDesQuetes {
+        en_cours: vers_quetes(&sauvegarde.quetes_du_camp_en_cours),
+        accomplies: vers_quetes(&sauvegarde.quetes_du_camp_accomplies),
+        services_ameliores: sauvegarde
+            .services_ameliores
+            .iter()
+            .map(|id| lire_personnage(id))
+            .collect::<Result<Vec<_>, _>>()?,
+    };
     // Avant la version 24, aucun monstre n'est loué (section 14.2).
     if sauvegarde.version < VERSION_DES_LOCATIONS {
         for monstre in sauvegarde.equipe.iter_mut().chain(&mut sauvegarde.camp) {
@@ -1313,6 +1418,8 @@ pub(crate) fn vers_partie(
             cote: sauvegarde.cote_de_l_arene,
             combats_entre_joueurs: sauvegarde.combats_d_arene,
         },
+        succes_obtenus,
+        quetes_du_camp,
         decouvertes: Decouvertes {
             annexes_ouvertes: sauvegarde
                 .annexes_ouvertes
@@ -1328,11 +1435,11 @@ pub(crate) fn vers_partie(
         quetes,
     })
     .map_err(incoherente)?;
-    // Avant la version 35, les shiny ne connaissaient pas le Rayon
+    // Avant la version 35, les shiny ne connaissaient pas le Choc
     // chromatique : ceux de l'équipe et du camp l'apprennent à la reprise
     // (section 5.1).
-    if sauvegarde.version < VERSION_DU_RAYON_CHROMATIQUE {
-        partie.enseigner_le_rayon_chromatique_aux_shiny();
+    if sauvegarde.version < VERSION_DU_CHOC_CHROMATIQUE {
+        partie.enseigner_le_choc_chromatique_aux_shiny();
     }
     Ok(partie)
 }
@@ -1459,7 +1566,7 @@ fn vers_attaque_a_choisir(
     let attaque = espece
         .attaque_apprise(&id_attaque)
         .cloned()
-        .or_else(|| rayon_du_shiny(monstre.est_shiny(), &id_attaque))
+        .or_else(|| choc_du_shiny(monstre.est_shiny(), &id_attaque))
         .ok_or_else(|| ErreurSauvegarde::AttaqueInconnue {
             espece: espece.id().as_str().to_string(),
             attaque: a_choisir.attaque,
@@ -1470,10 +1577,10 @@ fn vers_attaque_a_choisir(
     })
 }
 
-/// Le Rayon chromatique, que seul un shiny connaît (section 5.1).
-fn rayon_du_shiny(shiny: bool, id: &AttaqueId) -> Option<Attaque> {
-    let rayon = rayon_chromatique();
-    (shiny && rayon.id() == id).then_some(rayon)
+/// Le Choc chromatique, que seul un shiny connaît (section 5.1).
+fn choc_du_shiny(shiny: bool, id: &AttaqueId) -> Option<Attaque> {
+    let choc = choc_chromatique();
+    (shiny && choc.id() == id).then_some(choc)
 }
 
 fn depuis_monstre(monstre: &Monstre) -> MonstreV1 {
@@ -1529,7 +1636,7 @@ fn vers_monstre(
         .ok_or_else(|| ErreurSauvegarde::EspeceInconnue(monstre.espece.clone()))?;
     // Une attaque hors de la liste de l'espèce vient d'une capsule de son
     // type (section 13.10), c'est l'attaque d'œuf de sa famille (section
-    // 13.11), ou le Rayon chromatique d'un shiny (section 5.1).
+    // 13.11), ou le Choc chromatique d'un shiny (section 5.1).
     let attaques = monstre
         .attaques
         .iter()
@@ -1552,7 +1659,7 @@ fn vers_monstre(
                 .cloned()
                 .or_else(de_capsule)
                 .or_else(d_oeuf)
-                .or_else(|| rayon_du_shiny(monstre.shiny, &id_attaque))
+                .or_else(|| choc_du_shiny(monstre.shiny, &id_attaque))
                 .ok_or_else(|| ErreurSauvegarde::AttaqueInconnue {
                     espece: monstre.espece.clone(),
                     attaque: id.clone(),

@@ -16,7 +16,7 @@ use crate::ame::{Gardien, MarchandId, MarchandMort};
 use crate::amelioration::{
     Amelioration, PlanDAmelioration, PlanDeFabrication, PlanDesFilets, PlanDuCharme,
 };
-use crate::arene::{AdversaireDeLArene, FosseAuxDamnes, RecompenseDeLArene};
+use crate::arene::{AdversaireDeLArene, FosseAuxDamnes, PALIERS_DE_LA_FOSSE, RecompenseDeLArene};
 use crate::attaque::{Attaque, AttaqueId, Categorie, EffetSecondaire};
 use crate::beherit::Invocation;
 use crate::booster::Booster;
@@ -37,11 +37,15 @@ use crate::meteo::Meteo;
 use crate::niveau::Niveau;
 use crate::peche::{ParametresPeche, Pecheur};
 use crate::pierre::PierreDEvolution;
+use crate::quete_du_camp::{
+    DemandeDeQuete, Exploration, ObjetDeQuete, OuvertureDeQuete, Personnage, Quete, QueteId,
+};
 use crate::recompenses_du_codex::{PalierDuCodex, RecompenseDuCodex};
 use crate::ressource::{Ressource, RessourceId};
 use crate::soin::Soin;
 use crate::stats::Stats;
 use crate::statut::Statut;
+use crate::succes::{ConditionDeSucces, CouleurDuHeros, Succes};
 use crate::tour::TourSansFond;
 use crate::traque::{Apotre, Chapitre, Indice, Piste};
 use crate::tutoriel::Conseil;
@@ -459,6 +463,11 @@ pub struct ContenuV1 {
     annexes: Vec<Annexe>,
     /// Ouvertes à la chute du Démiurge (section 9.10).
     zones_legendaires: Vec<ZoneLegendaire>,
+    /// Dans l'ordre de l'écran des succès (section 4.5).
+    succes: Vec<Succes>,
+    /// Les chaînes des personnages du camp, chacune dans son ordre (section
+    /// 13.13).
+    quetes_du_camp: Vec<Quete>,
 }
 
 impl ContenuV1 {
@@ -1925,7 +1934,7 @@ impl ContenuV1 {
                 .expect("plan des filets conforme aux règles")
             })
             .collect();
-        Self {
+        let mut contenu = Self {
             especes,
             zones,
             piste,
@@ -1953,7 +1962,20 @@ impl ContenuV1 {
                 racines,
             ],
             zones_legendaires,
-        }
+            succes: Vec::new(),
+            quetes_du_camp: Vec::new(),
+        };
+        contenu.succes = creer_succes(contenu.annexes.len(), PALIERS_DE_LA_FOSSE);
+        contenu.quetes_du_camp = creer_quetes(&contenu.especes, &contenu.zones, &contenu.annexes);
+        contenu
+    }
+
+    pub fn succes(&self) -> &[Succes] {
+        &self.succes
+    }
+
+    pub fn quetes_du_camp(&self) -> &[Quete] {
+        &self.quetes_du_camp
     }
 
     pub fn annexes(&self) -> &[Annexe] {
@@ -1964,6 +1986,13 @@ impl ContenuV1 {
     #[cfg(test)]
     pub(crate) fn avec_annexes(mut self, annexes: Vec<Annexe>) -> Self {
         self.annexes = annexes;
+        self
+    }
+
+    /// Pour les tests : une quête dans une zone qu'une partie de test atteint.
+    #[cfg(test)]
+    pub(crate) fn avec_quetes_du_camp(mut self, quetes: Vec<Quete>) -> Self {
+        self.quetes_du_camp = quetes;
         self
     }
 
@@ -2140,6 +2169,15 @@ impl Catalogue for ContenuV1 {
             .iter()
             .filter_map(Espece::ressource)
             .find(|ressource| ressource.id() == id)
+            .cloned()
+    }
+
+    fn objet_de_quete(&self, quete: &QueteId) -> Option<ObjetDeQuete> {
+        self.quetes_du_camp
+            .iter()
+            .filter_map(Quete::exploration)
+            .map(Exploration::objet)
+            .find(|objet| objet.quete() == quete)
             .cloned()
     }
 
@@ -9029,6 +9067,604 @@ fn tresors_d_annexe() -> Vec<(Tresor, u32)> {
     ];
     tresors.extend(Booster::TOUS.map(|booster| (Tresor::Booster(booster), 5)));
     tresors
+}
+
+/// Section 50 de docs/contenu-v1.md : les Apôtres, dans l'ordre de la
+/// traque, avec l'identifiant du succès, le titre, l'Apôtre et son trophée.
+const FLEAUX: [(&str, &str, &str, &str, &str); 13] = [
+    (
+        "fleau-du-baron",
+        "Fléau du Baron",
+        "baron-pendu",
+        "abattre le Baron pendu",
+        "La corde du Baron pendu, nouée au poteau du camp.",
+    ),
+    (
+        "fleau-de-l-abbesse",
+        "Fléau de l'Abbesse",
+        "abbesse-ecorchee",
+        "abattre l'Abbesse écorchée",
+        "Le voile de l'Abbesse écorchée, tendu sur un cadre de bois.",
+    ),
+    (
+        "fleau-du-margrave",
+        "Fléau du Margrave",
+        "margrave-de-givre",
+        "abattre le Margrave de givre",
+        "Un éclat de la couronne du Margrave de givre, qui ne fond jamais.",
+    ),
+    (
+        "fleau-de-l-amiral",
+        "Fléau de l'Amiral",
+        "amiral-noye",
+        "abattre l'Amiral noyé",
+        "Le tricorne de l'Amiral noyé, toujours ruisselant, accroché à une lance.",
+    ),
+    (
+        "fleau-du-prevot",
+        "Fléau du Prévôt",
+        "prevot-des-fosses",
+        "abattre le Prévôt des fosses",
+        "Le fouet du Prévôt des fosses, enroulé sur un clou.",
+    ),
+    (
+        "fleau-de-la-duchesse",
+        "Fléau de la Duchesse",
+        "duchesse-sanguine",
+        "abattre la Duchesse sanguine",
+        "La coupe de la Duchesse sanguine, vide, posée sur une souche.",
+    ),
+    (
+        "fleau-de-l-eveque",
+        "Fléau de l'Évêque",
+        "eveque-des-os",
+        "abattre l'Évêque des os",
+        "La crosse de l'Évêque des os, plantée près de l'entrée.",
+    ),
+    (
+        "fleau-du-connetable",
+        "Fléau du Connétable",
+        "connetable-boucher",
+        "abattre le Connétable boucher",
+        "Le couperet du Connétable boucher, fiché dans un billot.",
+    ),
+    (
+        "fleau-du-chancelier",
+        "Fléau du Chancelier",
+        "chancelier-aux-mille-yeux",
+        "abattre le Chancelier aux mille yeux",
+        "Le sceau du Chancelier aux mille yeux, dont aucun œil ne s'ouvre plus.",
+    ),
+    (
+        "fleau-du-prince",
+        "Fléau du Prince",
+        "prince-de-braise",
+        "abattre le Prince de braise",
+        "Une braise du Prince, qui couve dans une lanterne de fer.",
+    ),
+    (
+        "fleau-du-senechal",
+        "Fléau du Sénéchal",
+        "senechal-des-orages",
+        "abattre le Sénéchal des orages",
+        "Le cor du Sénéchal des orages, muet, pendu à une branche.",
+    ),
+    (
+        "fleau-de-la-reine-mere",
+        "Fléau de la Reine-mère",
+        "reine-mere-de-chair",
+        "abattre la Reine-mère de chair",
+        "Une mèche de la Reine-mère de chair, tressée et séchée.",
+    ),
+    (
+        "fleau-du-roi-sans-visage",
+        "Fléau du Roi sans visage",
+        "roi-sans-visage",
+        "abattre le Roi sans visage",
+        "Le masque vide du Roi sans visage, posé face contre terre.",
+    ),
+];
+
+/// Section 50 : les légendaires capturés.
+const LEGENDES: [(&str, &str, &str, &str, &str); 3] = [
+    (
+        "legende-des-abysses",
+        "Légende des Abysses",
+        "leviathan",
+        "capturer Léviathan",
+        "Une écaille de Léviathan, grande comme un bouclier.",
+    ),
+    (
+        "legende-des-terres-arides",
+        "Légende des Terres arides",
+        "behemoth",
+        "capturer Béhémoth",
+        "Une corne de Béhémoth, dressée comme une pierre levée.",
+    ),
+    (
+        "legende-du-ciel-dechire",
+        "Légende du Ciel déchiré",
+        "ziz",
+        "capturer Ziz",
+        "Une plume de Ziz, plus haute qu'une tente.",
+    ),
+];
+
+/// Section 50 de docs/contenu-v1.md, dans l'ordre de l'écran des succès.
+/// Les seuils qui dépendent du contenu suivent ses annexes et la Fosse.
+fn creer_succes(annexes: usize, paliers_de_la_fosse: u8) -> Vec<Succes> {
+    let mut succes = vec![
+        Succes::new(
+            "nomade",
+            "Nomade",
+            "mener une expédition au bout",
+            ConditionDeSucces::ExpeditionMenee,
+        ),
+        Succes::new(
+            "naturaliste",
+            "Naturaliste",
+            "capturer 30 espèces du codex",
+            ConditionDeSucces::EspecesCapturees(30),
+        ),
+        Succes::new(
+            "encyclopediste",
+            "Encyclopédiste",
+            "compléter le codex",
+            ConditionDeSucces::CodexComplet,
+        )
+        .avec_trophee(
+            "Le bestiaire complet, relié de cuir noir, ouvert sur un lutrin près du feu.",
+        ),
+        Succes::new(
+            "oeil-de-lynx",
+            "Œil-de-lynx",
+            "avoir un monstre shiny dans l'équipe ou au camp",
+            ConditionDeSucces::MonstresShiny(1),
+        ),
+        Succes::new(
+            "porte-lueur",
+            "Porte-lueur",
+            "avoir 5 monstres shiny à la fois dans l'équipe et au camp",
+            ConditionDeSucces::MonstresShiny(5),
+        )
+        .avec_couleur(CouleurDuHeros::Nacre),
+        Succes::new(
+            "lueur-incarnee",
+            "Lueur incarnée",
+            "avoir un héros shiny",
+            ConditionDeSucces::HerosShiny,
+        ),
+        Succes::new(
+            "veteran",
+            "Vétéran",
+            "mener un monstre au niveau 50",
+            ConditionDeSucces::Niveau(50),
+        ),
+        Succes::new(
+            "legende-vivante",
+            "Légende vivante",
+            "mener un monstre au niveau 100",
+            ConditionDeSucces::Niveau(100),
+        ),
+        Succes::new(
+            "brise-chaines",
+            "Brise-chaînes",
+            "vaincre le Bourreau",
+            ConditionDeSucces::HumainVaincu(HumainId::new("bourreau")),
+        ),
+    ];
+    succes.extend(
+        FLEAUX
+            .iter()
+            .map(|(id, titre, apotre, description, trophee)| {
+                Succes::new(
+                    id,
+                    titre,
+                    description,
+                    ConditionDeSucces::ApotreAbattu(EspeceId::new(*apotre)),
+                )
+                .avec_trophee(trophee)
+            }),
+    );
+    succes.push(
+        Succes::new(
+            "deicide",
+            "Déicide",
+            "abattre le Démiurge",
+            ConditionDeSucces::DemiurgeAbattu,
+        )
+        .avec_trophee("Un fragment de l'Éclipse, pierre noire qui boit la lumière.")
+        .avec_couleur(CouleurDuHeros::Cendre),
+    );
+    succes.extend(
+        LEGENDES
+            .iter()
+            .map(|(id, titre, legendaire, description, trophee)| {
+                Succes::new(
+                    id,
+                    titre,
+                    description,
+                    ConditionDeSucces::LegendaireCapture(EspeceId::new(*legendaire)),
+                )
+                .avec_trophee(trophee)
+            }),
+    );
+    succes.extend([
+        Succes::new(
+            "idole-de-la-fosse",
+            "Idole de la Fosse",
+            "vaincre le dernier palier de la Fosse aux damnés",
+            ConditionDeSucces::PaliersDeLaFosse(paliers_de_la_fosse),
+        )
+        .avec_trophee("La chaîne du Champion de la Fosse, jetée au pied du feu.")
+        .avec_couleur(CouleurDuHeros::Sang),
+        Succes::new(
+            "ombre-de-la-tour",
+            "Ombre de la Tour",
+            "franchir 50 étapes de la Tour sans fond, seul",
+            ConditionDeSucces::EtapesDeLaTour(50),
+        )
+        .avec_couleur(CouleurDuHeros::Abime),
+        Succes::new(
+            "duelliste",
+            "Duelliste",
+            "gagner 10 duels",
+            ConditionDeSucces::DuelsGagnes(10),
+        ),
+        Succes::new(
+            "main-d-or",
+            "Main d'or",
+            "avoir 10 000 pièces d'argent, sac et coffre réunis",
+            ConditionDeSucces::Argent(10_000),
+        ),
+        Succes::new(
+            "architecte",
+            "Architecte",
+            "mener toutes les améliorations du camp à leur niveau maximal",
+            ConditionDeSucces::AmeliorationsAuMaximum,
+        ),
+        Succes::new(
+            "fer-de-lance",
+            "Fer de lance",
+            "porter une arme et une armure du palier 8",
+            ConditionDeSucces::PalierDEquipement(8),
+        ),
+        Succes::new(
+            "cartographe",
+            "Cartographe",
+            &format!("ouvrir les {annexes} zones annexes"),
+            ConditionDeSucces::AnnexesOuvertes(annexes),
+        ),
+        Succes::new(
+            "complice-de-malvoise",
+            "Complice de Malvoise",
+            "accomplir les 4 quêtes de Malvoise",
+            ConditionDeSucces::QuetesAccomplies(Personnage::Malvoise),
+        )
+        .avec_trophee("Le psautier de Frère Malvoise, ouvert à la page d'Isaure."),
+        Succes::new(
+            "eleve-de-gunther",
+            "Élève de Gunther",
+            "accomplir les 4 quêtes de Gunther",
+            ConditionDeSucces::QuetesAccomplies(Personnage::Gunther),
+        )
+        .avec_trophee("La lame noire de Konrad, plantée au bord du camp."),
+        Succes::new(
+            "camarade-d-ansgar",
+            "Camarade d'Ansgar",
+            "accomplir les 4 quêtes d'Ansgar",
+            ConditionDeSucces::QuetesAccomplies(Personnage::Ansgar),
+        )
+        .avec_trophee("Le filet de l'équipage d'Edwin, tendu entre deux pieux près de l'étang."),
+    ]);
+    succes
+}
+
+/// Une quête de la section 52 de docs/contenu-v1.md, avant que ses
+/// références au contenu soient résolues.
+struct FicheQuete {
+    id: &'static str,
+    personnage: Personnage,
+    titre: &'static str,
+    /// La zone qui l'ouvre ; une annexe si `ouverte_par_annexe`.
+    ouverture: &'static str,
+    ouverte_par_annexe: bool,
+    demande: FicheDemande,
+    argent: u32,
+    objets: fn(Inventaire) -> Inventaire,
+    texte_de_la_demande: &'static str,
+    texte_de_la_remise: &'static str,
+}
+
+enum FicheDemande {
+    /// L'espèce dont la ressource est demandée, et leur nombre.
+    Rapporter(&'static str, u32),
+    Explorer {
+        zone: &'static str,
+        etape: u32,
+        objet: &'static str,
+        gardien: &'static str,
+        niveau: u8,
+        rencontre: &'static str,
+        prise: &'static str,
+    },
+}
+
+const QUETES: [FicheQuete; 12] = [
+    FicheQuete {
+        id: "lueur-du-crane",
+        personnage: Personnage::Malvoise,
+        titre: "La lueur du crâne",
+        ouverture: "marais",
+        ouverte_par_annexe: false,
+        demande: FicheDemande::Rapporter("feu-follet", 5),
+        argent: 150,
+        objets: |objets| objets.avec_soins(Soin::Potion, 3),
+        texte_de_la_demande: "Malvoise fait tourner son crâne entre ses doigts. \"Il s'éteint. Les feux follets du Marais brûlent de ce qui reste des noyés : rapporte-m'en cinq poignées de cendre, et il verra de nouveau clair.\"",
+        texte_de_la_remise: "Malvoise souffle la cendre dans les orbites du crâne, qui s'allument d'une lueur verte. \"Il voit. C'était le crâne de mon maître, à l'Abbaye des Cendres. Il m'a appris à lire les morts ; on l'a brûlé pour cela.\"",
+    },
+    FicheQuete {
+        id: "psautier-de-malvoise",
+        personnage: Personnage::Malvoise,
+        titre: "Le psautier de Frère Malvoise",
+        ouverture: "abbaye",
+        ouverte_par_annexe: false,
+        demande: FicheDemande::Explorer {
+            zone: "abbaye",
+            etape: 3,
+            objet: "Psautier de Frère Malvoise",
+            gardien: "goule",
+            niveau: 27,
+            rencontre: "Sous une dalle descellée du chœur, un psautier relié de cuir noir. Une goule, accroupie dessus, relève la tête et gronde.",
+            prise: "Sur la garde du psautier, une main appliquée a écrit \"Frère Malvoise\". Vous le glissez dans votre sac.",
+        },
+        argent: 400,
+        objets: |objets| objets.avec_philtres_chromatiques(1),
+        texte_de_la_demande: "\"L'Abbaye des Cendres est ouverte, dis-tu ? J'y ai été moine. Frère Malvoise, archiviste. J'ai caché sous les dalles du chœur un psautier noté de ma main. Les goules rôdent là où l'on enterre mal : rapporte-le-moi.\"",
+        texte_de_la_remise: "Malvoise tourne les pages sans un mot, puis s'arrête sur un nom : Isaure. \"Ma sœur. Elle chantait au chœur quand l'Abbesse a commencé à écorcher les novices. Je n'ai rien fait. J'ai fui avec mes livres.\"",
+    },
+    FicheQuete {
+        id: "prieres-pour-isaure",
+        personnage: Personnage::Malvoise,
+        titre: "Des prières pour Isaure",
+        ouverture: "catacombes-de-sainte-ombre",
+        ouverte_par_annexe: false,
+        demande: FicheDemande::Rapporter("moine-psalmodiant", 6),
+        argent: 1_000,
+        objets: |objets| objets.avec_capsules_d_habilete(3),
+        texte_de_la_demande: "\"Les moines des Catacombes psalmodient encore, morts depuis des siècles. Leurs chapelets d'os portent des prières que plus personne ne dit. Rapporte-m'en six : il m'en faut pour retenir une âme qui ne trouve pas le repos.\"",
+        texte_de_la_remise: "Malvoise noue les chapelets autour du crâne, un à un. \"Isaure ne repose pas. Je l'entends, la nuit, qui chante sous le camp. Ces prières la retiendront, le temps que je trouve le reste.\"",
+    },
+    FicheQuete {
+        id: "page-du-codex-mortis",
+        personnage: Personnage::Malvoise,
+        titre: "La page du Codex Mortis",
+        ouverture: "haute-cite-dechue",
+        ouverte_par_annexe: false,
+        demande: FicheDemande::Explorer {
+            zone: "haute-cite-dechue",
+            etape: 3,
+            objet: "Page du Codex Mortis",
+            gardien: "oeil-errant",
+            niveau: 77,
+            rencontre: "Dans une salle de lecture éventrée, une page arrachée flotte au-dessus d'un pupitre, couverte d'une écriture qui bouge. Un œil errant se tourne vers vous.",
+            prise: "L'écriture cesse de bouger dès que vous touchez la page. Vous la pliez dans votre sac.",
+        },
+        argent: 3_000,
+        objets: |objets| objets.avec_philtres_chromatiques(1),
+        texte_de_la_demande: "\"La Haute-Cité avait la plus grande bibliothèque du monde. Le Codex Mortis y était enchaîné ; une de ses pages dit comment rendre le repos à une âme liée. Trouve-la, et j'achèverai ce que j'aurais dû faire il y a trente ans.\"",
+        texte_de_la_remise: "Malvoise lit la page à voix basse, puis la brûle au-dessus du crâne. Sous le camp, le chant s'arrête. \"Elle dort, enfin.\" Il reste longtemps silencieux. \"Je ne dois plus rien aux morts. Mes rites iront plus vite, désormais : mes mains ne tremblent plus.\"",
+    },
+    FicheQuete {
+        id: "tenailles-neuves",
+        personnage: Personnage::Gunther,
+        titre: "Des tenailles neuves",
+        ouverture: "vallee",
+        ouverte_par_annexe: false,
+        demande: FicheDemande::Rapporter("armure-hantee", 6),
+        argent: 200,
+        objets: |objets| {
+            objets
+                .avec_boosters(Booster::MoelleDeBete, 1)
+                .avec_boosters(Booster::EcorceDeFer, 1)
+        },
+        texte_de_la_demande: "Gunther essuie ses mains sur son tablier. \"Le Bourreau m'a pris mes outils et ne m'a laissé que ses chaînes. Les armures hantées font un bon acier : rapporte-m'en six fragments, que je me refasse des tenailles dignes de ce nom.\"",
+        texte_de_la_remise: "Gunther fond les fragments et martèle jusqu'à la nuit. Au matin, il vous montre des tenailles neuves. \"Mon fils aurait fait mieux. Konrad. Il avait la main plus fine que la mienne. Le Bourreau l'a gardé, lui aussi. Il n'est pas sorti.\"",
+    },
+    FicheQuete {
+        id: "marteau-de-hautefer",
+        personnage: Personnage::Gunther,
+        titre: "Le marteau de Hautefer",
+        ouverture: "col-du-givre-noir",
+        ouverte_par_annexe: false,
+        demande: FicheDemande::Explorer {
+            zone: "col-du-givre-noir",
+            etape: 3,
+            objet: "Marteau de Hautefer",
+            gardien: "troll-des-cavernes",
+            niveau: 36,
+            rencontre: "Dans les ruines d'une forge, sous la neige, un marteau repose sur une enclume fendue. Un troll des cavernes en a fait son oreiller ; il se lève, furieux.",
+            prise: "Le manche du marteau porte une marque : trois traits et une flamme. Vous le rangez dans votre sac.",
+        },
+        argent: 600,
+        objets: |objets| objets.avec_philtres_chromatiques(1),
+        texte_de_la_demande: "\"Mon village était au pied du Col : Hautefer. Les trolls l'ont pris, l'hiver où les Apôtres sont venus. Le marteau de mon père est resté sur l'enclume. S'il y est encore, rapporte-le-moi.\"",
+        texte_de_la_remise: "Gunther soupèse le marteau et rit pour la première fois. \"La marque de Hautefer. Mon père, et son père avant lui.\" Il le pend au-dessus de l'enclume. \"Il ne servira qu'aux beaux ouvrages.\"",
+    },
+    FicheQuete {
+        id: "lame-pour-konrad",
+        personnage: Personnage::Gunther,
+        titre: "Une lame pour Konrad",
+        ouverture: "mines-de-fer-noir",
+        ouverte_par_annexe: false,
+        demande: FicheDemande::Rapporter("golem-de-fer-noir", 8),
+        argent: 1_200,
+        objets: |objets| objets.avec_capsules_d_habilete(3),
+        texte_de_la_demande: "\"On dit que le fer des Mines ne rouille jamais, parce que les morts le gardent. Il m'en faut huit éclats : je veux forger une lame pour la tombe de Konrad. Il n'en a pas, de tombe. Il aura une lame.\"",
+        texte_de_la_remise: "Gunther forge trois jours. La lame est simple, sans ornement, noire comme les nuits du Col. Il la plante en terre au bord du camp. \"Voilà. Ici repose Konrad, apprenti de Hautefer.\"",
+    },
+    FicheQuete {
+        id: "coeur-de-braise",
+        personnage: Personnage::Gunther,
+        titre: "Le cœur de braise",
+        ouverture: "gorge-de-braise",
+        ouverte_par_annexe: false,
+        demande: FicheDemande::Explorer {
+            zone: "gorge-de-braise",
+            etape: 3,
+            objet: "Cœur de braise",
+            gardien: "golem-de-magma",
+            niveau: 82,
+            rencontre: "Au bord d'une coulée, une pierre rouge palpite comme un cœur. Un golem de magma la porte dans sa poitrine ouverte.",
+            prise: "Arraché au golem, le cœur de braise continue de battre, tiède, presque doux. Vous l'enveloppez au fond de votre sac.",
+        },
+        argent: 3_000,
+        objets: |objets| objets.avec_philtres_chromatiques(1),
+        texte_de_la_demande: "\"Au fond de la Gorge bat un cœur de braise qui ne refroidit jamais. Une forge qui en a un ne s'éteint plus. Avec lui, je travaillerai plus vite que je ne l'ai jamais fait.\"",
+        texte_de_la_remise: "Gunther pose le cœur de braise au fond du foyer. La forge s'embrase d'une flamme blanche. \"Konrad aurait aimé voir ça.\" Il reprend le marteau de Hautefer. \"Désormais, mes ouvrages iront plus vite.\"",
+    },
+    FicheQuete {
+        id: "leurres-de-plumes",
+        personnage: Personnage::Ansgar,
+        titre: "Des leurres de plumes",
+        ouverture: "marais",
+        ouverte_par_annexe: false,
+        demande: FicheDemande::Rapporter("corbeau", 5),
+        argent: 150,
+        objets: |objets| objets.avec_filets(Filet::Chanvre, 5),
+        texte_de_la_demande: "Ansgar ravaude un filet, les doigts gourds. \"Mes leurres sont restés dans la cabane. Avec cinq plumes de corbeau, je m'en ferai de nouveaux, et le poisson de l'étang mordra mieux.\"",
+        texte_de_la_remise: "Ansgar noue les plumes avec une patience infinie. \"Mon fils, Edwin, les faisait mieux que moi. Il est parti en mer, au Port. Les marins disaient que la mer y rend les noyés. Elle ne me l'a jamais rendu.\"",
+    },
+    FicheQuete {
+        id: "medaillon-d-edwin",
+        personnage: Personnage::Ansgar,
+        titre: "Le médaillon d'Edwin",
+        ouverture: "port-des-noyes",
+        ouverte_par_annexe: false,
+        demande: FicheDemande::Explorer {
+            zone: "port-des-noyes",
+            etape: 3,
+            objet: "Médaillon d'Edwin",
+            gardien: "sirene-putride",
+            niveau: 51,
+            rencontre: "Sur un ponton pourri, une sirène putride chante, un médaillon d'étain pendu à son cou.",
+            prise: "Le médaillon est terni, mais le visage gravé ressemble à Ansgar, en plus jeune. Vous le glissez dans votre sac.",
+        },
+        argent: 800,
+        objets: |objets| objets.avec_philtres_chromatiques(1),
+        texte_de_la_demande: "\"Le Port des Noyés. Edwin y a embarqué il y a vingt ans. Il portait un médaillon d'étain où j'avais gravé mon visage, tant bien que mal. Si la mer rend les noyés, elle rend peut-être aussi ce qu'ils portaient.\"",
+        texte_de_la_remise: "Ansgar serre le médaillon dans son poing, longtemps. \"Elle l'avait, la sirène ? Alors il n'est pas resté seul, au fond.\" Il le porte désormais à son cou.",
+    },
+    FicheQuete {
+        id: "barque-pour-edwin",
+        personnage: Personnage::Ansgar,
+        titre: "Une barque pour Edwin",
+        ouverture: "mines-de-fer-noir",
+        ouverte_par_annexe: false,
+        demande: FicheDemande::Rapporter("crabe-necrophage", 8),
+        argent: 1_200,
+        objets: |objets| objets.avec_capsules_d_habilete(3),
+        texte_de_la_demande: "\"Les gens du Port brûlaient une barque pour chaque noyé, pour qu'il trouve son chemin. Edwin n'en a pas eu. Avec huit carapaces de crabe pour la coque, je lui en ferai une.\"",
+        texte_de_la_remise: "Ansgar assemble une petite barque de carapaces et y couche une plume de corbeau. Au soir, il la pousse sur l'étang du camp et y met le feu. \"Bon vent, mon garçon.\"",
+    },
+    FicheQuete {
+        id: "filet-de-l-equipage",
+        personnage: Personnage::Ansgar,
+        titre: "Le filet de l'équipage",
+        ouverture: "epave-du-leviathan",
+        ouverte_par_annexe: true,
+        demande: FicheDemande::Explorer {
+            zone: "epave-du-leviathan",
+            etape: 2,
+            objet: "Filet de l'équipage",
+            gardien: "crabe-necrophage",
+            niveau: 53,
+            rencontre: "Au fond de la cale noyée, un filet aux mailles luisantes est roulé contre la coque. Un crabe nécrophage s'y est fait un nid ; il claque des pinces.",
+            prise: "Pas une maille du filet n'a cédé. Vous le roulez au fond de votre sac.",
+        },
+        argent: 3_000,
+        objets: |objets| objets.avec_philtres_chromatiques(1),
+        texte_de_la_demande: "\"L'Épave du Léviathan, c'était son navire, j'en suis sûr à présent. Dans la cale, il y avait le filet de l'équipage, tressé de crin de kelpie : un filet qui ne casse jamais. Rapporte-le-moi.\"",
+        texte_de_la_remise: "Ansgar déplie le filet de l'équipage d'Edwin. Ses mains ne tremblent pas. \"Avec ça, je ne perdrai plus une prise. Mes lignes iront plus vite au fond.\"",
+    },
+];
+
+/// La dernière quête de chaque personnage améliore son service (section
+/// 13.13).
+fn creer_quetes(especes: &[Espece], zones: &[Zone], annexes: &[Annexe]) -> Vec<Quete> {
+    let trouver = |id: &str| {
+        especes
+            .iter()
+            .find(|espece| espece.id().as_str() == id)
+            .unwrap_or_else(|| panic!("espèce {id} absente du contenu"))
+    };
+    let nom_de_zone = |id: &str| {
+        zones
+            .iter()
+            .chain(annexes.iter().map(Annexe::zone))
+            .find(|zone| zone.id().as_str() == id)
+            .map(|zone| zone.nom().to_string())
+            .unwrap_or_else(|| panic!("zone {id} absente du contenu"))
+    };
+    let mut quetes: Vec<Quete> = QUETES
+        .iter()
+        .map(|fiche| {
+            let id = QueteId::new(fiche.id);
+            let demande = match &fiche.demande {
+                FicheDemande::Rapporter(espece, nombre) => DemandeDeQuete::Rapporter {
+                    ressource: trouver(espece)
+                        .ressource()
+                        .cloned()
+                        .unwrap_or_else(|| panic!("{espece} lâche une ressource")),
+                    nombre: *nombre,
+                },
+                FicheDemande::Explorer {
+                    zone,
+                    etape,
+                    objet,
+                    gardien,
+                    niveau: valeur,
+                    rencontre,
+                    prise,
+                } => DemandeDeQuete::Explorer(Box::new(Exploration::new(
+                    ZoneId::new(*zone),
+                    &nom_de_zone(zone),
+                    *etape,
+                    ObjetDeQuete::new(id.clone(), objet),
+                    trouver(gardien).clone(),
+                    niveau(*valeur),
+                    rencontre,
+                    prise,
+                ))),
+            };
+            let ouverture = if fiche.ouverte_par_annexe {
+                OuvertureDeQuete::Annexe(ZoneId::new(fiche.ouverture))
+            } else {
+                OuvertureDeQuete::Zone(ZoneId::new(fiche.ouverture))
+            };
+            let recompense = (fiche.objets)(Inventaire::new(fiche.argent, 0, Vec::new()));
+            Quete::new(
+                id,
+                fiche.personnage,
+                fiche.titre,
+                ouverture,
+                demande,
+                recompense,
+                fiche.texte_de_la_demande,
+                fiche.texte_de_la_remise,
+            )
+        })
+        .collect();
+    for personnage in Personnage::TOUS {
+        if let Some(derniere) = quetes
+            .iter_mut()
+            .rev()
+            .find(|quete| quete.personnage() == personnage)
+        {
+            *derniere = derniere.clone().qui_ameliore_le_service();
+        }
+    }
+    quetes
 }
 
 #[cfg(test)]

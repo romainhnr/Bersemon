@@ -19,6 +19,7 @@ use bersemon_core::partie::Partie;
 use bersemon_core::pierre::PierreDEvolution;
 use bersemon_core::recompenses_du_codex::compte_au_codex;
 use bersemon_core::ressource::Ressource;
+use bersemon_core::succes::Succes;
 use bersemon_core::traque::Apotre;
 use bersemon_core::zone::Zone;
 
@@ -222,6 +223,13 @@ fn contenu_detaille(inventaire: &Inventaire, detaille: bool) -> String {
     if inventaire.charmes_de_garde() > 0 {
         elements.push(charmes_de_garde(inventaire.charmes_de_garde()));
     }
+    // Chacun est unique, et dit son nom (section 13.13).
+    elements.extend(
+        inventaire
+            .objets_de_quete()
+            .iter()
+            .map(|objet| objet.nom().to_string()),
+    );
     if elements.is_empty() {
         "vide".to_string()
     } else {
@@ -384,6 +392,23 @@ pub fn nom_du_heros(heros: &Heros) -> String {
     }
 }
 
+/// "Aldric, Guerrier", ou "Aldric, Fléau du Baron ; Guerrier" avec un titre
+/// porté (section 4.5).
+fn heros_du_camp(heros: &Heros, succes: &[Succes]) -> String {
+    let titre = heros
+        .titre()
+        .and_then(|titre| succes.iter().find(|un| un.id() == titre));
+    match titre {
+        Some(un) => format!(
+            "{}, {} ; {}",
+            nom_du_heros(heros),
+            un.titre(),
+            heros.classe().nom()
+        ),
+        None => format!("{}, {}", nom_du_heros(heros), heros.classe().nom()),
+    }
+}
+
 pub fn partie_en_cours(partie: &Partie) -> String {
     format!(
         "Partie en cours : {}, {}.",
@@ -393,11 +418,10 @@ pub fn partie_en_cours(partie: &Partie) -> String {
 }
 
 /// Le sac, que le joueur emporte, et le coffre, à l'abri (section 13.3).
-pub fn en_tete_du_camp(partie: &Partie) -> String {
+pub fn en_tete_du_camp(partie: &Partie, succes: &[Succes]) -> String {
     format!(
-        "Camp de base ({}, {}).\nSac ({}) : {}. Coffre du camp : {}.{}",
-        nom_du_heros(partie.heros()),
-        partie.heros().classe().nom(),
+        "Camp de base ({}).\nSac ({}) : {}. Coffre du camp : {}.{}",
+        heros_du_camp(partie.heros(), succes),
         crate::sac::places(partie),
         contenu(partie.sac()),
         contenu(partie.coffre_du_camp()),
@@ -408,11 +432,10 @@ pub fn en_tete_du_camp(partie: &Partie) -> String {
 /// Pour Discord : les ressources s'y comptent par sortes, pour que le camp
 /// tienne dans un message quand le joueur a de tout (section 13.3). Leur
 /// détail est à l'écran du coffre.
-pub fn en_tete_abrege_du_camp(partie: &Partie) -> String {
+pub fn en_tete_abrege_du_camp(partie: &Partie, succes: &[Succes]) -> String {
     format!(
-        "Camp de base ({}, {}).\nSac ({}) : {}. Coffre du camp : {}.{}",
-        nom_du_heros(partie.heros()),
-        partie.heros().classe().nom(),
+        "Camp de base ({}).\nSac ({}) : {}. Coffre du camp : {}.{}",
+        heros_du_camp(partie.heros(), succes),
         crate::sac::places(partie),
         contenu_detaille(partie.sac(), false),
         contenu_detaille(partie.coffre_du_camp(), false),

@@ -297,21 +297,29 @@ impl Forge {
         Ok(())
     }
 
-    pub(crate) fn lancer(&mut self, plan: &PlanDAmelioration, maintenant: Horodatage) -> Chantier {
+    /// La durée est celle du plan, raccourcie si Gunther a achevé sa chaîne de
+    /// quêtes (section 13.13).
+    pub(crate) fn lancer(
+        &mut self,
+        plan: &PlanDAmelioration,
+        duree: Duration,
+        maintenant: Horodatage,
+    ) -> Chantier {
         let ouvrage = Ouvrage::Amelioration {
             amelioration: plan.amelioration(),
             niveau: plan.niveau(),
         };
-        self.commencer(ouvrage, plan.duree(), maintenant)
+        self.commencer(ouvrage, duree, maintenant)
     }
 
     pub(crate) fn lancer_fabrication(
         &mut self,
         plan: &PlanDeFabrication,
+        duree: Duration,
         maintenant: Horodatage,
     ) -> Chantier {
         let ouvrage = Ouvrage::Objet(plan.objet().clone());
-        self.commencer(ouvrage, plan.duree(), maintenant)
+        self.commencer(ouvrage, duree, maintenant)
     }
 
     /// Le charme de garde se forge aussi souvent que le joueur le veut
@@ -320,12 +328,8 @@ impl Forge {
         self.verifier_atelier()
     }
 
-    pub(crate) fn lancer_charme(
-        &mut self,
-        plan: &PlanDuCharme,
-        maintenant: Horodatage,
-    ) -> Chantier {
-        self.commencer(Ouvrage::CharmeDeGarde, plan.duree(), maintenant)
+    pub(crate) fn lancer_charme(&mut self, duree: Duration, maintenant: Horodatage) -> Chantier {
+        self.commencer(Ouvrage::CharmeDeGarde, duree, maintenant)
     }
 
     /// Les filets se forgent par lots, aussi souvent que le joueur le veut
@@ -337,13 +341,14 @@ impl Forge {
     pub(crate) fn lancer_filets(
         &mut self,
         plan: &PlanDesFilets,
+        duree: Duration,
         maintenant: Horodatage,
     ) -> Chantier {
         let ouvrage = Ouvrage::Filets {
             filet: plan.filet(),
             nombre: plan.nombre(),
         };
-        self.commencer(ouvrage, plan.duree(), maintenant)
+        self.commencer(ouvrage, duree, maintenant)
     }
 
     fn commencer(&mut self, ouvrage: Ouvrage, duree: Duration, maintenant: Horodatage) -> Chantier {

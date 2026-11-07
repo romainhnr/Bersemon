@@ -2,6 +2,7 @@
 //! ce qu'une sauvegarde devra conserver.
 
 use std::fmt;
+use std::time::Duration;
 
 use crate::aleatoire::Aleatoire;
 use crate::ame::{MarchandId, MarchandMort};
@@ -48,7 +49,7 @@ use crate::marchand::{
     PRIX_PIERRE_D_EVOLUTION, prix_de_revente, prix_du_filet, prix_du_soin,
 };
 use crate::monstre::{
-    Monstre, RapportExperience, rayon_chromatique, tirer_shiny, tirer_valeurs_internes,
+    Monstre, RapportExperience, choc_chromatique, tirer_shiny, tirer_valeurs_internes,
 };
 use crate::niveau::Niveau;
 use crate::nom::Nom;
@@ -56,6 +57,10 @@ use crate::obeissance::limite_d_obeissance;
 use crate::peche::{ErreurPeche, ParametresPeche, Peche, Prise};
 use crate::pierre::PierreDEvolution;
 use crate::quete::{JournalDesQuetes, Objectif, QueteAccomplie};
+use crate::quete_du_camp::{
+    DemandeDeQuete, ErreurQuete, EtatDeLaChaine, EtatDesQuetes, Exploration, ObjetDeQuete,
+    OuvertureDeQuete, Personnage, Quete, QueteId, RemiseDeQuete, raccourcir,
+};
 use crate::recompenses_du_codex::{
     ErreurCodex, PalierDuCodex, RecompenseDuCodex, especes_au_codex, especes_capturees,
 };
@@ -67,6 +72,7 @@ use crate::rite::{
 };
 use crate::soin::{EffetDuSoin, ErreurSoin, Soin};
 use crate::stats::ValeursInternes;
+use crate::succes::{CouleurDuHeros, ErreurSucces, Succes, SuccesId, couleurs_debloquees};
 use crate::tour::{RecordsDeLaTour, TourSansFond};
 use crate::traque::{Apotre, Indice, Piste};
 use crate::tutoriel::Conseil;
@@ -151,6 +157,11 @@ pub struct Partie {
     decouvertes: Decouvertes,
     /// L'avancement des quêtes du jour et de la semaine (section 13.12).
     quetes: JournalDesQuetes,
+    /// Les succès obtenus, dans l'ordre où ils l'ont été ; ils restent acquis
+    /// (section 4.5).
+    succes_obtenus: Vec<SuccesId>,
+    /// Les chaînes de quêtes des personnages du camp (section 13.13).
+    quetes_du_camp: EtatDesQuetes,
 }
 
 /// Ce que le joueur a trouvé hors de la piste des Apôtres : les zones
@@ -220,6 +231,8 @@ pub struct EtatPartie {
     pub arene: EtatDeLArene,
     pub decouvertes: Decouvertes,
     pub quetes: JournalDesQuetes,
+    pub succes_obtenus: Vec<SuccesId>,
+    pub quetes_du_camp: EtatDesQuetes,
 }
 
 /// Sauvegarde lisible mais contraire aux règles des expéditions
@@ -318,6 +331,8 @@ impl Partie {
             arene: EtatDeLArene::default(),
             decouvertes: Decouvertes::default(),
             quetes: JournalDesQuetes::default(),
+            succes_obtenus: Vec::new(),
+            quetes_du_camp: EtatDesQuetes::default(),
             conseils_vus: Vec::new(),
             expeditions_automatiques: Vec::new(),
             attaques_a_choisir: Vec::new(),
@@ -813,7 +828,7 @@ impl Partie {
             petit,
             ressources,
             prix: PRIX_DU_RITE,
-            duree: DUREE_DU_RITE,
+            duree: self.duree_du_rite(),
             shiny_sur,
             attaque_d_oeuf,
         })
@@ -847,7 +862,7 @@ impl Partie {
         let premier_parent = parents.remove(0);
         self.rite = Some(Rite::new(
             [premier_parent, second_parent],
-            maintenant.plus(DUREE_DU_RITE),
+            maintenant.plus(self.duree_du_rite()),
         ));
         Ok(apercu)
     }
@@ -917,7 +932,8 @@ impl Partie {
         parametres: &ParametresPeche,
         maintenant: Horodatage,
     ) -> Result<Horodatage, ErreurPeche> {
-        self.peche.lancer(parametres.duree(), maintenant)
+        let duree = self.duree_de_la_ligne(parametres);
+        self.peche.lancer(duree, maintenant)
     }
 
     /// Relève la ligne prête, si un monstre pêché trouverait sa place dans
@@ -1032,7 +1048,8 @@ impl Partie {
     ) -> Result<Chantier, ErreurAmelioration> {
         self.verifier_amelioration(plan)?;
         self.payer_ressources(plan.cout());
-        Ok(self.forge.lancer(plan, maintenant))
+        let duree = self.duree_des_travaux(plan.duree());
+        Ok(self.forge.lancer(plan, duree, maintenant))
     }
 
     /// Du sac d'abord, puis du coffre, comme l'argent (section 13.3). Le
@@ -1075,7 +1092,8 @@ impl Partie {
     ) -> Result<Chantier, ErreurAmelioration> {
         self.verifier_fabrication(plan)?;
         self.payer_ressources(plan.cout());
-        Ok(self.forge.lancer_fabrication(plan, maintenant))
+        let duree = self.duree_des_travaux(plan.duree());
+        Ok(self.forge.lancer_fabrication(plan, duree, maintenant))
     }
 
     /// Au camp, après confirmation : un charme de garde, aussi souvent que
@@ -1087,7 +1105,8 @@ impl Partie {
     ) -> Result<Chantier, ErreurAmelioration> {
         self.verifier_charme(plan)?;
         self.payer_ressources(plan.cout());
-        Ok(self.forge.lancer_charme(plan, maintenant))
+        let duree = self.duree_des_travaux(plan.duree());
+        Ok(self.forge.lancer_charme(duree, maintenant))
     }
 
     /// Refuse ce que refuserait `lancer_charme`, sans rien changer.
@@ -1109,7 +1128,8 @@ impl Partie {
     ) -> Result<Chantier, ErreurAmelioration> {
         self.verifier_filets(plan)?;
         self.payer_ressources(plan.cout());
-        Ok(self.forge.lancer_filets(plan, maintenant))
+        let duree = self.duree_des_travaux(plan.duree());
+        Ok(self.forge.lancer_filets(plan, duree, maintenant))
     }
 
     /// Refuse ce que refuserait `lancer_filets`, sans rien changer.
@@ -1598,7 +1618,7 @@ impl Partie {
 
     /// Au camp, chez Malvoise, après confirmation (section 13.7) : le
     /// monstre devient shiny, et un Philtre chromatique est consommé, du sac
-    /// d'abord, puis du coffre. Il apprend le Rayon chromatique s'il a une
+    /// d'abord, puis du coffre. Il apprend le Choc chromatique s'il a une
     /// place libre ; sinon, l'attaque rejoint les attaques à choisir (section
     /// 5.1). Rend le monstre d'avant.
     pub fn rendre_shiny(&mut self, emplacement: Emplacement) -> Result<Monstre, ErreurMarchand> {
@@ -1608,7 +1628,7 @@ impl Partie {
             .monstre_a_modifier(emplacement)
             .expect("emplacement vérifié")
             .devenir_shiny();
-        self.enseigner_le_rayon_chromatique(emplacement);
+        self.enseigner_le_choc_chromatique(emplacement);
         Ok(monstre)
     }
 
@@ -1618,34 +1638,34 @@ impl Partie {
         }
     }
 
-    /// Le monstre shiny apprend le Rayon chromatique s'il a une place libre,
+    /// Le monstre shiny apprend le Choc chromatique s'il a une place libre,
     /// sinon le joueur choisit l'attaque à oublier ou y renonce, comme à la
     /// montée de niveau (section 5.1).
-    fn enseigner_le_rayon_chromatique(&mut self, emplacement: Emplacement) {
-        let rayon = rayon_chromatique();
+    fn enseigner_le_choc_chromatique(&mut self, emplacement: Emplacement) {
+        let choc = choc_chromatique();
         let Some(monstre) = self.collection.monstre_a_modifier(emplacement) else {
             return;
         };
-        if !monstre.est_shiny() || monstre.attaques().connait(rayon.id()) {
+        if !monstre.est_shiny() || monstre.attaques().connait(choc.id()) {
             return;
         }
         if monstre.attaques().est_complete() {
             self.attaques_a_choisir.push(AttaqueAChoisir {
                 emplacement,
-                attaque: rayon,
+                attaque: choc,
             });
         } else {
             monstre
-                .ajouter_attaque(rayon)
+                .ajouter_attaque(choc)
                 .expect("une attaque inconnue trouve une place libre");
         }
     }
 
-    /// Pour une sauvegarde antérieure au Rayon chromatique : chaque monstre
+    /// Pour une sauvegarde antérieure au Choc chromatique : chaque monstre
     /// shiny de l'équipe et du camp l'apprend, comme après le Philtre
     /// (section 5.1). Ceux qui sont absents du camp pourront le réapprendre
     /// au camp.
-    pub fn enseigner_le_rayon_chromatique_aux_shiny(&mut self) {
+    pub fn enseigner_le_choc_chromatique_aux_shiny(&mut self) {
         let shiny =
             |(position, monstre): (usize, &Monstre)| monstre.est_shiny().then_some(position);
         let emplacements: Vec<Emplacement> = (self.collection.equipe().iter().enumerate())
@@ -1658,7 +1678,7 @@ impl Partie {
             )
             .collect();
         for emplacement in emplacements {
-            self.enseigner_le_rayon_chromatique(emplacement);
+            self.enseigner_le_choc_chromatique(emplacement);
         }
     }
 
@@ -2101,6 +2121,244 @@ impl Partie {
         }
     }
 
+    pub fn succes_obtenus(&self) -> &[SuccesId] {
+        &self.succes_obtenus
+    }
+
+    /// Les succès atteints qui n'étaient pas encore obtenus : ils le sont
+    /// désormais, pour toujours, même si l'état qui les a donnés change
+    /// (section 4.5). Rend les nouveaux, dans l'ordre du contenu.
+    pub fn constater_les_succes(&mut self, succes: &[Succes], especes: &[Espece]) -> Vec<Succes> {
+        let nouveaux: Vec<Succes> = succes
+            .iter()
+            .filter(|un| !self.succes_obtenus.contains(un.id()) && un.est_atteint(self, especes))
+            .cloned()
+            .collect();
+        self.succes_obtenus
+            .extend(nouveaux.iter().map(|un| un.id().clone()));
+        nouveaux
+    }
+
+    /// Le titre d'un succès obtenu, ou aucun, sans confirmation.
+    pub fn porter_titre(&mut self, titre: Option<&SuccesId>) -> Result<(), ErreurSucces> {
+        if titre.is_some_and(|id| !self.succes_obtenus.contains(id)) {
+            return Err(ErreurSucces::NonObtenu);
+        }
+        self.heros.porter_titre(titre.cloned());
+        Ok(())
+    }
+
+    pub fn couleurs_debloquees(&self, succes: &[Succes]) -> Vec<CouleurDuHeros> {
+        couleurs_debloquees(&self.succes_obtenus, succes)
+    }
+
+    /// Une couleur débloquée, ou la couleur d'origine, sans confirmation.
+    pub fn porter_couleur(
+        &mut self,
+        couleur: Option<CouleurDuHeros>,
+        succes: &[Succes],
+    ) -> Result<(), ErreurSucces> {
+        if couleur.is_some_and(|couleur| !self.couleurs_debloquees(succes).contains(&couleur)) {
+            return Err(ErreurSucces::CouleurBloquee);
+        }
+        self.heros.porter_couleur(couleur);
+        Ok(())
+    }
+
+    pub fn quetes_du_camp(&self) -> &EtatDesQuetes {
+        &self.quetes_du_camp
+    }
+
+    pub fn personnage_au_camp(&self, personnage: Personnage) -> bool {
+        match personnage {
+            Personnage::Malvoise => self.marchand_au_camp,
+            Personnage::Gunther => self.forge.est_au_camp(),
+            Personnage::Ansgar => self.peche.pecheur_au_camp(),
+        }
+    }
+
+    fn quete_ouverte(&self, ouverture: &OuvertureDeQuete, zones: &[Zone], piste: &Piste) -> bool {
+        match ouverture {
+            OuvertureDeQuete::Zone(zone) => self
+                .zones_accessibles(zones, piste)
+                .iter()
+                .any(|accessible| accessible.id() == zone),
+            OuvertureDeQuete::Annexe(annexe) => self.annexe_ouverte(annexe),
+        }
+    }
+
+    /// La chaîne du personnage : sa prochaine quête, dans l'ordre du
+    /// contenu, s'ouvre une fois la précédente accomplie (section 13.13).
+    pub fn chaine<'q>(
+        &self,
+        personnage: Personnage,
+        quetes: &'q [Quete],
+        zones: &[Zone],
+        piste: &Piste,
+    ) -> EtatDeLaChaine<'q> {
+        if !self.personnage_au_camp(personnage) {
+            return EtatDeLaChaine::Absent;
+        }
+        let Some(prochaine) = quetes
+            .iter()
+            .filter(|quete| quete.personnage() == personnage)
+            .find(|quete| !self.quetes_du_camp.est_accomplie(quete.id()))
+        else {
+            return EtatDeLaChaine::Achevee;
+        };
+        if self.quetes_du_camp.est_en_cours(prochaine.id()) {
+            EtatDeLaChaine::EnCours(prochaine)
+        } else if self.quete_ouverte(prochaine.ouverture(), zones, piste) {
+            EtatDeLaChaine::Proposee(prochaine)
+        } else {
+            EtatDeLaChaine::RienPourLInstant
+        }
+    }
+
+    /// Au camp, sans confirmation : écouter la demande lance la quête.
+    pub fn ecouter(
+        &mut self,
+        personnage: Personnage,
+        quetes: &[Quete],
+        zones: &[Zone],
+        piste: &Piste,
+    ) -> Result<Quete, ErreurQuete> {
+        let quete = match self.chaine(personnage, quetes, zones, piste) {
+            EtatDeLaChaine::Absent => return Err(ErreurQuete::PersonnageAbsent(personnage)),
+            EtatDeLaChaine::Proposee(quete) => quete.clone(),
+            _ => return Err(ErreurQuete::RienADemander(personnage)),
+        };
+        self.quetes_du_camp.en_cours.push(quete.id().clone());
+        Ok(quete)
+    }
+
+    /// Refuse ce que refuserait `remettre`, sans rien changer.
+    pub fn verifier_remise<'q>(
+        &self,
+        personnage: Personnage,
+        quetes: &'q [Quete],
+        zones: &[Zone],
+        piste: &Piste,
+    ) -> Result<&'q Quete, ErreurQuete> {
+        let quete = match self.chaine(personnage, quetes, zones, piste) {
+            EtatDeLaChaine::Absent => return Err(ErreurQuete::PersonnageAbsent(personnage)),
+            EtatDeLaChaine::EnCours(quete) => quete,
+            _ => return Err(ErreurQuete::RienADemander(personnage)),
+        };
+        match quete.demande() {
+            DemandeDeQuete::Rapporter { ressource, nombre } => {
+                let manquantes = self.ressources_manquantes(&[(ressource.clone(), *nombre)]);
+                if let Some((ressource, manque)) = manquantes.into_iter().next() {
+                    return Err(ErreurQuete::RessourcesManquantes(
+                        Box::new(ressource),
+                        manque,
+                    ));
+                }
+            }
+            DemandeDeQuete::Explorer(exploration) => {
+                if !self.possede_l_objet_de_quete(exploration.objet().quete()) {
+                    return Err(ErreurQuete::ObjetManquant(Box::new(
+                        exploration.objet().clone(),
+                    )));
+                }
+            }
+        }
+        Ok(quete)
+    }
+
+    /// Au camp, sans confirmation : les ressources ou l'objet sont pris, du
+    /// sac d'abord, puis du coffre, et la récompense va au coffre. La
+    /// dernière quête de la chaîne améliore le service du personnage
+    /// (section 13.13).
+    pub fn remettre(
+        &mut self,
+        personnage: Personnage,
+        quetes: &[Quete],
+        zones: &[Zone],
+        piste: &Piste,
+    ) -> Result<RemiseDeQuete, ErreurQuete> {
+        let quete = self
+            .verifier_remise(personnage, quetes, zones, piste)?
+            .clone();
+        match quete.demande() {
+            DemandeDeQuete::Rapporter { ressource, nombre } => {
+                self.payer_ressources(&[(ressource.clone(), *nombre)]);
+            }
+            DemandeDeQuete::Explorer(exploration) => {
+                let objet = Objet::ObjetDeQuete(exploration.objet().quete().clone());
+                if self.sac.retirer(&objet).is_err() {
+                    self.coffre_du_camp
+                        .retirer(&objet)
+                        .expect("objet de quête vérifié");
+                }
+            }
+        }
+        self.coffre_du_camp.ajouter(quete.recompense().clone());
+        self.quetes_du_camp.en_cours.retain(|id| id != quete.id());
+        self.quetes_du_camp.accomplies.push(quete.id().clone());
+        let service_ameliore =
+            quete.ameliore_le_service() && !self.quetes_du_camp.service_ameliore(personnage);
+        if service_ameliore {
+            self.quetes_du_camp.services_ameliores.push(personnage);
+        }
+        Ok(RemiseDeQuete {
+            quete,
+            service_ameliore,
+        })
+    }
+
+    /// Dans le sac ou dans le coffre.
+    pub fn possede_l_objet_de_quete(&self, quete: &QueteId) -> bool {
+        self.sac.contient_objet_de_quete(quete)
+            || self.coffre_du_camp.contient_objet_de_quete(quete)
+    }
+
+    /// L'objet unique que son gardien attend dans cette zone : celui d'une
+    /// quête en cours que le joueur n'a ni dans son sac, ni dans son coffre
+    /// (section 13.13).
+    pub fn objet_de_quete_a_trouver<'q>(
+        &self,
+        zone: &ZoneId,
+        quetes: &'q [Quete],
+    ) -> Option<&'q Exploration> {
+        quetes
+            .iter()
+            .filter(|quete| self.quetes_du_camp.est_en_cours(quete.id()))
+            .filter_map(Quete::exploration)
+            .find(|exploration| {
+                exploration.zone() == zone
+                    && !self.possede_l_objet_de_quete(exploration.objet().quete())
+            })
+    }
+
+    /// La victoire sur son gardien le met dans le sac, où il se perd avec
+    /// lui (section 13.13).
+    pub(crate) fn trouver_l_objet_de_quete(&mut self, objet: ObjetDeQuete) {
+        self.sac.ajouter_objet_de_quete(objet);
+    }
+
+    /// Celle d'un travail de Gunther, 25 % plus courte une fois sa chaîne de
+    /// quêtes achevée (section 13.13).
+    pub fn duree_des_travaux(&self, duree: Duration) -> Duration {
+        self.raccourcie_par(Personnage::Gunther, duree)
+    }
+
+    pub fn duree_de_la_ligne(&self, parametres: &ParametresPeche) -> Duration {
+        self.raccourcie_par(Personnage::Ansgar, parametres.duree())
+    }
+
+    pub fn duree_du_rite(&self) -> Duration {
+        self.raccourcie_par(Personnage::Malvoise, DUREE_DU_RITE)
+    }
+
+    fn raccourcie_par(&self, personnage: Personnage, duree: Duration) -> Duration {
+        if self.quetes_du_camp.service_ameliore(personnage) {
+            raccourcir(duree)
+        } else {
+            duree
+        }
+    }
+
     /// Une expédition dans une annexe ouverte : ni humain, ni Apôtre, ni
     /// marchand mort (section 9.9).
     pub fn partir_vers_l_annexe(&self, annexe: &Annexe) -> Result<Expedition, ErreurExpedition> {
@@ -2354,6 +2612,8 @@ impl Partie {
             arene: etat.arene,
             decouvertes: etat.decouvertes,
             quetes: etat.quetes,
+            succes_obtenus: etat.succes_obtenus,
+            quetes_du_camp: etat.quetes_du_camp,
         })
     }
 
@@ -3013,6 +3273,7 @@ pub(crate) mod tests {
     use crate::heros::Classe;
     use crate::nom::Nom;
     use crate::stats::Stats;
+    use crate::succes::ConditionDeSucces;
     use crate::traque::Chapitre;
     use crate::types::Type;
     use std::time::Duration;
@@ -3035,12 +3296,12 @@ pub(crate) mod tests {
         partie
     }
 
-    /// Une sauvegarde antérieure au Rayon chromatique : chaque shiny de
+    /// Une sauvegarde antérieure au Choc chromatique : chaque shiny de
     /// l'équipe l'apprend s'il a une place libre ; sinon le joueur choisit
     /// l'attaque à oublier. Il peut toujours le réapprendre au camp (section
     /// 5.1).
     #[test]
-    fn les_shiny_d_une_ancienne_sauvegarde_apprennent_le_rayon() {
+    fn les_shiny_d_une_ancienne_sauvegarde_apprennent_le_choc() {
         let quatre = ["a", "b", "c", "d"]
             .map(|id| attaque(id, Type::Normal, Categorie::Physique, 40, 100))
             .to_vec();
@@ -3057,22 +3318,22 @@ pub(crate) mod tests {
         let mut partie = partie();
         partie.prendre_monstre_rare(complet);
         partie.prendre_monstre_rare(libre);
-        let rayon = rayon_chromatique();
-        partie.enseigner_le_rayon_chromatique_aux_shiny();
+        let choc = choc_chromatique();
+        partie.enseigner_le_choc_chromatique_aux_shiny();
         let equipe = partie.collection().equipe();
-        assert!(!equipe[0].attaques().connait(rayon.id()));
-        assert!(!equipe[1].attaques().connait(rayon.id()));
-        assert!(equipe[2].attaques().connait(rayon.id()));
+        assert!(!equipe[0].attaques().connait(choc.id()));
+        assert!(!equipe[1].attaques().connait(choc.id()));
+        assert!(equipe[2].attaques().connait(choc.id()));
         assert_eq!(
             partie.attaques_a_choisir(),
             [AttaqueAChoisir {
                 emplacement: Emplacement::Equipe(1),
-                attaque: rayon.clone(),
+                attaque: choc.clone(),
             }]
         );
         let apprenables = |emplacement| partie.attaques_a_apprendre(emplacement).unwrap();
-        assert!(apprenables(Emplacement::Equipe(1)).contains(&rayon));
-        assert!(!apprenables(Emplacement::Equipe(0)).contains(&rayon));
+        assert!(apprenables(Emplacement::Equipe(1)).contains(&choc));
+        assert!(!apprenables(Emplacement::Equipe(0)).contains(&choc));
     }
 
     /// Section 9.9 : le trésor d'un coffre d'annexe va dans le sac.
@@ -4357,6 +4618,8 @@ pub(crate) mod tests {
             rite: partie.rite().cloned(),
             paliers_du_codex: partie.paliers_du_codex().to_vec(),
             arene: partie.arene(),
+            succes_obtenus: partie.succes_obtenus().to_vec(),
+            quetes_du_camp: partie.quetes_du_camp().clone(),
             decouvertes: partie.decouvertes().clone(),
             quetes: partie.quetes().clone(),
         }
@@ -5030,5 +5293,279 @@ pub(crate) mod tests {
         );
         let expedition = partie.partir_vers_l_eclipse(contenu.invocation()).unwrap();
         assert_eq!(expedition.nombre_etapes(), 1);
+    }
+
+    /// Section 4.5 : un succès se constate une fois, reste acquis, et donne
+    /// son titre ; les couleurs suivent les succès obtenus.
+    #[test]
+    fn les_succes_se_constatent_une_fois_et_donnent_titres_et_couleurs() {
+        let (mut partie, contenu) = chez_malvoise();
+        let succes = contenu.succes();
+        let nouveaux = partie.constater_les_succes(succes, contenu.especes());
+        let ids: Vec<&str> = nouveaux.iter().map(|un| un.id().as_str()).collect();
+        assert_eq!(ids, ["nomade"]);
+        assert!(
+            partie
+                .constater_les_succes(succes, contenu.especes())
+                .is_empty()
+        );
+        // L'état qui l'a donné peut changer : le succès reste.
+        partie.zones_explorees.clear();
+        assert!(
+            partie
+                .constater_les_succes(succes, contenu.especes())
+                .is_empty()
+        );
+        assert_eq!(partie.succes_obtenus(), [SuccesId::new("nomade")]);
+        assert_eq!(
+            partie.porter_titre(Some(&SuccesId::new("deicide"))),
+            Err(ErreurSucces::NonObtenu)
+        );
+        partie.porter_titre(Some(&SuccesId::new("nomade"))).unwrap();
+        assert_eq!(partie.heros().titre(), Some(&SuccesId::new("nomade")));
+        partie.porter_titre(None).unwrap();
+        assert_eq!(partie.heros().titre(), None);
+        assert!(partie.couleurs_debloquees(succes).is_empty());
+        assert_eq!(
+            partie.porter_couleur(Some(CouleurDuHeros::Cendre), succes),
+            Err(ErreurSucces::CouleurBloquee)
+        );
+        // Le Démiurge abattu débloque la Cendre ; tous les trophées, la
+        // royale.
+        partie.beherit = EtatDuBeherit::DemiurgeVaincu;
+        partie.constater_les_succes(succes, contenu.especes());
+        assert_eq!(partie.couleurs_debloquees(succes), [CouleurDuHeros::Cendre]);
+        partie
+            .porter_couleur(Some(CouleurDuHeros::Cendre), succes)
+            .unwrap();
+        assert_eq!(
+            partie.heros().combattant().couleur_du_heros(),
+            Some(CouleurDuHeros::Cendre)
+        );
+        partie.succes_obtenus.extend(
+            succes
+                .iter()
+                .filter(|un| un.trophee().is_some())
+                .map(|un| un.id().clone()),
+        );
+        assert!(
+            partie
+                .couleurs_debloquees(succes)
+                .contains(&CouleurDuHeros::Royale)
+        );
+    }
+
+    /// Section 4.5 : 36 succès, dont 22 trophées et 4 couleurs, chacune
+    /// d'un seul succès.
+    #[test]
+    fn le_contenu_a_ses_succes_ses_trophees_et_ses_couleurs() {
+        let contenu = crate::contenu::ContenuV1::new();
+        let succes = contenu.succes();
+        assert_eq!(succes.len(), 36);
+        assert_eq!(
+            succes.iter().filter(|un| un.trophee().is_some()).count(),
+            22
+        );
+        let mut ids: Vec<&str> = succes.iter().map(|un| un.id().as_str()).collect();
+        ids.sort_unstable();
+        ids.dedup();
+        assert_eq!(ids.len(), succes.len());
+        for couleur in CouleurDuHeros::TOUTES {
+            let attendus = usize::from(couleur != CouleurDuHeros::Royale);
+            assert_eq!(
+                succes
+                    .iter()
+                    .filter(|un| un.couleur() == Some(couleur))
+                    .count(),
+                attendus,
+                "{couleur:?}"
+            );
+        }
+        // Chaque Apôtre et chaque légendaire du succès existe au contenu.
+        for un in succes {
+            if let ConditionDeSucces::ApotreAbattu(espece)
+            | ConditionDeSucces::LegendaireCapture(espece) = un.condition()
+            {
+                assert!(contenu.espece(espece).is_some(), "{}", espece.as_str());
+            }
+        }
+    }
+
+    /// Section 13.13 : 4 quêtes par personnage, la dernière améliore son
+    /// service ; chaque objet attend avant la dernière étape, dans une zone
+    /// sans marchand mort ni Ansgar, gardé par une espèce de la zone.
+    #[test]
+    fn le_contenu_a_ses_chaines_de_quetes() {
+        let contenu = crate::contenu::ContenuV1::new();
+        let quetes = contenu.quetes_du_camp();
+        assert_eq!(quetes.len(), 12);
+        for personnage in Personnage::TOUS {
+            let chaine: Vec<&Quete> = quetes
+                .iter()
+                .filter(|quete| quete.personnage() == personnage)
+                .collect();
+            assert_eq!(chaine.len(), 4, "{personnage:?}");
+            let services: Vec<bool> = chaine
+                .iter()
+                .map(|quete| quete.ameliore_le_service())
+                .collect();
+            assert_eq!(services, [false, false, false, true]);
+        }
+        let lieux: Vec<&Zone> = contenu
+            .zones()
+            .iter()
+            .chain(contenu.annexes().iter().map(Annexe::zone))
+            .collect();
+        let mut aleatoire = crate::aleatoire::GenerateurAleatoire::new(7);
+        for exploration in quetes.iter().filter_map(Quete::exploration) {
+            let zone = lieux
+                .iter()
+                .find(|zone| zone.id() == exploration.zone())
+                .expect("zone de la quête au contenu");
+            assert!(exploration.etape() >= 1 && exploration.etape() < zone.etapes());
+            assert!(zone.marchand_mort().is_none() && zone.pecheur().is_none());
+            assert!(
+                zone.especes()
+                    .iter()
+                    .any(|espece| espece.id() == exploration.gardien().id())
+            );
+            assert_eq!(exploration.niveau(), zone.niveaux().1);
+            let gardien = exploration.generer_gardien(&mut aleatoire);
+            assert_eq!(gardien.niveau(), exploration.niveau());
+        }
+        for quete in quetes {
+            if let DemandeDeQuete::Rapporter { nombre, .. } = quete.demande() {
+                assert!(*nombre > 0);
+            }
+        }
+    }
+
+    /// Section 13.13 : écouter lance la quête, remettre prend les ressources
+    /// et range la récompense au coffre ; la suivante attend sa zone.
+    #[test]
+    fn une_quete_de_ressources_s_ecoute_puis_se_remet() {
+        let (mut partie, contenu) = chez_malvoise();
+        let (quetes, zones, piste) = (contenu.quetes_du_camp(), contenu.zones(), contenu.piste());
+        let malvoise = Personnage::Malvoise;
+        assert_eq!(
+            partie.chaine(Personnage::Gunther, quetes, zones, piste),
+            EtatDeLaChaine::Absent
+        );
+        let EtatDeLaChaine::Proposee(premiere) = partie.chaine(malvoise, quetes, zones, piste)
+        else {
+            panic!("la première quête de Malvoise est proposée");
+        };
+        assert_eq!(premiere.id().as_str(), "lueur-du-crane");
+        assert_eq!(
+            partie.remettre(malvoise, quetes, zones, piste),
+            Err(ErreurQuete::RienADemander(malvoise))
+        );
+        partie.ecouter(malvoise, quetes, zones, piste).unwrap();
+        let DemandeDeQuete::Rapporter { ressource, .. } = premiere.demande() else {
+            panic!("des ressources à rapporter");
+        };
+        partie.sac.ajouter_ressources(ressource.clone(), 3);
+        assert_eq!(
+            partie.remettre(malvoise, quetes, zones, piste),
+            Err(ErreurQuete::RessourcesManquantes(
+                Box::new(ressource.clone()),
+                2
+            ))
+        );
+        partie
+            .coffre_du_camp
+            .ajouter_ressources(ressource.clone(), 4);
+        let argent = partie.coffre_du_camp.argent();
+        let remise = partie.remettre(malvoise, quetes, zones, piste).unwrap();
+        assert!(!remise.service_ameliore);
+        // Du sac d'abord, puis du coffre.
+        assert_eq!(partie.sac.nombre_de_ressources(ressource.id()), 0);
+        assert_eq!(
+            partie.coffre_du_camp.nombre_de_ressources(ressource.id()),
+            2
+        );
+        assert_eq!(partie.coffre_du_camp.argent(), argent + 150);
+        assert_eq!(partie.quetes_du_camp().accomplies_de(malvoise, quetes), 1);
+        // La suivante attend l'Abbaye.
+        assert_eq!(
+            partie.chaine(malvoise, quetes, zones, piste),
+            EtatDeLaChaine::RienPourLInstant
+        );
+    }
+
+    /// Section 13.13 : l'objet d'une quête en cours attend dans sa zone tant
+    /// que le joueur ne l'a ni dans son sac, ni dans son coffre ; il se
+    /// remet de l'un ou de l'autre.
+    #[test]
+    fn une_quete_d_exploration_attend_son_objet() {
+        let (mut partie, contenu) = chez_malvoise();
+        let (quetes, zones, piste) = (contenu.quetes_du_camp(), contenu.zones(), contenu.piste());
+        let psautier = QueteId::new("psautier-de-malvoise");
+        let abbaye = ZoneId::new("abbaye");
+        partie
+            .quetes_du_camp
+            .accomplies
+            .push(QueteId::new("lueur-du-crane"));
+        partie.quetes_du_camp.en_cours.push(psautier.clone());
+        let exploration = partie
+            .objet_de_quete_a_trouver(&abbaye, quetes)
+            .cloned()
+            .expect("le psautier attend dans l'Abbaye");
+        assert!(
+            partie
+                .objet_de_quete_a_trouver(&ZoneId::new("vallee"), quetes)
+                .is_none()
+        );
+        assert!(matches!(
+            partie.remettre(Personnage::Malvoise, quetes, zones, piste),
+            Err(ErreurQuete::ObjetManquant(_))
+        ));
+        partie.trouver_l_objet_de_quete(exploration.objet().clone());
+        assert_eq!(partie.sac().places_prises(), 11);
+        assert!(partie.objet_de_quete_a_trouver(&abbaye, quetes).is_none());
+        // Une défaite fait perdre le sac : le gardien l'a de nouveau.
+        let perdu = partie.sac.perdre_tout();
+        assert!(partie.objet_de_quete_a_trouver(&abbaye, quetes).is_some());
+        partie.coffre_du_camp.ajouter(perdu);
+        partie
+            .remettre(Personnage::Malvoise, quetes, zones, piste)
+            .unwrap();
+        assert!(!partie.possede_l_objet_de_quete(&psautier));
+        assert_eq!(partie.coffre_du_camp.philtres_chromatiques(), 1);
+    }
+
+    /// Section 13.13 : la dernière quête de Gunther raccourcit ses travaux
+    /// de 25 %, mais pas un travail déjà lancé.
+    #[test]
+    fn la_fin_d_une_chaine_raccourcit_le_service() {
+        let (mut partie, contenu) = chez_malvoise();
+        let duree = Duration::from_secs(4 * 60 * 60);
+        assert_eq!(partie.duree_des_travaux(duree), duree);
+        assert_eq!(partie.duree_du_rite(), Duration::from_secs(2 * 60 * 60));
+        partie
+            .quetes_du_camp
+            .services_ameliores
+            .push(Personnage::Gunther);
+        assert_eq!(
+            partie.duree_des_travaux(duree),
+            Duration::from_secs(3 * 60 * 60)
+        );
+        assert_eq!(
+            partie.duree_de_la_ligne(contenu.peche()),
+            contenu.peche().duree()
+        );
+        partie
+            .quetes_du_camp
+            .services_ameliores
+            .push(Personnage::Ansgar);
+        partie
+            .quetes_du_camp
+            .services_ameliores
+            .push(Personnage::Malvoise);
+        assert_eq!(
+            partie.duree_de_la_ligne(contenu.peche()),
+            Duration::from_secs(90 * 60)
+        );
+        assert_eq!(partie.duree_du_rite(), Duration::from_secs(90 * 60));
     }
 }

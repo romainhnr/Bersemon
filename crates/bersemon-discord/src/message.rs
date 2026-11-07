@@ -13,6 +13,7 @@ use bersemon_core::espece::EspeceId;
 use bersemon_core::heros::Classe;
 use bersemon_core::horodatage::Horodatage;
 use bersemon_core::monstre::Monstre;
+use bersemon_core::succes::CouleurDuHeros;
 use bersemon_presentation::erreurs::erreur_de_choix;
 use bersemon_presentation::partie::{compteur_d_etapes, question_de_confirmation};
 use bersemon_presentation::recit::raconter;
@@ -84,11 +85,13 @@ pub struct Message {
 }
 
 /// Le sprite d'un monstre ou d'un humain : son espèce, celle d'un monstre
-/// ou celle d'un humain en combat, et s'il est shiny.
+/// ou celle d'un humain en combat, s'il est shiny, et la couleur que porte
+/// un héros (section 4.5).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Portrait {
     pub espece: EspeceId,
     pub shiny: bool,
+    pub couleur: Option<CouleurDuHeros>,
 }
 
 impl Portrait {
@@ -96,6 +99,7 @@ impl Portrait {
         Self {
             espece: monstre.espece().id().clone(),
             shiny: monstre.est_shiny(),
+            couleur: monstre.couleur_du_heros(),
         }
     }
 
@@ -103,6 +107,7 @@ impl Portrait {
         Self {
             espece: classe.espece_du_combattant(),
             shiny: false,
+            couleur: None,
         }
     }
 }
@@ -131,7 +136,7 @@ impl Message {
         let (portraits, nom) = match self.sprite.as_ref()? {
             Illustration::Seul(portrait) => (
                 vec![Some((portrait, false))],
-                sprites::nom_de_fichier(&portrait.espece, portrait.shiny),
+                sprites::nom_de_fichier(&portrait.espece, portrait.shiny, portrait.couleur),
             ),
             Illustration::FaceAFace { joueur, adversaire } => (
                 vec![
@@ -148,11 +153,11 @@ impl Message {
                 "portraits.png".to_string(),
             ),
         };
-        let dessines: Vec<Option<(sprites::Sprite, bool, bool)>> = portraits
+        let dessines: Vec<Option<(sprites::Sprite, &Portrait, bool)>> = portraits
             .into_iter()
             .map(|place| {
                 let (portrait, retourne) = place?;
-                Some((sprites::sprite(&portrait.espece)?, portrait.shiny, retourne))
+                Some((sprites::sprite(&portrait.espece)?, portrait, retourne))
             })
             .collect();
         if dessines.iter().all(Option::is_none) {
@@ -163,9 +168,10 @@ impl Message {
             .map(|place| {
                 place
                     .as_ref()
-                    .map(|(sprite, shiny, retourne)| sprites::Case {
+                    .map(|(sprite, portrait, retourne)| sprites::Case {
                         sprite,
-                        shiny: *shiny,
+                        shiny: portrait.shiny,
+                        couleur: portrait.couleur,
                         retourne: *retourne,
                     })
             })
@@ -325,6 +331,7 @@ fn illustration(
             return Some(Illustration::Seul(Portrait {
                 espece: adversaire.id().espece_du_combattant(),
                 shiny: false,
+                couleur: None,
             }));
         }
         Attente::Classe => {
@@ -358,6 +365,7 @@ fn illustration(
                 Illustration::Seul(Portrait {
                     espece: espece.id().clone(),
                     shiny: false,
+                    couleur: None,
                 })
             })
         }
@@ -365,10 +373,15 @@ fn illustration(
             .collection()
             .monstre(emplacement)
             .map(|monstre| Illustration::Seul(Portrait::de(monstre))),
-        (Attente::Camp, Vue::Equipement) => Some(Illustration::Seul(Portrait {
-            espece: partie.heros().classe().espece_du_combattant(),
-            shiny: partie.heros().est_shiny(),
-        })),
+        // Le héros, sur son écran et ceux qui en partent, avec sa couleur
+        // (section 4.5).
+        (Attente::Camp, Vue::Heros | Vue::Equipement | Vue::Succes(_) | Vue::Trophees) => {
+            Some(Illustration::Seul(Portrait {
+                espece: partie.heros().classe().espece_du_combattant(),
+                shiny: partie.heros().est_shiny(),
+                couleur: partie.heros().couleur(),
+            }))
+        }
         _ => None,
     }
 }

@@ -12,6 +12,7 @@ use crate::niveau::Niveau;
 use crate::nom::Nom;
 use crate::stats::{BonusDeStats, Stats, StatsDeBase, ValeursInternes, cumuler_bonus};
 use crate::statut::Statut;
+use crate::succes::{CouleurDuHeros, SuccesId};
 use crate::types::{Type, TypesMonstre};
 
 /// Guerrier et Mage dans la V1 (Q2), puis le Templier et l'Assassin
@@ -294,6 +295,10 @@ pub struct Heros {
     statut: Option<Statut>,
     /// Il ne change que de couleur (section 4.1).
     shiny: bool,
+    /// Le titre d'un succès obtenu, qui suit son nom (section 4.5).
+    titre: Option<SuccesId>,
+    /// Celle de son sprite, à la place de sa palette normale ou shiny.
+    couleur: Option<CouleurDuHeros>,
 }
 
 impl Heros {
@@ -305,6 +310,8 @@ impl Heros {
             pv_perdus: 0,
             statut: None,
             shiny: false,
+            titre: None,
+            couleur: None,
         }
     }
 
@@ -317,6 +324,34 @@ impl Heros {
 
     pub fn est_shiny(&self) -> bool {
         self.shiny
+    }
+
+    /// Reprise d'une sauvegarde, ou choix du joueur, vérifié par la partie
+    /// (section 4.5).
+    pub fn avec_apparence(
+        mut self,
+        titre: Option<SuccesId>,
+        couleur: Option<CouleurDuHeros>,
+    ) -> Self {
+        self.titre = titre;
+        self.couleur = couleur;
+        self
+    }
+
+    pub fn titre(&self) -> Option<&SuccesId> {
+        self.titre.as_ref()
+    }
+
+    pub fn couleur(&self) -> Option<CouleurDuHeros> {
+        self.couleur
+    }
+
+    pub(crate) fn porter_titre(&mut self, titre: Option<SuccesId>) {
+        self.titre = titre;
+    }
+
+    pub(crate) fn porter_couleur(&mut self, couleur: Option<CouleurDuHeros>) {
+        self.couleur = couleur;
     }
 
     /// Le service de Malvoise, contre un Philtre chromatique (section 13.7).
@@ -362,6 +397,9 @@ impl Heros {
         }
         if self.shiny {
             combattant = combattant.en_couleurs_shiny();
+        }
+        if let Some(couleur) = self.couleur {
+            combattant = combattant.en_couleur_du_heros(couleur);
         }
         combattant
     }

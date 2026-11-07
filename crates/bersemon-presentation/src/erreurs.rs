@@ -74,6 +74,8 @@ pub fn erreur_de_choix(choix: &Choix, erreur: &ErreurChoix) -> String {
         ErreurChoix::AuTourDeLAutre => "C'est à votre compagnon d'agir.".to_string(),
         ErreurChoix::AttenteTropCourte => "Votre compagnon a encore le temps de jouer.".to_string(),
         ErreurChoix::Arene(erreur) => crate::arene::erreur_arene(*erreur),
+        ErreurChoix::Succes(erreur) => crate::succes::erreur_succes(erreur),
+        ErreurChoix::Quete(erreur) => crate::quetes_du_camp::erreur_quete(erreur),
         autre => format!("Action impossible : {autre}."),
     }
 }

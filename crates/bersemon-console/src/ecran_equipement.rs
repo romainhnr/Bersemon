@@ -10,7 +10,7 @@ use bersemon_presentation::equipement::{
 
 use crate::saisie::Entree;
 
-/// `Some(None)` au retour vers le menu du camp.
+/// `Some(None)` au retour vers l'écran du héros.
 pub fn choisir(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
     let equipement = partie.heros().equipement();
     loop {
@@ -20,7 +20,7 @@ pub fn choisir(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
         for (position, place) in PlaceDEquipement::TOUTES.iter().enumerate() {
             println!("  {}. {}", position + 1, nom_de_place(*place));
         }
-        println!("  0. Retour au camp");
+        println!("  0. Retour");
         let numero = entree.choix(0, PlaceDEquipement::TOUTES.len())?;
         if numero == 0 {
             return Some(None);

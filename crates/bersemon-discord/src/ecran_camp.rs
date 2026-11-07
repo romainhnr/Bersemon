@@ -19,6 +19,7 @@ use bersemon_core::horodatage::Horodatage;
 use bersemon_core::marchand::prix_de_revente;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
+use bersemon_core::quete_du_camp::{EtatDeLaChaine, Personnage};
 use bersemon_core::recompenses_du_codex::compte_au_codex;
 use bersemon_core::stats::ValeursInternes;
 use bersemon_presentation::arene::description_de_la_fosse;
@@ -45,12 +46,18 @@ use bersemon_presentation::partie::{
 };
 use bersemon_presentation::peche::ligne_prete;
 use bersemon_presentation::quetes::ecran_des_quetes;
+use bersemon_presentation::quetes_du_camp::{
+    avis_des_quetes_du_camp, chaines, ecran_des_quetes_du_camp, peut_remettre,
+};
 use bersemon_presentation::recompenses_du_codex::{progression_du_codex, reclamer};
 use bersemon_presentation::rite::{rite_acheve, service_du_rite};
+use bersemon_presentation::succes::{
+    bilan_des_succes, couleur_du_heros, lignes_des_succes, titre_du_heros, trophees_du_camp,
+};
 use bersemon_presentation::tour::description_de_la_tour;
 
 use crate::composants::{
-    Cle, ECLIPSE, FOSSE, RETIRER, Vue, booster_en_texte, emplacement_en_texte,
+    AUCUN, Cle, ECLIPSE, FOSSE, RETIRER, Vue, booster_en_texte, emplacement_en_texte,
 };
 use crate::echanges::TableauDesEchanges;
 use crate::message::{
@@ -85,7 +92,10 @@ pub fn question(
         Vue::Attaques(emplacement) => attaques(partie, emplacement, contenu),
         Vue::Coffre => ecran_coffre::coffre(partie),
         Vue::Ressources => ecran_coffre::ressources(partie),
-        Vue::Options => options(),
+        Vue::Heros => heros(partie, contenu),
+        Vue::Succes(page) => succes(partie, page, contenu),
+        Vue::Trophees => trophees(partie, contenu),
+        Vue::QuetesDuCamp => quetes_du_camp(partie, contenu),
         Vue::Forge => forge(partie, contenu, maintenant),
         Vue::Equipement => equipement(partie),
         Vue::Peche => ecran_peche::peche(partie, maintenant),
@@ -210,10 +220,11 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
         bouton(Cle::Afficher(Vue::Codex(None)), "Codex", SECONDAIRE),
     ];
     // Malvoise, Gunther et Ansgar n'apparaissent qu'une fois au camp
-    // (sections 13.4, 13.8 et 14.2), et l'équipement avec la forge (section
-    // 13.5) ; les autres joueurs et les quêtes sont toujours là (sections
-    // 13.12, 15.1 et 15.3) : au plus 12 boutons avec celui du rite, sur trois
-    // rangées. Avec les deux menus de départ, le camp a ses 5 rangées.
+    // (sections 13.4, 13.8 et 14.2) ; le héros, les autres joueurs et les
+    // quêtes sont toujours là (sections 4.5, 13.12, 15.1 et 15.3), les options
+    // ayant rejoint l'écran du héros : au plus 11 boutons avec celui du rite,
+    // sur trois rangées. Avec les deux menus de départ, le camp a ses 5
+    // rangées.
     if partie.marchand_au_camp() {
         boutons.push(bouton(Cle::Afficher(Vue::Marchand), "Malvoise", SECONDAIRE));
     }
@@ -224,18 +235,9 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
             SECONDAIRE,
         ));
     }
-    // L'écran de l'équipement porte aussi le service shiny du héros (section
-    // 13.7).
-    if partie.forge().est_au_camp()
-        || !partie.heros().equipement().possedes().is_empty()
-        || partie.verifier_shiny_du_heros().is_ok()
-    {
-        boutons.push(bouton(
-            Cle::Afficher(Vue::Equipement),
-            "Équipement",
-            SECONDAIRE,
-        ));
-    }
+    // Le héros, toujours là, mène à son équipement, à ses succès, au
+    // service shiny et au suicide (section 4.5).
+    boutons.push(bouton(Cle::Afficher(Vue::Heros), "Héros", SECONDAIRE));
     if partie.peche().pecheur_au_camp() {
         boutons.push(bouton(Cle::Afficher(Vue::Peche), "Pêche", SECONDAIRE));
     }
@@ -248,7 +250,6 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
         "Multijoueur",
         SECONDAIRE,
     ));
-    boutons.push(bouton(Cle::Afficher(Vue::Options), "Options", SECONDAIRE));
     // Le temps que le petit du rite attende (section 13.11), à la suite des
     // autres boutons.
     let rite_acheve = rite_acheve(partie, maintenant);
@@ -262,13 +263,17 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
     lignes.extend(rangees(boutons));
     // Le menu des expéditions est sur cet écran : le moment du départ est
     // celui de toute l'expédition (section 9.6).
-    let mut en_tete = vec![en_tete_abrege_du_camp(partie), moment_present(maintenant)];
+    let mut en_tete = vec![
+        en_tete_abrege_du_camp(partie, contenu.succes()),
+        moment_present(maintenant),
+    ];
     en_tete.extend(ames_d_apotres(partie, contenu));
     en_tete.extend(expeditions_rentrees(partie, maintenant));
     en_tete.extend(travail_fini(partie, maintenant));
     en_tete.extend(ligne_prete(partie, maintenant));
     en_tete.extend(avis_des_pieges(partie, maintenant).map(str::to_string));
     en_tete.extend(rite_acheve);
+    en_tete.extend(avis_des_quetes_du_camp(partie, contenu));
     Question {
         texte: format!(
             "{}\nVotre équipe :\n{}",
@@ -536,9 +541,31 @@ fn equipement(partie: &Partie) -> Question {
             menu(Cle::Equiper(*place), nom_de_place(*place), options)
         })
         .collect();
-    let mut boutons = vec![retour()];
-    // Le service shiny du héros se rend ici, comme celui d'un monstre depuis
-    // sa gestion (section 13.7).
+    lignes.extend(rangees(vec![retour_au_heros()]));
+    Question {
+        texte: etat_de_l_equipement(equipement),
+        rangees: lignes,
+    }
+}
+
+fn retour_au_heros() -> Bouton {
+    bouton(Cle::Afficher(Vue::Heros), "Retour au héros", SECONDAIRE)
+}
+
+/// Sa fiche et son sprite ; l'équipement, une fois Gunther au camp ou un
+/// objet possédé ; ses succès ; le service shiny de Malvoise, comme celui
+/// d'un monstre depuis sa gestion (section 13.7) ; et le suicide, que le
+/// déroulement fait confirmer (section 13.9).
+fn heros(partie: &Partie, contenu: &ContenuV1) -> Question {
+    let mut boutons = Vec::new();
+    if partie.forge().est_au_camp() || !partie.heros().equipement().possedes().is_empty() {
+        boutons.push(bouton(
+            Cle::Afficher(Vue::Equipement),
+            "Équipement",
+            PRINCIPAL,
+        ));
+    }
+    boutons.push(bouton(Cle::Afficher(Vue::Succes(0)), "Succès", PRINCIPAL));
     if partie.verifier_shiny_du_heros().is_ok() {
         boutons.push(bouton(
             Cle::RendreLeHerosShiny,
@@ -546,33 +573,167 @@ fn equipement(partie: &Partie) -> Question {
             PRINCIPAL,
         ));
     }
+    boutons.push(bouton(Cle::SeSuicider, "Se suicider", DANGER));
+    boutons.push(retour());
+    Question {
+        texte: format!(
+            "{}\n{} {}\n{}",
+            fiche_du_heros(partie.heros()),
+            titre_du_heros(partie.heros(), contenu.succes()),
+            couleur_du_heros(partie.heros()),
+            bilan_des_succes(partie, contenu.succes())
+        ),
+        rangees: rangees(boutons),
+    }
+}
+
+/// Assez peu pour qu'une page tienne dans un message, avec les menus des
+/// titres et des couleurs.
+const SUCCES_PAR_PAGE: usize = 18;
+
+/// Une page de la liste des succès, avec un menu des titres des succès
+/// obtenus, par 25, et un menu des couleurs débloquées (section 4.5).
+fn succes(partie: &Partie, page: u8, contenu: &ContenuV1) -> Question {
+    let tous = contenu.succes();
+    let lignes_des_succes = lignes_des_succes(partie, tous);
+    let pages = lignes_des_succes.len().div_ceil(SUCCES_PAR_PAGE).max(1);
+    let page = usize::from(page).min(pages - 1);
+    let debut = page * SUCCES_PAR_PAGE;
+    let fin = (debut + SUCCES_PAR_PAGE).min(lignes_des_succes.len());
+    let mut lignes: Vec<Rangee> = Vec::new();
+    let mut titres: Vec<OptionDeMenu> = tous
+        .iter()
+        .filter(|un| partie.succes_obtenus().contains(un.id()))
+        .map(|un| OptionDeMenu {
+            libelle: un.titre().to_string(),
+            valeur: un.id().as_str().to_string(),
+            description: Some(un.description().to_string()),
+        })
+        .collect();
+    if !titres.is_empty() {
+        titres.insert(
+            0,
+            OptionDeMenu {
+                libelle: "Ne porter aucun titre".to_string(),
+                valeur: AUCUN.to_string(),
+                description: None,
+            },
+        );
+    }
+    for (numero, morceau) in titres.chunks(OPTIONS_PAR_MENU).enumerate() {
+        let numero = u8::try_from(numero).unwrap_or(u8::MAX);
+        lignes.extend(menu(
+            Cle::PorterTitre(numero),
+            "Porter un titre",
+            morceau.to_vec(),
+        ));
+    }
+    let couleurs = partie.couleurs_debloquees(tous);
+    if !couleurs.is_empty() {
+        let mut options = vec![OptionDeMenu {
+            libelle: "Couleur d'origine".to_string(),
+            valeur: AUCUN.to_string(),
+            description: None,
+        }];
+        options.extend(couleurs.into_iter().map(|couleur| OptionDeMenu {
+            libelle: couleur.nom().to_string(),
+            valeur: couleur.identifiant().to_string(),
+            description: None,
+        }));
+        lignes.extend(menu(Cle::PorterCouleur, "Couleur du héros", options));
+    }
+    let mut boutons = Vec::new();
+    if page > 0 {
+        let precedente = u8::try_from(page - 1).unwrap_or(0);
+        boutons.push(bouton(
+            Cle::Afficher(Vue::Succes(precedente)),
+            "Page précédente",
+            SECONDAIRE,
+        ));
+    }
+    if page + 1 < pages {
+        let suivante = u8::try_from(page + 1).unwrap_or(u8::MAX);
+        boutons.push(bouton(
+            Cle::Afficher(Vue::Succes(suivante)),
+            "Page suivante",
+            SECONDAIRE,
+        ));
+    }
+    boutons.push(bouton(
+        Cle::Afficher(Vue::Trophees),
+        "Trophées du camp",
+        SECONDAIRE,
+    ));
+    boutons.push(retour_au_heros());
     lignes.extend(rangees(boutons));
     Question {
         texte: format!(
-            "{}\n\n{}",
-            fiche_du_heros(partie.heros()),
-            etat_de_l_equipement(equipement)
+            "{} (page {}/{pages})\n{}",
+            bilan_des_succes(partie, tous),
+            page + 1,
+            lignes_des_succes[debut..fin].join("\n")
         ),
         rangees: lignes,
     }
 }
 
-/// Le déroulement demande ensuite confirmation du suicide (section 13.9).
-/// Rien à réclamer : une quête accomplie paie d'elle-même (section 13.12).
+/// Rien à réclamer : une quête accomplie paie d'elle-même (section 13.12). Les quêtes des
+/// personnages du camp ont leur écran, une fois l'un d'eux au camp (section
+/// 13.13).
 fn quetes(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Question {
+    let mut boutons = Vec::new();
+    if Personnage::TOUS
+        .into_iter()
+        .any(|personnage| partie.personnage_au_camp(personnage))
+    {
+        boutons.push(bouton(
+            Cle::Afficher(Vue::QuetesDuCamp),
+            "Personnages du camp",
+            PRINCIPAL,
+        ));
+    }
+    boutons.push(retour());
     Question {
         texte: ecran_des_quetes(partie, contenu, maintenant),
-        rangees: rangees(vec![retour()]),
+        rangees: rangees(boutons),
     }
 }
 
-fn options() -> Question {
+fn trophees(partie: &Partie, contenu: &ContenuV1) -> Question {
     Question {
-        texte: "Options de la partie.".to_string(),
+        texte: trophees_du_camp(partie, contenu.succes()),
         rangees: rangees(vec![
-            bouton(Cle::SeSuicider, "Se suicider", DANGER),
-            retour(),
+            bouton(Cle::Afficher(Vue::Succes(0)), "Succès", SECONDAIRE),
+            retour_au_heros(),
         ]),
+    }
+}
+
+/// Un bouton par personnage qui a une demande à écouter ou une quête à
+/// remettre (section 13.13).
+fn quetes_du_camp(partie: &Partie, contenu: &ContenuV1) -> Question {
+    let mut boutons: Vec<Bouton> = chaines(partie, contenu)
+        .into_iter()
+        .filter_map(|(personnage, etat)| match etat {
+            EtatDeLaChaine::Proposee(_) => Some(bouton(
+                Cle::EcouterQuete(personnage),
+                &format!("Écouter {}", personnage.nom()),
+                PRINCIPAL,
+            )),
+            EtatDeLaChaine::EnCours(_) if peut_remettre(partie, contenu, personnage) => {
+                Some(bouton(
+                    Cle::RemettreQuete(personnage),
+                    &format!("Remettre à {}", personnage.nom()),
+                    SUCCES,
+                ))
+            }
+            _ => None,
+        })
+        .collect();
+    boutons.push(retour());
+    Question {
+        texte: ecran_des_quetes_du_camp(partie, contenu),
+        rangees: rangees(boutons),
     }
 }
 

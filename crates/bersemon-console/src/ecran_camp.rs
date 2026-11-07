@@ -1,9 +1,10 @@
 //! Camp de base : départ en expédition par la carte, expéditions
 //! automatiques, gestion des monstres (section 13.2), coffre du camp (section
-//! 13.3), codex, marchand, forge, équipement du héros (section 4.3), pêche
-//! (section 13.8), quêtes (section 13.12) et options (section 13.9). Les
-//! monstres sont désignés par leur numéro dans la liste de la collection :
-//! l'équipe d'abord, le camp ensuite.
+//! 13.3), codex, marchand, forge, héros, son équipement et ses succès
+//! (sections 4.3 et 4.5), pêche (section 13.8), quêtes du jour et de la
+//! semaine (section 13.12), quêtes des personnages du camp (section 13.13) et
+//! options (section 13.9). Les monstres sont désignés par leur numéro dans
+//! la liste de la collection : l'équipe d'abord, le camp ensuite.
 
 use bersemon_core::beherit::EtatDuBeherit;
 use bersemon_core::booster::Booster;
@@ -12,6 +13,7 @@ use bersemon_core::combat::Cote;
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::{ActionDeGestion, Choix};
 use bersemon_core::partie::Partie;
+use bersemon_core::quete_du_camp::Personnage;
 use bersemon_presentation::arene::lieu_sur_la_carte;
 use bersemon_presentation::beherit::{DEMANDE_DE_SACRIFICE, destination_de_l_eclipse};
 use bersemon_presentation::boosters::{boosters, effet_du_booster};
@@ -29,18 +31,20 @@ use bersemon_presentation::partie::{
 };
 use bersemon_presentation::peche::ligne_prete;
 use bersemon_presentation::quetes::ecran_des_quetes;
+use bersemon_presentation::quetes_du_camp::avis_des_quetes_du_camp;
 use bersemon_presentation::recompenses_du_codex::{progression_du_codex, reclamer};
 use bersemon_presentation::rite::rite_acheve;
 use bersemon_presentation::tour::destination_de_la_tour;
 
 use crate::affichage;
 use crate::ecran_coffre;
-use crate::ecran_equipement;
 use crate::ecran_expeditions_automatiques;
 use crate::ecran_forge;
+use crate::ecran_heros;
 use crate::ecran_machines;
 use crate::ecran_marchand;
 use crate::ecran_peche;
+use crate::ecran_quetes_du_camp;
 use crate::horloge::maintenant;
 use crate::saisie::Entree;
 
@@ -61,8 +65,9 @@ enum EntreeDuCamp {
     Codex,
     Marchand,
     Forge,
-    Equipement,
+    Heros,
     Peche,
+    QuetesDuCamp,
     Cour,
     Quetes,
     Options,
@@ -76,7 +81,7 @@ enum SousMenu {
     Gestion,
     Coffre,
     Marchand,
-    Equipement,
+    Heros,
 }
 
 /// Rend `None` si le joueur quitte ou que l'entrée est fermée.
@@ -92,7 +97,7 @@ pub fn choisir(
             SousMenu::Gestion => Some(gerer(partie, contenu, entree)?),
             SousMenu::Coffre => Some(ecran_coffre::choisir(partie, entree)?),
             SousMenu::Marchand => Some(ecran_marchand::choisir(partie, contenu, entree)?),
-            SousMenu::Equipement => Some(ecran_equipement::choisir(partie, entree)?),
+            SousMenu::Heros => Some(ecran_heros::choisir(partie, contenu, entree)?),
         };
         match sous_menu {
             Some(Some(choix)) => return Some(choix),
@@ -103,7 +108,7 @@ pub fn choisir(
             None => {}
         }
         println!();
-        println!("{}", en_tete_du_camp(partie));
+        println!("{}", en_tete_du_camp(partie, contenu.succes()));
         println!("{}", moment_present(maintenant()));
         if let Some(ames) = ames_d_apotres(partie, contenu) {
             println!("{ames}");
@@ -123,6 +128,9 @@ pub fn choisir(
         if let Some(avis) = rite_acheve(partie, maintenant()) {
             println!("{avis}");
         }
+        for avis in avis_des_quetes_du_camp(partie, contenu) {
+            println!("{avis}");
+        }
         // Malvoise, Gunther et Ansgar n'apparaissent qu'une fois au camp
         // (sections 13.4, 13.8 et 14.2).
         let mut entrees = vec![
@@ -138,12 +146,17 @@ pub fn choisir(
         if partie.forge().est_au_camp() {
             entrees.push((EntreeDuCamp::Forge, "Forge de Gunther"));
         }
-        // L'équipement vient de la forge (section 13.5).
-        if partie.forge().est_au_camp() || !partie.heros().equipement().possedes().is_empty() {
-            entrees.push((EntreeDuCamp::Equipement, "Équipement du héros"));
-        }
+        // Le héros, son équipement et ses succès (sections 4.3 et 4.5).
+        entrees.push((EntreeDuCamp::Heros, "Héros"));
         if partie.peche().pecheur_au_camp() {
             entrees.push((EntreeDuCamp::Peche, "Pêche d'Ansgar"));
+        }
+        // Les quêtes, une fois un personnage au camp (section 13.13).
+        if Personnage::TOUS
+            .into_iter()
+            .any(|personnage| partie.personnage_au_camp(personnage))
+        {
+            entrees.push((EntreeDuCamp::QuetesDuCamp, "Quêtes du camp"));
         }
         // Un accès direct, en plus de celui des machines de la forge, une
         // fois la cour construite (section 13.6).
@@ -178,11 +191,12 @@ pub fn choisir(
                 None
             }
             EntreeDuCamp::Forge => ecran_forge::choisir(partie, contenu, entree)?,
-            EntreeDuCamp::Equipement => {
-                menu.ouvert = SousMenu::Equipement;
+            EntreeDuCamp::Heros => {
+                menu.ouvert = SousMenu::Heros;
                 None
             }
             EntreeDuCamp::Peche => ecran_peche::choisir(partie, entree)?,
+            EntreeDuCamp::QuetesDuCamp => ecran_quetes_du_camp::choisir(partie, contenu, entree)?,
             EntreeDuCamp::Cour => ecran_machines::choisir_dans_la_cour(partie, contenu, entree)?,
             EntreeDuCamp::Quetes => {
                 // Rien à réclamer : une quête accomplie paie d'elle-même.

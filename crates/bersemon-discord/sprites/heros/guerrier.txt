@@ -13,6 +13,8 @@ s e0b090
 h 2a2024
 k 1b1420
 p 6a4a2a
+a d8b040
+z 9a2ac0
 shiny
 o 1b1420
 b b08a30
@@ -27,9 +29,118 @@ s e0b090
 h e8e4d8
 k 1b1420
 p 6a4a2a
+a d8b040
+z 9a2ac0
+# Couleurs du héros (section 4.5) : même dessin, autre palette.
+cendre
+o 1b1420
+b 6e6a66
+c 4a4644
+d 9a9690
+w c8ccd4
+x 8a8e98
+r c8501a
+q 7a2e10
+n 3a2a20
+s e0b090
+h 3a3634
+k 1b1420
+p 6a4a2a
+a d8b040
+z 9a2ac0
+sang
+o 1b1420
+b 7a1a22
+c 4a0c12
+d a82a32
+w c8ccd4
+x 8a8e98
+r 1e1418
+q 0e0a0c
+n 3a2a20
+s e0b090
+h 2a1014
+k 1b1420
+p 6a4a2a
+a d8b040
+z 9a2ac0
+abime
+o 1b1420
+b 2a3e6a
+c 18263e
+d 46629a
+w c8ccd4
+x 8a8e98
+r 2a9a8a
+q 1a5e56
+n 3a2a20
+s e0b090
+h 141c2e
+k 1b1420
+p 6a4a2a
+a d8b040
+z 9a2ac0
+nacre
+o 1b1420
+b d8d4e0
+c a8a4b4
+d f4f2f8
+w c8ccd4
+x 8a8e98
+r b89ad8
+q 7e62a0
+n 3a2a20
+s e0b090
+h e8e0f0
+k 1b1420
+p 6a4a2a
+a d8b040
+z 9a2ac0
+royale
+o 1b1420
+b d8b040
+c a07a20
+d f0d070
+w c8ccd4
+x 8a8e98
+r 6a2a8a
+q 44185e
+n 3a2a20
+s e0b090
+h 2a2024
+k 1b1420
+p 6a4a2a
+a f0c850
+z 9a2ac0
 dessin
 .........ohohooo....ooo.
 .........ohhhhhho..owwxo
+........ohhhhhho..owwwxo
+.........ossshhhoowwwwxo
+........osksshhoowwwwxo.
+.......ossssshhowwwwxo..
+........oossshhwwwwxo...
+........ohhssswwwwxo....
+........ooooordcwxo.....
+.......oddddddbbcqo.....
+......occxbbbbbbcqo.....
+......occcxbbbbcrqo.....
+.......osspxbbcrrrqo....
+.......ossbbxbcrrrqo....
+.......opppppppprrqo....
+......opoooooorrrrqo....
+.......ooddcoddcrrqo....
+........odbcodbcrrqo....
+........odbcodbcrrrqo...
+........odbcodbcrrrqo...
+.......oocccocccqqqqo...
+......onnnnnonnnnooo....
+......onnnnnonnnno......
+.......ooooo.oooo.......
+# Le dessin de la couleur royale : la couronne remplace le haut du casque.
+couronne
+.........oaoaoao....ooo.
+.........oazaaazo..owwxo
 ........ohhhhhho..owwwxo
 .........ossshhhoowwwwxo
 ........osksshhoowwwwxo.

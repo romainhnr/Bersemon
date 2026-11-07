@@ -51,12 +51,14 @@ use crate::partie::{Partie, RecompenseObtenue, creer_monstre_de_depart};
 use crate::peche::{ErreurPeche, Pecheur, Prise};
 use crate::pierre::PierreDEvolution;
 use crate::quete::{Objectif, QueteAccomplie};
+use crate::quete_du_camp::{ErreurQuete, Exploration, Personnage, Quete, RemiseDeQuete};
 use crate::recompenses_du_codex::{ErreurCodex, RecompenseDuCodex};
 use crate::relations::IdJoueur;
 use crate::ressource::{Ressource, RessourceId};
 use crate::rite::{ApercuDuRite, ErreurRite, NaissanceDuRite};
 use crate::sauvegarde::{ErreurSauvegarde, SauvegardeRepository};
 use crate::soin::{EffetDuSoin, ErreurSoin, Soin, Soins, soin_sans_effet, verifier_cible};
+use crate::succes::{CouleurDuHeros, ErreurSucces, Succes, SuccesId, tous_les_trophees};
 use crate::traque::Piste;
 use crate::tutoriel::Conseil;
 use crate::zone::{Zone, ZoneId};
@@ -200,6 +202,18 @@ pub enum Choix {
     /// Au camp, depuis le codex, sans confirmation : la récompense du
     /// premier palier atteint et pas encore réclamé (section 5.6).
     ReclamerRecompenseDuCodex,
+    /// Au camp, sans confirmation : le titre d'un succès obtenu, ou aucun
+    /// (section 4.5).
+    PorterTitre(Option<SuccesId>),
+    /// Au camp, sans confirmation : une couleur débloquée, ou la couleur
+    /// d'origine (section 4.5).
+    PorterCouleur(Option<CouleurDuHeros>),
+    /// Au camp, sans confirmation : la demande du personnage lance sa quête
+    /// (section 13.13).
+    EcouterQuete(Personnage),
+    /// Au camp, sans confirmation : la quête en cours du personnage, si le
+    /// joueur a ce qu'elle demande.
+    RemettreQuete(Personnage),
     /// Au camp, sans confirmation : l'objet remplace celui de cette place
     /// (section 4.3).
     Equiper {
@@ -506,6 +520,26 @@ pub enum Evenement {
     PecheurRencontre(String),
     /// Son texte après la victoire : Ansgar s'installe au camp.
     PecheurSauve(String),
+    /// Le texte de l'objet de quête et de son gardien, avant le combat
+    /// (section 13.13).
+    GardienDeQuete(String),
+    /// Son texte après la victoire : l'objet est dans le sac.
+    ObjetDeQueteTrouve(String),
+    /// Au camp, ce que vient de dire le personnage : la quête est en cours.
+    QueteEcoutee(Box<Quete>),
+    /// Au camp : la quête remise, sa récompense rangée au coffre.
+    QueteRemise(Box<RemiseDeQuete>),
+    /// Les succès obtenus d'un coup, dans l'ordre du contenu (section 4.5).
+    SuccesObtenus {
+        succes: Vec<Succes>,
+        /// Le dernier trophée vient d'être réuni : la couleur royale est
+        /// débloquée.
+        tous_les_trophees: bool,
+    },
+    /// Le titre que porte désormais le héros, ou aucun.
+    TitrePorte(Option<Succes>),
+    /// La couleur que porte désormais le héros, ou la couleur d'origine.
+    CouleurPortee(Option<CouleurDuHeros>),
     Rencontre(Combat),
     /// Événements d'un tour, avec le combat qui permet de les mettre en texte.
     Combat {
@@ -816,6 +850,10 @@ pub enum ErreurChoix {
     /// En groupe, l'autre joueur a encore le temps de jouer.
     AttenteTropCourte,
     Arene(ErreurArene),
+    Succes(ErreurSucces),
+    /// Le contenu n'a pas ce succès.
+    SuccesInconnu(SuccesId),
+    Quete(ErreurQuete),
 }
 
 impl fmt::Display for ErreurChoix {
@@ -852,6 +890,11 @@ impl fmt::Display for ErreurChoix {
             ErreurChoix::AuTourDeLAutre => write!(f, "c'est à l'autre joueur d'agir"),
             ErreurChoix::AttenteTropCourte => write!(f, "l'autre joueur a encore le temps"),
             ErreurChoix::Arene(erreur) => write!(f, "{erreur}"),
+            ErreurChoix::Succes(erreur) => write!(f, "{erreur}"),
+            ErreurChoix::SuccesInconnu(succes) => {
+                write!(f, "succès inconnu : {}", succes.as_str())
+            }
+            ErreurChoix::Quete(erreur) => write!(f, "{erreur}"),
         }
     }
 }
@@ -1082,6 +1125,7 @@ impl Deroulement {
             en_groupe: true,
             ame: None,
             pecheur: None,
+            objet_de_quete: None,
         });
         Ok(())
     }
@@ -1241,6 +1285,9 @@ impl Deroulement {
             Reponse::NouvellePartie => self.etat = Etat::NomDuHeros,
             Reponse::Faite | Reponse::RetourAuCamp => {}
         }
+        if let Etat::EnJeu(jeu) = &mut self.etat {
+            jeu.constater_les_succes(contexte, &mut evenements);
+        }
         Ok(evenements)
     }
 
@@ -1380,6 +1427,29 @@ impl EnJeu {
             expedition: None,
             arene: None,
         }))
+    }
+
+    /// Au camp seulement : un succès atteint en expédition s'annonce au
+    /// retour (section 4.5). Une partie qui en obtient est sauvegardée.
+    fn constater_les_succes(&mut self, contexte: &Contexte<'_>, evenements: &mut Vec<Evenement>) {
+        if self.expedition.is_some() || self.arene.is_some() {
+            return;
+        }
+        let succes = contexte.contenu.succes();
+        let deja_tous = tous_les_trophees(self.partie.succes_obtenus(), succes);
+        let nouveaux = self
+            .partie
+            .constater_les_succes(succes, contexte.contenu.especes());
+        if nouveaux.is_empty() {
+            return;
+        }
+        let tous_les_trophees =
+            !deja_tous && tous_les_trophees(self.partie.succes_obtenus(), succes);
+        evenements.push(Evenement::SuccesObtenus {
+            succes: nouveaux,
+            tous_les_trophees,
+        });
+        sauvegarder(&self.partie, contexte.depot, evenements);
     }
 
     fn attente(&self) -> Attente<'_> {
@@ -1581,6 +1651,15 @@ impl EnJeu {
                     })?
                     .avec_jour_ou_nuit(JourOuNuit::a(contexte.maintenant))
                     .avec_meteo(Meteo::de_la_zone(zone, contexte.maintenant));
+                // Le gardien d'un objet de quête l'attend dans sa zone, carte
+                // ou annexe (section 13.13).
+                let expedition = match self
+                    .partie
+                    .objet_de_quete_a_trouver(zone.id(), contenu.quetes_du_camp())
+                {
+                    Some(exploration) => expedition.avec_objet_de_quete(exploration.clone()),
+                    None => expedition,
+                };
                 self.lancer(expedition, contexte, evenements);
                 Ok(Reponse::Faite)
             }
@@ -2320,6 +2399,64 @@ impl EnJeu {
                 sauvegarder(&self.partie, contexte.depot, evenements);
                 Ok(Reponse::Faite)
             }
+            Choix::PorterTitre(titre) => {
+                let succes = match titre {
+                    Some(id) => Some(
+                        contexte
+                            .contenu
+                            .succes()
+                            .iter()
+                            .find(|un| un.id() == id)
+                            .cloned()
+                            .ok_or_else(|| ErreurChoix::SuccesInconnu(id.clone()))?,
+                    ),
+                    None => None,
+                };
+                self.partie
+                    .porter_titre(titre.as_ref())
+                    .map_err(ErreurChoix::Succes)?;
+                evenements.push(Evenement::TitrePorte(succes));
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::PorterCouleur(couleur) => {
+                self.partie
+                    .porter_couleur(*couleur, contexte.contenu.succes())
+                    .map_err(ErreurChoix::Succes)?;
+                evenements.push(Evenement::CouleurPortee(*couleur));
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::EcouterQuete(personnage) => {
+                let contenu = contexte.contenu;
+                let quete = self
+                    .partie
+                    .ecouter(
+                        *personnage,
+                        contenu.quetes_du_camp(),
+                        contenu.zones(),
+                        contenu.piste(),
+                    )
+                    .map_err(ErreurChoix::Quete)?;
+                evenements.push(Evenement::QueteEcoutee(Box::new(quete)));
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::RemettreQuete(personnage) => {
+                let contenu = contexte.contenu;
+                let remise = self
+                    .partie
+                    .remettre(
+                        *personnage,
+                        contenu.quetes_du_camp(),
+                        contenu.zones(),
+                        contenu.piste(),
+                    )
+                    .map_err(ErreurChoix::Quete)?;
+                evenements.push(Evenement::QueteRemise(Box::new(remise)));
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
             Choix::FaireEvoluer(emplacement) => {
                 if !confirme {
                     // Une évolution impossible est refusée sans demander de
@@ -2526,6 +2663,7 @@ impl EnJeu {
             en_groupe: false,
             ame: None,
             pecheur: None,
+            objet_de_quete: None,
         };
         let reponse = en_cours.etape_suivante(&mut self.partie, contexte, evenements);
         let reponse = en_cours.annoncer_l_indice(&self.partie, contexte.contenu.piste(), reponse);
@@ -2666,6 +2804,8 @@ struct EnExpedition {
     ame: Option<MarchandMort>,
     /// Ansgar, que le combat en cours peut sauver.
     pecheur: Option<Pecheur>,
+    /// L'objet de quête que le combat en cours peut gagner (section 13.13).
+    objet_de_quete: Option<Exploration>,
 }
 
 enum Moment {
@@ -3407,6 +3547,16 @@ impl EnExpedition {
                     ));
                 }
             }
+            // Une fuite ou une défaite laisse l'objet à son gardien, qui
+            // l'attend à l'expédition suivante (section 13.13).
+            if let Some(exploration) = self.objet_de_quete.take() {
+                if fin.issue == Some(Issue::Victoire) {
+                    evenements.push(Evenement::ObjetDeQueteTrouve(
+                        exploration.prise().to_string(),
+                    ));
+                    partie.trouver_l_objet_de_quete(exploration.objet().clone());
+                }
+            }
             // Une fuite ou une défaite laisse l'âme à retrouver.
             if let Some(marchand) = self.ame.take() {
                 if fin.issue == Some(Issue::Victoire) {
@@ -3577,6 +3727,22 @@ impl EnExpedition {
                 let combat = self.sous_le_cycle(combat);
                 evenements.push(Evenement::Rencontre(combat.clone()));
                 self.pecheur = Some(*pecheur);
+                self.engager(partie, combat, evenements)
+            }
+            EvenementExpedition::ObjetDeQuete {
+                exploration,
+                adversaire,
+            } => {
+                evenements.push(Evenement::GardienDeQuete(
+                    exploration.rencontre().to_string(),
+                ));
+                let combat = partie
+                    .preparer_combat(vec![adversaire])
+                    .expect(EQUIPE_APTE)
+                    .avec_limite_d_obeissance(limite);
+                let combat = self.sous_le_cycle(combat);
+                evenements.push(Evenement::Rencontre(combat.clone()));
+                self.objet_de_quete = Some(*exploration);
                 self.engager(partie, combat, evenements)
             }
             EvenementExpedition::MonstreRare(rare) => {
@@ -3778,7 +3944,7 @@ mod tests {
     use crate::espece::EspeceId;
     use crate::habilete::Habilete;
     use crate::humain::HumainId;
-    use crate::monstre::rayon_chromatique;
+    use crate::monstre::choc_chromatique;
     use crate::niveau::Niveau;
     use crate::partie::EtatPartie;
     use crate::peche::Peche;
@@ -3878,6 +4044,8 @@ mod tests {
             rite: partie.rite().cloned(),
             paliers_du_codex: partie.paliers_du_codex().to_vec(),
             arene: partie.arene(),
+            succes_obtenus: partie.succes_obtenus().to_vec(),
+            quetes_du_camp: partie.quetes_du_camp().clone(),
             decouvertes: partie.decouvertes().clone(),
             quetes: partie.quetes().clone(),
         }
@@ -3917,19 +4085,25 @@ mod tests {
             .unwrap();
         assert!(matches!(
             &evenements[..],
-            [Evenement::Introduction(Classe::Templier), Evenement::PartieCommencee(depart)]
-                if depart.est_shiny() && depart.espece().id().as_str() == "mandragore"
+            [
+                Evenement::Introduction(Classe::Templier),
+                Evenement::PartieCommencee(depart),
+                Evenement::SuccesObtenus { succes, .. },
+            ] if depart.est_shiny()
+                && depart.espece().id().as_str() == "mandragore"
+                && succes[0].id().as_str() == "oeil-de-lynx"
         ));
         assert_eq!(deroulement.attente(), Attente::Camp);
         let partie = deroulement.partie().unwrap();
         assert_eq!(partie.heros().classe(), Classe::Templier);
         assert!(!partie.heros().est_shiny());
-        // Né shiny, le monstre de départ connaît le Rayon chromatique
+        // Né shiny, le monstre de départ connaît le Choc chromatique
         // (section 5.1).
         let depart = &partie.collection().equipe()[0];
-        assert!(depart.attaques().connait(rayon_chromatique().id()));
-        // La partie est sauvegardée dès sa création (section 13.9).
-        assert_eq!(depot.sauvegardes.borrow().len(), 1);
+        assert!(depart.attaques().connait(choc_chromatique().id()));
+        // La partie est sauvegardée dès sa création (section 13.9), puis avec
+        // son succès (section 4.5).
+        assert_eq!(depot.sauvegardes.borrow().len(), 2);
     }
 
     /// 1 fois sur 512, le héros naît shiny ; il ne change que de couleur
@@ -3958,14 +4132,15 @@ mod tests {
             [
                 Evenement::Introduction(Classe::Guerrier),
                 Evenement::PartieCommencee(depart),
-                Evenement::HerosShiny
-            ] if !depart.est_shiny()
+                Evenement::HerosShiny,
+                Evenement::SuccesObtenus { succes, .. },
+            ] if !depart.est_shiny() && succes[0].id().as_str() == "lueur-incarnee"
         ));
         let heros = deroulement.partie().unwrap().heros();
         assert!(heros.est_shiny());
         let combattant = heros.combattant();
         assert!(combattant.est_shiny());
-        // Ni valeurs internes à 31, ni Rayon chromatique.
+        // Ni valeurs internes à 31, ni Choc chromatique.
         let ordinaire = Heros::new(Nom::new("Aldric").unwrap(), Classe::Guerrier).combattant();
         assert_eq!(combattant.stats(), ordinaire.stats());
         assert_eq!(combattant.attaques(), ordinaire.attaques());
@@ -4507,22 +4682,23 @@ mod tests {
             repondre_sans_tirage(&mut deroulement, Choix::Oui, &contenu, &depot).unwrap();
         assert!(matches!(
             &evenements[..],
-            [Evenement::MonstreRenduShiny(monstre)] if monstre.est_shiny()
+            [Evenement::MonstreRenduShiny(monstre), Evenement::SuccesObtenus { .. }]
+                if monstre.est_shiny()
         ));
         let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
         assert_eq!(sauvegarde.coffre_du_camp().philtres_chromatiques(), 0);
         assert!(sauvegarde.collection().equipe()[0].est_shiny());
         // Il connaît déjà 4 attaques : le joueur choisit celle qu'oublie le
-        // Rayon chromatique, ou y renonce (section 5.1).
+        // Choc chromatique, ou y renonce (section 5.1).
         assert_eq!(avant.attaques().liste().len(), 4);
-        let rayon = rayon_chromatique();
+        let choc = choc_chromatique();
         assert!(matches!(
             deroulement.attente(),
-            Attente::OubliAttaque { nouvelle, .. } if *nouvelle == rayon
+            Attente::OubliAttaque { nouvelle, .. } if *nouvelle == choc
         ));
         repondre_sans_tirage(&mut deroulement, Choix::OublierAttaque(1), &contenu, &depot).unwrap();
         let shiny = &deroulement.partie().unwrap().collection().equipe()[0];
-        assert_eq!(shiny.attaques().liste()[1], rayon);
+        assert_eq!(shiny.attaques().liste()[1], choc);
         // Déjà shiny : le refus vient sans confirmation.
         assert_eq!(
             repondre_sans_tirage(&mut deroulement, rendre, &contenu, &depot),
@@ -4554,7 +4730,11 @@ mod tests {
         );
         let evenements =
             repondre_sans_tirage(&mut deroulement, Choix::Oui, &contenu, &depot).unwrap();
-        assert_eq!(evenements, [Evenement::HerosRenduShiny]);
+        assert!(matches!(
+            &evenements[..],
+            [Evenement::HerosRenduShiny, Evenement::SuccesObtenus { succes, .. }]
+                if succes[0].id().as_str() == "lueur-incarnee"
+        ));
         let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
         assert!(sauvegarde.heros().est_shiny());
         assert_eq!(sauvegarde.sac().philtres_chromatiques(), 0);
@@ -6749,6 +6929,9 @@ mod tests {
             rite: None,
             paliers_du_codex: Vec::new(),
             arene: Default::default(),
+            // Déjà constaté, pour que les tests ne voient que leur événement.
+            succes_obtenus: vec![SuccesId::new("nomade")],
+            quetes_du_camp: Default::default(),
             decouvertes: Default::default(),
             quetes: Default::default(),
         })
@@ -7919,5 +8102,88 @@ mod tests {
             expedition.etape_suivante(&mut AleatoireScripte::new([81, 1, 25, 100, 100])),
             Some(EvenementExpedition::Coffre { .. })
         ));
+    }
+
+    /// Section 13.13 : la quête en cours, son objet attend à son étape,
+    /// gardé ; la victoire le met dans le sac, et il ne se rencontre plus.
+    #[test]
+    fn le_gardien_d_un_objet_de_quete_se_combat_en_expedition() {
+        use crate::inventaire::Inventaire;
+        use crate::niveau::Niveau;
+        use crate::quete_du_camp::{DemandeDeQuete, ObjetDeQuete, OuvertureDeQuete, QueteId};
+        let base = ContenuV1::new();
+        let loup = base.espece(&EspeceId::new("loup")).unwrap();
+        let id = QueteId::new("croc-perdu");
+        let quete = crate::quete_du_camp::Quete::new(
+            id.clone(),
+            Personnage::Malvoise,
+            "Le croc perdu",
+            OuvertureDeQuete::Zone(ZoneId::new("lisiere")),
+            DemandeDeQuete::Explorer(Box::new(Exploration::new(
+                ZoneId::new("lisiere"),
+                "Lisière du Bois-Sombre",
+                2,
+                ObjetDeQuete::new(id.clone(), "Croc perdu"),
+                loup,
+                Niveau::new(7).unwrap(),
+                "Un loup garde un croc.",
+                "Vous ramassez le croc.",
+            ))),
+            Inventaire::default(),
+            "",
+            "",
+        );
+        let contenu = base.avec_quetes_du_camp(vec![quete]);
+        let depot = DepotMemoire::default();
+        let mut etat = etat_de(&partie_pour_les_expeditions(&contenu));
+        etat.collection = crate::collection::Collection::new(salamandre(&contenu, 40));
+        etat.marchand_au_camp = true;
+        etat.quetes_du_camp.en_cours.push(id.clone());
+        let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
+        // Un coffre d'une potion et de 25 pièces d'argent, sans capsule.
+        let lisiere = Choix::PartirEnExpedition(ZoneId::new("lisiere"));
+        repondre_a(
+            &mut deroulement,
+            lisiere,
+            &contenu,
+            &depot,
+            0,
+            vec![81, 1, 25, 100, 100],
+        )
+        .unwrap();
+        // À l'étape 2, sans tirage de sa nature : le Loup, non shiny, valeurs
+        // internes nulles, première habileté.
+        let evenements = repondre_a(
+            &mut deroulement,
+            Choix::ContinuerLExpedition,
+            &contenu,
+            &depot,
+            0,
+            vec![2, 0, 0, 0, 0, 0, 0, 0],
+        )
+        .unwrap();
+        assert!(
+            evenements.iter().any(|evenement| matches!(
+                evenement,
+                Evenement::GardienDeQuete(texte) if texte == "Un loup garde un croc."
+            )),
+            "{evenements:?}"
+        );
+        let Attente::ActionDeCombat(combat) = deroulement.attente() else {
+            panic!("combat attendu");
+        };
+        assert!(combat.filet_possible() && combat.fuite_possible());
+        let vus = jouer_le_combat(&mut deroulement, &contenu, &depot);
+        assert!(vus.iter().any(|evenement| matches!(
+            evenement,
+            Evenement::ObjetDeQueteTrouve(texte) if texte == "Vous ramassez le croc."
+        )));
+        let partie = deroulement.partie().unwrap();
+        assert!(partie.sac().contient_objet_de_quete(&id));
+        assert!(
+            partie
+                .objet_de_quete_a_trouver(&ZoneId::new("lisiere"), contenu.quetes_du_camp())
+                .is_none()
+        );
     }
 }

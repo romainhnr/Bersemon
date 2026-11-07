@@ -34,10 +34,12 @@ use crate::partie::{
 };
 use crate::peche;
 use crate::quetes::quete_accomplie;
+use crate::quetes_du_camp;
 use crate::recompenses_du_codex::recompense_reclamee;
 use crate::rite::{naissance as texte_de_la_naissance, rite_lance};
 use crate::sac;
 use crate::soins::{le_soin, soin_utilise, soins};
+use crate::succes;
 
 /// La forme évoluée apprend d'autres attaques que son attaque d'évolution
 /// (section 5.4).
@@ -194,6 +196,16 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
         Evenement::AmeRecueillie(texte) => (texte.clone(), true),
         Evenement::PecheurRencontre(texte) => (texte.clone(), false),
         Evenement::PecheurSauve(texte) => (texte.clone(), true),
+        Evenement::GardienDeQuete(texte) => (texte.clone(), false),
+        Evenement::ObjetDeQueteTrouve(texte) => (texte.clone(), true),
+        Evenement::QueteEcoutee(quete) => (quetes_du_camp::quete_ecoutee(quete), false),
+        Evenement::QueteRemise(remise) => (quetes_du_camp::quete_remise(remise), false),
+        Evenement::SuccesObtenus {
+            succes: obtenus,
+            tous_les_trophees,
+        } => (succes::succes_obtenus(obtenus, *tous_les_trophees), true),
+        Evenement::TitrePorte(titre) => (succes::titre_porte(titre.as_ref()), false),
+        Evenement::CouleurPortee(couleur) => (succes::couleur_portee(*couleur), false),
         Evenement::AmeDonnee { marchand, soin } => (
             format!(
                 "Vous remettez l'âme {} à Malvoise, qui l'enferme dans le crâne. Malvoise vendra désormais {}.",

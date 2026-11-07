@@ -8,6 +8,7 @@ use crate::capsule::Capsule;
 use crate::equipement::{ObjetDEquipement, ObjetDEquipementId, SorteDObjet};
 use crate::espece::{Espece, EspeceId};
 use crate::heros::Classe;
+use crate::quete_du_camp::{ObjetDeQuete, QueteId};
 use crate::ressource::{Ressource, RessourceId};
 use crate::zone::{Zone, ZoneId};
 
@@ -26,6 +27,9 @@ pub trait Catalogue {
 
     /// Pour les ressources du sac et du coffre (section 14.3).
     fn ressource(&self, id: &RessourceId) -> Option<Ressource>;
+
+    /// Pour les objets de quête du sac et du coffre (section 13.13).
+    fn objet_de_quete(&self, quete: &QueteId) -> Option<ObjetDeQuete>;
 
     /// Pour l'équipement du héros et l'objet en fabrication (section 4.3).
     fn objet_d_equipement(&self, id: &ObjetDEquipementId) -> Option<ObjetDEquipement>;

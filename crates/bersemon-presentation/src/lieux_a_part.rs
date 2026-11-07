@@ -128,6 +128,8 @@ mod tests {
             rite: None,
             paliers_du_codex: Vec::new(),
             arene: Default::default(),
+            succes_obtenus: Vec::new(),
+            quetes_du_camp: Default::default(),
             decouvertes: Decouvertes {
                 annexes_ouvertes,
                 legendaires_captures: Vec::new(),

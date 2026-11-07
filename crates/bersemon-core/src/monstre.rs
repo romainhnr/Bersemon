@@ -12,6 +12,7 @@ use crate::niveau::Niveau;
 use crate::nom::Nom;
 use crate::stats::{Stats, ValeursInternes, calculer_stats};
 use crate::statut::Statut;
+use crate::succes::CouleurDuHeros;
 use crate::types::Type;
 
 /// Un monstre sauvage sur 512 est shiny (section 5.1).
@@ -25,10 +26,12 @@ pub fn tirer_shiny(aleatoire: &mut dyn Aleatoire) -> bool {
 /// L'attaque que connaît tout monstre shiny, et que seul un shiny apprend
 /// (section 5.1) : Stellaire, physique ou spéciale selon le monstre. Le
 /// héros shiny ne la connaît pas.
-pub fn rayon_chromatique() -> Attaque {
+pub fn choc_chromatique() -> Attaque {
     Attaque::new(
+        // Identifiant de son ancien nom, Rayon chromatique, gardé tel quel
+        // pour que les sauvegardes se relisent sans migration.
         AttaqueId::new("rayon-chromatique"),
-        "Rayon chromatique",
+        "Choc chromatique",
         Type::Stellaire,
         Categorie::Adaptative,
         80,
@@ -79,13 +82,16 @@ pub struct Monstre {
     /// Pour un monstre loué à Malvoise : les expéditions manuelles qu'il
     /// reste à sa location, au moins une (section 14.2).
     location: Option<u8>,
+    /// Pour le combattant d'un héros : la couleur de son sprite (section
+    /// 4.5). Jamais pour un monstre.
+    couleur_du_heros: Option<CouleurDuHeros>,
 }
 
 impl Monstre {
     /// Crée un monstre avec tous ses PV, sans statut, et l'XP minimale de son
     /// niveau. Le shiny est reçu déjà décidé : il ne se tire que pour un
     /// monstre sauvage (`tirer_shiny`). Un shiny a 31 dans chaque valeur
-    /// interne, quelles que soient celles reçues, et connaît le Rayon
+    /// interne, quelles que soient celles reçues, et connaît le Choc
     /// chromatique, à la place de la plus ancienne de ses attaques s'il en
     /// connaît déjà 4 (section 5.1). L'habileté est la première de l'espèce,
     /// sauf si `tirer_son_habilete` en tire une autre.
@@ -96,12 +102,12 @@ impl Monstre {
         mut attaques: AttaquesMonstre,
         shiny: bool,
     ) -> Self {
-        let rayon = rayon_chromatique();
-        if shiny && !attaques.connait(rayon.id()) {
+        let choc = choc_chromatique();
+        if shiny && !attaques.connait(choc.id()) {
             if attaques.est_complete() {
-                attaques.remplacer(0, rayon)
+                attaques.remplacer(0, choc)
             } else {
-                attaques.ajouter(rayon)
+                attaques.ajouter(choc)
             }
             .expect("une attaque inconnue prend une place");
         }
@@ -118,6 +124,7 @@ impl Monstre {
             habilete: None,
             recu_de: None,
             location: None,
+            couleur_du_heros: None,
         };
         monstre.habilete = monstre.espece.habiletes().first().copied();
         monstre.soigner_completement();
@@ -411,8 +418,19 @@ impl Monstre {
         self
     }
 
+    /// La couleur que porte le héros, qui ne change que son sprite (section
+    /// 4.5).
+    pub(crate) fn en_couleur_du_heros(mut self, couleur: CouleurDuHeros) -> Self {
+        self.couleur_du_heros = Some(couleur);
+        self
+    }
+
+    pub fn couleur_du_heros(&self) -> Option<CouleurDuHeros> {
+        self.couleur_du_heros
+    }
+
     /// Le service de Malvoise (section 13.7) : un shiny a 31 dans chaque
-    /// valeur interne (section 5.1). Le Rayon chromatique s'apprend ensuite
+    /// valeur interne (section 5.1). Le Choc chromatique s'apprend ensuite
     /// comme une attaque gagnée (`Partie::rendre_shiny`).
     pub(crate) fn devenir_shiny(&mut self) {
         self.shiny = true;
@@ -477,6 +495,7 @@ impl Monstre {
             habilete: etat.habilete,
             recu_de: etat.recu_de,
             location: etat.location.filter(|&restantes| restantes > 0),
+            couleur_du_heros: None,
         };
         if monstre.habilete.is_none() {
             monstre.habilete = monstre.espece.habiletes().first().copied();
@@ -714,7 +733,7 @@ mod tests {
 
     /// Section 5.1.
     #[test]
-    fn ne_shiny_il_connait_le_rayon_chromatique() {
+    fn ne_shiny_il_connait_le_choc_chromatique() {
         let ids = |monstre: &Monstre| -> Vec<String> {
             monstre
                 .attaques()
@@ -742,9 +761,9 @@ mod tests {
     /// Physique ou spéciale selon la plus haute des deux attaques du
     /// monstre, spéciale à égalité (section 5.1).
     #[test]
-    fn la_categorie_du_rayon_suit_le_monstre() {
-        let rayon = rayon_chromatique();
-        assert_eq!(rayon.categorie(), Categorie::Adaptative);
+    fn la_categorie_du_choc_suit_le_monstre() {
+        let choc = choc_chromatique();
+        assert_eq!(choc.categorie(), Categorie::Adaptative);
         let avec = |attaque: u16, attaque_speciale: u16| {
             let mut base = *espece_de_test().stats_de_base();
             base.attaque = attaque;
@@ -760,9 +779,9 @@ mod tests {
             );
             Monstre::creer(espece, Niveau::new(50).unwrap(), vi_maximales(), true).unwrap()
         };
-        assert_eq!(rayon.categorie_pour(&avec(90, 60)), Categorie::Physique);
-        assert_eq!(rayon.categorie_pour(&avec(60, 90)), Categorie::Speciale);
-        assert_eq!(rayon.categorie_pour(&avec(70, 70)), Categorie::Speciale);
+        assert_eq!(choc.categorie_pour(&avec(90, 60)), Categorie::Physique);
+        assert_eq!(choc.categorie_pour(&avec(60, 90)), Categorie::Speciale);
+        assert_eq!(choc.categorie_pour(&avec(70, 70)), Categorie::Speciale);
         let a = attaque_de_test("a");
         assert_eq!(a.categorie_pour(&avec(60, 90)), Categorie::Physique);
     }

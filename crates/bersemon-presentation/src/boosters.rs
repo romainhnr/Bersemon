@@ -4,7 +4,7 @@
 
 use bersemon_core::booster::{Booster, GAIN_D_UN_BOOSTER};
 use bersemon_core::combat::Cote;
-use bersemon_core::monstre::{Monstre, rayon_chromatique};
+use bersemon_core::monstre::{Monstre, choc_chromatique};
 use bersemon_core::stats::{Stat, ValeursInternes};
 
 use crate::mise_en_valeur::important;
@@ -123,9 +123,9 @@ pub fn monstre_rendu_shiny(monstre: &Monstre) -> String {
     let nom = important(monstre.nom());
     // Sans place libre, la question de l'attaque à oublier suit (section
     // 5.1).
-    let rayon = rayon_chromatique();
-    let apprend = if monstre.attaques().connait(rayon.id()) {
-        format!(" Il apprend {}.", rayon.nom())
+    let choc = choc_chromatique();
+    let apprend = if monstre.attaques().connait(choc.id()) {
+        format!(" Il apprend {}.", choc.nom())
     } else {
         String::new()
     };
@@ -170,25 +170,25 @@ mod tests {
         let texte = monstre_rendu_shiny(&loup);
         assert_eq!(texte.matches("shiny").count(), 1, "{texte}");
         assert!(
-            texte.ends_with("**Loup** est désormais shiny. Il apprend Rayon chromatique."),
+            texte.ends_with("**Loup** est désormais shiny. Il apprend Choc chromatique."),
             "{texte}"
         );
         // Sans place libre, le texte n'en dit rien : la question de l'attaque
         // à oublier suit (section 5.1).
-        let sans_rayon = Monstre::creer(
+        let sans_choc = Monstre::creer(
             contenu.espece(&EspeceId::new("loup")).unwrap().clone(),
             Niveau::new(5).unwrap(),
             ValeursInternes::default(),
             false,
         )
         .unwrap();
-        assert!(monstre_rendu_shiny(&sans_rayon).ends_with("est désormais shiny."));
+        assert!(monstre_rendu_shiny(&sans_choc).ends_with("est désormais shiny."));
     }
 
-    /// Section 5.1 : la catégorie du Rayon chromatique suit les stats du
+    /// Section 5.1 : la catégorie du Choc chromatique suit les stats du
     /// monstre ; sans monstre, les deux sont dites.
     #[test]
-    fn la_categorie_du_rayon_se_dit_pour_le_monstre() {
+    fn la_categorie_du_choc_se_dit_pour_le_monstre() {
         use crate::monstres::{decrire_attaque, decrire_attaque_de};
         use bersemon_core::catalogue::Catalogue;
         use bersemon_core::contenu::ContenuV1;
@@ -205,13 +205,13 @@ mod tests {
             )
             .unwrap()
         };
-        let rayon = rayon_chromatique();
+        let choc = choc_chromatique();
         assert_eq!(
-            decrire_attaque(&rayon),
-            "Rayon chromatique (Stellaire, physique ou spéciale, puissance 80, précision 100 %)"
+            decrire_attaque(&choc),
+            "Choc chromatique (Stellaire, physique ou spéciale, puissance 80, précision 100 %)"
         );
         // Le Loup frappe en physique, la Salamandre en spécial.
-        assert!(decrire_attaque_de(&creer("loup"), &rayon).contains("Stellaire, physique,"));
-        assert!(decrire_attaque_de(&creer("salamandre"), &rayon).contains("Stellaire, spéciale,"));
+        assert!(decrire_attaque_de(&creer("loup"), &choc).contains("Stellaire, physique,"));
+        assert!(decrire_attaque_de(&creer("salamandre"), &choc).contains("Stellaire, spéciale,"));
     }
 }

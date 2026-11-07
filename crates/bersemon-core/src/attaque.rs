@@ -29,7 +29,7 @@ pub enum Categorie {
     Speciale,
     /// Physique ou spéciale selon la plus haute des deux attaques du monstre
     /// qui l'utilise, hors bonus de combat, spéciale à égalité : celle du
-    /// Rayon chromatique, utile à tout shiny (section 5.1).
+    /// Choc chromatique, utile à tout shiny (section 5.1).
     Adaptative,
 }
 

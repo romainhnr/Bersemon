@@ -18,6 +18,7 @@ use crate::meteo::Meteo;
 use crate::monstre::Monstre;
 use crate::peche::Pecheur;
 use crate::pierre::PierreDEvolution;
+use crate::quete_du_camp::Exploration;
 use crate::tour::TourSansFond;
 use crate::traque::Apotre;
 use crate::zone::{MonstreRare, Zone, ZoneId, tirer_entre};
@@ -169,6 +170,12 @@ pub enum EvenementExpedition {
         pecheur: Box<Pecheur>,
         adversaire: Monstre,
     },
+    /// Combat ordinaire contre le gardien d'un objet de quête : la victoire
+    /// met l'objet dans le sac (section 13.13).
+    ObjetDeQuete {
+        exploration: Box<Exploration>,
+        adversaire: Monstre,
+    },
 }
 
 /// Quand l'âme du marchand mort de la zone se rencontre (section 14.2).
@@ -227,6 +234,9 @@ pub struct Expedition {
     ame: Option<(MarchandMort, RencontreDeLAme)>,
     /// Ansgar, tant qu'il n'est pas au camp ; une fois au plus.
     pecheur: Option<Pecheur>,
+    /// L'objet d'une quête en cours et son gardien, à son étape ; une fois au
+    /// plus (section 13.13). En boîte, comme la descente.
+    objet_de_quete: Option<Box<Exploration>>,
     /// Un coffre ne contient qu'une capsule que le joueur n'a pas encore.
     capsules_possedees: Vec<AttaqueId>,
     /// Pour qu'un autre coffre de la même expédition ne la contienne pas.
@@ -270,6 +280,7 @@ impl Expedition {
             humain: None,
             ame: None,
             pecheur: None,
+            objet_de_quete: None,
             capsules_possedees: Vec::new(),
             capsules_trouvees: Vec::new(),
             descente: None,
@@ -357,6 +368,13 @@ impl Expedition {
         self
     }
 
+    /// Son étape, avant la dernière, est choisie dans une zone sans marchand
+    /// mort ni Ansgar (section 13.13).
+    pub(crate) fn avec_objet_de_quete(mut self, exploration: Exploration) -> Self {
+        self.objet_de_quete = Some(Box::new(exploration));
+        self
+    }
+
     /// Le départ dans une zone de la carte fixe le moment de toute
     /// l'expédition (section 9.6).
     pub(crate) fn avec_jour_ou_nuit(mut self, jour_ou_nuit: JourOuNuit) -> Self {
@@ -429,7 +447,8 @@ impl Expedition {
     /// remplace l'événement de la dernière étape, sans tirage de sa nature
     /// (Q57), comme l'humain de la zone, sans aucun tirage (section 10.7).
     /// Ansgar remplace celui de son étape, avant l'âme, avec les tirages de
-    /// son adversaire (section 9.2). Dans la Tour sans fond, le gardien
+    /// son adversaire (section 9.2), puis le gardien d'un objet de quête, avec
+    /// les siens (section 13.13). Dans la Tour sans fond, le gardien
     /// remplace celui des étapes multiples de 10, avec ses seuls tirages
     /// (section 9.5).
     pub fn etape_suivante(&mut self, aleatoire: &mut dyn Aleatoire) -> Option<EvenementExpedition> {
@@ -476,6 +495,16 @@ impl Expedition {
             let adversaire = pecheur.generer_adversaire(aleatoire);
             return Some(EvenementExpedition::Pecheur {
                 pecheur: Box::new(pecheur),
+                adversaire,
+            });
+        }
+        if let Some(exploration) = self
+            .objet_de_quete
+            .take_if(|exploration| exploration.etape() == etape)
+        {
+            let adversaire = exploration.generer_gardien(aleatoire);
+            return Some(EvenementExpedition::ObjetDeQuete {
+                exploration,
                 adversaire,
             });
         }
@@ -1117,6 +1146,40 @@ mod tests {
         assert!(matches!(
             expedition.etape_suivante(&mut AleatoireScripte::new(MONSTRE)),
             Some(EvenementExpedition::Ame { .. })
+        ));
+    }
+
+    /// Section 13.13 : le gardien d'un objet de quête remplace l'événement
+    /// de son étape, sans tirage de sa nature, une fois au plus.
+    #[test]
+    fn le_gardien_d_un_objet_de_quete_attend_a_son_etape() {
+        use crate::quete_du_camp::{Exploration, ObjetDeQuete, QueteId};
+        let exploration = Exploration::new(
+            ZoneId::new("bois"),
+            "Bois",
+            2,
+            ObjetDeQuete::new(QueteId::new("psautier"), "Psautier"),
+            espece("loup"),
+            Niveau::new(5).unwrap(),
+            "",
+            "",
+        );
+        let mut expedition = Expedition::partir(zone(false)).avec_objet_de_quete(exploration);
+        let mut combat = vec![75];
+        combat.extend(MONSTRE);
+        assert!(matches!(
+            expedition.etape_suivante(&mut AleatoireScripte::new(combat.clone())),
+            Some(EvenementExpedition::Combat(_))
+        ));
+        assert!(matches!(
+            expedition.etape_suivante(&mut AleatoireScripte::new(MONSTRE)),
+            Some(EvenementExpedition::ObjetDeQuete { exploration, adversaire })
+                if exploration.objet().nom() == "Psautier"
+                    && adversaire.espece().id().as_str() == "loup"
+        ));
+        assert!(matches!(
+            expedition.etape_suivante(&mut AleatoireScripte::new(combat)),
+            Some(EvenementExpedition::Combat(_))
         ));
     }
 

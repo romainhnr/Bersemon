@@ -11,11 +11,15 @@
 //! couleur en hexadécimal), `shiny`, les mêmes caractères avec leurs couleurs
 //! shiny, et enfin `dessin`, 24 lignes de 24 caractères, où `.` est
 //! transparent. Un humain de l'IA, jamais shiny, n'a pas de section
-//! `shiny` ; un héros de joueur, qui peut l'être, en a une.
+//! `shiny` ; un héros de joueur, qui peut l'être, en a une. Un héros a aussi,
+//! entre `shiny` et `dessin`, une palette par couleur du héros (`cendre`,
+//! `sang`, `abime`, `nacre`, `royale`), et, après le dessin, `couronne`, celui
+//! de la couleur royale (section 4.5).
 
 use std::fmt;
 
 use bersemon_core::espece::EspeceId;
+use bersemon_core::succes::CouleurDuHeros;
 
 /// Côté de la grille, en pixels.
 pub const COTE: usize = 24;
@@ -573,46 +577,86 @@ pub struct Sprite {
     palette: Palette,
     /// `None` pour un humain de l'IA, jamais shiny.
     shiny: Option<Palette>,
+    /// Pour un héros de joueur : ses couleurs, chacune avec sa palette
+    /// (section 4.5).
+    couleurs: Vec<(CouleurDuHeros, Palette)>,
     /// `COTE` lignes de `COTE` caractères.
     dessin: Vec<Vec<char>>,
+    /// Le dessin de la couleur royale, qui couronne le héros.
+    couronne: Option<Vec<Vec<char>>>,
 }
 
-/// Un sprite placé dans une image : avec sa palette shiny ou non, et
-/// retourné ou non, pour regarder vers la droite comme le combattant du
-/// joueur face à l'adversaire.
+/// Un sprite placé dans une image : avec sa palette shiny ou non, ou une
+/// couleur du héros, qui l'emporte (section 4.5), et retourné ou non, pour
+/// regarder vers la droite comme le combattant du joueur face à
+/// l'adversaire.
 #[derive(Debug, Clone, Copy)]
 pub struct Case<'a> {
     pub sprite: &'a Sprite,
     pub shiny: bool,
+    pub couleur: Option<CouleurDuHeros>,
     pub retourne: bool,
+}
+
+/// Où en est la lecture d'un fichier de sprite.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Section {
+    Debut,
+    Palette,
+    Shiny,
+    Couleur,
+    Dessin,
+    Couronne,
 }
 
 impl Sprite {
     pub fn lire(texte: &str) -> Result<Self, ErreurSprite> {
-        let mut section = "";
+        let mut section = Section::Debut;
         let mut palette = Vec::new();
-        let mut shiny = None;
+        let mut shiny: Option<Palette> = None;
+        let mut couleurs: Vec<(CouleurDuHeros, Palette)> = Vec::new();
         let mut dessin = Vec::new();
+        let mut couronne: Option<Vec<Vec<char>>> = None;
         for ligne in texte.lines() {
             let ligne = ligne.trim_end();
             if ligne.is_empty() || ligne.starts_with('#') {
                 continue;
             }
-            match (section, ligne) {
-                ("palette", "shiny") => {
+            let couleur = CouleurDuHeros::depuis_identifiant(ligne);
+            match (section, ligne, couleur) {
+                (Section::Debut, "palette", _) => section = Section::Palette,
+                (Section::Palette, "shiny", _) => {
                     shiny = Some(Vec::new());
-                    section = ligne;
+                    section = Section::Shiny;
                 }
-                ("", "palette") | ("palette" | "shiny", "dessin") => section = ligne,
-                ("palette", _) => palette.push(lire_couleur(ligne)?),
-                ("shiny", _) => shiny
+                // Les couleurs du héros suivent sa palette shiny.
+                (Section::Shiny | Section::Couleur, _, Some(couleur)) => {
+                    couleurs.push((couleur, Vec::new()));
+                    section = Section::Couleur;
+                }
+                (Section::Palette | Section::Shiny | Section::Couleur, "dessin", _) => {
+                    section = Section::Dessin;
+                }
+                (Section::Dessin, "couronne", _) => {
+                    couronne = Some(Vec::new());
+                    section = Section::Couronne;
+                }
+                (Section::Palette, _, _) => palette.push(lire_couleur(ligne)?),
+                (Section::Shiny, _, _) => shiny
                     .get_or_insert_with(Vec::new)
                     .push(lire_couleur(ligne)?),
-                ("dessin", _) => dessin.push(ligne.chars().collect::<Vec<char>>()),
-                _ => return Err(ErreurSprite::SectionManquante),
+                (Section::Couleur, _, _) => {
+                    let (_, palette) = couleurs.last_mut().expect("couleur commencée");
+                    palette.push(lire_couleur(ligne)?);
+                }
+                (Section::Dessin, _, _) => dessin.push(ligne.chars().collect::<Vec<char>>()),
+                (Section::Couronne, _, _) => couronne
+                    .get_or_insert_with(Vec::new)
+                    .push(ligne.chars().collect::<Vec<char>>()),
+                (Section::Debut, _, _) => return Err(ErreurSprite::SectionManquante),
             }
         }
-        if section != "dessin" {
+        if !matches!(section, Section::Dessin | Section::Couronne) {
             return Err(ErreurSprite::SectionManquante);
         }
         let caracteres = |palette: &Palette| {
@@ -621,28 +665,33 @@ impl Sprite {
             caracteres
         };
         if shiny
-            .as_ref()
-            .is_some_and(|shiny| caracteres(&palette) != caracteres(shiny))
+            .iter()
+            .chain(couleurs.iter().map(|(_, palette)| palette))
+            .any(|autre| caracteres(&palette) != caracteres(autre))
         {
             return Err(ErreurSprite::PalettesDifferentes);
         }
         if palette.len() > COULEURS_MAX {
             return Err(ErreurSprite::TropDeCouleurs);
         }
-        if dessin.len() != COTE || dessin.iter().any(|ligne| ligne.len() != COTE) {
-            return Err(ErreurSprite::TailleIncorrecte);
-        }
-        if let Some(sans_couleur) = dessin
-            .iter()
-            .flatten()
-            .find(|c| **c != TRANSPARENT && !palette.iter().any(|(k, _)| k == *c))
-        {
-            return Err(ErreurSprite::CaractereSansCouleur(*sans_couleur));
+        for grille in std::iter::once(&dessin).chain(couronne.iter()) {
+            if grille.len() != COTE || grille.iter().any(|ligne| ligne.len() != COTE) {
+                return Err(ErreurSprite::TailleIncorrecte);
+            }
+            if let Some(sans_couleur) = grille
+                .iter()
+                .flatten()
+                .find(|c| **c != TRANSPARENT && !palette.iter().any(|(k, _)| k == *c))
+            {
+                return Err(ErreurSprite::CaractereSansCouleur(*sans_couleur));
+            }
         }
         Ok(Self {
             palette,
             shiny,
+            couleurs,
             dessin,
+            couronne,
         })
     }
 
@@ -651,20 +700,44 @@ impl Sprite {
         self.shiny.is_some()
     }
 
-    /// La palette shiny, si elle est demandée et que le sprite en a une.
-    fn palette(&self, shiny: bool) -> &Palette {
+    #[cfg(test)]
+    fn a_ses_couleurs(&self) -> bool {
+        CouleurDuHeros::TOUTES
+            .iter()
+            .all(|couleur| self.couleurs.iter().any(|(une, _)| une == couleur))
+            && self.couronne.is_some()
+    }
+
+    /// La couleur du héros, si elle est demandée et que le sprite l'a ;
+    /// sinon la palette shiny, si elle est demandée et que le sprite en a
+    /// une.
+    fn palette(&self, shiny: bool, couleur: Option<CouleurDuHeros>) -> &Palette {
+        if let Some((_, palette)) =
+            couleur.and_then(|couleur| self.couleurs.iter().find(|(une, _)| *une == couleur))
+        {
+            return palette;
+        }
         match &self.shiny {
             Some(palette) if shiny => palette,
             _ => &self.palette,
         }
     }
 
+    /// La couleur royale couronne le héros, si le sprite a sa couronne.
+    fn dessin(&self, couleur: Option<CouleurDuHeros>) -> &[Vec<char>] {
+        match &self.couronne {
+            Some(couronne) if couleur == Some(CouleurDuHeros::Royale) => couronne,
+            _ => &self.dessin,
+        }
+    }
+
     /// Le PNG agrandi de ce seul sprite.
     #[cfg(test)]
-    fn png(&self, shiny: bool) -> Vec<u8> {
+    fn png(&self, shiny: bool, couleur: Option<CouleurDuHeros>) -> Vec<u8> {
         png_cote_a_cote(&[Some(Case {
             sprite: self,
             shiny,
+            couleur,
             retourne: false,
         })])
     }
@@ -685,13 +758,13 @@ pub fn png_cote_a_cote(cases: &[Option<Case<'_>>]) -> Vec<u8> {
             continue;
         };
         let premier = trns.len();
-        let palette = case.sprite.palette(case.shiny);
+        let palette = case.sprite.palette(case.shiny, case.couleur);
         for (_, couleur) in palette {
             plte.extend_from_slice(couleur);
             trns.push(255);
         }
         let gauche = position * (COTE + ECART);
-        for (ligne, caracteres) in grille.iter_mut().zip(&case.sprite.dessin) {
+        for (ligne, caracteres) in grille.iter_mut().zip(case.sprite.dessin(case.couleur)) {
             for (x, c) in caracteres.iter().enumerate() {
                 let Some(rang) = palette.iter().position(|(k, _)| k == c) else {
                     continue;
@@ -737,10 +810,12 @@ pub fn sprite(espece: &EspeceId) -> Option<Sprite> {
     Sprite::lire(texte).ok()
 }
 
-/// "loup.png", ou "loup-shiny.png" : Discord affiche la pièce jointe sous
-/// ce nom.
-pub fn nom_de_fichier(espece: &EspeceId, shiny: bool) -> String {
-    if shiny {
+/// "loup.png", "loup-shiny.png", ou "heros-mage-cendre.png" pour un héros qui
+/// porte une couleur : Discord affiche la pièce jointe sous ce nom.
+pub fn nom_de_fichier(espece: &EspeceId, shiny: bool, couleur: Option<CouleurDuHeros>) -> String {
+    if let Some(couleur) = couleur {
+        format!("{}-{}.png", espece.as_str(), couleur.identifiant())
+    } else if shiny {
         format!("{}-shiny.png", espece.as_str())
     } else {
         format!("{}.png", espece.as_str())
@@ -892,6 +967,8 @@ mod tests {
             let sprite = sprite(espece).unwrap_or_else(|| panic!("{}", espece.as_str()));
             let classe = espece.as_str().starts_with("heros-");
             assert_eq!(sprite.a_un_shiny(), classe, "{}", espece.as_str());
+            // Seuls les héros des joueurs ont leurs couleurs (section 4.5).
+            assert_eq!(sprite.a_ses_couleurs(), classe, "{}", espece.as_str());
             // Aucune espèce de monstre ne porte le même identifiant.
             assert!(contenu.espece(espece).is_none(), "{}", espece.as_str());
         }
@@ -910,13 +987,17 @@ mod tests {
         for (id, _) in SPRITES.iter().chain(&SPRITES_DES_HUMAINS) {
             let espece = EspeceId::new(*id);
             let sprite = sprite(&espece).unwrap();
-            for shiny in [false, true]
-                .into_iter()
-                .take(1 + usize::from(sprite.a_un_shiny()))
-            {
+            let mut teintes: Vec<(bool, Option<CouleurDuHeros>)> = vec![(false, None)];
+            if sprite.a_un_shiny() {
+                teintes.push((true, None));
+            }
+            if sprite.a_ses_couleurs() {
+                teintes.extend(CouleurDuHeros::TOUTES.map(|couleur| (false, Some(couleur))));
+            }
+            for (shiny, couleur) in teintes {
                 std::fs::write(
-                    dossier.join(nom_de_fichier(&espece, shiny)),
-                    sprite.png(shiny),
+                    dossier.join(nom_de_fichier(&espece, shiny, couleur)),
+                    sprite.png(shiny, couleur),
                 )
                 .unwrap();
             }
@@ -929,6 +1010,7 @@ mod tests {
             Some(Case {
                 sprite,
                 shiny: false,
+                couleur: None,
                 retourne,
             })
         };
@@ -956,15 +1038,25 @@ mod tests {
     #[test]
     fn le_png_a_la_bonne_taille_et_ses_blocs() {
         let loup = sprite(&EspeceId::new("loup")).unwrap();
-        let png = loup.png(false);
+        let png = loup.png(false, None);
         assert_eq!(&png[..8], &[0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a]);
         assert_eq!(&png[12..16], b"IHDR");
         assert_eq!(&png[16..20], &144_u32.to_be_bytes());
         assert_eq!(&png[20..24], &144_u32.to_be_bytes());
         assert!(png.ends_with(b"IEND\xae\x42\x60\x82"));
         // Le shiny ne change que la palette.
-        assert_eq!(loup.png(true).len(), png.len());
-        assert_ne!(loup.png(true), png);
+        assert_eq!(loup.png(true, None).len(), png.len());
+        assert_ne!(loup.png(true, None), png);
+        // Une couleur du héros ne change que la palette, sauf la royale,
+        // qui le couronne (section 4.5).
+        let mage = sprite(&EspeceId::new("heros-mage")).unwrap();
+        let normal = mage.png(false, None);
+        let cendre = mage.png(true, Some(CouleurDuHeros::Cendre));
+        assert_eq!(cendre.len(), normal.len());
+        assert_ne!(cendre, normal);
+        assert_ne!(cendre, mage.png(true, None));
+        assert_ne!(mage.dessin(Some(CouleurDuHeros::Royale)), mage.dessin(None));
+        assert_eq!(mage.dessin(Some(CouleurDuHeros::Sang)), mage.dessin(None));
     }
 
     /// En combat, le combattant du joueur, à gauche, est retourné vers
@@ -987,11 +1079,13 @@ mod tests {
             Some(Case {
                 sprite: &gauche,
                 shiny: true,
+                couleur: None,
                 retourne: true,
             }),
             Some(Case {
                 sprite: &droite,
                 shiny: true,
+                couleur: None,
                 retourne: false,
             }),
         ]);
@@ -1021,6 +1115,7 @@ mod tests {
             Some(Case {
                 sprite: &droite,
                 shiny: false,
+                couleur: None,
                 retourne: false,
             }),
         ]);
