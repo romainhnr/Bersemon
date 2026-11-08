@@ -2773,7 +2773,7 @@ Parfums, portés aussitôt préparés :
 
 | Parfum | Recette | Effet |
 |---|---|---|
-| Parfum de charogne | 3 Chair de noyé et 2 Vers de vase | les hordes : un monstre de plus par groupe, 3 niveaux de plus, 10 points de monstres rares pris aux combats, ressource 1 fois sur 2 (à coup sûr pour une espèce rare) |
+| Parfum de charogne | 3 Chair de noyé et 2 Vers de vase | les hordes : un monstre de plus par groupe, 3 niveaux de plus, 10 points de monstres rares pris aux combats, ressource 1 fois sur 2 (2 fois sur 3 pour une espèce rare) |
 | Parfum de {espèce} | 1 Ambre noir et 3 de la ressource de l'espèce | les hordes, et l'espèce : 1 monstre sur 2 des groupes là où elle est commune, le monstre rare là où elle est rare |
 
 Chaîne d'allégeance (identifiant chaine-d-allegeance, objet d'évolution) : 500 pièces d'argent chez Malvoise ; ni dans les coffres ni à la pêche.

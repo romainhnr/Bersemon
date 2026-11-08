@@ -56,7 +56,7 @@ use crate::monstre::{
 use crate::niveau::Niveau;
 use crate::nom::Nom;
 use crate::obeissance::limite_d_obeissance;
-use crate::parfum::{CHANCES_DE_RESSOURCE_COMMUNE, Parfum};
+use crate::parfum::{CHANCE_DE_RESSOURCE_COMMUNE, CHANCE_DE_RESSOURCE_RARE, Parfum};
 use crate::peche::{ErreurPeche, ParametresPeche, Peche, Prise};
 use crate::pierre::PierreDEvolution;
 use crate::quete::{JournalDesQuetes, Objectif, QueteAccomplie};
@@ -79,7 +79,7 @@ use crate::succes::{CouleurDuHeros, ErreurSucces, Succes, SuccesId, couleurs_deb
 use crate::tour::{RecordsDeLaTour, TourSansFond};
 use crate::traque::{Apotre, Indice, Piste};
 use crate::tutoriel::Conseil;
-use crate::zone::{Zone, ZoneId, tirer_entre};
+use crate::zone::{Zone, ZoneId};
 
 /// Un monstre sauvage battu lâche sa ressource 1 fois sur 3 (section 14.3,
 /// Q82).
@@ -3059,10 +3059,10 @@ impl Partie {
 
     /// Après un combat gagné, chaque monstre sauvage mis KO et non capturé
     /// lâche sa ressource 1 fois sur 3 ; elle va dans le sac (section 14.3).
-    /// Dans une expédition parfumée, 1 fois sur 2, et à coup sûr pour une
-    /// espèce rare (section 9.2). Rend ce qui est trouvé, dans l'ordre.
-    /// Tirages : un par vaincu dont l'espèce a une ressource et dont la
-    /// chance n'est pas certaine, dans l'ordre du groupe.
+    /// Dans une expédition parfumée, 1 fois sur 2, et 2 fois sur 3 pour une
+    /// espèce rare (section 13.14). Rend ce qui est trouvé, dans l'ordre.
+    /// Tirages : un par vaincu dont l'espèce a une ressource, dans l'ordre
+    /// du groupe.
     pub fn recolter_ressources(
         &mut self,
         vaincus: &[Monstre],
@@ -3074,12 +3074,12 @@ impl Partie {
             let Some(ressource) = vaincu.espece().ressource() else {
                 continue;
             };
-            let chances = match (parfumee, vaincu.espece().rarete()) {
-                (false, _) => CHANCES_DE_RESSOURCE,
-                (true, Rarete::Commune) => CHANCES_DE_RESSOURCE_COMMUNE,
-                (true, _) => 1,
+            let (reussites, sur) = match (parfumee, vaincu.espece().rarete()) {
+                (false, _) => (1, CHANCES_DE_RESSOURCE),
+                (true, Rarete::Commune) => CHANCE_DE_RESSOURCE_COMMUNE,
+                (true, _) => CHANCE_DE_RESSOURCE_RARE,
             };
-            if tirer_entre(1, chances, aleatoire) == 1 {
+            if aleatoire.tirer(1..=sur) <= reussites {
                 self.sac.ajouter_ressources(ressource.clone(), 1);
                 trouvees.push(ressource.clone());
             }
@@ -3483,8 +3483,8 @@ pub(crate) mod tests {
         assert_eq!(sac.capsules_d_habilete(), 1);
     }
 
-    /// Section 9.2 : sous un parfum, une espèce commune lâche sa ressource 1
-    /// fois sur 2, une rare à coup sûr, sans tirage.
+    /// Section 13.14 : sous un parfum, une espèce commune lâche sa ressource
+    /// 1 fois sur 2, une rare 2 fois sur 3, sans que ce soit certain.
     #[test]
     fn sous_un_parfum_les_vaincus_lachent_plus_souvent() {
         let croc = Ressource::new(RessourceId::new("croc"), "Croc", 5);
@@ -3507,10 +3507,12 @@ pub(crate) mod tests {
         )
         .unwrap();
         let mut partie = partie();
+        // Le loup : 1 sur 2 la lâche, 2 non ; la vouivre : 1 ou 2 sur 3 la
+        // lâchent, 3 non.
         let trouvees = partie.recolter_ressources(
-            &[loup.clone(), vouivre, loup],
+            &[loup.clone(), vouivre.clone(), loup, vouivre],
             true,
-            &mut AleatoireScripte::new([1, 2]),
+            &mut AleatoireScripte::new([1, 2, 2, 3]),
         );
         assert_eq!(trouvees, vec![croc, ecaille]);
     }

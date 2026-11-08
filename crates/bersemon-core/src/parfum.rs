@@ -15,8 +15,10 @@ pub const POINTS_DE_RARES_EN_PLUS: u32 = 10;
 /// Niveaux de plus des monstres sauvages, après ceux de la nuit.
 pub const NIVEAUX_DE_PLUS: u8 = 3;
 /// Un monstre d'une espèce commune lâche sa ressource 1 fois sur 2 au lieu
-/// de 1 sur 3 ; celui d'une espèce rare, à coup sûr.
-pub const CHANCES_DE_RESSOURCE_COMMUNE: u32 = 2;
+/// de 1 sur 3 ; celui d'une espèce rare, plus souvent encore, sans que ce
+/// soit certain : 2 fois sur 3. En fraction, pour rester en calcul entier.
+pub const CHANCE_DE_RESSOURCE_COMMUNE: (u32, u32) = (1, 2);
+pub const CHANCE_DE_RESSOURCE_RARE: (u32, u32) = (2, 3);
 /// Chaque monstre d'un groupe est de l'espèce attirée 1 fois sur 2, si elle
 /// vit dans la zone.
 pub const CHANCES_DE_L_ESPECE_ATTIREE: u32 = 2;
