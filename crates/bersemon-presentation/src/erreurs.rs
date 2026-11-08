@@ -67,6 +67,7 @@ pub fn erreur_de_choix(choix: &Choix, erreur: &ErreurChoix) -> String {
         ErreurChoix::Amelioration(erreur) => erreur_amelioration(erreur),
         ErreurChoix::Equipement(erreur) => erreur_equipement(erreur),
         ErreurChoix::Peche(erreur) => erreur_peche(erreur),
+        ErreurChoix::Atelier(erreur) => crate::atelier::erreur_atelier(erreur),
         ErreurChoix::Machine(erreur) => erreur_machine(erreur),
         ErreurChoix::Rite(erreur) => erreur_rite(erreur),
         ErreurChoix::Codex(erreur) => erreur_codex(erreur),
@@ -168,6 +169,10 @@ pub fn erreur_de_combat(erreur: &ErreurCombat) -> String {
         ErreurCombat::AucunSoin(soin) => plus_aucun(*soin).to_string(),
         ErreurCombat::AucunFilet(_) => "Plus aucun filet de ce genre.".to_string(),
         ErreurCombat::SansFilet => "Vous n'avez plus de filet pour capturer.".to_string(),
+        ErreurCombat::AucunAppat(_) => "Plus aucun appât de ce genre.".to_string(),
+        ErreurCombat::DejaAppate => {
+            "Ce monstre a déjà un appât : lancez d'abord un filet.".to_string()
+        }
         ErreurCombat::MonstreDeLAutreJoueur(index) => {
             format!("Le monstre numéro {} est à l'autre joueur.", index + 1)
         }

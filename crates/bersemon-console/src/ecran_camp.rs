@@ -195,7 +195,7 @@ pub fn choisir(
                 menu.ouvert = SousMenu::Heros;
                 None
             }
-            EntreeDuCamp::Peche => ecran_peche::choisir(partie, entree)?,
+            EntreeDuCamp::Peche => ecran_peche::choisir(partie, contenu, entree)?,
             EntreeDuCamp::QuetesDuCamp => ecran_quetes_du_camp::choisir(partie, contenu, entree)?,
             EntreeDuCamp::Cour => ecran_machines::choisir_dans_la_cour(partie, contenu, entree)?,
             EntreeDuCamp::Quetes => {

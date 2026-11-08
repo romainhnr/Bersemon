@@ -208,11 +208,6 @@ pub fn parfum_repandu(parfum: &Parfum) -> String {
     ))
 }
 
-/// Entre deux étapes, le rappel du parfum de l'expédition.
-pub fn parfum_de_l_expedition(parfum: &Parfum) -> String {
-    format!("{} : les hordes vous suivent.", nom_du_parfum(parfum))
-}
-
 pub fn erreur_atelier(erreur: &ErreurAtelier) -> String {
     match erreur {
         ErreurAtelier::AucunPecheur => "Personne ne prépare d'appâts au camp.".to_string(),

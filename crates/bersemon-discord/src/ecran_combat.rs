@@ -13,6 +13,7 @@ use bersemon_core::partie::Partie;
 use bersemon_core::soin::Soins;
 use bersemon_core::types::Efficacite;
 use bersemon_presentation::arene::annonce_du_palier;
+use bersemon_presentation::atelier::{effet_de_l_appat, nom_de_l_appat};
 use bersemon_presentation::combat::{attaque_de_trop, attaque_en_combat, etat, ordre_et_bonus};
 use bersemon_presentation::filets::nom_du_filet;
 use bersemon_presentation::monstres::{
@@ -94,6 +95,29 @@ pub fn action(combat: &Combat, partie: &Partie) -> Question {
         "Utiliser un soin",
         options_de_soins(combat.soins(), combat.equipe(), heros),
     ));
+    // Avec les filets, l'ordre et la fuite sur une rangée, la dernière
+    // rangée reste libre pour les appâts (section 11.2).
+    if combat.filet_possible() {
+        let deja = combat.appat_pose().map(|appat| {
+            format!(
+                "{} déjà lancé, en attente du prochain filet",
+                nom_de_l_appat(appat)
+            )
+        });
+        let appats = combat
+            .appats()
+            .presents()
+            .map(|(appat, nombre)| OptionDeMenu {
+                libelle: format!("{} x{nombre}", nom_de_l_appat(appat)),
+                valeur: appat.id().to_string(),
+                description: Some(
+                    deja.clone()
+                        .unwrap_or_else(|| effet_de_l_appat(appat).to_string()),
+                ),
+            })
+            .collect();
+        lignes.extend(menu(Cle::LancerAppat, "Lancer un appât", appats));
+    }
     let mut texte = etat(combat, partie.codex());
     if combat.filet_possible() {
         texte.push('\n');
@@ -313,6 +337,59 @@ mod tests {
         assert_eq!(cles, vec![Cle::Attaquer(0), Cle::AbandonnerLaFosse]);
         let annonce = devant_l_adversaire(1, gueux);
         assert!(annonce.texte.contains("Le Gueux"));
+    }
+
+    /// Section 11.2 : avec l'ordre, trois filets, la fuite, le changement et
+    /// les soins, le menu des appâts tient sur la dernière rangée.
+    #[test]
+    fn les_appats_ont_la_derniere_rangee() {
+        use crate::message::{RANGEES_MAX, Rangee};
+        use bersemon_core::appat::{Appat, Appats};
+        use bersemon_core::catalogue::Catalogue;
+        use bersemon_core::contenu::ContenuV1;
+        use bersemon_core::espece::EspeceId;
+        use bersemon_core::filet::{Filet, Filets};
+        use bersemon_core::niveau::Niveau;
+        use bersemon_core::stats::ValeursInternes;
+
+        let contenu = ContenuV1::new();
+        let creer = |id: &str| {
+            Monstre::creer(
+                contenu.espece(&EspeceId::new(id)).unwrap(),
+                Niveau::new(10).unwrap(),
+                ValeursInternes::default(),
+                false,
+            )
+            .unwrap()
+        };
+        let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Guerrier);
+        let partie = Partie::nouvelle(heros.clone(), creer("loup"));
+        let mut filets = Filets::default();
+        let mut appats = Appats::default();
+        for filet in Filet::TOUS {
+            filets.ajouter(filet, 1);
+        }
+        appats.ajouter(Appat::Chair, 2);
+        let mut soins = Soins::default();
+        soins.ajouter(Soin::Potion, 1);
+        let combat = Combat::avec_le_heros(
+            vec![creer("loup"), creer("corbeau")],
+            heros.combattant(),
+            vec![creer("vipere")],
+        )
+        .unwrap()
+        .avec_ordre(heros.classe().ordre())
+        .avec_soins(soins)
+        .avec_reserve_de_filets(filets)
+        .avec_reserve_d_appats(appats);
+        let question = action(&combat, &partie);
+        assert!(question.rangees.len() <= RANGEES_MAX);
+        let derniere = question.rangees.last().unwrap();
+        let Rangee::Menu(menu) = derniere else {
+            panic!("menu des appâts attendu");
+        };
+        assert_eq!(menu.cle, Cle::LancerAppat);
+        assert_eq!(menu.options[0].valeur, "appat-de-chair");
     }
 
     /// Section 4.4 : les soins servent au héros, sauf l'élixir.

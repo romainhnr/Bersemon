@@ -4,6 +4,7 @@
 use bersemon_core::deroulement::Choix;
 use bersemon_core::inventaire::{Inventaire, Objet};
 use bersemon_core::partie::Partie;
+use bersemon_presentation::atelier::appats as texte_des_appats;
 use bersemon_presentation::boosters::boosters as texte_des_boosters;
 use bersemon_presentation::filets::filets as texte_des_filets;
 use bersemon_presentation::monstres::decrire_attaque;
@@ -41,9 +42,11 @@ pub fn choisir(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
         println!("  18. Ranger des Philtres chromatiques");
         println!("  19. Prendre des charmes de garde");
         println!("  20. Ranger des charmes de garde");
-        println!("  21. Tout ranger dans le coffre");
+        println!("  21. Prendre des appâts");
+        println!("  22. Ranger des appâts");
+        println!("  23. Tout ranger dans le coffre");
         println!("  0. Retour au camp");
-        let choix = match entree.choix(0, 21)? {
+        let choix = match entree.choix(0, 23)? {
             0 => return Some(None),
             1 => soins(coffre, entree)?.map(Choix::SortirDuCoffre),
             2 => soins(sac, entree)?.map(Choix::RangerAuCoffre),
@@ -77,6 +80,8 @@ pub fn choisir(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
                 .map(|nombre| Choix::SortirDuCoffre(Objet::CharmesDeGarde(nombre))),
             20 => quantite(sac.charmes_de_garde(), "charmes de garde", entree)?
                 .map(|nombre| Choix::RangerAuCoffre(Objet::CharmesDeGarde(nombre))),
+            21 => appats(coffre, entree)?.map(Choix::SortirDuCoffre),
+            22 => appats(sac, entree)?.map(Choix::RangerAuCoffre),
             _ => Some(Choix::ToutRangerAuCoffre),
         };
         if choix.is_some() {
@@ -103,6 +108,25 @@ fn soins(inventaire: &Inventaire, entree: &mut Entree) -> Option<Option<Objet>> 
     };
     let nombre = quantite(inventaire.soins().nombre(soin), "soins", entree)?;
     Some(nombre.map(|nombre| Objet::Soins(soin, nombre)))
+}
+
+fn appats(inventaire: &Inventaire, entree: &mut Entree) -> Option<Option<Objet>> {
+    let presents: Vec<_> = inventaire.appats().presents().collect();
+    if presents.is_empty() {
+        println!("Il n'y a aucun appât.");
+        return Some(None);
+    }
+    for (position, (appat, nombre)) in presents.iter().enumerate() {
+        println!("  {}. {}", position + 1, texte_des_appats(*appat, *nombre));
+    }
+    println!("Lequel ? (0 pour annuler)");
+    let choix = entree.choix(0, presents.len())?;
+    if choix == 0 {
+        return Some(None);
+    }
+    let (appat, disponible) = presents[choix - 1];
+    let nombre = quantite(disponible, "appâts", entree)?;
+    Some(nombre.map(|nombre| Objet::Appats(appat, nombre)))
 }
 
 fn filets(inventaire: &Inventaire, entree: &mut Entree) -> Option<Option<Objet>> {

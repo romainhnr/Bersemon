@@ -282,6 +282,8 @@ pub enum Cle {
     Ordre,
     /// Un filet de cette qualité (section 11.2).
     Filet(Filet),
+    /// Menu des appâts, en combat (section 11.2).
+    LancerAppat,
     Fuir,
     /// Menu de l'équipe, en combat.
     Changer,
@@ -385,6 +387,11 @@ pub enum Cle {
     /// 13.8).
     LancerLaLigne,
     ReleverLaLigne,
+    /// Menu des appâts qu'Ansgar prépare (section 13.8).
+    PreparerAppat,
+    /// Menus numérotés des parfums qu'Ansgar prépare : `charogne`, ou
+    /// l'identifiant d'une espèce (section 9.2).
+    PreparerParfum(u8),
     /// Répond au monstre pêché.
     GarderLaPrise,
     RelacherLaPrise,
@@ -474,6 +481,9 @@ pub const FOSSE: &str = "fosse-aux-damnes";
 
 /// La valeur qui forge le Béhérit dans le menu des âmes de l'étal.
 pub const BEHERIT: &str = "beherit";
+/// Valeur du parfum de charogne dans les menus des parfums ; les autres
+/// valeurs sont des espèces, dont aucune n'a cet identifiant.
+pub const PARFUM_DE_CHAROGNE: &str = "charogne";
 
 /// La valeur d'aucun titre, ou de la couleur d'origine, dans leur menu : un
 /// identifiant n'a jamais de tiret seul.
@@ -546,6 +556,9 @@ impl Cle {
             Cle::Attaquer(index) => jouer(Choix::Combat(Action::Attaquer(*index))),
             Cle::Ordre => jouer(Choix::DonnerOrdre),
             Cle::Filet(filet) => jouer(Choix::Combat(Action::LancerFilet(*filet))),
+            Cle::LancerAppat => jouer(Choix::Combat(Action::LancerAppat(Appat::depuis_id(
+                valeur?,
+            )?))),
             Cle::Fuir => jouer(Choix::Combat(Action::Fuir)),
             Cle::Changer => jouer(Choix::Combat(Action::Changer(position()?))),
             Cle::SoinEnCombat => {
@@ -622,6 +635,11 @@ impl Cle {
             Cle::Reprendre(position) => jouer(Choix::ReprendreDeLEntrainement(*position)),
             Cle::LancerLaLigne => jouer(Choix::LancerLaLigne),
             Cle::ReleverLaLigne => jouer(Choix::ReleverLaLigne),
+            Cle::PreparerAppat => jouer(Choix::PreparerAppat(Appat::depuis_id(valeur?)?)),
+            Cle::PreparerParfum(_) => match valeur? {
+                PARFUM_DE_CHAROGNE => jouer(Choix::PreparerParfumDeCharogne),
+                espece => jouer(Choix::PreparerParfumDEspece(EspeceId::new(espece))),
+            },
             Cle::GarderLaPrise => jouer(Choix::GarderLaPrise),
             Cle::RelacherLaPrise => jouer(Choix::RelacherLaPrise),
             Cle::Fabriquer => jouer(Choix::LancerFabrication(ObjetDEquipementId::new(valeur?))),
@@ -780,6 +798,7 @@ impl Cle {
             Cle::Attaquer(index) => format!("attaque:{index}"),
             Cle::Ordre => "ordre".to_string(),
             Cle::Filet(filet) => format!("filet:{}", filet.id()),
+            Cle::LancerAppat => "lancer-appat".to_string(),
             Cle::Fuir => "fuir".to_string(),
             Cle::Changer => "changer".to_string(),
             Cle::SoinEnCombat => "soin-combat".to_string(),
@@ -864,6 +883,8 @@ impl Cle {
             Cle::Reprendre(position) => format!("reprendre:{position}"),
             Cle::LancerLaLigne => "lancer-ligne".to_string(),
             Cle::ReleverLaLigne => "relever-ligne".to_string(),
+            Cle::PreparerAppat => "preparer-appat".to_string(),
+            Cle::PreparerParfum(numero) => format!("preparer-parfum:{numero}"),
             Cle::GarderLaPrise => "garder-prise".to_string(),
             Cle::RelacherLaPrise => "relacher-prise".to_string(),
             Cle::Fabriquer => "fabriquer".to_string(),
@@ -968,6 +989,8 @@ impl Cle {
             "vue:quetes" => Cle::Afficher(Vue::Quetes),
             "lancer-ligne" => Cle::LancerLaLigne,
             "relever-ligne" => Cle::ReleverLaLigne,
+            "lancer-appat" => Cle::LancerAppat,
+            "preparer-appat" => Cle::PreparerAppat,
             "garder-prise" => Cle::GarderLaPrise,
             "relacher-prise" => Cle::RelacherLaPrise,
             "vue:classement" => Cle::Afficher(Vue::Classement),
@@ -1160,6 +1183,7 @@ impl Cle {
                     "surnom" => Cle::SurnomSaisi(emplacement()?),
                     "relacher" => Cle::Relacher(emplacement()?),
                     "liberer" => Cle::Liberer(numero()?),
+                    "preparer-parfum" => Cle::PreparerParfum(numero()?),
                     "attaque" => Cle::Attaquer(position()?),
                     "remplacer" => Cle::Remplacer(position()?),
                     "capturer" => Cle::Capturer(position()?),
@@ -1616,6 +1640,10 @@ mod tests {
             Cle::Afficher(Vue::Peche),
             Cle::LancerLaLigne,
             Cle::ReleverLaLigne,
+            Cle::PreparerAppat,
+            Cle::PreparerParfum(0),
+            Cle::PreparerParfum(1),
+            Cle::LancerAppat,
             Cle::GarderLaPrise,
             Cle::RelacherLaPrise,
             Cle::Afficher(Vue::Quetes),

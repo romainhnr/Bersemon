@@ -98,7 +98,7 @@ pub fn question(
         Vue::QuetesDuCamp => quetes_du_camp(partie, contenu),
         Vue::Forge => forge(partie, contenu, maintenant),
         Vue::Equipement => equipement(partie),
-        Vue::Peche => ecran_peche::peche(partie, maintenant),
+        Vue::Peche => ecran_peche::peche(partie, contenu, maintenant),
         Vue::Quetes => quetes(partie, contenu, maintenant),
         // Le tableau des échanges vient des autres parties : le message le
         // prépare (`message::question`). Sans lui, l'écran n'en montre rien.

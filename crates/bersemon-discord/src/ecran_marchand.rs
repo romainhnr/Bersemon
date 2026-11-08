@@ -7,7 +7,7 @@ use bersemon_core::contenu::ContenuV1;
 use bersemon_core::horodatage::Horodatage;
 use bersemon_core::marchand::{
     EXPEDITIONS_DE_LOCATION, OffreDeMonstre, PRIX_CAPSULE_D_HABILETE, PRIX_PIERRE_D_EVOLUTION,
-    prix_du_filet, prix_du_soin,
+    prix_de_la_pierre, prix_du_filet, prix_du_soin,
 };
 use bersemon_core::partie::Partie;
 use bersemon_core::pierre::PierreDEvolution;
@@ -87,6 +87,18 @@ pub fn etal(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Que
             PRINCIPAL,
         ));
     }
+    // La dernière rangée est pleine : la Chaîne d'allégeance rejoint les
+    // filets et les capsules (section 5.4).
+    let chaine = PierreDEvolution::ChaineDAllegeance;
+    achats.push(bouton(
+        Cle::AcheterPierre(chaine),
+        &format!(
+            "Acheter une {} ({})",
+            chaine.nom(),
+            argent(prix_de_la_pierre(chaine))
+        ),
+        PRINCIPAL,
+    ));
     let mut lignes: Vec<Rangee> = rangees(achats);
     lignes.extend(menu(Cle::AcheterSoins, "Acheter des soins", lots_de_soins));
     // Au plus une âme par zone : le menu reste loin de ses 25 options. Les
@@ -118,7 +130,7 @@ pub fn etal(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Que
     );
     // Cinq boutons : la dernière rangée est pleine (section 5.4).
     let mut boutons = vec![bouton(Cle::AcheterCapsuleDHabilete, &libelle, PRINCIPAL)];
-    for pierre in PierreDEvolution::TOUTES {
+    for pierre in PierreDEvolution::TROUVEES {
         let libelle = format!(
             "Acheter une {} ({})",
             pierre.nom(),

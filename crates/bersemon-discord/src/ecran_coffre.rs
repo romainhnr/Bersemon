@@ -1,12 +1,13 @@
 //! Le coffre du camp sur Discord (section 13.3) : un menu pour prendre dans
 //! le coffre, un autre pour ranger ce que contient le sac, et de même pour
-//! les filets, les pierres d'évolution, les boosters et les Philtres chromatiques. Les
+//! les filets, les appâts, les objets d'évolution, les boosters et les Philtres chromatiques. Les
 //! ressources ont leur propre écran : avec celles du Col du Givre-Noir, elles
 //! ne tiennent plus dans un menu avec ces objets (étape 82).
 
 use bersemon_core::inventaire::{Inventaire, Objet};
 use bersemon_core::partie::Partie;
 use bersemon_core::soin::Soin;
+use bersemon_presentation::atelier::appats;
 use bersemon_presentation::boosters::{boosters, philtres_chromatiques};
 use bersemon_presentation::filets::filets;
 use bersemon_presentation::monstres::decrire_attaque;
@@ -205,12 +206,23 @@ pub fn ressources(partie: &Partie) -> Question {
     }
 }
 
-/// Un lot de 5 ou tous pour chaque filet, une ou toutes pour chaque pierre,
-/// tous ceux d'une sorte pour chaque booster, et tous les Philtres chromatiques :
-/// avec les trois filets, les deux pierres et les six boosters du contenu,
-/// 17 options au plus (sections 5.4, 11.2, 13.7 et 14.3).
+/// Un lot de 5 ou tous pour chaque filet, un ou tous pour chaque appât, une
+/// ou toutes pour chaque pierre, tous ceux d'une sorte pour chaque booster,
+/// et tous les Philtres chromatiques : avec les trois filets, les trois
+/// appâts, les trois objets d'évolution et les six boosters du contenu, 25
+/// options au plus, la limite d'un menu (sections 5.4, 11.2, 13.7 et 14.3).
 fn options_d_objets(inventaire: &Inventaire) -> Vec<OptionDeMenu> {
     let mut options = Vec::new();
+    for (appat, nombre) in inventaire.appats().presents() {
+        if nombre > 1 {
+            options.push(option(Objet::Appats(appat, 1), appats(appat, 1), None));
+        }
+        options.push(option(
+            Objet::Appats(appat, nombre),
+            appats(appat, nombre),
+            Some("Tout".to_string()),
+        ));
+    }
     for (filet, nombre) in inventaire.filets().presents() {
         if nombre > LOT_DE_FILETS {
             options.push(option(

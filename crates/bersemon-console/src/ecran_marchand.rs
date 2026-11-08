@@ -9,7 +9,8 @@ use bersemon_core::combat::Cote;
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::Choix;
 use bersemon_core::marchand::{
-    PRIX_CAPSULE_D_HABILETE, PRIX_PIERRE_D_EVOLUTION, prix_du_filet, prix_du_soin,
+    PRIX_CAPSULE_D_HABILETE, PRIX_PIERRE_D_EVOLUTION, prix_de_la_pierre, prix_du_filet,
+    prix_du_soin,
 };
 use bersemon_core::partie::Partie;
 use bersemon_core::pierre::PierreDEvolution;
@@ -45,8 +46,9 @@ pub fn choisir(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Opt
         );
         println!("  7. Vendre des ressources");
         println!(
-            "  8. Acheter des pierres d'évolution ({} l'une)",
-            argent(PRIX_PIERRE_D_EVOLUTION)
+            "  8. Acheter des objets d'évolution (pierres {} l'une, Chaîne d'allégeance {})",
+            argent(PRIX_PIERRE_D_EVOLUTION),
+            argent(prix_de_la_pierre(PierreDEvolution::ChaineDAllegeance))
         );
         println!(
             "  9. {SERVICE_SHINY} : vous en avez {}",
@@ -228,23 +230,32 @@ fn acheter_capsules_d_habilete(partie: &Partie, entree: &mut Entree) -> Option<O
 
 /// Le joueur ne choisit que ce qu'il peut payer (section 5.4).
 fn acheter_pierres(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
-    let au_plus = partie.argent() / PRIX_PIERRE_D_EVOLUTION;
-    if au_plus == 0 {
-        println!("Vous n'avez pas assez d'argent pour une pierre d'évolution.");
+    if partie.argent() < PRIX_PIERRE_D_EVOLUTION {
+        println!("Vous n'avez pas assez d'argent pour un objet d'évolution.");
         return Some(None);
     }
-    println!("Pierres d'évolution en vente :");
+    println!("Objets d'évolution en vente :");
     for (position, pierre) in PierreDEvolution::TOUTES.iter().enumerate() {
-        println!("  {}. {}", position + 1, pierre.nom());
+        println!(
+            "  {}. {} : {}",
+            position + 1,
+            pierre.nom(),
+            argent(prix_de_la_pierre(*pierre))
+        );
     }
-    println!("Laquelle acheter ? (0 pour annuler)");
+    println!("Lequel acheter ? (0 pour annuler)");
     let choix = entree.choix(0, PierreDEvolution::TOUTES.len())?;
     if choix == 0 {
         return Some(None);
     }
+    let pierre = PierreDEvolution::TOUTES[choix - 1];
+    let au_plus = partie.argent() / prix_de_la_pierre(pierre);
+    if au_plus == 0 {
+        println!("Vous n'avez pas assez d'argent pour cet objet.");
+        return Some(None);
+    }
     println!("Combien en acheter ? (0 pour annuler)");
     let nombre = entree.choix(0, au_plus as usize)?;
-    let pierre = PierreDEvolution::TOUTES[choix - 1];
     Some((nombre > 0).then_some(Choix::AcheterPierres(pierre, nombre as u32)))
 }
 

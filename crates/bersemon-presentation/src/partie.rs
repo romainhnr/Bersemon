@@ -425,12 +425,13 @@ pub fn partie_en_cours(partie: &Partie) -> String {
 /// Le sac, que le joueur emporte, et le coffre, à l'abri (section 13.3).
 pub fn en_tete_du_camp(partie: &Partie, succes: &[Succes]) -> String {
     format!(
-        "Camp de base ({}).\nSac ({}) : {}. Coffre du camp : {}.{}",
+        "Camp de base ({}).\nSac ({}) : {}. Coffre du camp : {}.{}{}",
         heros_du_camp(partie.heros(), succes),
         crate::sac::places(partie),
         contenu(partie.sac()),
         contenu(partie.coffre_du_camp()),
-        ligne_des_ames(partie)
+        ligne_des_ames(partie),
+        ligne_du_parfum(partie)
     )
 }
 
@@ -439,13 +440,26 @@ pub fn en_tete_du_camp(partie: &Partie, succes: &[Succes]) -> String {
 /// détail est à l'écran du coffre.
 pub fn en_tete_abrege_du_camp(partie: &Partie, succes: &[Succes]) -> String {
     format!(
-        "Camp de base ({}).\nSac ({}) : {}. Coffre du camp : {}.{}",
+        "Camp de base ({}).\nSac ({}) : {}. Coffre du camp : {}.{}{}",
         heros_du_camp(partie.heros(), succes),
         crate::sac::places(partie),
         contenu_detaille(partie.sac(), false),
         contenu_detaille(partie.coffre_du_camp(), false),
-        ligne_des_ames(partie)
+        ligne_des_ames(partie),
+        ligne_du_parfum(partie)
     )
+}
+
+/// Le parfum que porte le héros, jusqu'à sa prochaine expédition dans une
+/// zone (section 9.2). Une ligne qui commence par un saut de ligne, ou
+/// rien.
+fn ligne_du_parfum(partie: &Partie) -> String {
+    partie.parfum_porte().map_or_else(String::new, |parfum| {
+        format!(
+            "\nVous portez le {} : il se répandra à votre prochaine expédition dans une zone.",
+            crate::atelier::nom_du_parfum(parfum)
+        )
+    })
 }
 
 /// Les niveaux d'une zone disent sa difficulté (section 9.1).

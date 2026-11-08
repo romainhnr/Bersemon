@@ -12,6 +12,7 @@ use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_core::soin::Soins;
 use bersemon_core::zone::Zone;
+use bersemon_presentation::atelier::{liste_d_appats, nom_de_l_appat};
 use bersemon_presentation::combat::{attaque_de_trop, attaque_en_combat, ordre_et_bonus};
 use bersemon_presentation::filets::liste_de_filets;
 use bersemon_presentation::meteo::meteo_de_la_zone;
@@ -42,6 +43,16 @@ pub fn menu_action(combat: &Combat, commandes: &[Commande]) -> String {
                     "Lancer un filet (aucun)".to_string()
                 } else {
                     format!("Lancer un filet ({})", filets.join(", "))
+                }
+            }
+            Commande::LancerAppat => {
+                let appats = liste_d_appats(combat.appats()).join(", ");
+                match combat.appat_pose() {
+                    Some(appat) => format!(
+                        "Lancer un appât ({appats} ; déjà un {} sur ce monstre)",
+                        nom_de_l_appat(appat).to_lowercase()
+                    ),
+                    None => format!("Lancer un appât ({appats})"),
                 }
             }
             Commande::UtiliserSoin => format!("Utiliser un soin ({})", sac(combat.soins())),

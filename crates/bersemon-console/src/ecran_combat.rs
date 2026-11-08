@@ -2,6 +2,7 @@
 //! remplacement d'un monstre KO, capture des KO, attaque à oublier et
 //! évolution.
 
+use bersemon_core::appat::Appat;
 use bersemon_core::arene::AdversaireDeLArene;
 use bersemon_core::attaque::Attaque;
 use bersemon_core::collection::Collection;
@@ -13,6 +14,7 @@ use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_core::soin::{Soin, Soins};
 use bersemon_presentation::arene::annonce_du_palier;
+use bersemon_presentation::atelier::{effet_de_l_appat, nom_de_l_appat};
 use bersemon_presentation::filets::nom_du_filet;
 use bersemon_presentation::partie::{places_pour_une_capture, proposition_d_evolution};
 use bersemon_presentation::soins::{effet_du_soin, nom_du_soin};
@@ -27,6 +29,8 @@ pub enum Commande {
     Changer,
     DonnerOrdre,
     LancerFilet,
+    /// Avant un filet, s'il reste des appâts (section 11.2).
+    LancerAppat,
     UtiliserSoin,
     Fuir,
     /// Dans la Fosse aux damnés (section 9.8).
@@ -51,6 +55,9 @@ fn commandes(combat: &Combat) -> Vec<Commande> {
     }
     if combat.filet_possible() {
         commandes.push(Commande::LancerFilet);
+        if !combat.appats().est_vide() {
+            commandes.push(Commande::LancerAppat);
+        }
     }
     commandes.push(Commande::UtiliserSoin);
     if combat.fuite_possible() {
@@ -90,6 +97,7 @@ pub fn choisir_action(combat: &Combat, partie: &Partie, entree: &mut Entree) -> 
             // l'action.
             Commande::DonnerOrdre => return Some(Choix::DonnerOrdre),
             Commande::LancerFilet => choisir_filet(combat, entree)?.map(Action::LancerFilet),
+            Commande::LancerAppat => choisir_appat(combat, entree)?.map(Action::LancerAppat),
             // La confirmation d'un soin perdu est demandée par le
             // déroulement (Q53).
             Commande::UtiliserSoin => match choisir_soin(combat.soins(), entree)? {
@@ -126,6 +134,24 @@ fn choisir_filet(combat: &Combat, entree: &mut Entree) -> Option<Option<Filet>> 
             position + 1,
             nom_du_filet(*filet),
             combat.chance_de_capture(*filet)
+        );
+    }
+    println!("  0. Retour");
+    let choix = entree.choix(0, presents.len())?;
+    Some((choix > 0).then(|| presents[choix - 1].0))
+}
+
+/// Parmi ceux du sac, avec leur effet (section 11.2). `Some(None)` si le
+/// joueur annule.
+fn choisir_appat(combat: &Combat, entree: &mut Entree) -> Option<Option<Appat>> {
+    let presents: Vec<(Appat, u32)> = combat.appats().presents().collect();
+    println!("Quel appât lancer ? Il vaut pour le prochain filet lancé sur ce monstre.");
+    for (position, (appat, nombre)) in presents.iter().enumerate() {
+        println!(
+            "  {}. {} ({nombre}) : {}",
+            position + 1,
+            nom_de_l_appat(*appat),
+            effet_de_l_appat(*appat)
         );
     }
     println!("  0. Retour");

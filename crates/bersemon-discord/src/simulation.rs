@@ -29,7 +29,8 @@ use bersemon_core::zone::ZoneId;
 use bersemon_presentation::marchand::ressources_a_vendre;
 
 use crate::composants::{
-    BEHERIT, Choisis, Cle, Commande, Composant, ECLIPSE, RETIRER, Vue, lot_de_soins_en_texte,
+    BEHERIT, Choisis, Cle, Commande, Composant, ECLIPSE, PARFUM_DE_CHAROGNE, RETIRER, Vue,
+    lot_de_soins_en_texte,
 };
 use crate::joueurs::{IdJoueur, Joueurs, Session};
 use crate::message::{
@@ -1930,6 +1931,141 @@ fn ansgar_peche_a_travers_les_ecrans_du_bot() {
     assert_eq!(session.deroulement.attente(), Attente::Camp);
     let affiche = afficher_a(&mut joueurs, 8_200);
     assert!(propose(&affiche, |cle| *cle == Cle::LancerLaLigne));
+    let _ = fs::remove_dir_all(dossier);
+}
+
+/// Ansgar prépare un appât, qui va au coffre, puis un parfum, que le héros
+/// porte : le menu des parfums disparaît, et le camp le rappelle (sections
+/// 9.2 et 13.8).
+#[test]
+fn ansgar_prepare_appats_et_parfums_a_travers_les_ecrans_du_bot() {
+    use bersemon_core::appat::Appat;
+    use bersemon_core::catalogue::Catalogue;
+    use bersemon_core::heros::Heros;
+    use bersemon_core::niveau::Niveau;
+    use bersemon_core::nom::Nom;
+    use bersemon_core::parfum::Parfum;
+    use bersemon_core::partie::Partie;
+    use bersemon_core::peche::Peche;
+    use bersemon_core::ressource::RessourceId;
+    use bersemon_core::sauvegarde::SauvegardeRepository;
+    use bersemon_core::stats::ValeursInternes;
+    use bersemon_storage::FichierJson;
+
+    let contenu = ContenuV1::new();
+    let loup = Monstre::creer(
+        contenu.espece(&EspeceId::new("loup")).unwrap(),
+        Niveau::new(5).unwrap(),
+        ValeursInternes::default(),
+        false,
+    )
+    .unwrap();
+    let matiere = |id: &str| contenu.ressource(&RessourceId::new(id)).unwrap();
+    let coffre = Inventaire::default()
+        .avec_ressources(matiere("vers-de-vase"), 4)
+        .avec_ressources(matiere("chair-de-noye"), 3);
+    let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Mage);
+    let partie = Partie::nouvelle(heros, loup);
+    let partie = Partie::restaurer(EtatPartie {
+        heros: partie.heros().clone(),
+        collection: partie.collection().clone(),
+        sac: Inventaire::default(),
+        coffre_du_camp: coffre,
+        marchand_au_camp: false,
+        ames_donnees: Vec::new(),
+        ames_portees: Vec::new(),
+        ames_a_retrouver: Vec::new(),
+        codex: partie.codex().clone(),
+        zones_explorees: Vec::new(),
+        indices_trouves: 0,
+        apotres_vaincus: Vec::new(),
+        humains_vaincus: Vec::new(),
+        conseils_vus: Vec::new(),
+        expeditions_automatiques: Vec::new(),
+        attaques_a_choisir: Vec::new(),
+        peche: Peche::restaurer(true, None, None).unwrap(),
+        forge: Default::default(),
+        relations: Default::default(),
+        machines: Default::default(),
+        beherit: Default::default(),
+        records_de_la_tour: Default::default(),
+        rite: None,
+        paliers_du_codex: Vec::new(),
+        arene: Default::default(),
+        succes_obtenus: Vec::new(),
+        quetes_du_camp: Default::default(),
+        decouvertes: Default::default(),
+        quetes: Default::default(),
+    })
+    .unwrap();
+    let dossier = dossier_de_test().join("atelier");
+    fs::create_dir_all(&dossier).unwrap();
+    FichierJson::new(dossier.join(format!("{JOUEUR}.json")))
+        .enregistrer(&partie)
+        .unwrap();
+    let mut joueurs = Joueurs::new(dossier.clone(), 2026);
+    let afficher = |joueurs: &mut Joueurs| {
+        let session = joueurs.session(JOUEUR, &contenu);
+        let affiche = message(
+            session,
+            &[],
+            None,
+            &contenu,
+            Horodatage::depuis_secondes(1_000),
+        );
+        verifier_les_limites(&affiche);
+        affiche
+    };
+    let executer = |joueurs: &mut Joueurs, commande: Option<Commande>| {
+        let version = joueurs.session(JOUEUR, &contenu).version;
+        let maintenant = Horodatage::depuis_secondes(1_000);
+        match commande.expect("composant lisible") {
+            Commande::Jouer(choix) => joueurs
+                .jouer(JOUEUR, version, choix, &contenu, maintenant)
+                .unwrap(),
+            Commande::Afficher(vue) => {
+                joueurs.afficher(JOUEUR, version, vue, &contenu).unwrap();
+                Vec::new()
+            }
+            autre => panic!("{autre:?}"),
+        }
+    };
+    executer(&mut joueurs, Cle::ReprendreLaPartie.commande(None, None));
+    executer(&mut joueurs, Cle::Afficher(Vue::Peche).commande(None, None));
+    let affiche = afficher(&mut joueurs);
+    let clic = choisir_dans(&affiche, |cle| *cle == Cle::PreparerAppat, "appat-de-vers")
+        .unwrap_or_else(|| panic!("appât absent : {}", affiche.texte));
+    let prepare = executer(
+        &mut joueurs,
+        clic.cle.commande(clic.valeur.as_deref(), None),
+    );
+    assert_eq!(prepare, vec![Evenement::AppatPrepare(Appat::Vers)]);
+    let affiche = afficher(&mut joueurs);
+    let clic = choisir_dans(
+        &affiche,
+        |cle| matches!(cle, Cle::PreparerParfum(_)),
+        PARFUM_DE_CHAROGNE,
+    )
+    .unwrap_or_else(|| panic!("parfum absent : {}", affiche.texte));
+    let prepare = executer(
+        &mut joueurs,
+        clic.cle.commande(clic.valeur.as_deref(), None),
+    );
+    assert_eq!(prepare, vec![Evenement::ParfumPrepare(Parfum::Charogne)]);
+    let affiche = afficher(&mut joueurs);
+    assert!(
+        choisir_dans(
+            &affiche,
+            |cle| matches!(cle, Cle::PreparerParfum(_)),
+            PARFUM_DE_CHAROGNE
+        )
+        .is_none()
+    );
+    assert!(affiche.texte.contains("Vous portez le Parfum de charogne"));
+    let session = joueurs.session(JOUEUR, &contenu);
+    let partie = session.deroulement.partie().unwrap();
+    assert_eq!(partie.coffre_du_camp().appats().nombre(Appat::Vers), 1);
+    assert_eq!(partie.parfum_porte(), Some(&Parfum::Charogne));
     let _ = fs::remove_dir_all(dossier);
 }
 
