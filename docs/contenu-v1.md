@@ -2748,3 +2748,65 @@ Autres textes :
 | Objectif | Rapporter 5 Cendre de feu follet (vous en avez 3). / Trouver le Psautier de Frère Malvoise dans l'Abbaye des Cendres. / Remettre le Psautier de Frère Malvoise. |
 | Libellés | Quêtes du camp (console), Quêtes (Discord) ; Écouter {personnage} ; Remettre à {personnage} |
 | Refus | Il vous manque 2 Cendre de feu follet. / Vous n'avez pas le Psautier de Frère Malvoise. / {personnage} n'a rien à vous demander. / {personnage} n'est pas au camp. |
+
+## 53. Appâts, parfums et évolution par échange
+
+Décidé le 07/11/2026, pour les étapes 178 à 180 (gamedesign.md, sections 5.4, 11.2 et 13.14). Choix de l'utilisateur : l'appât prend le tour et vaut pour le prochain filet ; Ansgar fabrique sur le moment ; le parfum se met au camp avant de partir ; la Chaîne d'allégeance remplace l'échange dans la console. Toutes les valeurs, les noms et les textes ci-dessous sont proposés par Claude sans validation (gamedesign.md, Q122).
+
+Matières de la pêche : chaque ligne relevée en remonte 2 à 3 en plus de sa prise, chacune tirée sur 100. Ce sont des ressources sans espèce, que Malvoise rachète.
+
+| Identifiant | Matière | Chance | Prix chez Malvoise |
+|---|---|---|---|
+| vers-de-vase | Vers de vase | 60 % | 5 |
+| chair-de-noye | Chair de noyé | 30 % | 10 |
+| ambre-noir | Ambre noir | 10 % | 30 |
+
+Appâts, préparés par Ansgar, un à la fois, au coffre :
+
+| Identifiant | Appât | Chance du prochain filet | Recette |
+|---|---|---|---|
+| appat-de-vers | Appât de vers | x1,25 | 2 Vers de vase |
+| appat-de-chair | Appât de chair | x1,5 | 1 Vers de vase et 1 Chair de noyé |
+| appat-d-ambre | Appât d'ambre | x2 | 1 Chair de noyé et 1 Ambre noir |
+
+Parfums, portés aussitôt préparés :
+
+| Parfum | Recette | Effet |
+|---|---|---|
+| Parfum de charogne | 3 Chair de noyé et 2 Vers de vase | les hordes : un monstre de plus par groupe, 3 niveaux de plus, 10 points de monstres rares pris aux combats, ressource 1 fois sur 2 (à coup sûr pour une espèce rare) |
+| Parfum de {espèce} | 1 Ambre noir et 3 de la ressource de l'espèce | les hordes, et l'espèce : 1 monstre sur 2 des groupes là où elle est commune, le monstre rare là où elle est rare |
+
+Chaîne d'allégeance (identifiant chaine-d-allegeance, objet d'évolution) : 500 pièces d'argent chez Malvoise ; ni dans les coffres ni à la pêche.
+
+Formes par échange, au codex après les légendaires. Elles gardent le rôle, la rareté et les habiletés de leur forme d'avant, n'ont pas de ressource, et leur rendement d'XP vaut 1,4 fois le sien. Condition : reçu d'un autre joueur, ou une Chaîne d'allégeance, à tout niveau. Stats dans l'ordre PV / Attaque / Défense / Attaque spéciale / Défense spéciale / Vitesse.
+
+| Forme d'avant | Identifiant | Évolution | Types | Stats de base (total) | Rendement d'XP | Attaque d'évolution (niv. 1) | Autre attaque (niv. 1) |
+|---|---|---|---|---|---|---|---|
+| Chevalier noir | dullahan | Dullahan | Acier, Spectre | 85 / 120 / 115 / 45 / 75 / 60 (500) | 186 | Chevauchée sans tête | Épée des morts |
+| Corbeau des gibets | augure | Augure | Vol, Ténèbres, Psychique | 70 / 75 / 65 / 110 / 75 / 105 (500) | 128 | Présage funeste | Maléfice |
+| Aspic | gorgone | Gorgone | Poison, Roche | 80 / 70 / 95 / 95 / 85 / 75 (500) | 133 | Regard de pierre | Éboulement |
+
+Attaques nouvelles, sans capsule :
+
+| Identifiant | Attaque | Type | Catégorie | Puissance | Précision | Effet |
+|---|---|---|---|---|---|---|
+| chevauchee-sans-tete | Chevauchée sans tête | Spectre | physique | 95 | 100 | aucun |
+| presage-funeste | Présage funeste | Psychique | spéciale | 90 | 100 | aucun |
+| regard-de-pierre | Regard de pierre | Roche | spéciale | 85 | 90 | paralysie 30 % |
+
+Sprites : le Dullahan porte sa tête sous le bras, une flamme spectrale au cou ; l'Augure est un corbeau au halo et au troisième œil psychiques ; la Gorgone, un serpent de pierre à la chevelure de serpents.
+
+Textes. {cible} est le nom en combat du monstre adverse, {parfum} le nom du parfum, {liste} les matières avec leur nombre.
+
+| Moment | Texte |
+|---|---|
+| Appât lancé | Vous jetez un appât de vers à {cible}, qui s'en repaît : la chance de votre prochain filet est multipliée par 1,25. |
+| Matières pêchées | La ligne remonte aussi : {liste}. Vous les rangez dans le coffre. |
+| Appât préparé | Ansgar prépare un appât de vers. Vous le rangez dans le coffre. |
+| Parfum préparé | Ansgar mêle ses matières dans une fiole et vous en asperge : vous portez le {parfum}, jusqu'à votre prochaine expédition dans une zone. |
+| Au départ | Le {parfum} se répand autour de vous : des hordes plus fortes approchent, et l'odeur attire l'espèce {espèce}. |
+| Au camp | Vous portez le {parfum} : il se répandra à votre prochaine expédition dans une zone. |
+| Écran de la pêche | Ansgar prépare des appâts, à lancer en combat avant un filet, et des parfums, qui attirent des hordes à votre prochaine expédition dans une zone. / Vous ne portez aucun parfum. / Matières de la ligne : Vers de vase (2), Chair de noyé (0), Ambre noir (1). / Appâts, du sac et du coffre : 1 appât de vers. / Le parfum d'une espèce rencontrée demande 1 Ambre noir et 3 de la ressource qu'elle lâche. |
+| Codex | Évolution : Gorgone une fois reçu d'un autre joueur, ou avec une chaîne d'allégeance |
+| Refus | Il vous manque : Vers de vase. / Vous portez déjà le {parfum} : il se répandra à votre prochaine expédition dans une zone. / Ce monstre a déjà un appât : lancez d'abord un filet. / Plus aucun appât de ce genre. |
+| Libellés | Préparer un appât ; Préparer un parfum ; Lancer un appât ; Prendre des appâts ; Ranger des appâts ; Acheter une Chaîne d'allégeance (500 pièces d'argent) |
