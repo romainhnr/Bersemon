@@ -730,6 +730,7 @@ Le format reprend celui des combats de Pokémon, comme base de départ qui pourr
 ### 10.3 Fuite
 
 - Le joueur peut fuir, et la fuite réussit toujours, sauf face à un Apôtre (section 9.4). En partant, le monstre actif du joueur subit une attaque du monstre adverse, résolue normalement (section 10.4), mais qui lui laisse au moins 1 PV : une fuite ne met jamais KO.
+- Décidé le 11/11/2026, pour l'étape 189 (demande de l'utilisateur) : avant un combat d'où l'on ne fuit pas, annoncé par son texte et le bouton "Combattre" (humain de fin de zone, Apôtre, Démiurge, légendaire, gardien de la Tour), le joueur peut encore fuir : un second choix, "Fuir et rentrer au camp", le ramène au camp avec ses gains, sans combat ni attaque subie. L'étape n'est pas franchie : l'expédition n'est pas menée au bout, l'adversaire attend toujours, et dans la Tour le record s'arrête à l'étape d'avant. Le récit dit "Vous rebroussez chemin avant d'engager le combat." En groupe, le gardien de la Tour n'a toujours pas d'annonce, donc pas ce choix (hypothèse retenue, Q123).
 
 ### 10.4 Résolution d'une attaque
 

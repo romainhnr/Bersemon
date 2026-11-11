@@ -9,7 +9,8 @@ use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_presentation::monstres::{ligne_du_heros, ligne_monstre};
 use bersemon_presentation::partie::{
-    annonce as texte_d_annonce, place_manquante as texte_de_place_manquante, sac_en_expedition,
+    FUIR_AVANT_LE_COMBAT, annonce as texte_d_annonce, place_manquante as texte_de_place_manquante,
+    sac_en_expedition,
 };
 
 use bersemon_core::inventaire::Objet;
@@ -93,12 +94,17 @@ pub fn sac_plein(partie: &Partie) -> Question {
 }
 
 /// Un seul bouton, pour que le joueur ne rate pas l'événement en enchaînant
-/// les actions (section 9.2).
+/// les actions (section 9.2) ; un combat propose aussi de fuir avant de
+/// l'engager (section 10.3).
 pub fn annonce(annonce: Annonce) -> Question {
     let (texte, libelle) = texte_d_annonce(annonce);
+    let mut boutons = vec![bouton(Cle::Poursuivre, libelle, PRINCIPAL)];
+    if annonce == Annonce::Combat {
+        boutons.push(bouton(Cle::Rentrer, FUIR_AVANT_LE_COMBAT, SECONDAIRE));
+    }
     Question {
         texte: texte.to_string(),
-        rangees: rangees(vec![bouton(Cle::Poursuivre, libelle, PRINCIPAL)]),
+        rangees: rangees(boutons),
     }
 }
 

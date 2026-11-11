@@ -447,6 +447,13 @@ impl Expedition {
         self.defaite = true;
     }
 
+    /// Le joueur fuit avant le combat annoncé de l'étape en cours : elle
+    /// n'est pas franchie, l'expédition n'est donc pas menée au bout, et le
+    /// record de la Tour s'arrête à l'étape d'avant (section 10.3).
+    pub(crate) fn renoncer_a_l_etape(&mut self) {
+        self.etapes_faites = self.etapes_faites.saturating_sub(1);
+    }
+
     /// Passe à l'étape suivante et tire son événement ; `None` si
     /// l'expédition est terminée. Tirages : à la première étape, celle d'une
     /// âme à retrouver, parmi celles qui précèdent la dernière ; puis la

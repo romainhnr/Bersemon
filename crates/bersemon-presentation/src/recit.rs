@@ -357,6 +357,10 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             important(&format!("Vous avez exploré {zone} jusqu'au bout.")),
             true,
         ),
+        Evenement::FuiteAvantLeCombat => (
+            "Vous rebroussez chemin avant d'engager le combat.".to_string(),
+            true,
+        ),
         Evenement::RetourAuCamp => (
             "Retour au camp : votre héros et vos monstres sont soignés.".to_string(),
             !matches!(precedent, Some(Evenement::ZoneExploree(_))),

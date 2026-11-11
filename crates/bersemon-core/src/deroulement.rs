@@ -655,6 +655,9 @@ pub enum Evenement {
     ZoneExploree(String),
     /// Ce que le joueur a jeté de son sac, qui débordait (section 13.3).
     ObjetsJetes(Inventaire),
+    /// Le joueur fuit avant un combat annoncé, d'où l'on ne fuit pas : il
+    /// rentre au camp avec ses gains (section 10.3).
+    FuiteAvantLeCombat,
     RetourAuCamp,
     Indice {
         numero: usize,
@@ -2988,13 +2991,22 @@ impl EnExpedition {
                 self.entre_deux_etapes(partie, choix, confirme, contexte, evenements)
             }
             Moment::MonstreRare(monstre) => self.monstre_rare(partie, monstre, choix, evenements),
-            Moment::AnnonceDeCombat(combat) => {
-                if *choix != Choix::Poursuivre {
+            Moment::AnnonceDeCombat(combat) => match choix {
+                Choix::Poursuivre => Ok(self.engager(partie, combat, evenements)),
+                // Avant un combat d'où l'on ne fuit pas, le joueur peut encore
+                // rebrousser chemin : il rentre au camp avec ses gains, sans
+                // combattre ; l'expédition n'est pas menée au bout (section
+                // 10.3).
+                Choix::RentrerAuCamp => {
+                    self.expedition.renoncer_a_l_etape();
+                    evenements.push(Evenement::FuiteAvantLeCombat);
+                    Ok(Reponse::RetourAuCamp)
+                }
+                _ => {
                     self.moment = Moment::AnnonceDeCombat(combat);
                     return Err(ErreurChoix::HorsDePropos);
                 }
-                Ok(self.engager(partie, combat, evenements))
-            }
+            },
             Moment::Combat(combat) => {
                 self.combattre(partie, combat, choix, confirme, contexte, evenements)
             }
@@ -6570,6 +6582,39 @@ mod tests {
             ),
             Err(ErreurChoix::ZoneFermee)
         );
+    }
+
+    /// Section 10.3 : face à l'annonce du gardien, d'où l'on ne fuit pas, le
+    /// joueur peut encore fuir avant le combat ; il rentre au camp, avec le
+    /// record de l'étape d'avant.
+    #[test]
+    fn on_fuit_avant_le_gardien_de_la_tour() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let tour = contenu.tour().id().clone();
+        let mut deroulement = au_camp(partie_pour_la_tour(&contenu), &contenu, &depot);
+        let mut aleatoire = GenerateurAleatoire::new(5);
+        let mut choix = Choix::PartirEnExpedition(tour);
+        for _ in 0..5_000 {
+            let mut contexte = Contexte {
+                contenu: &contenu,
+                aleatoire: &mut aleatoire,
+                depot: &depot,
+                maintenant: Horodatage::depuis_secondes(0),
+            };
+            deroulement.repondre(choix, &mut contexte).unwrap();
+            if deroulement.attente() == Attente::Annonce(Annonce::Combat) {
+                break;
+            }
+            choix = jouer_un_coup(&deroulement, &contenu);
+        }
+        assert_eq!(deroulement.attente(), Attente::Annonce(Annonce::Combat));
+        let evenements =
+            repondre_sans_tirage(&mut deroulement, Choix::RentrerAuCamp, &contenu, &depot).unwrap();
+        assert_eq!(evenements.first(), Some(&Evenement::FuiteAvantLeCombat));
+        assert_eq!(deroulement.attente(), Attente::Camp);
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert_eq!(sauvegarde.records_de_la_tour().seul, 9);
     }
 
     /// Section 9.5 : des étapes sans fin, un gardien à l'étape 10 suivi d'un

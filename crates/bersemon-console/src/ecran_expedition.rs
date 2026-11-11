@@ -7,7 +7,7 @@ use bersemon_core::deroulement::{ActionDeGestion, Annonce, Choix};
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_presentation::partie::{
-    annonce as texte_d_annonce, collection as liste_des_monstres,
+    FUIR_AVANT_LE_COMBAT, annonce as texte_d_annonce, collection as liste_des_monstres,
     place_manquante as place_manquante_texte,
 };
 use bersemon_presentation::sac::{question_du_sac_plein, sortes_a_jeter};
@@ -88,12 +88,20 @@ fn changer_ordre(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> 
     })))
 }
 
-/// Le bouton de l'annonce est l'unique choix d'un menu (section 9.2).
+/// Le bouton de l'annonce est l'unique choix d'un menu (section 9.2) ; un
+/// combat propose aussi de fuir avant de l'engager (section 10.3).
 pub fn annonce(annonce: Annonce, entree: &mut Entree) -> Option<Choix> {
     let (texte, bouton) = texte_d_annonce(annonce);
     println!("{texte}");
     println!("  1. {bouton}");
-    entree.choix(1, 1).map(|_| Choix::Poursuivre)
+    if annonce != Annonce::Combat {
+        return entree.choix(1, 1).map(|_| Choix::Poursuivre);
+    }
+    println!("  2. {FUIR_AVANT_LE_COMBAT}");
+    match entree.choix(1, 2)? {
+        1 => Some(Choix::Poursuivre),
+        _ => Some(Choix::RentrerAuCamp),
+    }
 }
 
 pub fn monstre_rare(entree: &mut Entree) -> Option<Choix> {

@@ -343,6 +343,10 @@ pub fn compteur_d_etapes(expedition: &Expedition) -> String {
     }
 }
 
+/// Le second choix de l'annonce d'un combat : fuir avant de l'engager, en
+/// rentrant au camp (section 10.3).
+pub const FUIR_AVANT_LE_COMBAT: &str = "Fuir et rentrer au camp";
+
 /// Le texte et le bouton d'une annonce (section 9.2).
 pub fn annonce(annonce: Annonce) -> (&'static str, &'static str) {
     match annonce {
