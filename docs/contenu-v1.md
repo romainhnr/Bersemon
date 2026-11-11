@@ -1152,6 +1152,31 @@ Textes proposés sans validation (gamedesign.md, Q101) :
 | Écrans de la descente | Descente avec {héros}. / En attente de {héros}. / Vous voulez continuer : vous attendez {héros}. / {héros} veut continuer. ; boutons Actualiser, Rentrer au camp, Ramener le groupe au camp |
 | Refus | Vous ne pouvez pas vous inviter vous-même. / Vous avez déjà un défi ou une invitation en attente : un seul à la fois. / Ce joueur a déjà un défi ou une invitation en attente : réessayez plus tard. / Cette invitation n'est plus en attente. / Un des deux joueurs est déjà en duel ou en expédition. / Les deux joueurs doivent être au camp pour descendre ensemble : réessayez plus tard. / Chacun doit avoir ouvert la Tour sans fond, en menant la Lisière au bout. / C'est à votre compagnon d'agir. / Pas encore : votre compagnon a 5 minutes pour jouer. |
 
+
+Depuis l'étape 204 (11/11/2026, textes, noms, stats et attaques proposés par Claude sans validation, Q124), le fond de la Tour, les Abysses (gamedesign.md, section 9.5) :
+
+| Moment | Texte |
+|---|---|
+| Entrée, avant le gardien de l'étape 50 | Les marches cessent au bord d'un gouffre sans lumière : les Abysses. Seules les bêtes les plus terribles rôdent ici, et plus bas vous attend la Main du Démiurge, cinq Apôtres élevés au rang de dieux. |
+| Étape, à partir de la 50 | Étape {numéro}, dans les Abysses. |
+| Gardien de l'étape 40 | Un rempart barre l'escalier. Il bouge : {monstre}, un géant de pierre et d'acier, lève un bouclier haut comme une tour. Il n'y aura pas de fuite. |
+| Gardien de l'étape 50 | Sur le seuil, un chevalier en armure noire traîne une épée immense dans la pierre. Le gouffre le ronge depuis des siècles : {monstre} se met en garde. Il n'y aura pas de fuite. |
+| Cardinal du Vide (60) | Une voix sans bouche résonne sous votre crâne. {monstre}, premier de la Main du Démiurge, pose sur vous des yeux qui ne se ferment jamais. Il n'y aura pas de fuite. |
+| Dame des supplices (70) | Une femme drapée de chaînes sourit dans l'ombre, et chaque blessure de vos monstres se met à brûler. {monstre}, deuxième de la Main du Démiurge, s'avance. Il n'y aura pas de fuite. |
+| Bouffon écorché (80) | Un rire aigre roule dans le gouffre. {monstre}, troisième de la Main du Démiurge, danse sur des jambes sans peau. Il n'y aura pas de fuite. |
+| Seigneur Pestilence (90) | L'air s'épaissit, grouillant d'insectes. {monstre}, quatrième de la Main du Démiurge, déploie son corps de pourriture. Il n'y aura pas de fuite. |
+| Aile de l'Éclipse (100) | Le gouffre s'assombrit encore : une éclipse se lève sous la terre. {monstre}, cinquième et dernier de la Main du Démiurge, déploie ses ailes noires. Il n'y aura pas de fuite. |
+
+| Identifiant | Nom | Types | Rôle | Rareté | Stats de base (total) | Rendement d'XP | Attaques |
+|---|---|---|---|---|---|---|---|
+| colosse-du-rempart | Colosse du rempart | Acier, Roche | soutien | rare | 110 / 125 / 150 / 45 / 100 / 50 (580) | 260 | Éboulement, Marteau de forge, Jugement de pierre, Charge du rempart (Acier, physique, 110, précision 90) ; attaque d'oeuf : Mur de boucliers (Acier, physique, 80, précision 100) |
+| cardinal-du-vide | Cardinal du Vide | Psychique, Spectre | offensif | Apôtre | 100 / 70 / 110 / 140 / 120 / 80 (620) | 700 | Rayon d'éther, Malédiction mortelle, Jugement, Sentence du vide (Psychique, spéciale, 120, précision 90) |
+| dame-des-supplices | Dame des supplices | Ténèbres, Féérique | offensif | Apôtre | 95 / 125 / 85 / 110 / 90 / 115 (620) | 700 | Rapine, Ailes célestes, Coup de grâce, Étreinte des supplices (Ténèbres, physique, 120, précision 90) |
+| bouffon-ecorche | Bouffon écorché | Son, Ténèbres | offensif | Apôtre | 90 / 100 / 90 / 120 / 95 / 125 (620) | 700 | Requiem, Cri du néant, Sentence, Rire de l'écorché (Son, spéciale, 120, précision 90) |
+| seigneur-pestilence | Seigneur Pestilence | Poison, Insecte | offensif | Apôtre | 130 / 120 / 120 / 90 / 110 / 50 (620) | 700 | Peste noire, Faux de mante, Déluge toxique, Fléau grouillant (Poison, physique, 120, précision 90) |
+| aile-de-l-eclipse | Aile de l'Éclipse | Vol, Ténèbres | offensif | Apôtre | 100 / 125 / 90 / 125 / 90 / 130 (660) | 750 | Plongeon d'acier, Ouragan céleste, Griffe d'ombre, Éclipse totale (Ténèbres, spéciale, 120, précision 90) |
+
+Habiletés : Carapace et Volonté pour le Colosse, Sorcellerie et Volonté pour le Cardinal, Férocité et Célérité pour la Dame, Instinct et Sorcellerie pour le Bouffon, Carapace et Férocité pour le Seigneur, Affinité et Célérité pour l'Aile. Sprites : le Colosse reprend le Chevalier noir aux couleurs de la pierre ; chaque Élu reprend un Apôtre (Évêque des os, Duchesse sanguine, Abbesse écorchée, Reine-mère de chair, Sénéchal des orages), recoloré et entouré d'une aura rouge (dorée en shiny).
 ## 26. Filets de capture
 
 Décidés le 25/10/2026, pour les étapes 103 à 106 (gamedesign.md, sections 9.2, 11.2, 13.5 et 14.2), valeurs proposées par Claude et validées par l'utilisateur, à ajuster en jouant.
@@ -1343,11 +1368,11 @@ Décidé le 25/10/2026, pour les étapes 121 à 123 (gamedesign.md, section 9.7)
 
 | Météo | Identifiant | Types renforcés (+20 %) | Zones | Texte au départ |
 |---|---|---|---|---|
-| Pluie | pluie | Eau, Plante | Lisière, Marais, Vallée, Abbaye, Port des Noyés, Sylve, Catacombes, Palais de Chair, Puits du Monde, Abysses | Une pluie froide tombe sans relâche. |
-| Tempête | tempete | Électrique, Vol | toutes sauf le Désert de sel, le Palais de Chair, les Abysses et les Terres arides | L'orage gronde : le ciel se déchire d'éclairs. |
+| Pluie | pluie | Eau, Plante | Lisière, Marais, Vallée, Abbaye, Port des Noyés, Sylve, Catacombes, Palais de Chair, Puits du Monde, Mer sans rivage | Une pluie froide tombe sans relâche. |
+| Tempête | tempete | Électrique, Vol | toutes sauf le Désert de sel, le Palais de Chair, la Mer sans rivage et les Terres arides | L'orage gronde : le ciel se déchire d'éclairs. |
 | Grêle | grele | Glace, Roche | Vallée, Col, Mines de Fer-Noir, Haute-Cité déchue, Pics Foudroyés, Ciel déchiré | La grêle crépite sur les pierres et les armures. |
 | Tempête de sable | tempete-de-sable | Sol, Roche | Désert de sel, Terres arides | Le sable vole, cinglant comme une lame. |
-| Cyclone | cyclone | Eau, Vol | Port des Noyés et Abysses, zones de mer | Le cyclone hurle, et les vagues montent à l'assaut des côtes. |
+| Cyclone | cyclone | Eau, Vol | Port des Noyés et Mer sans rivage, zones de mer | Le cyclone hurle, et les vagues montent à l'assaut des côtes. |
 | Canicule | canicule | Feu, Sol | Lisière, Marais, Abbaye, Désert de sel, Sylve, Plaine du Massacre, Gorge de Braise, Palais de Chair, Terres arides | Une chaleur écrasante pèse sur la terre. |
 
 Chaque zone a 1 chance sur 3, par créneau de 30 minutes, d'avoir une de ses météos ; sinon, temps calme.
@@ -2519,7 +2544,7 @@ Zones légendaires, ouvertes à la chute du Démiurge, dans cet ordre. Niveau 10
 
 | Identifiant | Nom | Espèces | Monstre rare | Météos | Légendaire |
 |---|---|---|---|---|---|
-| abysses | Abysses | Sirène putride, Crabe nécrophage | Hydre des marées (hostile) | pluie, cyclone | Léviathan |
+| abysses | Mer sans rivage (Abysses avant l'étape 204) | Sirène putride, Crabe nécrophage | Hydre des marées (hostile) | pluie, cyclone | Léviathan |
 | terres-arides | Terres arides | Crotale des salines, Ver des salines, Scarabée solaire | aucun | tempête de sable, canicule | Béhémoth |
 | ciel-dechire | Ciel déchiré | Harpie des orages, Aigle-tonnerre, Feu de Saint-Elme | aucun | tempête, grêle | Ziz |
 
@@ -2552,7 +2577,7 @@ Sprites : un par légendaire, normal et shiny (section 42).
 
 Textes, avant le combat puis à la capture :
 
-> Léviathan : Au plus profond des Abysses, la mer elle-même se soulève : un serpent immense, couvert d'écailles noires, ouvre une gueule où s'engouffrent les courants. Léviathan, maître des eaux, vous barre la route.
+> Léviathan : Au plus profond de la Mer sans rivage, l'eau elle-même se soulève : un serpent immense, couvert d'écailles noires, ouvre une gueule où s'engouffrent les courants. Léviathan, maître des eaux, vous barre la route.
 
 > Léviathan s'effondre dans un remous et se laisse approcher. Le maître des eaux vous suit désormais.
 
@@ -2629,7 +2654,7 @@ Décidé le 06/11/2026, pour les étapes 174, 176 et 177 (gamedesign.md, section
 | fleau-de-la-reine-mere | Fléau de la Reine-mère | abattre la Reine-mère de chair | oui | |
 | fleau-du-roi-sans-visage | Fléau du Roi sans visage | abattre le Roi sans visage | oui | |
 | deicide | Déicide | abattre le Démiurge | oui | Cendre |
-| legende-des-abysses | Légende des Abysses | capturer Léviathan | oui | |
+| legende-des-abysses | Légende de la Mer sans rivage | capturer Léviathan | oui | |
 | legende-des-terres-arides | Légende des Terres arides | capturer Béhémoth | oui | |
 | legende-du-ciel-dechire | Légende du Ciel déchiré | capturer Ziz | oui | |
 | idole-de-la-fosse | Idole de la Fosse | vaincre le dernier palier de la Fosse aux damnés | oui | Sang |

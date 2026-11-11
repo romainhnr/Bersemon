@@ -4107,7 +4107,9 @@ impl EnExpedition {
                 let recit = self
                     .expedition
                     .tour()
-                    .map(|tour| tour.recit_du_gardien(gardien.nom()))
+                    .map(|tour| {
+                        tour.recit_du_gardien(self.expedition.etapes_faites(), gardien.nom())
+                    })
                     .unwrap_or_default();
                 evenements.push(Evenement::GardienDeLaTour(recit));
                 let combat = partie
@@ -4152,7 +4154,7 @@ impl EnExpedition {
             EvenementExpedition::Gardien(gardien) => {
                 if let Some(tour) = self.expedition.tour() {
                     evenements.push(Evenement::GardienDeLaTour(
-                        tour.recit_du_gardien(gardien.nom()),
+                        tour.recit_du_gardien(self.expedition.etapes_faites(), gardien.nom()),
                     ));
                 }
                 (vec![gardien.clone()], true)

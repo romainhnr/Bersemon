@@ -4209,7 +4209,12 @@ fn un_recit_trop_long_garde_la_question() {
     );
     verifier_les_limites(&affiche);
     assert!(affiche.texte.starts_with("..."), "{}", affiche.texte);
-    assert!(affiche.texte.contains("Étape 300."), "{}", affiche.texte);
+    // Au-delà de l'étape 50, la Tour est dans les Abysses (étape 204).
+    assert!(
+        affiche.texte.contains("Étape 300, dans les Abysses."),
+        "{}",
+        affiche.texte
+    );
     assert!(!affiche.texte.ends_with("..."), "{}", affiche.texte);
     let _ = fs::remove_dir_all(dossier);
 }

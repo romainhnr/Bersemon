@@ -927,9 +927,14 @@ mod tests {
             assert!(!liste.contains(&cache), "{cache}");
         }
         assert!(liste.contains(&"salamandre"));
+        // Ni les Apôtres de la traque, ni les deux formes du Démiurge, ni les
+        // cinq Élus des Abysses (étape 204).
         assert_eq!(
             liste.len(),
-            contenu.especes().len() - contenu.piste().apotres().count() - 2
+            contenu.especes().len()
+                - contenu.piste().apotres().count()
+                - 2
+                - contenu.tour().elus().len()
         );
         let mut partie = partie;
         let baron = contenu.piste().apotres().next().unwrap();

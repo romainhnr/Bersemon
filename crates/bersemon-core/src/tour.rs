@@ -1,16 +1,20 @@
 //! Tour sans fond (section 9.5) : un lieu hors de la carte, aux étapes sans
-//! fin, où chaque étape recrée sa zone selon la profondeur. C'est aussi le
-//! seul lieu de l'expédition en groupe (section 15.5).
+//! fin, où chaque étape recrée sa zone selon la profondeur. Au fond, à
+//! partir de l'étape 50, les Abysses n'ont que des monstres de niveau 100
+//! et les Élus de la Main du Démiurge pour gardiens. C'est aussi le seul
+//! lieu de l'expédition en groupe (section 15.5).
 
 use std::fmt;
 
 use crate::aleatoire::Aleatoire;
 use crate::capsule::Capsule;
-use crate::espece::Espece;
+use crate::espece::{Espece, Rarete};
 use crate::expedition::ParametresCoffre;
 use crate::expedition_automatique::ParametresExpeditionAutomatique;
-use crate::monstre::Monstre;
+use crate::monstre::{Monstre, tirer_shiny};
 use crate::niveau::Niveau;
+use crate::stats::ValeursInternes;
+
 use crate::zone::{EspeceRare, Zone, ZoneId, creer_monstre_sauvage, tirer_entre};
 
 /// À l'étape n, les monstres sont au niveau 4 + 2 x n, 100 au plus.
@@ -25,6 +29,13 @@ const ARGENT_MAX_PAR_ETAPE: u32 = 8;
 /// Seul, des groupes de 1 à 3 monstres ; à deux, de 2 à 4 (section 9.5).
 const GROUPE_SEUL: (u8, u8) = (1, 3);
 const GROUPE_A_DEUX: (u8, u8) = (2, 4);
+/// La première étape des Abysses, où les monstres sont au niveau 100
+/// depuis l'étape 48 (section 9.5, étape 204).
+pub const ETAPE_DES_ABYSSES: u32 = 50;
+/// Dans les Abysses, un monstre de plus au moins par groupe (proposé par
+/// Claude, Q124).
+const GROUPE_DES_ABYSSES_SEUL: (u8, u8) = (2, 3);
+const GROUPE_DES_ABYSSES_A_DEUX: (u8, u8) = (3, 4);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ErreurTour {
@@ -49,6 +60,23 @@ struct Etage {
     niveau_min: Niveau,
     especes: Vec<Espece>,
     rares: Vec<EspeceRare>,
+}
+
+/// Un gardien qui ne se tire pas : celui d'une étape donnée, ou un des Élus
+/// des Abysses, avec le texte qui l'annonce.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GardienAttitre {
+    pub espece: Espece,
+    pub recit: String,
+}
+
+/// Le fond de la Tour (section 9.5) : ses espèces, ses gardiens attitrés
+/// par étape, puis les Élus, gardiens des étapes suivantes, à tour de rôle.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct Abysses {
+    especes: Vec<Espece>,
+    rares: Vec<EspeceRare>,
+    recit: String,
 }
 
 /// Records de profondeur d'un joueur : la dernière étape franchie, seul et
@@ -76,6 +104,11 @@ pub struct TourSansFond {
     entree: String,
     gardien: String,
     repos: String,
+    abysses: Option<Abysses>,
+    /// Le gardien de ces étapes, à la place d'un rare tiré (étape 204).
+    gardiens_attitres: Vec<(u32, GardienAttitre)>,
+    /// Les gardiens des étapes 60, 70, et ainsi de suite, à tour de rôle.
+    elus: Vec<GardienAttitre>,
 }
 
 impl TourSansFond {
@@ -110,7 +143,68 @@ impl TourSansFond {
             entree: entree.into(),
             gardien: gardien.into(),
             repos: repos.into(),
+            abysses: None,
+            gardiens_attitres: Vec::new(),
+            elus: Vec::new(),
         })
+    }
+
+    /// À partir de l'étape 50 : `especes` pour les groupes, `rares` pour
+    /// les monstres rares ; `recit` dit l'entrée dans les Abysses.
+    pub fn avec_abysses(
+        mut self,
+        especes: Vec<Espece>,
+        rares: Vec<EspeceRare>,
+        recit: impl Into<String>,
+    ) -> Self {
+        self.abysses = Some(Abysses {
+            especes,
+            rares,
+            recit: recit.into(),
+        });
+        self
+    }
+
+    /// `etape` doit être une étape de gardien.
+    pub fn avec_gardien_attitre(mut self, etape: u32, gardien: GardienAttitre) -> Self {
+        self.gardiens_attitres.push((etape, gardien));
+        self
+    }
+
+    /// Les gardiens des étapes 60, 70, 80 et ainsi de suite, dans l'ordre,
+    /// puis de nouveau depuis le premier.
+    pub fn avec_elus(mut self, elus: Vec<GardienAttitre>) -> Self {
+        self.elus = elus;
+        self
+    }
+
+    pub fn elus(&self) -> &[GardienAttitre] {
+        &self.elus
+    }
+
+    /// Le récit de l'entrée dans les Abysses, à l'étape 50.
+    pub fn recit_des_abysses(&self) -> Option<&str> {
+        self.abysses.as_ref().map(|abysses| abysses.recit.as_str())
+    }
+
+    pub fn est_dans_les_abysses(etape: u32) -> bool {
+        etape >= ETAPE_DES_ABYSSES
+    }
+
+    /// Le gardien qui ne se tire pas à cette étape, s'il y en a un.
+    pub fn gardien_attitre(&self, etape: u32) -> Option<&GardienAttitre> {
+        if !Self::a_un_gardien(etape) {
+            return None;
+        }
+        if let Some((_, gardien)) = self.gardiens_attitres.iter().find(|(e, _)| *e == etape) {
+            return Some(gardien);
+        }
+        let premiere = ETAPE_DES_ABYSSES + ETAPES_ENTRE_DEUX_GARDIENS;
+        if etape < premiere || self.elus.is_empty() {
+            return None;
+        }
+        let rang = ((etape - premiere) / ETAPES_ENTRE_DEUX_GARDIENS) as usize % self.elus.len();
+        self.elus.get(rang)
     }
 
     pub fn id(&self) -> &ZoneId {
@@ -129,8 +223,18 @@ impl TourSansFond {
         &self.entree
     }
 
-    pub fn recit_du_gardien(&self, monstre: &str) -> String {
-        self.gardien.replace("{monstre}", monstre)
+    /// Le texte d'un gardien attitré, ou le texte commun, où `monstre`
+    /// remplace `{monstre}` ; à la première étape des Abysses, précédé de
+    /// celui de leur entrée.
+    pub fn recit_du_gardien(&self, etape: u32, monstre: &str) -> String {
+        let recit = match self.gardien_attitre(etape) {
+            Some(attitre) => attitre.recit.replace("{monstre}", monstre),
+            None => self.gardien.replace("{monstre}", monstre),
+        };
+        match self.recit_des_abysses() {
+            Some(abysses) if etape == ETAPE_DES_ABYSSES => format!("{abysses} {recit}"),
+            _ => recit,
+        }
     }
 
     pub fn recit_du_repos(&self) -> &str {
@@ -152,7 +256,15 @@ impl TourSansFond {
         let niveau = Self::niveau_de_l_etape(etape);
         let mut especes: Vec<Espece> = Vec::new();
         let mut rares: Vec<EspeceRare> = Vec::new();
-        for etage in self.etages_atteints(niveau) {
+        let abysses = self
+            .abysses
+            .as_ref()
+            .filter(|_| Self::est_dans_les_abysses(etape));
+        if let Some(abysses) = abysses {
+            especes = abysses.especes.clone();
+            rares = abysses.rares.clone();
+        }
+        for etage in self.etages_atteints(niveau).filter(|_| abysses.is_none()) {
             for espece in &etage.especes {
                 if !especes.iter().any(|deja| deja.id() == espece.id()) {
                     especes.push(espece.clone());
@@ -167,7 +279,12 @@ impl TourSansFond {
                 }
             }
         }
-        let (taille_min, taille_max) = if a_deux { GROUPE_A_DEUX } else { GROUPE_SEUL };
+        let (taille_min, taille_max) = match (a_deux, abysses.is_some()) {
+            (false, false) => GROUPE_SEUL,
+            (true, false) => GROUPE_A_DEUX,
+            (false, true) => GROUPE_DES_ABYSSES_SEUL,
+            (true, true) => GROUPE_DES_ABYSSES_A_DEUX,
+        };
         let coffre = ParametresCoffre::new(
             ARGENT_MIN_PAR_ETAPE * etape..=ARGENT_MAX_PAR_ETAPE * etape,
             capsules,
@@ -193,9 +310,26 @@ impl TourSansFond {
 
     /// Un monstre rare hostile des zones atteintes, au niveau de l'étape + 3,
     /// 100 au plus. Tirages : l'espèce, s'il y en a plusieurs, puis ceux
-    /// d'un monstre sauvage. Sans rare hostile, une espèce commune.
+    /// d'un monstre sauvage. Sans rare hostile, une espèce commune. Un
+    /// gardien attitré ne se tire pas ; un Élu, comme un Apôtre, a 31 dans
+    /// chaque valeur interne, et seuls son shiny et son habileté se tirent.
     pub(crate) fn generer_gardien(&self, etape: u32, aleatoire: &mut dyn Aleatoire) -> Monstre {
         let niveau = Self::niveau_de_l_etape(etape);
+        if let Some(attitre) = self.gardien_attitre(etape) {
+            let niveau = niveau_plafonne(u32::from(niveau.valeur()) + NIVEAUX_DU_GARDIEN);
+            if attitre.espece.rarete() == Rarete::Apotre {
+                let shiny = tirer_shiny(aleatoire);
+                return Monstre::creer(
+                    attitre.espece.clone(),
+                    niveau,
+                    ValeursInternes::maximales(),
+                    shiny,
+                )
+                .expect("Élu créé au niveau de son étape")
+                .tirer_son_habilete(aleatoire);
+            }
+            return creer_monstre_sauvage(&attitre.espece, niveau, aleatoire);
+        }
         let mut candidats: Vec<&Espece> = Vec::new();
         for etage in self.etages_atteints(niveau) {
             for rare in etage.rares.iter().filter(|rare| !rare.pacifique) {
@@ -345,8 +479,78 @@ mod tests {
         assert_eq!(gardien.espece().id().as_str(), "vouivre");
         assert_eq!(gardien.niveau().valeur(), 27);
         assert_eq!(
-            tour.recit_du_gardien("Vouivre"),
+            tour.recit_du_gardien(10, "Vouivre"),
             "Vouivre garde l'escalier."
         );
+    }
+
+    fn tour_avec_abysses() -> TourSansFond {
+        let attitre = |id: &str, recit: &str| GardienAttitre {
+            espece: espece(id),
+            recit: recit.to_string(),
+        };
+        let elu = |id: &str| GardienAttitre {
+            espece: espece(id).avec_rarete(Rarete::Apotre),
+            recit: format!("{{monstre}} : {id}."),
+        };
+        tour()
+            .avec_abysses(
+                vec![espece("basilic"), espece("vouivre")],
+                vec![EspeceRare {
+                    espece: espece("cerf-blanc"),
+                    pacifique: true,
+                }],
+                "Les Abysses.",
+            )
+            .avec_gardien_attitre(40, attitre("colosse", "{monstre} barre l'escalier."))
+            .avec_gardien_attitre(50, attitre("chevalier", "{monstre} se met en garde."))
+            .avec_elus(vec![elu("premier"), elu("second")])
+    }
+
+    /// Section 9.5 : les gardiens attitrés, puis les Élus à tour de rôle.
+    #[test]
+    fn les_abysses_ont_leurs_gardiens_attitres_puis_les_elus_a_tour_de_role() {
+        let tour = tour_avec_abysses();
+        let gardien = |etape: u32| {
+            tour.gardien_attitre(etape)
+                .map(|gardien| gardien.espece.id().as_str())
+        };
+        assert_eq!(gardien(30), None);
+        assert_eq!(gardien(40), Some("colosse"));
+        assert_eq!(gardien(45), None);
+        assert_eq!(gardien(50), Some("chevalier"));
+        assert_eq!(gardien(60), Some("premier"));
+        assert_eq!(gardien(70), Some("second"));
+        assert_eq!(gardien(80), Some("premier"));
+        assert_eq!(
+            tour.recit_du_gardien(50, "Chevalier"),
+            "Les Abysses. Chevalier se met en garde."
+        );
+        assert_eq!(tour.recit_du_gardien(70, "Second"), "Second : second.");
+        assert_eq!(
+            tour.recit_du_gardien(30, "Vouivre"),
+            "Vouivre garde l'escalier."
+        );
+        // Un Élu a 31 partout ; seuls son shiny et son habileté se tirent.
+        let elu = tour.generer_gardien(60, &mut AleatoireScripte::new([2]));
+        assert_eq!(elu.espece().id().as_str(), "premier");
+        assert_eq!(elu.niveau().valeur(), 100);
+        assert_eq!(elu.valeurs_internes(), &ValeursInternes::maximales());
+    }
+
+    #[test]
+    fn les_abysses_n_ont_que_leurs_especes_en_groupes_plus_nombreux() {
+        let tour = tour_avec_abysses();
+        let zone = tour.zone_de_l_etape(50, false, Vec::new());
+        assert_eq!(ids(zone.especes()), vec!["basilic", "vouivre"]);
+        assert_eq!(zone.tailles_de_groupe(), (2, 3));
+        assert_eq!(
+            tour.zone_de_l_etape(50, true, Vec::new())
+                .tailles_de_groupe(),
+            (3, 4)
+        );
+        let avant = tour.zone_de_l_etape(49, false, Vec::new());
+        assert_eq!(avant.tailles_de_groupe(), (1, 3));
+        assert!(ids(avant.especes()).contains(&"squelette"));
     }
 }

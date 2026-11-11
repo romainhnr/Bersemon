@@ -1758,8 +1758,16 @@ impl Combat {
         {
             return Vec::new();
         }
+        // Un Apôtre ne se capture pas, même gardien de la Tour, comme les
+        // Élus des Abysses (section 9.5).
         (0..self.adversaires.len())
             .filter(|index| self.adversaires[*index].est_ko() && !self.captures.contains(index))
+            .filter(|index| {
+                !matches!(
+                    self.adversaires[*index].espece().rarete(),
+                    crate::espece::Rarete::Apotre | crate::espece::Rarete::Demiurge
+                )
+            })
             .collect()
     }
 
@@ -3004,6 +3012,25 @@ mod tests {
         combat.capturer_ko(0).unwrap();
         let bilan = terminer(combat, &[100]);
         assert_eq!(bilan.captures.len(), 1);
+    }
+
+    /// Section 9.5 : un Élu des Abysses, comme tout Apôtre, ne se capture
+    /// pas, même vaincu et KO.
+    #[test]
+    fn un_elu_gardien_de_la_tour_ne_se_capture_pas() {
+        let espece =
+            crate::donnees_de_test::espece("elu").avec_rarete(crate::espece::Rarete::Apotre);
+        let elu = Monstre::creer(
+            espece,
+            Niveau::new(5).unwrap(),
+            crate::stats::ValeursInternes::default(),
+            false,
+        )
+        .unwrap();
+        let mut combat = combat(vec![rapide()], vec![affaibli(elu, 1)]).contre_un_gardien();
+        tour(&mut combat, Action::Attaquer(0), &[2, 100]);
+        assert_eq!(combat.phase(), Phase::Termine(Issue::Victoire));
+        assert!(combat.adversaires_capturables().is_empty());
     }
 
     /// Section 9.5 : ni fuite ni filet face au gardien pendant le combat ;

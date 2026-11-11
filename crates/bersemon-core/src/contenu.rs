@@ -50,7 +50,7 @@ use crate::soin::Soin;
 use crate::stats::Stats;
 use crate::statut::Statut;
 use crate::succes::{ConditionDeSucces, CouleurDuHeros, Succes};
-use crate::tour::TourSansFond;
+use crate::tour::{GardienAttitre, TourSansFond};
 use crate::traque::{Apotre, Chapitre, Indice, Piste};
 use crate::tutoriel::Conseil;
 use crate::types::{Type, TypesMonstre};
@@ -387,7 +387,7 @@ const AME_DU_ROI: &str =
 
 // Les zones légendaires et leurs gardiens, section 49 de docs/contenu-v1.md
 // (étape 169).
-const AVANT_LEVIATHAN: &str = "Au plus profond des Abysses, la mer elle-même se soulève : un serpent immense, couvert d'écailles noires, ouvre une gueule où s'engouffrent les courants. Léviathan, maître des eaux, vous barre la route.";
+const AVANT_LEVIATHAN: &str = "Au plus profond de la Mer sans rivage, l'eau elle-même se soulève : un serpent immense, couvert d'écailles noires, ouvre une gueule où s'engouffrent les courants. Léviathan, maître des eaux, vous barre la route.";
 
 const CAPTURE_DE_LEVIATHAN: &str = "Léviathan s'effondre dans un remous et se laisse approcher. Le maître des eaux vous suit désormais.";
 
@@ -410,6 +410,33 @@ const FORGE_DU_BEHERIT: &str = "Malvoise dépose les âmes des Apôtres au creux
 // Tour sans fond, section 25 de docs/contenu-v1.md (étape 96).
 const ENTREE_DANS_LA_TOUR: &str = "Au milieu des ruines se dresse le sommet d'une tour engloutie. Ses marches s'enfoncent dans la terre, et nul n'en a trouvé le fond ; plus on descend, plus les bêtes sont terribles.";
 const AVANT_LE_GARDIEN: &str = "Les marches débouchent sur un palier plus large que les autres. Au centre, {monstre} garde l'escalier qui s'enfonce plus bas. Il n'y aura pas de fuite.";
+/// Section 25 de docs/contenu-v1.md : le fond de la Tour (étape 204, textes
+/// proposés par Claude, Q124).
+const ENTREE_DANS_LES_ABYSSES: &str = "Les marches cessent au bord d'un gouffre sans lumière : les Abysses. Seules les bêtes les plus terribles rôdent ici, et plus bas vous attend la Main du Démiurge, cinq Apôtres élevés au rang de dieux.";
+const AVANT_LE_COLOSSE: &str = "Un rempart barre l'escalier. Il bouge : {monstre}, un géant de pierre et d'acier, lève un bouclier haut comme une tour. Il n'y aura pas de fuite.";
+const AVANT_LE_CHEVALIER: &str = "Sur le seuil, un chevalier en armure noire traîne une épée immense dans la pierre. Le gouffre le ronge depuis des siècles : {monstre} se met en garde. Il n'y aura pas de fuite.";
+const ELUS_DE_LA_MAIN: [(&str, &str); 5] = [
+    (
+        "cardinal-du-vide",
+        "Une voix sans bouche résonne sous votre crâne. {monstre}, premier de la Main du Démiurge, pose sur vous des yeux qui ne se ferment jamais. Il n'y aura pas de fuite.",
+    ),
+    (
+        "dame-des-supplices",
+        "Une femme drapée de chaînes sourit dans l'ombre, et chaque blessure de vos monstres se met à brûler. {monstre}, deuxième de la Main du Démiurge, s'avance. Il n'y aura pas de fuite.",
+    ),
+    (
+        "bouffon-ecorche",
+        "Un rire aigre roule dans le gouffre. {monstre}, troisième de la Main du Démiurge, danse sur des jambes sans peau. Il n'y aura pas de fuite.",
+    ),
+    (
+        "seigneur-pestilence",
+        "L'air s'épaissit, grouillant d'insectes. {monstre}, quatrième de la Main du Démiurge, déploie son corps de pourriture. Il n'y aura pas de fuite.",
+    ),
+    (
+        "aile-de-l-eclipse",
+        "Le gouffre s'assombrit encore : une éclipse se lève sous la terre. {monstre}, cinquième et dernier de la Main du Démiurge, déploie ses ailes noires. Il n'y aura pas de fuite.",
+    ),
+];
 const REPOS_DANS_LA_TOUR: &str = "Derrière le gardien, une source claire coule entre les pierres. Vos monstres y boivent et reprennent toutes leurs forces.";
 
 const SACRIFICE: &str = "Le Béhérit pourpre s'ouvre en un cri. {monstre} vous est arraché et disparaît dans une lumière rouge. Le ciel s'assombrit : l'Éclipse commence.";
@@ -1896,7 +1923,7 @@ impl ContenuV1 {
         let zones_legendaires = vec![
             zone_legendaire(
                 "abysses",
-                "Abysses",
+                "Mer sans rivage",
                 &["sirene-putride", "crabe-necrophage"],
                 vec![EspeceRare {
                     espece: trouver("hydre-des-marees"),
@@ -1926,6 +1953,30 @@ impl ContenuV1 {
             lisiere, marais, vallee, abbaye, col, desert, port, mines, sylve, catacombes, plaine,
             cite, gorge, pics, palais, puits,
         ];
+        // Les Abysses, au fond de la Tour : les rares hostiles de toutes les
+        // zones y forment les groupes, et les rares pacifiques y sont les
+        // monstres rares (section 9.5, étape 204).
+        let mut especes_des_abysses: Vec<Espece> = Vec::new();
+        let mut rares_des_abysses: Vec<EspeceRare> = Vec::new();
+        for rare in zones.iter().flat_map(|zone| zone.rares()) {
+            if rare.pacifique {
+                if !rares_des_abysses
+                    .iter()
+                    .any(|deja| deja.espece.id() == rare.espece.id())
+                {
+                    rares_des_abysses.push(rare.clone());
+                }
+            } else if !especes_des_abysses
+                .iter()
+                .any(|deja| deja.id() == rare.espece.id())
+            {
+                especes_des_abysses.push(rare.espece.clone());
+            }
+        }
+        let attitre = |id: &str, recit: &str| GardienAttitre {
+            espece: trouver(id),
+            recit: recit.to_string(),
+        };
         let tour = TourSansFond::new(
             ZoneId::new("tour-sans-fond"),
             "Tour sans fond",
@@ -1935,7 +1986,20 @@ impl ContenuV1 {
             AVANT_LE_GARDIEN,
             REPOS_DANS_LA_TOUR,
         )
-        .expect("Tour sans fond conforme aux règles");
+        .expect("Tour sans fond conforme aux règles")
+        .avec_abysses(
+            especes_des_abysses,
+            rares_des_abysses,
+            ENTREE_DANS_LES_ABYSSES,
+        )
+        .avec_gardien_attitre(40, attitre("colosse-du-rempart", AVANT_LE_COLOSSE))
+        .avec_gardien_attitre(50, attitre("chevalier-de-l-abime", AVANT_LE_CHEVALIER))
+        .avec_elus(
+            ELUS_DE_LA_MAIN
+                .iter()
+                .map(|(id, recit)| attitre(id, recit))
+                .collect(),
+        );
         let fosse = creer_la_fosse(&trouver);
         let matieres: Vec<(Ressource, u32)> = MATIERES_PECHEES
             .iter()
@@ -2607,7 +2671,7 @@ const ATTAQUES_DES_HEROS: [FicheAttaque; 40] = [
 ];
 
 /// Section 1 de docs/contenu-v1.md, dans le même ordre.
-const ATTAQUES: [FicheAttaque; 285] = [
+const ATTAQUES: [FicheAttaque; 292] = [
     fiche(
         "souffle-chaud",
         "Souffle chaud",
@@ -4767,6 +4831,65 @@ const ATTAQUES: [FicheAttaque; 285] = [
         110,
         90,
     ),
+    // Les attaques du Colosse du rempart et des Élus de la Main du Démiurge,
+    // gardiens de la Tour sans fond (section 9.5, étape 204).
+    fiche(
+        "charge-du-rempart",
+        "Charge du rempart",
+        Type::Acier,
+        Physique,
+        110,
+        90,
+    ),
+    fiche(
+        "sentence-du-vide",
+        "Sentence du vide",
+        Type::Psychique,
+        Speciale,
+        120,
+        90,
+    ),
+    fiche(
+        "etreinte-des-supplices",
+        "Étreinte des supplices",
+        Type::Tenebres,
+        Physique,
+        120,
+        90,
+    ),
+    fiche(
+        "rire-de-l-ecorche",
+        "Rire de l'écorché",
+        Type::Son,
+        Speciale,
+        120,
+        90,
+    ),
+    fiche(
+        "fleau-grouillant",
+        "Fléau grouillant",
+        Type::Poison,
+        Physique,
+        120,
+        90,
+    ),
+    fiche(
+        "eclipse-totale",
+        "Éclipse totale",
+        Type::Tenebres,
+        Speciale,
+        120,
+        90,
+    ),
+    // L'attaque d'oeuf du Colosse du rempart (section 13.11, étape 204).
+    fiche(
+        "mur-de-boucliers",
+        "Mur de boucliers",
+        Type::Acier,
+        Physique,
+        80,
+        100,
+    ),
 ];
 
 struct FicheCapsule {
@@ -5155,7 +5278,7 @@ const MARCHAND_ZOMBIE: FicheEspece = FicheEspece {
 /// Section 2 de docs/contenu-v1.md, dans l'ordre du codex : les monstres de
 /// départ, les communs, les rares, l'Apôtre, le monstre caché, puis les
 /// formes évoluées de la section 8.
-static ESPECES: [FicheEspece; 140] = [
+static ESPECES: [FicheEspece; 146] = [
     FicheEspece {
         id: "salamandre",
         nom: "Salamandre",
@@ -7774,6 +7897,113 @@ static ESPECES: [FicheEspece; 140] = [
         ],
         evolution: None,
     },
+    // Les gardiens attitrés de la Tour sans fond (section 9.5, étape 204,
+    // proposés par Claude, Q124) : le Colosse du rempart, à l'étape 40,
+    // clin d'oeil aux chevaliers des tours des jeux Souls ; puis, dans les
+    // Abysses, les cinq Élus de la Main du Démiurge, des Apôtres élevés au
+    // rang de dieux, qui ne se capturent pas.
+    FicheEspece {
+        id: "colosse-du-rempart",
+        nom: "Colosse du rempart",
+        types: &[Type::Acier, Type::Roche],
+        role: Role::Soutien,
+        stats_de_base: [110, 125, 150, 45, 100, 50],
+        rendement_experience: 260,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Carapace, Habilete::Volonte],
+        apprentissage: &[
+            (1, "eboulement"),
+            (1, "marteau-de-forge"),
+            (1, "jugement-de-pierre"),
+            (1, "charge-du-rempart"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "cardinal-du-vide",
+        nom: "Cardinal du Vide",
+        types: &[Type::Psychique, Type::Spectre],
+        role: Role::Offensif,
+        stats_de_base: [100, 70, 110, 140, 120, 80],
+        rendement_experience: 700,
+        rarete: Rarete::Apotre,
+        habiletes: &[Habilete::Sorcellerie, Habilete::Volonte],
+        apprentissage: &[
+            (1, "rayon-d-ether"),
+            (1, "malediction-mortelle"),
+            (1, "jugement"),
+            (1, "sentence-du-vide"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "dame-des-supplices",
+        nom: "Dame des supplices",
+        types: &[Type::Tenebres, Type::Feerique],
+        role: Role::Offensif,
+        stats_de_base: [95, 125, 85, 110, 90, 115],
+        rendement_experience: 700,
+        rarete: Rarete::Apotre,
+        habiletes: &[Habilete::Ferocite, Habilete::Celerite],
+        apprentissage: &[
+            (1, "rapine"),
+            (1, "ailes-celestes"),
+            (1, "coup-de-grace"),
+            (1, "etreinte-des-supplices"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "bouffon-ecorche",
+        nom: "Bouffon écorché",
+        types: &[Type::Son, Type::Tenebres],
+        role: Role::Offensif,
+        stats_de_base: [90, 100, 90, 120, 95, 125],
+        rendement_experience: 700,
+        rarete: Rarete::Apotre,
+        habiletes: &[Habilete::Instinct, Habilete::Sorcellerie],
+        apprentissage: &[
+            (1, "requiem"),
+            (1, "cri-du-neant"),
+            (1, "sentence"),
+            (1, "rire-de-l-ecorche"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "seigneur-pestilence",
+        nom: "Seigneur Pestilence",
+        types: &[Type::Poison, Type::Insecte],
+        role: Role::Offensif,
+        stats_de_base: [130, 120, 120, 90, 110, 50],
+        rendement_experience: 700,
+        rarete: Rarete::Apotre,
+        habiletes: &[Habilete::Carapace, Habilete::Ferocite],
+        apprentissage: &[
+            (1, "peste-noire"),
+            (1, "faux-de-mante"),
+            (1, "deluge-toxique"),
+            (1, "fleau-grouillant"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "aile-de-l-eclipse",
+        nom: "Aile de l'Éclipse",
+        types: &[Type::Vol, Type::Tenebres],
+        role: Role::Offensif,
+        stats_de_base: [100, 125, 90, 125, 90, 130],
+        rendement_experience: 750,
+        rarete: Rarete::Apotre,
+        habiletes: &[Habilete::Affinite, Habilete::Celerite],
+        apprentissage: &[
+            (1, "plongeon-d-acier"),
+            (1, "ouragan-celeste"),
+            (1, "griffe-d-ombre"),
+            (1, "eclipse-totale"),
+        ],
+        evolution: None,
+    },
 ];
 
 /// Section 15 de docs/contenu-v1.md : la ligne est prête 2 h après avoir
@@ -9439,7 +9669,7 @@ const ACTIVITES: [(&str, Activite); 28] = [
 
 /// Section 28 de docs/contenu-v1.md : l'attaque d'œuf de chaque famille
 /// d'évolution, par sa forme de base (section 13.11).
-const ATTAQUES_D_OEUF: [(&str, &str); 93] = [
+const ATTAQUES_D_OEUF: [(&str, &str); 94] = [
     ("salamandre", "souffle-des-forges"),
     ("crapaud", "ressac"),
     ("mandragore", "seve-maudite"),
@@ -9533,6 +9763,7 @@ const ATTAQUES_D_OEUF: [(&str, &str); 93] = [
     ("leviathan", "ecaille-abyssale"),
     ("behemoth", "corne-primordiale"),
     ("ziz", "plume-celeste"),
+    ("colosse-du-rempart", "mur-de-boucliers"),
 ];
 
 /// La forme de base de la famille de cette espèce : celle qu'aucune autre
@@ -9713,7 +9944,7 @@ const FLEAUX: [(&str, &str, &str, &str, &str); 13] = [
 const LEGENDES: [(&str, &str, &str, &str, &str); 3] = [
     (
         "legende-des-abysses",
-        "Légende des Abysses",
+        "Légende de la Mer sans rivage",
         "leviathan",
         "capturer Léviathan",
         "Une écaille de Léviathan, grande comme un bouclier.",
@@ -10460,8 +10691,9 @@ mod tests {
         let mut uniques = vues.clone();
         uniques.sort_by(|a, b| a.as_str().cmp(b.as_str()));
         uniques.dedup();
-        assert_eq!(vues.len(), 93);
-        assert_eq!(uniques.len(), 93);
+        // Celle du Colosse du rempart depuis l'étape 204.
+        assert_eq!(vues.len(), 94);
+        assert_eq!(uniques.len(), 94);
     }
 
     #[test]
@@ -10470,13 +10702,13 @@ mod tests {
 
         let contenu = ContenuV1::new();
         let au_codex = especes_au_codex(contenu.especes());
-        assert_eq!(au_codex, 125);
+        assert_eq!(au_codex, 126);
         let seuils: Vec<u32> = contenu
             .recompenses_du_codex()
             .iter()
             .map(|recompense| recompense.palier.seuil(au_codex))
             .collect();
-        assert_eq!(seuils, vec![10, 20, 30, 40, 50, 125]);
+        assert_eq!(seuils, vec![10, 20, 30, 40, 50, 126]);
         let complet = contenu.recompenses_du_codex().last().unwrap();
         assert_eq!(complet.palier, PalierDuCodex::Complet);
         let sceau = complet.objet_unique.as_ref().unwrap();
@@ -10581,7 +10813,7 @@ mod tests {
     #[test]
     fn contenu_conforme_aux_regles() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.especes().len(), 140);
+        assert_eq!(contenu.especes().len(), 146);
         assert_eq!(contenu.zones().len(), 16);
         assert_eq!(contenu.annexes().len(), 10);
         assert_eq!(contenu.piste().indices().count(), 27);
@@ -10631,7 +10863,10 @@ mod tests {
         // Le Désert de sel, dès le niveau 37 : à l'étape 17, niveau 38.
         assert!(!especes(16).contains(&"crotale-des-salines".to_string()));
         assert!(especes(17).contains(&"crotale-des-salines".to_string()));
-        assert!(tour.recit_du_gardien("Basilic").contains("Basilic garde"));
+        assert!(
+            tour.recit_du_gardien(10, "Basilic")
+                .contains("Basilic garde")
+        );
     }
 
     /// Section 24 de docs/contenu-v1.md (étape 94).
@@ -10704,10 +10939,20 @@ mod tests {
                 base.evolution()
                     .is_some_and(|evolution| evolution.vers() == espece.id())
             });
+            // Les gardiens attitrés de la Tour : le Colosse du rempart,
+            // rare, et les Élus, des Apôtres (section 9.5, étape 204).
+            let elu = contenu
+                .tour()
+                .elus()
+                .iter()
+                .any(|elu| elu.espece.id() == espece.id());
+            let colosse = espece.id().as_str() == "colosse-du-rempart";
             let attendue = if let Some(base) = base {
                 base.rarete()
-            } else if apotres.contains(&espece.id()) {
+            } else if apotres.contains(&espece.id()) || elu {
                 Rarete::Apotre
+            } else if colosse {
+                Rarete::Rare
             } else if formes_du_demiurge.contains(&espece.id()) {
                 Rarete::Demiurge
             } else if rares.contains(&espece.id()) {

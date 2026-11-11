@@ -1,0 +1,50 @@
+# Seigneur Pestilence
+palette
+o 1b1420
+a 344326
+e 202916
+b 87bf61
+c 658948
+d a6e080
+r 4f730e
+k 1b1420
+y 24ee76
+g 2bd152
+z e01030
+shiny
+o 1b1420
+a 26342d
+e 16201b
+b 67a598
+c 46776d
+d 85cdbe
+r 90901d
+k 1b1420
+y d7ff3d
+g cbddd4
+z fff0a0
+dessin
+..z......z.zoz.z........
+.zoz....zozogozoz.......
+zoroz..zogooooogoz......
+orrroz.zogggggggoz......
+zoroz...zooddcooz.......
+zogoz...zodbbbcoz.......
+zogoz...zodkbkcoz.......
+zogoz.zzoodbbbcoozz.....
+zogozzoodddrrrddcooz....
+zogozoddbbbbbbbbbdcoz...
+zogoodbbbbbbbbbbbbbcoz..
+zogodydbbbbbbcbbbbbccoz.
+zogdbdbbbbbbcydbbbcydcoz
+zogdbbbcccbbbdbbbbbdbcoz
+zogdbbcrrrdbbbbbbbbbbcoz
+zogdbbbckdbbbbbbcccbbcoz
+zogcbbbbdbbbbbbcrrrdbcoz
+zogocbbbbbbcccbbckdbcoz.
+.zoaacbbbbcrrrdbbdbcaeoz
+.zoaaaccbbbckdbbbccaaeoz
+.zoaaaaaccccdccccaaaaeoz
+.zoaaaaaaaaacaaaaaaaaeoz
+.zoeeeeeeeeeeeeeeeeeeeoz
+..zoooooooooooooooooooz.

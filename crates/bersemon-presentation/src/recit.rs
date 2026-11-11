@@ -12,6 +12,7 @@ use bersemon_core::expedition::Tresor;
 use bersemon_core::marchand::EXPEDITIONS_DE_LOCATION;
 use bersemon_core::objet_d_experience::{EffetDExperience, ObjetDExperience};
 use bersemon_core::ressource::Ressource;
+use bersemon_core::tour::TourSansFond;
 
 use crate::arene;
 use crate::atelier;
@@ -117,6 +118,14 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             numero,
             total: Some(total),
         } => (format!("Étape {numero}/{total}."), true),
+        // Sans total, dans la Tour sans fond : son fond, les Abysses, se
+        // dit à chaque étape (section 9.5).
+        Evenement::Etape {
+            numero,
+            total: None,
+        } if TourSansFond::est_dans_les_abysses(*numero) => {
+            (format!("Étape {numero}, dans les Abysses."), true)
+        }
         Evenement::Etape {
             numero,
             total: None,
