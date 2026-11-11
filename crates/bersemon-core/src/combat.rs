@@ -1115,11 +1115,11 @@ impl Combat {
         self.sans_capture
     }
 
-    /// Contre le gardien de la Tour sans fond : ni fuite, ni filet, ni
-    /// capture, et l'IA simple des humains (section 9.5).
+    /// Contre le gardien de la Tour sans fond : ni fuite ni filet pendant le
+    /// combat, et l'IA simple des humains ; vaincu et KO, il se capture, au
+    /// filet comme tout monstre KO (section 9.5).
     pub fn contre_un_gardien(mut self) -> Self {
         self.contre_un_gardien = true;
-        self.sans_capture = true;
         self.ia = Ia::PlusForte;
         self
     }
@@ -1156,6 +1156,7 @@ impl Combat {
     pub fn filet_possible(&self) -> bool {
         !self.contre_un_apotre
             && !self.contre_un_humain
+            && !self.contre_un_gardien
             && !self.sans_capture
             && !self.contre_un_legendaire
             && !self.duel
@@ -1786,7 +1787,11 @@ impl Combat {
             appats: groupe.appats,
             heros: heros_de_l_invite,
         });
-        let sauvages = !self.contre_un_apotre && !self.contre_un_humain && !self.sans_capture;
+        // Le gardien de la Tour ne lâche pas de ressource (section 9.5).
+        let sauvages = !self.contre_un_apotre
+            && !self.contre_un_humain
+            && !self.sans_capture
+            && !self.contre_un_gardien;
         let vaincus_sauvages = adversaires
             .into_iter()
             .flatten()
@@ -2930,11 +2935,25 @@ mod tests {
         assert_eq!(combat.phase(), Phase::ChoixAction);
     }
 
-    /// Section 9.5 : ni fuite, ni filet, ni capture face au gardien.
+    /// Vaincu et KO, le gardien de la Tour se capture, contre un filet
+    /// (section 9.5).
+    #[test]
+    fn le_gardien_ko_se_capture_apres_la_victoire() {
+        let mut combat = combat(vec![rapide()], vec![affaibli(lent(), 1)]).contre_un_gardien();
+        tour(&mut combat, Action::Attaquer(0), &[2, 100]);
+        assert_eq!(combat.phase(), Phase::Termine(Issue::Victoire));
+        assert_eq!(combat.adversaires_capturables(), vec![0]);
+        combat.capturer_ko(0).unwrap();
+        let bilan = terminer(combat, &[100]);
+        assert_eq!(bilan.captures.len(), 1);
+    }
+
+    /// Section 9.5 : ni fuite ni filet face au gardien pendant le combat ;
+    /// vaincu et KO, il se capture.
     #[test]
     fn ni_fuite_ni_filet_face_au_gardien_de_la_tour() {
         let mut combat = combat(vec![rapide()], vec![lent()]).contre_un_gardien();
-        assert!(combat.est_contre_un_gardien() && combat.est_sans_capture());
+        assert!(combat.est_contre_un_gardien() && !combat.est_sans_capture());
         assert!(!combat.fuite_possible() && !combat.filet_possible());
         assert_eq!(
             combat.jouer_tour(Action::Fuir, &mut AleatoireScripte::new([])),
