@@ -2946,3 +2946,47 @@ Chaque forme évolue de son stade 3 au niveau 70, et apprend alors son attaque d
 | imperatrice-des-ronces | Impératrice des ronces | Reine des ronces | Insecte, Plante | offensif | 83 / 65 / 77 / 131 / 101 / 113 (570) | 196 | Couronne d'épines (Plante, spéciale, 110, précision 90) |
 
 Sprites : ceux du stade 3, entourés d'une aura de la couleur de la famille (dorée en shiny). Le Chevalier de l'abîme est un clin d'oeil aux chevaliers déchus des jeux Souls, sous un nom propre à l'univers.
+
+## 56. Zones entre les Apôtres
+
+Décidé le 11/11/2026, à partir de l'étape 206 (gamedesign.md, section 9.1). Demande de l'utilisateur : 1 à 3 zones entre deux Apôtres. Zones, noms, espèces, stats, attaques, ressources, textes et sprites proposés par Claude sans validation (Q124). Chaque zone compte 5 étapes et des groupes de 1 à 3 monstres ; elle n'a ni humain, ni marchand mort, ni capsule d'attaque dans ses coffres ; son indice se trouve au bout de la première expédition menée au bout, et ouvre la zone suivante. Ses espèces ne vivent que là ; leurs sprites reprennent ceux d'espèces existantes, recolorés et retournés, en attendant mieux.
+
+### Bourg des Lamentations (12 à 16)
+
+Entre le Baron pendu et l'Abbesse, un bourg hanté, ouvert par l'indice de la Vallée (section 9.1, étape 206). Météos : pluie, tempête.
+
+> Indice : Au bout du bourg, sur la porte de l'église, quelqu'un a cloué le même sceau. Le chemin de l'est part de là, vers la fumée de l'Abbaye des Cendres.
+
+| Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP | Habiletés | Ressource | Attaque d'oeuf |
+|---|---|---|---|---|---|---|---|---|
+| pleureuse | Pleureuse | Spectre, Son | offensif | 50 / 35 / 45 / 80 / 65 / 55 (330) | 62 | Sorcellerie, Instinct | Voile de pleureuse | Voix d'outre-tombe (Spectre, spéciale, 80) |
+| mendiant-possede | Mendiant possédé | Ténèbres, Combat | offensif | 70 / 80 / 55 / 30 / 45 / 50 (330) | 62 | Férocité, Instinct | Sébile fêlée | Aumône maudite (Ténèbres, physique, 80) |
+| epouvantail | Épouvantail | Plante, Spectre | soutien | 65 / 55 / 70 / 45 / 65 / 30 (330) | 62 | Carapace, Volonté | Paille maudite | Paille ensorcelée (Plante, spéciale, 80) |
+| dame-blanche | Dame blanche (rare, pacifique) | Spectre, Féérique | soutien | 70 / 40 / 65 / 85 / 90 / 60 (410) | 115 | Volonté, Sorcellerie | Larme de dame blanche | Linceul blanc (Féérique, spéciale, 80) |
+
+Attaques apprises :
+
+- Pleureuse : lueur-trompeuse (niv. 1), glas (niv. 1), lamentation (niv. 8), crecelle (niv. 14), chant-des-noyes (niv. 22), tocsin (niv. 30).
+- Mendiant possédé : frappe-d-os (niv. 1), coup-sournois (niv. 1), morsure (niv. 9), croc-noir (niv. 15), ecorchure (niv. 24), rapine (niv. 32).
+- Épouvantail : coup-de-bois (niv. 1), feuille-tranchante (niv. 1), lianes-etrangleuses (niv. 8), frisson-d-outre-tombe (niv. 13), ronces (niv. 20), racines-du-gibet (niv. 30).
+- Dame blanche : lueur-trompeuse (niv. 1), poussiere-d-elfe (niv. 1), lumiere-d-aube (niv. 10), lamentation (niv. 16), rayon-de-lune (niv. 28), malediction-mortelle (niv. 40).
+
+### Bois des Farfadets (18 à 22)
+
+Entre l'Abbesse et le Margrave, un bois féerique, ouvert par l'indice de l'Abbaye ; le Farfadet y est un clin d'oeil au Puck de Berserk (section 9.1, étape 206). Météos : pluie, tempête.
+
+> Indice : Au cœur du bois, de petits rires vous guident jusqu'à un sentier de pierres blanches, marqué du même sceau. Il monte vers le nord, vers les neiges du Col du Givre-Noir.
+
+| Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP | Habiletés | Ressource | Attaque d'oeuf |
+|---|---|---|---|---|---|---|---|---|
+| hibou-blafard | Hibou blafard | Vol, Psychique | offensif | 55 / 40 / 50 / 80 / 60 / 60 (345) | 74 | Éclaireur, Instinct | Plume blafarde | Hululement lugubre (Vol, spéciale, 80) |
+| amanite-rampante | Amanite rampante | Plante, Poison | soutien | 70 / 50 / 70 / 60 / 65 / 30 (345) | 74 | Carapace, Sorcellerie | Chapeau d'amanite | Spores du sommeil (Poison, spéciale, 80) |
+| ours-moussu | Ours moussu | Plante, Combat | offensif | 85 / 85 / 70 / 30 / 45 / 30 (345) | 74 | Férocité, Carapace | Fourrure moussue | Accolade de mousse (Plante, physique, 80) |
+| farfadet | Farfadet (rare, pacifique) | Féérique, Vol | soutien | 60 / 40 / 55 / 90 / 85 / 80 (410) | 120 | Volonté, Célérité | Poudre de farfadet | Éclat de farfadet (Féérique, spéciale, 80) |
+
+Attaques apprises :
+
+- Hibou blafard : coup-de-bec (niv. 1), regard-funeste (niv. 1), pique (niv. 12), onde-psychique (niv. 18), bec-funeste (niv. 26), regard-hypnotique (niv. 34).
+- Amanite rampante : coup-de-racine (niv. 1), spores-putrides (niv. 1), lianes-etrangleuses (niv. 10), ronces (niv. 18), venin-noir (niv. 24), hurlement-de-mandragore (niv. 32).
+- Ours moussu : griffure (niv. 1), coup-de-bois (niv. 1), etreinte (niv. 11), ronces (niv. 17), ecorchure (niv. 25), charge-du-sanglier (niv. 33).
+- Farfadet : poussiere-d-elfe (niv. 1), bourrasque (niv. 1), lumiere-d-aube (niv. 12), pique (niv. 20), rayon-de-lune (niv. 30), ailes-celestes (niv. 42).

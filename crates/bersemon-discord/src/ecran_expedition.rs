@@ -10,7 +10,7 @@ use bersemon_core::partie::Partie;
 use bersemon_presentation::monstres::{ligne_du_heros, ligne_monstre};
 use bersemon_presentation::partie::{
     FUIR_AVANT_LE_COMBAT, annonce as texte_d_annonce, place_manquante as texte_de_place_manquante,
-    sac_en_expedition,
+    sac_en_expedition, sac_en_expedition_abrege,
 };
 use bersemon_presentation::tour::activer_le_raccourci;
 
@@ -21,7 +21,8 @@ use crate::composants::{Cle, objet_en_texte};
 use crate::ecran_camp::{liste_des_monstres, menus_de_monstres, options_d_equipe};
 use crate::ecran_combat::options_de_soins;
 use crate::message::{
-    OPTIONS_PAR_MENU, OptionDeMenu, PRINCIPAL, Question, SECONDAIRE, bouton, menu, rangees,
+    LONGUEUR_MAX, OPTIONS_PAR_MENU, OptionDeMenu, PRINCIPAL, Question, SECONDAIRE, bouton, menu,
+    rangees,
 };
 
 /// Continuer, rentrer, soigner un monstre ou mettre un monstre en tête :
@@ -93,13 +94,25 @@ pub fn sac_plein(partie: &Partie) -> Question {
         "Jeter une ressource",
         options(ressources),
     ));
-    Question {
-        texte: format!(
-            "{}
-{}",
+    // Avec toutes les sortes de ressources, la liste complète dépasse un
+    // message : elles se comptent alors par sortes, et les menus les
+    // détaillent (étape 206).
+    let texte = format!(
+        "{}\n{}",
+        question_du_sac_plein(partie),
+        sac_en_expedition(partie)
+    );
+    let texte = if texte.chars().count() <= LONGUEUR_MAX {
+        texte
+    } else {
+        format!(
+            "{}\n{}",
             question_du_sac_plein(partie),
-            sac_en_expedition(partie)
-        ),
+            sac_en_expedition_abrege(partie)
+        )
+    };
+    Question {
+        texte,
         rangees: lignes,
     }
 }

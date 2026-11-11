@@ -604,3 +604,7 @@ Les 16 zones existantes passent à leurs niveaux de la nouvelle carte (gamedesig
 
 La durée ne change pas au-delà du bruit, ce que visait la mise à l'échelle des rendements d'XP. Les zones suivies d'un trou portent la montée de niveau qui le traverse : Mines 23,2 expéditions, Gorge 23,6, Puits 27,2.
 
+## 23. Bourg des Lamentations et Bois des Farfadets (étape 206)
+
+Mesuré sur 100 parties par classe : 230 à 244 expéditions (médiane), comme à l'étape 205. Le joueur automatique traverse le Bourg en 1,6 expédition et le Bois en 1,1 : l'indice se trouve au bout de la première expédition menée au bout, et il part aussitôt pour la zone suivante, plus avancée. Il arrive au Bois au niveau 23, au-dessus de la zone (18 à 22), après avoir monté de niveau contre l'Abbesse. Un joueur qui veut capturer leurs espèces y restera davantage. Une partie de Mage sur 100 ne s'est pas terminée dans la limite de choix de l'outil.
+

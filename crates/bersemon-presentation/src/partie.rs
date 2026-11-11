@@ -294,6 +294,16 @@ pub fn ressources_du_sac_et_du_coffre(partie: &Partie) -> String {
 
 /// Le sac en expédition : une défaite le ferait perdre (section 9.3).
 pub fn sac_en_expedition(partie: &Partie) -> String {
+    sac_en_expedition_detaille(partie, true)
+}
+
+/// Comme `sac_en_expedition`, les ressources comptées par sortes : pour un
+/// message Discord quand la liste complète ne tient pas.
+pub fn sac_en_expedition_abrege(partie: &Partie) -> String {
+    sac_en_expedition_detaille(partie, false)
+}
+
+fn sac_en_expedition_detaille(partie: &Partie, detaille: bool) -> String {
     let sac = partie.sac();
     let sac = if sac.est_vide() {
         "Sac : vide.".to_string()
@@ -301,7 +311,7 @@ pub fn sac_en_expedition(partie: &Partie) -> String {
         format!(
             "Sac ({}) : {}. Une défaite le ferait perdre.",
             crate::sac::places(partie),
-            contenu(sac)
+            contenu_detaille(sac, detaille)
         )
     };
     format!("{sac}{}", ligne_des_ames(partie))

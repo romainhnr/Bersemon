@@ -54,7 +54,7 @@ use bersemon_core::zone::{Zone, ZoneId};
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 40;
+pub(crate) const VERSION: u64 = 41;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -1455,6 +1455,7 @@ pub(crate) fn vers_partie(
     } else {
         sauvegarde.indices_trouves
     };
+    let indices_trouves = indices_apres_les_zones_ajoutees(sauvegarde.version, indices_trouves);
     // Un humain disparu du jeu ne gêne pas : il ne sert qu'à ne plus faire
     // revenir celui qui a été vaincu (section 10.7).
     let humains_vaincus = sauvegarde
@@ -1618,6 +1619,28 @@ fn ids_de_marchands(marchands: &[MarchandMort]) -> Vec<String> {
         .iter()
         .map(|marchand| marchand.id().as_str().to_string())
         .collect()
+}
+
+/// Pour chaque version qui a ajouté des zones entre deux Apôtres : la
+/// position, dans la piste d'avant, de l'indice après lequel s'insère
+/// l'indice de chaque nouvelle zone (section 9.1).
+const INDICES_DES_ZONES_AJOUTEES: [(u64, &[usize]); 1] = [
+    // Étape 206 : le Bourg des Lamentations, après celui de la Vallée, et
+    // le Bois des Farfadets, après le premier de l'Abbaye.
+    (41, &[2, 4]),
+];
+
+/// Une partie antérieure compte comme trouvé l'indice d'une nouvelle zone
+/// dès qu'elle a trouvé celui qui le précède : elle garde ainsi l'accès à
+/// toutes les zones qu'elle avait ouvertes, et la nouvelle s'y ajoute.
+fn indices_apres_les_zones_ajoutees(version: u64, mut trouves: usize) -> usize {
+    for (depuis, apres) in INDICES_DES_ZONES_AJOUTEES {
+        if version < depuis {
+            let avant = trouves;
+            trouves += apres.iter().filter(|&&indice| indice < avant).count();
+        }
+    }
+    trouves
 }
 
 fn vers_marchands(ids: &[String], catalogue: &dyn Catalogue) -> Vec<MarchandMort> {
@@ -1966,4 +1989,22 @@ fn conseil(texte: &str) -> Result<Conseil, ErreurSauvegarde> {
 
 fn incoherente(erreur: impl std::fmt::Display) -> ErreurSauvegarde {
     ErreurSauvegarde::Incoherente(erreur.to_string())
+}
+
+#[cfg(test)]
+mod tests_des_zones_ajoutees {
+    use super::*;
+
+    /// Section 9.1 : une partie antérieure garde l'accès à ses zones, et
+    /// les nouvelles zones s'y ajoutent.
+    #[test]
+    fn les_indices_des_zones_ajoutees_comptent_comme_trouves() {
+        let apres = |trouves| indices_apres_les_zones_ajoutees(40, trouves);
+        assert_eq!((apres(0), apres(2)), (0, 2));
+        assert_eq!(apres(3), 4);
+        assert_eq!(apres(4), 5);
+        assert_eq!(apres(5), 7);
+        assert_eq!(apres(27), 29);
+        assert_eq!(indices_apres_les_zones_ajoutees(41, 5), 5);
+    }
 }

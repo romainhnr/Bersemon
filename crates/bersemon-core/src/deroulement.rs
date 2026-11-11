@@ -5791,17 +5791,14 @@ mod tests {
                 let partie = partie.unwrap();
                 let zones = partie.zones_accessibles(contenu.zones(), contenu.piste());
                 let niveau = partie.collection().equipe()[0].niveau().valeur();
-                let zone = if zones.len() > 4 && niveau >= 44 {
-                    zones[4]
-                } else if zones.len() > 3 && niveau >= 34 {
-                    zones[3]
-                } else if zones.len() > 2 && niveau >= 24 {
-                    zones[2]
-                } else if zones.len() > 1 && niveau >= 12 {
-                    zones[1]
-                } else {
-                    zones[0]
-                };
+                // La zone ouverte la plus avancée dont le niveau minimal ne
+                // dépasse pas celui du premier monstre de plus de 2.
+                let zone = zones
+                    .iter()
+                    .rev()
+                    .find(|zone| zone.niveaux().0.valeur() <= niveau.saturating_add(2))
+                    .copied()
+                    .unwrap_or(zones[0]);
                 Choix::PartirEnExpedition(zone.id().clone())
             }
             Attente::EntreDeuxEtapes => {
@@ -7243,9 +7240,10 @@ mod tests {
             .iter()
             .filter(|evenement| matches!(evenement, Evenement::Indice { .. }))
             .count();
-        // Le septième, au bout de l'expédition qui abat le Margrave, ouvre le
-        // Désert de sel (section 9.4).
-        assert_eq!(indices, 7);
+        // Le neuvième, au bout de l'expédition qui abat le Margrave, ouvre le
+        // Désert de sel (section 9.4), après ceux du Bourg des Lamentations et
+        // du Bois des Farfadets (étape 206).
+        assert_eq!(indices, 9);
         // Chaque indice et chaque combat de fin de zone sont d'abord annoncés
         // par un bouton (section 9.2).
         let annonces_d_indice = annonces
@@ -7288,11 +7286,12 @@ mod tests {
         }
         // Chaque Apôtre attendait à la dernière étape : l'épilogue est suivi
         // du retour au camp et de la sauvegarde. Le Baron laisse l'indice 3,
-        // qui ouvre l'Abbaye, l'Abbesse l'indice 5, qui ouvre le Col, le
-        // Margrave l'indice 7, qui ouvre le Désert (section 9.4).
+        // qui ouvre le Bourg des Lamentations, l'Abbesse l'indice 6, qui ouvre
+        // le Bois des Farfadets, le Margrave l'indice 9, qui ouvre le Désert
+        // (sections 9.1 et 9.4).
         assert_eq!(deroulement.attente(), Attente::Camp);
         let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
-        assert_eq!(sauvegarde.indices_trouves(), 7);
+        assert_eq!(sauvegarde.indices_trouves(), 9);
         assert_eq!(
             sauvegarde.apotres_vaincus(),
             &[
@@ -7480,7 +7479,7 @@ mod tests {
             ames_a_retrouver: Vec::new(),
             codex: partie.codex().clone(),
             zones_explorees: vec![ZoneId::new("lisiere"), ZoneId::new("marais")],
-            indices_trouves: 3,
+            indices_trouves: 4,
             apotres_vaincus: Vec::new(),
             humains_vaincus: Vec::new(),
             conseils_vus: Vec::new(),

@@ -224,6 +224,7 @@ enum Visite {
     AFaire,
     PotionAchetee,
     MonstreVendu,
+    SacRange,
     Faite,
 }
 
@@ -256,14 +257,17 @@ fn visite_au_marchand(session: &Session, message: &Message, visite: Visite) -> O
                 && !ressources_a_vendre(partie).is_empty()
         }
         Visite::PotionAchetee => camp > 0,
-        Visite::MonstreVendu => true,
+        // Le sac se range quand il contient quelque chose, quels que soient
+        // les tirages de la partie.
+        Visite::MonstreVendu => !partie.sac().est_vide(),
+        Visite::SacRange => true,
         Visite::Faite => false,
     };
     if !possible {
         return None;
     }
     match (session.vue, visite) {
-        (Vue::Camp, Visite::MonstreVendu) => {
+        (Vue::Camp, Visite::MonstreVendu | Visite::SacRange) => {
             Some(cliquer(message, |cle| *cle == Cle::Afficher(Vue::Coffre)))
         }
         (Vue::Camp, _) => Some(cliquer(message, |cle| *cle == Cle::Afficher(Vue::Marchand))),
@@ -289,10 +293,10 @@ fn visite_au_marchand(session: &Session, message: &Message, visite: Visite) -> O
             |cle| matches!(cle, Cle::Vendre(_)),
             &format!("c{}", camp - 1),
         ),
-        (Vue::Coffre, Visite::MonstreVendu) if !partie.sac().est_vide() => {
+        (Vue::Coffre, Visite::MonstreVendu) => {
             Some(cliquer(message, |cle| *cle == Cle::ToutRanger))
         }
-        (Vue::Coffre, Visite::MonstreVendu) => {
+        (Vue::Coffre, Visite::SacRange) => {
             choisir_dans(message, |cle| *cle == Cle::SortirDuCoffre, "soins:potion:1")
         }
         _ => None,
@@ -352,17 +356,25 @@ fn jouer_un_coup(
             }
             let partie = session.deroulement.partie().unwrap();
             let niveau = partie.collection().equipe()[0].niveau().valeur();
-            let abbaye = choisir_dans(message, |cle| *cle == Cle::Partir, "abbaye");
-            let vallee = choisir_dans(message, |cle| *cle == Cle::Partir, "vallee");
-            let marais = choisir_dans(message, |cle| *cle == Cle::Partir, "marais");
-            let col = choisir_dans(message, |cle| *cle == Cle::Partir, "col-du-givre-noir");
-            match (col, abbaye, vallee, marais) {
-                (Some(clic), _, _, _) if niveau >= 44 => clic,
-                (_, Some(clic), _, _) if niveau >= 34 => clic,
-                (_, _, Some(clic), _) if niveau >= 24 => clic,
-                (_, _, _, Some(clic)) if niveau >= 12 => clic,
-                _ => choisir_dans(message, |cle| *cle == Cle::Partir, "lisiere").expect("lisière"),
-            }
+            // La zone ouverte la plus avancée dont le niveau minimal ne
+            // dépasse pas celui du premier monstre de plus de 2, jusqu'au
+            // Col (étapes 205 et 206).
+            const ZONES: [(&str, u8); 7] = [
+                ("col-du-givre-noir", 21),
+                ("bois-des-farfadets", 18),
+                ("abbaye", 15),
+                ("bourg-des-lamentations", 12),
+                ("vallee", 9),
+                ("marais", 6),
+                ("lisiere", 3),
+            ];
+            ZONES
+                .iter()
+                .filter(|(_, minimum)| *minimum <= niveau.saturating_add(2))
+                .find_map(|(id, _)| choisir_dans(message, |cle| *cle == Cle::Partir, id))
+                .unwrap_or_else(|| {
+                    choisir_dans(message, |cle| *cle == Cle::Partir, "lisiere").expect("lisière")
+                })
         }
         Attente::EntreDeuxEtapes => {
             let partie = session.deroulement.partie().unwrap();
@@ -534,7 +546,7 @@ fn l_equipe_et_le_camp_pleins_tiennent_dans_les_limites() {
             ames_a_retrouver: Vec::new(),
             codex: partie.codex().clone(),
             zones_explorees: vec![ZoneId::new("lisiere"), ZoneId::new("marais")],
-            indices_trouves: 3,
+            indices_trouves: 4,
             apotres_vaincus: Vec::new(),
             humains_vaincus: Vec::new(),
             conseils_vus: Vec::new(),
@@ -839,6 +851,9 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
                 }
                 Evenement::SoinsAchetes { nombre: 1, .. } => visite = Visite::PotionAchetee,
                 Evenement::MonstreVendu { .. } => visite = Visite::MonstreVendu,
+                Evenement::RangeAuCoffre(_) if visite == Visite::MonstreVendu => {
+                    visite = Visite::SacRange
+                }
                 Evenement::SortiDuCoffre(_) => visite = Visite::Faite,
                 _ => {}
             }
@@ -914,9 +929,10 @@ fn une_partie_complete_a_travers_les_ecrans_du_bot() {
     let session = joueurs.session(JOUEUR, &contenu);
     assert_eq!(session.deroulement.attente(), Attente::Camp);
     let partie = session.deroulement.partie().unwrap();
-    // Le septième indice, au bout de l'expédition qui abat le Margrave,
-    // ouvre le Désert de sel (section 9.4).
-    assert_eq!(partie.indices_trouves(), 7);
+    // Le neuvième indice, au bout de l'expédition qui abat le Margrave,
+    // ouvre le Désert de sel (section 9.4), après ceux du Bourg et du Bois
+    // (étape 206).
+    assert_eq!(partie.indices_trouves(), 9);
     assert_eq!(
         partie.apotres_vaincus(),
         &[
@@ -1320,7 +1336,7 @@ fn le_demiurge_s_affronte_a_travers_les_ecrans_du_bot() {
         ames_a_retrouver: Vec::new(),
         codex: partie.codex().clone(),
         zones_explorees: Vec::new(),
-        indices_trouves: 6,
+        indices_trouves: 8,
         apotres_vaincus: contenu
             .piste()
             .apotres()
@@ -1490,7 +1506,7 @@ fn malvoise_vend_et_loue_des_monstres_a_travers_les_ecrans_du_bot() {
             .iter()
             .map(|zone| zone.id().clone())
             .collect(),
-        indices_trouves: 6,
+        indices_trouves: 8,
         apotres_vaincus: contenu
             .piste()
             .apotres()
@@ -1581,9 +1597,11 @@ fn malvoise_vend_et_loue_des_monstres_a_travers_les_ecrans_du_bot() {
             .unwrap_or(0)
     };
     // Plus de 25 espèces en vente depuis l'étape 165 : deux menus.
+    // Et les communes du Bourg et du Bois depuis l'étape 206.
     assert_eq!(options(Cle::AcheterMonstre(0)), 25);
-    assert_eq!(options(Cle::AcheterMonstre(1)), 23);
-    assert_eq!(options(Cle::LouerMonstre), 21);
+    assert_eq!(options(Cle::AcheterMonstre(1)), 25);
+    assert_eq!(options(Cle::AcheterMonstre(2)), 4);
+    assert_eq!(options(Cle::LouerMonstre), 23);
     assert!(!propose(&affiche, |cle| *cle == Cle::RendreLeMonstreLoue));
     let clic = choisir_dans(&affiche, |cle| *cle == Cle::AcheterMonstre(0), "loup").unwrap();
     let achat = jouer(&mut joueurs, clic);
