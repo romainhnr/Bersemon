@@ -12,6 +12,7 @@
 
 use crate::butin::{Butin, HabiletesDuButin};
 use crate::objet_d_experience::{ErreurObjetDExperience, ObjetDExperience};
+use crate::peche::CanneAPeche;
 use std::collections::VecDeque;
 use std::fmt;
 use std::time::Duration;
@@ -187,7 +188,12 @@ pub enum Choix {
     /// Au camp : le joueur constate le travail fini de Gunther.
     ConstaterTravail,
     /// Au camp, sans confirmation : Ansgar tend une ligne (section 13.8).
+    /// Avec la meilleure canne fabriquée (section 13.8).
     LancerLaLigne,
+    /// Avec cette canne, parmi celles fabriquées (section 13.8).
+    LancerLaLigneAvec(CanneAPeche),
+    /// Au camp, sans confirmation, avec Ansgar (section 13.8).
+    FabriquerCanne(CanneAPeche),
     /// Au camp, une fois la ligne prête.
     ReleverLaLigne,
     /// Au camp, sans confirmation : Ansgar prépare un appât, qui va dans le
@@ -759,6 +765,7 @@ pub enum Evenement {
     TravailConstate(Chantier),
     /// La ligne d'Ansgar sera prête à l'heure `fin`, dans `delai` (section
     /// 13.8).
+    CanneFabriquee(CanneAPeche),
     LigneLancee {
         fin: Horodatage,
         delai: Duration,
@@ -2389,10 +2396,22 @@ impl EnJeu {
                 sauvegarder(&self.partie, contexte.depot, evenements);
                 Ok(Reponse::Faite)
             }
-            Choix::LancerLaLigne => {
+            Choix::FabriquerCanne(canne) => {
+                self.partie
+                    .fabriquer_canne(*canne, contexte.contenu.peche())
+                    .map_err(ErreurChoix::Peche)?;
+                evenements.push(Evenement::CanneFabriquee(*canne));
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::LancerLaLigne | Choix::LancerLaLigneAvec(_) => {
+                let canne = match choix {
+                    Choix::LancerLaLigneAvec(canne) => Some(*canne),
+                    _ => None,
+                };
                 let fin = self
                     .partie
-                    .lancer_la_ligne(contexte.contenu.peche(), contexte.maintenant)
+                    .lancer_la_ligne(canne, contexte.maintenant)
                     .map_err(ErreurChoix::Peche)?;
                 evenements.push(Evenement::LigneLancee {
                     fin,
@@ -8372,7 +8391,11 @@ mod tests {
     /// Lisière, de niveau 3 à 7, est ouverte.
     fn partie_avec_ansgar(contenu: &ContenuV1) -> Partie {
         let mut etat = etat_de(&partie(contenu));
-        etat.peche = Peche::restaurer(true, None, None).unwrap();
+        // Avec la canne en argent, qui garde la table et les 2 h d'avant les
+        // cannes (section 13.8).
+        etat.peche = Peche::restaurer(true, None, None)
+            .and_then(|peche| peche.avec_cannes(vec![CanneAPeche::Argent], None))
+            .unwrap();
         Partie::restaurer(etat).unwrap()
     }
 

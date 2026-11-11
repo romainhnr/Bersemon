@@ -60,7 +60,7 @@ use crate::niveau::Niveau;
 use crate::nom::Nom;
 use crate::obeissance::limite_d_obeissance;
 use crate::parfum::Parfum;
-use crate::peche::{ErreurPeche, ParametresPeche, Peche, Prise};
+use crate::peche::{CanneAPeche, ErreurPeche, ParametresPeche, Peche, Prise};
 use crate::pierre::PierreDEvolution;
 use crate::quete::{JournalDesQuetes, Objectif, QueteAccomplie};
 use crate::quete_du_camp::{
@@ -929,13 +929,54 @@ impl Partie {
 
     /// Gratuite et sans confirmation, une ligne à la fois. Rend l'heure où
     /// elle sera prête (section 13.8).
+    /// Avec la canne choisie, ou la meilleure fabriquée (section 13.8).
     pub fn lancer_la_ligne(
         &mut self,
-        parametres: &ParametresPeche,
+        canne: Option<CanneAPeche>,
         maintenant: Horodatage,
     ) -> Result<Horodatage, ErreurPeche> {
-        let duree = self.duree_de_la_ligne(parametres);
-        self.peche.lancer(duree, maintenant)
+        if !self.peche.pecheur_au_camp() {
+            return Err(ErreurPeche::AucunPecheur);
+        }
+        let canne = canne
+            .or(self.peche.meilleure_canne())
+            .ok_or(ErreurPeche::CanneManquante(CanneAPeche::Bois))?;
+        let duree = self.duree_de_la_ligne(canne);
+        self.peche.lancer(canne, duree, maintenant)
+    }
+
+    /// Au camp, sans confirmation : Ansgar aide à fabriquer la canne, sur le
+    /// moment, contre son prix, pris du sac puis du coffre ; il faut la
+    /// canne d'avant (section 13.8).
+    pub fn fabriquer_canne(
+        &mut self,
+        canne: CanneAPeche,
+        parametres: &ParametresPeche,
+    ) -> Result<(), ErreurPeche> {
+        if !self.peche.pecheur_au_camp() {
+            return Err(ErreurPeche::AucunPecheur);
+        }
+        if self.peche.cannes().contains(&canne) {
+            return Err(ErreurPeche::CanneDejaFabriquee);
+        }
+        if let Some(precedente) = canne.precedente() {
+            if !self.peche.cannes().contains(&precedente) {
+                return Err(ErreurPeche::CannePrecedenteManquante(precedente));
+            }
+        }
+        let (argent, ressources) = parametres.prix_de_la_canne(canne);
+        let ressources = ressources.to_vec();
+        let manquantes = self.ressources_manquantes(&ressources);
+        if self.argent() < argent || !manquantes.is_empty() {
+            return Err(ErreurPeche::PrixDeLaCanne {
+                argent: argent.saturating_sub(self.argent()),
+                ressources: manquantes,
+            });
+        }
+        self.payer(argent).expect("l'argent vient d'être vérifié");
+        self.payer_ressources(&ressources);
+        self.peche.ajouter_canne(canne);
+        Ok(())
     }
 
     /// Relève la ligne prête, si un monstre pêché trouverait sa place dans
@@ -956,8 +997,12 @@ impl Partie {
         if !self.collection.a_de_la_place() {
             return Err(ErreurPeche::PlaceManquante);
         }
-        let prise = parametres.tirer_prise(zone, aleatoire);
-        let matieres = parametres.tirer_matieres(aleatoire);
+        let canne = self
+            .peche
+            .canne_de_la_ligne()
+            .unwrap_or(CanneAPeche::Argent);
+        let prise = parametres.tirer_prise(zone, canne, aleatoire);
+        let matieres = parametres.tirer_matieres(canne, aleatoire);
         for (matiere, nombre) in &matieres {
             self.coffre_du_camp
                 .ajouter_ressources(matiere.clone(), *nombre);
@@ -2564,8 +2609,10 @@ impl Partie {
         self.raccourcie_par(Personnage::Gunther, duree)
     }
 
-    pub fn duree_de_la_ligne(&self, parametres: &ParametresPeche) -> Duration {
-        self.raccourcie_par(Personnage::Ansgar, parametres.duree())
+    /// Celle de la canne, raccourcie par la fin des quêtes d'Ansgar
+    /// (section 13.13).
+    pub fn duree_de_la_ligne(&self, canne: CanneAPeche) -> Duration {
+        self.raccourcie_par(Personnage::Ansgar, canne.duree())
     }
 
     pub fn duree_du_rite(&self) -> Duration {
@@ -6036,7 +6083,7 @@ pub(crate) mod tests {
     /// de 25 %, mais pas un travail déjà lancé.
     #[test]
     fn la_fin_d_une_chaine_raccourcit_le_service() {
-        let (mut partie, contenu) = chez_malvoise();
+        let (mut partie, _) = chez_malvoise();
         let duree = Duration::from_secs(4 * 60 * 60);
         assert_eq!(partie.duree_des_travaux(duree), duree);
         assert_eq!(partie.duree_du_rite(), Duration::from_secs(2 * 60 * 60));
@@ -6049,8 +6096,8 @@ pub(crate) mod tests {
             Duration::from_secs(3 * 60 * 60)
         );
         assert_eq!(
-            partie.duree_de_la_ligne(contenu.peche()),
-            contenu.peche().duree()
+            partie.duree_de_la_ligne(CanneAPeche::Argent),
+            Duration::from_secs(2 * 60 * 60)
         );
         partie
             .quetes_du_camp
@@ -6061,7 +6108,7 @@ pub(crate) mod tests {
             .services_ameliores
             .push(Personnage::Malvoise);
         assert_eq!(
-            partie.duree_de_la_ligne(contenu.peche()),
+            partie.duree_de_la_ligne(CanneAPeche::Argent),
             Duration::from_secs(90 * 60)
         );
         assert_eq!(partie.duree_du_rite(), Duration::from_secs(90 * 60));

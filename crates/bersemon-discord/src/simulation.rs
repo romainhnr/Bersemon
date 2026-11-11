@@ -1839,7 +1839,12 @@ fn ansgar_peche_a_travers_les_ecrans_du_bot() {
         heros: partie.heros().clone(),
         collection: partie.collection().clone(),
         sac: Inventaire::default(),
-        coffre_du_camp: Inventaire::default(),
+        coffre_du_camp: {
+            let mut coffre = Inventaire::new(1_000, 0, Vec::new());
+            let ambre = contenu.peche().matieres()[2].0.clone();
+            coffre.ajouter_ressources(ambre, 3);
+            coffre
+        },
         marchand_au_camp: false,
         ames_donnees: Vec::new(),
         ames_portees: Vec::new(),
@@ -1852,7 +1857,19 @@ fn ansgar_peche_a_travers_les_ecrans_du_bot() {
         conseils_vus: Vec::new(),
         expeditions_automatiques: Vec::new(),
         attaques_a_choisir: Vec::new(),
-        peche: Peche::restaurer(true, None, None).unwrap(),
+        // Les cannes en bois et en fer ; de quoi fabriquer celle en argent
+        // (section 13.8).
+        peche: Peche::restaurer(true, None, None)
+            .and_then(|peche| {
+                peche.avec_cannes(
+                    vec![
+                        bersemon_core::peche::CanneAPeche::Bois,
+                        bersemon_core::peche::CanneAPeche::Fer,
+                    ],
+                    None,
+                )
+            })
+            .unwrap(),
         forge: Default::default(),
         relations: Default::default(),
         machines: Default::default(),
@@ -1902,7 +1919,17 @@ fn ansgar_peche_a_travers_les_ecrans_du_bot() {
     };
     cliquer_a(&mut joueurs, Cle::ReprendreLaPartie, 1_000);
     cliquer_a(&mut joueurs, Cle::Afficher(Vue::Peche), 1_000);
-    let lancee = cliquer_a(&mut joueurs, Cle::LancerLaLigne, 1_000);
+    use bersemon_core::peche::CanneAPeche;
+    let fabriquee = cliquer_a(
+        &mut joueurs,
+        Cle::FabriquerCanne(CanneAPeche::Argent),
+        1_000,
+    );
+    assert_eq!(
+        fabriquee,
+        vec![Evenement::CanneFabriquee(CanneAPeche::Argent)]
+    );
+    let lancee = cliquer_a(&mut joueurs, Cle::LancerAvec(CanneAPeche::Argent), 1_000);
     assert!(matches!(&lancee[..], [Evenement::LigneLancee { .. }]));
     // Rien à relever avant l'heure ; à l'heure, le bot l'annonce.
     let avant = afficher_a(&mut joueurs, 8_199);
@@ -1937,7 +1964,7 @@ fn ansgar_peche_a_travers_les_ecrans_du_bot() {
     let session = joueurs.session(JOUEUR, &contenu);
     assert_eq!(session.deroulement.attente(), Attente::Camp);
     let affiche = afficher_a(&mut joueurs, 8_200);
-    assert!(propose(&affiche, |cle| *cle == Cle::LancerLaLigne));
+    assert!(propose(&affiche, |cle| *cle == Cle::LancerAvec(CanneAPeche::Argent)));
     let _ = fs::remove_dir_all(dossier);
 }
 

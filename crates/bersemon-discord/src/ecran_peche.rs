@@ -8,13 +8,17 @@ use bersemon_core::horodatage::Horodatage;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::parfum::Parfum;
 use bersemon_core::partie::Partie;
+use bersemon_core::peche::CanneAPeche;
 use bersemon_presentation::atelier::{
     effet_de_l_appat, effet_du_parfum, etat_de_l_atelier, nom_de_l_appat, nom_du_parfum,
     offre_de_parfum, recette_d_un_parfum_d_espece,
 };
+use bersemon_presentation::expeditions_automatiques::duree;
 use bersemon_presentation::forge::cout;
 use bersemon_presentation::monstres::fiche_du_monstre;
-use bersemon_presentation::peche::{etat_de_la_ligne, question_de_la_prise};
+use bersemon_presentation::peche::{
+    cannes_possedees, description_de_la_canne, etat_de_la_ligne, question_de_la_prise,
+};
 
 use crate::composants::{Cle, PARFUM_DE_CHAROGNE};
 use crate::ecran_camp::retour;
@@ -34,12 +38,34 @@ pub fn peche(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Qu
         };
     }
     let mut boutons = Vec::new();
-    match partie.peche().ligne() {
-        None => boutons.push(bouton(Cle::LancerLaLigne, "Lancer la ligne", PRINCIPAL)),
-        Some(_) if partie.peche().est_prete(maintenant) => {
+    let peche = partie.peche();
+    match peche.ligne() {
+        // Un bouton par canne fabriquée : 3 au plus (section 13.8).
+        None => boutons.extend(peche.cannes().iter().map(|canne| {
+            bouton(
+                Cle::LancerAvec(*canne),
+                &format!(
+                    "Lancer : {} ({})",
+                    canne.nom().to_lowercase(),
+                    duree(partie.duree_de_la_ligne(*canne))
+                ),
+                PRINCIPAL,
+            )
+        })),
+        Some(_) if peche.est_prete(maintenant) => {
             boutons.push(bouton(Cle::ReleverLaLigne, "Relever la ligne", SUCCES));
         }
         Some(_) => {}
+    }
+    if let Some(suivante) = CanneAPeche::TOUTES
+        .into_iter()
+        .find(|canne| !peche.cannes().contains(canne))
+    {
+        boutons.push(bouton(
+            Cle::FabriquerCanne(suivante),
+            &format!("Fabriquer : {}", suivante.nom().to_lowercase()),
+            SECONDAIRE,
+        ));
     }
     boutons.push(retour());
     let mut lignes = rangees(boutons);
@@ -88,8 +114,17 @@ pub fn peche(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Qu
     };
     Question {
         texte: format!(
-            "Pêche d'Ansgar :\n{}\n{}{parfum}",
+            "Pêche d'Ansgar :\n{}\n{}{}\n{}{parfum}",
             etat_de_la_ligne(partie, maintenant),
+            cannes_possedees(partie),
+            CanneAPeche::TOUTES
+                .into_iter()
+                .find(|canne| !partie.peche().cannes().contains(canne))
+                .map(|suivante| format!(
+                    " Canne suivante : {}.",
+                    description_de_la_canne(suivante, contenu.peche())
+                ))
+                .unwrap_or_default(),
             etat_de_l_atelier(partie, contenu)
         ),
         rangees: lignes,

@@ -8,19 +8,23 @@ use bersemon_core::deroulement::Choix;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::parfum::Parfum;
 use bersemon_core::partie::Partie;
+use bersemon_core::peche::CanneAPeche;
 use bersemon_presentation::atelier::{
     etat_de_l_atelier, nom_du_parfum, offre_d_appat, offre_de_parfum, recette_d_un_parfum_d_espece,
 };
+use bersemon_presentation::expeditions_automatiques::duree;
 use bersemon_presentation::mise_en_valeur::sans_marques;
 use bersemon_presentation::monstres::fiche_du_monstre;
-use bersemon_presentation::peche::{etat_de_la_ligne, question_de_la_prise};
+use bersemon_presentation::peche::{
+    cannes_possedees, description_de_la_canne, etat_de_la_ligne, question_de_la_prise,
+};
 
 use crate::horloge::maintenant;
 use crate::saisie::Entree;
 
 /// Ce que propose l'écran, dans l'ordre des numéros.
 enum EntreeDeLaPeche {
-    Ligne(Choix, &'static str),
+    Ligne(Choix, String),
     Appats,
     Parfums,
 }
@@ -34,20 +38,41 @@ pub fn choisir(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Opt
     println!();
     println!("Pêche d'Ansgar :");
     println!("{}", etat_de_la_ligne(partie, maintenant));
+    println!("{}", cannes_possedees(partie));
     println!("{}", etat_de_l_atelier(partie, contenu));
     let mut entrees = Vec::new();
     match peche.ligne() {
-        None => entrees.push(EntreeDeLaPeche::Ligne(
-            Choix::LancerLaLigne,
-            "Lancer la ligne",
-        )),
+        // Une entrée par canne fabriquée (section 13.8).
+        None => entrees.extend(peche.cannes().iter().map(|canne| {
+            EntreeDeLaPeche::Ligne(
+                Choix::LancerLaLigneAvec(*canne),
+                format!(
+                    "Lancer la ligne avec la {} ({})",
+                    canne.nom().to_lowercase(),
+                    duree(partie.duree_de_la_ligne(*canne))
+                ),
+            )
+        })),
         Some(_) if peche.est_prete(maintenant) => {
             entrees.push(EntreeDeLaPeche::Ligne(
                 Choix::ReleverLaLigne,
-                "Relever la ligne",
+                "Relever la ligne".to_string(),
             ));
         }
         Some(_) => {}
+    }
+    // La canne suivante, à fabriquer avec Ansgar.
+    if let Some(suivante) = CanneAPeche::TOUTES
+        .into_iter()
+        .find(|canne| !peche.cannes().contains(canne))
+    {
+        entrees.push(EntreeDeLaPeche::Ligne(
+            Choix::FabriquerCanne(suivante),
+            format!(
+                "Fabriquer la canne suivante : {}",
+                description_de_la_canne(suivante, contenu.peche())
+            ),
+        ));
     }
     entrees.push(EntreeDeLaPeche::Appats);
     if partie.parfum_porte().is_none() {
@@ -55,7 +80,7 @@ pub fn choisir(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Opt
     }
     for (position, entree_du_menu) in entrees.iter().enumerate() {
         let libelle = match entree_du_menu {
-            EntreeDeLaPeche::Ligne(_, libelle) => libelle,
+            EntreeDeLaPeche::Ligne(_, libelle) => libelle.as_str(),
             EntreeDeLaPeche::Appats => "Préparer un appât",
             EntreeDeLaPeche::Parfums => "Préparer un parfum",
         };

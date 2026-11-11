@@ -608,6 +608,7 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             ),
             false,
         ),
+        Evenement::CanneFabriquee(canne) => (crate::peche::canne_fabriquee(*canne), false),
         Evenement::ObjetsDExperienceAchetes {
             objet,
             nombre,

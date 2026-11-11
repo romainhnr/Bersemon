@@ -22,6 +22,7 @@ use bersemon_core::filet::Filet;
 use bersemon_core::heros::Classe;
 use bersemon_core::inventaire::Objet;
 use bersemon_core::objet_d_experience::ObjetDExperience;
+use bersemon_core::peche::CanneAPeche;
 use bersemon_core::pierre::PierreDEvolution;
 use bersemon_core::quete_du_camp::{Personnage, QueteId};
 use bersemon_core::ressource::RessourceId;
@@ -396,6 +397,9 @@ pub enum Cle {
     /// Ansgar tend une ligne, que le joueur relève une fois prête (section
     /// 13.8).
     LancerLaLigne,
+    /// Avec cette canne (section 13.8).
+    LancerAvec(CanneAPeche),
+    FabriquerCanne(CanneAPeche),
     ReleverLaLigne,
     /// Menu des appâts qu'Ansgar prépare (section 13.8).
     PreparerAppat,
@@ -662,6 +666,8 @@ impl Cle {
             Cle::Entrainer(_) => jouer(Choix::MettreALEntrainement(lire_emplacement(valeur?)?)),
             Cle::Reprendre(position) => jouer(Choix::ReprendreDeLEntrainement(*position)),
             Cle::LancerLaLigne => jouer(Choix::LancerLaLigne),
+            Cle::LancerAvec(canne) => jouer(Choix::LancerLaLigneAvec(*canne)),
+            Cle::FabriquerCanne(canne) => jouer(Choix::FabriquerCanne(*canne)),
             Cle::ReleverLaLigne => jouer(Choix::ReleverLaLigne),
             Cle::PreparerAppat => jouer(Choix::PreparerAppat(Appat::depuis_id(valeur?)?)),
             Cle::PreparerParfum(_) => match valeur? {
@@ -914,6 +920,8 @@ impl Cle {
             Cle::Entrainer(numero) => format!("entrainer:{numero}"),
             Cle::Reprendre(position) => format!("reprendre:{position}"),
             Cle::LancerLaLigne => "lancer-ligne".to_string(),
+            Cle::LancerAvec(canne) => format!("lancer-avec:{}", canne_en_texte(*canne)),
+            Cle::FabriquerCanne(canne) => format!("fabriquer-canne:{}", canne_en_texte(*canne)),
             Cle::ReleverLaLigne => "relever-ligne".to_string(),
             Cle::PreparerAppat => "preparer-appat".to_string(),
             Cle::PreparerParfum(numero) => format!("preparer-parfum:{numero}"),
@@ -1188,6 +1196,8 @@ impl Cle {
                     "rendre-shiny" => Cle::RendreShiny(emplacement()?),
                     "faire-evoluer" => Cle::FaireEvoluer(emplacement()?),
                     "acheter-pierre" => Cle::AcheterPierre(lire_pierre(parametre)?),
+                    "lancer-avec" => Cle::LancerAvec(lire_canne(parametre)?),
+                    "fabriquer-canne" => Cle::FabriquerCanne(lire_canne(parametre)?),
                     "ameliorer" => Cle::Ameliorer(lire_amelioration(parametre)?),
                     "equiper" => Cle::Equiper(lire_place(parametre)?),
                     "fiche" => Cle::Fiche(numero()?),
@@ -1305,6 +1315,20 @@ fn lire_objet_d_experience(texte: &str) -> Option<ObjetDExperience> {
     ObjetDExperience::TOUS
         .into_iter()
         .find(|objet| objet_d_experience_en_valeur(*objet) == texte)
+}
+
+fn canne_en_texte(canne: CanneAPeche) -> &'static str {
+    match canne {
+        CanneAPeche::Bois => "bois",
+        CanneAPeche::Fer => "fer",
+        CanneAPeche::Argent => "argent",
+    }
+}
+
+fn lire_canne(texte: &str) -> Option<CanneAPeche> {
+    CanneAPeche::TOUTES
+        .into_iter()
+        .find(|canne| canne_en_texte(*canne) == texte)
 }
 
 pub fn pierre_en_texte(pierre: PierreDEvolution) -> &'static str {
@@ -1524,6 +1548,8 @@ mod tests {
             Cle::Renommer(Emplacement::Equipe(0)),
             Cle::SurnomSaisi(Emplacement::Camp(4)),
             Cle::Relacher(Emplacement::Camp(0)),
+            Cle::LancerAvec(CanneAPeche::Fer),
+            Cle::FabriquerCanne(CanneAPeche::Argent),
             Cle::Continuer,
             Cle::Rentrer,
             Cle::ActiverLeRaccourci,

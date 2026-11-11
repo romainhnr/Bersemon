@@ -6,7 +6,7 @@ use std::time::Duration;
 use bersemon_core::horodatage::Horodatage;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
-use bersemon_core::peche::{ErreurPeche, Prise};
+use bersemon_core::peche::{CanneAPeche, ErreurPeche, ParametresPeche, Prise};
 
 use crate::expeditions_automatiques::duree;
 use crate::mise_en_valeur::important;
@@ -70,7 +70,13 @@ pub fn etat_de_la_ligne(partie: &Partie, maintenant: Horodatage) -> String {
             "La ligne est prête à relever.".to_string()
         }
         Some(fin) => format!(
-            "La ligne est à l'eau : prête dans {}.",
+            "La ligne est à l'eau, avec la {} : prête dans {}.",
+            partie
+                .peche()
+                .canne_de_la_ligne()
+                .unwrap_or(CanneAPeche::Argent)
+                .nom()
+                .to_lowercase(),
             duree(maintenant.duree_jusqu_a(fin))
         ),
     }
@@ -96,7 +102,60 @@ pub fn erreur_peche(erreur: &ErreurPeche) -> String {
             "Votre équipe et votre camp sont pleins : faites de la place avant de relever la ligne."
                 .to_string()
         }
+        ErreurPeche::CanneManquante(canne) => format!(
+            "Il vous faut d'abord une {} : Ansgar vous aide à la fabriquer.",
+            canne.nom().to_lowercase()
+        ),
+        ErreurPeche::CannePrecedenteManquante(canne) => format!(
+            "Il faut d'abord fabriquer la {}.",
+            canne.nom().to_lowercase()
+        ),
+        ErreurPeche::CanneDejaFabriquee => "Vous avez déjà cette canne.".to_string(),
+        ErreurPeche::PrixDeLaCanne { argent, ressources } => {
+            let mut manque = Vec::new();
+            if *argent > 0 {
+                manque.push(crate::partie::argent(*argent));
+            }
+            if !ressources.is_empty() {
+                manque.push(crate::forge::cout(ressources));
+            }
+            format!("Il vous manque {}.", manque.join(" et "))
+        }
     }
+}
+
+/// "Canne en fer : 1 h, 300 pièces d'argent et Fragment d'armure (5)".
+pub fn description_de_la_canne(canne: CanneAPeche, parametres: &ParametresPeche) -> String {
+    let (prix, ressources) = parametres.prix_de_la_canne(canne);
+    let mut cout = vec![argent(prix)];
+    if !ressources.is_empty() {
+        cout.push(crate::forge::cout(ressources));
+    }
+    format!(
+        "{} : {}, {}",
+        canne.nom(),
+        duree(canne.duree()),
+        cout.join(" et ")
+    )
+}
+
+pub fn canne_fabriquee(canne: CanneAPeche) -> String {
+    format!(
+        "Ansgar vous aide à fabriquer une {} : la ligne reste {} à l'eau, et remonte des prises plus rares que celle d'avant.",
+        canne.nom().to_lowercase(),
+        duree(canne.duree())
+    )
+}
+
+/// "Cannes : Canne en bois, Canne en fer." ou "Aucune canne : fabriquez-en
+/// une avec Ansgar."
+pub fn cannes_possedees(partie: &Partie) -> String {
+    let cannes = partie.peche().cannes();
+    if cannes.is_empty() {
+        return "Aucune canne : fabriquez-en une avec Ansgar.".to_string();
+    }
+    let noms: Vec<&str> = cannes.iter().map(|canne| canne.nom()).collect();
+    format!("Cannes : {}.", noms.join(", "))
 }
 
 #[cfg(test)]

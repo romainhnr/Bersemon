@@ -17,26 +17,97 @@ use crate::ressource::Ressource;
 use crate::stats::ValeursInternes;
 use crate::zone::{Zone, creer_monstre_sauvage, tirer_entre};
 
-/// Bornes du tirage de la prise, sur 100 (docs/contenu-v1.md, sections 15
-/// et 17) : monstre commun 55 %, monstre rare 5 %, potion 14 %, bourse noyée
-/// 10 %, pierre d'évolution 5 %, capsule d'habileté 5 %, booster 5 %,
-/// Philtre chromatique 1 %.
-const JUSQU_AU_MONSTRE_COMMUN: u32 = 55;
-const JUSQU_AU_MONSTRE_RARE: u32 = 60;
-const JUSQU_A_LA_POTION: u32 = 74;
-const JUSQU_A_LA_BOURSE: u32 = 84;
-const JUSQU_A_LA_PIERRE: u32 = 89;
-const JUSQU_A_LA_CAPSULE_D_HABILETE: u32 = 94;
-const JUSQU_AU_BOOSTER: u32 = 99;
-/// Chaque ligne relevée remonte aussi 2 à 3 matières, en plus de sa prise
-/// (docs/contenu-v1.md, section 53).
-const MATIERES_MIN: u32 = 2;
-const MATIERES_MAX: u32 = 3;
+/// Les cannes qu'Ansgar aide à fabriquer (section 13.8) : plus la canne est
+/// bonne, plus la ligne reste longtemps à l'eau, et plus ce qu'elle remonte
+/// est rare.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum CanneAPeche {
+    Bois,
+    Fer,
+    Argent,
+}
+
+/// Une canne, l'argent et les ressources qu'elle coûte.
+pub type PrixDeLaCanne = (CanneAPeche, u32, Vec<(Ressource, u32)>);
+
+/// Bornes du tirage de la prise, sur 100, dans l'ordre : monstre commun,
+/// monstre rare, potion, bourse noyée, pierre d'évolution, capsule
+/// d'habileté, booster ; le reste, un Philtre chromatique.
+type BornesDeLaPrise = [u32; 7];
+
+impl CanneAPeche {
+    pub const TOUTES: [CanneAPeche; 3] = [CanneAPeche::Bois, CanneAPeche::Fer, CanneAPeche::Argent];
+
+    pub fn nom(self) -> &'static str {
+        match self {
+            CanneAPeche::Bois => "Canne en bois",
+            CanneAPeche::Fer => "Canne en fer",
+            CanneAPeche::Argent => "Canne en argent",
+        }
+    }
+
+    /// Le temps de la ligne à l'eau, choix de l'utilisateur (section 13.8).
+    pub fn duree(self) -> Duration {
+        let minutes = match self {
+            CanneAPeche::Bois => 30,
+            CanneAPeche::Fer => 60,
+            CanneAPeche::Argent => 120,
+        };
+        Duration::from_secs(minutes * 60)
+    }
+
+    /// La canne d'avant, qu'il faut posséder pour fabriquer celle-ci.
+    pub fn precedente(self) -> Option<CanneAPeche> {
+        match self {
+            CanneAPeche::Bois => None,
+            CanneAPeche::Fer => Some(CanneAPeche::Bois),
+            CanneAPeche::Argent => Some(CanneAPeche::Fer),
+        }
+    }
+
+    /// Prises, sur 100 (docs/contenu-v1.md, section 15). La canne en argent
+    /// garde la table d'avant les cannes : monstre commun 55 %, rare 5 %,
+    /// potion 14 %, bourse 10 %, pierre 5 %, capsule d'habileté 5 %, booster
+    /// 5 %, Philtre chromatique 1 %. Les autres, proposées par Claude (Q123),
+    /// remontent moins de raretés.
+    fn bornes(self) -> BornesDeLaPrise {
+        match self {
+            // Commun 60, rare 1, potion 25, bourse 10, pierre 1, capsule 1,
+            // booster 2, Philtre 0.
+            CanneAPeche::Bois => [60, 61, 86, 96, 97, 98, 100],
+            // Commun 58, rare 3, potion 19, bourse 10, pierre 3, capsule 3,
+            // booster 4, Philtre 0.
+            CanneAPeche::Fer => [58, 61, 80, 90, 93, 96, 100],
+            CanneAPeche::Argent => [55, 60, 74, 84, 89, 94, 99],
+        }
+    }
+
+    /// Le nombre de matières que remonte la ligne, au moins et au plus.
+    fn matieres(self) -> (u32, u32) {
+        match self {
+            CanneAPeche::Bois => (1, 2),
+            CanneAPeche::Fer => (2, 2),
+            CanneAPeche::Argent => (2, 3),
+        }
+    }
+
+    /// Les chances des matières, dans leur ordre (Vers de vase, Chair de
+    /// noyé, Ambre noir) : la canne en argent garde celles d'avant.
+    fn chances_des_matieres(self) -> [u32; 3] {
+        match self {
+            CanneAPeche::Bois => [80, 20, 0],
+            CanneAPeche::Fer => [70, 25, 5],
+            CanneAPeche::Argent => [60, 30, 10],
+        }
+    }
+}
 
 /// Ce que la pêche peut remonter (docs/contenu-v1.md, section 15).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParametresPeche {
     duree: Duration,
+    /// Le prix de chaque canne, en argent et en ressources (section 13.8).
+    cannes: Vec<PrixDeLaCanne>,
     especes: Vec<Espece>,
     rare: Espece,
     /// Les matières que remonte chaque ligne, avec leur chance sur 100, qui
@@ -102,6 +173,7 @@ impl ParametresPeche {
         }
         Ok(Self {
             duree,
+            cannes: Vec::new(),
             especes,
             rare,
             matieres: Vec::new(),
@@ -125,20 +197,46 @@ impl ParametresPeche {
         &self.matieres
     }
 
+    pub fn avec_cannes(mut self, cannes: Vec<PrixDeLaCanne>) -> Self {
+        self.cannes = cannes;
+        self
+    }
+
+    /// L'argent et les ressources que demande la canne ; rien si le contenu
+    /// ne la chiffre pas.
+    pub fn prix_de_la_canne(&self, canne: CanneAPeche) -> (u32, &[(Ressource, u32)]) {
+        self.cannes
+            .iter()
+            .find(|(une, _, _)| *une == canne)
+            .map_or((0, &[][..]), |(_, argent, ressources)| {
+                (*argent, ressources.as_slice())
+            })
+    }
+
     /// Tirages, s'il y a des matières : leur nombre, puis la sorte de
-    /// chacune. Rend chaque sorte avec son nombre, dans l'ordre des
-    /// matières.
-    pub(crate) fn tirer_matieres(&self, aleatoire: &mut dyn Aleatoire) -> Vec<(Ressource, u32)> {
+    /// chacune, avec les chances de la canne. Rend chaque sorte avec son
+    /// nombre, dans l'ordre des matières.
+    pub(crate) fn tirer_matieres(
+        &self,
+        canne: CanneAPeche,
+        aleatoire: &mut dyn Aleatoire,
+    ) -> Vec<(Ressource, u32)> {
         if self.matieres.is_empty() {
             return Vec::new();
         }
+        // Les chances de la canne, si le contenu a ses trois matières.
+        let chances: Vec<u32> = if self.matieres.len() == 3 {
+            canne.chances_des_matieres().to_vec()
+        } else {
+            self.matieres.iter().map(|(_, chance)| *chance).collect()
+        };
+        let (minimum, maximum) = canne.matieres();
         let mut nombres = vec![0; self.matieres.len()];
-        for _ in 0..tirer_entre(MATIERES_MIN, MATIERES_MAX, aleatoire) {
+        for _ in 0..tirer_entre(minimum, maximum, aleatoire) {
             let mut tirage = aleatoire.tirer(1..=100);
-            let position = self
-                .matieres
+            let position = chances
                 .iter()
-                .position(|(_, chance)| {
+                .position(|chance| {
                     if tirage <= *chance {
                         true
                     } else {
@@ -176,18 +274,32 @@ impl ParametresPeche {
     /// espèce ; pour un monstre, ceux d'un monstre sauvage de la zone
     /// (niveau, shiny, valeurs internes s'il n'est pas shiny, habileté) ;
     /// pour une bourse, son argent ; pour une pierre ou un booster, lequel.
-    pub(crate) fn tirer_prise(&self, zone: &Zone, aleatoire: &mut dyn Aleatoire) -> Prise {
+    pub(crate) fn tirer_prise(
+        &self,
+        zone: &Zone,
+        canne: CanneAPeche,
+        aleatoire: &mut dyn Aleatoire,
+    ) -> Prise {
+        let [
+            jusqu_au_monstre_commun,
+            jusqu_au_monstre_rare,
+            jusqu_a_la_potion,
+            jusqu_a_la_bourse,
+            jusqu_a_la_pierre,
+            jusqu_a_la_capsule_d_habilete,
+            jusqu_au_booster,
+        ] = canne.bornes();
         match aleatoire.tirer(1..=100) {
-            tirage if tirage <= JUSQU_AU_MONSTRE_COMMUN => {
+            tirage if tirage <= jusqu_au_monstre_commun => {
                 let position = tirer_entre(0, (self.especes.len() - 1) as u32, aleatoire);
                 let espece = &self.especes[position as usize];
                 Prise::Monstre(Box::new(zone.generer_monstre(espece, aleatoire)))
             }
-            tirage if tirage <= JUSQU_AU_MONSTRE_RARE => {
+            tirage if tirage <= jusqu_au_monstre_rare => {
                 Prise::Monstre(Box::new(zone.generer_monstre(&self.rare, aleatoire)))
             }
-            tirage if tirage <= JUSQU_A_LA_POTION => Prise::Potion,
-            tirage if tirage <= JUSQU_A_LA_BOURSE => {
+            tirage if tirage <= jusqu_a_la_potion => Prise::Potion,
+            tirage if tirage <= jusqu_a_la_bourse => {
                 let fourchette = zone.coffre().argent();
                 Prise::Argent(tirer_entre(
                     *fourchette.start(),
@@ -195,14 +307,14 @@ impl ParametresPeche {
                     aleatoire,
                 ))
             }
-            tirage if tirage <= JUSQU_A_LA_PIERRE => {
+            tirage if tirage <= jusqu_a_la_pierre => {
                 let derniere = (PierreDEvolution::TROUVEES.len() - 1) as u32;
                 Prise::Pierre(
                     PierreDEvolution::TROUVEES[tirer_entre(0, derniere, aleatoire) as usize],
                 )
             }
-            tirage if tirage <= JUSQU_A_LA_CAPSULE_D_HABILETE => Prise::CapsuleDHabilete,
-            tirage if tirage <= JUSQU_AU_BOOSTER => {
+            tirage if tirage <= jusqu_a_la_capsule_d_habilete => Prise::CapsuleDHabilete,
+            tirage if tirage <= jusqu_au_booster => {
                 let dernier = (Booster::TOUS.len() - 1) as u32;
                 Prise::Booster(Booster::TOUS[tirer_entre(0, dernier, aleatoire) as usize])
             }
@@ -296,6 +408,16 @@ pub enum ErreurPeche {
     /// L'équipe et le camp sont pleins : la ligne ne se relève pas, pour
     /// qu'un monstre pêché ait toujours sa place.
     PlaceManquante,
+    /// Il faut d'abord fabriquer cette canne (section 13.8).
+    CanneManquante(CanneAPeche),
+    /// Pour la fabriquer, il faut la canne d'avant.
+    CannePrecedenteManquante(CanneAPeche),
+    CanneDejaFabriquee,
+    /// Ce qu'il manque pour la fabriquer : de l'argent, des ressources.
+    PrixDeLaCanne {
+        argent: u32,
+        ressources: Vec<(Ressource, u32)>,
+    },
 }
 
 impl fmt::Display for ErreurPeche {
@@ -309,6 +431,12 @@ impl fmt::Display for ErreurPeche {
                 f,
                 "votre équipe et votre camp sont pleins : faites de la place avant de relever la ligne"
             ),
+            ErreurPeche::CanneManquante(canne) => write!(f, "aucune {}", canne.nom()),
+            ErreurPeche::CannePrecedenteManquante(canne) => {
+                write!(f, "il faut d'abord la {}", canne.nom())
+            }
+            ErreurPeche::CanneDejaFabriquee => write!(f, "canne déjà fabriquée"),
+            ErreurPeche::PrixDeLaCanne { .. } => write!(f, "de quoi payer la canne manque"),
         }
     }
 }
@@ -327,6 +455,11 @@ pub struct Peche {
     /// Le parfum qu'Ansgar a préparé et que le héros porte jusqu'à sa
     /// prochaine expédition dans une zone (section 9.2).
     parfum: Option<Parfum>,
+    /// Les cannes fabriquées, dans l'ordre de `CanneAPeche::TOUTES`.
+    cannes: Vec<CanneAPeche>,
+    /// La canne de la ligne à l'eau ; une ligne d'avant les cannes compte
+    /// comme lancée avec la canne en argent, qui dure 2 h comme elle.
+    canne_de_la_ligne: Option<CanneAPeche>,
 }
 
 impl Peche {
@@ -342,7 +475,49 @@ impl Peche {
             ligne,
             prise,
             parfum: None,
+            cannes: Vec::new(),
+            canne_de_la_ligne: None,
         })
+    }
+
+    /// Reprise d'une sauvegarde : les cannes fabriquées et celle de la ligne
+    /// à l'eau ; sans Ansgar, aucune.
+    pub fn avec_cannes(
+        mut self,
+        cannes: Vec<CanneAPeche>,
+        canne_de_la_ligne: Option<CanneAPeche>,
+    ) -> Option<Self> {
+        if !self.pecheur_au_camp && !cannes.is_empty() {
+            return None;
+        }
+        self.cannes = CanneAPeche::TOUTES
+            .into_iter()
+            .filter(|canne| cannes.contains(canne))
+            .collect();
+        self.canne_de_la_ligne = canne_de_la_ligne.filter(|_| self.ligne.is_some());
+        Some(self)
+    }
+
+    pub fn cannes(&self) -> &[CanneAPeche] {
+        &self.cannes
+    }
+
+    /// La meilleure canne fabriquée, celle que prend la ligne par défaut.
+    pub fn meilleure_canne(&self) -> Option<CanneAPeche> {
+        self.cannes.last().copied()
+    }
+
+    /// La canne de la ligne à l'eau ; `None` sans ligne, ou pour une ligne
+    /// lancée avant les cannes, relevée comme avec la canne en argent.
+    pub fn canne_de_la_ligne(&self) -> Option<CanneAPeche> {
+        self.canne_de_la_ligne
+    }
+
+    pub(crate) fn ajouter_canne(&mut self, canne: CanneAPeche) {
+        if !self.cannes.contains(&canne) {
+            self.cannes.push(canne);
+            self.cannes.sort();
+        }
     }
 
     /// Reprise d'une sauvegarde : le parfum porté, qu'Ansgar a forcément
@@ -392,6 +567,7 @@ impl Peche {
     /// Rend l'heure où la ligne sera prête.
     pub(crate) fn lancer(
         &mut self,
+        canne: CanneAPeche,
         duree: Duration,
         maintenant: Horodatage,
     ) -> Result<Horodatage, ErreurPeche> {
@@ -401,8 +577,12 @@ impl Peche {
         if self.ligne.is_some() {
             return Err(ErreurPeche::LigneDejaALEau);
         }
+        if !self.cannes.contains(&canne) {
+            return Err(ErreurPeche::CanneManquante(canne));
+        }
         let fin = maintenant.plus(duree);
         self.ligne = Some(fin);
+        self.canne_de_la_ligne = Some(canne);
         Ok(fin)
     }
 
@@ -417,6 +597,7 @@ impl Peche {
 
     pub(crate) fn relever(&mut self) {
         self.ligne = None;
+        self.canne_de_la_ligne = None;
     }
 
     pub(crate) fn garder_en_attente(&mut self, monstre: Monstre) {
@@ -466,6 +647,7 @@ mod tests {
         // six valeurs internes ; niveau unique et pas d'habileté à tirer.
         let prise = parametres.tirer_prise(
             &marais,
+            CanneAPeche::Argent,
             &mut AleatoireScripte::new([55, 1, 2, 0, 0, 0, 0, 0, 0]),
         );
         assert!(
@@ -473,6 +655,7 @@ mod tests {
         );
         let prise = parametres.tirer_prise(
             &marais,
+            CanneAPeche::Argent,
             &mut AleatoireScripte::new([56, 2, 0, 0, 0, 0, 0, 0]),
         );
         assert!(
@@ -480,41 +663,73 @@ mod tests {
         );
         for tirage in [61, 74] {
             assert_eq!(
-                parametres.tirer_prise(&marais, &mut AleatoireScripte::new([tirage])),
+                parametres.tirer_prise(
+                    &marais,
+                    CanneAPeche::Argent,
+                    &mut AleatoireScripte::new([tirage])
+                ),
                 Prise::Potion
             );
         }
         // L'argent d'un coffre de la zone, toujours 10, sans tirage.
         for tirage in [75, 84] {
             assert_eq!(
-                parametres.tirer_prise(&marais, &mut AleatoireScripte::new([tirage])),
+                parametres.tirer_prise(
+                    &marais,
+                    CanneAPeche::Argent,
+                    &mut AleatoireScripte::new([tirage])
+                ),
                 Prise::Argent(10)
             );
         }
         assert_eq!(
-            parametres.tirer_prise(&marais, &mut AleatoireScripte::new([85, 1])),
+            parametres.tirer_prise(
+                &marais,
+                CanneAPeche::Argent,
+                &mut AleatoireScripte::new([85, 1])
+            ),
             Prise::Pierre(PierreDEvolution::Lune)
         );
         assert_eq!(
-            parametres.tirer_prise(&marais, &mut AleatoireScripte::new([89, 0])),
+            parametres.tirer_prise(
+                &marais,
+                CanneAPeche::Argent,
+                &mut AleatoireScripte::new([89, 0])
+            ),
             Prise::Pierre(PierreDEvolution::Braise)
         );
         for tirage in [90, 94] {
             assert_eq!(
-                parametres.tirer_prise(&marais, &mut AleatoireScripte::new([tirage])),
+                parametres.tirer_prise(
+                    &marais,
+                    CanneAPeche::Argent,
+                    &mut AleatoireScripte::new([tirage])
+                ),
                 Prise::CapsuleDHabilete
             );
         }
         assert_eq!(
-            parametres.tirer_prise(&marais, &mut AleatoireScripte::new([95, 0])),
+            parametres.tirer_prise(
+                &marais,
+                CanneAPeche::Argent,
+                &mut AleatoireScripte::new([95, 0])
+            ),
             Prise::Booster(Booster::FioleDeSang)
         );
         assert_eq!(
-            parametres.tirer_prise(&marais, &mut AleatoireScripte::new([99, 5])),
+            parametres.tirer_prise(
+                &marais,
+                CanneAPeche::Argent,
+                &mut AleatoireScripte::new([99, 5])
+            ),
             Prise::Booster(Booster::PoudreDeVifArgent)
         );
         assert_eq!(
-            parametres.tirer_prise(&marais, &mut AleatoireScripte::new([100])),
+            parametres.tirer_prise(
+                &marais,
+                CanneAPeche::Argent,
+                &mut AleatoireScripte::new([100])
+            ),
             Prise::PhiltreChromatique
         );
     }
@@ -522,15 +737,23 @@ mod tests {
     #[test]
     fn une_ligne_a_la_fois_relevee_une_fois_prete() {
         let mut peche = Peche::default();
+        let argent = CanneAPeche::Argent;
         assert_eq!(
-            peche.lancer(DEUX_HEURES, a(0)),
+            peche.lancer(argent, DEUX_HEURES, a(0)),
             Err(ErreurPeche::AucunPecheur)
         );
         peche.accueillir_ansgar();
         assert_eq!(peche.verifier_releve(a(0)), Err(ErreurPeche::AucuneLigne));
-        assert_eq!(peche.lancer(DEUX_HEURES, a(100)), Ok(a(7_300)));
+        // Sans canne, pas de ligne (section 13.8).
         assert_eq!(
-            peche.lancer(DEUX_HEURES, a(200)),
+            peche.lancer(argent, DEUX_HEURES, a(100)),
+            Err(ErreurPeche::CanneManquante(argent))
+        );
+        peche.ajouter_canne(argent);
+        assert_eq!(peche.lancer(argent, DEUX_HEURES, a(100)), Ok(a(7_300)));
+        assert_eq!(peche.canne_de_la_ligne(), Some(argent));
+        assert_eq!(
+            peche.lancer(argent, DEUX_HEURES, a(200)),
             Err(ErreurPeche::LigneDejaALEau)
         );
         assert_eq!(

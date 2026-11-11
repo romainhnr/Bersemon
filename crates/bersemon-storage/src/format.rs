@@ -35,7 +35,7 @@ use bersemon_core::niveau::Niveau;
 use bersemon_core::nom::Nom;
 use bersemon_core::parfum::Parfum;
 use bersemon_core::partie::{AttaqueAChoisir, Decouvertes, EtatPartie, Partie};
-use bersemon_core::peche::Peche;
+use bersemon_core::peche::{CanneAPeche, Peche};
 use bersemon_core::pierre::PierreDEvolution;
 use bersemon_core::quete::{Avancement, EtatDeQuete, JournalDesQuetes, Objectif, Periode, Quete};
 use bersemon_core::quete_du_camp::{EtatDesQuetes, Personnage, QueteId};
@@ -208,6 +208,13 @@ pub(crate) struct SauvegardeV14 {
     /// prête.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     ligne: Option<u64>,
+    /// Depuis la version 40 (section 13.8) : les cannes fabriquées.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    cannes: Vec<String>,
+    /// Depuis la version 40 : la canne de la ligne à l'eau ; absente pour
+    /// une ligne d'avant, qui compte comme lancée avec la canne en argent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    canne_de_la_ligne: Option<String>,
     /// Le monstre pêché que le joueur n'a encore ni gardé ni relâché.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     prise: Option<MonstreV1>,
@@ -589,6 +596,22 @@ struct PierreV13 {
     nombre: u32,
 }
 
+/// Nom fixé ici, et non le nom Rust.
+fn canne_en_texte(canne: CanneAPeche) -> &'static str {
+    match canne {
+        CanneAPeche::Bois => "bois",
+        CanneAPeche::Fer => "fer",
+        CanneAPeche::Argent => "argent",
+    }
+}
+
+fn lire_canne(texte: &str) -> Result<CanneAPeche, ErreurSauvegarde> {
+    CanneAPeche::TOUTES
+        .into_iter()
+        .find(|canne| canne_en_texte(*canne) == texte)
+        .ok_or_else(|| ErreurSauvegarde::Incoherente(format!("canne à pêche inconnue : {texte}")))
+}
+
 fn pierre_en_texte(pierre: PierreDEvolution) -> &'static str {
     match pierre {
         PierreDEvolution::Braise => "braise",
@@ -935,6 +958,16 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV14 {
             }),
         ansgar_au_camp: partie.peche().pecheur_au_camp(),
         ligne: partie.peche().ligne().map(Horodatage::secondes),
+        cannes: partie
+            .peche()
+            .cannes()
+            .iter()
+            .map(|canne| canne_en_texte(*canne).to_string())
+            .collect(),
+        canne_de_la_ligne: partie
+            .peche()
+            .canne_de_la_ligne()
+            .map(|canne| canne_en_texte(canne).to_string()),
         prise: partie.peche().prise().map(depuis_monstre),
         parfum: depuis_parfum(partie.parfum_porte()),
         amis: partie.relations().amis().to_vec(),
@@ -1339,6 +1372,19 @@ pub(crate) fn vers_partie(
     )
     .and_then(|peche| peche.avec_parfum(vers_parfum(sauvegarde.parfum, catalogue)))
     .ok_or_else(|| ErreurSauvegarde::Incoherente("pêche sans Ansgar au camp".to_string()))?;
+    let cannes = sauvegarde
+        .cannes
+        .iter()
+        .map(|canne| lire_canne(canne))
+        .collect::<Result<Vec<_>, _>>()?;
+    let canne_de_la_ligne = sauvegarde
+        .canne_de_la_ligne
+        .as_deref()
+        .map(lire_canne)
+        .transpose()?;
+    let peche = peche
+        .avec_cannes(cannes, canne_de_la_ligne)
+        .ok_or_else(|| ErreurSauvegarde::Incoherente("cannes sans Ansgar au camp".to_string()))?;
     let collection = Collection::restaurer(equipe, camp, ameliorations.tailles())
         .map_err(|erreur| ErreurSauvegarde::Incoherente(erreur.to_string()))?;
     // Avant la version 7, tout ce que possédait le joueur est rangé dans le

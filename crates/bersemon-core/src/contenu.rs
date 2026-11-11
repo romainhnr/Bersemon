@@ -10,6 +10,7 @@
 use crate::annexe::Annexe;
 use crate::butin::ButinRare;
 use crate::legendaire::{Legendaire, ZoneLegendaire};
+use crate::peche::CanneAPeche;
 use std::ops::RangeInclusive;
 use std::time::Duration;
 
@@ -1937,6 +1938,18 @@ impl ContenuV1 {
                 .map(|(id, nombre)| (matiere(id), *nombre))
                 .collect()
         };
+        // Le prix des cannes à pêche (section 13.8), proposé par Claude
+        // (Q123) : de l'argent, du métal pour la canne en fer, de l'ambre
+        // pour la canne en argent.
+        let peche = peche.avec_cannes(vec![
+            (CanneAPeche::Bois, 50, Vec::new()),
+            (
+                CanneAPeche::Fer,
+                300,
+                vec![(ressource("fragment-d-armure"), 5)],
+            ),
+            (CanneAPeche::Argent, 1_000, recette(&[("ambre-noir", 3)])),
+        ]);
         let atelier = AtelierDAnsgar::new(
             RECETTES_DES_APPATS
                 .iter()
