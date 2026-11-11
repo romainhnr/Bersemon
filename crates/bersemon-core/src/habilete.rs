@@ -44,10 +44,17 @@ pub enum Habilete {
     Traqueur,
     Pillard,
     Fouineur,
+    /// L'objet que lâche un monstre vaincu est doublé (section 14.3).
+    Depeceur,
+    /// La chance du butin rare double (section 14.3).
+    Fortune,
+    /// Dès le début du combat, le joueur voit ce que lâchera chaque monstre
+    /// sauvage (section 14.3).
+    Flair,
 }
 
 impl Habilete {
-    pub const TOUTES: [Habilete; 11] = [
+    pub const TOUTES: [Habilete; 14] = [
         Habilete::Ferocite,
         Habilete::Carapace,
         Habilete::Sorcellerie,
@@ -59,6 +66,9 @@ impl Habilete {
         Habilete::Traqueur,
         Habilete::Pillard,
         Habilete::Fouineur,
+        Habilete::Depeceur,
+        Habilete::Fortune,
+        Habilete::Flair,
     ];
 
     /// Nom de l'habileté tel qu'il s'écrit dans le jeu, commun à toutes les
@@ -76,6 +86,9 @@ impl Habilete {
             Habilete::Traqueur => "Traqueur",
             Habilete::Pillard => "Pillard",
             Habilete::Fouineur => "Fouineur",
+            Habilete::Depeceur => "Dépeceur",
+            Habilete::Fortune => "Fortune",
+            Habilete::Flair => "Flair",
         }
     }
 
@@ -109,7 +122,10 @@ impl Habilete {
             | Habilete::Eclaireur
             | Habilete::Traqueur
             | Habilete::Pillard
-            | Habilete::Fouineur => Stats::default(),
+            | Habilete::Fouineur
+            | Habilete::Depeceur
+            | Habilete::Fortune
+            | Habilete::Flair => Stats::default(),
         }
     }
 }

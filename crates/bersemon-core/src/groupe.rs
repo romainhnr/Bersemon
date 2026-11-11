@@ -5,6 +5,7 @@
 //! combat commun se joue ici.
 
 use crate::aleatoire::Aleatoire;
+use crate::butin::{HabiletesDuButin, tirer_le_butin};
 use crate::combat::{Action, Combat, Cote, ErreurCombat, Issue, Membre, Phase};
 use crate::contenu::ContenuV1;
 use crate::deroulement::{Attente, Choix, Contexte, Deroulement, ErreurChoix, Evenement};
@@ -408,6 +409,25 @@ impl ExpeditionEnGroupe {
         )
         .expect("le groupe a au moins un monstre apte entre deux étapes")
         .mene_par(meneur_de_l_etape(etape));
+        // Le butin se tire au début du combat, avec les habiletés des deux
+        // équipes ; chacun recevra le sien (section 14.3).
+        let habiletes = HabiletesDuButin::de_l_equipe(
+            partie_hote
+                .collection()
+                .equipe()
+                .iter()
+                .chain(partie_invite.collection().equipe()),
+        );
+        let combat = if combat.lache_un_butin() {
+            let butins: Vec<_> = combat
+                .adversaires()
+                .iter()
+                .map(|monstre| tirer_le_butin(monstre, habiletes, false, &mut *contexte.aleatoire))
+                .collect();
+            combat.avec_butins(butins)
+        } else {
+            combat
+        };
         recits[0].extend(hote.engager_en_groupe(&combat));
         recits[1].extend(invite.engager_en_groupe(&combat));
         self.combat = Some(combat);

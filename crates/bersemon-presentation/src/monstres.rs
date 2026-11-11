@@ -207,6 +207,9 @@ pub fn effet_d_habilete(habilete: Habilete) -> &'static str {
         Habilete::Traqueur => "chance de capture x1,25 quand il est actif",
         Habilete::Pillard => "+50 % d'argent dans les coffres et les expéditions automatiques",
         Habilete::Fouineur => "1 chance sur 4 de trouver une potion après une victoire",
+        Habilete::Depeceur => "les monstres vaincus lâchent leur objet en double",
+        Habilete::Fortune => "chance du butin rare des monstres vaincus doublée",
+        Habilete::Flair => "montre dès le début du combat ce que lâchera chaque monstre",
     }
 }
 

@@ -8,6 +8,7 @@
 //! reçoivent de l'appelant, comme le hasard.
 
 use crate::annexe::Annexe;
+use crate::butin::ButinRare;
 use crate::legendaire::{Legendaire, ZoneLegendaire};
 use std::ops::RangeInclusive;
 use std::time::Duration;
@@ -5099,7 +5100,7 @@ static ESPECES: [FicheEspece; 131] = [
         stats_de_base: [50, 62, 45, 30, 40, 58],
         rendement_experience: 70,
         rarete: Rarete::Commune,
-        habiletes: &[Habilete::Traqueur, Habilete::Fouineur],
+        habiletes: &[Habilete::Depeceur, Habilete::Fouineur],
         apprentissage: &[(1, "griffure"), (4, "morsure"), (9, "curee")],
         evolution: par_niveau_au_moment("warg", 16, JourOuNuit::Nuit, "croc-noir"),
     },
@@ -5111,7 +5112,7 @@ static ESPECES: [FicheEspece; 131] = [
         stats_de_base: [42, 57, 38, 45, 38, 72],
         rendement_experience: 66,
         rarete: Rarete::Commune,
-        habiletes: &[Habilete::Pillard, Habilete::Eclaireur],
+        habiletes: &[Habilete::Pillard, Habilete::Fortune],
         apprentissage: &[(1, "coup-de-bec"), (4, "pique"), (8, "regard-funeste")],
         evolution: par_niveau_au_moment("corbeau-des-gibets", 16, JourOuNuit::Nuit, "bec-funeste"),
     },
@@ -5389,7 +5390,7 @@ static ESPECES: [FicheEspece; 131] = [
         stats_de_base: [65, 80, 58, 38, 52, 75],
         rendement_experience: 98,
         rarete: Rarete::Commune,
-        habiletes: &[Habilete::Traqueur, Habilete::Fouineur],
+        habiletes: &[Habilete::Depeceur, Habilete::Fouineur],
         apprentissage: &[
             (1, "griffure"),
             (4, "morsure"),
@@ -5407,7 +5408,7 @@ static ESPECES: [FicheEspece; 131] = [
         stats_de_base: [55, 72, 48, 58, 48, 90],
         rendement_experience: 92,
         rarete: Rarete::Commune,
-        habiletes: &[Habilete::Pillard, Habilete::Eclaireur],
+        habiletes: &[Habilete::Pillard, Habilete::Fortune],
         apprentissage: &[
             (1, "coup-de-bec"),
             (4, "pique"),
@@ -5576,7 +5577,7 @@ static ESPECES: [FicheEspece; 131] = [
         stats_de_base: [65, 78, 55, 40, 45, 57],
         rendement_experience: 102,
         rarete: Rarete::Commune,
-        habiletes: &[Habilete::Instinct, Habilete::Ferocite],
+        habiletes: &[Habilete::Depeceur, Habilete::Ferocite],
         apprentissage: &[
             (1, "morsure"),
             (1, "morsure-venimeuse"),
@@ -5593,7 +5594,7 @@ static ESPECES: [FicheEspece; 131] = [
         stats_de_base: [50, 55, 45, 55, 45, 90],
         rendement_experience: 100,
         rarete: Rarete::Commune,
-        habiletes: &[Habilete::Celerite, Habilete::Eclaireur],
+        habiletes: &[Habilete::Celerite, Habilete::Flair],
         apprentissage: &[
             (1, "coup-de-bec"),
             (1, "cri-strident"),
@@ -5945,7 +5946,7 @@ static ESPECES: [FicheEspece; 131] = [
         stats_de_base: [85, 110, 75, 45, 65, 100],
         rendement_experience: 137,
         rarete: Rarete::Commune,
-        habiletes: &[Habilete::Traqueur, Habilete::Fouineur],
+        habiletes: &[Habilete::Depeceur, Habilete::Fouineur],
         apprentissage: &[
             (1, "griffure"),
             (4, "morsure"),
@@ -6234,7 +6235,7 @@ static ESPECES: [FicheEspece; 131] = [
         stats_de_base: [61, 92, 48, 38, 47, 104],
         rendement_experience: 145,
         rarete: Rarete::Commune,
-        habiletes: &[Habilete::Celerite, Habilete::Traqueur],
+        habiletes: &[Habilete::Celerite, Habilete::Fortune],
         apprentissage: &[
             (1, "coup-de-bec"),
             (1, "morsure"),
@@ -6661,7 +6662,7 @@ static ESPECES: [FicheEspece; 131] = [
         stats_de_base: [70, 80, 56, 36, 52, 66],
         rendement_experience: 210,
         rarete: Rarete::Commune,
-        habiletes: &[Habilete::Traqueur, Habilete::Pillard],
+        habiletes: &[Habilete::Depeceur, Habilete::Pillard],
         apprentissage: &[
             (1, "coup-de-bec"),
             (1, "secousse"),
@@ -6792,7 +6793,7 @@ static ESPECES: [FicheEspece; 131] = [
         stats_de_base: [58, 38, 52, 100, 66, 76],
         rendement_experience: 225,
         rarete: Rarete::Commune,
-        habiletes: &[Habilete::Instinct, Habilete::Eclaireur],
+        habiletes: &[Habilete::Instinct, Habilete::Flair],
         apprentissage: &[
             (1, "regard-funeste"),
             (1, "onde-psychique"),
@@ -7399,7 +7400,7 @@ static ESPECES: [FicheEspece; 131] = [
         stats_de_base: [70, 75, 65, 110, 75, 105],
         rendement_experience: 128,
         rarete: Rarete::Commune,
-        habiletes: &[Habilete::Pillard, Habilete::Eclaireur],
+        habiletes: &[Habilete::Pillard, Habilete::Fortune],
         apprentissage: &[
             (1, "coup-de-bec"),
             (1, "presage-funeste"),
@@ -7509,7 +7510,11 @@ fn creer_espece(fiche: &FicheEspece) -> Espece {
                 Rarete::Rare => PRIX_D_UNE_RESSOURCE_RARE,
                 Rarete::Commune | Rarete::Apotre | Rarete::Demiurge => PRIX_D_UNE_RESSOURCE_COMMUNE,
             };
-            espece.avec_ressource(Ressource::new(RessourceId::new(*id), *nom, prix))
+            let espece = espece.avec_ressource(Ressource::new(RessourceId::new(*id), *nom, prix));
+            // Une espèce qui lâche une ressource a aussi son butin rare
+            // (section 14.3).
+            let butin_rare = ButinRare::de_l_espece(&espece);
+            espece.avec_butin_rare(butin_rare)
         }
         None => espece,
     }

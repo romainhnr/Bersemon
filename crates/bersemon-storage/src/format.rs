@@ -1840,6 +1840,9 @@ fn nom_d_habilete(habilete: Habilete) -> &'static str {
         Habilete::Traqueur => "traqueur",
         Habilete::Pillard => "pillard",
         Habilete::Fouineur => "fouineur",
+        Habilete::Depeceur => "depeceur",
+        Habilete::Fortune => "fortune",
+        Habilete::Flair => "flair",
     }
 }
 

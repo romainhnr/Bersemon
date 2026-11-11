@@ -644,7 +644,9 @@ mod tests {
         let loup = creer(&contenu, "loup", 5);
         let fiche = crate::monstres::fiche_du_monstre(&loup);
         assert!(
-            fiche.contains("\nHabileté : Traqueur (chance de capture x1,25 quand il est actif)\n"),
+            fiche.contains(
+                "\nHabileté : Dépeceur (les monstres vaincus lâchent leur objet en double)\n"
+            ),
             "{fiche}"
         );
         // Tout capturé et tous les Apôtres abattus : la fiche ne cache rien.
@@ -661,7 +663,7 @@ mod tests {
             crate::partie::fiche_d_espece(espece, &codex, &apotres, &contenu)
         };
         let espece = fiche_complete(loup.espece());
-        assert_eq!(espece[1], "Habiletés possibles : Traqueur et Fouineur");
+        assert_eq!(espece[1], "Habiletés possibles : Dépeceur et Fouineur");
         assert_eq!(espece[3], "Attaques apprises :");
         assert_eq!(
             espece[4],

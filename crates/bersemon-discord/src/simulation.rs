@@ -3737,6 +3737,17 @@ fn coup_de_groupe(
         Attente::Evolution { .. } => Choix::NePasEvoluer,
         Attente::PlaceManquante(_) => Choix::RelacherLaCapture,
         Attente::Confirmation(_) => Choix::Oui,
+        // Le butin, désormais certain, peut faire déborder le sac.
+        Attente::SacPlein => {
+            let sac = session.deroulement.partie().expect("en jeu").sac();
+            Choix::Jeter(
+                bersemon_presentation::sac::sortes_a_jeter(sac)
+                    .first()
+                    .expect("un sac plein a de quoi jeter")
+                    .unite
+                    .clone(),
+            )
+        }
         autre => panic!("{autre:?}"),
     }
 }

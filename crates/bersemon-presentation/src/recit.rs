@@ -1,5 +1,7 @@
 //! Récit des événements du déroulement, dans l'ordre où ils arrivent.
 
+use bersemon_core::booster::Booster;
+use bersemon_core::butin::Butin;
 use bersemon_core::combat::Cote;
 use bersemon_core::contenu::{
     INTRODUCTION, MALVOISE_ET_L_AME, MALVOISE_SANS_AME, RECOMPENSE_DU_DEMIURGE,
@@ -525,6 +527,31 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
                 false,
             )
         }
+        Evenement::BoostersLaches(boosters) => {
+            // Regroupés par sorte, dans l'ordre où ils sont trouvés.
+            let mut sortes: Vec<(Booster, u32)> = Vec::new();
+            for booster in boosters {
+                match sortes.iter_mut().find(|(sorte, _)| sorte == booster) {
+                    Some((_, nombre)) => *nombre += 1,
+                    None => sortes.push((*booster, 1)),
+                }
+            }
+            let liste: Vec<String> = sortes
+                .into_iter()
+                .map(|(booster, nombre)| format!("{} ({nombre})", booster.nom()))
+                .collect();
+            (
+                important(&format!("Butin rare ! Vous ramassez : {}.", enumerer(&liste))),
+                false,
+            )
+        }
+        Evenement::ButinFlaire(butins) => {
+            let liste: Vec<String> = butins
+                .iter()
+                .map(|(nom, butin)| format!("{nom} lâchera {}", decrire_butin(butin)))
+                .collect();
+            (format!("Votre flair ne trompe pas : {}.", enumerer(&liste)), false)
+        }
         Evenement::RessourcesVendues {
             ressource,
             nombre,
@@ -643,6 +670,14 @@ fn rejoint(dans_l_equipe: bool) -> &'static str {
         "rejoint l'équipe"
     } else {
         "rejoint le camp"
+    }
+}
+
+/// "Croc de loup (2)" ou "Moelle de bête (1)".
+fn decrire_butin(butin: &Butin) -> String {
+    match butin {
+        Butin::Ressource(ressource, nombre) => format!("{} ({nombre})", ressource.nom()),
+        Butin::Booster(booster, nombre) => format!("{} ({nombre})", booster.nom()),
     }
 }
 

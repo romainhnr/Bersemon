@@ -1,6 +1,7 @@
 //! Partie en cours : le héros et tout ce que le joueur possède ou sait. C'est
 //! ce qu'une sauvegarde devra conserver.
 
+use crate::butin::{Butin, HabiletesDuButin, tirer_le_butin};
 use std::fmt;
 use std::time::Duration;
 
@@ -56,7 +57,7 @@ use crate::monstre::{
 use crate::niveau::Niveau;
 use crate::nom::Nom;
 use crate::obeissance::limite_d_obeissance;
-use crate::parfum::{CHANCE_DE_RESSOURCE_COMMUNE, CHANCE_DE_RESSOURCE_RARE, Parfum};
+use crate::parfum::Parfum;
 use crate::peche::{ErreurPeche, ParametresPeche, Peche, Prise};
 use crate::pierre::PierreDEvolution;
 use crate::quete::{JournalDesQuetes, Objectif, QueteAccomplie};
@@ -80,10 +81,6 @@ use crate::tour::{RecordsDeLaTour, TourSansFond};
 use crate::traque::{Apotre, Indice, Piste};
 use crate::tutoriel::Conseil;
 use crate::zone::{Zone, ZoneId};
-
-/// Un monstre sauvage battu lâche sa ressource 1 fois sur 3 (section 14.3,
-/// Q82).
-const CHANCES_DE_RESSOURCE: u32 = 3;
 
 /// Le monstre de départ est au niveau 5 (section 6).
 const NIVEAU_DE_DEPART: u8 = 5;
@@ -3110,33 +3107,43 @@ impl Partie {
     }
 
     /// Après un combat gagné, chaque monstre sauvage mis KO et non capturé
-    /// lâche sa ressource 1 fois sur 3 ; elle va dans le sac (section 14.3).
-    /// Dans une expédition parfumée, 1 fois sur 2, et 2 fois sur 3 pour une
-    /// espèce rare (section 13.14). Rend ce qui est trouvé, dans l'ordre.
-    /// Tirages : un par vaincu dont l'espèce a une ressource, dans l'ordre
-    /// du groupe.
-    pub fn recolter_ressources(
-        &mut self,
-        vaincus: &[Monstre],
-        parfumee: bool,
-        aleatoire: &mut dyn Aleatoire,
-    ) -> Vec<Ressource> {
-        let mut trouvees = Vec::new();
-        for vaincu in vaincus {
-            let Some(ressource) = vaincu.espece().ressource() else {
-                continue;
-            };
-            let (reussites, sur) = match (parfumee, vaincu.espece().rarete()) {
-                (false, _) => (1, CHANCES_DE_RESSOURCE),
-                (true, Rarete::Commune) => CHANCE_DE_RESSOURCE_COMMUNE,
-                (true, _) => CHANCE_DE_RESSOURCE_RARE,
-            };
-            if aleatoire.tirer(1..=sur) <= reussites {
-                self.sac.ajouter_ressources(ressource.clone(), 1);
-                trouvees.push(ressource.clone());
+    /// lâche son butin, tiré au début du combat : sa ressource, ou son
+    /// butin rare ; il va dans le sac (section 14.3). Rend les ressources
+    /// trouvées, une par exemplaire, puis les boosters, dans l'ordre. Sans
+    /// tirage.
+    pub fn recolter_le_butin(&mut self, butins: &[Butin]) -> (Vec<Ressource>, Vec<Booster>) {
+        let mut ressources = Vec::new();
+        let mut boosters = Vec::new();
+        for butin in butins {
+            match butin {
+                Butin::Ressource(ressource, nombre) => {
+                    self.sac.ajouter_ressources(ressource.clone(), *nombre);
+                    ressources.extend(std::iter::repeat_n(ressource.clone(), *nombre as usize));
+                }
+                Butin::Booster(booster, nombre) => {
+                    self.sac.ajouter_boosters(*booster, *nombre);
+                    boosters.extend(std::iter::repeat_n(*booster, *nombre as usize));
+                }
             }
         }
-        trouvees
+        (ressources, boosters)
+    }
+
+    /// Le butin de chaque monstre d'un groupe sauvage, au début du combat,
+    /// avec les habiletés Dépeceur et Fortune de l'équipe et le parfum
+    /// porté (section 14.3). Tirages : un par monstre qui a un butin rare,
+    /// dans l'ordre du groupe.
+    pub fn tirer_les_butins(
+        &self,
+        adversaires: &[Monstre],
+        parfum: bool,
+        aleatoire: &mut dyn Aleatoire,
+    ) -> Vec<Option<Butin>> {
+        let habiletes = HabiletesDuButin::de_l_equipe(self.collection.equipe());
+        adversaires
+            .iter()
+            .map(|monstre| tirer_le_butin(monstre, habiletes, parfum, aleatoire))
+            .collect()
     }
 
     /// Au camp, chez Malvoise, sans confirmation : toutes les ressources de
@@ -3535,38 +3542,36 @@ pub(crate) mod tests {
         assert_eq!(sac.capsules_d_habilete(), 1);
     }
 
-    /// Section 13.14 : sous un parfum, une espèce commune lâche sa ressource
-    /// 1 fois sur 2, une rare 2 fois sur 3, sans que ce soit certain.
+    /// Section 14.3 : chaque vaincu lâche son butin, tiré au début du
+    /// combat ; sous un parfum, la chance du butin rare double.
     #[test]
-    fn sous_un_parfum_les_vaincus_lachent_plus_souvent() {
+    fn le_butin_se_tire_au_debut_du_combat() {
         let croc = Ressource::new(RessourceId::new("croc"), "Croc", 5);
-        let ecaille = Ressource::new(RessourceId::new("ecaille"), "Écaille", 15);
-        let niveau = Niveau::new(5).unwrap();
+        let espece = espece("loup").avec_ressource(croc.clone());
+        let rare = crate::butin::ButinRare::new(Booster::MoelleDeBete, 5);
         let loup = Monstre::creer(
-            espece("loup").avec_ressource(croc.clone()),
-            niveau,
+            espece.avec_butin_rare(rare),
+            Niveau::new(5).unwrap(),
             ValeursInternes::default(),
             false,
         )
         .unwrap();
-        let vouivre = Monstre::creer(
-            espece("vouivre")
-                .avec_ressource(ecaille.clone())
-                .avec_rarete(Rarete::Rare),
-            niveau,
-            ValeursInternes::default(),
-            false,
-        )
-        .unwrap();
-        let mut partie = partie();
-        // Le loup : 1 sur 2 la lâche, 2 non ; la vouivre : 1 ou 2 sur 3 la
-        // lâchent, 3 non.
-        let trouvees = partie.recolter_ressources(
-            &[loup.clone(), vouivre.clone(), loup, vouivre],
+        let partie = partie();
+        // Sous un parfum, 10 % : 10 donne le butin rare, 11 la ressource ;
+        // le rat, sans ressource, ne tire rien.
+        let butins = partie.tirer_les_butins(
+            &[loup.clone(), creer("rat", 5), loup],
             true,
-            &mut AleatoireScripte::new([1, 2, 2, 3]),
+            &mut AleatoireScripte::new([10, 11]),
         );
-        assert_eq!(trouvees, vec![croc, ecaille]);
+        assert_eq!(
+            butins,
+            vec![
+                Some(Butin::Booster(Booster::MoelleDeBete, 1)),
+                None,
+                Some(Butin::Ressource(croc, 1)),
+            ]
+        );
     }
 
     /// Section 13.8 : Ansgar prépare un appât, qui va au coffre, ou un
@@ -3686,12 +3691,19 @@ pub(crate) mod tests {
         )
         .unwrap();
         let mut partie = partie();
-        // Un tirage par vaincu dont l'espèce a une ressource : 1 la lâche.
-        let vaincus = [loup.clone(), creer("rat", 5), loup.clone(), loup];
-        let trouvees =
-            partie.recolter_ressources(&vaincus, false, &mut AleatoireScripte::new([1, 2, 1]));
+        // Chaque vaincu lâche toujours son butin, tiré au début du combat.
+        let butins = [
+            Butin::Ressource(croc.clone(), 1),
+            Butin::Booster(Booster::FioleDeSang, 1),
+            Butin::Ressource(croc.clone(), 1),
+        ];
+        let (trouvees, boosters) = partie.recolter_le_butin(&butins);
         assert_eq!(trouvees, vec![croc.clone(), croc.clone()]);
+        assert_eq!(boosters, vec![Booster::FioleDeSang]);
         assert_eq!(partie.sac().nombre_de_ressources(croc.id()), 2);
+        assert_eq!(partie.sac().nombre_de_boosters(Booster::FioleDeSang), 1);
+        partie.sac.utiliser_booster(Booster::FioleDeSang);
+        let _ = loup;
         assert_eq!(
             partie.vendre_ressources(croc.id()),
             Err(ErreurMarchand::AucunMarchand)

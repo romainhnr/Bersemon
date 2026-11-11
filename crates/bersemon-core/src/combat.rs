@@ -22,6 +22,7 @@
 //!   résolution de l'attaque, puis l'effet secondaire si la cible peut le
 //!   subir.
 
+use crate::butin::Butin;
 use std::cmp::Ordering;
 use std::fmt;
 
@@ -397,6 +398,9 @@ pub struct BilanCombat {
     /// ressource après une victoire (section 14.3) : ni ceux d'un humain, ni
     /// un Apôtre, ni un mort-vivant.
     pub vaincus_sauvages: Vec<Monstre>,
+    /// Le butin de chaque vaincu sauvage qui en a un, tiré au début du
+    /// combat, dans l'ordre du groupe (section 14.3).
+    pub butins: Vec<Butin>,
     pub experience: Vec<Option<RapportExperience>>,
     pub soins: Soins,
     /// Ceux qui restent (section 11.2).
@@ -440,6 +444,7 @@ impl BilanCombat {
             equipe,
             captures: invite.captures,
             vaincus_sauvages: self.vaincus_sauvages.clone(),
+            butins: self.butins.clone(),
             experience,
             soins: invite.soins,
             filets: invite.filets,
@@ -531,6 +536,9 @@ pub struct Combat {
     /// Les monstres adverses qui ont reçu un appât, par leur position, et
     /// son niveau : il vaut pour le prochain filet lancé sur eux.
     appats_poses: Vec<(usize, Appat)>,
+    /// Ce que lâchera chaque monstre adverse, tiré au début du combat
+    /// (section 14.3) ; vide hors des combats contre des monstres sauvages.
+    butins: Vec<Option<Butin>>,
     /// Face à un Apôtre, ni fuite ni filet (section 9.4).
     contre_un_apotre: bool,
     /// Face au Démiurge, ses formes se succèdent : la seconde n'est pas
@@ -686,6 +694,7 @@ impl Combat {
             filets: Filets::default(),
             appats: Appats::default(),
             appats_poses: Vec::new(),
+            butins: Vec::new(),
             contre_un_apotre: false,
             en_deux_phases: false,
             contre_un_humain: false,
@@ -798,6 +807,31 @@ impl Combat {
             self.noter_participation();
         }
         self
+    }
+
+    /// Ce que lâchera chaque monstre adverse, dans l'ordre du groupe, tiré
+    /// au début du combat (section 14.3).
+    pub fn avec_butins(mut self, butins: Vec<Option<Butin>>) -> Self {
+        self.butins = butins;
+        self
+    }
+
+    /// Ce que lâchera ce monstre adverse, vaincu, s'il a un butin.
+    pub fn butin(&self, index: usize) -> Option<&Butin> {
+        self.butins.get(index).and_then(Option::as_ref)
+    }
+
+    /// Les monstres sauvages vaincus lâchent un butin : ni ceux d'un humain,
+    /// ni un Apôtre, ni un mort-vivant, ni le gardien de la Tour, ni un
+    /// légendaire (sections 9.5, 9.10 et 14.3).
+    pub fn lache_un_butin(&self) -> bool {
+        !self.contre_un_apotre
+            && !self.contre_un_humain
+            && !self.sans_capture
+            && !self.contre_un_gardien
+            && !self.contre_un_legendaire
+            && !self.duel
+            && !self.arene
     }
 
     /// Sans effet hors groupe.
@@ -1686,6 +1720,7 @@ impl Combat {
             filets: Filets::default(),
             appats: Appats::default(),
             appats_poses: Vec::new(),
+            butins: Vec::new(),
             contre_un_apotre: self.contre_un_apotre,
             en_deux_phases: self.en_deux_phases,
             contre_un_humain: self.contre_un_humain,
@@ -1773,6 +1808,8 @@ impl Combat {
         };
         let mut adversaires: Vec<Option<Monstre>> =
             self.adversaires.into_iter().map(Some).collect();
+        let mut butins = std::mem::take(&mut self.butins);
+        butins.resize(adversaires.len(), None);
         // En groupe, chaque capture revient à celui qui l'a faite.
         let mut captures = Vec::new();
         let mut captures_de_l_invite = Vec::new();
@@ -1811,16 +1848,18 @@ impl Combat {
             && !self.contre_un_humain
             && !self.sans_capture
             && !self.contre_un_gardien;
-        let vaincus_sauvages = adversaires
+        let (vaincus_sauvages, butins): (Vec<Monstre>, Vec<Option<Butin>>) = adversaires
             .into_iter()
-            .flatten()
-            .filter(|adversaire| sauvages && adversaire.est_ko())
-            .collect();
+            .zip(butins)
+            .filter_map(|(adversaire, butin)| Some((adversaire?, butin)))
+            .filter(|(adversaire, _)| sauvages && adversaire.est_ko())
+            .unzip();
         BilanCombat {
             issue,
             equipe: self.equipe,
             captures,
             vaincus_sauvages,
+            butins: butins.into_iter().flatten().collect(),
             experience,
             soins: self.soins,
             filets: self.filets,

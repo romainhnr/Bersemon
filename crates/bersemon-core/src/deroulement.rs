@@ -10,6 +10,7 @@
 //! Une expédition en cours ne vit qu'en mémoire : la partie n'est sauvegardée
 //! qu'au camp (section 13.9).
 
+use crate::butin::{Butin, HabiletesDuButin};
 use std::collections::VecDeque;
 use std::fmt;
 use std::time::Duration;
@@ -576,8 +577,14 @@ pub enum Evenement {
     /// potion va dans le sac (section 5.9).
     PotionTrouvee(Monstre),
     /// Après une victoire, lâchées par les monstres sauvages mis KO, une par
-    /// monstre ; elles vont dans le sac (section 14.3).
+    /// exemplaire ; elles vont dans le sac (section 14.3).
     RessourcesTrouvees(Vec<Ressource>),
+    /// Après une victoire, les butins rares lâchés, un par exemplaire ; ils
+    /// vont dans le sac (section 14.3).
+    BoostersLaches(Vec<Booster>),
+    /// Au début du combat, l'habileté Flair montre le butin de chaque
+    /// monstre sauvage qui en a un : son nom et son butin (section 14.3).
+    ButinFlaire(Vec<(String, Butin)>),
     /// Rachetées par Malvoise ; l'argent va dans le coffre.
     RessourcesVendues {
         ressource: Ressource,
@@ -3026,7 +3033,9 @@ impl EnExpedition {
             }
             Moment::MonstreRare(monstre) => self.monstre_rare(partie, monstre, choix, evenements),
             Moment::AnnonceDeCombat(combat) => match choix {
-                Choix::Poursuivre => Ok(self.engager(partie, combat, evenements)),
+                Choix::Poursuivre => {
+                    Ok(self.engager(partie, combat, &mut *contexte.aleatoire, evenements))
+                }
                 // Avant un combat d'où l'on ne fuit pas, le joueur peut encore
                 // rebrousser chemin : il rentre au camp avec ses gains, sans
                 // combattre ; l'expédition n'est pas menée au bout (section
@@ -3373,7 +3382,8 @@ impl EnExpedition {
                 return Reponse::Faite;
             }
         }
-        let vaincus = bilan.vaincus_sauvages.clone();
+        let vaincus = bilan.vaincus_sauvages.len();
+        let butins = bilan.butins.clone();
         let (captures, sac_perdu) = partie
             .conclure_combat(bilan)
             .expect("le combat rend l'équipe qu'il a reçue");
@@ -3382,12 +3392,13 @@ impl EnExpedition {
             if let Some(fouineur) = partie.fouiller_apres_une_victoire(&mut *contexte.aleatoire) {
                 evenements.push(Evenement::PotionTrouvee(fouineur));
             }
-            let parfumee = self.expedition.parfum().is_some();
-            let ressources =
-                partie.recolter_ressources(&vaincus, parfumee, &mut *contexte.aleatoire);
+            let (ressources, boosters) = partie.recolter_le_butin(&butins);
             recoltees = ressources.len();
             if !ressources.is_empty() {
                 evenements.push(Evenement::RessourcesTrouvees(ressources));
+            }
+            if !boosters.is_empty() {
+                evenements.push(Evenement::BoostersLaches(boosters));
             }
         }
         // Un monstre capturé est vaincu lui aussi (section 7), sauf celui
@@ -3400,7 +3411,7 @@ impl EnExpedition {
         faire_progresser(
             partie,
             Objectif::VaincreDesMonstresSauvages,
-            vaincus.len() + sauvages_captures,
+            vaincus + sauvages_captures,
             contexte,
             evenements,
         );
@@ -3783,7 +3794,7 @@ impl EnExpedition {
                     .avec_limite_d_obeissance(limite);
                 let combat = self.sous_le_cycle(combat);
                 evenements.push(Evenement::Rencontre(combat.clone()));
-                self.engager(partie, combat, evenements)
+                self.engager(partie, combat, &mut *contexte.aleatoire, evenements)
             }
             EvenementExpedition::Coffre {
                 potions,
@@ -3858,7 +3869,7 @@ impl EnExpedition {
                 let combat = self.sous_le_cycle(combat);
                 evenements.push(Evenement::Rencontre(combat.clone()));
                 self.ame = Some(*marchand);
-                self.engager(partie, combat, evenements)
+                self.engager(partie, combat, &mut *contexte.aleatoire, evenements)
             }
             EvenementExpedition::Pecheur {
                 pecheur,
@@ -3874,7 +3885,7 @@ impl EnExpedition {
                 let combat = self.sous_le_cycle(combat);
                 evenements.push(Evenement::Rencontre(combat.clone()));
                 self.pecheur = Some(*pecheur);
-                self.engager(partie, combat, evenements)
+                self.engager(partie, combat, &mut *contexte.aleatoire, evenements)
             }
             EvenementExpedition::ObjetDeQuete {
                 exploration,
@@ -3890,7 +3901,7 @@ impl EnExpedition {
                 let combat = self.sous_le_cycle(combat);
                 evenements.push(Evenement::Rencontre(combat.clone()));
                 self.objet_de_quete = Some(*exploration);
-                self.engager(partie, combat, evenements)
+                self.engager(partie, combat, &mut *contexte.aleatoire, evenements)
             }
             EvenementExpedition::MonstreRare(rare) => {
                 partie.noter_rencontre(&rare.monstre);
@@ -3906,7 +3917,7 @@ impl EnExpedition {
                     .avec_limite_d_obeissance(limite);
                 let combat = self.sous_le_cycle(combat);
                 evenements.push(Evenement::Rencontre(combat.clone()));
-                self.engager(partie, combat, evenements)
+                self.engager(partie, combat, &mut *contexte.aleatoire, evenements)
             }
             EvenementExpedition::Apotre(formes) => {
                 // Le récit de l'Apôtre tient lieu d'annonce de la rencontre.
@@ -4025,16 +4036,41 @@ impl EnExpedition {
         }
     }
 
+    /// Contre des monstres sauvages, leur butin se tire au début du
+    /// combat ; avec Flair dans l'équipe, le joueur le voit aussitôt
+    /// (section 14.3).
     fn engager(
         &mut self,
         partie: &mut Partie,
         combat: Combat,
+        aleatoire: &mut dyn Aleatoire,
         evenements: &mut Vec<Evenement>,
     ) -> Reponse {
         montrer_conseil(partie, Conseil::PremierCombat, evenements);
+        let combat = if combat.lache_un_butin() {
+            let parfum = self.expedition.parfum().is_some();
+            let butins = partie.tirer_les_butins(combat.adversaires(), parfum, aleatoire);
+            let flair = HabiletesDuButin::de_l_equipe(partie.collection().equipe()).flair;
+            let flaires = flaires(combat.adversaires(), &butins);
+            if flair && !flaires.is_empty() {
+                evenements.push(Evenement::ButinFlaire(flaires));
+            }
+            combat.avec_butins(butins)
+        } else {
+            combat
+        };
         self.moment = Moment::Combat(combat);
         Reponse::Faite
     }
+}
+
+/// Le nom de chaque monstre sauvage et son butin, pour l'habileté Flair.
+fn flaires(adversaires: &[Monstre], butins: &[Option<Butin>]) -> Vec<(String, Butin)> {
+    adversaires
+        .iter()
+        .zip(butins)
+        .filter_map(|(monstre, butin)| Some((monstre.nom().to_string(), butin.clone()?)))
+        .collect()
 }
 
 /// Un soin sans effet serait perdu : le joueur confirme d'abord (Q53,
@@ -4706,8 +4742,8 @@ mod tests {
         }
         // Rien en chemin ; à l'étape 4, sans tirage de sa nature : le Loup du
         // brigand, au niveau 7, non shiny, valeurs internes nulles, première
-        // habileté.
-        let tirages = vec![100, 2, 0, 0, 0, 0, 0, 0, 0];
+        // habileté ; puis son butin, sa ressource.
+        let tirages = vec![100, 2, 0, 0, 0, 0, 0, 0, 0, 100];
         let evenements = repondre_a(
             &mut deroulement,
             Choix::ContinuerLExpedition,
@@ -6730,6 +6766,42 @@ mod tests {
         );
     }
 
+    /// Section 14.3 : avec Flair dans l'équipe, le butin de chaque monstre
+    /// sauvage se voit dès le début du combat ; la victoire le donne.
+    #[test]
+    fn le_flair_montre_le_butin_que_la_victoire_donne() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let mut etat = etat_de(&partie(&contenu));
+        let mut equipe = crate::collection::Collection::new(salamandre(&contenu, 40));
+        equipe.accueillir_capture(
+            monstre_du_contenu(&contenu, "chauve-souris-de-crypte", 30)
+                .avec_habilete(crate::habilete::Habilete::Flair),
+        );
+        etat.collection = equipe;
+        let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
+        let lisiere = Choix::PartirEnExpedition(ZoneId::new("lisiere"));
+        let evenements = franchir(&mut deroulement, lisiere, Vec::new(), &contenu, &depot, 1);
+        let flaires = evenements
+            .iter()
+            .find_map(|evenement| match evenement {
+                Evenement::ButinFlaire(flaires) => Some(flaires.clone()),
+                _ => None,
+            })
+            .expect("le flair montre le butin");
+        let ressources: u32 = evenements
+            .iter()
+            .map(|evenement| match evenement {
+                Evenement::RessourcesTrouvees(trouvees) => trouvees.len() as u32,
+                Evenement::BoostersLaches(boosters) => boosters.len() as u32,
+                _ => 0,
+            })
+            .sum();
+        // Chaque monstre vaincu, aucun n'étant capturé, lâche son butin.
+        let attendus: u32 = flaires.iter().map(|(_, butin)| butin.nombre()).sum();
+        assert_eq!(ressources, attendus);
+    }
+
     /// Section 9.5 : entre deux étapes, seul, la dernière étape franchie
     /// devient le raccourci ; la descente suivante peut reprendre à l'étape
     /// d'après.
@@ -6915,7 +6987,7 @@ mod tests {
         .louer(1);
         partie.collection_mut().accueillir_capture(cerf);
         let mut deroulement = au_camp(partie, &contenu, &depot);
-        let mut aleatoire = GenerateurAleatoire::new(3);
+        let mut aleatoire = GenerateurAleatoire::new(4);
         let mut finies = Vec::new();
         let mut retours = 0;
         for _ in 0..2_000 {
@@ -8118,14 +8190,14 @@ mod tests {
         repondre_sans_tirage(&mut deroulement, Choix::ReprendreLaPartie, &contenu, &depot).unwrap();
         // La première étape, un combat : un monstre (1), la première espèce
         // de la nuit (0), niveau 5 (5), non shiny (2), valeurs internes,
-        // habileté (0).
+        // habileté (0), puis son butin, sa ressource (100).
         let evenements = repondre_avec_tirages(
             &mut deroulement,
             Choix::PartirEnExpedition(ZoneId::new("lisiere")),
             &contenu,
             &depot,
             Horodatage::depuis_secondes(2 * 3_600),
-            vec![1, 0, 5, 2, 0, 0, 0, 0, 0, 0, 0],
+            vec![1, 0, 5, 2, 0, 0, 0, 0, 0, 0, 0, 100],
         )
         .unwrap();
         assert_eq!(
@@ -8225,14 +8297,15 @@ mod tests {
         let mut deroulement = Deroulement::demarrer(Ok(Some(partie(&contenu))));
         repondre_sans_tirage(&mut deroulement, Choix::ReprendreLaPartie, &contenu, &depot).unwrap();
         // La première étape, un combat : un monstre, la première espèce du
-        // moment, niveau 5, non shiny, valeurs internes, habileté.
+        // moment, niveau 5, non shiny, valeurs internes, habileté, puis son
+        // butin.
         let evenements = repondre_avec_tirages(
             &mut deroulement,
             Choix::PartirEnExpedition(ZoneId::new("lisiere")),
             &contenu,
             &depot,
             maintenant,
-            vec![1, 0, 5, 2, 0, 0, 0, 0, 0, 0, 0],
+            vec![1, 0, 5, 2, 0, 0, 0, 0, 0, 0, 0, 100],
         )
         .unwrap();
         assert!(evenements.contains(&Evenement::MeteoAuDepart(meteo)));
@@ -8570,14 +8643,15 @@ mod tests {
         let lisiere = Choix::PartirEnExpedition(ZoneId::new("lisiere"));
         franchir(&mut deroulement, lisiere, Vec::new(), &contenu, &depot, 1);
         // Rien en chemin ; à l'étape 2, sans tirage de sa nature : le Loup,
-        // non shiny, valeurs internes nulles, première habileté.
+        // non shiny, valeurs internes nulles, première habileté ; puis son
+        // butin, sa ressource.
         let evenements = repondre_a(
             &mut deroulement,
             Choix::ContinuerLExpedition,
             &contenu,
             &depot,
             0,
-            vec![100, 2, 0, 0, 0, 0, 0, 0, 0],
+            vec![100, 2, 0, 0, 0, 0, 0, 0, 0, 100],
         )
         .unwrap();
         assert!(

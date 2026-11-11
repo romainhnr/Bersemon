@@ -463,6 +463,20 @@ Les capsules de la Lisière servent aux monstres de départ, dont l'espèce appr
 
 Ajoutées à l'étape 28, le 19/10/2026 (gamedesign.md, section 5.9). Chaque espèce a 2 habiletés possibles ; un monstre tire la sienne à sa création. La première de la liste est donnée aux monstres des sauvegardes antérieures. La répartition suit le profil de chaque espèce ; elle est à ajuster en jouant.
 
+Changé le 11/11/2026, pour l'étape 193 (gamedesign.md, sections 5.9 et 14.3 ; choix des espèces proposé par Claude sans validation, Q123) : trois habiletés du butin remplacent une habileté de quelques espèces, choisies pour leur thème de charognard, d'oiseau attiré par ce qui brille ou de chasseur à l'odorat. Le tableau ci-dessous donne l'état d'avant ; les espèces changées sont :
+
+| Espèce | Habiletés possibles depuis l'étape 193 |
+|---|---|
+| Loup, Warg, Loup-garou | Dépeceur, Fouineur (au lieu de Traqueur, Fouineur) |
+| Goule | Dépeceur, Férocité (au lieu d'Instinct, Férocité) |
+| Vautour des charniers | Dépeceur, Pillard (au lieu de Traqueur, Pillard) |
+| Corbeau, Corbeau des gibets, Augure | Pillard, Fortune (au lieu de Pillard, Éclaireur) |
+| Goéland charognard | Célérité, Fortune (au lieu de Célérité, Traqueur) |
+| Chauve-souris de crypte | Célérité, Flair (au lieu de Célérité, Éclaireur) |
+| Œil errant | Instinct, Flair (au lieu d'Instinct, Éclaireur) |
+
+Un monstre qui avait déjà l'habileté remplacée la garde ; une capsule d'habileté le fait passer à l'autre habileté actuelle de son espèce.
+
 | Espèce | Habiletés possibles |
 |---|---|
 | Salamandre | Affinité, Sorcellerie |

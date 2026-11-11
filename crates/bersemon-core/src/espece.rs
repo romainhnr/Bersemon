@@ -2,6 +2,7 @@
 //! commun (sections 5.1 et 7).
 
 use crate::attaque::{Attaque, AttaqueId};
+use crate::butin::ButinRare;
 use crate::evolution::Evolution;
 use crate::habilete::Habilete;
 use crate::jour_et_nuit::Activite;
@@ -93,6 +94,9 @@ pub struct Espece {
     /// Lâchée par un monstre sauvage de l'espèce mis KO (section 14.3). En
     /// boîte, pour que chaque monstre, qui porte son espèce, reste léger.
     ressource: Option<Box<Ressource>>,
+    /// Ce que lâche parfois un monstre sauvage de l'espèce à la place de sa
+    /// ressource (section 14.3).
+    butin_rare: Option<ButinRare>,
     /// En boîte, pour la même raison (section 5.4).
     evolution: Option<Box<Evolution>>,
     /// Celle de sa famille d'évolution, que seul le Rite du sang mêlé
@@ -129,6 +133,7 @@ impl Espece {
             rarete: Rarete::Commune,
             habiletes: Vec::new(),
             ressource: None,
+            butin_rare: None,
             evolution: None,
             attaque_d_oeuf: None,
             activite: None,
@@ -172,6 +177,16 @@ impl Espece {
 
     pub fn ressource(&self) -> Option<&Ressource> {
         self.ressource.as_deref()
+    }
+
+    pub fn avec_butin_rare(mut self, butin_rare: Option<ButinRare>) -> Self {
+        self.butin_rare = butin_rare;
+        self
+    }
+
+    /// `None` pour une espèce qui ne lâche que sa ressource, ou rien.
+    pub fn butin_rare(&self) -> Option<&ButinRare> {
+        self.butin_rare.as_ref()
     }
 
     pub fn avec_rarete(mut self, rarete: Rarete) -> Self {

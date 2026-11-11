@@ -15,6 +15,7 @@ pub mod atelier;
 pub mod attaque;
 pub mod beherit;
 pub mod booster;
+pub mod butin;
 pub mod capsule;
 pub mod capture;
 pub mod catalogue;
