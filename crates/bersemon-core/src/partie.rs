@@ -2701,6 +2701,12 @@ impl Partie {
     /// Les zones légendaires s'ouvrent à la chute du Démiurge (section
     /// 9.10).
     pub fn zones_legendaires_ouvertes(&self) -> bool {
+        self.demiurge_vaincu()
+    }
+
+    /// La fin de l'aventure, après laquelle les monstres de départ se
+    /// montrent dans certaines annexes (section 9.9).
+    pub fn demiurge_vaincu(&self) -> bool {
         self.beherit == EtatDuBeherit::DemiurgeVaincu
     }
 

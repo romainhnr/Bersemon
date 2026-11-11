@@ -28,6 +28,11 @@ use crate::stats::ValeursInternes;
 /// (section 9.2).
 pub const CHANCES_MONSTRE_CACHE: u32 = 20;
 
+/// Une fois le Démiurge vaincu, 1 monstre rare sur ce nombre est l'un de
+/// ceux d'après la fin, là où il y en a : les monstres de départ, dans
+/// certaines annexes (section 9.9, proposé par Claude, Q124).
+pub const CHANCES_D_UN_RARE_D_APRES_LA_FIN: u32 = 4;
+
 /// Identifiant stable d'une zone, enregistré dans la sauvegarde pour savoir
 /// quelles zones sont explorées.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -159,6 +164,9 @@ pub struct Zone {
     /// Plus de coffres et de monstres rares dans une zone annexe (section
     /// 9.9).
     repartition: Repartition,
+    /// Ceux qui ne s'y montrent qu'une fois le Démiurge vaincu (section
+    /// 9.9).
+    rares_d_apres_la_fin: Vec<EspeceRare>,
 }
 
 impl Zone {
@@ -220,7 +228,22 @@ impl Zone {
             lieu_d_invocation: false,
             meteos: Vec::new(),
             repartition: Repartition::DE_LA_CARTE,
+            rares_d_apres_la_fin: Vec::new(),
         })
+    }
+
+    /// Vérifiés comme les autres espèces de la zone.
+    pub fn avec_rares_d_apres_la_fin(mut self, rares: Vec<EspeceRare>) -> Result<Self, ErreurZone> {
+        let niveau_le_plus_haut = niveau_avec(self.niveau_max, NIVEAUX_DE_PLUS_MAX);
+        for rare in &rares {
+            verifier_espece(&rare.espece, self.niveau_min, niveau_le_plus_haut)?;
+        }
+        self.rares_d_apres_la_fin = rares;
+        Ok(self)
+    }
+
+    pub fn rares_d_apres_la_fin(&self) -> &[EspeceRare] {
+        &self.rares_d_apres_la_fin
     }
 
     /// Celle d'une zone annexe : 60 % de combats, 30 % de coffres, 10 % de
@@ -439,16 +462,20 @@ impl Zone {
         jour_ou_nuit: Option<JourOuNuit>,
         aleatoire: &mut dyn Aleatoire,
     ) -> Option<MonstreRare> {
-        self.generer_monstre_rare_attire(jour_ou_nuit, None, aleatoire)
+        self.generer_monstre_rare_attire(jour_ou_nuit, None, false, aleatoire)
     }
 
     /// Avec un parfum, 3 niveaux de plus ; le parfum d'une espèce rare de la
     /// zone la fait venir à coup sûr, sans tirage de l'espèce, après la
-    /// chance du monstre caché (section 9.2).
+    /// chance du monstre caché (section 9.2). `apres_la_fin` : le Démiurge
+    /// est vaincu, et un rare d'après la fin peut venir à la place de
+    /// l'espèce rare, avec un tirage de plus, sa chance, puis l'espèce s'il
+    /// y en a plusieurs.
     pub fn generer_monstre_rare_attire(
         &self,
         jour_ou_nuit: Option<JourOuNuit>,
         parfum: Option<&Parfum>,
+        apres_la_fin: bool,
         aleatoire: &mut dyn Aleatoire,
     ) -> Option<MonstreRare> {
         let attiree = parfum.and_then(Parfum::espece_attiree).and_then(|attiree| {
@@ -461,6 +488,13 @@ impl Zone {
             _ if self.rares.is_empty() => return None,
             _ => match attiree {
                 Some(attiree) => attiree,
+                None if apres_la_fin
+                    && !self.rares_d_apres_la_fin.is_empty()
+                    && aleatoire.tirer(1..=CHANCES_D_UN_RARE_D_APRES_LA_FIN) == 1 =>
+                {
+                    &self.rares_d_apres_la_fin
+                        [tirer_position(self.rares_d_apres_la_fin.len(), aleatoire)]
+                }
                 None => &self.rares[tirer_position(self.rares.len(), aleatoire)],
             },
         };
@@ -706,6 +740,7 @@ mod tests {
             .generer_monstre_rare_attire(
                 None,
                 Some(&Parfum::Espece(espece("basilic"))),
+                false,
                 &mut AleatoireScripte::new([2, 0, 0, 0, 0, 0, 0]),
             )
             .unwrap();
@@ -815,6 +850,43 @@ mod tests {
         let mut aleatoire = AleatoireScripte::new([2, 2, 0, 0, 0, 0, 0, 0]);
         let monstre = zone.generer_monstre_rare(None, &mut aleatoire).unwrap();
         assert_eq!(monstre.monstre.espece().id().as_str(), "cerf-blanc");
+    }
+
+    /// Section 9.9 : les monstres de départ des annexes, une fois le
+    /// Démiurge vaincu.
+    #[test]
+    fn un_rare_d_apres_la_fin_ne_vient_qu_apres_le_demiurge() {
+        let rare = EspeceRare {
+            espece: espece("cerf-blanc"),
+            pacifique: true,
+        };
+        let depart = EspeceRare {
+            espece: espece("crapaud"),
+            pacifique: true,
+        };
+        let zone = zone((5, 5), 1, vec![espece("loup")], vec![rare])
+            .unwrap()
+            .avec_rares_d_apres_la_fin(vec![depart])
+            .unwrap();
+        let espece_tiree = |apres_la_fin: bool, tirages: Vec<u32>| {
+            let mut aleatoire = AleatoireScripte::new(tirages);
+            zone.generer_monstre_rare_attire(None, None, apres_la_fin, &mut aleatoire)
+                .unwrap()
+                .monstre
+                .espece()
+                .id()
+                .as_str()
+                .to_string()
+        };
+        // Avant la fin, sans tirage de plus : l'espèce rare de la zone.
+        assert_eq!(espece_tiree(false, vec![2, 0, 0, 0, 0, 0, 0]), "cerf-blanc");
+        // Après, 1 sur 4 : le monstre de départ, puis son shiny et ses
+        // valeurs internes ; sinon l'espèce rare de la zone.
+        assert_eq!(espece_tiree(true, vec![1, 2, 0, 0, 0, 0, 0, 0]), "crapaud");
+        assert_eq!(
+            espece_tiree(true, vec![2, 2, 0, 0, 0, 0, 0, 0]),
+            "cerf-blanc"
+        );
     }
 
     #[test]

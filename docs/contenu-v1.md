@@ -116,6 +116,8 @@ Attaques apprises :
 - Mandragore, des attaques des deux catégories et deux effets de statut, pour user l'adversaire : Coup de racine (niv. 1), Feuille tranchante (niv. 3), Secousse (niv. 7), Ronces (niv. 10), Spores putrides (niv. 14). Depuis l'étape 117 (gamedesign.md, section 5.3), Secousse remplace le Cri strident au niveau 7, pour la Mandragore comme pour la Mandragore ancienne et l'Arbre-pendu, qui suivent cette liste.
 - Chat noir, surtout des attaques physiques : Griffure (niv. 1), Coup sournois (niv. 3), Feulement (niv. 7), Morsure (niv. 10), Coup de grâce (niv. 14). Griffure et Morsure sont aussi celles du Loup.
 
+Depuis l'étape 201 (11/11/2026), une fois le Démiurge vaincu, chaque monstre de départ se montre aussi, rare et pacifique, dans deux annexes (gamedesign.md, section 9.9) : Salamandre au Cœur du volcan et au Filon écarlate, Crapaud à l'Épave du Léviathan et aux Racines du monde, Mandragore à l'Autel des ronces et au Jardin de la Reine, Chat noir à la Crypte des saints et à la Bibliothèque interdite.
+
 Au niveau 5, chaque monstre de départ connaît 2 attaques : une de type Normal et une de son type. La Mandragore est le départ le plus exigeant (section 5), ce qui est assumé.
 
 ### Monstres communs

@@ -448,6 +448,21 @@ pub fn texte_du_conseil(conseil: Conseil) -> &'static str {
 /// codex.
 const NOMBRE_DE_DEPARTS: usize = 4;
 
+/// Section 9.9 : une fois le Démiurge vaincu, chaque monstre de départ se
+/// montre, pacifique et rare, dans deux annexes choisies selon son type,
+/// pour que le codex se complète sans dépendre des échanges (proposé par
+/// Claude, Q124).
+const DEPARTS_D_APRES_LA_FIN: [(&str, &str); 8] = [
+    ("coeur-du-volcan", "salamandre"),
+    ("filon-ecarlate", "salamandre"),
+    ("epave-du-leviathan", "crapaud"),
+    ("racines-du-monde", "crapaud"),
+    ("autel-des-ronces", "mandragore"),
+    ("jardin-de-la-reine", "mandragore"),
+    ("crypte-des-saints", "chat-noir"),
+    ("bibliotheque-interdite", "chat-noir"),
+];
+
 pub struct ContenuV1 {
     especes: Vec<Espece>,
     zones: Vec<Zone>,
@@ -948,6 +963,17 @@ impl ContenuV1 {
         let annexe = |zone: Result<Zone, _>, de: &Zone, meteos: Vec<Meteo>, decouverte: &str| {
             zone.and_then(|zone: Zone| zone.avec_repartition(Repartition::DES_ANNEXES))
                 .and_then(|zone| zone.avec_monstre_cache(schnoz()))
+                .and_then(|zone| {
+                    let departs = DEPARTS_D_APRES_LA_FIN
+                        .iter()
+                        .filter(|(annexe, _)| *annexe == zone.id().as_str())
+                        .map(|(_, espece)| EspeceRare {
+                            espece: trouver(espece),
+                            pacifique: true,
+                        })
+                        .collect();
+                    zone.avec_rares_d_apres_la_fin(departs)
+                })
                 .map(|zone| Annexe::new(zone.avec_meteos(meteos), de.id().clone(), decouverte))
         };
         let epave = annexe(
@@ -9899,6 +9925,33 @@ mod tests {
     use super::*;
     use crate::monstre::Monstre;
     use crate::stats::ValeursInternes;
+
+    /// Section 9.9 : chaque monstre de départ se montre dans deux annexes
+    /// après la fin.
+    #[test]
+    fn chaque_monstre_de_depart_revient_dans_deux_annexes() {
+        let contenu = ContenuV1::new();
+        for depart in contenu.especes_de_depart() {
+            let annexes = contenu
+                .annexes()
+                .iter()
+                .filter(|annexe| {
+                    annexe
+                        .zone()
+                        .rares_d_apres_la_fin()
+                        .iter()
+                        .any(|rare| rare.espece.id() == depart.id() && rare.pacifique)
+                })
+                .count();
+            assert_eq!(annexes, 2, "{}", depart.id().as_str());
+        }
+        let toutes: usize = contenu
+            .annexes()
+            .iter()
+            .map(|annexe| annexe.zone().rares_d_apres_la_fin().len())
+            .sum();
+        assert_eq!(toutes, DEPARTS_D_APRES_LA_FIN.len());
+    }
 
     #[test]
     fn chaque_ressource_a_un_rang_et_un_seul() {

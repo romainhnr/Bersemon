@@ -33,12 +33,21 @@ pub fn lieux_du_journal<'c>(partie: &Partie, contenu: &'c ContenuV1) -> Vec<Lieu
         .iter()
         .map(|annexe| annexe.zone().id().as_str())
         .collect();
+    // Les monstres de départ ne se montrent dans les annexes qu'une fois le
+    // Démiurge vaincu (section 9.9) : le journal ne les y compte qu'alors.
+    let apres_la_fin = partie.demiurge_vaincu();
     let especes_de = |zone: &'c bersemon_core::zone::Zone| -> Vec<&'c Espece> {
         let mut especes: Vec<&'c Espece> = Vec::new();
+        let d_apres_la_fin = zone
+            .rares_d_apres_la_fin()
+            .iter()
+            .filter(|_| apres_la_fin)
+            .map(|rare| &rare.espece);
         for espece in zone
             .especes()
             .iter()
             .chain(zone.rares().iter().map(|rare| &rare.espece))
+            .chain(d_apres_la_fin)
         {
             if !especes.iter().any(|deja| deja.id() == espece.id()) {
                 especes.push(espece);

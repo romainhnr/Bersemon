@@ -1802,7 +1802,8 @@ impl EnJeu {
                         }
                     })?
                     .avec_jour_ou_nuit(JourOuNuit::a(contexte.maintenant))
-                    .avec_meteo(Meteo::de_la_zone(zone, contexte.maintenant));
+                    .avec_meteo(Meteo::de_la_zone(zone, contexte.maintenant))
+                    .apres_la_fin(self.partie.demiurge_vaincu());
                 // Le gardien d'un objet de quête l'attend dans sa zone, carte
                 // ou annexe (section 13.13).
                 let expedition = match self

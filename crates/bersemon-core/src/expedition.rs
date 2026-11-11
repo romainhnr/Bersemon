@@ -267,6 +267,9 @@ pub struct Expedition {
     /// événement tiré est alors en chemin s'il n'a pas été suivi d'une étape
     /// (section 9.2).
     en_chemin: bool,
+    /// Le Démiurge était vaincu au départ : les rares d'après la fin de la
+    /// zone peuvent venir (section 9.9).
+    apres_la_fin: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -301,6 +304,7 @@ impl Expedition {
             meteo: None,
             parfum: None,
             en_chemin: false,
+            apres_la_fin: false,
         }
     }
 
@@ -423,6 +427,11 @@ impl Expedition {
     /// l'expédition (section 9.7).
     pub(crate) fn avec_meteo(mut self, meteo: Option<Meteo>) -> Self {
         self.meteo = meteo;
+        self
+    }
+
+    pub(crate) fn apres_la_fin(mut self, apres_la_fin: bool) -> Self {
+        self.apres_la_fin = apres_la_fin;
         self
     }
 
@@ -599,7 +608,12 @@ impl Expedition {
         if tirage <= repartition.coffre + rare {
             return self
                 .zone
-                .generer_monstre_rare_attire(self.jour_ou_nuit, self.parfum.as_ref(), aleatoire)
+                .generer_monstre_rare_attire(
+                    self.jour_ou_nuit,
+                    self.parfum.as_ref(),
+                    self.apres_la_fin,
+                    aleatoire,
+                )
                 .map(EvenementExpedition::MonstreRare);
         }
         None
