@@ -345,6 +345,8 @@ pub enum Cle {
     RendreLeMonstreLoue,
     /// Une pierre d'évolution, chez Malvoise (section 5.4).
     AcheterPierre(PierreDEvolution),
+    /// Menu des objets d'évolution de l'étal (section 5.4).
+    AcheterObjetDEvolution,
     /// Menu des attaques à apprendre par ce monstre, en oubliant celle en
     /// position `oubliee` s'il en connaît déjà 4.
     Apprendre {
@@ -615,6 +617,7 @@ impl Cle {
             Cle::LouerMonstre => jouer(Choix::LouerMonstre(EspeceId::new(valeur?))),
             Cle::RendreLeMonstreLoue => jouer(Choix::RendreLeMonstreLoue),
             Cle::AcheterPierre(pierre) => jouer(Choix::AcheterPierres(*pierre, 1)),
+            Cle::AcheterObjetDEvolution => jouer(Choix::AcheterPierres(lire_pierre(valeur?)?, 1)),
             Cle::Apprendre {
                 emplacement,
                 oubliee,
@@ -852,6 +855,7 @@ impl Cle {
             Cle::RendreLeMonstreLoue => "rendre-le-monstre-loue".to_string(),
             Cle::RendreLeHerosShiny => "rendre-le-heros-shiny".to_string(),
             Cle::AcheterPierre(pierre) => format!("acheter-pierre:{}", pierre_en_texte(*pierre)),
+            Cle::AcheterObjetDEvolution => "acheter-objet-d-evolution".to_string(),
             Cle::VendreCeMonstre(emplacement) => {
                 format!("vendre-monstre:{}", emplacement_en_texte(*emplacement))
             }
@@ -948,6 +952,7 @@ impl Cle {
             "oui" => Cle::Oui,
             "non" => Cle::Non,
             "partir" => Cle::Partir,
+            "acheter-objet-d-evolution" => Cle::AcheterObjetDEvolution,
             "partir-ailleurs" => Cle::PartirAilleurs,
             "vue:camp" => Cle::Afficher(Vue::Camp),
             // La liste des monstres a disparu du camp : un bouton d'un ancien
@@ -1262,11 +1267,17 @@ fn lire_place(texte: &str) -> Option<PlaceDEquipement> {
 }
 
 /// Nom fixé ici, et non le nom Rust, comme dans la sauvegarde.
-fn pierre_en_texte(pierre: PierreDEvolution) -> &'static str {
+pub fn pierre_en_texte(pierre: PierreDEvolution) -> &'static str {
     match pierre {
         PierreDEvolution::Braise => "braise",
         PierreDEvolution::Lune => "lune",
-        PierreDEvolution::ChaineDAllegeance => "chaine-d-allegeance",
+        PierreDEvolution::Nuit => "nuit",
+        PierreDEvolution::Soleil => "soleil",
+        PierreDEvolution::Orage => "orage",
+        PierreDEvolution::Pluie => "pluie",
+        PierreDEvolution::Chaude => "chaude",
+        PierreDEvolution::Brumes => "brumes",
+        PierreDEvolution::ChaineDeLien => "chaine-d-allegeance",
     }
 }
 
@@ -1587,6 +1598,7 @@ mod tests {
             Cle::Afficher(Vue::Achats),
             Cle::Afficher(Vue::Capsules),
             Cle::AcheterPierre(PierreDEvolution::Braise),
+            Cle::AcheterObjetDEvolution,
             Cle::AcheterPierre(PierreDEvolution::Lune),
             Cle::Apprendre {
                 emplacement: Emplacement::Camp(29),

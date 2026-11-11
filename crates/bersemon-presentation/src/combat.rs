@@ -675,7 +675,7 @@ mod tests {
             .collect();
         assert_eq!(
             suite[0],
-            "Évolution : Warg dès le niveau 16, après un combat de nuit"
+            "Évolution : Warg dès le niveau 16, après un combat de nuit, ou avec une pierre de nuit"
         );
         assert_eq!(suite[1], "Capsules d'attaque possibles :");
         assert!(
@@ -691,7 +691,7 @@ mod tests {
         let fiche_du_basilic = fiche_complete(&basilic);
         assert!(
             fiche_du_basilic.contains(
-                &"Évolution : Basilic royal dès le niveau 22, après un combat sous la canicule"
+                &"Évolution : Basilic royal dès le niveau 22, après un combat sous la canicule, ou avec une pierre chaude"
                     .to_string()
             ),
             "{fiche_du_basilic:?}"
@@ -705,7 +705,7 @@ mod tests {
         };
         assert_eq!(
             fiche("armure-hantee"),
-            "Évolution : Chevalier noir dès le niveau 18, en gagnant un niveau dans la zone Vallée des Brumes"
+            "Évolution : Chevalier noir dès le niveau 18, en gagnant un niveau dans la zone Vallée des Brumes, ou avec une pierre des brumes"
         );
         assert_eq!(
             fiche("squelette"),
@@ -730,18 +730,18 @@ mod tests {
         let mut codex = Codex::default();
         assert_eq!(
             evolution("loup", &codex, &[]),
-            "Évolution : ??? dès le niveau 16, après un combat de nuit"
+            "Évolution : ??? dès le niveau 16, après un combat de nuit, ou avec une pierre de nuit"
         );
         // Rencontrée ne suffit pas : il faut l'avoir capturée.
         codex.noter_rencontre(&EspeceId::new("warg"));
         assert_eq!(
             evolution("loup", &codex, &[]),
-            "Évolution : ??? dès le niveau 16, après un combat de nuit"
+            "Évolution : ??? dès le niveau 16, après un combat de nuit, ou avec une pierre de nuit"
         );
         codex.noter_capture(&EspeceId::new("warg"));
         assert_eq!(
             evolution("loup", &codex, &[]),
-            "Évolution : Warg dès le niveau 16, après un combat de nuit"
+            "Évolution : Warg dès le niveau 16, après un combat de nuit, ou avec une pierre de nuit"
         );
         assert_eq!(
             evolution("squelette", &codex, &[]),

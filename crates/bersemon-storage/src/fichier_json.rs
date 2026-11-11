@@ -1702,7 +1702,7 @@ mod tests {
 
     #[test]
     fn pierre_inconnue() {
-        let texte = texte_de_partie().replace("\"lune\"", "\"soleil\"");
+        let texte = texte_de_partie().replace("\"lune\"", "\"etoile\"");
         assert!(matches!(
             charger_texte(&texte),
             Err(ErreurSauvegarde::Incoherente(_))

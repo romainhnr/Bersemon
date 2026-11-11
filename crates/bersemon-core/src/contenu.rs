@@ -4920,7 +4920,7 @@ enum FicheCondition {
     Moment(JourOuNuit, u8),
     /// Niveau, sous une météo (section 9.7).
     Meteo(Meteo, u8),
-    /// Reçu d'un autre joueur, ou avec une Chaîne d'allégeance (section
+    /// Reçu d'un autre joueur, ou avec une Chaîne de lien (section
     /// 5.4).
     Echange,
 }
@@ -4937,7 +4937,7 @@ const fn par_pierre(
     })
 }
 
-/// Reçu d'un autre joueur, ou avec une Chaîne d'allégeance, à tout niveau
+/// Reçu d'un autre joueur, ou avec une Chaîne de lien, à tout niveau
 /// (section 5.4).
 const fn par_echange(vers: &'static str, attaque: &'static str) -> Option<FicheEvolution> {
     Some(FicheEvolution {
@@ -7542,11 +7542,34 @@ fn creer_evolution(fiche: &FicheEvolution) -> Evolution {
         },
         FicheCondition::Echange => ConditionEvolution::Echange,
     };
-    Evolution::new(
+    // Une pierre simule chaque condition de moment, de météo ou de lieu
+    // (section 5.4) ; les météos qu'aucune évolution ne demande n'en ont
+    // pas.
+    let substitution = match &condition {
+        ConditionEvolution::Moment { jour_ou_nuit, .. } => Some(match jour_ou_nuit {
+            JourOuNuit::Nuit => PierreDEvolution::Nuit,
+            JourOuNuit::Jour => PierreDEvolution::Soleil,
+        }),
+        ConditionEvolution::Meteo { meteo, .. } => match meteo {
+            Meteo::Tempete => Some(PierreDEvolution::Orage),
+            Meteo::Pluie => Some(PierreDEvolution::Pluie),
+            Meteo::Canicule => Some(PierreDEvolution::Chaude),
+            _ => None,
+        },
+        ConditionEvolution::Lieu { zone, .. } if zone.as_str() == "vallee" => {
+            Some(PierreDEvolution::Brumes)
+        }
+        _ => None,
+    };
+    let evolution = Evolution::new(
         EspeceId::new(fiche.vers),
         condition,
         AttaqueId::new(fiche.attaque),
-    )
+    );
+    match substitution {
+        Some(pierre) => evolution.avec_pierre_de_substitution(pierre),
+        None => evolution,
+    }
 }
 
 /// Section 9 de docs/contenu-v1.md : amélioration, niveau atteint,

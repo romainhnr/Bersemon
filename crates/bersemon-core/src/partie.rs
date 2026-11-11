@@ -30,7 +30,7 @@ use crate::combat::{BilanCombat, Combat, Cote, ErreurCombat, Issue, Membre, Regl
 use crate::equipement::{ErreurEquipement, ObjetDEquipement, ObjetDEquipementId, PlaceDEquipement};
 use crate::espece::{Espece, EspeceId, Rarete};
 use crate::evolution::{
-    Circonstances, ErreurEvolution, ResultatEvolution, evolution_possible, faire_evoluer,
+    Circonstances, ErreurEvolution, Evolution, ResultatEvolution, evolution_possible, faire_evoluer,
 };
 use crate::expedition::{ErreurExpedition, Expedition, RencontreDeLAme, Tresor};
 use crate::expedition_automatique::{
@@ -1603,12 +1603,18 @@ impl Partie {
             .map_err(ErreurEvolution::Collection)?;
         let evolution = monstre.espece().evolution();
         // Reçu d'un autre joueur, il n'a pas besoin de la Chaîne
-        // d'allégeance (section 5.4).
+        // de lien (section 5.4).
         let pierre = evolution
             .and_then(|evolution| evolution.pierre())
             .filter(|_| !monstre.evolue_par_echange());
         let vers = match pierre {
             Some(pierre) => {
+                // Une pierre qui simule le moment, la météo ou le lieu ne
+                // dispense pas du niveau (section 5.4).
+                let niveau_requis = evolution.and_then(Evolution::niveau_requis);
+                if niveau_requis.is_some_and(|niveau| monstre.niveau() < niveau) {
+                    return Err(ErreurEvolution::ImpossiblePourLInstant);
+                }
                 if self.nombre_de_pierres(pierre) == 0 {
                     return Err(ErreurEvolution::PierreManquante(pierre));
                 }
@@ -3622,7 +3628,7 @@ pub(crate) mod tests {
     }
 
     /// Section 5.4 : reçu d'un autre joueur, l'Aspic évolue au camp sans
-    /// Chaîne d'allégeance ; sinon, il lui en faut une, consommée.
+    /// Chaîne de lien ; sinon, il lui en faut une, consommée.
     #[test]
     fn l_aspic_evolue_par_echange_ou_avec_une_chaine() {
         let contenu = crate::contenu::ContenuV1::new();
@@ -3635,7 +3641,7 @@ pub(crate) mod tests {
         .unwrap();
         let mut seul = partie();
         seul.collection.accueillir_capture(aspic.clone());
-        let chaine = PierreDEvolution::ChaineDAllegeance;
+        let chaine = PierreDEvolution::ChaineDeLien;
         assert_eq!(
             seul.estimer_evolution(Emplacement::Equipe(1), &contenu),
             Err(ErreurEvolution::PierreManquante(chaine))

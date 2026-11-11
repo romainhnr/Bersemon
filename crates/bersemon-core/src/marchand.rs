@@ -41,13 +41,21 @@ pub const PRIX_CAPSULE_D_HABILETE: u32 = 200;
 pub const PRIX_PIERRE_D_EVOLUTION: u32 = 300;
 /// En pièces d'argent : elle fait évoluer les formes les plus fortes
 /// (section 5.4, Q122).
-pub const PRIX_DE_LA_CHAINE_D_ALLEGEANCE: u32 = 500;
+pub const PRIX_DE_LA_CHAINE_DE_LIEN: u32 = 500;
 
 /// Malvoise vend tous les objets d'évolution (section 5.4).
 pub fn prix_de_la_pierre(pierre: PierreDEvolution) -> u32 {
     match pierre {
         PierreDEvolution::Braise | PierreDEvolution::Lune => PRIX_PIERRE_D_EVOLUTION,
-        PierreDEvolution::ChaineDAllegeance => PRIX_DE_LA_CHAINE_D_ALLEGEANCE,
+        PierreDEvolution::ChaineDeLien => PRIX_DE_LA_CHAINE_DE_LIEN,
+        // Les pierres qui simulent une condition coûtent comme les autres
+        // (hypothèse retenue, Q123).
+        PierreDEvolution::Nuit
+        | PierreDEvolution::Soleil
+        | PierreDEvolution::Orage
+        | PierreDEvolution::Pluie
+        | PierreDEvolution::Chaude
+        | PierreDEvolution::Brumes => PRIX_PIERRE_D_EVOLUTION,
     }
 }
 

@@ -51,12 +51,12 @@ pub fn coffre(partie: &Partie) -> Question {
     lignes.extend(menu(
         Cle::SortirRessourcesDuCoffre(0),
         "Prendre d'autres objets dans le coffre",
-        options_d_objets(partie.coffre_du_camp()),
+        options_d_objets(partie.coffre_du_camp(), true),
     ));
     lignes.extend(menu(
         Cle::RangerRessourcesAuCoffre(0),
         "Ranger d'autres objets dans le coffre",
-        options_d_objets(partie.sac()),
+        options_d_objets(partie.sac(), false),
     ));
     let mut boutons = Vec::new();
     if !partie.coffre_du_camp().ressources().is_empty() || !partie.sac().ressources().is_empty() {
@@ -206,17 +206,16 @@ pub fn ressources(partie: &Partie) -> Question {
     }
 }
 
-/// Un lot de 5 ou tous pour chaque filet, un ou tous pour chaque appât, une
-/// ou toutes pour chaque pierre, tous ceux d'une sorte pour chaque booster,
-/// et tous les Philtres chromatiques : avec les trois filets, les trois
-/// appâts, les trois objets d'évolution et les six boosters du contenu, 25
-/// options au plus, la limite d'un menu (sections 5.4, 11.2, 13.7 et 14.3).
-fn options_d_objets(inventaire: &Inventaire) -> Vec<OptionDeMenu> {
+/// Un lot de 5 ou tous pour chaque filet, tous ceux d'une sorte pour chaque
+/// appât, chaque booster et chaque objet d'évolution, et tous les Philtres
+/// chromatiques : avec les trois filets, les trois appâts, les six boosters
+/// et les neuf objets d'évolution du contenu, 25 options au plus, la limite
+/// d'un menu (sections 5.4, 11.2, 13.7 et 14.3). Les boosters, les Philtres
+/// et les objets d'évolution ne servent qu'au camp, où ils se prennent dans
+/// le coffre : ils ne se proposent qu'à ranger.
+fn options_d_objets(inventaire: &Inventaire, pour_prendre: bool) -> Vec<OptionDeMenu> {
     let mut options = Vec::new();
     for (appat, nombre) in inventaire.appats().presents() {
-        if nombre > 1 {
-            options.push(option(Objet::Appats(appat, 1), appats(appat, 1), None));
-        }
         options.push(option(
             Objet::Appats(appat, nombre),
             appats(appat, nombre),
@@ -237,6 +236,9 @@ fn options_d_objets(inventaire: &Inventaire) -> Vec<OptionDeMenu> {
             Some("Tout".to_string()),
         ));
     }
+    if pour_prendre {
+        return options;
+    }
     for &(booster, nombre) in inventaire.boosters() {
         options.push(option(
             Objet::Boosters(booster, nombre),
@@ -253,9 +255,6 @@ fn options_d_objets(inventaire: &Inventaire) -> Vec<OptionDeMenu> {
         ));
     }
     for &(pierre, nombre) in inventaire.pierres() {
-        if nombre > 1 {
-            options.push(option(Objet::Pierres(pierre, 1), pierres(pierre, 1), None));
-        }
         options.push(option(
             Objet::Pierres(pierre, nombre),
             pierres(pierre, nombre),

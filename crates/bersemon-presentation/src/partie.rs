@@ -624,9 +624,9 @@ pub fn fiche_d_espece(
     }
     let evolution = espece.evolution().and_then(|evolution| {
         let vers = contenu.espece(evolution.vers())?;
-        Some((vers, evolution.condition()))
+        Some((vers, evolution.condition(), evolution.pierre()))
     });
-    if let Some((vers, condition)) = evolution {
+    if let Some((vers, condition, pierre)) = evolution {
         let nom = if codex.etat(vers.id()) == EtatCodex::Capturee {
             vers.nom()
         } else {
@@ -639,8 +639,19 @@ pub fn fiche_d_espece(
         if cachee {
             fiche.push(format!("Évolution : {nom}, condition inconnue"));
         } else {
+            // La pierre qui simule un moment, une météo ou un lieu (section
+            // 5.4).
+            let pierre = match (condition, pierre) {
+                (
+                    ConditionEvolution::Moment { .. }
+                    | ConditionEvolution::Meteo { .. }
+                    | ConditionEvolution::Lieu { .. },
+                    Some(pierre),
+                ) => format!(", ou avec une {}", pierre.nom().to_lowercase()),
+                _ => String::new(),
+            };
             fiche.push(format!(
-                "Évolution : {nom} {}",
+                "Évolution : {nom} {}{pierre}",
                 condition_d_evolution(condition, contenu)
             ));
         }
@@ -714,7 +725,7 @@ pub fn condition_d_evolution(condition: &ConditionEvolution, catalogue: &dyn Cat
             meteo::sous(*meteo)
         ),
         ConditionEvolution::Echange => {
-            "une fois reçu d'un autre joueur, ou avec une chaîne d'allégeance".to_string()
+            "une fois reçu d'un autre joueur, ou avec une chaîne de lien".to_string()
         }
     }
 }

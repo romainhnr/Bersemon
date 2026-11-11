@@ -564,7 +564,13 @@ fn pierre_en_texte(pierre: PierreDEvolution) -> &'static str {
     match pierre {
         PierreDEvolution::Braise => "braise",
         PierreDEvolution::Lune => "lune",
-        PierreDEvolution::ChaineDAllegeance => "chaine-d-allegeance",
+        PierreDEvolution::Nuit => "nuit",
+        PierreDEvolution::Soleil => "soleil",
+        PierreDEvolution::Orage => "orage",
+        PierreDEvolution::Pluie => "pluie",
+        PierreDEvolution::Chaude => "chaude",
+        PierreDEvolution::Brumes => "brumes",
+        PierreDEvolution::ChaineDeLien => "chaine-d-allegeance",
     }
 }
 

@@ -6,8 +6,8 @@
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::horodatage::Horodatage;
 use bersemon_core::marchand::{
-    EXPEDITIONS_DE_LOCATION, OffreDeMonstre, PRIX_CAPSULE_D_HABILETE, PRIX_PIERRE_D_EVOLUTION,
-    prix_de_la_pierre, prix_du_filet, prix_du_soin,
+    EXPEDITIONS_DE_LOCATION, OffreDeMonstre, PRIX_CAPSULE_D_HABILETE, prix_de_la_pierre,
+    prix_du_filet, prix_du_soin,
 };
 use bersemon_core::partie::Partie;
 use bersemon_core::pierre::PierreDEvolution;
@@ -22,7 +22,7 @@ use bersemon_presentation::partie::argent;
 use bersemon_presentation::rite::{etat_du_rite, service_du_rite};
 use bersemon_presentation::soins::{effet_du_soin, le_soin, soins};
 
-use crate::composants::{BEHERIT, Cle, Vue, lot_de_soins_en_texte};
+use crate::composants::{BEHERIT, Cle, Vue, lot_de_soins_en_texte, pierre_en_texte};
 use crate::ecran_camp::{menus_de_monstres_decrits, retour};
 use crate::message::{
     DANGER, OptionDeMenu, PRINCIPAL, Question, RANGEES_MAX, Rangee, SECONDAIRE, bouton, menu,
@@ -87,19 +87,17 @@ pub fn etal(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Que
             PRINCIPAL,
         ));
     }
-    // La dernière rangée est pleine : la Chaîne d'allégeance rejoint les
-    // filets et les capsules (section 5.4).
-    let chaine = PierreDEvolution::ChaineDAllegeance;
-    achats.push(bouton(
-        Cle::AcheterPierre(chaine),
-        &format!(
-            "Acheter une {} ({})",
-            chaine.nom(),
-            argent(prix_de_la_pierre(chaine))
-        ),
-        PRINCIPAL,
-    ));
     let mut lignes: Vec<Rangee> = rangees(achats);
+    // Les neuf objets d'évolution, pierres et Chaîne de lien, ont leur
+    // menu, un par achat (section 5.4).
+    let objets_d_evolution: Vec<OptionDeMenu> = PierreDEvolution::TOUTES
+        .into_iter()
+        .map(|pierre| OptionDeMenu {
+            libelle: format!("{} : {}", pierre.nom(), argent(prix_de_la_pierre(pierre))),
+            valeur: pierre_en_texte(pierre).to_string(),
+            description: None,
+        })
+        .collect();
     lignes.extend(menu(Cle::AcheterSoins, "Acheter des soins", lots_de_soins));
     // Au plus une âme par zone : le menu reste loin de ses 25 options. Les
     // âmes des Apôtres s'y donnent ensemble, pour forger le Béhérit (section
@@ -128,16 +126,12 @@ pub fn etal(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Que
         "Acheter une capsule d'habileté ({})",
         argent(PRIX_CAPSULE_D_HABILETE)
     );
-    // Cinq boutons : la dernière rangée est pleine (section 5.4).
+    lignes.extend(menu(
+        Cle::AcheterObjetDEvolution,
+        "Acheter un objet d'évolution",
+        objets_d_evolution,
+    ));
     let mut boutons = vec![bouton(Cle::AcheterCapsuleDHabilete, &libelle, PRINCIPAL)];
-    for pierre in PierreDEvolution::TROUVEES {
-        let libelle = format!(
-            "Acheter une {} ({})",
-            pierre.nom(),
-            argent(PRIX_PIERRE_D_EVOLUTION)
-        );
-        boutons.push(bouton(Cle::AcheterPierre(pierre), &libelle, PRINCIPAL));
-    }
     boutons.extend([
         bouton(
             Cle::Afficher(Vue::Vente),

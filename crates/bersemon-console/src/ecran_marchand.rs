@@ -46,9 +46,9 @@ pub fn choisir(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Opt
         );
         println!("  7. Vendre des ressources");
         println!(
-            "  8. Acheter des objets d'évolution (pierres {} l'une, Chaîne d'allégeance {})",
+            "  8. Acheter des objets d'évolution (pierres {} l'une, Chaîne de lien {})",
             argent(PRIX_PIERRE_D_EVOLUTION),
-            argent(prix_de_la_pierre(PierreDEvolution::ChaineDAllegeance))
+            argent(prix_de_la_pierre(PierreDEvolution::ChaineDeLien))
         );
         println!(
             "  9. {SERVICE_SHINY} : vous en avez {}",

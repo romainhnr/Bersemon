@@ -2627,7 +2627,18 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         let partie = Partie::restaurer(etat(donnees, portees)).unwrap();
         let cles = afficher(&partie, Vue::Marchand);
         assert!(cles.contains(&Cle::AcheterCapsuleDHabilete));
-        assert!(cles.contains(&Cle::AcheterPierre(PierreDEvolution::Lune)));
+        // Les objets d'évolution ont leur menu (section 5.4).
+        let etal = crate::ecran_camp::question(
+            &partie,
+            Vue::Marchand,
+            &contenu,
+            Horodatage::depuis_secondes(0),
+        );
+        assert!(etal.rangees.iter().any(|rangee| matches!(
+            rangee,
+            Rangee::Menu(menu) if menu.cle == Cle::AcheterObjetDEvolution
+                && menu.options.len() == PierreDEvolution::TOUTES.len()
+        )));
         assert!(cles.contains(&Cle::AcheterFilets(Filet::Chanvre, 5)));
         assert!(cles.contains(&Cle::AcheterFilets(Filet::Leste, 5)));
         let cles = afficher(&partie, Vue::Coffre);
@@ -2687,9 +2698,11 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
                 .sum()
         };
         let coffre = crate::ecran_coffre::coffre(&partie);
+        // Les pierres, boosters et Philtres, qui servent au camp depuis le
+        // coffre, ne se prennent pas : seuls les filets (et les appâts).
         assert_eq!(
             options(&coffre, Cle::SortirRessourcesDuCoffre),
-            2 * Filet::TOUS.len() + 4 + Booster::TOUS.len() + 1
+            2 * Filet::TOUS.len()
         );
         let ressources = crate::ecran_coffre::ressources(&partie);
         assert_eq!(

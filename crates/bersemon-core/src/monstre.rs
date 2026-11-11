@@ -81,7 +81,7 @@ pub struct Monstre {
     /// seul peut désobéir (section 15.2).
     recu_de: Option<Nom>,
     /// Reçu d'un autre joueur alors que son espèce évolue par échange : il
-    /// peut évoluer au camp sans Chaîne d'allégeance, tant qu'il ne l'a pas
+    /// peut évoluer au camp sans Chaîne de lien, tant qu'il ne l'a pas
     /// fait (section 5.4).
     evolution_par_echange: bool,
     /// Pour un monstre loué à Malvoise : les expéditions manuelles qu'il
@@ -241,7 +241,7 @@ impl Monstre {
     }
 
     /// Reçu d'un autre joueur, il peut évoluer par échange sans Chaîne
-    /// d'allégeance (section 5.4).
+    /// de lien (section 5.4).
     pub fn evolue_par_echange(&self) -> bool {
         self.evolution_par_echange
     }

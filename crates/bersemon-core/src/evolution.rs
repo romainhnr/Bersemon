@@ -40,7 +40,7 @@ pub enum ConditionEvolution {
     /// cette météo (section 9.7).
     Meteo { meteo: Meteo, niveau: Niveau },
     /// Être reçu d'un autre joueur, par échange ou par don, à tout niveau
-    /// (section 15.1) ; sinon, recevoir une Chaîne d'allégeance au camp.
+    /// (section 15.1) ; sinon, recevoir une Chaîne de lien au camp.
     Echange,
 }
 
@@ -64,6 +64,10 @@ pub struct Circonstances<'a> {
 pub struct Evolution {
     vers: EspeceId,
     condition: ConditionEvolution,
+    /// La pierre qui simule une condition de moment, de météo ou de lieu :
+    /// au camp, elle remplace cette condition, une fois le niveau atteint
+    /// (section 5.4).
+    pierre_de_substitution: Option<PierreDEvolution>,
     /// L'attaque d'évolution, dans la liste d'apprentissage de l'espèce
     /// d'arrivée, apprise au moment d'évoluer.
     attaque: AttaqueId,
@@ -74,7 +78,26 @@ impl Evolution {
         Self {
             vers,
             condition,
+            pierre_de_substitution: None,
             attaque,
+        }
+    }
+
+    pub fn avec_pierre_de_substitution(mut self, pierre: PierreDEvolution) -> Self {
+        self.pierre_de_substitution = Some(pierre);
+        self
+    }
+
+    /// Le niveau que demande la condition, même avec une pierre de
+    /// substitution ; `None` pour une pierre ou un échange, à tout niveau.
+    pub fn niveau_requis(&self) -> Option<Niveau> {
+        match &self.condition {
+            ConditionEvolution::Niveau(niveau)
+            | ConditionEvolution::Lieu { niveau, .. }
+            | ConditionEvolution::ApotreVaincu { niveau, .. }
+            | ConditionEvolution::Moment { niveau, .. }
+            | ConditionEvolution::Meteo { niveau, .. } => Some(*niveau),
+            ConditionEvolution::Pierre(_) | ConditionEvolution::Echange => None,
         }
     }
 
@@ -91,17 +114,18 @@ impl Evolution {
     }
 
     /// La pierre qu'il faut utiliser au camp, si c'est la condition ; pour
-    /// une évolution par échange, la Chaîne d'allégeance, qui n'est pas
+    /// une évolution par échange, la Chaîne de lien, qui n'est pas
     /// nécessaire au monstre reçu d'un autre joueur.
+    /// Pour une condition de moment, de météo ou de lieu, la pierre qui la
+    /// simule, s'il y en a une (section 5.4).
     pub fn pierre(&self) -> Option<PierreDEvolution> {
         match self.condition {
             ConditionEvolution::Pierre(pierre) => Some(pierre),
-            ConditionEvolution::Echange => Some(PierreDEvolution::ChaineDAllegeance),
-            ConditionEvolution::Niveau(_)
-            | ConditionEvolution::Lieu { .. }
-            | ConditionEvolution::ApotreVaincu { .. }
+            ConditionEvolution::Echange => Some(PierreDEvolution::ChaineDeLien),
+            ConditionEvolution::Lieu { .. }
             | ConditionEvolution::Moment { .. }
-            | ConditionEvolution::Meteo { .. } => None,
+            | ConditionEvolution::Meteo { .. } => self.pierre_de_substitution,
+            ConditionEvolution::Niveau(_) | ConditionEvolution::ApotreVaincu { .. } => None,
         }
     }
 
