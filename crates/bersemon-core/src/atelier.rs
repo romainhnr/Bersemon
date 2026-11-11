@@ -5,13 +5,16 @@
 use std::fmt;
 
 use crate::appat::Appat;
-use crate::espece::Espece;
+use crate::espece::{Espece, Rarete};
 use crate::parfum::Parfum;
 use crate::ressource::Ressource;
 
 /// Le parfum d'une espèce demande ce nombre de la ressource qu'elle lâche,
-/// en plus de sa base (docs/contenu-v1.md, section 53).
-pub const RESSOURCES_DU_PARFUM_D_ESPECE: u32 = 3;
+/// en plus de sa base (docs/contenu-v1.md, section 53). Depuis que le
+/// butin est certain (étape 193), il en faut 3 fois plus pour une espèce
+/// commune, et 2 fois plus pour une rare, plus souvent capturée qu'abattue.
+pub const RESSOURCES_DU_PARFUM_D_ESPECE: u32 = 9;
+pub const RESSOURCES_DU_PARFUM_D_ESPECE_RARE: u32 = 6;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AtelierDAnsgar {
@@ -100,7 +103,12 @@ impl AtelierDAnsgar {
             Parfum::Espece(espece) => {
                 let ressource = espece.ressource()?;
                 let mut cout = self.base_du_parfum_d_espece.clone();
-                cout.push((ressource.clone(), RESSOURCES_DU_PARFUM_D_ESPECE));
+                let nombre = if espece.rarete() == Rarete::Commune {
+                    RESSOURCES_DU_PARFUM_D_ESPECE
+                } else {
+                    RESSOURCES_DU_PARFUM_D_ESPECE_RARE
+                };
+                cout.push((ressource.clone(), nombre));
                 Some(cout)
             }
         }
@@ -189,7 +197,7 @@ mod tests {
         let loup = espece("loup").avec_ressource(croc.clone());
         assert_eq!(
             atelier.cout_du_parfum(&Parfum::Espece(loup)),
-            Some(vec![(matiere("ambre"), 1), (croc, 3)])
+            Some(vec![(matiere("ambre"), 1), (croc, 9)])
         );
         assert_eq!(
             atelier.cout_du_parfum(&Parfum::Espece(espece("elfe"))),

@@ -5917,11 +5917,11 @@ mod tests {
         let ressource = |id: &str| contenu.ressource(&RessourceId::new(id)).unwrap();
         let mut etat = etat_de(&partie(contenu));
         etat.forge = Forge::restaurer(true, Default::default(), None).unwrap();
-        etat.sac = Inventaire::default().avec_ressources(ressource("croc-de-loup"), 3);
+        etat.sac = Inventaire::default().avec_ressources(ressource("croc-de-loup"), 9);
         etat.coffre_du_camp = Inventaire::default()
-            .avec_ressources(ressource("croc-de-loup"), 2)
-            .avec_ressources(ressource("plume-de-corbeau"), 5)
-            .avec_ressources(ressource("ecaille-de-vipere"), 5);
+            .avec_ressources(ressource("croc-de-loup"), 6)
+            .avec_ressources(ressource("plume-de-corbeau"), 15)
+            .avec_ressources(ressource("ecaille-de-vipere"), 15);
         Partie::restaurer(etat).unwrap()
     }
 
@@ -6010,8 +6010,8 @@ mod tests {
         etat.marchand_au_camp = true;
         etat.forge = Forge::restaurer(true, Default::default(), None).unwrap();
         etat.coffre_du_camp = Inventaire::new(40, 0, Vec::new())
-            .avec_ressources(ressource("croc-de-loup"), 3)
-            .avec_ressources(ressource("plume-de-corbeau"), 4);
+            .avec_ressources(ressource("croc-de-loup"), 9)
+            .avec_ressources(ressource("plume-de-corbeau"), 10);
         let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
         let evenements = repondre_a_l_heure(
             &mut deroulement,
@@ -6032,7 +6032,7 @@ mod tests {
         let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
         assert_eq!(sauvegarde.argent(), 10);
         assert_eq!(sauvegarde.coffre_du_camp().filets().nombre(Filet::Leste), 1);
-        // Gunther forge le chanvre : 3 crocs de loup et 3 plumes de corbeau,
+        // Gunther forge le chanvre : 9 crocs de loup et 9 plumes de corbeau,
         // 30 minutes, après confirmation.
         let forger = Choix::FabriquerFilets(Filet::Chanvre);
         repondre_a_l_heure(&mut deroulement, forger, &contenu, &depot, a(1_000)).unwrap();
@@ -6092,8 +6092,8 @@ mod tests {
         let mut etat = etat_de(&partie_de(salamandre(&contenu, 40)));
         etat.forge = Forge::restaurer(true, Default::default(), None).unwrap();
         etat.coffre_du_camp = Inventaire::default()
-            .avec_ressources(ressource("plume-de-corbeau"), 7)
-            .avec_ressources(ressource("ecaille-de-vipere"), 4);
+            .avec_ressources(ressource("plume-de-corbeau"), 19)
+            .avec_ressources(ressource("ecaille-de-vipere"), 12);
         let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
         let couteau = ObjetDEquipementId::new("baton-d-if");
         let equiper = Choix::Equiper {
@@ -6261,7 +6261,7 @@ mod tests {
             .collect();
         assert_eq!(
             manquantes,
-            vec![("croc-de-loup", 4), ("ecaille-de-vipere", 4)]
+            vec![("croc-de-loup", 12), ("ecaille-de-vipere", 12)]
         );
         assert_eq!(deroulement.attente(), Attente::Camp);
     }

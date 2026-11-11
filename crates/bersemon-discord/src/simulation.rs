@@ -1661,9 +1661,9 @@ fn gunther_agrandit_l_enclos_a_travers_les_ecrans_du_bot() {
     let partie = Partie::nouvelle(heros, loup);
     let ressource = |id: &str| contenu.ressource(&RessourceId::new(id)).unwrap();
     let coffre = Inventaire::default()
-        .avec_ressources(ressource("croc-de-loup"), 5)
-        .avec_ressources(ressource("plume-de-corbeau"), 13)
-        .avec_ressources(ressource("ecaille-de-vipere"), 5);
+        .avec_ressources(ressource("croc-de-loup"), 15)
+        .avec_ressources(ressource("plume-de-corbeau"), 39)
+        .avec_ressources(ressource("ecaille-de-vipere"), 15);
     let partie = Partie::restaurer(EtatPartie {
         heros: partie.heros().clone(),
         collection: partie.collection().clone(),
@@ -4463,7 +4463,7 @@ fn quetes_et_succes_a_travers_les_ecrans_du_bot() {
         heros: partie.heros().clone(),
         collection: partie.collection().clone(),
         sac: Inventaire::default(),
-        coffre_du_camp: Inventaire::default().avec_ressources(cendre, 5),
+        coffre_du_camp: Inventaire::default().avec_ressources(cendre, 15),
         marchand_au_camp: true,
         ames_donnees: Vec::new(),
         ames_portees: Vec::new(),

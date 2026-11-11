@@ -572,16 +572,16 @@ Libération de Gunther, après le texte de la victoire sur le Bourreau :
 
 | Amélioration | Identifiant | Niveau | Effet | Coût | Durée |
 |---|---|---|---|---|---|
-| Enclos | enclos | 1 | camp de 30 à 40 places | 5 Croc de loup, 5 Plume de corbeau, 5 Écaille de vipère | 1 h |
-| | | 2 | de 40 à 50 places | 6 Cendre de feu follet, 6 Fragment d'armure | 2 h |
-| | | 3 | de 50 à 60 places | 6 Aile de fée noire, 6 Os de squelette | 4 h |
-| Filets | filets | 1 | chance de capture x1,1 | 4 Croc de loup, 4 Écaille de vipère | 1 h |
-| | | 2 | x1,2 | 5 Cendre de feu follet, 5 Fragment d'armure | 3 h |
-| | | 3 | x1,3 | 5 Aile de fée noire, 5 Os de squelette | 6 h |
-| Équipe | equipe | 1 | équipe de 3 à 4 monstres (étape 43) | 1 Croc de basilic, 1 Écaille de vouivre, 8 Os de squelette, 8 Aile de fée noire | 8 h |
-| Sac | sac | 1 | sac de 30 à 45 places (étape 125) | 6 Plume de corbeau, 6 Écaille de vipère | 1 h |
-| | | 2 | de 45 à 60 places | 6 Cendre de feu follet, 6 Fragment d'armure | 3 h |
-| | | 3 | de 60 à 80 places | 6 Aile de fée noire, 6 Os de squelette | 6 h |
+| Enclos | enclos | 1 | camp de 30 à 40 places | 15 Croc de loup, 15 Plume de corbeau, 15 Écaille de vipère | 1 h |
+| | | 2 | de 40 à 50 places | 18 Cendre de feu follet, 18 Fragment d'armure | 2 h |
+| | | 3 | de 50 à 60 places | 18 Aile de fée noire, 18 Os de squelette | 4 h |
+| Filets | filets | 1 | chance de capture x1,1 | 12 Croc de loup, 12 Écaille de vipère | 1 h |
+| | | 2 | x1,2 | 15 Cendre de feu follet, 15 Fragment d'armure | 3 h |
+| | | 3 | x1,3 | 15 Aile de fée noire, 15 Os de squelette | 6 h |
+| Équipe | equipe | 1 | équipe de 3 à 4 monstres (étape 43) | 2 Croc de basilic, 2 Écaille de vouivre, 24 Os de squelette, 24 Aile de fée noire | 8 h |
+| Sac | sac | 1 | sac de 30 à 45 places (étape 125) | 18 Plume de corbeau, 18 Écaille de vipère | 1 h |
+| | | 2 | de 45 à 60 places | 18 Cendre de feu follet, 18 Fragment d'armure | 3 h |
+| | | 3 | de 60 à 80 places | 18 Aile de fée noire, 18 Os de squelette | 6 h |
 
 Les ressources rares sont lentes à réunir : une expédition dans le Marais rapporte un Croc de basilic environ une fois sur 12. Elles ne sont demandées qu'à la dernière amélioration.
 
@@ -659,20 +659,20 @@ Décidé le 20/10/2026, pour les étapes 48 à 51 (gamedesign.md, sections 4.3 e
 
 | Identifiant | Objet | Sorte | Bonus | Coût | Durée |
 |---|---|---|---|---|---|
-| couteau-de-chasse | Couteau de chasse | arme | +5 % d'Attaque | 6 Croc de loup, 4 Écaille de vipère | 1 h |
-| baton-d-if | Bâton d'if | arme | +5 % d'Attaque spéciale | 6 Plume de corbeau, 4 Écaille de vipère | 1 h |
-| epee-du-pendu | Épée du pendu | arme | +10 % d'Attaque | 6 Fragment d'armure, 6 Os de squelette, 1 Croc de basilic | 3 h |
-| grimoire-des-brumes | Grimoire des brumes | arme | +10 % d'Attaque spéciale | 6 Cendre de feu follet, 6 Aile de fée noire, 1 Croc de basilic | 3 h |
-| espadon-des-cendres | Espadon des cendres | arme | +15 % d'Attaque | 8 Éclat de gargouille, 6 Dent de goule, 1 Crin de chimère | 6 h |
-| encensoir-maudit | Encensoir maudit | arme | +15 % d'Attaque spéciale | 8 Aile de chauve-souris, 6 Dent de goule, 1 Crin de chimère | 6 h |
-| brigandine-de-cuir | Brigandine de cuir | armure | +5 % de Défense et de Défense spéciale | 6 Croc de loup, 6 Plume de corbeau | 2 h |
-| cotte-de-mailles | Cotte de mailles | armure | +10 % de Défense et de Défense spéciale | 8 Fragment d'armure, 4 Os de squelette, 1 Écaille de vouivre | 4 h |
-| plates-de-gargouille | Plates de gargouille | armure | +15 % de Défense et de Défense spéciale | 10 Éclat de gargouille, 6 Os de squelette, 1 Crin de chimère | 8 h |
-| croc-tresse | Croc tressé | talisman | +5 % d'Attaque | 8 Croc de loup | 1 h |
-| plume-de-corbeau-sertie | Plume de corbeau sertie | talisman | +5 % de Vitesse | 8 Plume de corbeau | 1 h |
-| lanterne-de-feu-follet | Lanterne de feu follet | talisman | +5 % d'Attaque spéciale | 8 Cendre de feu follet | 2 h |
-| os-grave | Os gravé | talisman | +5 % de Défense | 8 Os de squelette | 2 h |
-| aile-de-fee-sertie | Aile de fée sertie | talisman | +5 % de Défense spéciale | 8 Aile de fée noire | 2 h |
+| couteau-de-chasse | Couteau de chasse | arme | +5 % d'Attaque | 18 Croc de loup, 12 Écaille de vipère | 1 h |
+| baton-d-if | Bâton d'if | arme | +5 % d'Attaque spéciale | 18 Plume de corbeau, 12 Écaille de vipère | 1 h |
+| epee-du-pendu | Épée du pendu | arme | +10 % d'Attaque | 18 Fragment d'armure, 18 Os de squelette, 2 Croc de basilic | 3 h |
+| grimoire-des-brumes | Grimoire des brumes | arme | +10 % d'Attaque spéciale | 18 Cendre de feu follet, 18 Aile de fée noire, 2 Croc de basilic | 3 h |
+| espadon-des-cendres | Espadon des cendres | arme | +15 % d'Attaque | 24 Éclat de gargouille, 18 Dent de goule, 2 Crin de chimère | 6 h |
+| encensoir-maudit | Encensoir maudit | arme | +15 % d'Attaque spéciale | 24 Aile de chauve-souris, 18 Dent de goule, 2 Crin de chimère | 6 h |
+| brigandine-de-cuir | Brigandine de cuir | armure | +5 % de Défense et de Défense spéciale | 18 Croc de loup, 18 Plume de corbeau | 2 h |
+| cotte-de-mailles | Cotte de mailles | armure | +10 % de Défense et de Défense spéciale | 24 Fragment d'armure, 12 Os de squelette, 2 Écaille de vouivre | 4 h |
+| plates-de-gargouille | Plates de gargouille | armure | +15 % de Défense et de Défense spéciale | 30 Éclat de gargouille, 18 Os de squelette, 2 Crin de chimère | 8 h |
+| croc-tresse | Croc tressé | talisman | +5 % d'Attaque | 24 Croc de loup | 1 h |
+| plume-de-corbeau-sertie | Plume de corbeau sertie | talisman | +5 % de Vitesse | 24 Plume de corbeau | 1 h |
+| lanterne-de-feu-follet | Lanterne de feu follet | talisman | +5 % d'Attaque spéciale | 24 Cendre de feu follet | 2 h |
+| os-grave | Os gravé | talisman | +5 % de Défense | 24 Os de squelette | 2 h |
+| aile-de-fee-sertie | Aile de fée sertie | talisman | +5 % de Défense spéciale | 24 Aile de fée noire | 2 h |
 
 Paliers : le premier se fabrique avec les ressources de la Lisière et du Marais, le deuxième avec celles du Marais et de la Vallée, plus une ressource rare, le troisième avec celles de l'Abbaye des Cendres et un Crin de chimère.
 
@@ -857,12 +857,12 @@ Décidé le 20/10/2026, pour les étapes 72 à 74 (gamedesign.md, section 13.6),
 
 | Machine | Identifiant | Niveau | Effet | Coût | Durée |
 |---|---|---|---|---|---|
-| Pièges | pieges | 1 | 1 ressource toutes les 2 h, stock de 6 | 5 Croc de loup, 5 Écaille de vipère | 1 h |
-| | | 2 | 1 ressource par heure, stock de 12 | 6 Cendre de feu follet, 6 Fragment d'armure | 3 h |
-| | | 3 | 1 ressource par heure, stock de 24, une ressource rare de la zone 1 fois sur 10 | 6 Aile de fée noire, 6 Os de squelette, 1 Écaille de vouivre | 6 h |
-| Cour d'entraînement | cour | 1 | 1 place, 50 XP par heure | 6 Croc de loup, 6 Plume de corbeau | 2 h |
-| | | 2 | 2 places, 50 XP par heure | 6 Fragment d'armure, 6 Os de squelette | 4 h |
-| | | 3 | 3 places, 100 XP par heure | 8 Éclat de gargouille, 6 Dent de goule | 8 h |
+| Pièges | pieges | 1 | 1 ressource toutes les 2 h, stock de 6 | 15 Croc de loup, 15 Écaille de vipère | 1 h |
+| | | 2 | 1 ressource par heure, stock de 12 | 18 Cendre de feu follet, 18 Fragment d'armure | 3 h |
+| | | 3 | 1 ressource par heure, stock de 24, une ressource rare de la zone 1 fois sur 10 | 18 Aile de fée noire, 18 Os de squelette, 2 Écaille de vouivre | 6 h |
+| Cour d'entraînement | cour | 1 | 1 place, 50 XP par heure | 18 Croc de loup, 18 Plume de corbeau | 2 h |
+| | | 2 | 2 places, 50 XP par heure | 18 Fragment d'armure, 18 Os de squelette | 4 h |
+| | | 3 | 3 places, 100 XP par heure | 24 Éclat de gargouille, 18 Dent de goule | 8 h |
 
 Ressources des pièges, par zone : celles des espèces communes de la zone, au hasard ; au niveau 3, la ressource rare de la zone 1 fois sur 10 (Croc de basilic dans le Marais, Écaille de vouivre dans la Vallée, Crin de chimère dans l'Abbaye ; aucune dans la Lisière, dont le Cerf blanc ne lâche rien).
 
@@ -893,7 +893,7 @@ Décidé le 20/10/2026, pour les étapes 75 à 78 (gamedesign.md, sections 4.2, 
 | soutien | +10 % de Défense et de Défense spéciale | 25 % de protection au monstre protégé |
 | offensif | +10 % d'Attaque et d'Attaque spéciale | +10 % d'argent s'il rentre debout d'une réussite |
 
-Charme de garde (identifiant charme-de-garde) : 50 % de protection au monstre protégé, un par expédition. Fabriqué par Gunther, un par travail, contre 3 Os de squelette et 3 Fragment d'armure, en 30 minutes. Il ne se revend pas.
+Charme de garde (identifiant charme-de-garde) : 50 % de protection au monstre protégé, un par expédition. Fabriqué par Gunther, un par travail, contre 9 Os de squelette et 9 Fragment d'armure, en 30 minutes. Il ne se revend pas.
 
 Textes proposés sans validation (gamedesign.md, Q96) :
 
@@ -1137,9 +1137,9 @@ Décidés le 25/10/2026, pour les étapes 103 à 106 (gamedesign.md, sections 9.
 
 | Identifiant | Nom | Chance de capture | Prix chez Malvoise | Fabrication par Gunther, par lot de 5 | Durée |
 |---|---|---|---|---|---|
-| filet-de-chanvre | Filet de chanvre | normale (x1) | 10 | 3 Croc de loup, 3 Plume de corbeau | 30 min |
-| filet-leste | Filet lesté | x1,5 | 30 | 3 Fragment d'armure, 3 Os de squelette | 1 h |
-| filet-de-chaines | Filet de chaînes | x2 | ne s'achète pas | 3 Éclat de gargouille, 2 Pierre de troll | 2 h |
+| filet-de-chanvre | Filet de chanvre | normale (x1) | 10 | 9 Croc de loup, 9 Plume de corbeau | 30 min |
+| filet-leste | Filet lesté | x1,5 | 30 | 9 Fragment d'armure, 9 Os de squelette | 1 h |
+| filet-de-chaines | Filet de chaînes | x2 | ne s'achète pas | 9 Éclat de gargouille, 6 Pierre de troll | 2 h |
 
 Départ : 10 filets de chanvre dans le sac. Sauvegarde antérieure à la version 27 : 10 filets de chanvre au coffre.
 
@@ -1416,39 +1416,39 @@ Armes de classe. Bonus aux monstres : +3 %, +5 %, +8 % ou +10 % d'Attaque et d'A
 
 | Identifiant | Arme | Classe | Palier | Coût | Durée |
 |---|---|---|---|---|---|
-| lame-de-milicien | Lame de milicien | Guerrier | 1 | 6 Croc de loup, 4 Écaille de vipère | 1 h |
-| epee-du-pendu | Épée du pendu | Guerrier | 2 | 6 Fragment d'armure, 6 Os de squelette, 1 Croc de basilic | 3 h |
-| espadon-des-cendres | Espadon des cendres | Guerrier | 3 | 8 Éclat de gargouille, 6 Dent de goule, 1 Crin de chimère | 6 h |
+| lame-de-milicien | Lame de milicien | Guerrier | 1 | 18 Croc de loup, 12 Écaille de vipère | 1 h |
+| epee-du-pendu | Épée du pendu | Guerrier | 2 | 18 Fragment d'armure, 18 Os de squelette, 2 Croc de basilic | 3 h |
+| espadon-des-cendres | Espadon des cendres | Guerrier | 3 | 24 Éclat de gargouille, 18 Dent de goule, 2 Crin de chimère | 6 h |
 | glaive-du-champion | Glaive du champion | Guerrier | 4 | récompense de la Fosse aux damnés | |
-| couteau-de-chasse | Couteau de chasse | Assassin | 1 | 6 Croc de loup, 4 Écaille de vipère | 1 h |
-| dague-des-brumes | Dague des brumes | Assassin | 2 | 6 Fragment d'armure, 6 Os de squelette, 1 Croc de basilic | 3 h |
-| lames-de-cendre | Lames de cendre | Assassin | 3 | 8 Éclat de gargouille, 6 Dent de goule, 1 Crin de chimère | 6 h |
+| couteau-de-chasse | Couteau de chasse | Assassin | 1 | 18 Croc de loup, 12 Écaille de vipère | 1 h |
+| dague-des-brumes | Dague des brumes | Assassin | 2 | 18 Fragment d'armure, 18 Os de squelette, 2 Croc de basilic | 3 h |
+| lames-de-cendre | Lames de cendre | Assassin | 3 | 24 Éclat de gargouille, 18 Dent de goule, 2 Crin de chimère | 6 h |
 | crocs-du-champion | Crocs du champion | Assassin | 4 | récompense de la Fosse aux damnés | |
-| baton-d-if | Bâton d'if | Mage | 1 | 6 Plume de corbeau, 4 Écaille de vipère | 1 h |
-| grimoire-des-brumes | Grimoire des brumes | Mage | 2 | 6 Cendre de feu follet, 6 Aile de fée noire, 1 Croc de basilic | 3 h |
-| sceptre-des-cendres | Sceptre des cendres | Mage | 3 | 8 Aile de chauve-souris, 6 Dent de goule, 1 Crin de chimère | 6 h |
+| baton-d-if | Bâton d'if | Mage | 1 | 18 Plume de corbeau, 12 Écaille de vipère | 1 h |
+| grimoire-des-brumes | Grimoire des brumes | Mage | 2 | 18 Cendre de feu follet, 18 Aile de fée noire, 2 Croc de basilic | 3 h |
+| sceptre-des-cendres | Sceptre des cendres | Mage | 3 | 24 Aile de chauve-souris, 18 Dent de goule, 2 Crin de chimère | 6 h |
 | grimoire-du-champion | Grimoire du champion | Mage | 4 | récompense de la Fosse aux damnés | |
-| masse-de-pelerin | Masse de pèlerin | Templier | 1 | 6 Plume de corbeau, 4 Écaille de vipère | 1 h |
-| fleau-du-pendu | Fléau du pendu | Templier | 2 | 6 Cendre de feu follet, 6 Aile de fée noire, 1 Croc de basilic | 3 h |
-| encensoir-maudit | Encensoir maudit | Templier | 3 | 8 Aile de chauve-souris, 6 Dent de goule, 1 Crin de chimère | 6 h |
+| masse-de-pelerin | Masse de pèlerin | Templier | 1 | 18 Plume de corbeau, 12 Écaille de vipère | 1 h |
+| fleau-du-pendu | Fléau du pendu | Templier | 2 | 18 Cendre de feu follet, 18 Aile de fée noire, 2 Croc de basilic | 3 h |
+| encensoir-maudit | Encensoir maudit | Templier | 3 | 24 Aile de chauve-souris, 18 Dent de goule, 2 Crin de chimère | 6 h |
 | marteau-du-champion | Marteau du champion | Templier | 4 | récompense de la Fosse aux damnés | |
 
 Armures de classe. Bonus aux monstres : +5 %, +10 % ou +15 % de Défense et de Défense spéciale selon le palier. Coûts et durées : ceux des anciennes armures du même palier.
 
 | Identifiant | Armure | Classe | Palier | Coût | Durée |
 |---|---|---|---|---|---|
-| gambison | Gambison | Guerrier | 1 | 6 Croc de loup, 6 Plume de corbeau | 2 h |
-| cotte-de-mailles | Cotte de mailles | Guerrier | 2 | 8 Fragment d'armure, 4 Os de squelette, 1 Écaille de vouivre | 4 h |
-| plates-de-gargouille | Plates de gargouille | Guerrier | 3 | 10 Éclat de gargouille, 6 Os de squelette, 1 Crin de chimère | 8 h |
-| brigandine-de-cuir | Brigandine de cuir | Assassin | 1 | 6 Croc de loup, 6 Plume de corbeau | 2 h |
-| cuir-des-brumes | Cuir des brumes | Assassin | 2 | 8 Fragment d'armure, 4 Os de squelette, 1 Écaille de vouivre | 4 h |
-| manteau-de-cendre | Manteau de cendre | Assassin | 3 | 10 Éclat de gargouille, 6 Os de squelette, 1 Crin de chimère | 8 h |
-| robe-de-lin | Robe de lin | Mage | 1 | 6 Croc de loup, 6 Plume de corbeau | 2 h |
-| robe-des-brumes | Robe des brumes | Mage | 2 | 8 Fragment d'armure, 4 Os de squelette, 1 Écaille de vouivre | 4 h |
-| robe-des-cendres | Robe des cendres | Mage | 3 | 10 Éclat de gargouille, 6 Os de squelette, 1 Crin de chimère | 8 h |
-| haubert-de-pelerin | Haubert de pèlerin | Templier | 1 | 6 Croc de loup, 6 Plume de corbeau | 2 h |
-| cotte-benie | Cotte bénie | Templier | 2 | 8 Fragment d'armure, 4 Os de squelette, 1 Écaille de vouivre | 4 h |
-| plates-consacrees | Plates consacrées | Templier | 3 | 10 Éclat de gargouille, 6 Os de squelette, 1 Crin de chimère | 8 h |
+| gambison | Gambison | Guerrier | 1 | 18 Croc de loup, 18 Plume de corbeau | 2 h |
+| cotte-de-mailles | Cotte de mailles | Guerrier | 2 | 24 Fragment d'armure, 12 Os de squelette, 2 Écaille de vouivre | 4 h |
+| plates-de-gargouille | Plates de gargouille | Guerrier | 3 | 30 Éclat de gargouille, 18 Os de squelette, 2 Crin de chimère | 8 h |
+| brigandine-de-cuir | Brigandine de cuir | Assassin | 1 | 18 Croc de loup, 18 Plume de corbeau | 2 h |
+| cuir-des-brumes | Cuir des brumes | Assassin | 2 | 24 Fragment d'armure, 12 Os de squelette, 2 Écaille de vouivre | 4 h |
+| manteau-de-cendre | Manteau de cendre | Assassin | 3 | 30 Éclat de gargouille, 18 Os de squelette, 2 Crin de chimère | 8 h |
+| robe-de-lin | Robe de lin | Mage | 1 | 18 Croc de loup, 18 Plume de corbeau | 2 h |
+| robe-des-brumes | Robe des brumes | Mage | 2 | 24 Fragment d'armure, 12 Os de squelette, 2 Écaille de vouivre | 4 h |
+| robe-des-cendres | Robe des cendres | Mage | 3 | 30 Éclat de gargouille, 18 Os de squelette, 2 Crin de chimère | 8 h |
+| haubert-de-pelerin | Haubert de pèlerin | Templier | 1 | 18 Croc de loup, 18 Plume de corbeau | 2 h |
+| cotte-benie | Cotte bénie | Templier | 2 | 24 Fragment d'armure, 12 Os de squelette, 2 Écaille de vouivre | 4 h |
+| plates-consacrees | Plates consacrées | Templier | 3 | 30 Éclat de gargouille, 18 Os de squelette, 2 Crin de chimère | 8 h |
 
 Les identifiants des anciens objets sont gardés pour l'objet de classe qui reprend leur nom. Les talismans de la section 11 et le Sceau du bestiaire ne changent pas.
 
@@ -1830,15 +1830,15 @@ Trésor d'un coffre d'annexe, tiré selon son poids sur 100 : Philtre chromatiqu
 
 | Identifiant | Objet | Classe | Palier | Coût | Durée |
 |---|---|---|---|---|---|
-| hache-de-fer-noir | Hache de fer noir (arme) | Guerrier | 5 | 8 Éclat de fer noir, 6 Pioche maudite, 1 Écaille de rouille | 12 h |
-| dagues-de-fer-noir | Dagues de fer noir (arme) | Assassin | 5 | 8 Éclat de fer noir, 6 Pioche maudite, 1 Écaille de rouille | 12 h |
-| baton-de-grisou | Bâton de grisou (arme) | Mage | 5 | 8 Fiole de grisou, 6 Pioche maudite, 1 Écaille de rouille | 12 h |
-| masse-de-fer-noir | Masse de fer noir (arme) | Templier | 5 | 8 Fiole de grisou, 6 Pioche maudite, 1 Écaille de rouille | 12 h |
-| cuirasse-des-abysses | Cuirasse des abysses (armure) | Guerrier | 4 | 10 Carapace de crabe, 6 Écaille de sirène, 1 Croc d'hydre | 10 h |
+| hache-de-fer-noir | Hache de fer noir (arme) | Guerrier | 5 | 24 Éclat de fer noir, 18 Pioche maudite, 2 Écaille de rouille | 12 h |
+| dagues-de-fer-noir | Dagues de fer noir (arme) | Assassin | 5 | 24 Éclat de fer noir, 18 Pioche maudite, 2 Écaille de rouille | 12 h |
+| baton-de-grisou | Bâton de grisou (arme) | Mage | 5 | 24 Fiole de grisou, 18 Pioche maudite, 2 Écaille de rouille | 12 h |
+| masse-de-fer-noir | Masse de fer noir (arme) | Templier | 5 | 24 Fiole de grisou, 18 Pioche maudite, 2 Écaille de rouille | 12 h |
+| cuirasse-des-abysses | Cuirasse des abysses (armure) | Guerrier | 4 | 30 Carapace de crabe, 18 Écaille de sirène, 2 Croc d'hydre | 10 h |
 | cuir-de-requin | Cuir de requin (armure) | Assassin | 4 | idem | 10 h |
 | robe-des-marees | Robe des marées (armure) | Mage | 4 | idem | 10 h |
 | plates-nacrees | Plates nacrées (armure) | Templier | 4 | idem | 10 h |
-| plates-de-fer-noir | Plates de fer noir (armure) | Guerrier | 5 | 10 Éclat de fer noir, 6 Carapace de crabe, 1 Écaille de rouille | 14 h |
+| plates-de-fer-noir | Plates de fer noir (armure) | Guerrier | 5 | 30 Éclat de fer noir, 18 Carapace de crabe, 2 Écaille de rouille | 14 h |
 | maille-de-fer-noir | Maille de fer noir (armure) | Assassin | 5 | idem | 14 h |
 | robe-de-grisou | Robe de grisou (armure) | Mage | 5 | idem | 14 h |
 | harnois-de-fer-noir | Harnois de fer noir (armure) | Templier | 5 | idem | 14 h |
@@ -1984,11 +1984,11 @@ Annexes (gamedesign.md, section 9.9), sur le modèle de la section 44 :
 
 | Identifiant | Objet | Classe | Coût | Durée |
 |---|---|---|---|---|
-| hache-du-bourreau-d-os | Hache du bourreau d'os (arme) | Guerrier | 8 Soie des cryptes, 6 Lame de mante, 1 Phylactère brisé | 14 h |
-| lames-de-soie | Lames de soie (arme) | Assassin | 8 Soie des cryptes, 6 Lame de mante, 1 Phylactère brisé | 14 h |
-| crosse-des-catacombes | Crosse des catacombes (arme) | Mage | 8 Chapelet d'os, 6 Épine de ronce, 1 Phylactère brisé | 14 h |
-| masse-ecarlate | Masse écarlate (arme) | Templier | 8 Chapelet d'os, 6 Épine de ronce, 1 Phylactère brisé | 14 h |
-| plates-du-sanglier | Plates du sanglier (armure) | Guerrier | 10 Défense de sanglier, 6 Queue de rat, 1 Sève de dryade | 16 h |
+| hache-du-bourreau-d-os | Hache du bourreau d'os (arme) | Guerrier | 24 Soie des cryptes, 18 Lame de mante, 2 Phylactère brisé | 14 h |
+| lames-de-soie | Lames de soie (arme) | Assassin | 24 Soie des cryptes, 18 Lame de mante, 2 Phylactère brisé | 14 h |
+| crosse-des-catacombes | Crosse des catacombes (arme) | Mage | 24 Chapelet d'os, 18 Épine de ronce, 2 Phylactère brisé | 14 h |
+| masse-ecarlate | Masse écarlate (arme) | Templier | 24 Chapelet d'os, 18 Épine de ronce, 2 Phylactère brisé | 14 h |
+| plates-du-sanglier | Plates du sanglier (armure) | Guerrier | 30 Défense de sanglier, 18 Queue de rat, 2 Sève de dryade | 16 h |
 | cuir-ecarlate | Cuir écarlate (armure) | Assassin | idem | 16 h |
 | robe-de-ronces | Robe de ronces (armure) | Mage | idem | 16 h |
 | harnois-des-saints | Harnois des saints (armure) | Templier | idem | 16 h |
@@ -2137,11 +2137,11 @@ Annexes (gamedesign.md, section 9.9), sur le modèle de la section 44 :
 
 | Identifiant | Objet | Classe | Coût | Durée |
 |---|---|---|---|---|
-| fendoir-de-guerre | Fendoir de guerre (arme) | Guerrier | 8 Collier à pointes, 6 Crin spectral, 1 Éclat d'archonte | 16 h |
-| dagues-du-massacre | Dagues du massacre (arme) | Assassin | 8 Collier à pointes, 6 Crin spectral, 1 Éclat d'archonte | 16 h |
-| sceptre-d-ether | Sceptre d'éther (arme) | Mage | 8 Encre vivante, 6 Cristallin, 1 Éclat d'archonte | 16 h |
-| marteau-du-griffon | Marteau du griffon (arme) | Templier | 8 Encre vivante, 6 Cristallin, 1 Éclat d'archonte | 16 h |
-| cuirasse-du-griffon | Cuirasse du griffon (armure) | Guerrier | 10 Rouage brisé, 6 Plume de vautour, 1 Serre de griffon | 18 h |
+| fendoir-de-guerre | Fendoir de guerre (arme) | Guerrier | 24 Collier à pointes, 18 Crin spectral, 2 Éclat d'archonte | 16 h |
+| dagues-du-massacre | Dagues du massacre (arme) | Assassin | 24 Collier à pointes, 18 Crin spectral, 2 Éclat d'archonte | 16 h |
+| sceptre-d-ether | Sceptre d'éther (arme) | Mage | 24 Encre vivante, 18 Cristallin, 2 Éclat d'archonte | 16 h |
+| marteau-du-griffon | Marteau du griffon (arme) | Templier | 24 Encre vivante, 18 Cristallin, 2 Éclat d'archonte | 16 h |
+| cuirasse-du-griffon | Cuirasse du griffon (armure) | Guerrier | 30 Rouage brisé, 18 Plume de vautour, 2 Serre de griffon | 18 h |
 | cuir-du-vautour | Cuir du vautour (armure) | Assassin | idem | 18 h |
 | robe-des-archives | Robe des archives (armure) | Mage | idem | 18 h |
 | plates-de-la-cite | Plates de la cité (armure) | Templier | idem | 18 h |
@@ -2287,11 +2287,11 @@ Annexes (gamedesign.md, section 9.9), sur le modèle de la section 44 :
 
 | Identifiant | Objet | Classe | Coût | Durée |
 |---|---|---|---|---|
-| hache-de-magma | Hache de magma (arme) | Guerrier | 8 Corne de granit, 6 Croc calciné, 1 Cœur de tonnerre | 18 h |
-| dagues-foudroyees | Dagues foudroyées (arme) | Assassin | 8 Corne de granit, 6 Croc calciné, 1 Cœur de tonnerre | 18 h |
-| baton-des-orages | Bâton des orages (arme) | Mage | 8 Étincelle captive, 6 Scorie de magma, 1 Cœur de tonnerre | 18 h |
-| marteau-de-lave | Marteau de lave (arme) | Templier | 8 Étincelle captive, 6 Scorie de magma, 1 Cœur de tonnerre | 18 h |
-| plates-de-magma | Plates de magma (armure) | Guerrier | 10 Lingot noirci, 6 Plume d'orage, 1 Écaille de magma | 20 h |
+| hache-de-magma | Hache de magma (arme) | Guerrier | 24 Corne de granit, 18 Croc calciné, 2 Cœur de tonnerre | 18 h |
+| dagues-foudroyees | Dagues foudroyées (arme) | Assassin | 24 Corne de granit, 18 Croc calciné, 2 Cœur de tonnerre | 18 h |
+| baton-des-orages | Bâton des orages (arme) | Mage | 24 Étincelle captive, 18 Scorie de magma, 2 Cœur de tonnerre | 18 h |
+| marteau-de-lave | Marteau de lave (arme) | Templier | 24 Étincelle captive, 18 Scorie de magma, 2 Cœur de tonnerre | 18 h |
+| plates-de-magma | Plates de magma (armure) | Guerrier | 30 Lingot noirci, 18 Plume d'orage, 2 Écaille de magma | 20 h |
 | cuir-d-orage | Cuir d'orage (armure) | Assassin | idem | 20 h |
 | robe-de-cendre | Robe de cendre (armure) | Mage | idem | 20 h |
 | harnois-foudroye | Harnois foudroyé (armure) | Templier | idem | 20 h |
@@ -2674,17 +2674,17 @@ Décidé le 06/11/2026, pour les étapes 175 à 177 (gamedesign.md, section 13.1
 
 | Identifiant | Personnage | Quête | Ouverture | Demande | Récompense |
 |---|---|---|---|---|---|
-| lueur-du-crane | Malvoise | La lueur du crâne | Marais des Pendus ouvert | 5 Cendre de feu follet | 150 pièces d'argent, 3 potions |
+| lueur-du-crane | Malvoise | La lueur du crâne | Marais des Pendus ouvert | 15 Cendre de feu follet | 150 pièces d'argent, 3 potions |
 | psautier-de-malvoise | Malvoise | Le psautier de Frère Malvoise | Abbaye des Cendres ouverte | Psautier de Frère Malvoise, Abbaye, étape 3, gardé par une Goule de niveau 27 | 400, 1 Philtre chromatique |
-| prieres-pour-isaure | Malvoise | Des prières pour Isaure | Catacombes de Sainte-Ombre ouvertes | 6 Chapelet d'os | 1 000, 3 capsules d'habileté |
+| prieres-pour-isaure | Malvoise | Des prières pour Isaure | Catacombes de Sainte-Ombre ouvertes | 18 Chapelet d'os | 1 000, 3 capsules d'habileté |
 | page-du-codex-mortis | Malvoise | La page du Codex Mortis | Haute-Cité déchue ouverte | Page du Codex Mortis, Haute-Cité, étape 3, gardée par un Œil errant de niveau 77 | 3 000, 1 Philtre chromatique ; rite en 1 h 30 |
-| tenailles-neuves | Gunther | Des tenailles neuves | Vallée des Brumes ouverte | 6 Fragment d'armure | 200, 1 Moelle de bête, 1 Écorce de fer |
+| tenailles-neuves | Gunther | Des tenailles neuves | Vallée des Brumes ouverte | 18 Fragment d'armure | 200, 1 Moelle de bête, 1 Écorce de fer |
 | marteau-de-hautefer | Gunther | Le marteau de Hautefer | Col du Givre-Noir ouvert | Marteau de Hautefer, Col, étape 3, gardé par un Troll des cavernes de niveau 36 | 600, 1 Philtre chromatique |
-| lame-pour-konrad | Gunther | Une lame pour Konrad | Mines de Fer-Noir ouvertes | 8 Éclat de fer noir | 1 200, 3 capsules d'habileté |
+| lame-pour-konrad | Gunther | Une lame pour Konrad | Mines de Fer-Noir ouvertes | 24 Éclat de fer noir | 1 200, 3 capsules d'habileté |
 | coeur-de-braise | Gunther | Le cœur de braise | Gorge de Braise ouverte | Cœur de braise, Gorge, étape 3, gardé par un Golem de magma de niveau 82 | 3 000, 1 Philtre chromatique ; travaux 25 % plus courts |
-| leurres-de-plumes | Ansgar | Des leurres de plumes | Marais des Pendus ouvert | 5 Plume de corbeau | 150, 5 filets de chanvre |
+| leurres-de-plumes | Ansgar | Des leurres de plumes | Marais des Pendus ouvert | 15 Plume de corbeau | 150, 5 filets de chanvre |
 | medaillon-d-edwin | Ansgar | Le médaillon d'Edwin | Port des Noyés ouvert | Médaillon d'Edwin, Port, étape 3, gardé par une Sirène putride de niveau 51 | 800, 1 Philtre chromatique |
-| barque-pour-edwin | Ansgar | Une barque pour Edwin | Mines de Fer-Noir ouvertes | 8 Carapace de crabe | 1 200, 3 capsules d'habileté |
+| barque-pour-edwin | Ansgar | Une barque pour Edwin | Mines de Fer-Noir ouvertes | 24 Carapace de crabe | 1 200, 3 capsules d'habileté |
 | filet-de-l-equipage | Ansgar | Le filet de l'équipage | Épave du Léviathan ouverte | Filet de l'équipage, Épave, étape 2, gardé par un Crabe nécrophage de niveau 53 | 3 000, 1 Philtre chromatique ; ligne en 1 h 30 |
 
 Chaque objet de quête a l'identifiant de sa quête.
@@ -2693,7 +2693,7 @@ Textes, pour chaque quête : la demande, puis, pour un objet, sa rencontre et sa
 
 Malvoise :
 
-> La lueur du crâne, demande : Malvoise fait tourner son crâne entre ses doigts. "Il s'éteint. Les feux follets du Marais brûlent de ce qui reste des noyés : rapporte-m'en cinq poignées de cendre, et il verra de nouveau clair."
+> La lueur du crâne, demande : Malvoise fait tourner son crâne entre ses doigts. "Il s'éteint. Les feux follets du Marais brûlent de ce qui reste des noyés : rapporte-m'en quinze poignées de cendre, et il verra de nouveau clair."
 
 > Remise : Malvoise souffle la cendre dans les orbites du crâne, qui s'allument d'une lueur verte. "Il voit. C'était le crâne de mon maître, à l'Abbaye des Cendres. Il m'a appris à lire les morts ; on l'a brûlé pour cela."
 
@@ -2705,7 +2705,7 @@ Malvoise :
 
 > Remise : Malvoise tourne les pages sans un mot, puis s'arrête sur un nom : Isaure. "Ma sœur. Elle chantait au chœur quand l'Abbesse a commencé à écorcher les novices. Je n'ai rien fait. J'ai fui avec mes livres."
 
-> Des prières pour Isaure, demande : "Les moines des Catacombes psalmodient encore, morts depuis des siècles. Leurs chapelets d'os portent des prières que plus personne ne dit. Rapporte-m'en six : il m'en faut pour retenir une âme qui ne trouve pas le repos."
+> Des prières pour Isaure, demande : "Les moines des Catacombes psalmodient encore, morts depuis des siècles. Leurs chapelets d'os portent des prières que plus personne ne dit. Rapporte-m'en dix-huit : il m'en faut pour retenir une âme qui ne trouve pas le repos."
 
 > Remise : Malvoise noue les chapelets autour du crâne, un à un. "Isaure ne repose pas. Je l'entends, la nuit, qui chante sous le camp. Ces prières la retiendront, le temps que je trouve le reste."
 
@@ -2719,7 +2719,7 @@ Malvoise :
 
 Gunther :
 
-> Des tenailles neuves, demande : Gunther essuie ses mains sur son tablier. "Le Bourreau m'a pris mes outils et ne m'a laissé que ses chaînes. Les armures hantées font un bon acier : rapporte-m'en six fragments, que je me refasse des tenailles dignes de ce nom."
+> Des tenailles neuves, demande : Gunther essuie ses mains sur son tablier. "Le Bourreau m'a pris mes outils et ne m'a laissé que ses chaînes. Les armures hantées font un bon acier : rapporte-m'en dix-huit fragments, que je me refasse des tenailles dignes de ce nom."
 
 > Remise : Gunther fond les fragments et martèle jusqu'à la nuit. Au matin, il vous montre des tenailles neuves. "Mon fils aurait fait mieux. Konrad. Il avait la main plus fine que la mienne. Le Bourreau l'a gardé, lui aussi. Il n'est pas sorti."
 
@@ -2731,7 +2731,7 @@ Gunther :
 
 > Remise : Gunther soupèse le marteau et rit pour la première fois. "La marque de Hautefer. Mon père, et son père avant lui." Il le pend au-dessus de l'enclume. "Il ne servira qu'aux beaux ouvrages."
 
-> Une lame pour Konrad, demande : "On dit que le fer des Mines ne rouille jamais, parce que les morts le gardent. Il m'en faut huit éclats : je veux forger une lame pour la tombe de Konrad. Il n'en a pas, de tombe. Il aura une lame."
+> Une lame pour Konrad, demande : "On dit que le fer des Mines ne rouille jamais, parce que les morts le gardent. Il m'en faut vingt-quatre éclats : je veux forger une lame pour la tombe de Konrad. Il n'en a pas, de tombe. Il aura une lame."
 
 > Remise : Gunther forge trois jours. La lame est simple, sans ornement, noire comme les nuits du Col. Il la plante en terre au bord du camp. "Voilà. Ici repose Konrad, apprenti de Hautefer."
 
@@ -2745,7 +2745,7 @@ Gunther :
 
 Ansgar :
 
-> Des leurres de plumes, demande : Ansgar ravaude un filet, les doigts gourds. "Mes leurres sont restés dans la cabane. Avec cinq plumes de corbeau, je m'en ferai de nouveaux, et le poisson de l'étang mordra mieux."
+> Des leurres de plumes, demande : Ansgar ravaude un filet, les doigts gourds. "Mes leurres sont restés dans la cabane. Avec quinze plumes de corbeau, je m'en ferai de nouveaux, et le poisson de l'étang mordra mieux."
 
 > Remise : Ansgar noue les plumes avec une patience infinie. "Mon fils, Edwin, les faisait mieux que moi. Il est parti en mer, au Port. Les marins disaient que la mer y rend les noyés. Elle ne me l'a jamais rendu."
 
@@ -2757,7 +2757,7 @@ Ansgar :
 
 > Remise : Ansgar serre le médaillon dans son poing, longtemps. "Elle l'avait, la sirène ? Alors il n'est pas resté seul, au fond." Il le porte désormais à son cou.
 
-> Une barque pour Edwin, demande : "Les gens du Port brûlaient une barque pour chaque noyé, pour qu'il trouve son chemin. Edwin n'en a pas eu. Avec huit carapaces de crabe pour la coque, je lui en ferai une."
+> Une barque pour Edwin, demande : "Les gens du Port brûlaient une barque pour chaque noyé, pour qu'il trouve son chemin. Edwin n'en a pas eu. Avec vingt-quatre carapaces de crabe pour la coque, je lui en ferai une."
 
 > Remise : Ansgar assemble une petite barque de carapaces et y couche une plume de corbeau. Au soir, il la pousse sur l'étang du camp et y met le feu. "Bon vent, mon garçon."
 
@@ -2778,7 +2778,7 @@ Autres textes :
 | Récompense | Vous recevez {récompense}, rangés dans le coffre. |
 | Service amélioré | Le Rite du sang mêlé dure désormais 1 h 30. / Les travaux de Gunther durent désormais 25 % de moins. / La ligne d'Ansgar est désormais prête en 1 h 30. |
 | Écran des quêtes | Pour chaque personnage au camp : "{personnage} ({n}/4 quêtes accomplies)", puis sa quête en cours, "En cours : {quête}. {objectif}", "Une demande à écouter.", "Rien à vous demander pour l'instant." ou "Toutes ses quêtes sont accomplies." |
-| Objectif | Rapporter 5 Cendre de feu follet (vous en avez 3). / Trouver le Psautier de Frère Malvoise dans l'Abbaye des Cendres. / Remettre le Psautier de Frère Malvoise. |
+| Objectif | Rapporter 15 Cendre de feu follet (vous en avez 13). / Trouver le Psautier de Frère Malvoise dans l'Abbaye des Cendres. / Remettre le Psautier de Frère Malvoise. |
 | Libellés | Quêtes du camp (console), Quêtes (Discord) ; Écouter {personnage} ; Remettre à {personnage} |
 | Refus | Il vous manque 2 Cendre de feu follet. / Vous n'avez pas le Psautier de Frère Malvoise. / {personnage} n'a rien à vous demander. / {personnage} n'est pas au camp. |
 
@@ -2807,7 +2807,7 @@ Parfums, portés aussitôt préparés :
 | Parfum | Recette | Effet |
 |---|---|---|
 | Parfum de charogne | 3 Chair de noyé et 2 Vers de vase | les hordes : un monstre de plus par groupe, 3 niveaux de plus, 10 points de monstres rares pris aux combats, ressource 1 fois sur 2 (2 fois sur 3 pour une espèce rare) |
-| Parfum de {espèce} | 1 Ambre noir et 3 de la ressource de l'espèce | les hordes, et l'espèce : 1 monstre sur 2 des groupes là où elle est commune, le monstre rare là où elle est rare |
+| Parfum de {espèce} | 1 Ambre noir et 9 de la ressource de l'espèce, 6 pour une espèce rare (3 avant l'étape 199) | les hordes, et l'espèce : 1 monstre sur 2 des groupes là où elle est commune, le monstre rare là où elle est rare |
 
 Chaîne d'allégeance (identifiant chaine-d-allegeance, objet d'évolution) : 500 pièces d'argent chez Malvoise ; ni dans les coffres ni à la pêche. Renommée Chaîne de lien à l'étape 194 (11/11/2026, demande de l'utilisateur) : seuls le nom et les textes changent, l'identifiant reste chaine-d-allegeance ; les textes de cette section qui la nomment disent désormais "Chaîne de lien" (ou "chaîne de lien" au codex).
 
@@ -2877,7 +2877,7 @@ Cannes à pêche (étape 197), fabriquées par Ansgar, chacune demandant la pré
 | Canne | Durée de la ligne | Coût |
 |---|---|---|
 | Canne en bois | 30 min | 50 pièces d'argent |
-| Canne en fer | 1 h | 300 pièces d'argent et 5 Fragments d'armure |
+| Canne en fer | 1 h | 300 pièces d'argent et 15 Fragments d'armure (5 avant l'étape 199) |
 | Canne en argent | 2 h | 1 000 pièces d'argent et 3 Ambres noirs |
 
 Les tables de prises de chaque canne sont dans gamedesign.md, section 13.8. Libellés : "Lancer la ligne avec la canne en bois (30 min)" et "Fabriquer la canne suivante : " suivi de la canne et de son coût, dans la console ; "Lancer : canne en bois (30 min)" et "Fabriquer : canne en fer" sur Discord.

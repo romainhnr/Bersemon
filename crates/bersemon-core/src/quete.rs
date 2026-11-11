@@ -154,7 +154,9 @@ impl Objectif {
             Objectif::VaincreDesMonstresSauvages => 15,
             Objectif::CapturerDesMonstres => 3,
             Objectif::OuvrirDesCoffres => 2,
-            Objectif::RecolterDesRessources => 5,
+            // Depuis l'étape 193, chaque monstre abattu lâche un objet : 3
+            // fois plus qu'au lancement des quêtes.
+            Objectif::RecolterDesRessources => 15,
             Objectif::MenerDesExpeditionsAuBout => 2,
             Objectif::ReussirDesExpeditionsAutomatiques => 1,
         }

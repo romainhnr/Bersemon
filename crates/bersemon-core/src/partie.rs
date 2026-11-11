@@ -6030,7 +6030,7 @@ pub(crate) mod tests {
         let DemandeDeQuete::Rapporter { ressource, .. } = premiere.demande() else {
             panic!("des ressources à rapporter");
         };
-        partie.sac.ajouter_ressources(ressource.clone(), 3);
+        partie.sac.ajouter_ressources(ressource.clone(), 13);
         assert_eq!(
             partie.remettre(malvoise, quetes, zones, piste),
             Err(ErreurQuete::RessourcesManquantes(
