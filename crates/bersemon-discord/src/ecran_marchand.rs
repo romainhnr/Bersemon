@@ -30,8 +30,8 @@ use crate::composants::{
 };
 use crate::ecran_camp::{menus_de_monstres_decrits, retour};
 use crate::message::{
-    DANGER, OptionDeMenu, PRINCIPAL, Question, RANGEES_MAX, Rangee, SECONDAIRE, bouton, menu,
-    menus, rangees,
+    Bouton, DANGER, OptionDeMenu, PRINCIPAL, Question, RANGEES_MAX, Rangee, SECONDAIRE, bouton,
+    menu, menus, rangees,
 };
 
 /// Soins achetés par 1 ou par 5 ; l'élixir et le grand élixir, chers, par 1
@@ -308,39 +308,94 @@ pub fn transformation(partie: &Partie, contenu: &ContenuV1) -> Question {
     }
 }
 
-/// Les espèces communes et rares des zones menées au bout : 13 et 8 dans le
-/// contenu, loin des 25 options d'un menu (section 14.2).
+/// Les espèces communes des zones explorées, en vente : plus de 75 depuis
+/// l'étape 208, en menus de 25 sur toutes les rangées sauf celle des
+/// boutons ; la location a son propre écran (section 14.2).
 pub fn achats(partie: &Partie, contenu: &ContenuV1) -> Question {
     if !partie.marchand_au_camp() {
         return sans_marchand();
     }
-    // Sans les types : ceux d'une espèce seulement rencontrée restent
-    // cachés jusqu'à sa capture (section 5.6).
-    let option = |offre: &OffreDeMonstre, libelle: String| OptionDeMenu {
-        libelle,
-        valeur: offre.espece.id().as_str().to_string(),
-        description: None,
-    };
     let mut lignes: Vec<Rangee> = Vec::new();
     let a_vendre = partie
         .offres_d_achat(contenu.zones(), contenu.especes())
         .iter()
-        .map(|offre| option(offre, offre_d_achat(offre)))
+        .map(|offre| option_de_monstre(offre, offre_d_achat(offre)))
         .collect();
-    // Une rangée pour la location, une pour les boutons : les espèces en
-    // vente se partagent les autres, 25 par menu.
     lignes.extend(menus(
         Cle::AcheterMonstre,
         "Acheter un monstre",
         a_vendre,
-        RANGEES_MAX - 2,
+        RANGEES_MAX - 1,
     ));
+    let mut boutons = Vec::new();
+    if !partie
+        .offres_de_location(contenu.zones(), contenu.piste())
+        .is_empty()
+    {
+        boutons.push(bouton(
+            Cle::Afficher(Vue::Locations),
+            "Louer un monstre",
+            PRINCIPAL,
+        ));
+    }
+    boutons.extend(boutons_du_monstre_loue(partie));
+    Question {
+        texte: format!(
+            "Malvoise vend des monstres communs des zones que vous avez explorées. Vous avez {}.{}",
+            argent(partie.argent()),
+            ligne_de_location(partie)
+        ),
+        rangees: lignes.into_iter().chain(rangees(boutons)).collect(),
+    }
+}
+
+/// Les espèces rares des zones explorées, à louer : plus de 25 depuis
+/// l'étape 208, en menus de 25 (section 14.2).
+pub fn locations(partie: &Partie, contenu: &ContenuV1) -> Question {
+    if !partie.marchand_au_camp() {
+        return sans_marchand();
+    }
+    let mut lignes: Vec<Rangee> = Vec::new();
     let a_louer = partie
         .offres_de_location(contenu.zones(), contenu.piste())
         .iter()
-        .map(|offre| option(offre, offre_de_location(offre)))
+        .map(|offre| option_de_monstre(offre, offre_de_location(offre)))
         .collect();
-    lignes.extend(menu(Cle::LouerMonstre, "Louer un monstre", a_louer));
+    lignes.extend(menus(
+        Cle::LouerMonstre,
+        "Louer un monstre",
+        a_louer,
+        RANGEES_MAX - 1,
+    ));
+    let mut boutons = vec![bouton(
+        Cle::Afficher(Vue::Achats),
+        "Acheter un monstre",
+        PRINCIPAL,
+    )];
+    boutons.extend(boutons_du_monstre_loue(partie));
+    Question {
+        texte: format!(
+            "Malvoise loue des monstres rares des zones que vous avez explorées pour {EXPEDITIONS_DE_LOCATION} expéditions : un monstre loué ne fait que combattre, puis repart. Vous avez {}.{}",
+            argent(partie.argent()),
+            ligne_de_location(partie)
+        ),
+        rangees: lignes.into_iter().chain(rangees(boutons)).collect(),
+    }
+}
+
+/// Sans les types : ceux d'une espèce seulement rencontrée restent cachés
+/// jusqu'à sa capture (section 5.6).
+fn option_de_monstre(offre: &OffreDeMonstre, libelle: String) -> OptionDeMenu {
+    OptionDeMenu {
+        libelle,
+        valeur: offre.espece.id().as_str().to_string(),
+        description: None,
+    }
+}
+
+/// Le rendu du monstre loué, s'il y en a un, puis les retours, communs aux
+/// achats et aux locations.
+fn boutons_du_monstre_loue(partie: &Partie) -> Vec<Bouton> {
     let mut boutons = Vec::new();
     if let Some((_, monstre)) = partie.collection().monstre_loue() {
         boutons.push(bouton(
@@ -357,17 +412,13 @@ pub fn achats(partie: &Partie, contenu: &ContenuV1) -> Question {
         ),
         retour(),
     ]);
-    lignes.extend(rangees(boutons));
-    let location = location_en_cours(partie)
+    boutons
+}
+
+fn ligne_de_location(partie: &Partie) -> String {
+    location_en_cours(partie)
         .map(|ligne| format!("\n{ligne}"))
-        .unwrap_or_default();
-    Question {
-        texte: format!(
-            "Malvoise vend des monstres communs des zones que vous avez explorées, et loue des monstres rares pour {EXPEDITIONS_DE_LOCATION} expéditions : un monstre loué ne fait que combattre, puis repart. Vous avez {}.{location}",
-            argent(partie.argent())
-        ),
-        rangees: lignes,
-    }
+        .unwrap_or_default()
 }
 
 /// Une vue restée d'avant le marchand, ou ouverte par un message dépassé.

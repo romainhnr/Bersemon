@@ -54,7 +54,7 @@ use bersemon_core::zone::{Zone, ZoneId};
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 42;
+pub(crate) const VERSION: u64 = 43;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -1630,13 +1630,17 @@ fn ids_de_marchands(marchands: &[MarchandMort]) -> Vec<String> {
 /// Pour chaque version qui a ajouté des zones entre deux Apôtres : la
 /// position, dans la piste d'avant, de l'indice après lequel s'insère
 /// l'indice de chaque nouvelle zone (section 9.1).
-const INDICES_DES_ZONES_AJOUTEES: [(u64, &[usize]); 2] = [
+const INDICES_DES_ZONES_AJOUTEES: [(u64, &[usize]); 3] = [
     // Étape 206 : le Bourg des Lamentations, après celui de la Vallée, et
     // le Bois des Farfadets, après le premier de l'Abbaye.
     (41, &[2, 4]),
     // Étape 207 : la Mer des Naufrages, après le second du Port, et la
     // Grève des Ossements, après le second des Mines.
     (42, &[11, 13]),
+    // Étape 208 : les Champs de Pavots noirs, les Remparts de Grisval, la
+    // Forêt pétrifiée et le Sanctuaire d'Asphodèle, chacun après le second
+    // indice de la Sylve, des Catacombes, de la Plaine et de la Haute-Cité.
+    (43, &[17, 19, 21, 23]),
 ];
 
 /// Une partie antérieure compte comme trouvé l'indice d'une nouvelle zone
@@ -2013,7 +2017,9 @@ mod tests_des_zones_ajoutees {
         assert_eq!(apres(3), 4);
         assert_eq!(apres(4), 5);
         assert_eq!(apres(5), 7);
-        assert_eq!(apres(27), 31);
+        assert_eq!(apres(27), 35);
         assert_eq!(indices_apres_les_zones_ajoutees(41, 5), 5);
+        assert_eq!(indices_apres_les_zones_ajoutees(42, 18), 19);
+        assert_eq!(indices_apres_les_zones_ajoutees(42, 24), 28);
     }
 }

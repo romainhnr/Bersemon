@@ -1596,18 +1596,32 @@ fn malvoise_vend_et_loue_des_monstres_a_travers_les_ecrans_du_bot() {
             })
             .unwrap_or(0)
     };
-    // Plus de 25 espèces en vente depuis l'étape 165 : deux menus.
+    // Plus de 25 espèces en vente depuis l'étape 165 : plusieurs menus.
     // Et les communes des zones ajoutées depuis l'étape 206.
     assert_eq!(options(Cle::AcheterMonstre(0)), 25);
     assert_eq!(options(Cle::AcheterMonstre(1)), 25);
-    assert_eq!(options(Cle::AcheterMonstre(2)), 10);
-    assert_eq!(options(Cle::LouerMonstre), 25);
+    assert_eq!(options(Cle::AcheterMonstre(2)), 22);
     assert!(!propose(&affiche, |cle| *cle == Cle::RendreLeMonstreLoue));
     let clic = choisir_dans(&affiche, |cle| *cle == Cle::AcheterMonstre(0), "loup").unwrap();
     let achat = jouer(&mut joueurs, clic);
     assert!(matches!(&achat[..], [Evenement::MonstreAchete { .. }, ..]));
+    // Plus de 25 rares à louer depuis l'étape 208 : la location a son
+    // écran, en plusieurs menus.
+    cliquer_sur(&mut joueurs, Cle::Afficher(Vue::Locations));
     let affiche = afficher(&mut joueurs);
-    let clic = choisir_dans(&affiche, |cle| *cle == Cle::LouerMonstre, "cerf-blanc").unwrap();
+    let options = |cle: Cle| {
+        affiche
+            .rangees
+            .iter()
+            .find_map(|rangee| match rangee {
+                Rangee::Menu(menu) if menu.cle == cle => Some(menu.options.len()),
+                _ => None,
+            })
+            .unwrap_or(0)
+    };
+    assert_eq!(options(Cle::LouerMonstre(0)), 25);
+    assert_eq!(options(Cle::LouerMonstre(1)), 4);
+    let clic = choisir_dans(&affiche, |cle| *cle == Cle::LouerMonstre(0), "cerf-blanc").unwrap();
     let location = jouer(&mut joueurs, clic);
     assert!(matches!(&location[..], [Evenement::MonstreLoue { .. }, ..]));
     let affiche = afficher(&mut joueurs);

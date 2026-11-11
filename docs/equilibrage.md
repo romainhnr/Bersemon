@@ -612,3 +612,6 @@ Mesuré sur 100 parties par classe : 230 à 244 expéditions (médiane), comme �
 
 Le joueur automatique fait construire le bateau dès qu'une zone de mer l'attend, avant tout autre travail. Avec un premier coût de 24 Carapaces de crabe, 12 Écailles de sirène et 18 Plumes de goéland, il restait 34,3 expéditions au Port et arrivait en mer au niveau 42 ; ramené à 15, 6 et 9, mesuré sur 100 parties par classe : 238 à 244 expéditions (médiane), 27,9 au Port, 1,1 dans la Mer et 2,0 sur la Grève, qu'il traverse comme le Bourg et le Bois. Une partie de Guerrier sur 100 ne s'est pas terminée dans la limite de choix de l'outil.
 
+## 25. Pavots, Remparts, Forêt pétrifiée et Sanctuaire (étape 208)
+
+Mesuré sur 100 parties par classe : 244 à 255 expéditions (médiane), au lieu de 238 à 244. Le joueur automatique traverse les Champs de Pavots noirs en 1,9 expédition, les Remparts de Grisval en 2,4, la Forêt pétrifiée en 2,8 et le Sanctuaire d'Asphodèle en 3,9, sans défaite ; il y arrive 4 à 5 niveaux au-dessus du minimum de la zone. Une partie d'Assassin sur 100 ne s'est pas terminée dans la limite de choix de l'outil.

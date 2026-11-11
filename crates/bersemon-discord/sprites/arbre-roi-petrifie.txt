@@ -1,0 +1,48 @@
+# Arbre-roi pétrifié
+palette
+o 1b1420
+b 3c3e3c
+c 262726
+d 565957
+g 474749
+i 2d2e2f
+p 5d6360
+y 9792a1
+k 1b1420
+z 817789
+shiny
+o 1b1420
+b a19f9f
+c 787676
+d bebbba
+g 555b53
+i 373c36
+p 353434
+y 8f9881
+k 1b1420
+z 9dafa9
+dessin
+....zzozzzoggioz.zzozz..
+...zooioooigggiozooiooz.
+..zoggggiooiiiozoggggioz
+.zoigggggioodcooigggggio
+..zoiigiiozodcozoiigiioz
+...zocidcozodcozoddicoz.
+....zodbbcoodcoodbbcoz..
+....zodcbbcodcodbbcoz...
+....zococbbdbbdbbccoz...
+...zopozocbbbbbccoopoz..
+...zopozzodbbbcoozopoz..
+...zopozzodbbbcozzopoz..
+...zopozzodbbbcozzopoz..
+...zopozzodybycozopopoz.
+..zopopozodbbbcozzopoz..
+...zopozzodbbbcoz.zoz...
+....zoz.zodkkkcoz..z....
+.....z..zodkkkcoz.......
+........zodbbbcoz.......
+........zodbbbcoz.......
+.......zodbbbbcoz.......
+.......zodbbbbbcoz......
+......zocccccccccoz.....
+.......zoooooooooz......

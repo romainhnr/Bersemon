@@ -36,7 +36,7 @@ const CASES_MAX: usize = 4;
 const COULEURS_MAX: usize = 63;
 
 /// Identifiant de l'espèce et texte de son sprite, dans l'ordre du codex.
-const SPRITES: [(&str, &str); 162] = [
+const SPRITES: [(&str, &str); 178] = [
     ("salamandre", include_str!("../sprites/salamandre.txt")),
     ("crapaud", include_str!("../sprites/crapaud.txt")),
     ("mandragore", include_str!("../sprites/mandragore.txt")),
@@ -510,6 +510,70 @@ const SPRITES: [(&str, &str); 162] = [
     (
         "sirene-d-ecume",
         include_str!("../sprites/sirene-d-ecume.txt"),
+    ),
+    (
+        "sphinx-tete-de-mort",
+        include_str!("../sprites/sphinx-tete-de-mort.txt"),
+    ),
+    (
+        "lievre-somnambule",
+        include_str!("../sprites/lievre-somnambule.txt"),
+    ),
+    (
+        "pavot-carnivore",
+        include_str!("../sprites/pavot-carnivore.txt"),
+    ),
+    (
+        "marchand-de-sable",
+        include_str!("../sprites/marchand-de-sable.txt"),
+    ),
+    (
+        "belier-de-siege",
+        include_str!("../sprites/belier-de-siege.txt"),
+    ),
+    (
+        "sentinelle-de-pierre",
+        include_str!("../sprites/sentinelle-de-pierre.txt"),
+    ),
+    (
+        "baliste-hantee",
+        include_str!("../sprites/baliste-hantee.txt"),
+    ),
+    (
+        "chevalier-errant",
+        include_str!("../sprites/chevalier-errant.txt"),
+    ),
+    (
+        "cerf-de-pierre",
+        include_str!("../sprites/cerf-de-pierre.txt"),
+    ),
+    (
+        "lezard-petrifie",
+        include_str!("../sprites/lezard-petrifie.txt"),
+    ),
+    (
+        "dryade-de-pierre",
+        include_str!("../sprites/dryade-de-pierre.txt"),
+    ),
+    (
+        "arbre-roi-petrifie",
+        include_str!("../sprites/arbre-roi-petrifie.txt"),
+    ),
+    (
+        "moine-de-lumiere",
+        include_str!("../sprites/moine-de-lumiere.txt"),
+    ),
+    (
+        "chimere-de-cristal",
+        include_str!("../sprites/chimere-de-cristal.txt"),
+    ),
+    (
+        "ver-luisant-geant",
+        include_str!("../sprites/ver-luisant-geant.txt"),
+    ),
+    (
+        "gardien-d-asphodele",
+        include_str!("../sprites/gardien-d-asphodele.txt"),
     ),
 ];
 

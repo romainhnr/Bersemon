@@ -1,0 +1,48 @@
+# Sphinx tête-de-mort
+palette
+o 1b1420
+a b09153
+e 7c6a52
+f d3ac51
+g 7c5631
+b 73604d
+c 4f4338
+d 977a54
+k 1b1420
+y c7b032
+shiny
+o 1b1420
+a 4a70b0
+e 495772
+f 4d92d2
+g 97335f
+b 484f60
+c 313742
+d 546284
+k 1b1420
+y b036cd
+dessin
+............o...........
+........o..oyo..o.......
+..o....oco..o..oco...o..
+.oeo....oco...oco...oeo.
+.ofeo...occo.occo..ofeo.
+.ofaeo...ocoooco.oofaeo.
+.ofaaeoo..ocbco.offaaeo.
+ofaagggeo.okbboofagggeo.
+ofaagkgaeoobbbofaagkgaeo
+ofaagggaaeodbcfaaagggaeo
+ofaaaaaaaaedbcaaaaaaaaeo
+oeaaaaaaaaedbcaaaaaaaaeo
+.oeaaaaaaaedbcaaaaaaeeo.
+..oeeaaeaaedbcaaeaaeoo..
+...ooeeofaedbcaeofeo....
+.....offaaedbcaafeo.....
+....oeaaaaedbcaaaaeo....
+...o.ofaaeocbcaaaeo..o..
+..oyoofaeo.ocoeaaeo.oyo.
+...o.oeeo...o.oeaeo..o..
+......oo.......oeo......
+................o.......
+........................
+........................

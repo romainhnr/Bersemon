@@ -95,6 +95,7 @@ pub fn question(
         Vue::Vente => ecran_marchand::vente(partie),
         Vue::Transformation => ecran_marchand::transformation(partie, contenu),
         Vue::Achats => ecran_marchand::achats(partie, contenu),
+        Vue::Locations => ecran_marchand::locations(partie, contenu),
         Vue::Capsules => ecran_marchand::capsules(partie, contenu),
         Vue::Eclipse => ecran_eclipse::eclipse(partie, contenu),
         Vue::Attaques(emplacement) => attaques(partie, emplacement, contenu),

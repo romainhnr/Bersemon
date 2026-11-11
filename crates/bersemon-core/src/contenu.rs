@@ -116,23 +116,23 @@ const INDICE_12: &str = "dans la geôle du Prévôt, un registre de condamnés s
 
 const INDICE_13: &str = "la chasseresse vaincue a parlé : la Duchesse sanguine attend au cœur de la Sylve, dans un manoir que les ronces ont dévoré.";
 
-const INDICE_14: &str = "parmi les parures de la Duchesse, une bague gravée du même sceau : sous la ville morte de Sainte-Ombre, des catacombes où un évêque bénit encore les os. Un septième Apôtre y prêche.";
+const INDICE_14: &str = "parmi les parures de la Duchesse, une bague gravée du même sceau : au-delà des Champs de Pavots noirs, sous la ville morte de Sainte-Ombre, des catacombes où un évêque bénit encore les os. Un septième Apôtre y prêche.";
 
 const INDICE_15: &str = "le fossoyeur vaincu a parlé : l'Évêque des os officie au fond des catacombes, dans une chapelle bâtie de crânes.";
 
 // Plaine du Massacre et Haute-Cité déchue, section 46 de
 // docs/contenu-v1.md (étape 166).
-const INDICE_16: &str = "sous l'autel de l'Évêque, une liste de recrues scellée du même sceau : à l'ouest, la Plaine du Massacre, où deux armées se battent encore après leur mort. Un huitième Apôtre y commande.";
+const INDICE_16: &str = "sous l'autel de l'Évêque, une liste de recrues scellée du même sceau : à l'ouest, au-delà des Remparts de Grisval, la Plaine du Massacre, où deux armées se battent encore après leur mort. Un huitième Apôtre y commande.";
 
 const INDICE_17: &str = "le capitaine mercenaire vaincu a parlé : le Connétable boucher dresse son camp au centre de la plaine, sur une colline de cadavres.";
 
-const INDICE_18: &str = "dans la tente du Connétable, un ordre de marche scellé du même sceau : au-delà de la plaine, la Haute-Cité déchue, dont les tours regardent encore le ciel. Un neuvième Apôtre y gouverne.";
+const INDICE_18: &str = "dans la tente du Connétable, un ordre de marche scellé du même sceau : au-delà de la plaine et de la Forêt pétrifiée, la Haute-Cité déchue, dont les tours regardent encore le ciel. Un neuvième Apôtre y gouverne.";
 
 const INDICE_19: &str = "l'archiviste vaincu a parlé : le Chancelier aux mille yeux siège au sommet de la plus haute tour, dans une salle tapissée de regards.";
 
 // Gorge de Braise et Pics Foudroyés, section 47 de docs/contenu-v1.md
 // (étape 167).
-const INDICE_20: &str = "dans les archives du Chancelier, une carte scellée du même sceau : au sud, la Gorge de Braise, où la terre saigne du feu. Un dixième Apôtre y règne.";
+const INDICE_20: &str = "dans les archives du Chancelier, une carte scellée du même sceau : au sud, par le Sanctuaire d'Asphodèle caché sous la terre, la Gorge de Braise, où la terre saigne du feu. Un dixième Apôtre y règne.";
 
 const INDICE_21: &str = "le pyromancien vaincu a parlé : le Prince de braise trône au fond de la gorge, sur un siège de lave refroidie.";
 
@@ -149,6 +149,22 @@ const INDICE_25: &str = "la favorite vaincue a parlé : la Reine-mère de chair 
 const INDICE_26: &str = "dans la couche de la Reine-mère, une carte scellée du même sceau : sous le palais, le Puits du Monde descend jusqu'au fond des choses. Le dernier Apôtre y attend.";
 
 const INDICE_27: &str = "le chevalier-crâne vaincu a parlé : le Roi sans visage règne au fond du Puits, sur un trône taillé dans la dernière pierre du monde.";
+
+/// Indice de Sanctuaire d'Asphodèle, trouvé au bout de la première expédition menée
+/// au bout (section 9.4, étape 208, texte proposé par Claude, Q124).
+const INDICE_DU_SANCTUAIRE: &str = "au fond du sanctuaire, sous le soleil qui brille sous la terre, un autel porte le même sceau. Une galerie brûlante en part vers le sud, jusqu'à la Gorge de Braise.";
+
+/// Indice de Forêt pétrifiée, trouvé au bout de la première expédition menée
+/// au bout (section 9.4, étape 208, texte proposé par Claude, Q124).
+const INDICE_DE_LA_FORET: &str = "entre les arbres de pierre, un pèlerin pétrifié tient une tablette au même sceau. Son regard figé fixe les tours de la Haute-Cité déchue.";
+
+/// Indice de Remparts de Grisval, trouvé au bout de la première expédition menée
+/// au bout (section 9.4, étape 208, texte proposé par Claude, Q124).
+const INDICE_DES_REMPARTS: &str = "sur le plus haut rempart, un étendard déchiré porte le même sceau. De là, on voit à l'ouest la Plaine du Massacre, où deux armées se battent encore.";
+
+/// Indice de Champs de Pavots noirs, trouvé au bout de la première expédition menée
+/// au bout (section 9.4, étape 208, texte proposé par Claude, Q124).
+const INDICE_DES_PAVOTS: &str = "au milieu des pavots, une stèle porte le même sceau. Au-delà, la route descend vers les clochers muets de Sainte-Ombre et ses catacombes.";
 
 /// Indice de Grève des Ossements, trouvé au bout de la première expédition menée
 /// au bout (section 9.4, étape 207, texte proposé par Claude, Q124).
@@ -1206,6 +1222,28 @@ impl ContenuV1 {
                 .avec_meteos(METEOS_COMMUNES.to_vec())
         })
         .expect("Sylve écarlate conforme aux règles");
+        // Entre la Duchesse et l'Évêque, des champs de pavots noirs dont le parfum endort les voyageurs (section 9.1, étape 208).
+        let pavots = Zone::new(
+            ZoneId::new("champs-de-pavots-noirs"),
+            "Champs de Pavots noirs",
+            (niveau(47), niveau(50)),
+            5,
+            3,
+            vec![
+                trouver("sphinx-tete-de-mort"),
+                trouver("lievre-somnambule"),
+                trouver("pavot-carnivore"),
+            ],
+            vec![EspeceRare {
+                espece: trouver("marchand-de-sable"),
+                pacifique: false,
+            }],
+            expedition_automatique(9, 378..=714, 3640..=5320, 1..=3, 405..=660),
+            coffre(320..=490, Vec::new()),
+        )
+        .and_then(|zone| zone.avec_monstre_cache(schnoz()))
+        .map(|zone| zone.avec_meteos(vec![Meteo::Pluie, Meteo::Canicule]))
+        .expect("Champs de Pavots noirs conforme aux règles");
         // Au service de l'Évêque des os, il garde les Catacombes (section
         // 10.7).
         let fossoyeur = Humain::new(
@@ -1275,6 +1313,28 @@ impl ContenuV1 {
             DECOUVERTE_DE_L_AUTEL,
         )
         .expect("Autel des ronces conforme aux règles");
+        // Entre l'Évêque et le Connétable, les remparts d'une ville assiégée depuis des siècles, que ses défenseurs morts gardent encore (section 9.1, étape 208).
+        let remparts = Zone::new(
+            ZoneId::new("remparts-de-grisval"),
+            "Remparts de Grisval",
+            (niveau(53), niveau(56)),
+            5,
+            3,
+            vec![
+                trouver("belier-de-siege"),
+                trouver("sentinelle-de-pierre"),
+                trouver("baliste-hantee"),
+            ],
+            vec![EspeceRare {
+                espece: trouver("chevalier-errant"),
+                pacifique: false,
+            }],
+            expedition_automatique(10, 448..=840, 4700..=6800, 1..=3, 460..=740),
+            coffre(360..=550, Vec::new()),
+        )
+        .and_then(|zone| zone.avec_monstre_cache(schnoz()))
+        .map(|zone| zone.avec_meteos(vec![Meteo::Pluie, Meteo::Tempete, Meteo::Grele]))
+        .expect("Remparts de Grisval conforme aux règles");
         let crypte = annexe(
             Zone::new(
                 ZoneId::new("crypte-des-saints"),
@@ -1343,6 +1403,28 @@ impl ContenuV1 {
                 .avec_meteos(meteos_de_la_plaine.clone())
         })
         .expect("Plaine du Massacre conforme aux règles");
+        // Entre le Connétable et le Chancelier, une forêt changée en pierre avec tout ce qui y vivait (section 9.1, étape 208).
+        let foret = Zone::new(
+            ZoneId::new("foret-petrifiee"),
+            "Forêt pétrifiée",
+            (niveau(59), niveau(62)),
+            5,
+            3,
+            vec![
+                trouver("cerf-de-pierre"),
+                trouver("lezard-petrifie"),
+                trouver("dryade-de-pierre"),
+            ],
+            vec![EspeceRare {
+                espece: trouver("arbre-roi-petrifie"),
+                pacifique: true,
+            }],
+            expedition_automatique(11, 522..=981, 5960..=8520, 1..=3, 520..=820),
+            coffre(400..=610, Vec::new()),
+        )
+        .and_then(|zone| zone.avec_monstre_cache(schnoz()))
+        .map(|zone| zone.avec_meteos(vec![Meteo::Tempete, Meteo::Grele]))
+        .expect("Forêt pétrifiée conforme aux règles");
         let tertre = annexe(
             Zone::new(
                 ZoneId::new("tertre-des-heros"),
@@ -1412,6 +1494,28 @@ impl ContenuV1 {
                 .avec_meteos(meteos_de_la_cite.clone())
         })
         .expect("Haute-Cité déchue conforme aux règles");
+        // Entre le Chancelier et le Prince, une vallée cachée sous la terre, éclairée par un soleil souterrain, où des moines gardent une paix ancienne (section 9.1, étape 208).
+        let sanctuaire = Zone::new(
+            ZoneId::new("sanctuaire-d-asphodele"),
+            "Sanctuaire d'Asphodèle",
+            (niveau(67), niveau(70)),
+            5,
+            3,
+            vec![
+                trouver("moine-de-lumiere"),
+                trouver("chimere-de-cristal"),
+                trouver("ver-luisant-geant"),
+            ],
+            vec![EspeceRare {
+                espece: trouver("gardien-d-asphodele"),
+                pacifique: true,
+            }],
+            expedition_automatique(12, 601..=1145, 7560..=10690, 1..=3, 580..=900),
+            coffre(440..=670, Vec::new()),
+        )
+        .and_then(|zone| zone.avec_monstre_cache(schnoz()))
+        .map(|zone| zone.avec_meteos(vec![Meteo::Pluie, Meteo::Canicule]))
+        .expect("Sanctuaire d'Asphodèle conforme aux règles");
         let bibliotheque = annexe(
             Zone::new(
                 ZoneId::new("bibliotheque-interdite"),
@@ -1835,7 +1939,11 @@ impl ContenuV1 {
         .avec_recit_de_l_ame(AME_DE_L_EVEQUE)
         .avec_ligne_du_carnet(CARNET_DE_L_EVEQUE);
         let chapitre_de_l_eveque = Chapitre::new(
-            vec![indice(&sylve, INDICE_14), indice(&catacombes, INDICE_15)],
+            vec![
+                indice(&sylve, INDICE_14),
+                indice(&pavots, INDICE_DES_PAVOTS),
+                indice(&catacombes, INDICE_15),
+            ],
             eveque,
         )
         .expect("chapitre de l'Évêque conforme aux règles");
@@ -1852,7 +1960,11 @@ impl ContenuV1 {
         .avec_recit_de_l_ame(AME_DU_CONNETABLE)
         .avec_ligne_du_carnet(CARNET_DU_CONNETABLE);
         let chapitre_du_connetable = Chapitre::new(
-            vec![indice(&catacombes, INDICE_16), indice(&plaine, INDICE_17)],
+            vec![
+                indice(&catacombes, INDICE_16),
+                indice(&remparts, INDICE_DES_REMPARTS),
+                indice(&plaine, INDICE_17),
+            ],
             connetable,
         )
         .expect("chapitre du Connétable conforme aux règles");
@@ -1868,7 +1980,11 @@ impl ContenuV1 {
         .avec_recit_de_l_ame(AME_DU_CHANCELIER)
         .avec_ligne_du_carnet(CARNET_DU_CHANCELIER);
         let chapitre_du_chancelier = Chapitre::new(
-            vec![indice(&plaine, INDICE_18), indice(&cite, INDICE_19)],
+            vec![
+                indice(&plaine, INDICE_18),
+                indice(&foret, INDICE_DE_LA_FORET),
+                indice(&cite, INDICE_19),
+            ],
             chancelier,
         )
         .expect("chapitre du Chancelier conforme aux règles");
@@ -1885,7 +2001,11 @@ impl ContenuV1 {
         .avec_recit_de_l_ame(AME_DU_PRINCE)
         .avec_ligne_du_carnet(CARNET_DU_PRINCE);
         let chapitre_du_prince = Chapitre::new(
-            vec![indice(&cite, INDICE_20), indice(&gorge, INDICE_21)],
+            vec![
+                indice(&cite, INDICE_20),
+                indice(&sanctuaire, INDICE_DU_SANCTUAIRE),
+                indice(&gorge, INDICE_21),
+            ],
             prince,
         )
         .expect("chapitre du Prince conforme aux règles");
@@ -2082,7 +2202,8 @@ impl ContenuV1 {
         ];
         let zones = vec![
             lisiere, marais, vallee, bourg, abbaye, bois, col, desert, port, mer, mines, greve,
-            sylve, catacombes, plaine, cite, gorge, pics, palais, puits,
+            sylve, pavots, catacombes, remparts, plaine, foret, cite, sanctuaire, gorge, pics,
+            palais, puits,
         ];
         // Les Abysses, au fond de la Tour : les rares hostiles de toutes les
         // zones y forment les groupes, et les rares pacifiques y sont les
@@ -2802,7 +2923,7 @@ const ATTAQUES_DES_HEROS: [FicheAttaque; 40] = [
 ];
 
 /// Section 1 de docs/contenu-v1.md, dans le même ordre.
-const ATTAQUES: [FicheAttaque; 308] = [
+const ATTAQUES: [FicheAttaque; 324] = [
     fiche(
         "souffle-chaud",
         "Souffle chaud",
@@ -5151,6 +5272,135 @@ const ATTAQUES: [FicheAttaque; 308] = [
         80,
         100,
     ),
+    // Attaques d'oeuf des espèces de des Champs de Pavots noirs, des Remparts de Grisval, de la Forêt pétrifiée et du Sanctuaire d'Asphodèle (section 13.11, étape 208).
+    fiche(
+        "aile-du-crane",
+        "Aile du crâne",
+        Type::Insecte,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "bond-onirique",
+        "Bond onirique",
+        Type::Psychique,
+        Speciale,
+        80,
+        100,
+    ),
+    fiche(
+        "pollen-du-sommeil",
+        "Pollen du sommeil",
+        Type::Plante,
+        Speciale,
+        80,
+        100,
+    ),
+    fiche(
+        "sable-des-songes",
+        "Sable des songes",
+        Type::Psychique,
+        Speciale,
+        80,
+        100,
+    ),
+    fiche(
+        "tete-de-belier",
+        "Tête de bélier",
+        Type::Acier,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "garde-immobile",
+        "Garde immobile",
+        Type::Roche,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "carreau-funebre",
+        "Carreau funèbre",
+        Type::Spectre,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "serment-du-chevalier",
+        "Serment du chevalier",
+        Type::Combat,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "ramure-de-granit",
+        "Ramure de granit",
+        Type::Roche,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "morsure-calcaire",
+        "Morsure calcaire",
+        Type::Roche,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "seve-de-calcaire",
+        "Sève de calcaire",
+        Type::Plante,
+        Speciale,
+        80,
+        100,
+    ),
+    fiche(
+        "racines-de-granit",
+        "Racines de granit",
+        Type::Roche,
+        Speciale,
+        80,
+        100,
+    ),
+    fiche(
+        "mantra-solaire",
+        "Mantra solaire",
+        Type::Lumiere,
+        Speciale,
+        80,
+        100,
+    ),
+    fiche(
+        "griffes-de-cristal",
+        "Griffes de cristal",
+        Type::Lumiere,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "lueur-du-ver",
+        "Lueur du ver",
+        Type::Insecte,
+        Speciale,
+        80,
+        100,
+    ),
+    fiche(
+        "souffle-d-asphodele",
+        "Souffle d'Asphodèle",
+        Type::Dragon,
+        Speciale,
+        80,
+        100,
+    ),
 ];
 
 struct FicheCapsule {
@@ -5539,7 +5789,7 @@ const MARCHAND_ZOMBIE: FicheEspece = FicheEspece {
 /// Section 2 de docs/contenu-v1.md, dans l'ordre du codex : les monstres de
 /// départ, les communs, les rares, l'Apôtre, le monstre caché, puis les
 /// formes évoluées de la section 8.
-static ESPECES: [FicheEspece; 162] = [
+static ESPECES: [FicheEspece; 178] = [
     FicheEspece {
         id: "salamandre",
         nom: "Salamandre",
@@ -8573,6 +8823,312 @@ static ESPECES: [FicheEspece; 162] = [
         ],
         evolution: None,
     },
+    // Espèces de des Champs de Pavots noirs, des Remparts de Grisval, de la Forêt pétrifiée et du Sanctuaire d'Asphodèle (section 9.1, étape 208, proposées par
+    // Claude, Q124).
+    FicheEspece {
+        id: "sphinx-tete-de-mort",
+        nom: "Sphinx tête-de-mort",
+        types: &[Type::Insecte, Type::Tenebres],
+        role: Role::Offensif,
+        stats_de_base: [64, 92, 60, 45, 50, 80],
+        rendement_experience: 145,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Celerite, Habilete::Traqueur],
+        apprentissage: &[
+            (1, "bourdonnement"),
+            (1, "coup-sournois"),
+            (15, "nuee"),
+            (25, "croc-noir"),
+            (35, "faux-de-mante"),
+            (53, "rapine"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "lievre-somnambule",
+        nom: "Lièvre somnambule",
+        types: &[Type::Normal, Type::Psychique],
+        role: Role::Offensif,
+        stats_de_base: [62, 50, 56, 90, 68, 64],
+        rendement_experience: 145,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Instinct, Habilete::Celerite],
+        apprentissage: &[
+            (1, "griffure"),
+            (1, "onde-psychique"),
+            (15, "ruade"),
+            (25, "regard-hypnotique"),
+            (35, "curee"),
+            (53, "jugement"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "pavot-carnivore",
+        nom: "Pavot carnivore",
+        types: &[Type::Plante, Type::Psychique],
+        role: Role::Soutien,
+        stats_de_base: [84, 60, 80, 82, 80, 10],
+        rendement_experience: 145,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Sorcellerie, Habilete::Carapace],
+        apprentissage: &[
+            (1, "feuille-tranchante"),
+            (1, "onde-psychique"),
+            (15, "lianes-etrangleuses"),
+            (25, "hurlement-de-mandragore"),
+            (35, "regard-hypnotique"),
+            (53, "ronces-maudites"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "marchand-de-sable",
+        nom: "Marchand de sable",
+        types: &[Type::Psychique, Type::Spectre],
+        role: Role::Offensif,
+        stats_de_base: [72, 48, 66, 112, 90, 74],
+        rendement_experience: 245,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Sorcellerie, Habilete::Instinct],
+        apprentissage: &[
+            (1, "onde-psychique"),
+            (1, "lueur-trompeuse"),
+            (20, "regard-hypnotique"),
+            (30, "flamme-funebre"),
+            (40, "malediction-mortelle"),
+            (54, "presage-funeste"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "belier-de-siege",
+        nom: "Bélier de siège",
+        types: &[Type::Acier, Type::Roche],
+        role: Role::Offensif,
+        stats_de_base: [80, 92, 90, 30, 50, 40],
+        rendement_experience: 163,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Carapace, Habilete::Ferocite],
+        apprentissage: &[
+            (1, "coup-de-garde"),
+            (1, "griffe-de-pierre"),
+            (16, "lame-rouillee"),
+            (26, "chute-de-pierres"),
+            (36, "taille-d-acier"),
+            (59, "eboulement"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "sentinelle-de-pierre",
+        nom: "Sentinelle de pierre",
+        types: &[Type::Roche, Type::Combat],
+        role: Role::Soutien,
+        stats_de_base: [86, 70, 95, 50, 80, 10],
+        rendement_experience: 163,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Carapace, Habilete::Volonte],
+        apprentissage: &[
+            (1, "griffe-de-pierre"),
+            (1, "frappe-d-os"),
+            (16, "chute-de-pierres"),
+            (26, "epee-des-morts"),
+            (36, "regard-de-pierre"),
+            (59, "jugement-de-pierre"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "baliste-hantee",
+        nom: "Baliste hantée",
+        types: &[Type::Acier, Type::Spectre],
+        role: Role::Offensif,
+        stats_de_base: [66, 96, 74, 35, 50, 70],
+        rendement_experience: 163,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Traqueur, Habilete::Instinct],
+        apprentissage: &[
+            (1, "coup-de-garde"),
+            (1, "charge-spectrale"),
+            (16, "lame-rouillee"),
+            (26, "griffes-spectrales"),
+            (36, "taille-d-acier"),
+            (59, "charge-des-morts"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "chevalier-errant",
+        nom: "Chevalier errant",
+        types: &[Type::Combat, Type::Acier],
+        role: Role::Offensif,
+        stats_de_base: [80, 108, 92, 40, 62, 66],
+        rendement_experience: 276,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Volonte, Habilete::Ferocite],
+        apprentissage: &[
+            (1, "frappe-d-os"),
+            (1, "coup-de-garde"),
+            (21, "lame-rouillee"),
+            (31, "epee-des-morts"),
+            (41, "taille-d-acier"),
+            (60, "marteau-de-forge"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "cerf-de-pierre",
+        nom: "Cerf de pierre",
+        types: &[Type::Roche, Type::Normal],
+        role: Role::Offensif,
+        stats_de_base: [74, 92, 84, 36, 52, 58],
+        rendement_experience: 183,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Volonte, Habilete::Celerite],
+        apprentissage: &[
+            (1, "griffe-de-pierre"),
+            (1, "ruade"),
+            (18, "chute-de-pierres"),
+            (28, "curee"),
+            (38, "coup-de-cornes"),
+            (65, "eboulement"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "lezard-petrifie",
+        nom: "Lézard pétrifié",
+        types: &[Type::Roche, Type::Poison],
+        role: Role::Offensif,
+        stats_de_base: [70, 90, 80, 40, 50, 62],
+        rendement_experience: 183,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Traqueur, Habilete::Carapace],
+        apprentissage: &[
+            (1, "griffe-de-pierre"),
+            (1, "morsure-venimeuse"),
+            (18, "croc-de-venin"),
+            (28, "chute-de-pierres"),
+            (38, "regard-de-pierre"),
+            (65, "deluge-toxique"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "dryade-de-pierre",
+        nom: "Dryade de pierre",
+        types: &[Type::Roche, Type::Plante],
+        role: Role::Soutien,
+        stats_de_base: [82, 58, 88, 74, 82, 12],
+        rendement_experience: 183,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Carapace, Habilete::Sorcellerie],
+        apprentissage: &[
+            (1, "feuille-tranchante"),
+            (1, "griffe-de-pierre"),
+            (18, "lianes-etrangleuses"),
+            (28, "hurlement-de-mandragore"),
+            (38, "ronces-maudites"),
+            (65, "eclat-de-gemme"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "arbre-roi-petrifie",
+        nom: "Arbre-roi pétrifié",
+        types: &[Type::Roche, Type::Psychique],
+        role: Role::Soutien,
+        stats_de_base: [100, 70, 105, 85, 95, 10],
+        rendement_experience: 310,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Volonte, Habilete::Carapace],
+        apprentissage: &[
+            (1, "griffe-de-pierre"),
+            (1, "onde-psychique"),
+            (23, "chute-de-pierres"),
+            (33, "regard-hypnotique"),
+            (43, "regard-de-pierre"),
+            (66, "jugement-de-pierre"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "moine-de-lumiere",
+        nom: "Moine de lumière",
+        types: &[Type::Lumiere, Type::Psychique],
+        role: Role::Soutien,
+        stats_de_base: [82, 48, 74, 86, 90, 12],
+        rendement_experience: 206,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Volonte, Habilete::Sorcellerie],
+        apprentissage: &[
+            (1, "lueur-sacree"),
+            (1, "onde-psychique"),
+            (20, "rayon-solaire"),
+            (30, "regard-hypnotique"),
+            (40, "eclat-du-zenith"),
+            (73, "aube-eclatante"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "chimere-de-cristal",
+        nom: "Chimère de cristal",
+        types: &[Type::Lumiere, Type::Roche],
+        role: Role::Offensif,
+        stats_de_base: [70, 90, 82, 48, 54, 48],
+        rendement_experience: 206,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Ferocite, Habilete::Carapace],
+        apprentissage: &[
+            (1, "griffe-de-pierre"),
+            (1, "lueur-sacree"),
+            (20, "chute-de-pierres"),
+            (30, "lance-de-lumiere"),
+            (40, "coup-de-cornes"),
+            (73, "eboulement"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "ver-luisant-geant",
+        nom: "Ver luisant géant",
+        types: &[Type::Insecte, Type::Lumiere],
+        role: Role::Offensif,
+        stats_de_base: [70, 50, 64, 96, 72, 40],
+        rendement_experience: 206,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Instinct, Habilete::Affinite],
+        apprentissage: &[
+            (1, "bourdonnement"),
+            (1, "lueur-sacree"),
+            (20, "nuee"),
+            (30, "rayon-solaire"),
+            (40, "eclat-du-zenith"),
+            (73, "aile-poudree"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "gardien-d-asphodele",
+        nom: "Gardien d'Asphodèle",
+        types: &[Type::Lumiere, Type::Dragon],
+        role: Role::Offensif,
+        stats_de_base: [84, 62, 78, 100, 92, 64],
+        rendement_experience: 347,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Volonte, Habilete::Affinite],
+        apprentissage: &[
+            (1, "lueur-sacree"),
+            (1, "souffle-draconique"),
+            (25, "rayon-solaire"),
+            (35, "eclat-du-zenith"),
+            (45, "souffle-des-brumes"),
+            (74, "flamme-blanche"),
+        ],
+        evolution: None,
+    },
 ];
 
 /// Section 15 de docs/contenu-v1.md : la ligne est prête 2 h après avoir
@@ -10103,7 +10659,7 @@ const PRIX_D_UNE_RESSOURCE_RARE: u32 = 15;
 
 /// Espèce, identifiant et nom de chaque ressource : seules les espèces
 /// sauvages qui se combattent en ont une (section 14.3).
-const RESSOURCES: [(&str, &str, &str); 81] = [
+const RESSOURCES: [(&str, &str, &str); 97] = [
     ("loup", "croc-de-loup", "Croc de loup"),
     ("corbeau", "plume-de-corbeau", "Plume de corbeau"),
     ("vipere", "ecaille-de-vipere", "Écaille de vipère"),
@@ -10231,6 +10787,34 @@ const RESSOURCES: [(&str, &str, &str); 81] = [
     ("mouette-hurleuse", "plume-de-mouette", "Plume de mouette"),
     ("naufrageur", "lanterne-rouillee", "Lanterne rouillée"),
     ("sirene-d-ecume", "perle-d-ecume", "Perle d'écume"),
+    (
+        "sphinx-tete-de-mort",
+        "ecaille-de-sphinx",
+        "Écaille de sphinx",
+    ),
+    ("lievre-somnambule", "patte-de-lievre", "Patte de lièvre"),
+    ("pavot-carnivore", "graine-de-pavot", "Graine de pavot"),
+    ("marchand-de-sable", "sablier-d-os", "Sablier d'os"),
+    ("belier-de-siege", "corne-ferree", "Corne ferrée"),
+    ("sentinelle-de-pierre", "eclat-de-statue", "Éclat de statue"),
+    ("baliste-hantee", "carreau-rouille", "Carreau rouillé"),
+    ("chevalier-errant", "ecu-brise", "Écu brisé"),
+    ("cerf-de-pierre", "bois-petrifie", "Bois pétrifié"),
+    ("lezard-petrifie", "ecaille-de-lezard", "Écaille de lézard"),
+    ("dryade-de-pierre", "ecorce-de-pierre", "Écorce de pierre"),
+    ("arbre-roi-petrifie", "seve-petrifiee", "Sève pétrifiée"),
+    (
+        "moine-de-lumiere",
+        "chapelet-de-lumiere",
+        "Chapelet de lumière",
+    ),
+    (
+        "chimere-de-cristal",
+        "prisme-de-chimere",
+        "Prisme de chimère",
+    ),
+    ("ver-luisant-geant", "abdomen-luisant", "Abdomen luisant"),
+    ("gardien-d-asphodele", "ecaille-doree", "Écaille dorée"),
 ];
 
 /// Section 32 de docs/contenu-v1.md : les météos de la Lisière, du Marais
@@ -10274,7 +10858,7 @@ const ACTIVITES: [(&str, Activite); 28] = [
 
 /// Section 28 de docs/contenu-v1.md : l'attaque d'œuf de chaque famille
 /// d'évolution, par sa forme de base (section 13.11).
-const ATTAQUES_D_OEUF: [(&str, &str); 110] = [
+const ATTAQUES_D_OEUF: [(&str, &str); 126] = [
     ("salamandre", "souffle-des-forges"),
     ("crapaud", "ressac"),
     ("mandragore", "seve-maudite"),
@@ -10385,6 +10969,22 @@ const ATTAQUES_D_OEUF: [(&str, &str); 110] = [
     ("mouette-hurleuse", "cri-des-marees"),
     ("naufrageur", "fanal-trompeur"),
     ("sirene-d-ecume", "chant-d-ecume"),
+    ("sphinx-tete-de-mort", "aile-du-crane"),
+    ("lievre-somnambule", "bond-onirique"),
+    ("pavot-carnivore", "pollen-du-sommeil"),
+    ("marchand-de-sable", "sable-des-songes"),
+    ("belier-de-siege", "tete-de-belier"),
+    ("sentinelle-de-pierre", "garde-immobile"),
+    ("baliste-hantee", "carreau-funebre"),
+    ("chevalier-errant", "serment-du-chevalier"),
+    ("cerf-de-pierre", "ramure-de-granit"),
+    ("lezard-petrifie", "morsure-calcaire"),
+    ("dryade-de-pierre", "seve-de-calcaire"),
+    ("arbre-roi-petrifie", "racines-de-granit"),
+    ("moine-de-lumiere", "mantra-solaire"),
+    ("chimere-de-cristal", "griffes-de-cristal"),
+    ("ver-luisant-geant", "lueur-du-ver"),
+    ("gardien-d-asphodele", "souffle-d-asphodele"),
 ];
 
 /// La forme de base de la famille de cette espèce : celle qu'aucune autre
@@ -11323,8 +11923,8 @@ mod tests {
         uniques.sort_by(|a, b| a.as_str().cmp(b.as_str()));
         uniques.dedup();
         // Celle du Colosse du rempart depuis l'étape 204.
-        assert_eq!(vues.len(), 110);
-        assert_eq!(uniques.len(), 110);
+        assert_eq!(vues.len(), 126);
+        assert_eq!(uniques.len(), 126);
     }
 
     #[test]
@@ -11333,13 +11933,13 @@ mod tests {
 
         let contenu = ContenuV1::new();
         let au_codex = especes_au_codex(contenu.especes());
-        assert_eq!(au_codex, 142);
+        assert_eq!(au_codex, 158);
         let seuils: Vec<u32> = contenu
             .recompenses_du_codex()
             .iter()
             .map(|recompense| recompense.palier.seuil(au_codex))
             .collect();
-        assert_eq!(seuils, vec![10, 20, 30, 40, 50, 142]);
+        assert_eq!(seuils, vec![10, 20, 30, 40, 50, 158]);
         let complet = contenu.recompenses_du_codex().last().unwrap();
         assert_eq!(complet.palier, PalierDuCodex::Complet);
         let sceau = complet.objet_unique.as_ref().unwrap();
@@ -11444,10 +12044,10 @@ mod tests {
     #[test]
     fn contenu_conforme_aux_regles() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.especes().len(), 162);
-        assert_eq!(contenu.zones().len(), 20);
+        assert_eq!(contenu.especes().len(), 178);
+        assert_eq!(contenu.zones().len(), 24);
         assert_eq!(contenu.annexes().len(), 10);
-        assert_eq!(contenu.piste().indices().count(), 31);
+        assert_eq!(contenu.piste().indices().count(), 35);
         // Toute espèce rencontrée en zone, annexes comprises, se retrouve au
         // chargement d'une sauvegarde.
         let annexes = contenu.annexes().iter().map(Annexe::zone);
@@ -12619,12 +13219,16 @@ mod tests {
                 "greve-des-ossements",
                 "sylve-ecarlate",
                 "sylve-ecarlate",
+                "champs-de-pavots-noirs",
                 "catacombes-de-sainte-ombre",
                 "catacombes-de-sainte-ombre",
+                "remparts-de-grisval",
                 "plaine-du-massacre",
                 "plaine-du-massacre",
+                "foret-petrifiee",
                 "haute-cite-dechue",
                 "haute-cite-dechue",
+                "sanctuaire-d-asphodele",
                 "gorge-de-braise",
                 "gorge-de-braise",
                 "pics-foudroyes",
@@ -12752,16 +13356,16 @@ mod tests {
         assert_eq!(piste.indice_suivant(17, &vaincus[..5]), None);
         let quatorzieme = piste.indice_suivant(17, &vaincus[..6]).unwrap();
         assert_eq!(&quatorzieme.zone, sylve.id());
-        assert!(piste.zone_ouverte(catacombes.id(), 18));
-        let quinzieme = piste.indice_suivant(18, &vaincus[..6]).unwrap();
+        assert!(piste.zone_ouverte(catacombes.id(), 19));
+        let quinzieme = piste.indice_suivant(19, &vaincus[..6]).unwrap();
         assert_eq!(&quinzieme.zone, catacombes.id());
         let eveque = piste
-            .apotre_en_attente(catacombes.id(), 19, &vaincus[..6])
+            .apotre_en_attente(catacombes.id(), 20, &vaincus[..6])
             .unwrap();
         assert_eq!(eveque.espece().id().as_str(), "eveque-des-os");
         assert_eq!(eveque.niveau(), niveau(55));
         // Le seizième, aux Catacombes, attend la chute de l'Évêque.
-        assert_eq!(piste.indice_suivant(19, &vaincus[..6]), None);
+        assert_eq!(piste.indice_suivant(20, &vaincus[..6]), None);
         let attaques = |apotre: &Apotre| -> Vec<String> {
             assert_eq!(apotre.espece().types().liste(), &[Type::Obscur]);
             creer(
@@ -12891,31 +13495,31 @@ mod tests {
         let puits = zone_par_id(&contenu, "puits-du-monde");
         assert_eq!(palais.niveaux(), (niveau(87), niveau(90)));
         assert_eq!(puits.niveaux(), (niveau(95), niveau(98)));
-        let vingt_quatrieme = piste.indice_suivant(27, &vaincus[..11]).unwrap();
+        let vingt_quatrieme = piste.indice_suivant(31, &vaincus[..11]).unwrap();
         assert_eq!(vingt_quatrieme.zone.as_str(), "pics-foudroyes");
-        assert!(!piste.zone_ouverte(palais.id(), 27));
-        assert!(piste.zone_ouverte(palais.id(), 28));
-        let vingt_cinquieme = piste.indice_suivant(28, &vaincus[..11]).unwrap();
+        assert!(!piste.zone_ouverte(palais.id(), 31));
+        assert!(piste.zone_ouverte(palais.id(), 32));
+        let vingt_cinquieme = piste.indice_suivant(32, &vaincus[..11]).unwrap();
         assert_eq!(&vingt_cinquieme.zone, palais.id());
         let reine = piste
-            .apotre_en_attente(palais.id(), 29, &vaincus[..11])
+            .apotre_en_attente(palais.id(), 33, &vaincus[..11])
             .unwrap();
         assert_eq!(reine.espece().id().as_str(), "reine-mere-de-chair");
         assert_eq!(reine.niveau(), niveau(92));
-        assert_eq!(piste.indice_suivant(29, &vaincus[..11]), None);
-        let vingt_sixieme = piste.indice_suivant(29, &vaincus[..12]).unwrap();
+        assert_eq!(piste.indice_suivant(33, &vaincus[..11]), None);
+        let vingt_sixieme = piste.indice_suivant(33, &vaincus[..12]).unwrap();
         assert_eq!(&vingt_sixieme.zone, palais.id());
-        assert!(piste.zone_ouverte(puits.id(), 30));
-        let vingt_septieme = piste.indice_suivant(30, &vaincus[..12]).unwrap();
+        assert!(piste.zone_ouverte(puits.id(), 34));
+        let vingt_septieme = piste.indice_suivant(34, &vaincus[..12]).unwrap();
         assert_eq!(&vingt_septieme.zone, puits.id());
         let roi = piste
-            .apotre_en_attente(puits.id(), 31, &vaincus[..12])
+            .apotre_en_attente(puits.id(), 35, &vaincus[..12])
             .unwrap();
         assert_eq!(roi.espece().id().as_str(), "roi-sans-visage");
         assert_eq!(roi.niveau(), niveau(100));
         // Plus aucun indice après le dernier Apôtre : le Béhérit prend le
         // relais (section 9.4).
-        assert_eq!(piste.indice_suivant(31, &vaincus), None);
+        assert_eq!(piste.indice_suivant(35, &vaincus), None);
         let attaques = |apotre: &Apotre| -> Vec<String> {
             assert_eq!(apotre.espece().types().liste(), &[Type::Obscur]);
             creer(
@@ -12981,30 +13585,30 @@ mod tests {
         let pics = zone_par_id(&contenu, "pics-foudroyes");
         assert_eq!(gorge.niveaux(), (niveau(71), niveau(74)));
         assert_eq!(pics.niveaux(), (niveau(79), niveau(82)));
-        let vingtieme = piste.indice_suivant(23, &vaincus[..9]).unwrap();
+        let vingtieme = piste.indice_suivant(26, &vaincus[..9]).unwrap();
         assert_eq!(vingtieme.zone.as_str(), "haute-cite-dechue");
-        assert!(!piste.zone_ouverte(gorge.id(), 23));
-        assert!(piste.zone_ouverte(gorge.id(), 24));
-        let vingt_et_unieme = piste.indice_suivant(24, &vaincus[..9]).unwrap();
+        assert!(!piste.zone_ouverte(gorge.id(), 26));
+        assert!(piste.zone_ouverte(gorge.id(), 28));
+        let vingt_et_unieme = piste.indice_suivant(28, &vaincus[..9]).unwrap();
         assert_eq!(&vingt_et_unieme.zone, gorge.id());
         let prince = piste
-            .apotre_en_attente(gorge.id(), 25, &vaincus[..9])
+            .apotre_en_attente(gorge.id(), 29, &vaincus[..9])
             .unwrap();
         assert_eq!(prince.espece().id().as_str(), "prince-de-braise");
         assert_eq!(prince.niveau(), niveau(76));
-        assert_eq!(piste.indice_suivant(25, &vaincus[..9]), None);
-        let vingt_deuxieme = piste.indice_suivant(25, &vaincus[..10]).unwrap();
+        assert_eq!(piste.indice_suivant(29, &vaincus[..9]), None);
+        let vingt_deuxieme = piste.indice_suivant(29, &vaincus[..10]).unwrap();
         assert_eq!(&vingt_deuxieme.zone, gorge.id());
-        assert!(piste.zone_ouverte(pics.id(), 26));
-        let vingt_troisieme = piste.indice_suivant(26, &vaincus[..10]).unwrap();
+        assert!(piste.zone_ouverte(pics.id(), 30));
+        let vingt_troisieme = piste.indice_suivant(30, &vaincus[..10]).unwrap();
         assert_eq!(&vingt_troisieme.zone, pics.id());
         let senechal = piste
-            .apotre_en_attente(pics.id(), 27, &vaincus[..10])
+            .apotre_en_attente(pics.id(), 31, &vaincus[..10])
             .unwrap();
         assert_eq!(senechal.espece().id().as_str(), "senechal-des-orages");
         assert_eq!(senechal.niveau(), niveau(84));
         // Le vingt-quatrième, dans les Pics, attend la chute du Sénéchal.
-        assert_eq!(piste.indice_suivant(27, &vaincus[..10]), None);
+        assert_eq!(piste.indice_suivant(31, &vaincus[..10]), None);
         let attaques = |apotre: &Apotre| -> Vec<String> {
             assert_eq!(apotre.espece().types().liste(), &[Type::Obscur]);
             creer(
@@ -13069,25 +13673,25 @@ mod tests {
         let cite = zone_par_id(&contenu, "haute-cite-dechue");
         assert_eq!(plaine.niveaux(), (niveau(56), niveau(59)));
         assert_eq!(cite.niveaux(), (niveau(63), niveau(66)));
-        let seizieme = piste.indice_suivant(19, &vaincus[..7]).unwrap();
+        let seizieme = piste.indice_suivant(20, &vaincus[..7]).unwrap();
         assert_eq!(seizieme.zone.as_str(), "catacombes-de-sainte-ombre");
-        assert!(!piste.zone_ouverte(plaine.id(), 19));
-        assert!(piste.zone_ouverte(plaine.id(), 20));
-        let dix_septieme = piste.indice_suivant(20, &vaincus[..7]).unwrap();
+        assert!(!piste.zone_ouverte(plaine.id(), 20));
+        assert!(piste.zone_ouverte(plaine.id(), 22));
+        let dix_septieme = piste.indice_suivant(22, &vaincus[..7]).unwrap();
         assert_eq!(&dix_septieme.zone, plaine.id());
         let connetable = piste
-            .apotre_en_attente(plaine.id(), 21, &vaincus[..7])
+            .apotre_en_attente(plaine.id(), 23, &vaincus[..7])
             .unwrap();
         assert_eq!(connetable.espece().id().as_str(), "connetable-boucher");
         assert_eq!(connetable.niveau(), niveau(61));
-        assert_eq!(piste.indice_suivant(21, &vaincus[..7]), None);
-        let dix_huitieme = piste.indice_suivant(21, &vaincus[..8]).unwrap();
+        assert_eq!(piste.indice_suivant(23, &vaincus[..7]), None);
+        let dix_huitieme = piste.indice_suivant(23, &vaincus[..8]).unwrap();
         assert_eq!(&dix_huitieme.zone, plaine.id());
-        assert!(piste.zone_ouverte(cite.id(), 22));
-        let dix_neuvieme = piste.indice_suivant(22, &vaincus[..8]).unwrap();
+        assert!(piste.zone_ouverte(cite.id(), 25));
+        let dix_neuvieme = piste.indice_suivant(25, &vaincus[..8]).unwrap();
         assert_eq!(&dix_neuvieme.zone, cite.id());
         let chancelier = piste
-            .apotre_en_attente(cite.id(), 23, &vaincus[..8])
+            .apotre_en_attente(cite.id(), 26, &vaincus[..8])
             .unwrap();
         assert_eq!(
             chancelier.espece().id().as_str(),
@@ -13095,7 +13699,7 @@ mod tests {
         );
         assert_eq!(chancelier.niveau(), niveau(68));
         // Le vingtième, dans la Haute-Cité, attend la chute du Chancelier.
-        assert_eq!(piste.indice_suivant(23, &vaincus[..8]), None);
+        assert_eq!(piste.indice_suivant(26, &vaincus[..8]), None);
         let attaques = |apotre: &Apotre| -> Vec<String> {
             assert_eq!(apotre.espece().types().liste(), &[Type::Obscur]);
             creer(

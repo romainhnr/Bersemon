@@ -1015,6 +1015,8 @@ Décidés le 20/10/2026, pour les étapes 83 à 86 (gamedesign.md, section 14.2)
 | Moment | Texte |
 |---|---|
 | Libellés | Acheter ou louer ; Acheter un monstre ; Louer un monstre ; Rendre {monstre} à Malvoise |
+| Écran des achats (Discord, étape 208) | Malvoise vend des monstres communs des zones que vous avez explorées. Vous avez {argent}. |
+| Écran de location (Discord, étape 208) | Malvoise loue des monstres rares des zones que vous avez explorées pour 3 expéditions : un monstre loué ne fait que combattre, puis repart. Vous avez {argent}. |
 | Offre d'achat | {espèce} de niveau {niveau} : {prix} |
 | Offre de location | {espèce} de niveau {niveau}, pour 3 expéditions : {prix} |
 | Achat | Malvoise ouvre une cage contre {prix} : {monstre} rejoint l'équipe. / ... rejoint le camp. |
@@ -3031,3 +3033,83 @@ Attaques apprises :
 - Mouette hurleuse : coup-de-bec (niv. 1), glas (niv. 1), pique (niv. 24), crecelle (niv. 32), bec-funeste (niv. 40), carillon-funebre (niv. 48).
 - Naufrageur : crachat-de-braises (niv. 1), lueur-trompeuse (niv. 1), flamme-vive (niv. 24), frisson-d-outre-tombe (niv. 32), flamme-funebre (niv. 40), bucher (niv. 48).
 - Sirène d'écume : deferlante (niv. 1), lueur-sacree (niv. 1), rayon-solaire (niv. 28), chant-des-noyes (niv. 36), eclat-du-zenith (niv. 44), abime-des-mers (niv. 52).
+
+### Champs de Pavots noirs (47 à 50)
+
+Entre la Duchesse et l'Évêque, des champs de pavots noirs dont le parfum endort les voyageurs (section 9.1, étape 208). Météos : pluie, canicule.
+
+> Indice : Au milieu des pavots, une stèle porte le même sceau. Au-delà, la route descend vers les clochers muets de Sainte-Ombre et ses catacombes.
+
+| Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP | Habiletés | Ressource | Attaque d'oeuf |
+|---|---|---|---|---|---|---|---|---|
+| sphinx-tete-de-mort | Sphinx tête-de-mort | Insecte, Ténèbres | offensif | 64 / 92 / 60 / 45 / 50 / 80 (391) | 145 | Célérité, Traqueur | Écaille de sphinx | Aile du crâne (Insecte, physique, 80) |
+| lievre-somnambule | Lièvre somnambule | Normal, Psychique | offensif | 62 / 50 / 56 / 90 / 68 / 64 (390) | 145 | Instinct, Célérité | Patte de lièvre | Bond onirique (Psychique, spéciale, 80) |
+| pavot-carnivore | Pavot carnivore | Plante, Psychique | soutien | 84 / 60 / 80 / 82 / 80 / 10 (396) | 145 | Sorcellerie, Carapace | Graine de pavot | Pollen du sommeil (Plante, spéciale, 80) |
+| marchand-de-sable | Marchand de sable (rare, hostile) | Psychique, Spectre | offensif | 72 / 48 / 66 / 112 / 90 / 74 (462) | 245 | Sorcellerie, Instinct | Sablier d'os | Sable des songes (Psychique, spéciale, 80) |
+
+Attaques apprises :
+
+- Sphinx tête-de-mort : bourdonnement (niv. 1), coup-sournois (niv. 1), nuee (niv. 15), croc-noir (niv. 25), faux-de-mante (niv. 35), rapine (niv. 53).
+- Lièvre somnambule : griffure (niv. 1), onde-psychique (niv. 1), ruade (niv. 15), regard-hypnotique (niv. 25), curee (niv. 35), jugement (niv. 53).
+- Pavot carnivore : feuille-tranchante (niv. 1), onde-psychique (niv. 1), lianes-etrangleuses (niv. 15), hurlement-de-mandragore (niv. 25), regard-hypnotique (niv. 35), ronces-maudites (niv. 53).
+- Marchand de sable : onde-psychique (niv. 1), lueur-trompeuse (niv. 1), regard-hypnotique (niv. 20), flamme-funebre (niv. 30), malediction-mortelle (niv. 40), presage-funeste (niv. 54).
+
+### Remparts de Grisval (53 à 56)
+
+Entre l'Évêque et le Connétable, les remparts d'une ville assiégée depuis des siècles, que ses défenseurs morts gardent encore (section 9.1, étape 208). Météos : pluie, tempête, grêle.
+
+> Indice : Sur le plus haut rempart, un étendard déchiré porte le même sceau. De là, on voit à l'ouest la Plaine du Massacre, où deux armées se battent encore.
+
+| Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP | Habiletés | Ressource | Attaque d'oeuf |
+|---|---|---|---|---|---|---|---|---|
+| belier-de-siege | Bélier de siège | Acier, Roche | offensif | 80 / 92 / 90 / 30 / 50 / 40 (382) | 163 | Carapace, Férocité | Corne ferrée | Tête de bélier (Acier, physique, 80) |
+| sentinelle-de-pierre | Sentinelle de pierre | Roche, Combat | soutien | 86 / 70 / 95 / 50 / 80 / 10 (391) | 163 | Carapace, Volonté | Éclat de statue | Garde immobile (Roche, physique, 80) |
+| baliste-hantee | Baliste hantée | Acier, Spectre | offensif | 66 / 96 / 74 / 35 / 50 / 70 (391) | 163 | Traqueur, Instinct | Carreau rouillé | Carreau funèbre (Spectre, physique, 80) |
+| chevalier-errant | Chevalier errant (rare, hostile) | Combat, Acier | offensif | 80 / 108 / 92 / 40 / 62 / 66 (448) | 276 | Volonté, Férocité | Écu brisé | Serment du chevalier (Combat, physique, 80) |
+
+Attaques apprises :
+
+- Bélier de siège : coup-de-garde (niv. 1), griffe-de-pierre (niv. 1), lame-rouillee (niv. 16), chute-de-pierres (niv. 26), taille-d-acier (niv. 36), eboulement (niv. 59).
+- Sentinelle de pierre : griffe-de-pierre (niv. 1), frappe-d-os (niv. 1), chute-de-pierres (niv. 16), epee-des-morts (niv. 26), regard-de-pierre (niv. 36), jugement-de-pierre (niv. 59).
+- Baliste hantée : coup-de-garde (niv. 1), charge-spectrale (niv. 1), lame-rouillee (niv. 16), griffes-spectrales (niv. 26), taille-d-acier (niv. 36), charge-des-morts (niv. 59).
+- Chevalier errant : frappe-d-os (niv. 1), coup-de-garde (niv. 1), lame-rouillee (niv. 21), epee-des-morts (niv. 31), taille-d-acier (niv. 41), marteau-de-forge (niv. 60).
+
+### Forêt pétrifiée (59 à 62)
+
+Entre le Connétable et le Chancelier, une forêt changée en pierre avec tout ce qui y vivait (section 9.1, étape 208). Météos : tempête, grêle.
+
+> Indice : Entre les arbres de pierre, un pèlerin pétrifié tient une tablette au même sceau. Son regard figé fixe les tours de la Haute-Cité déchue.
+
+| Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP | Habiletés | Ressource | Attaque d'oeuf |
+|---|---|---|---|---|---|---|---|---|
+| cerf-de-pierre | Cerf de pierre | Roche, Normal | offensif | 74 / 92 / 84 / 36 / 52 / 58 (396) | 183 | Volonté, Célérité | Bois pétrifié | Ramure de granit (Roche, physique, 80) |
+| lezard-petrifie | Lézard pétrifié | Roche, Poison | offensif | 70 / 90 / 80 / 40 / 50 / 62 (392) | 183 | Traqueur, Carapace | Écaille de lézard | Morsure calcaire (Roche, physique, 80) |
+| dryade-de-pierre | Dryade de pierre | Roche, Plante | soutien | 82 / 58 / 88 / 74 / 82 / 12 (396) | 183 | Carapace, Sorcellerie | Écorce de pierre | Sève de calcaire (Plante, spéciale, 80) |
+| arbre-roi-petrifie | Arbre-roi pétrifié (rare, pacifique) | Roche, Psychique | soutien | 100 / 70 / 105 / 85 / 95 / 10 (465) | 310 | Volonté, Carapace | Sève pétrifiée | Racines de granit (Roche, spéciale, 80) |
+
+Attaques apprises :
+
+- Cerf de pierre : griffe-de-pierre (niv. 1), ruade (niv. 1), chute-de-pierres (niv. 18), curee (niv. 28), coup-de-cornes (niv. 38), eboulement (niv. 65).
+- Lézard pétrifié : griffe-de-pierre (niv. 1), morsure-venimeuse (niv. 1), croc-de-venin (niv. 18), chute-de-pierres (niv. 28), regard-de-pierre (niv. 38), deluge-toxique (niv. 65).
+- Dryade de pierre : feuille-tranchante (niv. 1), griffe-de-pierre (niv. 1), lianes-etrangleuses (niv. 18), hurlement-de-mandragore (niv. 28), ronces-maudites (niv. 38), eclat-de-gemme (niv. 65).
+- Arbre-roi pétrifié : griffe-de-pierre (niv. 1), onde-psychique (niv. 1), chute-de-pierres (niv. 23), regard-hypnotique (niv. 33), regard-de-pierre (niv. 43), jugement-de-pierre (niv. 66).
+
+### Sanctuaire d'Asphodèle (67 à 70)
+
+Entre le Chancelier et le Prince, une vallée cachée sous la terre, éclairée par un soleil souterrain, où des moines gardent une paix ancienne (section 9.1, étape 208). Météos : pluie, canicule.
+
+> Indice : Au fond du sanctuaire, sous le soleil qui brille sous la terre, un autel porte le même sceau. Une galerie brûlante en part vers le sud, jusqu'à la Gorge de Braise.
+
+| Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP | Habiletés | Ressource | Attaque d'oeuf |
+|---|---|---|---|---|---|---|---|---|
+| moine-de-lumiere | Moine de lumière | Lumière, Psychique | soutien | 82 / 48 / 74 / 86 / 90 / 12 (392) | 206 | Volonté, Sorcellerie | Chapelet de lumière | Mantra solaire (Lumière, spéciale, 80) |
+| chimere-de-cristal | Chimère de cristal | Lumière, Roche | offensif | 70 / 90 / 82 / 48 / 54 / 48 (392) | 206 | Férocité, Carapace | Prisme de chimère | Griffes de cristal (Lumière, physique, 80) |
+| ver-luisant-geant | Ver luisant géant | Insecte, Lumière | offensif | 70 / 50 / 64 / 96 / 72 / 40 (392) | 206 | Instinct, Affinité | Abdomen luisant | Lueur du ver (Insecte, spéciale, 80) |
+| gardien-d-asphodele | Gardien d'Asphodèle (rare, pacifique) | Lumière, Dragon | offensif | 84 / 62 / 78 / 100 / 92 / 64 (480) | 347 | Volonté, Affinité | Écaille dorée | Souffle d'Asphodèle (Dragon, spéciale, 80) |
+
+Attaques apprises :
+
+- Moine de lumière : lueur-sacree (niv. 1), onde-psychique (niv. 1), rayon-solaire (niv. 20), regard-hypnotique (niv. 30), eclat-du-zenith (niv. 40), aube-eclatante (niv. 73).
+- Chimère de cristal : griffe-de-pierre (niv. 1), lueur-sacree (niv. 1), chute-de-pierres (niv. 20), lance-de-lumiere (niv. 30), coup-de-cornes (niv. 40), eboulement (niv. 73).
+- Ver luisant géant : bourdonnement (niv. 1), lueur-sacree (niv. 1), nuee (niv. 20), rayon-solaire (niv. 30), eclat-du-zenith (niv. 40), aile-poudree (niv. 73).
+- Gardien d'Asphodèle : lueur-sacree (niv. 1), souffle-draconique (niv. 1), rayon-solaire (niv. 25), eclat-du-zenith (niv. 35), souffle-des-brumes (niv. 45), flamme-blanche (niv. 74).

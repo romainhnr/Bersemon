@@ -78,8 +78,11 @@ pub enum Vue {
     /// Les monstres que Malvoise change en ressources, avec ce qu'il en
     /// tirerait (section 14.2).
     Transformation,
-    /// Les monstres que Malvoise vend et loue (section 14.2).
+    /// Les monstres que Malvoise vend (section 14.2).
     Achats,
+    /// Les monstres rares que Malvoise loue : plus de 25 depuis l'étape
+    /// 208, ils ont leur écran à part des achats (section 14.2).
+    Locations,
     /// Les capsules d'attaque que Malvoise vend, en menus de 25 au plus
     /// (section 14.2, étape 165).
     Capsules,
@@ -365,8 +368,9 @@ pub enum Cle {
     /// Menus numérotés des espèces que Malvoise vend (section 14.2) : plus
     /// de 25 depuis l'étape 165.
     AcheterMonstre(u8),
-    /// Menu des espèces que Malvoise loue.
-    LouerMonstre,
+    /// Menus numérotés des espèces que Malvoise loue : plus de 25 depuis
+    /// l'étape 208 (section 14.2).
+    LouerMonstre(u8),
     RendreLeMonstreLoue,
     /// Une pierre d'évolution, chez Malvoise (section 5.4).
     AcheterPierre(PierreDEvolution),
@@ -678,7 +682,7 @@ impl Cle {
             Cle::RendreLeHerosShiny => jouer(Choix::RendreLeHerosShiny),
             Cle::AcheterCapsuleDHabilete => jouer(Choix::AcheterCapsulesDHabilete(1)),
             Cle::AcheterMonstre(_) => jouer(Choix::AcheterMonstre(EspeceId::new(valeur?))),
-            Cle::LouerMonstre => jouer(Choix::LouerMonstre(EspeceId::new(valeur?))),
+            Cle::LouerMonstre(_) => jouer(Choix::LouerMonstre(EspeceId::new(valeur?))),
             Cle::RendreLeMonstreLoue => jouer(Choix::RendreLeMonstreLoue),
             Cle::AcheterPierre(pierre) => jouer(Choix::AcheterPierres(*pierre, 1)),
             Cle::AcheterObjetDEvolution => match lire_objet_d_experience(valeur?) {
@@ -849,6 +853,7 @@ impl Cle {
             Cle::Afficher(Vue::Vente) => "vue:vente".to_string(),
             Cle::Afficher(Vue::Transformation) => "vue:transformation".to_string(),
             Cle::Afficher(Vue::Achats) => "vue:achats".to_string(),
+            Cle::Afficher(Vue::Locations) => "vue:locations".to_string(),
             Cle::Afficher(Vue::Capsules) => "vue:capsules".to_string(),
             Cle::Afficher(Vue::Eclipse) => "vue:eclipse".to_string(),
             Cle::Afficher(Vue::Attaques(emplacement)) => {
@@ -960,7 +965,7 @@ impl Cle {
             }
             Cle::AcheterCapsuleDHabilete => "acheter-capsule-d-habilete".to_string(),
             Cle::AcheterMonstre(numero) => format!("acheter-monstre:{numero}"),
-            Cle::LouerMonstre => "louer-monstre".to_string(),
+            Cle::LouerMonstre(numero) => format!("louer-monstre:{numero}"),
             Cle::RendreLeMonstreLoue => "rendre-le-monstre-loue".to_string(),
             Cle::RendreLeHerosShiny => "rendre-le-heros-shiny".to_string(),
             Cle::AcheterPierre(pierre) => format!("acheter-pierre:{}", pierre_en_texte(*pierre)),
@@ -1089,6 +1094,7 @@ impl Cle {
             "vue:vente" => Cle::Afficher(Vue::Vente),
             "vue:transformation" => Cle::Afficher(Vue::Transformation),
             "vue:achats" => Cle::Afficher(Vue::Achats),
+            "vue:locations" => Cle::Afficher(Vue::Locations),
             "vue:capsules" => Cle::Afficher(Vue::Capsules),
             "vue:eclipse" => Cle::Afficher(Vue::Eclipse),
             "partir-vers-l-eclipse" => Cle::PartirVersLEclipse,
@@ -1161,7 +1167,8 @@ impl Cle {
             "acheter-capsule" => Cle::AcheterCapsule(0),
             "acheter-capsule-d-habilete" => Cle::AcheterCapsuleDHabilete,
             "acheter-monstre" => Cle::AcheterMonstre(0),
-            "louer-monstre" => Cle::LouerMonstre,
+            // Celui des messages affichés avant l'étape 208, sans numéro.
+            "louer-monstre" => Cle::LouerMonstre(0),
             "rendre-le-monstre-loue" => Cle::RendreLeMonstreLoue,
             "rendre-le-heros-shiny" => Cle::RendreLeHerosShiny,
             "donner-ame" => Cle::DonnerAme,
@@ -1332,6 +1339,7 @@ impl Cle {
                     "lieu-du-journal" => Cle::LieuDuJournal(numero()?),
                     "acheter-capsule" => Cle::AcheterCapsule(numero()?),
                     "acheter-monstre" => Cle::AcheterMonstre(numero()?),
+                    "louer-monstre" => Cle::LouerMonstre(numero()?),
                     "sortir-ressources" => Cle::SortirRessourcesDuCoffre(numero()?),
                     "ranger-ressources" => Cle::RangerRessourcesAuCoffre(numero()?),
                     "vendre-ressources" => Cle::VendreRessources(numero()?),
@@ -1895,9 +1903,11 @@ mod tests {
             Cle::AcheterCapsuleDHabilete,
             Cle::AcheterMonstre(0),
             Cle::AcheterMonstre(1),
-            Cle::LouerMonstre,
+            Cle::LouerMonstre(0),
+            Cle::LouerMonstre(1),
             Cle::RendreLeMonstreLoue,
             Cle::Afficher(Vue::Achats),
+            Cle::Afficher(Vue::Locations),
             Cle::Afficher(Vue::Capsules),
             Cle::AcheterPierre(PierreDEvolution::Braise),
             Cle::AcheterObjetDEvolution,
