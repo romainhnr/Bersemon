@@ -32,6 +32,9 @@ use bersemon_presentation::expeditions_automatiques::duree;
 use bersemon_presentation::expeditions_automatiques::expeditions_rentrees;
 use bersemon_presentation::forge::{cout, etat_de_la_forge, lot_de_filets, travail_fini};
 use bersemon_presentation::jour_et_nuit::moment_present;
+use bersemon_presentation::journal::{
+    LieuDuJournal, lieux_du_journal, lignes_du_lieu, resume_du_lieu, zones_d_apparition,
+};
 use bersemon_presentation::lieux_a_part::{description_du_lieu, lieux_a_part};
 use bersemon_presentation::machines::{
     avis_des_pieges, etat_de_la_cour, machines as texte_des_machines,
@@ -79,6 +82,7 @@ pub fn question(
         Vue::Camp => principale(partie, contenu, maintenant),
         Vue::Codex(fiche) => codex(partie, fiche, 0, contenu),
         Vue::PageDuCodex(page) => codex(partie, None, usize::from(page), contenu),
+        Vue::Journal(lieu) => journal(partie, usize::from(lieu), contenu),
         Vue::Gestion(choisi) => gestion(partie, choisi, contenu),
         Vue::Expeditions => ecran_expeditions_automatiques::liste(partie, contenu, maintenant),
         Vue::Preparation { zone, choisis } => {
@@ -809,6 +813,7 @@ fn codex(partie: &Partie, fiche: Option<usize>, page: usize, contenu: &ContenuV1
                 partie.apotres_vaincus(),
                 contenu,
             ));
+            lignes.extend(zones_d_apparition(espece, partie, contenu));
         }
         None => {
             lignes.extend(page_de_la_liste(page));
@@ -874,6 +879,11 @@ fn codex(partie: &Partie, fiche: Option<usize>, page: usize, contenu: &ContenuV1
             boutons.push(bouton(cle, "Liste du codex", SECONDAIRE));
         }
     } else {
+        boutons.push(bouton(
+            Cle::Afficher(Vue::Journal(0)),
+            "Journal des zones",
+            SECONDAIRE,
+        ));
         if let Some(cle) = page.checked_sub(1).and_then(vers_la_page) {
             boutons.push(bouton(cle, "Page précédente", SECONDAIRE));
         }
@@ -888,6 +898,40 @@ fn codex(partie: &Partie, fiche: Option<usize>, page: usize, contenu: &ContenuV1
     Question {
         texte: lignes.join("\n"),
         rangees: rangees_du_codex,
+    }
+}
+
+/// Le journal des monstres par zone, ouvert sur un lieu découvert, avec un
+/// menu des lieux découverts et le retour au codex (section 5.6).
+fn journal(partie: &Partie, lieu: usize, contenu: &ContenuV1) -> Question {
+    let codex = partie.codex();
+    let lieux: Vec<LieuDuJournal<'_>> = lieux_du_journal(partie, contenu)
+        .into_iter()
+        .filter(|lieu| lieu.decouvert)
+        .collect();
+    let mut lignes = vec!["Journal des monstres par zone.".to_string()];
+    if let Some(ouvert) = lieux.get(lieu).or(lieux.first()) {
+        lignes.push(resume_du_lieu(ouvert, codex));
+        lignes.extend(lignes_du_lieu(ouvert, codex));
+    }
+    let options: Vec<OptionDeMenu> = lieux
+        .iter()
+        .enumerate()
+        .map(|(position, lieu)| OptionDeMenu {
+            libelle: lieu.nom.clone(),
+            valeur: position.to_string(),
+            description: Some(resume_du_lieu(lieu, codex)),
+        })
+        .collect();
+    let mut rangees_du_journal =
+        crate::message::menus(Cle::LieuDuJournal, "Voir un autre lieu", options, 2);
+    rangees_du_journal.extend(rangees(vec![
+        bouton(Cle::Afficher(Vue::Codex(None)), "Codex", SECONDAIRE),
+        retour(),
+    ]));
+    Question {
+        texte: lignes.join("\n"),
+        rangees: rangees_du_journal,
     }
 }
 

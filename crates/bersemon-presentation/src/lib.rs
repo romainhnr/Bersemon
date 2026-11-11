@@ -20,6 +20,7 @@ pub mod filets;
 pub mod forge;
 pub mod groupe;
 pub mod jour_et_nuit;
+pub mod journal;
 pub mod lieux_a_part;
 pub mod machines;
 pub mod marchand;

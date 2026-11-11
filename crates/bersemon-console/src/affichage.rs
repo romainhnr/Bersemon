@@ -17,6 +17,7 @@ use bersemon_presentation::combat::{
     attaque_de_trop, attaque_en_combat, efficacite_en_combat, ordre_et_bonus,
 };
 use bersemon_presentation::filets::liste_de_filets;
+use bersemon_presentation::journal::zones_d_apparition;
 use bersemon_presentation::meteo::meteo_de_la_zone;
 use bersemon_presentation::monstres::{
     decrire_attaque_de, ligne_du_heros, ligne_monstre, nom_en_combat,
@@ -226,7 +227,10 @@ pub fn codex(partie: &Partie, contenu: &ContenuV1) -> String {
             ligne_du_codex(codex, espece)
         ));
         if codex.etat(espece.id()) == EtatCodex::Capturee {
-            for ligne in fiche_d_espece(espece, codex, partie.apotres_vaincus(), contenu) {
+            for ligne in fiche_d_espece(espece, codex, partie.apotres_vaincus(), contenu)
+                .into_iter()
+                .chain(zones_d_apparition(espece, partie, contenu))
+            {
                 lignes.push(format!("     {ligne}"));
             }
         }

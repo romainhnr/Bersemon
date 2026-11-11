@@ -20,6 +20,7 @@ use bersemon_presentation::boosters::{boosters, effet_du_booster};
 use bersemon_presentation::expeditions_automatiques::expeditions_rentrees;
 use bersemon_presentation::forge::travail_fini;
 use bersemon_presentation::jour_et_nuit::moment_present;
+use bersemon_presentation::journal::journal;
 use bersemon_presentation::lieux_a_part::{lieux_a_part, ligne_du_lieu};
 use bersemon_presentation::machines::avis_des_pieges;
 use bersemon_presentation::marchand::liste_de_rachat;
@@ -222,14 +223,23 @@ fn consulter_le_codex(
 ) -> Option<Option<Choix>> {
     println!("{}", affichage::codex(partie, contenu));
     println!("{}", progression_du_codex(partie, contenu));
-    let recompenses = contenu.recompenses_du_codex();
-    let Some(a_reclamer) = partie.recompense_a_reclamer(recompenses, contenu.especes()) else {
-        return Some(None);
-    };
-    println!("  1. {}", reclamer(a_reclamer));
-    println!("  0. Retour au camp");
-    let choix = entree.choix(0, 1)?;
-    Some((choix == 1).then_some(Choix::ReclamerRecompenseDuCodex))
+    loop {
+        // Le journal des monstres par zone se lit depuis le codex (section
+        // 5.6).
+        println!("  1. Journal des monstres par zone");
+        let recompenses = contenu.recompenses_du_codex();
+        let a_reclamer = partie.recompense_a_reclamer(recompenses, contenu.especes());
+        if let Some(a_reclamer) = &a_reclamer {
+            println!("  2. {}", reclamer(a_reclamer));
+        }
+        println!("  0. Retour au camp");
+        let dernier = if a_reclamer.is_some() { 2 } else { 1 };
+        match entree.choix(0, dernier)? {
+            1 => println!("{}", journal(partie, contenu)),
+            2 => return Some(Some(Choix::ReclamerRecompenseDuCodex)),
+            _ => return Some(None),
+        }
+    }
 }
 
 /// `Some(None)` au retour vers le menu du camp. Le déroulement demande

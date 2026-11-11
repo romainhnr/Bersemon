@@ -48,6 +48,9 @@ pub enum Vue {
     /// `Codex(None)` : avec le Col du Givre-Noir, la liste ne tient plus dans
     /// un message (étape 82).
     PageDuCodex(u8),
+    /// Le journal des monstres par zone, ouvert sur ce lieu découvert
+    /// (section 5.6).
+    Journal(u8),
     /// Avec le monstre choisi pour être géré.
     Gestion(Option<Emplacement>),
     /// Les zones explorées et leurs expéditions automatiques (section 12).
@@ -250,6 +253,8 @@ pub enum Cle {
     /// Menu numéroté des espèces capturées du codex : il en faut plusieurs
     /// au-delà de 25 espèces.
     Fiche(u8),
+    /// Menu des lieux du journal, numéroté : 25 lieux au plus par menu.
+    LieuDuJournal(u8),
     /// Menu des monstres à gérer.
     Choisir(u8),
     /// Menu numéroté des monstres que le Béhérit accepte (section 9.4).
@@ -523,6 +528,9 @@ impl Cle {
             Cle::Sacrifier(_) => jouer(Choix::Sacrifier(lire_emplacement(valeur?)?)),
             Cle::Afficher(vue) => Some(Commande::Afficher(*vue)),
             Cle::Fiche(_) => Some(Commande::Afficher(Vue::Codex(Some(position()?)))),
+            Cle::LieuDuJournal(_) => Some(Commande::Afficher(Vue::Journal(
+                u8::try_from(position()?).ok()?,
+            ))),
             Cle::Choisir(_) => Some(Commande::Afficher(Vue::Gestion(Some(lire_emplacement(
                 valeur?,
             )?)))),
@@ -735,6 +743,7 @@ impl Cle {
             Cle::Afficher(Vue::Codex(None)) => "vue:codex".to_string(),
             Cle::Afficher(Vue::Codex(Some(index))) => format!("vue:codex:{index}"),
             Cle::Afficher(Vue::PageDuCodex(page)) => format!("vue:page-du-codex:{page}"),
+            Cle::Afficher(Vue::Journal(lieu)) => format!("vue:journal:{lieu}"),
             Cle::Afficher(Vue::Gestion(None)) => "vue:gestion".to_string(),
             Cle::Afficher(Vue::Gestion(Some(emplacement))) => {
                 format!("vue:gestion:{}", emplacement_en_texte(*emplacement))
@@ -779,6 +788,7 @@ impl Cle {
                 cede: Some(cede),
             }) => format!("vue:echanges:{avec}:{}", emplacement_en_texte(*cede)),
             Cle::Fiche(numero) => format!("fiche:{numero}"),
+            Cle::LieuDuJournal(numero) => format!("lieu-du-journal:{numero}"),
             Cle::Choisir(numero) => format!("choisir:{numero}"),
             Cle::Sacrifier(numero) => format!("sacrifier:{numero}"),
             Cle::PartirVersLEclipse => "partir-vers-l-eclipse".to_string(),
@@ -1074,6 +1084,7 @@ impl Cle {
                             "page-du-codex" => {
                                 Cle::Afficher(Vue::PageDuCodex(parametre.parse().ok()?))
                             }
+                            "journal" => Cle::Afficher(Vue::Journal(parametre.parse().ok()?)),
                             "gestion" => {
                                 Cle::Afficher(Vue::Gestion(Some(lire_emplacement(parametre)?)))
                             }
@@ -1170,6 +1181,7 @@ impl Cle {
                     "ameliorer" => Cle::Ameliorer(lire_amelioration(parametre)?),
                     "equiper" => Cle::Equiper(lire_place(parametre)?),
                     "fiche" => Cle::Fiche(numero()?),
+                    "lieu-du-journal" => Cle::LieuDuJournal(numero()?),
                     "acheter-capsule" => Cle::AcheterCapsule(numero()?),
                     "acheter-monstre" => Cle::AcheterMonstre(numero()?),
                     "sortir-ressources" => Cle::SortirRessourcesDuCoffre(numero()?),
@@ -1470,6 +1482,8 @@ mod tests {
             Cle::Afficher(Vue::Gestion(Some(Emplacement::Camp(29)))),
             Cle::Fiche(0),
             Cle::Fiche(1),
+            Cle::LieuDuJournal(1),
+            Cle::Afficher(Vue::Journal(3)),
             Cle::Choisir(2),
             Cle::Sacrifier(1),
             Cle::PartirVersLEclipse,
