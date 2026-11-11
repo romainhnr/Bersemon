@@ -615,3 +615,7 @@ Le joueur automatique fait construire le bateau dès qu'une zone de mer l'attend
 ## 25. Pavots, Remparts, Forêt pétrifiée et Sanctuaire (étape 208)
 
 Mesuré sur 100 parties par classe : 244 à 255 expéditions (médiane), au lieu de 238 à 244. Le joueur automatique traverse les Champs de Pavots noirs en 1,9 expédition, les Remparts de Grisval en 2,4, la Forêt pétrifiée en 2,8 et le Sanctuaire d'Asphodèle en 3,9, sans défaite ; il y arrive 4 à 5 niveaux au-dessus du minimum de la zone. Une partie d'Assassin sur 100 ne s'est pas terminée dans la limite de choix de l'outil.
+
+## 26. Glacier des Âmes, Cimetière des Géants et Faille du Néant (étape 209)
+
+Mesuré sur 100 parties par classe : 250 à 260 expéditions (médiane), au lieu de 244 à 255 ; toutes les parties se terminent. Le joueur automatique passe 3,6 expéditions au Glacier, 4,7 au Cimetière et 4,6 dans la Faille, presque sans défaite. Ces zones prennent une part de la montée de niveau des zones qui les précèdent : Gorge de Braise 25,4 expéditions au lieu de 28,2, Pics Foudroyés 14,7 au lieu de 18,0, Palais de Chair 17,5 au lieu de 22,4.

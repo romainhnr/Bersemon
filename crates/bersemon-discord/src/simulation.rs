@@ -1600,7 +1600,8 @@ fn malvoise_vend_et_loue_des_monstres_a_travers_les_ecrans_du_bot() {
     // Et les communes des zones ajoutées depuis l'étape 206.
     assert_eq!(options(Cle::AcheterMonstre(0)), 25);
     assert_eq!(options(Cle::AcheterMonstre(1)), 25);
-    assert_eq!(options(Cle::AcheterMonstre(2)), 22);
+    assert_eq!(options(Cle::AcheterMonstre(2)), 25);
+    assert_eq!(options(Cle::AcheterMonstre(3)), 6);
     assert!(!propose(&affiche, |cle| *cle == Cle::RendreLeMonstreLoue));
     let clic = choisir_dans(&affiche, |cle| *cle == Cle::AcheterMonstre(0), "loup").unwrap();
     let achat = jouer(&mut joueurs, clic);
@@ -1620,7 +1621,7 @@ fn malvoise_vend_et_loue_des_monstres_a_travers_les_ecrans_du_bot() {
             .unwrap_or(0)
     };
     assert_eq!(options(Cle::LouerMonstre(0)), 25);
-    assert_eq!(options(Cle::LouerMonstre(1)), 4);
+    assert_eq!(options(Cle::LouerMonstre(1)), 7);
     let clic = choisir_dans(&affiche, |cle| *cle == Cle::LouerMonstre(0), "cerf-blanc").unwrap();
     let location = jouer(&mut joueurs, clic);
     assert!(matches!(&location[..], [Evenement::MonstreLoue { .. }, ..]));
@@ -2796,14 +2797,17 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
             options(&coffre, Cle::SortirRessourcesDuCoffre),
             2 * Filet::TOUS.len()
         );
+        // Plus de 100 sortes depuis l'étape 209 : les dernières ne se
+        // prennent pas dans le coffre, mais se paient, se vendent et
+        // s'échangent depuis le coffre comme les autres.
         let ressources = crate::ecran_coffre::ressources(&partie);
         assert_eq!(
             options(&ressources, Cle::SortirRessourcesDuCoffre),
-            sortes.len()
+            sortes.len().min((RANGEES_MAX - 1) * OPTIONS_PAR_MENU)
         );
         // Le coffre d'abord ; le sac prend les rangées qui restent, "Tout
         // ranger" le rangeant de toute façon en entier (section 14.3).
-        let rangees_du_coffre = sortes.len().div_ceil(OPTIONS_PAR_MENU);
+        let rangees_du_coffre = sortes.len().div_ceil(OPTIONS_PAR_MENU).min(RANGEES_MAX - 1);
         assert_eq!(
             options(&ressources, Cle::RangerRessourcesAuCoffre),
             sortes

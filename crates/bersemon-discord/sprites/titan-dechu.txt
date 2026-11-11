@@ -1,0 +1,42 @@
+# Titan déchu
+palette
+o 1b1420
+b 5e5c67
+c 3f3e45
+d 787687
+p 323429
+y 8cba5f
+w beb7c2
+shiny
+o 1b1420
+b 5f5c4b
+c 403d31
+d 7e7a62
+p 29252b
+y 5f7bba
+w a8b97b
+dessin
+...........ooo..........
+..........oddco.........
+.........odcbcco........
+.........odycyco........
+.........occccco........
+.....ooooowwwwwoooo.....
+....odddddwwwwwdddcoo...
+...obbbbbbdddddbbbcbbo..
+...obbbbbbbbbbbbbcobbo..
+..obbbdbbbbbbbbbbcobbbo.
+..obbbdbbbbbbbbbbcobbbo.
+.odybodbbbbbbbbbbcoobyco
+odbbbddbbbbbbbbbbcodbbbc
+odbbbbcbbbbbbbbbcoodbbbc
+ocbbbcodcccccccccoocbbbc
+.occcoopppppppppppooccco
+oyooo.opppppppppppo.ooyo
+oo....opppppppppppo...oo
+yoo...odddcooodddco..ooy
+ooyo..odbbco.odbbco.oyoo
+..o...odbbco.odbbco..o..
+......odbbco.odbbco.....
+......occcco.occcco.....
+.......oooo...oooo......

@@ -1,0 +1,46 @@
+# Ver ossivore
+palette
+o 1b1420
+e 4a4d3e
+f 2c2f25
+b 707464
+c 494b40
+d 969a8b
+r 9f8c5a
+w ffffff
+y b5cf9e
+shiny
+o 1b1420
+e 4a4d3e
+f 2c2f25
+b 58576e
+c 393748
+d 818196
+r 95b5c4
+w ffffff
+y e4ccc1
+dessin
+.........owo.owo........
+..........owoowo........
+...........owoowo.......
+...........oowdwoo....o.
+..........ocdbbbddoooobo
+..........ocbbbybdobbwbo
+.........ocbbbbbbbbbrrbo
+..........ocbbbbbdrrbbbo
+..........occbbbccoowbbo
+..........ooocbcoo..ooo.
+.........ocddbdo........
+.........ocbbbdo........
+........occcccdo........
+.........ocbbbdo........
+.........ocbbbco........
+........occccco.........
+........ocbbbdo.........
+........ocbbbdo.........
+.......oocccccoo........
+...oooofecbbbdeeoooo....
+.oofeeeeeccccceeeeeeoo..
+offeeeeeeeeeeeeeeeeeffo.
+.ooffffeeeeeeeeeffffoo..
+...oooofffffffffoooo....

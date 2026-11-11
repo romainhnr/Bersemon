@@ -174,7 +174,9 @@ fn options(inventaire: &Inventaire, avec_capsules: bool) -> Vec<OptionDeMenu> {
 pub fn ressources(partie: &Partie) -> Question {
     // Une rangée pour les boutons, quatre pour les menus : ceux du coffre
     // d'abord, puis ceux du sac dans les rangées qui restent. Au-delà, le
-    // sac se range en entier par "Tout ranger" (section 14.3).
+    // sac se range en entier par "Tout ranger" (section 14.3) ; au-delà de
+    // 100 sortes au coffre, les dernières y restent, ce qui ne prive de
+    // rien : coûts, vente et échanges puisent aussi dans le coffre.
     let mut lignes = menus(
         Cle::SortirRessourcesDuCoffre,
         "Prendre des ressources dans le coffre",

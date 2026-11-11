@@ -3113,3 +3113,63 @@ Attaques apprises :
 - Chimère de cristal : griffe-de-pierre (niv. 1), lueur-sacree (niv. 1), chute-de-pierres (niv. 20), lance-de-lumiere (niv. 30), coup-de-cornes (niv. 40), eboulement (niv. 73).
 - Ver luisant géant : bourdonnement (niv. 1), lueur-sacree (niv. 1), nuee (niv. 20), rayon-solaire (niv. 30), eclat-du-zenith (niv. 40), aile-poudree (niv. 73).
 - Gardien d'Asphodèle : lueur-sacree (niv. 1), souffle-draconique (niv. 1), rayon-solaire (niv. 25), eclat-du-zenith (niv. 35), souffle-des-brumes (niv. 45), flamme-blanche (niv. 74).
+
+### Glacier des Âmes (75 à 78)
+
+Entre le Prince et le Sénéchal, un glacier où les âmes des morts restent prises dans la glace (section 9.1, étape 209). Météos : grêle, tempête.
+
+> Indice : Dans la glace, un mort aux yeux ouverts serre un médaillon au même sceau. Au-dessus du glacier grondent les Pics Foudroyés.
+
+| Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP | Habiletés | Ressource | Attaque d'oeuf |
+|---|---|---|---|---|---|---|---|---|
+| ours-des-glaces | Ours des glaces | Glace, Spectre | offensif | 86 / 96 / 72 / 38 / 52 / 48 (392) | 230 | Férocité, Volonté | Fourrure givrée | Étreinte glaciale (Glace, physique, 80) |
+| yeti | Yéti | Glace, Combat | offensif | 84 / 98 / 74 / 36 / 50 / 52 (394) | 230 | Férocité, Carapace | Toison de yéti | Poing de givre (Glace, physique, 80) |
+| esprit-du-blizzard | Esprit du blizzard | Glace, Vol | offensif | 60 / 45 / 56 / 96 / 66 / 70 (393) | 230 | Célérité, Sorcellerie | Flocon éternel | Voile de neige (Vol, spéciale, 80) |
+| mammouth-fantome | Mammouth fantôme (rare, hostile) | Glace, Sol | offensif | 100 / 110 / 90 / 40 / 62 / 50 (452) | 390 | Férocité, Volonté | Défense de mammouth | Piétinement glacial (Sol, physique, 80) |
+
+Attaques apprises :
+
+- Ours des glaces : croc-de-givre (niv. 1), charge-spectrale (niv. 1), avalanche (niv. 23), griffes-spectrales (niv. 33), charge-des-morts (niv. 81).
+- Yéti : croc-de-givre (niv. 1), frappe-d-os (niv. 1), avalanche (niv. 23), epee-des-morts (niv. 33), ecorchure (niv. 43), dechiquetage (niv. 81).
+- Esprit du blizzard : bourrasque (niv. 1), croc-de-givre (niv. 1), souffle-glacial (niv. 23), ultrason (niv. 33), bec-funeste (niv. 43), blizzard (niv. 81).
+- Mammouth fantôme : croc-de-givre (niv. 1), secousse (niv. 1), avalanche (niv. 28), charge-du-sanglier (niv. 38), serres-de-poussiere (niv. 48), seisme (niv. 82).
+
+### Cimetière des Géants (83 à 86)
+
+Entre le Sénéchal et la Reine-mère, une vallée obscure où les géants d'autrefois sont venus mourir (section 9.1, étape 209). Météos : tempête, pluie.
+
+> Indice : Entre les côtes d'un géant, une couronne rouillée porte le même sceau. Une odeur de chair monte de l'est : le Palais de Chair n'est plus loin.
+
+| Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP | Habiletés | Ressource | Attaque d'oeuf |
+|---|---|---|---|---|---|---|---|---|
+| colosse-d-os | Colosse d'os | Sol, Spectre | soutien | 92 / 80 / 96 / 40 / 70 / 14 (392) | 254 | Carapace, Volonté | Fémur de géant | Ossature de géant (Sol, physique, 80) |
+| charognard-des-geants | Charognard des géants | Vol, Poison | offensif | 70 / 90 / 58 / 40 / 52 / 82 (392) | 254 | Dépeceur, Pillard | Plume de charognard | Bec putride (Poison, physique, 80) |
+| ver-ossivore | Ver ossivore | Sol, Insecte | offensif | 82 / 94 / 76 / 36 / 50 / 54 (392) | 254 | Férocité, Traqueur | Mandibule ossivore | Ronge-os (Insecte, physique, 80) |
+| titan-dechu | Titan déchu (rare, hostile) | Sol, Combat | offensif | 100 / 115 / 92 / 40 / 60 / 48 (455) | 432 | Férocité, Volonté | Phalange de titan | Chute du titan (Combat, physique, 80) |
+
+Attaques apprises :
+
+- Colosse d'os : secousse (niv. 1), lueur-trompeuse (niv. 1), charge-spectrale (niv. 25), bandelettes (niv. 35), griffes-spectrales (niv. 45), engloutissement (niv. 88).
+- Charognard des géants : coup-de-bec (niv. 1), morsure-venimeuse (niv. 1), pique (niv. 25), croc-de-venin (niv. 35), bec-funeste (niv. 45), deluge-toxique (niv. 88).
+- Ver ossivore : secousse (niv. 1), bourdonnement (niv. 1), morsure-de-l-araignee (niv. 25), serres-de-poussiere (niv. 35), faux-de-mante (niv. 45), seisme (niv. 88).
+- Titan déchu : secousse (niv. 1), frappe-d-os (niv. 1), epee-des-morts (niv. 30), ecorchure (niv. 40), serres-de-poussiere (niv. 50), seisme (niv. 89).
+
+### Faille du Néant (91 à 94)
+
+Entre la Reine-mère et le Roi sans visage, une faille où le monde s'arrête et où le néant regarde ceux qui s'en approchent (section 9.1, étape 209). Météos : tempête, grêle.
+
+> Indice : Au bord de la faille, un anneau de chevalier porte le même sceau. Plus bas, le néant rejoint le Puits du Monde.
+
+| Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP | Habiletés | Ressource | Attaque d'oeuf |
+|---|---|---|---|---|---|---|---|---|
+| rampant-du-neant | Rampant du néant | Ténèbres, Psychique | offensif | 68 / 48 / 62 / 100 / 72 / 42 (392) | 277 | Sorcellerie, Instinct | Ichor du néant | Murmure du néant (Ténèbres, spéciale, 80) |
+| mangeur-d-etoiles | Mangeur d'étoiles | Ténèbres, Dragon | offensif | 78 / 94 / 70 / 52 / 50 / 48 (392) | 277 | Férocité, Affinité | Croc stellaire | Gueule d'éclipse (Dragon, physique, 80) |
+| spectre-hurlant | Spectre hurlant | Spectre, Son | soutien | 74 / 40 / 66 / 92 / 84 / 36 (392) | 277 | Sorcellerie, Volonté | Ectoplasme hurlant | Hurlement du vide (Son, spéciale, 80) |
+| ange-du-neant | Ange du néant (rare, hostile) | Ténèbres, Lumière | offensif | 80 / 60 / 72 / 106 / 90 / 62 (470) | 470 | Sorcellerie, Affinité | Plume du néant | Lumière noire (Lumière, spéciale, 80) |
+
+Attaques apprises :
+
+- Rampant du néant : regard-funeste (niv. 1), onde-psychique (niv. 1), malefice (niv. 28), sentence (niv. 38), regard-hypnotique (niv. 48), rayon-d-ether (niv. 95).
+- Mangeur d'étoiles : morsure (niv. 1), souffle-draconique (niv. 1), croc-noir (niv. 28), furie-draconique (niv. 38), griffe-d-ombre (niv. 48), rapine (niv. 95).
+- Spectre hurlant : lueur-trompeuse (niv. 1), glas (niv. 1), lamentation (niv. 28), tocsin (niv. 38), malediction-mortelle (niv. 48), requiem (niv. 95).
+- Ange du néant : lueur-sacree (niv. 1), regard-funeste (niv. 1), malefice (niv. 33), eclat-du-zenith (niv. 43), sentence (niv. 53), aube-eclatante (niv. 96).

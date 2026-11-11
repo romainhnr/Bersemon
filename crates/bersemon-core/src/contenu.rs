@@ -136,19 +136,31 @@ const INDICE_20: &str = "dans les archives du Chancelier, une carte scellée du 
 
 const INDICE_21: &str = "le pyromancien vaincu a parlé : le Prince de braise trône au fond de la gorge, sur un siège de lave refroidie.";
 
-const INDICE_22: &str = "dans les cendres du Prince, une lettre scellée du même sceau : au-delà de la gorge, les Pics Foudroyés, où l'orage ne s'arrête jamais. Un onzième Apôtre y monte la garde.";
+const INDICE_22: &str = "dans les cendres du Prince, une lettre scellée du même sceau : au-delà de la gorge et du Glacier des Âmes, les Pics Foudroyés, où l'orage ne s'arrête jamais. Un onzième Apôtre y monte la garde.";
 
 const INDICE_23: &str = "le héraut de l'orage vaincu a parlé : le Sénéchal des orages attend au sommet du plus haut pic, là où tombe la foudre.";
 
 // Palais de Chair et Puits du Monde, section 48 de docs/contenu-v1.md
 // (étape 168).
-const INDICE_24: &str = "sous la lance du Sénéchal, une invitation scellée du même sceau : au cœur du royaume, le Palais de Chair, dont les murs respirent. Un douzième Apôtre y tient sa cour.";
+const INDICE_24: &str = "sous la lance du Sénéchal, une invitation scellée du même sceau : au cœur du royaume, au-delà du Cimetière des Géants, le Palais de Chair, dont les murs respirent. Un douzième Apôtre y tient sa cour.";
 
 const INDICE_25: &str = "la favorite vaincue a parlé : la Reine-mère de chair repose dans la salle du trône, au milieu de sa couvée.";
 
-const INDICE_26: &str = "dans la couche de la Reine-mère, une carte scellée du même sceau : sous le palais, le Puits du Monde descend jusqu'au fond des choses. Le dernier Apôtre y attend.";
+const INDICE_26: &str = "dans la couche de la Reine-mère, une carte scellée du même sceau : sous le palais, au-delà de la Faille du Néant, le Puits du Monde descend jusqu'au fond des choses. Le dernier Apôtre y attend.";
 
 const INDICE_27: &str = "le chevalier-crâne vaincu a parlé : le Roi sans visage règne au fond du Puits, sur un trône taillé dans la dernière pierre du monde.";
+
+/// Indice de Faille du Néant, trouvé au bout de la première expédition menée
+/// au bout (section 9.4, étape 209, texte proposé par Claude, Q124).
+const INDICE_DE_LA_FAILLE: &str = "au bord de la faille, un anneau de chevalier porte le même sceau. Plus bas, le néant rejoint le Puits du Monde.";
+
+/// Indice de Cimetière des Géants, trouvé au bout de la première expédition menée
+/// au bout (section 9.4, étape 209, texte proposé par Claude, Q124).
+const INDICE_DU_CIMETIERE: &str = "entre les côtes d'un géant, une couronne rouillée porte le même sceau. Une odeur de chair monte de l'est : le Palais de Chair n'est plus loin.";
+
+/// Indice de Glacier des Âmes, trouvé au bout de la première expédition menée
+/// au bout (section 9.4, étape 209, texte proposé par Claude, Q124).
+const INDICE_DU_GLACIER: &str = "dans la glace, un mort aux yeux ouverts serre un médaillon au même sceau. Au-dessus du glacier grondent les Pics Foudroyés.";
 
 /// Indice de Sanctuaire d'Asphodèle, trouvé au bout de la première expédition menée
 /// au bout (section 9.4, étape 208, texte proposé par Claude, Q124).
@@ -1585,6 +1597,28 @@ impl ContenuV1 {
                 .avec_meteos(meteos_de_la_gorge.clone())
         })
         .expect("Gorge de Braise conforme aux règles");
+        // Entre le Prince et le Sénéchal, un glacier où les âmes des morts restent prises dans la glace (section 9.1, étape 209).
+        let glacier = Zone::new(
+            ZoneId::new("glacier-des-ames"),
+            "Glacier des Âmes",
+            (niveau(75), niveau(78)),
+            5,
+            3,
+            vec![
+                trouver("ours-des-glaces"),
+                trouver("yeti"),
+                trouver("esprit-du-blizzard"),
+            ],
+            vec![EspeceRare {
+                espece: trouver("mammouth-fantome"),
+                pacifique: false,
+            }],
+            expedition_automatique(13, 686..=1322, 9480..=13270, 1..=3, 640..=980),
+            coffre(480..=730, Vec::new()),
+        )
+        .and_then(|zone| zone.avec_monstre_cache(schnoz()))
+        .map(|zone| zone.avec_meteos(vec![Meteo::Grele, Meteo::Tempete]))
+        .expect("Glacier des Âmes conforme aux règles");
         let coeur = annexe(
             Zone::new(
                 ZoneId::new("coeur-du-volcan"),
@@ -1652,6 +1686,28 @@ impl ContenuV1 {
                 .avec_meteos(meteos_des_pics.clone())
         })
         .expect("Pics Foudroyés conforme aux règles");
+        // Entre le Sénéchal et la Reine-mère, une vallée obscure où les géants d'autrefois sont venus mourir (section 9.1, étape 209).
+        let cimetiere = Zone::new(
+            ZoneId::new("cimetiere-des-geants"),
+            "Cimetière des Géants",
+            (niveau(83), niveau(86)),
+            5,
+            3,
+            vec![
+                trouver("colosse-d-os"),
+                trouver("charognard-des-geants"),
+                trouver("ver-ossivore"),
+            ],
+            vec![EspeceRare {
+                espece: trouver("titan-dechu"),
+                pacifique: false,
+            }],
+            expedition_automatique(14, 772..=1502, 11630..=16110, 1..=3, 700..=1060),
+            coffre(520..=790, Vec::new()),
+        )
+        .and_then(|zone| zone.avec_monstre_cache(schnoz()))
+        .map(|zone| zone.avec_meteos(vec![Meteo::Tempete, Meteo::Pluie]))
+        .expect("Cimetière des Géants conforme aux règles");
         let aire = annexe(
             Zone::new(
                 ZoneId::new("aire-des-pegases"),
@@ -1719,6 +1775,28 @@ impl ContenuV1 {
                 .avec_meteos(meteos_du_palais.clone())
         })
         .expect("Palais de Chair conforme aux règles");
+        // Entre la Reine-mère et le Roi sans visage, une faille où le monde s'arrête et où le néant regarde ceux qui s'en approchent (section 9.1, étape 209).
+        let faille = Zone::new(
+            ZoneId::new("faille-du-neant"),
+            "Faille du Néant",
+            (niveau(91), niveau(94)),
+            5,
+            3,
+            vec![
+                trouver("rampant-du-neant"),
+                trouver("mangeur-d-etoiles"),
+                trouver("spectre-hurlant"),
+            ],
+            vec![EspeceRare {
+                espece: trouver("ange-du-neant"),
+                pacifique: false,
+            }],
+            expedition_automatique(15, 858..=1686, 13940..=19120, 1..=3, 760..=1140),
+            coffre(560..=850, Vec::new()),
+        )
+        .and_then(|zone| zone.avec_monstre_cache(schnoz()))
+        .map(|zone| zone.avec_meteos(vec![Meteo::Tempete, Meteo::Grele]))
+        .expect("Faille du Néant conforme aux règles");
         let jardin = annexe(
             Zone::new(
                 ZoneId::new("jardin-de-la-reine"),
@@ -2021,7 +2099,11 @@ impl ContenuV1 {
         .avec_recit_de_l_ame(AME_DU_SENECHAL)
         .avec_ligne_du_carnet(CARNET_DU_SENECHAL);
         let chapitre_du_senechal = Chapitre::new(
-            vec![indice(&gorge, INDICE_22), indice(&pics, INDICE_23)],
+            vec![
+                indice(&gorge, INDICE_22),
+                indice(&glacier, INDICE_DU_GLACIER),
+                indice(&pics, INDICE_23),
+            ],
             senechal,
         )
         .expect("chapitre du Sénéchal conforme aux règles");
@@ -2038,7 +2120,11 @@ impl ContenuV1 {
         .avec_recit_de_l_ame(AME_DE_LA_REINE)
         .avec_ligne_du_carnet(CARNET_DE_LA_REINE);
         let chapitre_de_la_reine = Chapitre::new(
-            vec![indice(&pics, INDICE_24), indice(&palais, INDICE_25)],
+            vec![
+                indice(&pics, INDICE_24),
+                indice(&cimetiere, INDICE_DU_CIMETIERE),
+                indice(&palais, INDICE_25),
+            ],
             reine,
         )
         .expect("chapitre de la Reine-mère conforme aux règles");
@@ -2054,7 +2140,11 @@ impl ContenuV1 {
         .avec_recit_de_l_ame(AME_DU_ROI)
         .avec_ligne_du_carnet(CARNET_DU_ROI);
         let chapitre_du_roi = Chapitre::new(
-            vec![indice(&palais, INDICE_26), indice(&puits, INDICE_27)],
+            vec![
+                indice(&palais, INDICE_26),
+                indice(&faille, INDICE_DE_LA_FAILLE),
+                indice(&puits, INDICE_27),
+            ],
             roi,
         )
         .expect("chapitre du Roi conforme aux règles");
@@ -2202,8 +2292,8 @@ impl ContenuV1 {
         ];
         let zones = vec![
             lisiere, marais, vallee, bourg, abbaye, bois, col, desert, port, mer, mines, greve,
-            sylve, pavots, catacombes, remparts, plaine, foret, cite, sanctuaire, gorge, pics,
-            palais, puits,
+            sylve, pavots, catacombes, remparts, plaine, foret, cite, sanctuaire, gorge, glacier,
+            pics, cimetiere, palais, faille, puits,
         ];
         // Les Abysses, au fond de la Tour : les rares hostiles de toutes les
         // zones y forment les groupes, et les rares pacifiques y sont les
@@ -2923,7 +3013,7 @@ const ATTAQUES_DES_HEROS: [FicheAttaque; 40] = [
 ];
 
 /// Section 1 de docs/contenu-v1.md, dans le même ordre.
-const ATTAQUES: [FicheAttaque; 324] = [
+const ATTAQUES: [FicheAttaque; 336] = [
     fiche(
         "souffle-chaud",
         "Souffle chaud",
@@ -5401,6 +5491,96 @@ const ATTAQUES: [FicheAttaque; 324] = [
         80,
         100,
     ),
+    // Attaques d'oeuf des espèces de du Glacier des Âmes, du Cimetière des Géants et de la Faille du Néant (section 13.11, étape 209).
+    fiche(
+        "etreinte-glaciale",
+        "Étreinte glaciale",
+        Type::Glace,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "poing-de-givre",
+        "Poing de givre",
+        Type::Glace,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "voile-de-neige",
+        "Voile de neige",
+        Type::Vol,
+        Speciale,
+        80,
+        100,
+    ),
+    fiche(
+        "pietinement-glacial",
+        "Piétinement glacial",
+        Type::Sol,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "ossature-de-geant",
+        "Ossature de géant",
+        Type::Sol,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "bec-putride",
+        "Bec putride",
+        Type::Poison,
+        Physique,
+        80,
+        100,
+    ),
+    fiche("ronge-os", "Ronge-os", Type::Insecte, Physique, 80, 100),
+    fiche(
+        "chute-du-titan",
+        "Chute du titan",
+        Type::Combat,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "murmure-du-neant",
+        "Murmure du néant",
+        Type::Tenebres,
+        Speciale,
+        80,
+        100,
+    ),
+    fiche(
+        "gueule-d-eclipse",
+        "Gueule d'éclipse",
+        Type::Dragon,
+        Physique,
+        80,
+        100,
+    ),
+    fiche(
+        "hurlement-du-vide",
+        "Hurlement du vide",
+        Type::Son,
+        Speciale,
+        80,
+        100,
+    ),
+    fiche(
+        "lumiere-noire",
+        "Lumière noire",
+        Type::Lumiere,
+        Speciale,
+        80,
+        100,
+    ),
 ];
 
 struct FicheCapsule {
@@ -5789,7 +5969,7 @@ const MARCHAND_ZOMBIE: FicheEspece = FicheEspece {
 /// Section 2 de docs/contenu-v1.md, dans l'ordre du codex : les monstres de
 /// départ, les communs, les rares, l'Apôtre, le monstre caché, puis les
 /// formes évoluées de la section 8.
-static ESPECES: [FicheEspece; 178] = [
+static ESPECES: [FicheEspece; 190] = [
     FicheEspece {
         id: "salamandre",
         nom: "Salamandre",
@@ -9129,6 +9309,235 @@ static ESPECES: [FicheEspece; 178] = [
         ],
         evolution: None,
     },
+    // Espèces de du Glacier des Âmes, du Cimetière des Géants et de la Faille du Néant (section 9.1, étape 209, proposées par
+    // Claude, Q124).
+    FicheEspece {
+        id: "ours-des-glaces",
+        nom: "Ours des glaces",
+        types: &[Type::Glace, Type::Spectre],
+        role: Role::Offensif,
+        stats_de_base: [86, 96, 72, 38, 52, 48],
+        rendement_experience: 230,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Ferocite, Habilete::Volonte],
+        apprentissage: &[
+            (1, "croc-de-givre"),
+            (1, "charge-spectrale"),
+            (23, "avalanche"),
+            (33, "griffes-spectrales"),
+            (81, "charge-des-morts"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "yeti",
+        nom: "Yéti",
+        types: &[Type::Glace, Type::Combat],
+        role: Role::Offensif,
+        stats_de_base: [84, 98, 74, 36, 50, 52],
+        rendement_experience: 230,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Ferocite, Habilete::Carapace],
+        apprentissage: &[
+            (1, "croc-de-givre"),
+            (1, "frappe-d-os"),
+            (23, "avalanche"),
+            (33, "epee-des-morts"),
+            (43, "ecorchure"),
+            (81, "dechiquetage"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "esprit-du-blizzard",
+        nom: "Esprit du blizzard",
+        types: &[Type::Glace, Type::Vol],
+        role: Role::Offensif,
+        stats_de_base: [60, 45, 56, 96, 66, 70],
+        rendement_experience: 230,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Celerite, Habilete::Sorcellerie],
+        apprentissage: &[
+            (1, "bourrasque"),
+            (1, "croc-de-givre"),
+            (23, "souffle-glacial"),
+            (33, "ultrason"),
+            (43, "bec-funeste"),
+            (81, "blizzard"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "mammouth-fantome",
+        nom: "Mammouth fantôme",
+        types: &[Type::Glace, Type::Sol],
+        role: Role::Offensif,
+        stats_de_base: [100, 110, 90, 40, 62, 50],
+        rendement_experience: 390,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Ferocite, Habilete::Volonte],
+        apprentissage: &[
+            (1, "croc-de-givre"),
+            (1, "secousse"),
+            (28, "avalanche"),
+            (38, "charge-du-sanglier"),
+            (48, "serres-de-poussiere"),
+            (82, "seisme"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "colosse-d-os",
+        nom: "Colosse d'os",
+        types: &[Type::Sol, Type::Spectre],
+        role: Role::Soutien,
+        stats_de_base: [92, 80, 96, 40, 70, 14],
+        rendement_experience: 254,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Carapace, Habilete::Volonte],
+        apprentissage: &[
+            (1, "secousse"),
+            (1, "lueur-trompeuse"),
+            (25, "charge-spectrale"),
+            (35, "bandelettes"),
+            (45, "griffes-spectrales"),
+            (88, "engloutissement"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "charognard-des-geants",
+        nom: "Charognard des géants",
+        types: &[Type::Vol, Type::Poison],
+        role: Role::Offensif,
+        stats_de_base: [70, 90, 58, 40, 52, 82],
+        rendement_experience: 254,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Depeceur, Habilete::Pillard],
+        apprentissage: &[
+            (1, "coup-de-bec"),
+            (1, "morsure-venimeuse"),
+            (25, "pique"),
+            (35, "croc-de-venin"),
+            (45, "bec-funeste"),
+            (88, "deluge-toxique"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "ver-ossivore",
+        nom: "Ver ossivore",
+        types: &[Type::Sol, Type::Insecte],
+        role: Role::Offensif,
+        stats_de_base: [82, 94, 76, 36, 50, 54],
+        rendement_experience: 254,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Ferocite, Habilete::Traqueur],
+        apprentissage: &[
+            (1, "secousse"),
+            (1, "bourdonnement"),
+            (25, "morsure-de-l-araignee"),
+            (35, "serres-de-poussiere"),
+            (45, "faux-de-mante"),
+            (88, "seisme"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "titan-dechu",
+        nom: "Titan déchu",
+        types: &[Type::Sol, Type::Combat],
+        role: Role::Offensif,
+        stats_de_base: [100, 115, 92, 40, 60, 48],
+        rendement_experience: 432,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Ferocite, Habilete::Volonte],
+        apprentissage: &[
+            (1, "secousse"),
+            (1, "frappe-d-os"),
+            (30, "epee-des-morts"),
+            (40, "ecorchure"),
+            (50, "serres-de-poussiere"),
+            (89, "seisme"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "rampant-du-neant",
+        nom: "Rampant du néant",
+        types: &[Type::Tenebres, Type::Psychique],
+        role: Role::Offensif,
+        stats_de_base: [68, 48, 62, 100, 72, 42],
+        rendement_experience: 277,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Sorcellerie, Habilete::Instinct],
+        apprentissage: &[
+            (1, "regard-funeste"),
+            (1, "onde-psychique"),
+            (28, "malefice"),
+            (38, "sentence"),
+            (48, "regard-hypnotique"),
+            (95, "rayon-d-ether"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "mangeur-d-etoiles",
+        nom: "Mangeur d'étoiles",
+        types: &[Type::Tenebres, Type::Dragon],
+        role: Role::Offensif,
+        stats_de_base: [78, 94, 70, 52, 50, 48],
+        rendement_experience: 277,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Ferocite, Habilete::Affinite],
+        apprentissage: &[
+            (1, "morsure"),
+            (1, "souffle-draconique"),
+            (28, "croc-noir"),
+            (38, "furie-draconique"),
+            (48, "griffe-d-ombre"),
+            (95, "rapine"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "spectre-hurlant",
+        nom: "Spectre hurlant",
+        types: &[Type::Spectre, Type::Son],
+        role: Role::Soutien,
+        stats_de_base: [74, 40, 66, 92, 84, 36],
+        rendement_experience: 277,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Sorcellerie, Habilete::Volonte],
+        apprentissage: &[
+            (1, "lueur-trompeuse"),
+            (1, "glas"),
+            (28, "lamentation"),
+            (38, "tocsin"),
+            (48, "malediction-mortelle"),
+            (95, "requiem"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "ange-du-neant",
+        nom: "Ange du néant",
+        types: &[Type::Tenebres, Type::Lumiere],
+        role: Role::Offensif,
+        stats_de_base: [80, 60, 72, 106, 90, 62],
+        rendement_experience: 470,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Sorcellerie, Habilete::Affinite],
+        apprentissage: &[
+            (1, "lueur-sacree"),
+            (1, "regard-funeste"),
+            (33, "malefice"),
+            (43, "eclat-du-zenith"),
+            (53, "sentence"),
+            (96, "aube-eclatante"),
+        ],
+        evolution: None,
+    },
 ];
 
 /// Section 15 de docs/contenu-v1.md : la ligne est prête 2 h après avoir
@@ -10659,7 +11068,7 @@ const PRIX_D_UNE_RESSOURCE_RARE: u32 = 15;
 
 /// Espèce, identifiant et nom de chaque ressource : seules les espèces
 /// sauvages qui se combattent en ont une (section 14.3).
-const RESSOURCES: [(&str, &str, &str); 97] = [
+const RESSOURCES: [(&str, &str, &str); 109] = [
     ("loup", "croc-de-loup", "Croc de loup"),
     ("corbeau", "plume-de-corbeau", "Plume de corbeau"),
     ("vipere", "ecaille-de-vipere", "Écaille de vipère"),
@@ -10815,6 +11224,30 @@ const RESSOURCES: [(&str, &str, &str); 97] = [
     ),
     ("ver-luisant-geant", "abdomen-luisant", "Abdomen luisant"),
     ("gardien-d-asphodele", "ecaille-doree", "Écaille dorée"),
+    ("ours-des-glaces", "fourrure-givree", "Fourrure givrée"),
+    ("yeti", "toison-de-yeti", "Toison de yéti"),
+    ("esprit-du-blizzard", "flocon-eternel", "Flocon éternel"),
+    (
+        "mammouth-fantome",
+        "defense-de-mammouth",
+        "Défense de mammouth",
+    ),
+    ("colosse-d-os", "femur-de-geant", "Fémur de géant"),
+    (
+        "charognard-des-geants",
+        "plume-de-charognard",
+        "Plume de charognard",
+    ),
+    ("ver-ossivore", "mandibule-ossivore", "Mandibule ossivore"),
+    ("titan-dechu", "phalange-de-titan", "Phalange de titan"),
+    ("rampant-du-neant", "ichor-du-neant", "Ichor du néant"),
+    ("mangeur-d-etoiles", "croc-stellaire", "Croc stellaire"),
+    (
+        "spectre-hurlant",
+        "ectoplasme-hurlant",
+        "Ectoplasme hurlant",
+    ),
+    ("ange-du-neant", "plume-du-neant", "Plume du néant"),
 ];
 
 /// Section 32 de docs/contenu-v1.md : les météos de la Lisière, du Marais
@@ -10858,7 +11291,7 @@ const ACTIVITES: [(&str, Activite); 28] = [
 
 /// Section 28 de docs/contenu-v1.md : l'attaque d'œuf de chaque famille
 /// d'évolution, par sa forme de base (section 13.11).
-const ATTAQUES_D_OEUF: [(&str, &str); 126] = [
+const ATTAQUES_D_OEUF: [(&str, &str); 138] = [
     ("salamandre", "souffle-des-forges"),
     ("crapaud", "ressac"),
     ("mandragore", "seve-maudite"),
@@ -10985,6 +11418,18 @@ const ATTAQUES_D_OEUF: [(&str, &str); 126] = [
     ("chimere-de-cristal", "griffes-de-cristal"),
     ("ver-luisant-geant", "lueur-du-ver"),
     ("gardien-d-asphodele", "souffle-d-asphodele"),
+    ("ours-des-glaces", "etreinte-glaciale"),
+    ("yeti", "poing-de-givre"),
+    ("esprit-du-blizzard", "voile-de-neige"),
+    ("mammouth-fantome", "pietinement-glacial"),
+    ("colosse-d-os", "ossature-de-geant"),
+    ("charognard-des-geants", "bec-putride"),
+    ("ver-ossivore", "ronge-os"),
+    ("titan-dechu", "chute-du-titan"),
+    ("rampant-du-neant", "murmure-du-neant"),
+    ("mangeur-d-etoiles", "gueule-d-eclipse"),
+    ("spectre-hurlant", "hurlement-du-vide"),
+    ("ange-du-neant", "lumiere-noire"),
 ];
 
 /// La forme de base de la famille de cette espèce : celle qu'aucune autre
@@ -11923,8 +12368,8 @@ mod tests {
         uniques.sort_by(|a, b| a.as_str().cmp(b.as_str()));
         uniques.dedup();
         // Celle du Colosse du rempart depuis l'étape 204.
-        assert_eq!(vues.len(), 126);
-        assert_eq!(uniques.len(), 126);
+        assert_eq!(vues.len(), 138);
+        assert_eq!(uniques.len(), 138);
     }
 
     #[test]
@@ -11933,13 +12378,13 @@ mod tests {
 
         let contenu = ContenuV1::new();
         let au_codex = especes_au_codex(contenu.especes());
-        assert_eq!(au_codex, 158);
+        assert_eq!(au_codex, 170);
         let seuils: Vec<u32> = contenu
             .recompenses_du_codex()
             .iter()
             .map(|recompense| recompense.palier.seuil(au_codex))
             .collect();
-        assert_eq!(seuils, vec![10, 20, 30, 40, 50, 158]);
+        assert_eq!(seuils, vec![10, 20, 30, 40, 50, 170]);
         let complet = contenu.recompenses_du_codex().last().unwrap();
         assert_eq!(complet.palier, PalierDuCodex::Complet);
         let sceau = complet.objet_unique.as_ref().unwrap();
@@ -12044,10 +12489,10 @@ mod tests {
     #[test]
     fn contenu_conforme_aux_regles() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.especes().len(), 178);
-        assert_eq!(contenu.zones().len(), 24);
+        assert_eq!(contenu.especes().len(), 190);
+        assert_eq!(contenu.zones().len(), 27);
         assert_eq!(contenu.annexes().len(), 10);
-        assert_eq!(contenu.piste().indices().count(), 35);
+        assert_eq!(contenu.piste().indices().count(), 38);
         // Toute espèce rencontrée en zone, annexes comprises, se retrouve au
         // chargement d'une sauvegarde.
         let annexes = contenu.annexes().iter().map(Annexe::zone);
@@ -13231,10 +13676,13 @@ mod tests {
                 "sanctuaire-d-asphodele",
                 "gorge-de-braise",
                 "gorge-de-braise",
+                "glacier-des-ames",
                 "pics-foudroyes",
                 "pics-foudroyes",
+                "cimetiere-des-geants",
                 "palais-de-chair",
                 "palais-de-chair",
+                "faille-du-neant",
                 "puits-du-monde"
             ]
         );
@@ -13495,31 +13943,31 @@ mod tests {
         let puits = zone_par_id(&contenu, "puits-du-monde");
         assert_eq!(palais.niveaux(), (niveau(87), niveau(90)));
         assert_eq!(puits.niveaux(), (niveau(95), niveau(98)));
-        let vingt_quatrieme = piste.indice_suivant(31, &vaincus[..11]).unwrap();
+        let vingt_quatrieme = piste.indice_suivant(32, &vaincus[..11]).unwrap();
         assert_eq!(vingt_quatrieme.zone.as_str(), "pics-foudroyes");
-        assert!(!piste.zone_ouverte(palais.id(), 31));
-        assert!(piste.zone_ouverte(palais.id(), 32));
-        let vingt_cinquieme = piste.indice_suivant(32, &vaincus[..11]).unwrap();
+        assert!(!piste.zone_ouverte(palais.id(), 32));
+        assert!(piste.zone_ouverte(palais.id(), 34));
+        let vingt_cinquieme = piste.indice_suivant(34, &vaincus[..11]).unwrap();
         assert_eq!(&vingt_cinquieme.zone, palais.id());
         let reine = piste
-            .apotre_en_attente(palais.id(), 33, &vaincus[..11])
+            .apotre_en_attente(palais.id(), 35, &vaincus[..11])
             .unwrap();
         assert_eq!(reine.espece().id().as_str(), "reine-mere-de-chair");
         assert_eq!(reine.niveau(), niveau(92));
-        assert_eq!(piste.indice_suivant(33, &vaincus[..11]), None);
-        let vingt_sixieme = piste.indice_suivant(33, &vaincus[..12]).unwrap();
+        assert_eq!(piste.indice_suivant(35, &vaincus[..11]), None);
+        let vingt_sixieme = piste.indice_suivant(35, &vaincus[..12]).unwrap();
         assert_eq!(&vingt_sixieme.zone, palais.id());
-        assert!(piste.zone_ouverte(puits.id(), 34));
-        let vingt_septieme = piste.indice_suivant(34, &vaincus[..12]).unwrap();
+        assert!(piste.zone_ouverte(puits.id(), 37));
+        let vingt_septieme = piste.indice_suivant(37, &vaincus[..12]).unwrap();
         assert_eq!(&vingt_septieme.zone, puits.id());
         let roi = piste
-            .apotre_en_attente(puits.id(), 35, &vaincus[..12])
+            .apotre_en_attente(puits.id(), 38, &vaincus[..12])
             .unwrap();
         assert_eq!(roi.espece().id().as_str(), "roi-sans-visage");
         assert_eq!(roi.niveau(), niveau(100));
         // Plus aucun indice après le dernier Apôtre : le Béhérit prend le
         // relais (section 9.4).
-        assert_eq!(piste.indice_suivant(35, &vaincus), None);
+        assert_eq!(piste.indice_suivant(38, &vaincus), None);
         let attaques = |apotre: &Apotre| -> Vec<String> {
             assert_eq!(apotre.espece().types().liste(), &[Type::Obscur]);
             creer(
@@ -13599,16 +14047,16 @@ mod tests {
         assert_eq!(piste.indice_suivant(29, &vaincus[..9]), None);
         let vingt_deuxieme = piste.indice_suivant(29, &vaincus[..10]).unwrap();
         assert_eq!(&vingt_deuxieme.zone, gorge.id());
-        assert!(piste.zone_ouverte(pics.id(), 30));
-        let vingt_troisieme = piste.indice_suivant(30, &vaincus[..10]).unwrap();
+        assert!(piste.zone_ouverte(pics.id(), 31));
+        let vingt_troisieme = piste.indice_suivant(31, &vaincus[..10]).unwrap();
         assert_eq!(&vingt_troisieme.zone, pics.id());
         let senechal = piste
-            .apotre_en_attente(pics.id(), 31, &vaincus[..10])
+            .apotre_en_attente(pics.id(), 32, &vaincus[..10])
             .unwrap();
         assert_eq!(senechal.espece().id().as_str(), "senechal-des-orages");
         assert_eq!(senechal.niveau(), niveau(84));
         // Le vingt-quatrième, dans les Pics, attend la chute du Sénéchal.
-        assert_eq!(piste.indice_suivant(31, &vaincus[..10]), None);
+        assert_eq!(piste.indice_suivant(32, &vaincus[..10]), None);
         let attaques = |apotre: &Apotre| -> Vec<String> {
             assert_eq!(apotre.espece().types().liste(), &[Type::Obscur]);
             creer(

@@ -36,7 +36,7 @@ const CASES_MAX: usize = 4;
 const COULEURS_MAX: usize = 63;
 
 /// Identifiant de l'espèce et texte de son sprite, dans l'ordre du codex.
-const SPRITES: [(&str, &str); 178] = [
+const SPRITES: [(&str, &str); 190] = [
     ("salamandre", include_str!("../sprites/salamandre.txt")),
     ("crapaud", include_str!("../sprites/crapaud.txt")),
     ("mandragore", include_str!("../sprites/mandragore.txt")),
@@ -574,6 +574,42 @@ const SPRITES: [(&str, &str); 178] = [
     (
         "gardien-d-asphodele",
         include_str!("../sprites/gardien-d-asphodele.txt"),
+    ),
+    (
+        "ours-des-glaces",
+        include_str!("../sprites/ours-des-glaces.txt"),
+    ),
+    ("yeti", include_str!("../sprites/yeti.txt")),
+    (
+        "esprit-du-blizzard",
+        include_str!("../sprites/esprit-du-blizzard.txt"),
+    ),
+    (
+        "mammouth-fantome",
+        include_str!("../sprites/mammouth-fantome.txt"),
+    ),
+    ("colosse-d-os", include_str!("../sprites/colosse-d-os.txt")),
+    (
+        "charognard-des-geants",
+        include_str!("../sprites/charognard-des-geants.txt"),
+    ),
+    ("ver-ossivore", include_str!("../sprites/ver-ossivore.txt")),
+    ("titan-dechu", include_str!("../sprites/titan-dechu.txt")),
+    (
+        "rampant-du-neant",
+        include_str!("../sprites/rampant-du-neant.txt"),
+    ),
+    (
+        "mangeur-d-etoiles",
+        include_str!("../sprites/mangeur-d-etoiles.txt"),
+    ),
+    (
+        "spectre-hurlant",
+        include_str!("../sprites/spectre-hurlant.txt"),
+    ),
+    (
+        "ange-du-neant",
+        include_str!("../sprites/ange-du-neant.txt"),
     ),
 ];
 
