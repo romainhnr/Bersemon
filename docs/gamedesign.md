@@ -761,6 +761,7 @@ Décidé le 18/10/2026, pour l'étape 25 :
 - Les types d'un monstre adverse ne s'affichent que si son espèce est capturée au codex ; sinon, « ? ».
 - Quand le joueur peut capturer, le nombre de monstres de son équipe et de son camp est rappelé. Le bouton qui renonce à la capture devient « Ne pas capturer ».
 - Sur Discord, sont mis en gras, en plus de la section 2 : les noms des monstres, la fin d'une expédition menée au bout, les indices et les défaites.
+- Décidé le 11/11/2026, pour l'étape 186 (demande de l'utilisateur) : la rencontre d'un monstre shiny en combat est mise en évidence par une ligne de plus, en gras sur Discord, entourée de trois émojis étoile de chaque côté : "Un shiny ! Loup sauvage (shiny) brille d'un éclat inhabituel." Une ligne par shiny parmi les monstres annoncés. La console montre la même ligne, sans le gras ; une console Windows 10 ancienne peut mal afficher l'émoji (hypothèse retenue, Q123).
 
 ### 10.7 Combats contre des humains (après la V1)
 

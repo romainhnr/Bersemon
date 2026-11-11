@@ -40,8 +40,27 @@ pub fn rencontre(combat: &Combat) -> String {
             ))
         })
         .collect();
-    format!("Des monstres surgissent : {}.", noms.join(", "))
+    let mut texte = format!("Des monstres surgissent : {}.", noms.join(", "));
+    // Un shiny est rare : sa rencontre est mise en évidence par des étoiles,
+    // sur Discord comme dans la console.
+    for index in 0..visibles {
+        let combattant = Combattant {
+            cote: Cote::Adversaire,
+            index,
+        };
+        if combat.monstre(combattant).est_shiny() {
+            texte.push('\n');
+            texte.push_str(&important(&format!(
+                "{ETOILES} Un shiny ! {} brille d'un éclat inhabituel. {ETOILES}",
+                nom_en_combat(combat, combattant)
+            )));
+        }
+    }
+    texte
 }
+
+/// Trois étoiles, en émoji, autour de l'annonce d'un shiny.
+const ETOILES: &str = "\u{2B50}\u{2B50}\u{2B50}";
 
 /// L'équipe et le héros, avec un repère devant celui qui combat, puis le
 /// monstre adverse actif, avec ses types si son espèce est capturée
@@ -540,6 +559,29 @@ mod tests {
             rencontre(&combat().sans_capture()),
             "Des monstres surgissent : **Loup**."
         );
+    }
+
+    #[test]
+    fn la_rencontre_d_un_shiny_est_mise_en_evidence() {
+        let contenu = ContenuV1::new();
+        let loup = creer(&contenu, "loup", 5);
+        let shiny = Monstre::creer(
+            loup.espece().clone(),
+            loup.niveau(),
+            bersemon_core::stats::ValeursInternes::default(),
+            true,
+        )
+        .unwrap();
+        let combat =
+            Combat::new(vec![creer(&contenu, "salamandre", 5)], vec![loup, shiny]).unwrap();
+        let texte = rencontre(&combat);
+        assert!(
+            texte.ends_with(
+                "\n**\u{2B50}\u{2B50}\u{2B50} Un shiny ! Loup sauvage (shiny) brille d'un éclat inhabituel. \u{2B50}\u{2B50}\u{2B50}**"
+            ),
+            "{texte}"
+        );
+        assert_eq!(texte.matches("Un shiny").count(), 1);
     }
 
     #[test]
