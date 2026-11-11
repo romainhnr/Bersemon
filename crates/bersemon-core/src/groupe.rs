@@ -392,6 +392,9 @@ impl ExpeditionEnGroupe {
         let (Some(partie_hote), Some(partie_invite)) = (hote.partie(), invite.partie()) else {
             return;
         };
+        let etape = hote
+            .expedition()
+            .map_or(1, |expedition| expedition.etapes_faites());
         let combat = Partie::preparer_combat_en_groupe(
             partie_hote,
             partie_invite,
@@ -400,10 +403,22 @@ impl ExpeditionEnGroupe {
             contexte.contenu.zones(),
             contexte.contenu.piste(),
         )
-        .expect("le groupe a au moins un monstre apte entre deux étapes");
+        .expect("le groupe a au moins un monstre apte entre deux étapes")
+        .mene_par(meneur_de_l_etape(etape));
         recits[0].extend(hote.engager_en_groupe(&combat));
         recits[1].extend(invite.engager_en_groupe(&combat));
         self.combat = Some(combat);
+    }
+}
+
+/// Les joueurs mènent chacun une étape à leur tour, pour que l'un n'attende
+/// pas que les monstres de l'autre tombent pour jouer (section 15.5) :
+/// l'hôte les étapes impaires, l'invité les paires.
+pub fn meneur_de_l_etape(etape: u32) -> Membre {
+    if etape % 2 == 1 {
+        Membre::Hote
+    } else {
+        Membre::Invite
     }
 }
 

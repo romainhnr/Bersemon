@@ -781,6 +781,25 @@ impl Combat {
         Ok(combat)
     }
 
+    /// En groupe, dans la Tour, les joueurs mènent chacun une étape à leur
+    /// tour : le premier monstre debout de celui qui mène commence, et ceux
+    /// de l'autre n'entrent qu'une fois les siens KO (section 15.5). Sans
+    /// effet hors groupe, ou si ce joueur n'a aucun monstre debout.
+    pub fn mene_par(mut self, membre: Membre) -> Self {
+        if self.groupe.is_none() {
+            return self;
+        }
+        let premier = (0..self.equipe.len())
+            .find(|index| self.proprietaire(*index) == membre && !self.equipe[*index].est_ko());
+        if let Some(index) = premier {
+            self.actif_joueur = index;
+            // Seul le monstre qui commence a déjà fait face à l'adversaire.
+            self.participants[self.actif_adversaire].clear();
+            self.noter_participation();
+        }
+        self
+    }
+
     /// Sans effet hors groupe.
     pub fn avec_regles_de_l_invite(mut self, regles: ReglesDuMembre) -> Self {
         if let Some(groupe) = &mut self.groupe {
@@ -3854,6 +3873,24 @@ mod tests {
         assert_eq!(adversaire, rapide().stats());
         assert_eq!(joueur, appliquer_bonus(&rapide().stats(), &bonus));
         assert_ne!(joueur, adversaire);
+    }
+
+    /// Section 15.5 : celui qui mène l'étape commence ; seul son monstre a
+    /// déjà fait face à l'adversaire.
+    #[test]
+    fn en_groupe_celui_qui_mene_l_etape_commence() {
+        let combat = Combat::en_groupe(vec![lent()], vec![rapide()], vec![lent()])
+            .unwrap()
+            .mene_par(Membre::Invite);
+        assert_eq!(combat.membre_actif(), Membre::Invite);
+        assert_eq!(combat.actif(Cote::Joueur), j(1));
+        assert_eq!(combat.participants[0], vec![1]);
+        let combat = Combat::en_groupe(vec![lent()], vec![rapide()], vec![lent()])
+            .unwrap()
+            .mene_par(Membre::Hote);
+        assert_eq!(combat.membre_actif(), Membre::Hote);
+        assert_eq!(crate::groupe::meneur_de_l_etape(1), Membre::Hote);
+        assert_eq!(crate::groupe::meneur_de_l_etape(2), Membre::Invite);
     }
 
     #[test]
