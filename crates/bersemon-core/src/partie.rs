@@ -376,6 +376,21 @@ impl Partie {
         &self.coffre_du_camp
     }
 
+    /// Celles du sac et du coffre réunies, une entrée par sorte : ce qui peut
+    /// payer un coût ou se céder à un autre joueur (section 15.1).
+    pub fn ressources_possedees(&self) -> Vec<(Ressource, u32)> {
+        let mut possedees = Inventaire::default();
+        for (ressource, nombre) in self
+            .coffre_du_camp
+            .ressources()
+            .iter()
+            .chain(self.sac.ressources())
+        {
+            possedees.ajouter_ressources(ressource.clone(), *nombre);
+        }
+        possedees.ressources().to_vec()
+    }
+
     /// Au camp, l'argent du sac et celui du coffre paient ensemble (section
     /// 13.3).
     pub fn argent(&self) -> u32 {
@@ -1201,7 +1216,7 @@ impl Partie {
 
     /// Du sac d'abord, puis du coffre, comme l'argent (section 13.3). Le
     /// coût est vérifié par l'appelant.
-    fn payer_ressources(&mut self, cout: &[(Ressource, u32)]) {
+    pub(crate) fn payer_ressources(&mut self, cout: &[(Ressource, u32)]) {
         for (ressource, nombre) in cout {
             let du_sac = (*nombre).min(self.sac.nombre_de_ressources(ressource.id()));
             for (inventaire, quantite) in [
@@ -1215,6 +1230,12 @@ impl Partie {
                 }
             }
         }
+    }
+
+    /// Au coffre du camp, qui n'a pas de limite : celles d'un autre joueur
+    /// (section 15.1).
+    pub(crate) fn recevoir_ressources(&mut self, ressource: Ressource, nombre: u32) {
+        self.coffre_du_camp.ajouter_ressources(ressource, nombre);
     }
 
     /// Refuse ce que refuserait `lancer_amelioration`, sans rien changer.

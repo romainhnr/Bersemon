@@ -1,16 +1,20 @@
 //! Écran des autres joueurs (sections 15.1 et 15.3) : l'offre et le défi
 //! reçus, à accepter ou à refuser, l'offre et le défi envoyés, à retirer,
 //! puis, sans offre envoyée, une offre à faire en trois temps : le joueur,
-//! le monstre à lui céder, et celui qu'on lui demande, ou aucun pour un
-//! don. Une fois le joueur choisi, il peut aussi être défié en duel, et
-//! ajouté aux amis ou retiré (section 15.4). Le palmarès du joueur est en
+//! le monstre ou les ressources à lui céder, et le monstre ou les
+//! ressources qu'on lui demande, ou rien pour un don. Des ressources se
+//! choisissent par leur sorte, puis par leur nombre. Une fois le joueur
+//! choisi, il peut aussi être défié en duel, et ajouté aux amis ou retiré
+//! (section 15.4). Le palmarès du joueur est en
 //! tête, et le classement des duels s'ouvre d'un bouton, comme celui des
 //! records de la Tour sans fond (section 9.5).
 
 use bersemon_core::collection::{Collection, Emplacement};
+use bersemon_core::contenu::ContenuV1;
 use bersemon_core::espece::Rarete;
 use bersemon_core::partie::Partie;
 use bersemon_core::relations::Palmares;
+use bersemon_core::ressource::Ressource;
 use bersemon_core::tour::RecordsDeLaTour;
 use bersemon_presentation::duels::{
     classement as texte_du_classement, classement_de_l_arene as texte_de_l_arene, duels_de,
@@ -23,15 +27,23 @@ use bersemon_presentation::groupe::{
     ACCEPTER_L_INVITATION, INVITER_DANS_LA_TOUR, REFUSER_L_INVITATION, RETIRER_L_INVITATION,
     invitation_envoyee, vous_invite,
 };
+use bersemon_presentation::partie::ressources as ressources_en_texte;
 use bersemon_presentation::tour::records_de_la_tour as texte_des_records;
 
-use crate::composants::{Cle, Vue};
-use crate::echanges::{AutreJoueur, TableauDesEchanges};
+use crate::composants::{Cle, PartEnCours, Vue};
+use crate::echanges::{AutreJoueur, Designation, TableauDesEchanges};
 use crate::ecran_camp::{menus_de_monstres, retour};
 use crate::joueurs::IdJoueur;
 use crate::message::{
-    DANGER, OptionDeMenu, PRINCIPAL, Question, Rangee, SECONDAIRE, SUCCES, bouton, menu, rangees,
+    DANGER, OptionDeMenu, PRINCIPAL, Question, RANGEES_MAX, Rangee, SECONDAIRE, SUCCES, bouton,
+    menu, menus, rangees,
 };
+
+/// Les nombres proposés pour des ressources, en plus de "Tout".
+const NOMBRES_DE_RESSOURCES: [u32; 10] = [1, 2, 3, 5, 10, 20, 50, 100, 200, 500];
+
+/// Deux rangées pour les boutons, le reste pour les menus de ressources.
+const MENUS_DE_RESSOURCES_MAX: usize = RANGEES_MAX - 2;
 
 fn qui(autre: &AutreJoueur) -> String {
     joueur(&autre.heros, autre.pseudo.as_deref())
@@ -46,11 +58,81 @@ fn n_est_pas_un_apotre(collection: &Collection) -> impl Fn(Emplacement) -> bool 
     }
 }
 
+/// Une option par sorte, triées par nom, avec leur rang au contenu pour
+/// valeur.
+fn options_de_sortes(possedees: &[(Ressource, u32)], rangs: &[Ressource]) -> Vec<OptionDeMenu> {
+    let mut options: Vec<(&Ressource, u32, usize)> = possedees
+        .iter()
+        .filter_map(|(ressource, nombre)| {
+            let rang = rangs
+                .iter()
+                .position(|presente| presente.id() == ressource.id())?;
+            Some((ressource, *nombre, rang))
+        })
+        .collect();
+    options.sort_by(|a, b| a.0.nom().cmp(b.0.nom()));
+    options
+        .into_iter()
+        .map(|(ressource, nombre, rang)| OptionDeMenu {
+            libelle: ressources_en_texte(ressource, nombre),
+            valeur: rang.to_string(),
+            description: None,
+        })
+        .collect()
+}
+
+fn options_de_nombres(possedees: u32) -> Vec<OptionDeMenu> {
+    NOMBRES_DE_RESSOURCES
+        .into_iter()
+        .filter(|nombre| *nombre < possedees)
+        .map(|nombre| OptionDeMenu {
+            libelle: nombre.to_string(),
+            valeur: nombre.to_string(),
+            description: None,
+        })
+        .chain((possedees > 0).then(|| OptionDeMenu {
+            libelle: format!("Tout ({possedees})"),
+            valeur: possedees.to_string(),
+            description: None,
+        }))
+        .collect()
+}
+
+/// La sorte de ce rang, et combien en ont le sac et le coffre réunis.
+fn sorte(
+    rangs: &[Ressource],
+    rang: u16,
+    possedees: &[(Ressource, u32)],
+) -> Option<(Ressource, u32)> {
+    let ressource = rangs.get(usize::from(rang))?.clone();
+    let nombre = possedees
+        .iter()
+        .find(|(presente, _)| presente.id() == ressource.id())
+        .map_or(0, |(_, nombre)| *nombre);
+    Some((ressource, nombre))
+}
+
+/// "Croc (Loup, niv. 7)", ou "Fragment d'armure (12)" : `None` si le
+/// monstre n'est plus là, ou si le rang ne désigne aucune ressource.
+fn designation_en_texte(
+    collection: &Collection,
+    rangs: &[Ressource],
+    designation: Designation,
+) -> Option<String> {
+    match designation {
+        Designation::Monstre(emplacement) => collection.monstre(emplacement).map(nom_et_niveau),
+        Designation::Ressources { rang, nombre } => rangs
+            .get(usize::from(rang))
+            .map(|ressource| ressources_en_texte(ressource, nombre)),
+    }
+}
+
 pub fn echanges(
     partie: &Partie,
     tableau: &TableauDesEchanges,
     avec: Option<IdJoueur>,
-    cede: Option<Emplacement>,
+    (cede, demande): (Option<PartEnCours>, Option<PartEnCours>),
+    contenu: &ContenuV1,
 ) -> Question {
     let mut paragraphes = Vec::new();
     let mut lignes: Vec<Rangee> = Vec::new();
@@ -131,7 +213,7 @@ pub fn echanges(
                 paragraphes.push("Aucun autre joueur n'a de partie sur le bot.".to_string());
             } else {
                 paragraphes.push(
-                    "Choisissez un joueur pour lui donner un monstre, lui en proposer un échange ou le défier en duel."
+                    "Choisissez un joueur pour lui donner un monstre ou des ressources, lui proposer un échange ou le défier en duel."
                         .to_string(),
                 );
             }
@@ -140,8 +222,21 @@ pub fn echanges(
         (None, Some((autre, collection))) => {
             let id = autre.id;
             let a_moi = partie.collection();
+            let rangs = contenu.ressources();
+            let mes_ressources = partie.ressources_possedees();
+            // Ce qui n'existe plus, monstre parti ou rang inconnu, ramène au
+            // début de l'offre.
+            let cede = cede.filter(|part| match part {
+                PartEnCours::Choisie(designation) => {
+                    designation_en_texte(a_moi, &rangs, *designation).is_some()
+                }
+                PartEnCours::SorteAChoisir => true,
+                PartEnCours::NombreAChoisir(rang) => usize::from(*rang) < rangs.len(),
+            });
             paragraphes.push(duels_de(&autre.heros, autre.palmares));
-            if peut_defier {
+            // Les défis se lancent avant de composer une offre : pendant,
+            // leurs boutons laissent la place à ceux de l'offre.
+            if peut_defier && cede.is_none() {
                 boutons.push(bouton(Cle::Defier(id), "Défier en duel", PRINCIPAL));
                 boutons.push(bouton(
                     Cle::DefierALArene(id),
@@ -155,10 +250,17 @@ pub fn echanges(
             } else {
                 boutons.push(bouton(Cle::AjouterAmi(id), "Ajouter aux amis", SUCCES));
             }
-            match cede.and_then(|cede| a_moi.monstre(cede).map(|monstre| (cede, monstre))) {
+            let vue = |cede, demande| {
+                Cle::Afficher(Vue::Echanges {
+                    avec: Some(id),
+                    cede,
+                    demande,
+                })
+            };
+            match cede {
                 None => {
                     paragraphes.push(format!(
-                        "Offre à {} : choisissez le monstre à céder.",
+                        "Offre à {} : choisissez le monstre à lui céder, ou cédez-lui des ressources.",
                         qui(autre)
                     ));
                     lignes.extend(menus_de_monstres(
@@ -167,34 +269,126 @@ pub fn echanges(
                         "Céder",
                         n_est_pas_un_apotre(a_moi),
                     ));
-                }
-                Some((cede, monstre)) => {
-                    paragraphes.push(format!(
-                        "Offre à {} : vous cédez {}. Choisissez le monstre demandé en échange, ou donnez-le sans contrepartie.",
-                        qui(autre),
-                        nom_et_niveau(monstre)
-                    ));
-                    lignes.extend(menus_de_monstres(
-                        collection,
-                        |menu| Cle::Demander {
-                            menu,
-                            avec: id,
-                            cede,
-                        },
-                        "Demander",
-                        n_est_pas_un_apotre(collection),
-                    ));
                     boutons.push(bouton(
-                        Cle::Donner { avec: id, cede },
-                        "Le donner sans contrepartie",
+                        vue(Some(PartEnCours::SorteAChoisir), None),
+                        "Céder des ressources",
                         PRINCIPAL,
                     ));
+                }
+                Some(PartEnCours::SorteAChoisir) => {
+                    let options = options_de_sortes(&mes_ressources, &rangs);
+                    paragraphes.push(if options.is_empty() {
+                        "Vous n'avez aucune ressource, ni dans le sac, ni dans le coffre."
+                            .to_string()
+                    } else {
+                        format!(
+                            "Offre à {} : choisissez les ressources à lui céder.",
+                            qui(autre)
+                        )
+                    });
+                    lignes.extend(menus(
+                        |menu| Cle::CederRessource { menu, avec: id },
+                        "Céder des ressources",
+                        options,
+                        MENUS_DE_RESSOURCES_MAX,
+                    ));
+                }
+                Some(PartEnCours::NombreAChoisir(rang)) => {
+                    if let Some((ressource, nombre)) = sorte(&rangs, rang, &mes_ressources) {
+                        paragraphes.push(format!(
+                            "Offre à {} : combien de {} lui céder ? Le sac et le coffre en ont {nombre}.",
+                            qui(autre),
+                            ressource.nom()
+                        ));
+                        lignes.extend(menu(
+                            Cle::NombreACeder { avec: id, rang },
+                            "Nombre à céder",
+                            options_de_nombres(nombre),
+                        ));
+                    }
+                }
+                Some(PartEnCours::Choisie(designation)) => {
+                    let texte = designation_en_texte(a_moi, &rangs, designation)
+                        .expect("cession vérifiée plus haut");
+                    let ses_ressources = &tableau.ressources_du_choisi;
+                    match demande {
+                        Some(PartEnCours::SorteAChoisir) => {
+                            let options = options_de_sortes(ses_ressources, &rangs);
+                            paragraphes.push(if options.is_empty() {
+                                format!("Vous cédez {texte}, mais {} n'a aucune ressource.", qui(autre))
+                            } else {
+                                format!(
+                                    "Offre à {} : vous cédez {texte}. Choisissez les ressources demandées en échange.",
+                                    qui(autre)
+                                )
+                            });
+                            lignes.extend(menus(
+                                |menu| Cle::DemanderRessource {
+                                    menu,
+                                    avec: id,
+                                    cede: designation,
+                                },
+                                "Demander des ressources",
+                                options,
+                                MENUS_DE_RESSOURCES_MAX,
+                            ));
+                        }
+                        Some(PartEnCours::NombreAChoisir(rang)) => {
+                            if let Some((ressource, nombre)) = sorte(&rangs, rang, ses_ressources) {
+                                paragraphes.push(format!(
+                                    "Offre à {} : vous cédez {texte}. Combien de {} demander ? {} en a {nombre}.",
+                                    qui(autre),
+                                    ressource.nom(),
+                                    autre.heros
+                                ));
+                                lignes.extend(menu(
+                                    Cle::NombreADemander {
+                                        avec: id,
+                                        cede: designation,
+                                        rang,
+                                    },
+                                    "Nombre demandé",
+                                    options_de_nombres(nombre),
+                                ));
+                            }
+                        }
+                        None | Some(PartEnCours::Choisie(_)) => {
+                            paragraphes.push(format!(
+                                "Offre à {} : vous cédez {texte}. Choisissez le monstre ou les ressources demandés en échange, ou donnez sans contrepartie.",
+                                qui(autre)
+                            ));
+                            lignes.extend(menus_de_monstres(
+                                collection,
+                                |menu| Cle::Demander {
+                                    menu,
+                                    avec: id,
+                                    cede: designation,
+                                },
+                                "Demander",
+                                n_est_pas_un_apotre(collection),
+                            ));
+                            boutons.push(bouton(
+                                vue(cede, Some(PartEnCours::SorteAChoisir)),
+                                "Demander des ressources",
+                                PRINCIPAL,
+                            ));
+                            boutons.push(bouton(
+                                Cle::Donner {
+                                    avec: id,
+                                    cede: designation,
+                                },
+                                "Donner sans contrepartie",
+                                PRINCIPAL,
+                            ));
+                        }
+                    }
                 }
             }
             boutons.push(bouton(
                 Cle::Afficher(Vue::Echanges {
                     avec: None,
                     cede: None,
+                    demande: None,
                 }),
                 "Annuler l'offre",
                 SECONDAIRE,
@@ -203,8 +397,8 @@ pub fn echanges(
     }
     // Au plus 10 boutons : ils tiennent en deux rangées. Le défi ou
     // l'invitation en attente en compte 2 au plus, l'offre reçue 2, le
-    // joueur choisi 6 sans défi ni invitation en attente, ou 3 avec, et le
-    // classement et le retour 2.
+    // joueur choisi 6 avant l'offre sans défi ni invitation en attente, 3
+    // avec, et 4 pendant l'offre, et le classement et le retour 2.
     boutons.push(bouton(
         Cle::Afficher(Vue::Classement),
         "Classement",
@@ -214,7 +408,7 @@ pub fn echanges(
     lignes.extend(rangees(boutons));
     Question {
         texte: format!(
-            "Multijoueur : offres de monstres et duels.\n{}\n\n{}",
+            "Multijoueur : offres de monstres et de ressources, et duels.\n{}\n\n{}",
             vos_duels(partie.relations().palmares()),
             paragraphes.join("\n\n")
         ),
@@ -246,6 +440,7 @@ pub fn classement(tableau: &TableauDesEchanges) -> Question {
                 Cle::Afficher(Vue::Echanges {
                     avec: None,
                     cede: None,
+                    demande: None,
                 }),
                 "Retour aux autres joueurs",
                 SECONDAIRE,
@@ -288,6 +483,7 @@ pub fn records_de_la_tour(partie: &Partie, tableau: &TableauDesEchanges) -> Ques
                 Cle::Afficher(Vue::Echanges {
                     avec: None,
                     cede: None,
+                    demande: None,
                 }),
                 "Retour aux autres joueurs",
                 SECONDAIRE,
@@ -328,6 +524,7 @@ pub fn classement_de_l_arene(partie: &Partie, tableau: &TableauDesEchanges) -> Q
                 Cle::Afficher(Vue::Echanges {
                     avec: None,
                     cede: None,
+                    demande: None,
                 }),
                 "Retour aux autres joueurs",
                 SECONDAIRE,

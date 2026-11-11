@@ -29,8 +29,8 @@ use bersemon_core::zone::ZoneId;
 use bersemon_presentation::marchand::ressources_a_vendre;
 
 use crate::composants::{
-    BEHERIT, Choisis, Cle, Commande, Composant, ECLIPSE, PARFUM_DE_CHAROGNE, RETIRER, Vue,
-    lot_de_soins_en_texte,
+    BEHERIT, Choisis, Cle, Commande, Composant, ECLIPSE, PARFUM_DE_CHAROGNE, PartEnCours, RETIRER,
+    Vue, lot_de_soins_en_texte,
 };
 use crate::joueurs::{IdJoueur, Joueurs, Session};
 use crate::message::{
@@ -3225,6 +3225,7 @@ fn deux_joueurs_echangent_a_travers_les_ecrans_du_bot() {
     let echanges = Cle::Afficher(Vue::Echanges {
         avec: None,
         cede: None,
+        demande: None,
     });
     let clic = cliquer(&affiche, |cle| *cle == echanges);
     let affiche = executer_le_clic(&mut joueurs, JOUEUR, clic, &contenu);
@@ -3300,6 +3301,262 @@ fn deux_joueurs_echangent_a_travers_les_ecrans_du_bot() {
             .contains("Reçu de Aldric. Obéit jusqu'au niveau 12."),
         "{}",
         affiche.texte
+    );
+    let _ = fs::remove_dir_all(dossier);
+}
+
+/// Aldric donne des crocs à Ysolde, puis lui cède son Corbeau contre ses
+/// plumes, à travers les écrans du bot : les ressources se choisissent par
+/// leur sorte, puis par leur nombre (section 15.1).
+#[test]
+fn deux_joueurs_se_cedent_des_ressources_a_travers_les_ecrans_du_bot() {
+    use bersemon_core::butin::Butin;
+    use bersemon_core::catalogue::Catalogue;
+    use bersemon_core::heros::Heros;
+    use bersemon_core::niveau::Niveau;
+    use bersemon_core::nom::Nom;
+    use bersemon_core::partie::Partie;
+    use bersemon_core::ressource::RessourceId;
+    use bersemon_core::sauvegarde::SauvegardeRepository;
+    use bersemon_core::stats::ValeursInternes;
+    use bersemon_storage::FichierJson;
+
+    const YSOLDE: IdJoueur = 8;
+    let contenu = ContenuV1::new();
+    let creer = |id: &str, niveau: u8| {
+        Monstre::creer(
+            contenu.espece(&EspeceId::new(id)).unwrap(),
+            Niveau::new(niveau).unwrap(),
+            ValeursInternes::default(),
+            false,
+        )
+        .unwrap()
+    };
+    let ressource = |id: &str| contenu.ressource(&RessourceId::new(id)).unwrap();
+    let croc = ressource("croc-de-loup");
+    let plume = ressource("plume-de-corbeau");
+    let rang = |ressource: &bersemon_core::ressource::Ressource| {
+        contenu
+            .ressources()
+            .iter()
+            .position(|presente| presente.id() == ressource.id())
+            .unwrap()
+            .to_string()
+    };
+    let dossier = dossier_de_test().join("echanges-de-ressources");
+    fs::create_dir_all(&dossier).unwrap();
+    for (joueur, nom, depart, butin) in [
+        (
+            JOUEUR,
+            "Aldric",
+            "salamandre",
+            Butin::Ressource(croc.clone(), 12),
+        ),
+        (
+            YSOLDE,
+            "Ysolde",
+            "mandragore",
+            Butin::Ressource(plume.clone(), 7),
+        ),
+    ] {
+        let heros = Heros::new(Nom::new(nom).unwrap(), Classe::Mage);
+        let mut partie = Partie::nouvelle(heros, creer(depart, 5));
+        partie.prendre_monstre_rare(creer("corbeau", 20));
+        partie.recolter_le_butin(&[butin]);
+        FichierJson::new(dossier.join(format!("{joueur}.json")))
+            .enregistrer(&partie)
+            .unwrap();
+    }
+    let mut joueurs = Joueurs::new(dossier.clone(), 2026);
+    for joueur in [JOUEUR, YSOLDE] {
+        executer_le_clic(
+            &mut joueurs,
+            joueur,
+            bouton(Cle::ReprendreLaPartie),
+            &contenu,
+        );
+    }
+    let echanges = Cle::Afficher(Vue::Echanges {
+        avec: None,
+        cede: None,
+        demande: None,
+    });
+    let possedees = |joueurs: &mut Joueurs, joueur: IdJoueur, ressource: &RessourceId| {
+        let partie = joueurs
+            .session(joueur, &contenu)
+            .deroulement
+            .partie()
+            .unwrap();
+        partie
+            .ressources_possedees()
+            .into_iter()
+            .find(|(possedee, _)| possedee.id() == ressource)
+            .map_or(0, |(_, nombre)| nombre)
+    };
+
+    // Aldric donne 5 crocs à Ysolde.
+    let affiche = executer_le_clic(&mut joueurs, JOUEUR, bouton(echanges.clone()), &contenu);
+    let clic = choisir_dans(&affiche, |cle| *cle == Cle::ChoisirJoueur, "8").expect("Ysolde");
+    let affiche = executer_le_clic(&mut joueurs, JOUEUR, clic, &contenu);
+    let clic = cliquer(&affiche, |cle| {
+        matches!(
+            cle,
+            Cle::Afficher(Vue::Echanges {
+                cede: Some(PartEnCours::SorteAChoisir),
+                ..
+            })
+        )
+    });
+    let affiche = executer_le_clic(&mut joueurs, JOUEUR, clic, &contenu);
+    assert_eq!(
+        valeurs_des_menus(&affiche, |cle| matches!(cle, Cle::CederRessource { .. })),
+        vec![rang(&croc)]
+    );
+    let clic = choisir_dans(
+        &affiche,
+        |cle| matches!(cle, Cle::CederRessource { .. }),
+        &rang(&croc),
+    )
+    .unwrap();
+    let affiche = executer_le_clic(&mut joueurs, JOUEUR, clic, &contenu);
+    assert!(
+        affiche.texte.contains(&format!(
+            "combien de {} lui céder ? Le sac et le coffre en ont 12.",
+            croc.nom()
+        )),
+        "{}",
+        affiche.texte
+    );
+    assert_eq!(
+        valeurs_des_menus(&affiche, |cle| matches!(cle, Cle::NombreACeder { .. })),
+        ["1", "2", "3", "5", "10", "12"]
+    );
+    let clic = choisir_dans(&affiche, |cle| matches!(cle, Cle::NombreACeder { .. }), "5").unwrap();
+    let affiche = executer_le_clic(&mut joueurs, JOUEUR, clic, &contenu);
+    assert!(
+        affiche
+            .texte
+            .contains(&format!("vous cédez {} (5).", croc.nom())),
+        "{}",
+        affiche.texte
+    );
+    let clic = cliquer(&affiche, |cle| matches!(cle, Cle::Donner { .. }));
+    let affiche = executer_le_clic(&mut joueurs, JOUEUR, clic, &contenu);
+    assert!(
+        affiche
+            .texte
+            .contains(&format!("Vous offrez {} (5) à Ysolde.", croc.nom())),
+        "{}",
+        affiche.texte
+    );
+    let messages = joueurs.prendre_les_messages_prives();
+    assert_eq!(messages.len(), 1);
+    assert!(
+        messages[0]
+            .texte
+            .starts_with(&format!("Aldric vous offre {} (5).", croc.nom())),
+        "{}",
+        messages[0].texte
+    );
+    let affiche = executer_le_clic(&mut joueurs, YSOLDE, bouton(echanges.clone()), &contenu);
+    let clic = cliquer(&affiche, |cle| *cle == Cle::AccepterOffre);
+    let affiche = executer_le_clic(&mut joueurs, YSOLDE, clic, &contenu);
+    assert!(
+        affiche.texte.contains(&format!(
+            "Vous recevez {} (5) de Aldric, au coffre du camp.",
+            croc.nom()
+        )),
+        "{}",
+        affiche.texte
+    );
+    assert_eq!(possedees(&mut joueurs, JOUEUR, croc.id()), 7);
+    assert_eq!(possedees(&mut joueurs, YSOLDE, croc.id()), 5);
+    joueurs.prendre_les_messages_prives();
+
+    // Aldric cède son Corbeau contre toutes les plumes d'Ysolde.
+    let affiche = executer_le_clic(&mut joueurs, JOUEUR, bouton(echanges.clone()), &contenu);
+    let clic = choisir_dans(&affiche, |cle| *cle == Cle::ChoisirJoueur, "8").unwrap();
+    let affiche = executer_le_clic(&mut joueurs, JOUEUR, clic, &contenu);
+    let clic = choisir_dans(&affiche, |cle| matches!(cle, Cle::Ceder { .. }), "e1").unwrap();
+    let affiche = executer_le_clic(&mut joueurs, JOUEUR, clic, &contenu);
+    // Pendant l'offre, les défis laissent la place à ses boutons.
+    assert!(!propose(&affiche, |cle| matches!(cle, Cle::Defier(_))));
+    let clic = cliquer(&affiche, |cle| {
+        matches!(
+            cle,
+            Cle::Afficher(Vue::Echanges {
+                demande: Some(PartEnCours::SorteAChoisir),
+                ..
+            })
+        )
+    });
+    let affiche = executer_le_clic(&mut joueurs, JOUEUR, clic, &contenu);
+    let mut demandables =
+        valeurs_des_menus(&affiche, |cle| matches!(cle, Cle::DemanderRessource { .. }));
+    demandables.sort();
+    let mut attendues = vec![rang(&croc), rang(&plume)];
+    attendues.sort();
+    assert_eq!(demandables, attendues);
+    let clic = choisir_dans(
+        &affiche,
+        |cle| matches!(cle, Cle::DemanderRessource { .. }),
+        &rang(&plume),
+    )
+    .unwrap();
+    let affiche = executer_le_clic(&mut joueurs, JOUEUR, clic, &contenu);
+    assert!(
+        affiche.texte.contains(&format!(
+            "Combien de {} demander ? Ysolde en a 7.",
+            plume.nom()
+        )),
+        "{}",
+        affiche.texte
+    );
+    let clic = choisir_dans(
+        &affiche,
+        |cle| matches!(cle, Cle::NombreADemander { .. }),
+        "7",
+    )
+    .unwrap();
+    let affiche = executer_le_clic(&mut joueurs, JOUEUR, clic, &contenu);
+    assert!(
+        affiche.texte.contains(&format!(
+            "Vous proposez à Ysolde Corbeau (niv. 20) contre {} (7).",
+            plume.nom()
+        )),
+        "{}",
+        affiche.texte
+    );
+    let affiche = executer_le_clic(&mut joueurs, YSOLDE, bouton(echanges.clone()), &contenu);
+    assert!(
+        affiche.texte.contains(&format!(
+            "Aldric vous propose Corbeau (niv. 20), contre {} (7).",
+            plume.nom()
+        )),
+        "{}",
+        affiche.texte
+    );
+    let clic = cliquer(&affiche, |cle| *cle == Cle::AccepterOffre);
+    executer_le_clic(&mut joueurs, YSOLDE, clic, &contenu);
+    assert_eq!(possedees(&mut joueurs, JOUEUR, plume.id()), 7);
+    assert_eq!(possedees(&mut joueurs, YSOLDE, plume.id()), 0);
+    let especes = |joueurs: &mut Joueurs, joueur: IdJoueur| {
+        let partie = joueurs
+            .session(joueur, &contenu)
+            .deroulement
+            .partie()
+            .unwrap();
+        partie
+            .collection()
+            .equipe()
+            .iter()
+            .map(|monstre| monstre.espece().id().as_str().to_string())
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(especes(&mut joueurs, JOUEUR), ["salamandre"]);
+    assert_eq!(
+        especes(&mut joueurs, YSOLDE),
+        ["mandragore", "corbeau", "corbeau"]
     );
     let _ = fs::remove_dir_all(dossier);
 }
@@ -3389,6 +3646,7 @@ fn lancer_le_duel(joueurs: &mut Joueurs, contenu: &ContenuV1) {
     let autres = Cle::Afficher(Vue::Echanges {
         avec: None,
         cede: None,
+        demande: None,
     });
     let clic = cliquer(&affiche, |cle| *cle == autres);
     let affiche = executer_le_clic(joueurs, JOUEUR, clic, contenu);
@@ -3558,6 +3816,7 @@ fn un_joueur_qui_ne_joue_pas_perd_par_forfait() {
     let autres = Cle::Afficher(Vue::Echanges {
         avec: None,
         cede: None,
+        demande: None,
     });
     let affiche = executer_le_clic(&mut joueurs, YSOLDE, bouton(autres), &contenu);
     assert!(
@@ -3615,6 +3874,7 @@ fn la_tour_sans_fond_et_le_classement_de_ses_records() {
     let autres = Cle::Afficher(Vue::Echanges {
         avec: None,
         cede: None,
+        demande: None,
     });
     let affiche = executer_le_clic(&mut joueurs, YSOLDE, bouton(autres), &contenu);
     let clic = cliquer(&affiche, |cle| *cle == Cle::Afficher(Vue::Classement));
@@ -3806,6 +4066,7 @@ fn une_invitation_acceptee_fait_descendre_le_groupe() {
     let autres = Cle::Afficher(Vue::Echanges {
         avec: None,
         cede: None,
+        demande: None,
     });
     let affiche = executer_le_clic(&mut joueurs, JOUEUR, bouton(autres.clone()), &contenu);
     let clic = choisir_dans(&affiche, |cle| *cle == Cle::ChoisirJoueur, "8").unwrap();
@@ -4010,6 +4271,7 @@ fn un_ami_passe_en_tete_de_la_liste_des_joueurs() {
     let autres = Cle::Afficher(Vue::Echanges {
         avec: None,
         cede: None,
+        demande: None,
     });
     let affiche = executer_le_clic(&mut joueurs, YSOLDE, bouton(autres.clone()), &contenu);
     assert_eq!(

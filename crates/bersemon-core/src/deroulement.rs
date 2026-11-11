@@ -34,7 +34,7 @@ use crate::catalogue::Catalogue;
 use crate::collection::{Emplacement, ErreurCollection, Placement, TriDuCamp};
 use crate::combat::{self, Action, BilanCombat, Combat, Cote, ErreurCombat, Issue, Phase};
 use crate::contenu::ContenuV1;
-use crate::echange::{ErreurEchange, Offre, conclure_offre};
+use crate::echange::{Cession, ErreurEchange, Offre, conclure_offre};
 use crate::equipement::{ErreurEquipement, ObjetDEquipement, ObjetDEquipementId, PlaceDEquipement};
 use crate::espece::{Espece, EspeceId};
 use crate::evolution::{Circonstances, ErreurEvolution, evolution_possible, faire_evoluer};
@@ -866,6 +866,18 @@ pub enum Evenement {
         heros: String,
         monstre: Monstre,
     },
+    /// À un autre joueur, par don ou échange (section 15.1).
+    RessourcesCedees {
+        heros: String,
+        ressource: Ressource,
+        nombre: u32,
+    },
+    /// D'un autre joueur, au coffre du camp.
+    RessourcesRecues {
+        heros: String,
+        ressource: Ressource,
+        nombre: u32,
+    },
     CapsuleAchetee {
         capsule: Capsule,
         prix: u32,
@@ -1078,35 +1090,55 @@ impl Deroulement {
             .partie_au_camp_mut()
             .ok_or(ErreurEchange::ReceveurPasAuCamp)?;
         let conclusion = conclure_offre(partie_du_donneur, partie_du_receveur, offre)?;
-        let recu = |partie: &Partie, emplacement: Emplacement| {
-            partie
-                .collection()
-                .monstre(emplacement)
-                .expect("monstre placé par conclure_offre")
-                .clone()
-        };
         let heros_du_donneur = partie_du_donneur.heros().nom().as_str().to_string();
         let heros_du_receveur = partie_du_receveur.heros().nom().as_str().to_string();
-        let mut du_donneur = vec![Evenement::MonstreCede {
-            heros: heros_du_receveur.clone(),
-            monstre: offre.cede.monstre.clone(),
-        }];
+        let cede = |cession: &Cession, heros: &str| match cession {
+            Cession::Monstre(offert) => Evenement::MonstreCede {
+                heros: heros.to_string(),
+                monstre: offert.monstre.clone(),
+            },
+            Cession::Ressources(ressource, nombre) => Evenement::RessourcesCedees {
+                heros: heros.to_string(),
+                ressource: ressource.clone(),
+                nombre: *nombre,
+            },
+        };
+        // Le monstre reçu se lit à sa nouvelle place : il porte déjà le nom
+        // du héros qui l'a cédé.
+        let recu = |cession: &Cession, partie: &Partie, place: Option<Emplacement>, heros: &str| {
+            match cession {
+                Cession::Monstre(_) => Evenement::MonstreRecu {
+                    heros: heros.to_string(),
+                    monstre: place
+                        .and_then(|emplacement| partie.collection().monstre(emplacement))
+                        .expect("monstre placé par conclure_offre")
+                        .clone(),
+                },
+                Cession::Ressources(ressource, nombre) => Evenement::RessourcesRecues {
+                    heros: heros.to_string(),
+                    ressource: ressource.clone(),
+                    nombre: *nombre,
+                },
+            }
+        };
+        let mut du_donneur = vec![cede(&offre.cede, &heros_du_receveur)];
         let mut du_receveur = Vec::new();
         if let Some(demande) = &offre.demande {
-            du_receveur.push(Evenement::MonstreCede {
-                heros: heros_du_donneur.clone(),
-                monstre: demande.monstre.clone(),
-            });
+            du_receveur.push(cede(demande, &heros_du_donneur));
         }
-        du_receveur.push(Evenement::MonstreRecu {
-            heros: heros_du_donneur,
-            monstre: recu(partie_du_receveur, conclusion.chez_le_receveur),
-        });
-        if let Some(emplacement) = conclusion.chez_le_donneur {
-            du_donneur.push(Evenement::MonstreRecu {
-                heros: heros_du_receveur,
-                monstre: recu(partie_du_donneur, emplacement),
-            });
+        du_receveur.push(recu(
+            &offre.cede,
+            partie_du_receveur,
+            conclusion.chez_le_receveur,
+            &heros_du_donneur,
+        ));
+        if let Some(demande) = &offre.demande {
+            du_donneur.push(recu(
+                demande,
+                partie_du_donneur,
+                conclusion.chez_le_donneur,
+                &heros_du_receveur,
+            ));
         }
         sauvegarder(partie_du_receveur, depot_du_receveur, &mut du_receveur);
         sauvegarder(partie_du_donneur, depot_du_donneur, &mut du_donneur);

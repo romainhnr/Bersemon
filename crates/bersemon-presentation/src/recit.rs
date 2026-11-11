@@ -495,6 +495,25 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             ),
             false,
         ),
+        Evenement::RessourcesCedees {
+            heros,
+            ressource,
+            nombre,
+        } => (
+            format!("Vous cédez {} à {heros}.", ressources(ressource, *nombre)),
+            false,
+        ),
+        Evenement::RessourcesRecues {
+            heros,
+            ressource,
+            nombre,
+        } => (
+            format!(
+                "Vous recevez {} de {heros}, au coffre du camp.",
+                ressources(ressource, *nombre)
+            ),
+            false,
+        ),
         // Tout ranger reste possible avec un sac vide.
         Evenement::RangeAuCoffre(range) if range.est_vide() => {
             ("Le sac est déjà vide.".to_string(), false)

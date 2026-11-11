@@ -109,9 +109,17 @@ pub fn question(
         Vue::Quetes => quetes(partie, contenu, maintenant),
         // Le tableau des échanges vient des autres parties : le message le
         // prépare (`message::question`). Sans lui, l'écran n'en montre rien.
-        Vue::Echanges { avec, cede } => {
-            ecran_echanges::echanges(partie, &TableauDesEchanges::default(), avec, cede)
-        }
+        Vue::Echanges {
+            avec,
+            cede,
+            demande,
+        } => ecran_echanges::echanges(
+            partie,
+            &TableauDesEchanges::default(),
+            avec,
+            (cede, demande),
+            contenu,
+        ),
         Vue::Classement => ecran_echanges::classement(&TableauDesEchanges::default()),
         Vue::RecordsDeLaTour => {
             ecran_echanges::records_de_la_tour(partie, &TableauDesEchanges::default())
@@ -260,6 +268,7 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
         Cle::Afficher(Vue::Echanges {
             avec: None,
             cede: None,
+            demande: None,
         }),
         "Multijoueur",
         SECONDAIRE,

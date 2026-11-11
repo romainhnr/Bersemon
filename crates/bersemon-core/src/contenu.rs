@@ -2078,6 +2078,27 @@ impl ContenuV1 {
         &self.especes
     }
 
+    /// Toutes les ressources, celles des espèces dans l'ordre du codex puis
+    /// les matières de la pêche, chacune une fois : un ordre fixe, qui
+    /// permet de les désigner par leur rang.
+    pub fn ressources(&self) -> Vec<Ressource> {
+        let mut ressources: Vec<Ressource> = Vec::new();
+        for ressource in self
+            .especes
+            .iter()
+            .filter_map(Espece::ressource)
+            .chain(self.peche.matieres().iter().map(|(matiere, _)| matiere))
+        {
+            if !ressources
+                .iter()
+                .any(|presente| presente.id() == ressource.id())
+            {
+                ressources.push(ressource.clone());
+            }
+        }
+        ressources
+    }
+
     pub fn especes_de_depart(&self) -> &[Espece] {
         &self.especes[..NOMBRE_DE_DEPARTS]
     }
@@ -9878,6 +9899,34 @@ mod tests {
     use super::*;
     use crate::monstre::Monstre;
     use crate::stats::ValeursInternes;
+
+    #[test]
+    fn chaque_ressource_a_un_rang_et_un_seul() {
+        let contenu = ContenuV1::new();
+        let ressources = contenu.ressources();
+        let attendues = contenu
+            .especes()
+            .iter()
+            .filter_map(Espece::ressource)
+            .chain(
+                contenu
+                    .peche()
+                    .matieres()
+                    .iter()
+                    .map(|(matiere, _)| matiere),
+            );
+        for ressource in attendues {
+            assert_eq!(
+                ressources
+                    .iter()
+                    .filter(|presente| presente.id() == ressource.id())
+                    .count(),
+                1,
+                "{}",
+                ressource.id().as_str()
+            );
+        }
+    }
 
     fn creer(contenu: &ContenuV1, id: &str, valeur: u8) -> Monstre {
         let espece = contenu.espece(&EspeceId::new(id)).unwrap();

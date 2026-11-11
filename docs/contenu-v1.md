@@ -704,6 +704,23 @@ Décidé le 20/10/2026, pour les étapes 55 à 58 (gamedesign.md, sections 15.1 
 
 Au camp, le bouton s'appelle "Échanges", puis "Autres joueurs" depuis l'étape 60 (section 14), puis "Multijoueur" depuis l'étape 150 ; l'écran commence alors par "Multijoueur : offres de monstres et duels." Limite d'obéissance : niveau maximal de la zone la plus avancée ouverte, plus 5 (12, 18, 25 puis 32).
 
+Depuis l'étape 198 (11/11/2026, textes proposés, hypothèse Q123), une offre peut porter sur des ressources (gamedesign.md, section 15.1). {ressources} s'écrit comme au coffre : le nom seul pour une ressource, "Fragment d'armure (12)" pour plusieurs. L'écran commence par "Multijoueur : offres de monstres et de ressources, et duels."
+
+| Moment | Texte |
+|---|---|
+| Message privé, ressources contre un monstre ou d'autres ressources | {héros} ({pseudo}) vous propose {ressources} contre votre {monstre} (ou contre {ressources}). Ouvrez /bersemon, au camp, pour répondre. |
+| Message privé, don de ressources | {héros} ({pseudo}) vous offre {ressources}. Ouvrez /bersemon, au camp, pour répondre. |
+| Écran, choix de la sorte à céder | Offre à {héros} ({pseudo}) : choisissez les ressources à lui céder. |
+| Écran, aucune ressource | Vous n'avez aucune ressource, ni dans le sac, ni dans le coffre. |
+| Écran, nombre à céder | Offre à {héros} ({pseudo}) : combien de {ressource} lui céder ? Le sac et le coffre en ont {nombre}. |
+| Écran, contrepartie à choisir | Offre à {héros} ({pseudo}) : vous cédez {cession}. Choisissez le monstre ou les ressources demandés en échange, ou donnez sans contrepartie. |
+| Écran, nombre demandé | Offre à {héros} ({pseudo}) : vous cédez {cession}. Combien de {ressource} demander ? {héros} en a {nombre}. |
+| Récit, ressources cédées | Vous cédez {ressources} à {héros}. |
+| Récit, ressources reçues | Vous recevez {ressources} de {héros}, au coffre du camp. |
+| Refus, plus assez de ressources | Le sac et le coffre n'ont pas autant de ces ressources. |
+| Refus, offre périmée | Cette offre n'est plus valable : un des monstres a changé ou changé de place, ou les ressources ne sont plus là. Elle est retirée. |
+| Refus, dernier monstre | Chaque joueur doit garder au moins un monstre. |
+
 ## 14. Duel en temps réel
 
 Décidé le 20/10/2026, pour les étapes 59 à 61 (gamedesign.md, section 15.3), textes validés par l'utilisateur. {héros} est le nom du héros de l'autre joueur, {pseudo} son pseudo Discord.

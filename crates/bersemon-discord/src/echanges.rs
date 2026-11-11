@@ -1,6 +1,7 @@
-//! Offres de don et d'échange entre joueurs du bot (section 15.1), gardées en
-//! mémoire jusqu'à leur réponse : un redémarrage du bot les perd (Q89). Les
-//! règles du transfert sont dans le noyau (`bersemon_core::echange`).
+//! Offres de don et d'échange de monstres et de ressources entre joueurs du
+//! bot (section 15.1), gardées en mémoire jusqu'à leur réponse : un
+//! redémarrage du bot les perd (Q89). Les règles du transfert sont dans le
+//! noyau (`bersemon_core::echange`).
 
 use std::collections::HashMap;
 use std::fs;
@@ -10,6 +11,7 @@ use bersemon_core::arene::EtatDeLArene;
 use bersemon_core::collection::{Collection, Emplacement};
 use bersemon_core::echange::{ErreurEchange, Offre};
 use bersemon_core::relations::Palmares;
+use bersemon_core::ressource::Ressource;
 use bersemon_core::tour::RecordsDeLaTour;
 use bersemon_presentation::echanges::erreur_echange;
 
@@ -19,14 +21,23 @@ use crate::joueurs::IdJoueur;
 /// pour que les autres le reconnaissent dans la liste des joueurs.
 const FICHIER_DES_PSEUDOS: &str = "pseudos.txt";
 
+/// Ce qu'une offre cède ou demande, désigné à l'écran : un monstre par sa
+/// place, des ressources par leur rang dans `ContenuV1::ressources`, un
+/// ordre fixe, et leur nombre.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Designation {
+    Monstre(Emplacement),
+    Ressources { rang: u16, nombre: u32 },
+}
+
 /// Ce que le joueur fait depuis l'écran des échanges.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ActionDEchange {
     /// Sans `demande`, c'est un don.
     Offrir {
         a: IdJoueur,
-        cede: Emplacement,
-        demande: Option<Emplacement>,
+        cede: Designation,
+        demande: Option<Designation>,
     },
     /// L'offre envoyée, tant qu'elle n'est pas acceptée.
     Retirer,
@@ -172,6 +183,9 @@ pub struct TableauDesEchanges {
     pub envoyee: Option<(AutreJoueur, Offre)>,
     /// Le joueur choisi pour une offre, avec ses monstres.
     pub choisi: Option<(AutreJoueur, Collection)>,
+    /// Les ressources du joueur choisi, sac et coffre réunis, à lui
+    /// demander en échange.
+    pub ressources_du_choisi: Vec<(Ressource, u32)>,
     /// Les défis en duel en attente (section 15.3).
     pub defi_recu: Option<AutreJoueur>,
     pub defi_envoye: Option<AutreJoueur>,

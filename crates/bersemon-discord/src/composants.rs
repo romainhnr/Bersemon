@@ -31,12 +31,23 @@ use bersemon_core::succes::{CouleurDuHeros, SuccesId};
 use bersemon_core::zone::ZoneId;
 
 use crate::duels::ActionDeDuel;
-use crate::echanges::ActionDEchange;
+use crate::echanges::{ActionDEchange, Designation};
 use crate::groupes::ActionDeGroupe;
 use crate::joueurs::IdJoueur;
 
 /// Distingue les composants de Bersemon de ceux d'autres usages éventuels.
 const PREFIXE: &str = "bersemon";
+
+/// Ce que cède ou demande une offre en préparation : un monstre ou des
+/// ressources choisis, ou des ressources dont la sorte, puis le nombre,
+/// restent à choisir (section 15.1).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PartEnCours {
+    Choisie(Designation),
+    SorteAChoisir,
+    /// La sorte, par son rang dans `ContenuV1::ressources`.
+    NombreAChoisir(u16),
+}
 
 /// Ce que montre le camp. Changer de vue ne touche pas à la partie.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -97,10 +108,11 @@ pub enum Vue {
     /// Les quêtes du jour et de la semaine (section 13.12).
     Quetes,
     /// Les offres de don et d'échange (section 15.1), avec le joueur choisi
-    /// pour une offre, puis le monstre à lui céder.
+    /// pour une offre, puis ce qu'on lui cède, et ce qu'on lui demande.
     Echanges {
         avec: Option<IdJoueur>,
-        cede: Option<Emplacement>,
+        cede: Option<PartEnCours>,
+        demande: Option<PartEnCours>,
     },
     /// Le classement des duels de tous les joueurs du bot (section 15.4).
     Classement,
@@ -441,16 +453,40 @@ pub enum Cle {
         menu: u8,
         avec: IdJoueur,
     },
+    /// Menu numéroté des ressources du joueur : la sorte à céder à ce
+    /// joueur.
+    CederRessource {
+        menu: u8,
+        avec: IdJoueur,
+    },
+    /// Menu du nombre de ressources de cette sorte à céder à ce joueur.
+    NombreACeder {
+        avec: IdJoueur,
+        rang: u16,
+    },
     /// Menu numéroté des monstres de ce joueur : celui demandé en échange.
     Demander {
         menu: u8,
         avec: IdJoueur,
-        cede: Emplacement,
+        cede: Designation,
     },
-    /// Le monstre choisi, offert sans contrepartie.
+    /// Menu numéroté des ressources de ce joueur : la sorte demandée en
+    /// échange.
+    DemanderRessource {
+        menu: u8,
+        avec: IdJoueur,
+        cede: Designation,
+    },
+    /// Menu du nombre de ressources de cette sorte demandées en échange.
+    NombreADemander {
+        avec: IdJoueur,
+        cede: Designation,
+        rang: u16,
+    },
+    /// Ce qui est choisi, offert sans contrepartie.
     Donner {
         avec: IdJoueur,
-        cede: Emplacement,
+        cede: Designation,
     },
     AccepterOffre,
     RefuserOffre,
@@ -687,6 +723,7 @@ impl Cle {
             Cle::ChoisirJoueur => Some(Commande::Afficher(Vue::Echanges {
                 avec: Some(valeur?.parse().ok()?),
                 cede: None,
+                demande: None,
             })),
             Cle::SecondParent { premier, .. } => jouer(Choix::LancerLeRite {
                 premier: *premier,
@@ -706,13 +743,44 @@ impl Cle {
             Cle::RemettreQuete(personnage) => jouer(Choix::RemettreQuete(*personnage)),
             Cle::Ceder { avec, .. } => Some(Commande::Afficher(Vue::Echanges {
                 avec: Some(*avec),
-                cede: Some(lire_emplacement(valeur?)?),
+                cede: Some(PartEnCours::Choisie(Designation::Monstre(
+                    lire_emplacement(valeur?)?,
+                ))),
+                demande: None,
+            })),
+            Cle::CederRessource { avec, .. } => Some(Commande::Afficher(Vue::Echanges {
+                avec: Some(*avec),
+                cede: Some(PartEnCours::NombreAChoisir(valeur?.parse().ok()?)),
+                demande: None,
+            })),
+            Cle::NombreACeder { avec, rang } => Some(Commande::Afficher(Vue::Echanges {
+                avec: Some(*avec),
+                cede: Some(PartEnCours::Choisie(Designation::Ressources {
+                    rang: *rang,
+                    nombre: valeur?.parse().ok()?,
+                })),
+                demande: None,
             })),
             Cle::Demander { avec, cede, .. } => Some(Commande::Echanger(ActionDEchange::Offrir {
                 a: *avec,
                 cede: *cede,
-                demande: Some(lire_emplacement(valeur?)?),
+                demande: Some(Designation::Monstre(lire_emplacement(valeur?)?)),
             })),
+            Cle::DemanderRessource { avec, cede, .. } => Some(Commande::Afficher(Vue::Echanges {
+                avec: Some(*avec),
+                cede: Some(PartEnCours::Choisie(*cede)),
+                demande: Some(PartEnCours::NombreAChoisir(valeur?.parse().ok()?)),
+            })),
+            Cle::NombreADemander { avec, cede, rang } => {
+                Some(Commande::Echanger(ActionDEchange::Offrir {
+                    a: *avec,
+                    cede: *cede,
+                    demande: Some(Designation::Ressources {
+                        rang: *rang,
+                        nombre: valeur?.parse().ok()?,
+                    }),
+                }))
+            }
             Cle::Donner { avec, cede } => Some(Commande::Echanger(ActionDEchange::Offrir {
                 a: *avec,
                 cede: *cede,
@@ -797,12 +865,16 @@ impl Cle {
             Cle::RetirerAmi(autre) => format!("retirer-ami:{autre}"),
             Cle::Afficher(Vue::Echanges {
                 avec: Some(avec),
-                cede: None,
-            }) => format!("vue:echanges:{avec}"),
-            Cle::Afficher(Vue::Echanges {
-                avec: Some(avec),
-                cede: Some(cede),
-            }) => format!("vue:echanges:{avec}:{}", emplacement_en_texte(*cede)),
+                cede,
+                demande,
+            }) => {
+                let mut texte = format!("vue:echanges:{avec}");
+                for part in [cede, demande].into_iter().map_while(|part| part.as_ref()) {
+                    texte.push(':');
+                    texte.push_str(&part_en_texte(*part));
+                }
+                texte
+            }
             Cle::Fiche(numero) => format!("fiche:{numero}"),
             Cle::LieuDuJournal(numero) => format!("lieu-du-journal:{numero}"),
             Cle::Choisir(numero) => format!("choisir:{numero}"),
@@ -942,10 +1014,20 @@ impl Cle {
                 format!("remettre-quete:{}", personnage.identifiant())
             }
             Cle::Ceder { menu, avec } => format!("ceder:{menu}:{avec}"),
+            Cle::CederRessource { menu, avec } => format!("ceder-ressource:{menu}:{avec}"),
+            Cle::NombreACeder { avec, rang } => format!("nombre-a-ceder:{avec}:{rang}"),
             Cle::Demander { menu, avec, cede } => {
-                format!("demander:{menu}:{avec}:{}", emplacement_en_texte(*cede))
+                format!("demander:{menu}:{avec}:{}", designation_en_texte(*cede))
             }
-            Cle::Donner { avec, cede } => format!("donner:{avec}:{}", emplacement_en_texte(*cede)),
+            Cle::DemanderRessource { menu, avec, cede } => format!(
+                "demander-ressource:{menu}:{avec}:{}",
+                designation_en_texte(*cede)
+            ),
+            Cle::NombreADemander { avec, cede, rang } => format!(
+                "nombre-a-demander:{avec}:{}:{rang}",
+                designation_en_texte(*cede)
+            ),
+            Cle::Donner { avec, cede } => format!("donner:{avec}:{}", designation_en_texte(*cede)),
             Cle::AccepterOffre => "accepter-offre".to_string(),
             Cle::RefuserOffre => "refuser-offre".to_string(),
             Cle::RetirerOffre => "retirer-offre".to_string(),
@@ -1040,6 +1122,7 @@ impl Cle {
             "vue:echanges" => Cle::Afficher(Vue::Echanges {
                 avec: None,
                 cede: None,
+                demande: None,
             }),
             "choisir-joueur" => Cle::ChoisirJoueur,
             "accepter-offre" => Cle::AccepterOffre,
@@ -1119,13 +1202,15 @@ impl Cle {
                                 })
                             }
                             "echanges" => {
-                                let (avec, cede) = match parametre.split_once(':') {
-                                    Some((avec, cede)) => (avec, Some(lire_emplacement(cede)?)),
-                                    None => (parametre, None),
-                                };
+                                let mut morceaux = parametre.splitn(3, ':');
+                                let avec = morceaux.next()?.parse().ok()?;
+                                let mut part = || morceaux.next().map(lire_part);
+                                let cede = part().map_or(Some(None), |part| part.map(Some))?;
+                                let demande = part().map_or(Some(None), |part| part.map(Some))?;
                                 Cle::Afficher(Vue::Echanges {
-                                    avec: Some(avec.parse().ok()?),
+                                    avec: Some(avec),
                                     cede,
+                                    demande,
                                 })
                             }
                             _ => return None,
@@ -1158,7 +1243,37 @@ impl Cle {
                         Cle::Demander {
                             menu: morceaux.next()?.parse().ok()?,
                             avec: morceaux.next()?.parse().ok()?,
-                            cede: lire_emplacement(morceaux.next()?)?,
+                            cede: lire_designation(morceaux.next()?)?,
+                        }
+                    }
+                    "ceder-ressource" => {
+                        let (menu, avec) = parametre.split_once(':')?;
+                        Cle::CederRessource {
+                            menu: menu.parse().ok()?,
+                            avec: avec.parse().ok()?,
+                        }
+                    }
+                    "nombre-a-ceder" => {
+                        let (avec, rang) = parametre.split_once(':')?;
+                        Cle::NombreACeder {
+                            avec: avec.parse().ok()?,
+                            rang: rang.parse().ok()?,
+                        }
+                    }
+                    "demander-ressource" => {
+                        let mut morceaux = parametre.splitn(3, ':');
+                        Cle::DemanderRessource {
+                            menu: morceaux.next()?.parse().ok()?,
+                            avec: morceaux.next()?.parse().ok()?,
+                            cede: lire_designation(morceaux.next()?)?,
+                        }
+                    }
+                    "nombre-a-demander" => {
+                        let mut morceaux = parametre.splitn(3, ':');
+                        Cle::NombreADemander {
+                            avec: morceaux.next()?.parse().ok()?,
+                            cede: lire_designation(morceaux.next()?)?,
+                            rang: morceaux.next()?.parse().ok()?,
                         }
                     }
                     "defier" => Cle::Defier(parametre.parse().ok()?),
@@ -1171,7 +1286,7 @@ impl Cle {
                         let (avec, cede) = parametre.split_once(':')?;
                         Cle::Donner {
                             avec: avec.parse().ok()?,
-                            cede: lire_emplacement(cede)?,
+                            cede: lire_designation(cede)?,
                         }
                     }
                     "expedier" => {
@@ -1263,6 +1378,46 @@ fn lire_emplacement(texte: &str) -> Option<Emplacement> {
         return index.parse().ok().map(Emplacement::Equipe);
     }
     texte.strip_prefix('c')?.parse().ok().map(Emplacement::Camp)
+}
+
+/// "e0" ou "c12" pour un monstre, comme son emplacement, "r3x20" pour 20
+/// ressources de rang 3.
+fn designation_en_texte(designation: Designation) -> String {
+    match designation {
+        Designation::Monstre(emplacement) => emplacement_en_texte(emplacement),
+        Designation::Ressources { rang, nombre } => format!("r{rang}x{nombre}"),
+    }
+}
+
+fn lire_designation(texte: &str) -> Option<Designation> {
+    match texte.strip_prefix('r') {
+        Some(ressources) => {
+            let (rang, nombre) = ressources.split_once('x')?;
+            Some(Designation::Ressources {
+                rang: rang.parse().ok()?,
+                nombre: nombre.parse().ok()?,
+            })
+        }
+        None => lire_emplacement(texte).map(Designation::Monstre),
+    }
+}
+
+/// Comme une désignation, avec "r" pour une sorte à choisir et "r3" pour
+/// un nombre à choisir de ressources de rang 3.
+fn part_en_texte(part: PartEnCours) -> String {
+    match part {
+        PartEnCours::Choisie(designation) => designation_en_texte(designation),
+        PartEnCours::SorteAChoisir => "r".to_string(),
+        PartEnCours::NombreAChoisir(rang) => format!("r{rang}"),
+    }
+}
+
+fn lire_part(texte: &str) -> Option<PartEnCours> {
+    match texte.strip_prefix('r') {
+        Some("") => Some(PartEnCours::SorteAChoisir),
+        Some(rang) if !rang.contains('x') => rang.parse().ok().map(PartEnCours::NombreAChoisir),
+        _ => lire_designation(texte).map(PartEnCours::Choisie),
+    }
 }
 
 /// Nom fixé ici, et non le nom Rust, comme dans la sauvegarde.
@@ -1565,28 +1720,91 @@ mod tests {
             Cle::Afficher(Vue::Echanges {
                 avec: None,
                 cede: None,
+                demande: None,
             }),
             Cle::Afficher(Vue::Echanges {
                 avec: Some(123_456_789_012_345_678),
                 cede: None,
+                demande: None,
             }),
             Cle::Afficher(Vue::Echanges {
                 avec: Some(42),
-                cede: Some(Emplacement::Camp(59)),
+                cede: Some(PartEnCours::Choisie(Designation::Monstre(
+                    Emplacement::Camp(59),
+                ))),
+                demande: None,
+            }),
+            Cle::Afficher(Vue::Echanges {
+                avec: Some(42),
+                cede: Some(PartEnCours::SorteAChoisir),
+                demande: None,
+            }),
+            Cle::Afficher(Vue::Echanges {
+                avec: Some(42),
+                cede: Some(PartEnCours::NombreAChoisir(17)),
+                demande: None,
+            }),
+            Cle::Afficher(Vue::Echanges {
+                avec: Some(123_456_789_012_345_678),
+                cede: Some(PartEnCours::Choisie(Designation::Ressources {
+                    rang: 65_535,
+                    nombre: 4_294_967_295,
+                })),
+                demande: Some(PartEnCours::NombreAChoisir(65_535)),
+            }),
+            Cle::Afficher(Vue::Echanges {
+                avec: Some(42),
+                cede: Some(PartEnCours::Choisie(Designation::Monstre(
+                    Emplacement::Equipe(0),
+                ))),
+                demande: Some(PartEnCours::SorteAChoisir),
             }),
             Cle::ChoisirJoueur,
             Cle::Ceder {
                 menu: 2,
                 avec: 123_456_789_012_345_678,
             },
+            Cle::CederRessource {
+                menu: 1,
+                avec: 123_456_789_012_345_678,
+            },
+            Cle::NombreACeder {
+                avec: 123_456_789_012_345_678,
+                rang: 12,
+            },
             Cle::Demander {
                 menu: 1,
                 avec: 123_456_789_012_345_678,
-                cede: Emplacement::Camp(59),
+                cede: Designation::Monstre(Emplacement::Camp(59)),
+            },
+            Cle::Demander {
+                menu: 0,
+                avec: 7,
+                cede: Designation::Ressources {
+                    rang: 3,
+                    nombre: 20,
+                },
+            },
+            Cle::DemanderRessource {
+                menu: 2,
+                avec: 123_456_789_012_345_678,
+                cede: Designation::Ressources {
+                    rang: 3,
+                    nombre: 20,
+                },
+            },
+            Cle::NombreADemander {
+                avec: 123_456_789_012_345_678,
+                cede: Designation::Monstre(Emplacement::Equipe(5)),
+                rang: 40,
             },
             Cle::Donner {
                 avec: 7,
-                cede: Emplacement::Equipe(3),
+                cede: Designation::Monstre(Emplacement::Equipe(3)),
+            },
+            Cle::Donner {
+                avec: 7,
+                cede: Designation::Ressources { rang: 0, nombre: 1 },
             },
             Cle::AccepterOffre,
             Cle::RefuserOffre,

@@ -13,7 +13,7 @@ use bersemon_core::combat::{Cote, Membre};
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::{Attente, Choix, Contexte, Deroulement, ErreurChoix, Evenement};
 use bersemon_core::duel::Duel;
-use bersemon_core::echange::{ErreurEchange, Offre};
+use bersemon_core::echange::{Cession, ErreurEchange, Offre};
 use bersemon_core::groupe::{ContexteDeGroupe, ExpeditionEnGroupe};
 use bersemon_core::horodatage::Horodatage;
 use bersemon_core::partie::Partie;
@@ -28,8 +28,8 @@ use bersemon_storage::FichierJson;
 use crate::composants::Vue;
 use crate::duels::{ActionDeDuel, Defi, DuelEnCours, DuelVu, ErreurDeDefi};
 use crate::echanges::{
-    ActionDEchange, AutreJoueur, Bourse, ErreurDOffre, MessagePrive, OffreEnAttente, Pseudos,
-    TableauDesEchanges,
+    ActionDEchange, AutreJoueur, Bourse, Designation, ErreurDOffre, MessagePrive, OffreEnAttente,
+    Pseudos, TableauDesEchanges,
 };
 use crate::groupes::{ActionDeGroupe, ErreurDInvitation, GroupeEnCours, GroupeVu, Invitation};
 use crate::message::OPTIONS_PAR_MENU;
@@ -291,8 +291,15 @@ impl Joueurs {
         let choisi = avec.and_then(|autre| {
             let qui = self.autre_joueur(autre, contenu)?;
             let partie = partie_lisible(&self.sessions.get(&autre)?.deroulement)?;
-            Some((qui, partie.collection().clone()))
+            Some((
+                (qui, partie.collection().clone()),
+                partie.ressources_possedees(),
+            ))
         });
+        let (choisi, ressources_du_choisi) = match choisi {
+            Some((choisi, ressources)) => (Some(choisi), ressources),
+            None => (None, Vec::new()),
+        };
         let defi_a_l_arene = self
             .defis
             .iter()
@@ -320,6 +327,7 @@ impl Joueurs {
             recue,
             envoyee,
             choisi,
+            ressources_du_choisi,
             defi_recu,
             defi_envoye,
             defi_a_l_arene,
@@ -953,7 +961,11 @@ impl Joueurs {
         };
         let session = self.charger(joueur, contenu);
         session.version = session.version.wrapping_add(1);
-        session.vue = Vue::Echanges { avec, cede: None };
+        session.vue = Vue::Echanges {
+            avec,
+            cede: None,
+            demande: None,
+        };
         Ok(evenements)
     }
 
@@ -961,8 +973,8 @@ impl Joueurs {
         &mut self,
         joueur: IdJoueur,
         a: IdJoueur,
-        cede: bersemon_core::collection::Emplacement,
-        demande: Option<bersemon_core::collection::Emplacement>,
+        cede: Designation,
+        demande: Option<Designation>,
         contenu: &ContenuV1,
     ) -> Result<(), ErreurDOffre> {
         if a == joueur {
@@ -987,11 +999,25 @@ impl Joueurs {
             .get(&a)
             .and_then(|session| partie_lisible(&session.deroulement))
             .ok_or(ErreurDOffre::JoueurSansPartie)?;
-        let offre = match demande {
-            Some(demande) => Offre::echange(donneur, cede, receveur, demande),
-            None => Offre::don(donneur, cede, receveur),
-        }
-        .map_err(ErreurDOffre::Echange)?;
+        let ressources = contenu.ressources();
+        let cession = |partie: &Partie, designation: Designation| match designation {
+            Designation::Monstre(emplacement) => Cession::monstre(partie, emplacement),
+            Designation::Ressources { rang, nombre } => {
+                let ressource = ressources
+                    .get(usize::from(rang))
+                    .cloned()
+                    .ok_or(ErreurEchange::RessourcesManquantes)?;
+                Cession::ressources(partie, ressource, nombre)
+            }
+        };
+        let offre = cession(donneur, cede)
+            .and_then(|cede| {
+                let demande = demande
+                    .map(|demande| cession(receveur, demande))
+                    .transpose()?;
+                Offre::new(donneur, cede, receveur, demande)
+            })
+            .map_err(ErreurDOffre::Echange)?;
         let texte = offre_recue(&expediteur.heros, expediteur.pseudo.as_deref(), &offre);
         self.bourse.deposer(OffreEnAttente {
             de: joueur,
@@ -1439,6 +1465,7 @@ mod tests {
         let vue = Vue::Echanges {
             avec: None,
             cede: None,
+            demande: None,
         };
         joueurs.afficher(joueur, version, vue, contenu).unwrap();
     }
@@ -1458,8 +1485,8 @@ mod tests {
 
     const ECHANGE_DES_PREMIERS: ActionDEchange = ActionDEchange::Offrir {
         a: 2,
-        cede: Emplacement::Equipe(0),
-        demande: Some(Emplacement::Equipe(0)),
+        cede: Designation::Monstre(Emplacement::Equipe(0)),
+        demande: Some(Designation::Monstre(Emplacement::Equipe(0))),
     };
 
     #[test]
@@ -1519,7 +1546,7 @@ mod tests {
         let (mut joueurs, dossier) = deux_joueurs(&contenu);
         let soi_meme = ActionDEchange::Offrir {
             a: 1,
-            cede: Emplacement::Equipe(0),
+            cede: Designation::Monstre(Emplacement::Equipe(0)),
             demande: None,
         };
         assert_eq!(
@@ -1529,7 +1556,7 @@ mod tests {
         // Un don laisserait Aldric sans monstre.
         let don = ActionDEchange::Offrir {
             a: 2,
-            cede: Emplacement::Equipe(0),
+            cede: Designation::Monstre(Emplacement::Equipe(0)),
             demande: None,
         };
         assert_eq!(
@@ -1718,6 +1745,7 @@ mod tests {
         joueurs.charger(2, &contenu).vue = Vue::Echanges {
             avec: None,
             cede: None,
+            demande: None,
         };
         assert!(joueurs.session(2, &contenu).echanges.defi_a_l_arene);
         en_duel(&mut joueurs, 2, ActionDeDuel::AccepterDefi, &contenu).unwrap();

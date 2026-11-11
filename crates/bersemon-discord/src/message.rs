@@ -472,9 +472,17 @@ fn question_de_la_partie(
         Attente::NomDuHeros => ecran_accueil::nom_du_heros(),
         Attente::Classe => ecran_accueil::classe(contenu),
         Attente::Camp => match session.vue {
-            Vue::Echanges { avec, cede } => {
-                ecran_echanges::echanges(partie(), &session.echanges, avec, cede)
-            }
+            Vue::Echanges {
+                avec,
+                cede,
+                demande,
+            } => ecran_echanges::echanges(
+                partie(),
+                &session.echanges,
+                avec,
+                (cede, demande),
+                contenu,
+            ),
             Vue::Classement => ecran_echanges::classement(&session.echanges),
             Vue::RecordsDeLaTour => ecran_echanges::records_de_la_tour(partie(), &session.echanges),
             Vue::ClassementDeLArene => {

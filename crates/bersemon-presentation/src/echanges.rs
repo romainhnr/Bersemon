@@ -1,12 +1,13 @@
-//! Don et échange de monstres entre joueurs (section 15.1) : les offres,
-//! leurs messages privés et leurs refus. Textes dans docs/contenu-v1.md,
+//! Don et échange de monstres et de ressources entre joueurs (section
+//! 15.1) : les offres, leurs messages privés et leurs refus. Textes dans docs/contenu-v1.md,
 //! section 13.
 
 use bersemon_core::combat::Cote;
-use bersemon_core::echange::{ErreurEchange, Offre};
+use bersemon_core::echange::{Cession, ErreurEchange, Offre};
 use bersemon_core::monstre::Monstre;
 
 use crate::monstres::{nom, nom_en_valeur};
+use crate::partie::ressources;
 
 /// "Ysolde (ysolde_42)", ou le nom du héros seul si le bot ne connaît pas
 /// encore le pseudo du joueur.
@@ -20,15 +21,37 @@ pub fn joueur(heros: &str, pseudo: Option<&str>) -> String {
 /// Le message privé qui prévient le joueur d'une offre reçue.
 pub fn offre_recue(heros: &str, pseudo: Option<&str>, offre: &Offre) -> String {
     let qui = joueur(heros, pseudo);
-    let cede = nom_en_valeur(&offre.cede.monstre, Cote::Joueur);
+    let cede = |cession: &Cession| match cession {
+        Cession::Monstre(offert) => nom_en_valeur(&offert.monstre, Cote::Joueur),
+        Cession::Ressources(ressource, nombre) => ressources(ressource, *nombre),
+    };
     let proposition = match &offre.demande {
         Some(demande) => format!(
-            "{qui} vous propose {cede} contre votre {}.",
-            nom_en_valeur(&demande.monstre, Cote::Joueur)
+            "{qui} vous propose {} contre {}.",
+            cede(&offre.cede),
+            votre(demande, |offert| nom_en_valeur(offert, Cote::Joueur))
         ),
-        None => format!("{qui} vous offre {cede}."),
+        None => format!("{qui} vous offre {}.", cede(&offre.cede)),
     };
     format!("{proposition} Ouvrez /bersemon, au camp, pour répondre.")
+}
+
+/// "Croc (Loup, niv. 7)" pour un monstre, "Fragment d'armure (12)" pour
+/// des ressources.
+pub fn cession(cession: &Cession) -> String {
+    match cession {
+        Cession::Monstre(offert) => nom_et_niveau(&offert.monstre),
+        Cession::Ressources(ressource, nombre) => ressources(ressource, *nombre),
+    }
+}
+
+/// Ce qui est demandé à celui qui reçoit l'offre : "votre" monstre, ou des
+/// ressources, prises de son sac ou de son coffre.
+fn votre(demande: &Cession, nommer: impl Fn(&Monstre) -> String) -> String {
+    match demande {
+        Cession::Monstre(offert) => format!("votre {}", nommer(&offert.monstre)),
+        Cession::Ressources(ressource, nombre) => ressources(ressource, *nombre),
+    }
 }
 
 pub fn offre_acceptee(heros: &str) -> String {
@@ -56,11 +79,11 @@ pub fn nom_et_niveau(monstre: &Monstre) -> String {
 
 /// L'offre vue par celui qui la reçoit.
 pub fn decrire_offre_recue(qui: &str, offre: &Offre) -> String {
-    let cede = nom_et_niveau(&offre.cede.monstre);
+    let cede = cession(&offre.cede);
     match &offre.demande {
         Some(demande) => format!(
-            "{qui} vous propose {cede}, contre votre {}.",
-            nom_et_niveau(&demande.monstre)
+            "{qui} vous propose {cede}, contre {}.",
+            votre(demande, nom_et_niveau)
         ),
         None => format!("{qui} vous offre {cede}."),
     }
@@ -68,11 +91,11 @@ pub fn decrire_offre_recue(qui: &str, offre: &Offre) -> String {
 
 /// L'offre vue par celui qui l'a faite.
 pub fn decrire_offre_envoyee(qui: &str, offre: &Offre) -> String {
-    let cede = nom_et_niveau(&offre.cede.monstre);
+    let cede = cession(&offre.cede);
     match &offre.demande {
         Some(demande) => format!(
             "Vous proposez à {qui} {cede} contre {}. En attente de sa réponse.",
-            nom_et_niveau(&demande.monstre)
+            cession(demande)
         ),
         None => format!("Vous offrez {cede} à {qui}. En attente de sa réponse."),
     }
@@ -85,12 +108,16 @@ pub fn erreur_echange(erreur: &ErreurEchange) -> String {
             "Un Apôtre ne se donne ni ne s'échange : il reste à celui qui l'a vaincu.".to_string()
         }
         ErreurEchange::MonstreLoue => "Un monstre loué ne peut pas faire cela.".to_string(),
-        ErreurEchange::DernierMonstre => "Vous ne pouvez pas donner votre dernier monstre.".to_string(),
+        ErreurEchange::DernierMonstre => "Chaque joueur doit garder au moins un monstre.".to_string(),
         ErreurEchange::PlusDePlace => {
-            "L'équipe et le camp de celui qui reçoit le don sont pleins.".to_string()
+            "L'équipe et le camp de celui qui recevrait le monstre sont pleins.".to_string()
+        }
+        ErreurEchange::AucuneRessource => "Choisissez au moins une ressource.".to_string(),
+        ErreurEchange::RessourcesManquantes => {
+            "Le sac et le coffre n'ont pas autant de ces ressources.".to_string()
         }
         ErreurEchange::OffrePerimee => {
-            "Cette offre n'est plus valable : un des monstres a changé ou changé de place. Elle est retirée.".to_string()
+            "Cette offre n'est plus valable : un des monstres a changé ou changé de place, ou les ressources ne sont plus là. Elle est retirée.".to_string()
         }
         ErreurEchange::DonneurPasAuCamp => {
             "Le joueur qui vous a fait cette offre n'est pas au camp : réessayez plus tard.".to_string()
