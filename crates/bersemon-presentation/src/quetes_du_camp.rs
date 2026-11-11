@@ -263,7 +263,7 @@ mod tests {
         let ecran = ecran_des_quetes_du_camp(&partie, &contenu);
         assert!(
             ecran.contains(
-                "En cours : La lueur du crâne. Rapporter 5 Cendre de feu follet (vous en avez 0)."
+                "En cours : La lueur du crâne. Rapporter 15 Cendre de feu follet (vous en avez 0)."
             ),
             "{ecran}"
         );

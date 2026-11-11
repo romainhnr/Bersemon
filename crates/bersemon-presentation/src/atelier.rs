@@ -5,7 +5,10 @@
 //! docs/contenu-v1.md, section 53.
 
 use bersemon_core::appat::{Appat, Appats};
-use bersemon_core::atelier::{AtelierDAnsgar, ErreurAtelier, RESSOURCES_DU_PARFUM_D_ESPECE};
+use bersemon_core::atelier::{
+    AtelierDAnsgar, ErreurAtelier, RESSOURCES_DU_PARFUM_D_ESPECE,
+    RESSOURCES_DU_PARFUM_D_ESPECE_RARE,
+};
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::parfum::Parfum;
 use bersemon_core::partie::Partie;
@@ -124,7 +127,7 @@ pub fn recette_d_un_parfum_d_espece(atelier: &AtelierDAnsgar) -> String {
         format!("{base} et ")
     };
     format!(
-        "Le parfum d'une espèce rencontrée demande {base}{RESSOURCES_DU_PARFUM_D_ESPECE} de la ressource qu'elle lâche."
+        "Le parfum d'une espèce rencontrée demande {base}{RESSOURCES_DU_PARFUM_D_ESPECE} de la ressource qu'elle lâche, {RESSOURCES_DU_PARFUM_D_ESPECE_RARE} pour une espèce rare."
     )
 }
 
@@ -243,7 +246,7 @@ mod tests {
         );
         assert_eq!(
             recette_d_un_parfum_d_espece(atelier),
-            "Le parfum d'une espèce rencontrée demande 1 Ambre noir et 3 de la ressource qu'elle lâche."
+            "Le parfum d'une espèce rencontrée demande 1 Ambre noir et 9 de la ressource qu'elle lâche, 6 pour une espèce rare."
         );
     }
 }

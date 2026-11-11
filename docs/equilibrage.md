@@ -568,3 +568,16 @@ La durée bouge dans les deux sens, de 5 à 10 expéditions : c'est le bruit, le
 
 Limite : à un choix par minute, le joueur automatique joue toute sa partie en 5 jours simulés environ (de 4,2 à 7,2 jours sur 40 parties), soit au plus une quinzaine de quêtes du jour et six de la semaine. Un joueur réel, qui étale ses expéditions sur des semaines, en accomplit bien plus pour le même nombre d'expéditions : la mesure ne donne qu'un minimum de l'effet des quêtes, en argent comme en boosters (gamedesign.md, Q119).
 
+
+## 21. Butin certain et coûts en ressources (étapes 193 et 199)
+
+Depuis l'étape 193, chaque monstre sauvage abattu lâche un objet : sa ressource, ou son butin rare. Mesuré sur 25 parties par classe, une partie rapporte alors 2,7 fois plus de ressources d'espèces communes (médiane des ressources trouvées au moins 3 fois par partie avant l'étape 193), et 2 à 3 fois plus de ressources d'espèces rares. Le joueur automatique forgeait 6,2 à 6,8 objets par partie, au lieu de 2,4 à 2,8.
+
+À l'étape 199, les coûts en ressources des espèces communes sont multipliés par 3, et ceux des espèces rares par 2 (gamedesign.md, section 14.3). Mesuré sur 100 parties par classe, comparé à la version d'avant l'étape 193 :
+
+| Version | Expéditions (médiane : Guerrier, Mage, Templier, Assassin) | Défaites (moyenne) | Objets forgés |
+|---|---|---|---|
+| Avant l'étape 193 | 244, 243, 232, 244 | 37,0, 36,5, 29,3, 32,8 | 2,6, 2,8, 2,7, 2,4 |
+| Étape 199 | 240, 240, 244, 250 | 41,5, 42,7, 27,9, 29,6 | 2,5, 2,6, 2,8, 2,8 |
+
+La progression revient à celle d'avant le butin certain, aux écarts de bruit près. Le joueur automatique n'obtient toujours pas l'équipe de 4, qui demande 2 Crocs de basilic et 2 Écailles de vouivre : il ne revient pas chercher ces ressources rares. Il n'emploie ni Dépeceur, ni parfum, ni la revente des ressources : un joueur qui s'en sert en réunit davantage.

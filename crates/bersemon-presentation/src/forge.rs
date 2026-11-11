@@ -124,8 +124,8 @@ pub fn lot_de_filets(plan: &PlanDesFilets) -> String {
     )
 }
 
-/// "5 filets lestés (chance de capture x1,5) : Fragment d'armure (3) et Os
-/// de squelette (3), 1 h".
+/// "5 filets lestés (chance de capture x1,5) : Fragment d'armure (9) et Os
+/// de squelette (9), 1 h".
 pub fn plan_des_filets(plan: &PlanDesFilets) -> String {
     format!(
         "{} : {}, {}",
@@ -294,7 +294,7 @@ mod tests {
             .unwrap();
         assert_eq!(
             question_de_lancement(plan),
-            "Faire construire Enclos, niveau 1 (camp de 40 places) ? Gunther prendra Croc de loup (5), Plume de corbeau (5) et Écaille de vipère (5), et aura fini dans 1 h. Une construction lancée ne s'annule pas."
+            "Faire construire Enclos, niveau 1 (camp de 40 places) ? Gunther prendra Croc de loup (15), Plume de corbeau (15) et Écaille de vipère (15), et aura fini dans 1 h. Une construction lancée ne s'annule pas."
         );
         let filets = contenu
             .plan_d_amelioration(Amelioration::Filets, 3)
@@ -311,11 +311,11 @@ mod tests {
         let plan = contenu.plan_des_filets(Filet::Leste).unwrap();
         assert_eq!(
             question_des_filets(plan),
-            "Faire forger 5 filets lestés (chance de capture x1,5) ? Gunther prendra Fragment d'armure (3) et Os de squelette (3), et aura fini dans 1 h. Un travail lancé ne s'annule pas."
+            "Faire forger 5 filets lestés (chance de capture x1,5) ? Gunther prendra Fragment d'armure (9) et Os de squelette (9), et aura fini dans 1 h. Un travail lancé ne s'annule pas."
         );
         assert_eq!(
             lancement_des_filets(plan),
-            "Vous remettez à Gunther Fragment d'armure (3) et Os de squelette (3). Il se met à forger 5 filets lestés. Il aura fini dans 1 h."
+            "Vous remettez à Gunther Fragment d'armure (9) et Os de squelette (9). Il se met à forger 5 filets lestés. Il aura fini dans 1 h."
         );
         let chantier = Chantier {
             ouvrage: Ouvrage::Filets {
