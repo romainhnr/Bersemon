@@ -10,6 +10,7 @@ use bersemon_core::contenu::{
 use bersemon_core::deroulement::Evenement;
 use bersemon_core::expedition::Tresor;
 use bersemon_core::marchand::EXPEDITIONS_DE_LOCATION;
+use bersemon_core::objet_d_experience::{EffetDExperience, ObjetDExperience};
 use bersemon_core::ressource::Ressource;
 
 use crate::arene;
@@ -607,6 +608,31 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             ),
             false,
         ),
+        Evenement::ObjetsDExperienceAchetes {
+            objet,
+            nombre,
+            prix,
+        } => (
+            format!(
+                "Vous achetez {} pour {}.",
+                objets_d_experience(*objet, *nombre),
+                argent(*prix)
+            ),
+            false,
+        ),
+        Evenement::ObjetDExperienceDonne {
+            objet,
+            monstre,
+            rapport,
+        } => (
+            format!(
+                "{} absorbe un {}. {}",
+                nom_en_valeur(monstre, Cote::Joueur),
+                objet.nom(),
+                crate::combat::rapport_experience(monstre, rapport)
+            ),
+            false,
+        ),
         Evenement::PierresAchetees {
             pierre,
             nombre,
@@ -678,6 +704,19 @@ fn decrire_butin(butin: &Butin) -> String {
     match butin {
         Butin::Ressource(ressource, nombre) => format!("{} ({nombre})", ressource.nom()),
         Butin::Booster(booster, nombre) => format!("{} ({nombre})", booster.nom()),
+    }
+}
+
+/// "Éclat de mémoire (2)".
+pub fn objets_d_experience(objet: ObjetDExperience, nombre: u32) -> String {
+    format!("{} ({nombre})", objet.nom())
+}
+
+/// "Éclat de mémoire : +1 000 XP" ; "Cœur de bataille : +1 niveau".
+pub fn effet_d_un_objet_d_experience(objet: ObjetDExperience) -> String {
+    match objet.effet() {
+        EffetDExperience::Experience(gain) => format!("{} : +{gain} XP", objet.nom()),
+        EffetDExperience::Niveau => format!("{} : +1 niveau", objet.nom()),
     }
 }
 

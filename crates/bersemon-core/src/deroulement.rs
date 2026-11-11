@@ -11,6 +11,7 @@
 //! qu'au camp (section 13.9).
 
 use crate::butin::{Butin, HabiletesDuButin};
+use crate::objet_d_experience::{ErreurObjetDExperience, ObjetDExperience};
 use std::collections::VecDeque;
 use std::fmt;
 use std::time::Duration;
@@ -141,6 +142,15 @@ pub enum Choix {
     AcheterCapsulesDHabilete(u32),
     /// Au camp, chez Malvoise, sans confirmation (section 5.4).
     AcheterPierres(PierreDEvolution, u32),
+    /// Au camp, chez Malvoise, sans confirmation ; ils vont au coffre
+    /// (section 14.3).
+    AcheterObjetsDExperience(ObjetDExperience, u32),
+    /// Au camp, sans confirmation : le monstre gagne l'XP de l'objet, ou un
+    /// niveau (section 14.3).
+    DonnerObjetDExperience {
+        emplacement: Emplacement,
+        objet: ObjetDExperience,
+    },
     /// Au camp, chez Malvoise, sans confirmation : toutes les ressources de
     /// cette sorte, du sac et du coffre (section 14.3).
     VendreRessources(RessourceId),
@@ -713,6 +723,18 @@ pub enum Evenement {
         nombre: u32,
         prix: u32,
     },
+    ObjetsDExperienceAchetes {
+        objet: ObjetDExperience,
+        nombre: u32,
+        prix: u32,
+    },
+    /// `monstre` est le monstre après l'objet ; le rapport dit l'XP et les
+    /// niveaux gagnés (section 14.3).
+    ObjetDExperienceDonne {
+        objet: ObjetDExperience,
+        monstre: Monstre,
+        rapport: RapportExperience,
+    },
     /// Gunther se met au travail, sur ce plan, jusqu'à la fin du chantier
     /// (section 13.4). Le plan est en boîte, comme dans la confirmation.
     AmeliorationLancee {
@@ -879,6 +901,7 @@ pub enum ErreurChoix {
     Apprentissage(ErreurApprentissage),
     Habilete(ErreurChangementDHabilete),
     Booster(ErreurBooster),
+    ObjetDExperience(ErreurObjetDExperience),
     Evolution(ErreurEvolution),
     Amelioration(ErreurAmelioration),
     /// Le contenu n'a pas de plan pour ce niveau ou cet objet.
@@ -925,6 +948,7 @@ impl fmt::Display for ErreurChoix {
             ErreurChoix::Apprentissage(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Habilete(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Booster(erreur) => write!(f, "{erreur}"),
+            ErreurChoix::ObjetDExperience(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Evolution(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Beherit(erreur) => write!(f, "{erreur}"),
             ErreurChoix::Amelioration(erreur) => write!(f, "{erreur}"),
@@ -1990,6 +2014,38 @@ impl EnJeu {
                     pierre: *pierre,
                     nombre: *nombre,
                     prix,
+                });
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::AcheterObjetsDExperience(objet, nombre) => {
+                let prix = self
+                    .partie
+                    .acheter_objets_d_experience(*objet, *nombre)
+                    .map_err(ErreurChoix::Marchand)?;
+                evenements.push(Evenement::ObjetsDExperienceAchetes {
+                    objet: *objet,
+                    nombre: *nombre,
+                    prix,
+                });
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::DonnerObjetDExperience { emplacement, objet } => {
+                let (_, rapport) = self
+                    .partie
+                    .donner_objet_d_experience(*emplacement, *objet)
+                    .map_err(ErreurChoix::ObjetDExperience)?;
+                let monstre = self
+                    .partie
+                    .collection()
+                    .monstre(*emplacement)
+                    .cloned()
+                    .expect("le monstre vient de recevoir l'objet");
+                evenements.push(Evenement::ObjetDExperienceDonne {
+                    objet: *objet,
+                    monstre,
+                    rapport,
                 });
                 sauvegarder(&self.partie, contexte.depot, evenements);
                 Ok(Reponse::Faite)

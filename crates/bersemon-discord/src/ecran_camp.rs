@@ -6,6 +6,7 @@
 //! ne changent rien à la partie ; seules les actions la modifient, et la
 //! sauvegardent.
 
+use crate::composants::objet_d_experience_en_valeur;
 use bersemon_core::amelioration::Amelioration;
 use bersemon_core::booster::Booster;
 use bersemon_core::codex::EtatCodex;
@@ -18,6 +19,7 @@ use bersemon_core::habilete::autre_habilete;
 use bersemon_core::horodatage::Horodatage;
 use bersemon_core::marchand::prix_de_revente;
 use bersemon_core::monstre::Monstre;
+use bersemon_core::objet_d_experience::ObjetDExperience;
 use bersemon_core::partie::Partie;
 use bersemon_core::quete_du_camp::{EtatDeLaChaine, Personnage};
 use bersemon_core::recompenses_du_codex::compte_au_codex;
@@ -52,6 +54,7 @@ use bersemon_presentation::quetes::ecran_des_quetes;
 use bersemon_presentation::quetes_du_camp::{
     avis_des_quetes_du_camp, chaines, ecran_des_quetes_du_camp, peut_remettre,
 };
+use bersemon_presentation::recit::{effet_d_un_objet_d_experience, objets_d_experience};
 use bersemon_presentation::recompenses_du_codex::{progression_du_codex, reclamer};
 use bersemon_presentation::rite::{rite_acheve, service_du_rite};
 use bersemon_presentation::succes::{
@@ -1128,7 +1131,7 @@ fn gestion(partie: &Partie, choisi: Option<Emplacement>, contenu: &ContenuV1) ->
     if a_soi {
         lignes.extend(menu(
             Cle::DonnerBooster(emplacement),
-            "Donner un booster",
+            "Donner un booster ou un objet d'expérience",
             options_de_boosters(partie, monstre),
         ));
     }
@@ -1149,7 +1152,7 @@ fn gestion(partie: &Partie, choisi: Option<Emplacement>, contenu: &ContenuV1) ->
 /// Les boosters du sac et du coffre qui servent encore à ce monstre : 6 au
 /// plus (section 14.3).
 fn options_de_boosters(partie: &Partie, monstre: &Monstre) -> Vec<OptionDeMenu> {
-    Booster::TOUS
+    let boosters_utiles = Booster::TOUS
         .into_iter()
         .filter(|booster| {
             *monstre.valeurs_internes().valeurs().de(booster.stat()) < ValeursInternes::MAX
@@ -1161,8 +1164,22 @@ fn options_de_boosters(partie: &Partie, monstre: &Monstre) -> Vec<OptionDeMenu> 
                 valeur: booster_en_texte(booster).to_string(),
                 description: Some(effet_du_booster(booster)),
             })
-        })
-        .collect()
+        });
+    // Les objets d'expérience suivent les boosters, dans le même menu, tant
+    // que le monstre peut encore monter (section 14.3).
+    let au_maximum = monstre.niveau().valeur() >= bersemon_core::niveau::Niveau::MAX;
+    let objets = ObjetDExperience::TOUS
+        .into_iter()
+        .filter(|_| !au_maximum && !monstre.est_loue())
+        .filter_map(|objet| {
+            let nombre = partie.nombre_d_objets_d_experience(objet);
+            (nombre > 0).then(|| OptionDeMenu {
+                libelle: objets_d_experience(objet, nombre),
+                valeur: objet_d_experience_en_valeur(objet),
+                description: Some(effet_d_un_objet_d_experience(objet)),
+            })
+        });
+    boosters_utiles.chain(objets).collect()
 }
 
 /// Les monstres de l'équipe, puis ceux du camp, numérotés à la suite et 25

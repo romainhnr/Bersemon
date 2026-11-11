@@ -222,6 +222,12 @@ fn contenu_detaille(inventaire: &Inventaire, detaille: bool) -> String {
             .iter()
             .map(|(booster, nombre)| boosters(*booster, *nombre)),
     );
+    elements.extend(
+        inventaire
+            .objets_d_experience()
+            .iter()
+            .map(|(objet, nombre)| crate::recit::objets_d_experience(*objet, *nombre)),
+    );
     if inventaire.philtres_chromatiques() > 0 {
         elements.push(philtres_chromatiques(inventaire.philtres_chromatiques()));
     }

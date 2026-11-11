@@ -4,6 +4,7 @@
 //! ressources, pierres d'évolution, boosters, Philtres chromatiques, charmes de
 //! garde, filets de capture, appâts et objets de quête.
 
+use crate::objet_d_experience::ObjetDExperience;
 use std::fmt;
 
 use crate::aleatoire::Aleatoire;
@@ -48,6 +49,9 @@ pub struct Inventaire {
     /// Sans doublon : chacun est unique et ne sert qu'à sa quête (section
     /// 13.13).
     objets_de_quete: Vec<ObjetDeQuete>,
+    /// Dans l'ordre de `ObjetDExperience::TOUS`, sans nombre nul : achetés,
+    /// ils vont au coffre, où ils servent (section 14.3).
+    objets_d_experience: Vec<(ObjetDExperience, u32)>,
 }
 
 /// Ce que le joueur déplace entre le sac et le coffre du camp.
@@ -105,6 +109,7 @@ impl Inventaire {
             filets: Filets::default(),
             appats: Appats::default(),
             objets_de_quete: Vec::new(),
+            objets_d_experience: Vec::new(),
         };
         inventaire.soins.ajouter(Soin::Potion, potions);
         for capsule in capsules {
@@ -174,6 +179,54 @@ impl Inventaire {
 
     pub fn boosters(&self) -> &[(Booster, u32)] {
         &self.boosters
+    }
+
+    pub fn objets_d_experience(&self) -> &[(ObjetDExperience, u32)] {
+        &self.objets_d_experience
+    }
+
+    pub fn nombre_d_objets_d_experience(&self, objet: ObjetDExperience) -> u32 {
+        self.objets_d_experience
+            .iter()
+            .find(|(present, _)| *present == objet)
+            .map_or(0, |(_, nombre)| *nombre)
+    }
+
+    pub fn ajouter_objets_d_experience(&mut self, objet: ObjetDExperience, nombre: u32) {
+        if nombre == 0 {
+            return;
+        }
+        match self
+            .objets_d_experience
+            .iter_mut()
+            .find(|(present, _)| *present == objet)
+        {
+            Some((_, present)) => *present = present.saturating_add(nombre),
+            None => {
+                self.objets_d_experience.push((objet, nombre));
+                let rang = |objet: &ObjetDExperience| {
+                    ObjetDExperience::TOUS.iter().position(|un| un == objet)
+                };
+                self.objets_d_experience
+                    .sort_by_key(|(objet, _)| rang(objet));
+            }
+        }
+    }
+
+    /// Rend `false` sans rien changer s'il n'y en a pas.
+    pub(crate) fn utiliser_objet_d_experience(&mut self, objet: ObjetDExperience) -> bool {
+        let Some(position) = self
+            .objets_d_experience
+            .iter()
+            .position(|(present, nombre)| *present == objet && *nombre > 0)
+        else {
+            return false;
+        };
+        self.objets_d_experience[position].1 -= 1;
+        if self.objets_d_experience[position].1 == 0 {
+            self.objets_d_experience.remove(position);
+        }
+        true
     }
 
     pub fn nombre_de_boosters(&self, booster: Booster) -> u32 {
@@ -364,6 +417,7 @@ impl Inventaire {
             && self.filets.est_vide()
             && self.appats.est_vide()
             && self.objets_de_quete.is_empty()
+            && self.objets_d_experience.is_empty()
     }
 
     /// Les places prises dans le sac : chaque objet en prend une, l'argent

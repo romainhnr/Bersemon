@@ -9,6 +9,7 @@ use bersemon_core::marchand::{
     EXPEDITIONS_DE_LOCATION, OffreDeMonstre, PRIX_CAPSULE_D_HABILETE, prix_de_la_pierre,
     prix_du_filet, prix_du_soin,
 };
+use bersemon_core::objet_d_experience::ObjetDExperience;
 use bersemon_core::partie::Partie;
 use bersemon_core::pierre::PierreDEvolution;
 use bersemon_presentation::beherit::{FORGER_LE_BEHERIT, peut_forger_le_beherit};
@@ -19,10 +20,13 @@ use bersemon_presentation::marchand::{
 };
 use bersemon_presentation::monstres::decrire_attaque;
 use bersemon_presentation::partie::argent;
+use bersemon_presentation::recit::effet_d_un_objet_d_experience;
 use bersemon_presentation::rite::{etat_du_rite, service_du_rite};
 use bersemon_presentation::soins::{effet_du_soin, le_soin, soins};
 
-use crate::composants::{BEHERIT, Cle, Vue, lot_de_soins_en_texte, pierre_en_texte};
+use crate::composants::{
+    BEHERIT, Cle, Vue, lot_de_soins_en_texte, objet_d_experience_en_valeur, pierre_en_texte,
+};
 use crate::ecran_camp::{menus_de_monstres_decrits, retour};
 use crate::message::{
     DANGER, OptionDeMenu, PRINCIPAL, Question, RANGEES_MAX, Rangee, SECONDAIRE, bouton, menu,
@@ -90,7 +94,7 @@ pub fn etal(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Que
     let mut lignes: Vec<Rangee> = rangees(achats);
     // Les neuf objets d'évolution, pierres et Chaîne de lien, ont leur
     // menu, un par achat (section 5.4).
-    let objets_d_evolution: Vec<OptionDeMenu> = PierreDEvolution::TOUTES
+    let mut objets_d_evolution: Vec<OptionDeMenu> = PierreDEvolution::TOUTES
         .into_iter()
         .map(|pierre| OptionDeMenu {
             libelle: format!("{} : {}", pierre.nom(), argent(prix_de_la_pierre(pierre))),
@@ -98,6 +102,17 @@ pub fn etal(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Que
             description: None,
         })
         .collect();
+    // Les objets d'expérience partagent le menu : l'étal n'a plus de
+    // rangée libre (section 14.3).
+    objets_d_evolution.extend(
+        ObjetDExperience::TOUS
+            .into_iter()
+            .map(|objet| OptionDeMenu {
+                libelle: format!("{} : {}", objet.nom(), argent(objet.prix())),
+                valeur: objet_d_experience_en_valeur(objet),
+                description: Some(effet_d_un_objet_d_experience(objet)),
+            }),
+    );
     lignes.extend(menu(Cle::AcheterSoins, "Acheter des soins", lots_de_soins));
     // Au plus une âme par zone : le menu reste loin de ses 25 options. Les
     // âmes des Apôtres s'y donnent ensemble, pour forger le Béhérit (section
@@ -128,7 +143,7 @@ pub fn etal(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Que
     );
     lignes.extend(menu(
         Cle::AcheterObjetDEvolution,
-        "Acheter un objet d'évolution",
+        "Acheter un objet d'évolution ou d'expérience",
         objets_d_evolution,
     ));
     let mut boutons = vec![bouton(Cle::AcheterCapsuleDHabilete, &libelle, PRINCIPAL)];

@@ -9,6 +9,7 @@ use bersemon_core::deroulement::{ActionDeGestion, Choix, ErreurChoix};
 use bersemon_core::habilete::ErreurChangementDHabilete;
 use bersemon_core::inventaire::ErreurObjet;
 use bersemon_core::marchand::ErreurMarchand;
+use bersemon_core::objet_d_experience::ErreurObjetDExperience;
 use bersemon_core::sauvegarde::ErreurSauvegarde;
 use bersemon_core::soin::ErreurSoin;
 
@@ -58,6 +59,16 @@ pub fn erreur_de_choix(choix: &Choix, erreur: &ErreurChoix) -> String {
                 "Son espèce n'a pas d'autre habileté.".to_string()
             }
             ErreurChangementDHabilete::Collection(erreur) => erreur_collection(erreur),
+        },
+        ErreurChoix::ObjetDExperience(erreur) => match erreur {
+            ErreurObjetDExperience::Aucun(objet) => format!("Vous n'avez pas de {}.", objet.nom()),
+            ErreurObjetDExperience::NiveauMaximum => {
+                "Ce monstre est au niveau maximum : il ne gagne plus d'XP.".to_string()
+            }
+            ErreurObjetDExperience::MonstreLoue => {
+                "Un monstre loué ne reçoit pas d'objet d'expérience.".to_string()
+            }
+            ErreurObjetDExperience::Collection(erreur) => erreur_collection(erreur),
         },
         ErreurChoix::Booster(erreur) => match erreur {
             ErreurBooster::Aucun(booster) => refus_sans_booster(*booster),

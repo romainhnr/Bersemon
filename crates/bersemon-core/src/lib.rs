@@ -49,6 +49,7 @@ pub mod monstre;
 pub mod niveau;
 pub mod nom;
 pub mod obeissance;
+pub mod objet_d_experience;
 pub mod parfum;
 pub mod partie;
 pub mod peche;

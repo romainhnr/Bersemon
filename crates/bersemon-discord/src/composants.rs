@@ -21,6 +21,7 @@ use bersemon_core::expedition_automatique::Protection;
 use bersemon_core::filet::Filet;
 use bersemon_core::heros::Classe;
 use bersemon_core::inventaire::Objet;
+use bersemon_core::objet_d_experience::ObjetDExperience;
 use bersemon_core::pierre::PierreDEvolution;
 use bersemon_core::quete_du_camp::{Personnage, QueteId};
 use bersemon_core::ressource::RessourceId;
@@ -614,10 +615,16 @@ impl Cle {
             Cle::Vendre(_) => jouer(Choix::Vendre(lire_emplacement(valeur?)?)),
             Cle::VendreCeMonstre(emplacement) => jouer(Choix::Vendre(*emplacement)),
             Cle::ChangerDHabilete(emplacement) => jouer(Choix::ChangerDHabilete(*emplacement)),
-            Cle::DonnerBooster(emplacement) => jouer(Choix::DonnerBooster {
-                emplacement: *emplacement,
-                booster: lire_booster(valeur?)?,
-            }),
+            Cle::DonnerBooster(emplacement) => match lire_objet_d_experience(valeur?) {
+                Some(objet) => jouer(Choix::DonnerObjetDExperience {
+                    emplacement: *emplacement,
+                    objet,
+                }),
+                None => jouer(Choix::DonnerBooster {
+                    emplacement: *emplacement,
+                    booster: lire_booster(valeur?)?,
+                }),
+            },
             Cle::RendreShiny(emplacement) => jouer(Choix::RendreShiny(*emplacement)),
             Cle::RendreLeHerosShiny => jouer(Choix::RendreLeHerosShiny),
             Cle::AcheterCapsuleDHabilete => jouer(Choix::AcheterCapsulesDHabilete(1)),
@@ -625,7 +632,10 @@ impl Cle {
             Cle::LouerMonstre => jouer(Choix::LouerMonstre(EspeceId::new(valeur?))),
             Cle::RendreLeMonstreLoue => jouer(Choix::RendreLeMonstreLoue),
             Cle::AcheterPierre(pierre) => jouer(Choix::AcheterPierres(*pierre, 1)),
-            Cle::AcheterObjetDEvolution => jouer(Choix::AcheterPierres(lire_pierre(valeur?)?, 1)),
+            Cle::AcheterObjetDEvolution => match lire_objet_d_experience(valeur?) {
+                Some(objet) => jouer(Choix::AcheterObjetsDExperience(objet, 1)),
+                None => jouer(Choix::AcheterPierres(lire_pierre(valeur?)?, 1)),
+            },
             Cle::Apprendre {
                 emplacement,
                 oubliee,
@@ -1279,6 +1289,24 @@ fn lire_place(texte: &str) -> Option<PlaceDEquipement> {
 }
 
 /// Nom fixé ici, et non le nom Rust, comme dans la sauvegarde.
+/// "xp:eclat-de-memoire" : la valeur d'un objet d'expérience, dans les
+/// menus qu'il partage avec les boosters et les objets d'évolution.
+pub fn objet_d_experience_en_valeur(objet: ObjetDExperience) -> String {
+    let nom = match objet {
+        ObjetDExperience::Eclat => "eclat-de-memoire",
+        ObjetDExperience::Fiole => "fiole-de-memoire",
+        ObjetDExperience::Cristal => "cristal-de-memoire",
+        ObjetDExperience::Coeur => "coeur-de-bataille",
+    };
+    format!("xp:{nom}")
+}
+
+fn lire_objet_d_experience(texte: &str) -> Option<ObjetDExperience> {
+    ObjetDExperience::TOUS
+        .into_iter()
+        .find(|objet| objet_d_experience_en_valeur(*objet) == texte)
+}
+
 pub fn pierre_en_texte(pierre: PierreDEvolution) -> &'static str {
     match pierre {
         PierreDEvolution::Braise => "braise",

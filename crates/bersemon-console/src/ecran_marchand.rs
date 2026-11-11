@@ -12,6 +12,7 @@ use bersemon_core::marchand::{
     PRIX_CAPSULE_D_HABILETE, PRIX_PIERRE_D_EVOLUTION, prix_de_la_pierre, prix_du_filet,
     prix_du_soin,
 };
+use bersemon_core::objet_d_experience::ObjetDExperience;
 use bersemon_core::partie::Partie;
 use bersemon_core::pierre::PierreDEvolution;
 use bersemon_presentation::beherit::{FORGER_LE_BEHERIT, peut_forger_le_beherit};
@@ -23,6 +24,7 @@ use bersemon_presentation::marchand::{
 };
 use bersemon_presentation::monstres::ligne_monstre;
 use bersemon_presentation::partie::{argent, collection as liste_des_monstres};
+use bersemon_presentation::recit::effet_d_un_objet_d_experience;
 use bersemon_presentation::rite::{etat_du_rite, service_du_rite};
 use bersemon_presentation::soins::{le_soin, offre_de_soin};
 
@@ -61,11 +63,12 @@ pub fn choisir(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Opt
         println!("  12. {entree_du_rite}");
         // Le retour d'un monstre loué n'est proposé que s'il y en a un.
         let loue = partie.collection().monstre_loue();
+        println!("  13. Acheter des objets d'expérience");
         if let Some((_, monstre)) = loue {
-            println!("  13. Rendre {} à Malvoise", monstre.nom());
+            println!("  14. Rendre {} à Malvoise", monstre.nom());
         }
         println!("  0. Retour au camp");
-        let dernier = if loue.is_some() { 13 } else { 12 };
+        let dernier = if loue.is_some() { 14 } else { 13 };
         let choix = match entree.choix(0, dernier)? {
             0 => return Some(None),
             1 => acheter_soins(partie, entree)?,
@@ -80,6 +83,7 @@ pub fn choisir(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Opt
             10 => acheter_monstre(partie, contenu, entree)?,
             11 => louer_monstre(partie, contenu, entree)?,
             12 => rite(partie, contenu, entree)?,
+            13 => acheter_objets_d_experience(partie, entree)?,
             _ => Some(Choix::RendreLeMonstreLoue),
         };
         if choix.is_some() {
@@ -257,6 +261,34 @@ fn acheter_pierres(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>
     println!("Combien en acheter ? (0 pour annuler)");
     let nombre = entree.choix(0, au_plus as usize)?;
     Some((nombre > 0).then_some(Choix::AcheterPierres(pierre, nombre as u32)))
+}
+
+/// Le joueur choisit l'objet, puis combien en acheter, selon son argent
+/// (section 14.3).
+fn acheter_objets_d_experience(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>> {
+    println!("Objets d'expérience en vente :");
+    for (position, objet) in ObjetDExperience::TOUS.iter().enumerate() {
+        println!(
+            "  {}. {}, {}",
+            position + 1,
+            effet_d_un_objet_d_experience(*objet),
+            argent(objet.prix())
+        );
+    }
+    println!("Lequel acheter ? (0 pour annuler)");
+    let choix = entree.choix(0, ObjetDExperience::TOUS.len())?;
+    if choix == 0 {
+        return Some(None);
+    }
+    let objet = ObjetDExperience::TOUS[choix - 1];
+    let au_plus = partie.argent() / objet.prix();
+    if au_plus == 0 {
+        println!("Vous n'avez pas assez d'argent pour cet objet.");
+        return Some(None);
+    }
+    println!("Combien en acheter ? (0 pour annuler)");
+    let nombre = entree.choix(0, au_plus as usize)?;
+    Some((nombre > 0).then_some(Choix::AcheterObjetsDExperience(objet, nombre as u32)))
 }
 
 /// Le rite en cours s'accueille une fois fini, et sinon le refus dit le

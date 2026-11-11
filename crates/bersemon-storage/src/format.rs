@@ -5,6 +5,7 @@
 //!
 //! Chaque structure porte le numéro de la version qui l'a introduite.
 
+use bersemon_core::objet_d_experience::ObjetDExperience;
 use serde::{Deserialize, Serialize};
 
 use bersemon_core::ame::{MarchandId, MarchandMort};
@@ -506,6 +507,34 @@ struct InventaireV7 {
     /// Depuis la version 38 (section 13.13) : l'identifiant de leur quête.
     #[serde(default)]
     objets_de_quete: Vec<String>,
+    /// Depuis la version 40 (section 14.3), au même format que les filets.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    objets_d_experience: Vec<ObjetDExperienceV40>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct ObjetDExperienceV40 {
+    objet: String,
+    nombre: u32,
+}
+
+/// Nom fixé ici, et non le nom Rust.
+fn objet_d_experience_en_texte(objet: ObjetDExperience) -> &'static str {
+    match objet {
+        ObjetDExperience::Eclat => "eclat-de-memoire",
+        ObjetDExperience::Fiole => "fiole-de-memoire",
+        ObjetDExperience::Cristal => "cristal-de-memoire",
+        ObjetDExperience::Coeur => "coeur-de-bataille",
+    }
+}
+
+fn lire_objet_d_experience(texte: &str) -> Result<ObjetDExperience, ErreurSauvegarde> {
+    ObjetDExperience::TOUS
+        .into_iter()
+        .find(|objet| objet_d_experience_en_texte(*objet) == texte)
+        .ok_or_else(|| {
+            ErreurSauvegarde::Incoherente(format!("objet d'expérience inconnu : {texte}"))
+        })
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -1067,6 +1096,14 @@ fn depuis_inventaire(inventaire: &Inventaire) -> InventaireV7 {
                 nombre: *nombre,
             })
             .collect(),
+        objets_d_experience: inventaire
+            .objets_d_experience()
+            .iter()
+            .map(|(objet, nombre)| ObjetDExperienceV40 {
+                objet: objet_d_experience_en_texte(*objet).to_string(),
+                nombre: *nombre,
+            })
+            .collect(),
         philtres_chromatiques: inventaire.philtres_chromatiques(),
         charmes_de_garde: inventaire.charmes_de_garde(),
         filets: inventaire
@@ -1125,6 +1162,9 @@ fn vers_inventaire(
     }
     for booster in inventaire.boosters {
         resultat.ajouter_boosters(lire_booster(&booster.booster)?, booster.nombre);
+    }
+    for objet in inventaire.objets_d_experience {
+        resultat.ajouter_objets_d_experience(lire_objet_d_experience(&objet.objet)?, objet.nombre);
     }
     resultat.ajouter_philtres_chromatiques(inventaire.philtres_chromatiques);
     resultat.ajouter_charmes_de_garde(inventaire.charmes_de_garde);

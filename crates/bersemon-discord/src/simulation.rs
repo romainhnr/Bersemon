@@ -2637,7 +2637,9 @@ fn les_ecrans_du_camp_les_plus_charges_restent_dans_les_limites() {
         assert!(etal.rangees.iter().any(|rangee| matches!(
             rangee,
             Rangee::Menu(menu) if menu.cle == Cle::AcheterObjetDEvolution
-                && menu.options.len() == PierreDEvolution::TOUTES.len()
+                && menu.options.len()
+                    == PierreDEvolution::TOUTES.len()
+                        + bersemon_core::objet_d_experience::ObjetDExperience::TOUS.len()
         )));
         assert!(cles.contains(&Cle::AcheterFilets(Filet::Chanvre, 5)));
         assert!(cles.contains(&Cle::AcheterFilets(Filet::Leste, 5)));

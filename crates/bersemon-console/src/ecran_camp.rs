@@ -12,6 +12,7 @@ use bersemon_core::collection::{Collection, Emplacement, TriDuCamp};
 use bersemon_core::combat::Cote;
 use bersemon_core::contenu::ContenuV1;
 use bersemon_core::deroulement::{ActionDeGestion, Choix};
+use bersemon_core::objet_d_experience::ObjetDExperience;
 use bersemon_core::partie::Partie;
 use bersemon_core::quete_du_camp::Personnage;
 use bersemon_presentation::arene::lieu_sur_la_carte;
@@ -33,6 +34,7 @@ use bersemon_presentation::partie::{
 use bersemon_presentation::peche::ligne_prete;
 use bersemon_presentation::quetes::ecran_des_quetes;
 use bersemon_presentation::quetes_du_camp::avis_des_quetes_du_camp;
+use bersemon_presentation::recit::effet_d_un_objet_d_experience;
 use bersemon_presentation::recompenses_du_codex::{progression_du_codex, reclamer};
 use bersemon_presentation::rite::rite_acheve;
 use bersemon_presentation::tour::{depart_par_le_raccourci, destination_de_la_tour};
@@ -361,7 +363,7 @@ fn gerer(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Option<Op
             "  10. Changer l'habileté d'un monstre ({})",
             capsules_d_habilete(partie.capsules_d_habilete())
         );
-        println!("  11. Donner un booster à un monstre");
+        println!("  11. Donner un booster ou un objet d'expérience à un monstre");
         println!("  12. Faire évoluer un monstre");
         if marchand {
             println!("  13. Vendre un monstre à Malvoise");
@@ -544,11 +546,17 @@ fn donner_booster(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>>
         .map(|booster| (booster, partie.nombre_de_boosters(booster)))
         .filter(|(_, nombre)| *nombre > 0)
         .collect();
-    if possedes.is_empty() {
-        println!("Vous n'avez aucun booster.");
+    // Les objets d'expérience suivent les boosters (section 14.3).
+    let objets: Vec<(ObjetDExperience, u32)> = ObjetDExperience::TOUS
+        .into_iter()
+        .map(|objet| (objet, partie.nombre_d_objets_d_experience(objet)))
+        .filter(|(_, nombre)| *nombre > 0)
+        .collect();
+    if possedes.is_empty() && objets.is_empty() {
+        println!("Vous n'avez ni booster ni objet d'expérience.");
         return Some(None);
     }
-    println!("Quel booster donner ? (0 pour annuler)");
+    println!("Quel objet donner ? (0 pour annuler)");
     for (numero, (booster, nombre)) in possedes.iter().enumerate() {
         println!(
             "  {}. {} : {}",
@@ -557,9 +565,27 @@ fn donner_booster(partie: &Partie, entree: &mut Entree) -> Option<Option<Choix>>
             effet_du_booster(*booster)
         );
     }
-    let choix = entree.choix(0, possedes.len())?;
+    for (numero, (objet, nombre)) in objets.iter().enumerate() {
+        println!(
+            "  {}. {} ({nombre})",
+            possedes.len() + numero + 1,
+            effet_d_un_objet_d_experience(*objet)
+        );
+    }
+    let choix = entree.choix(0, possedes.len() + objets.len())?;
     if choix == 0 {
         return Some(None);
+    }
+    if choix > possedes.len() {
+        let objet = objets[choix - 1 - possedes.len()].0;
+        let emplacement = designer(
+            partie.collection(),
+            entree,
+            &format!("À quel monstre donner le {} ?", objet.nom()),
+        )?;
+        return Some(
+            emplacement.map(|emplacement| Choix::DonnerObjetDExperience { emplacement, objet }),
+        );
     }
     let booster = possedes[choix - 1].0;
     let emplacement = designer(

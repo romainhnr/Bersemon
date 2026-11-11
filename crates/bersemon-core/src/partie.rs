@@ -2,6 +2,8 @@
 //! ce qu'une sauvegarde devra conserver.
 
 use crate::butin::{Butin, HabiletesDuButin, tirer_le_butin};
+use crate::experience::experience_requise;
+use crate::objet_d_experience::{EffetDExperience, ErreurObjetDExperience, ObjetDExperience};
 use std::fmt;
 use std::time::Duration;
 
@@ -1674,6 +1676,77 @@ impl Partie {
     /// Trouvé dans un coffre, il va dans le sac (section 14.3).
     pub fn trouver_booster(&mut self, booster: Booster) {
         self.sac.ajouter_boosters(booster, 1);
+    }
+
+    /// Ceux du sac et du coffre : au camp, ils servent tous (section 14.3).
+    pub fn nombre_d_objets_d_experience(&self, objet: ObjetDExperience) -> u32 {
+        self.sac
+            .nombre_d_objets_d_experience(objet)
+            .saturating_add(self.coffre_du_camp.nombre_d_objets_d_experience(objet))
+    }
+
+    /// Au camp, chez Malvoise, sans confirmation ; ils vont au coffre
+    /// (section 14.3). Rend le prix payé.
+    pub fn acheter_objets_d_experience(
+        &mut self,
+        objet: ObjetDExperience,
+        nombre: u32,
+    ) -> Result<u32, ErreurMarchand> {
+        self.verifier_marchand()?;
+        if nombre == 0 {
+            return Err(ErreurMarchand::QuantiteNulle);
+        }
+        let prix = nombre.saturating_mul(objet.prix());
+        self.payer(prix)?;
+        self.coffre_du_camp
+            .ajouter_objets_d_experience(objet, nombre);
+        Ok(prix)
+    }
+
+    /// Au camp, sans confirmation (section 14.3) : le monstre gagne l'XP de
+    /// l'objet, ou juste assez pour le niveau suivant ; l'objet est consommé,
+    /// du sac d'abord, puis du coffre. Les attaques qu'il ne peut apprendre
+    /// faute de place attendent le choix du joueur, comme au retour d'une
+    /// expédition automatique. Rend le monstre d'avant et le rapport.
+    pub fn donner_objet_d_experience(
+        &mut self,
+        emplacement: Emplacement,
+        objet: ObjetDExperience,
+    ) -> Result<(Monstre, RapportExperience), ErreurObjetDExperience> {
+        let monstre = self
+            .collection
+            .monstre_a_soi(emplacement)
+            .map_err(ErreurObjetDExperience::Collection)?
+            .clone();
+        if monstre.est_loue() {
+            return Err(ErreurObjetDExperience::MonstreLoue);
+        }
+        let Ok(suivant) = Niveau::new(monstre.niveau().valeur() + 1) else {
+            return Err(ErreurObjetDExperience::NiveauMaximum);
+        };
+        if !self.sac.utiliser_objet_d_experience(objet)
+            && !self.coffre_du_camp.utiliser_objet_d_experience(objet)
+        {
+            return Err(ErreurObjetDExperience::Aucun(objet));
+        }
+        let gain = match objet.effet() {
+            EffetDExperience::Experience(gain) => gain,
+            EffetDExperience::Niveau => {
+                experience_requise(suivant).saturating_sub(monstre.experience())
+            }
+        };
+        let rapport = self
+            .collection
+            .monstre_a_modifier(emplacement)
+            .expect("emplacement vérifié")
+            .gagner_experience(gain);
+        for attaque in &rapport.attaques_en_attente {
+            self.attaques_a_choisir.push(AttaqueAChoisir {
+                emplacement,
+                attaque: attaque.clone(),
+            });
+        }
+        Ok((monstre, rapport))
     }
 
     /// Au camp, sans confirmation (section 14.3) : le booster est consommé,
@@ -3819,6 +3892,53 @@ pub(crate) mod tests {
         partie.rendre_shiny_les_valeurs_maximales();
         assert!(partie.collection().equipe()[1].est_shiny());
         assert!(!partie.collection().equipe()[0].est_shiny());
+    }
+
+    /// Section 14.3 : un objet d'expérience s'achète chez Malvoise, va au
+    /// coffre, et fait gagner son XP, ou un niveau entier.
+    #[test]
+    fn un_objet_d_experience_fait_monter_le_monstre() {
+        let mut partie = partie();
+        partie.coffre_du_camp.ajouter_argent(2_000);
+        assert_eq!(
+            partie.acheter_objets_d_experience(ObjetDExperience::Eclat, 1),
+            Err(ErreurMarchand::AucunMarchand)
+        );
+        partie.accueillir_malvoise();
+        assert_eq!(
+            partie.acheter_objets_d_experience(ObjetDExperience::Eclat, 2),
+            Ok(200)
+        );
+        partie
+            .acheter_objets_d_experience(ObjetDExperience::Coeur, 1)
+            .unwrap();
+        assert_eq!(
+            partie.nombre_d_objets_d_experience(ObjetDExperience::Eclat),
+            2
+        );
+        let depart = Emplacement::Equipe(0);
+        let niveau = partie
+            .collection()
+            .monstre(depart)
+            .unwrap()
+            .niveau()
+            .valeur();
+        let (_, rapport) = partie
+            .donner_objet_d_experience(depart, ObjetDExperience::Coeur)
+            .unwrap();
+        assert_eq!(rapport.niveau_apres.valeur(), niveau + 1);
+        let (_, rapport) = partie
+            .donner_objet_d_experience(depart, ObjetDExperience::Eclat)
+            .unwrap();
+        assert_eq!(rapport.experience_gagnee, 1_000);
+        assert_eq!(
+            partie.nombre_d_objets_d_experience(ObjetDExperience::Eclat),
+            1
+        );
+        assert_eq!(
+            partie.donner_objet_d_experience(depart, ObjetDExperience::Coeur),
+            Err(ErreurObjetDExperience::Aucun(ObjetDExperience::Coeur))
+        );
     }
 
     fn loup_aux_valeurs(pv: u8) -> Monstre {
