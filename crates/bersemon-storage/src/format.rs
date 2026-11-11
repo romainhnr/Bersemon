@@ -54,7 +54,7 @@ use bersemon_core::zone::{Zone, ZoneId};
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 41;
+pub(crate) const VERSION: u64 = 42;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -408,6 +408,9 @@ struct AmeliorationsV14 {
     /// amélioré.
     #[serde(default)]
     sac: u8,
+    /// Depuis la version 42 (section 9.1) : le bateau de Gunther.
+    #[serde(default)]
+    bateau: u8,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -454,6 +457,7 @@ fn amelioration_en_texte(amelioration: Amelioration) -> &'static str {
         Amelioration::Sac => "sac",
         Amelioration::Pieges => "pieges",
         Amelioration::Cour => "cour",
+        Amelioration::Bateau => "bateau",
     }
 }
 
@@ -912,6 +916,7 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV14 {
             pieges: partie.forge().ameliorations().niveau(Amelioration::Pieges),
             cour: partie.forge().ameliorations().niveau(Amelioration::Cour),
             sac: partie.forge().ameliorations().niveau(Amelioration::Sac),
+            bateau: partie.forge().ameliorations().niveau(Amelioration::Bateau),
         },
         chantier: partie
             .forge()
@@ -1324,6 +1329,7 @@ pub(crate) fn vers_partie(
         )
     })
     .and_then(|ameliorations| ameliorations.avec_sac(sauvegarde.ameliorations.sac))
+    .and_then(|ameliorations| ameliorations.avec_bateau(sauvegarde.ameliorations.bateau))
     .ok_or_else(|| {
         ErreurSauvegarde::Incoherente("niveau d'amélioration hors limites".to_string())
     })?;
@@ -1624,10 +1630,13 @@ fn ids_de_marchands(marchands: &[MarchandMort]) -> Vec<String> {
 /// Pour chaque version qui a ajouté des zones entre deux Apôtres : la
 /// position, dans la piste d'avant, de l'indice après lequel s'insère
 /// l'indice de chaque nouvelle zone (section 9.1).
-const INDICES_DES_ZONES_AJOUTEES: [(u64, &[usize]); 1] = [
+const INDICES_DES_ZONES_AJOUTEES: [(u64, &[usize]); 2] = [
     // Étape 206 : le Bourg des Lamentations, après celui de la Vallée, et
     // le Bois des Farfadets, après le premier de l'Abbaye.
     (41, &[2, 4]),
+    // Étape 207 : la Mer des Naufrages, après le second du Port, et la
+    // Grève des Ossements, après le second des Mines.
+    (42, &[11, 13]),
 ];
 
 /// Une partie antérieure compte comme trouvé l'indice d'une nouvelle zone
@@ -2004,7 +2013,7 @@ mod tests_des_zones_ajoutees {
         assert_eq!(apres(3), 4);
         assert_eq!(apres(4), 5);
         assert_eq!(apres(5), 7);
-        assert_eq!(apres(27), 29);
+        assert_eq!(apres(27), 31);
         assert_eq!(indices_apres_les_zones_ajoutees(41, 5), 5);
     }
 }

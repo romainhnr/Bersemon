@@ -1,0 +1,52 @@
+# Mouette hurleuse
+palette
+o 1b1420
+b ffffff
+c dbdbda
+d ffffff
+a 56565a
+e 36363a
+f 848489
+y dad5c4
+r c2a5a5
+v a8997b
+k 1b1420
+w ffffff
+shiny
+o 1b1420
+b 535157
+c 35343a
+d 828088
+a ffffff
+e ffffff
+f ffffff
+y ccdcde
+r e0e0ca
+v 809ea3
+k e0caca
+w ffffff
+dessin
+..................ooofeo
+................oofffeo.
+...............offaaaeo.
+..............ofaaaaaeo.
+..............ofaeaaeo..
+......ooooo..ofaaeaaeo..
+.....oddddco.ofaeaaeo...
+...ooodkbbco.ofaeaaeo...
+.ooyycbbbbbcofaaeaaeo...
+oyyyyodbbbcoofaaeaeo....
+oyrooocccbbdeaaeaaeo....
+ovo...ooodbbceaeaeo.....
+.o......odbbbceaeco.....
+.......ocbbbbbcedcco....
+........odbbbbbdcaaooo..
+........ocbbbbbbcaaaaao.
+.........occcbcccooaao..
+..........oyocyoo..oo...
+..........oyooyo........
+....o....oyo.oyo...o....
+...owoooooyoooyoooowo...
+....owwwwwwwwwwwwwwo....
+...owoooooooooooooowo...
+....o..............o....

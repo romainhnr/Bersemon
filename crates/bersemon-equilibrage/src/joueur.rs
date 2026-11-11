@@ -548,8 +548,9 @@ fn au_camp(
 }
 
 /// Le travail fini constaté ; sinon, Gunther libre, le premier travail
-/// abordable : l'équipe agrandie, l'objet d'équipement aux plus gros bonus,
-/// puis les filets améliorés.
+/// abordable : le bateau quand une zone de mer l'attend (étape 207),
+/// l'équipe agrandie, l'objet d'équipement aux plus gros bonus, puis les
+/// filets améliorés.
 fn forge(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Option<Choix> {
     let forge = partie.forge();
     if !forge.est_au_camp() {
@@ -567,6 +568,16 @@ fn forge(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Option
             .filter(|plan| partie.verifier_amelioration(plan).is_ok())
             .map(|_| Choix::LancerAmelioration(amelioration))
     };
+    let bateau_attendu = !partie
+        .zones_attendant_un_bateau(contenu.zones(), contenu.piste())
+        .is_empty();
+    if bateau_attendu {
+        // Sans bateau, la piste s'arrête : il passe avant le reste, et ses
+        // ressources ne servent pas ailleurs.
+        if let Some(choix) = amelioration(Amelioration::Bateau) {
+            return Some(choix);
+        }
+    }
     if let Some(choix) = amelioration(Amelioration::Equipe) {
         return Some(choix);
     }

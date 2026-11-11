@@ -1597,11 +1597,11 @@ fn malvoise_vend_et_loue_des_monstres_a_travers_les_ecrans_du_bot() {
             .unwrap_or(0)
     };
     // Plus de 25 espèces en vente depuis l'étape 165 : deux menus.
-    // Et les communes du Bourg et du Bois depuis l'étape 206.
+    // Et les communes des zones ajoutées depuis l'étape 206.
     assert_eq!(options(Cle::AcheterMonstre(0)), 25);
     assert_eq!(options(Cle::AcheterMonstre(1)), 25);
-    assert_eq!(options(Cle::AcheterMonstre(2)), 4);
-    assert_eq!(options(Cle::LouerMonstre), 23);
+    assert_eq!(options(Cle::AcheterMonstre(2)), 10);
+    assert_eq!(options(Cle::LouerMonstre), 25);
     assert!(!propose(&affiche, |cle| *cle == Cle::RendreLeMonstreLoue));
     let clic = choisir_dans(&affiche, |cle| *cle == Cle::AcheterMonstre(0), "loup").unwrap();
     let achat = jouer(&mut joueurs, clic);

@@ -1,0 +1,44 @@
+# Pagure à crâne
+palette
+o 1b1420
+b 61697b
+c 3e4352
+d 9297a4
+a aeafb8
+e 424036
+r ccb37a
+w ffffff
+shiny
+o 1b1420
+b ab9e78
+c 7a6c48
+d cec6a6
+a d1deb5
+e 424036
+r 99abe6
+w ffffff
+dessin
+......................o.
+.....................owo
+....................owoo
+...................owocd
+..................ocddbd
+..................ocoood
+..........o..o...ocbbobd
+.oo......orooro..ocbbbbc
+obbo.....oeooeo...ocbbco
+bbbbo....oeooeo..ocbcco.
+obbo..oooceddeooocbdoo..
+obbboocddbdacbdddbbco...
+.obbocbdacbdbdacbbdo....
+.obbbbbbdbbbcbdbbbdo....
+..obbbbbbcbdacbbbbdo....
+...ocbbbdacbdbbbbbco....
+....ocbbbdbbbbbbbco.....
+....oecccbbbbbccceo.....
+....oeoeocccccoeoeo.....
+...oeoeo.ooooo.oeoeo....
+...oeoeo.......oeoeo....
+..oeoeo.........oeoeo...
+...o.o...........o.o....
+........................

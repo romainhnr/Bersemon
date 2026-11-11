@@ -327,8 +327,20 @@ fn forge(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Questi
     {
         boutons.push(bouton(Cle::Constater, "Constater le travail", SUCCES));
     }
+    // Gunther ne fait qu'un travail à la fois : les améliorations ne se
+    // proposent que sans chantier, et le bateau quand une zone de mer
+    // l'attend (section 9.1). Les boutons tiennent ainsi en deux rangées.
+    let sans_chantier = partie.forge().chantier().is_none();
+    let bateau_attendu = !partie
+        .zones_attendant_un_bateau(contenu.zones(), contenu.piste())
+        .is_empty();
     for amelioration in Amelioration::TOUTES {
-        if partie.forge().ameliorations().niveau(amelioration) < amelioration.niveau_max() {
+        if amelioration == Amelioration::Bateau && !bateau_attendu {
+            continue;
+        }
+        if sans_chantier
+            && partie.forge().ameliorations().niveau(amelioration) < amelioration.niveau_max()
+        {
             let libelle = format!("Améliorer : {}", amelioration.nom());
             boutons.push(bouton(Cle::Ameliorer(amelioration), &libelle, PRINCIPAL));
         }

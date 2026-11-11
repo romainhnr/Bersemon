@@ -592,6 +592,7 @@ Libération de Gunther, après le texte de la victoire sur le Bourreau :
 | Sac | sac | 1 | sac de 30 à 45 places (étape 125) | 18 Plume de corbeau, 18 Écaille de vipère | 1 h |
 | | | 2 | de 45 à 60 places | 18 Cendre de feu follet, 18 Fragment d'armure | 3 h |
 | | | 3 | de 60 à 80 places | 18 Aile de fée noire, 18 Os de squelette | 6 h |
+| Bateau | bateau | 1 | mène à la Mer des Naufrages (étape 207) | 15 Carapace de crabe, 6 Écaille de sirène, 9 Plume de goéland | 4 h |
 
 Les ressources rares sont lentes à réunir : une expédition dans le Marais rapporte un Croc de basilic environ une fois sur 12. Elles ne sont demandées qu'à la dernière amélioration.
 
@@ -2990,3 +2991,43 @@ Attaques apprises :
 - Amanite rampante : coup-de-racine (niv. 1), spores-putrides (niv. 1), lianes-etrangleuses (niv. 10), ronces (niv. 18), venin-noir (niv. 24), hurlement-de-mandragore (niv. 32).
 - Ours moussu : griffure (niv. 1), coup-de-bois (niv. 1), etreinte (niv. 11), ronces (niv. 17), ecorchure (niv. 25), charge-du-sanglier (niv. 33).
 - Farfadet : poussiere-d-elfe (niv. 1), bourrasque (niv. 1), lumiere-d-aube (niv. 12), pique (niv. 20), rayon-de-lune (niv. 30), ailes-celestes (niv. 42).
+
+### Mer des Naufrages (31 à 35)
+
+Entre l'Amiral et le Prévôt, la haute mer, où l'on ne part qu'avec le bateau de Gunther (section 9.1, étape 207). Météos : pluie, tempête, cyclone. Il faut le bateau de Gunther pour y partir.
+
+> Indice : Au large, une épave porte le même sceau sur sa figure de proue. Ses cartes mènent à une côte de fer, à l'est : les Mines de Fer-Noir.
+
+| Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP | Habiletés | Ressource | Attaque d'oeuf |
+|---|---|---|---|---|---|---|---|---|
+| meduse-des-naufrages | Méduse des naufrages | Eau, Poison | soutien | 70 / 45 / 60 / 80 / 80 / 35 (370) | 95 | Sorcellerie, Carapace | Ombrelle de méduse | Filaments de méduse (Poison, spéciale, 80) |
+| requin-noir | Requin noir | Eau, Ténèbres | offensif | 70 / 95 / 60 / 40 / 45 / 60 (370) | 95 | Férocité, Traqueur | Dent de requin | Mâchoire abyssale (Eau, physique, 80) |
+| albatros-maudit | Albatros maudit | Vol, Spectre | offensif | 60 / 75 / 50 / 55 / 50 / 80 (370) | 95 | Célérité, Éclaireur | Plume d'albatros | Vol du mauvais présage (Vol, physique, 80) |
+| kraken | Kraken (rare, hostile) | Eau, Psychique | offensif | 95 / 100 / 85 / 75 / 70 / 40 (465) | 170 | Férocité, Carapace | Bec de kraken | Tentacules du kraken (Eau, physique, 80) |
+
+Attaques apprises :
+
+- Méduse des naufrages : plongeon (niv. 1), morsure-venimeuse (niv. 1), jet-d-encre (niv. 20), croc-de-venin (niv. 30), venin-noir (niv. 38), maree-noire (niv. 46).
+- Requin noir : plongeon (niv. 1), morsure (niv. 1), deferlante (niv. 22), croc-noir (niv. 30), lame-de-fond (niv. 38), pince-broyeuse (niv. 48).
+- Albatros maudit : coup-de-bec (niv. 1), lueur-trompeuse (niv. 1), pique (niv. 20), charge-spectrale (niv. 28), bec-funeste (niv. 36), ouragan-celeste (niv. 46).
+- Kraken : lame-de-fond (niv. 1), etreinte (niv. 1), jet-d-encre (niv. 26), trombe (niv. 34), maree-noire (niv. 42), abime-des-mers (niv. 50).
+
+### Grève des Ossements (39 à 43)
+
+Entre le Prévôt et la Duchesse, une plage couverte d'os, que la marée rejette (section 9.1, étape 207). Météos : pluie, tempête, canicule.
+
+> Indice : Sur la grève, les os dessinent une flèche marquée du même sceau. Elle pointe vers le nord, vers les arbres rouges de la Sylve écarlate.
+
+| Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP | Habiletés | Ressource | Attaque d'oeuf |
+|---|---|---|---|---|---|---|---|---|
+| pagure-a-crane | Pagure à crâne | Eau, Roche | soutien | 70 / 75 / 95 / 40 / 65 / 35 (380) | 105 | Carapace, Volonté | Coquille de pagure | Coquille d'os (Roche, physique, 80) |
+| mouette-hurleuse | Mouette hurleuse | Vol, Son | offensif | 60 / 70 / 50 / 70 / 50 / 80 (380) | 105 | Célérité, Instinct | Plume de mouette | Cri des marées (Son, spéciale, 80) |
+| naufrageur | Naufrageur | Feu, Spectre | offensif | 65 / 50 / 55 / 95 / 65 / 50 (380) | 105 | Sorcellerie, Affinité | Lanterne rouillée | Fanal trompeur (Feu, spéciale, 80) |
+| sirene-d-ecume | Sirène d'écume (rare, pacifique) | Eau, Lumière | soutien | 80 / 45 / 70 / 95 / 95 / 80 (465) | 195 | Volonté, Sorcellerie | Perle d'écume | Chant d'écume (Eau, spéciale, 80) |
+
+Attaques apprises :
+
+- Pagure à crâne : plongeon (niv. 1), griffe-de-pierre (niv. 1), deferlante (niv. 24), chute-de-pierres (niv. 32), pince-broyeuse (niv. 40), eboulement (niv. 48).
+- Mouette hurleuse : coup-de-bec (niv. 1), glas (niv. 1), pique (niv. 24), crecelle (niv. 32), bec-funeste (niv. 40), carillon-funebre (niv. 48).
+- Naufrageur : crachat-de-braises (niv. 1), lueur-trompeuse (niv. 1), flamme-vive (niv. 24), frisson-d-outre-tombe (niv. 32), flamme-funebre (niv. 40), bucher (niv. 48).
+- Sirène d'écume : deferlante (niv. 1), lueur-sacree (niv. 1), rayon-solaire (niv. 28), chant-des-noyes (niv. 36), eclat-du-zenith (niv. 44), abime-des-mers (niv. 52).

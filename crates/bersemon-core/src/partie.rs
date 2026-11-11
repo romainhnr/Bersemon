@@ -2972,9 +2972,25 @@ impl Partie {
 
     /// Les zones ouvertes par la piste de l'Apôtre (section 9.1), dans
     /// l'ordre de la carte.
+    /// Une zone de mer qui exige un bateau attend que Gunther l'ait
+    /// construit (section 9.1).
     pub fn zones_accessibles<'a>(&self, zones: &'a [Zone], piste: &Piste) -> Vec<&'a Zone> {
+        let bateau = self.forge.ameliorations().bateau();
         zones
             .iter()
+            .filter(|zone| piste.zone_ouverte(zone.id(), self.indices_trouves))
+            .filter(|zone| bateau || !zone.exige_un_bateau())
+            .collect()
+    }
+
+    /// Ouvertes par la piste, mais pas encore accessibles faute de bateau.
+    pub fn zones_attendant_un_bateau<'a>(&self, zones: &'a [Zone], piste: &Piste) -> Vec<&'a Zone> {
+        if self.forge.ameliorations().bateau() {
+            return Vec::new();
+        }
+        zones
+            .iter()
+            .filter(|zone| zone.exige_un_bateau())
             .filter(|zone| piste.zone_ouverte(zone.id(), self.indices_trouves))
             .collect()
     }
@@ -4570,6 +4586,53 @@ pub(crate) mod tests {
         assert_eq!(partie.estimer_vente(Emplacement::Equipe(0)), dernier);
         assert_eq!(partie.vendre(Emplacement::Equipe(0)), dernier);
         assert_eq!(partie.argent(), 68);
+    }
+
+    /// Section 9.1 : la Mer des Naufrages, ouverte par la piste, attend le
+    /// bateau de Gunther.
+    #[test]
+    fn la_mer_des_naufrages_attend_le_bateau() {
+        let contenu = crate::contenu::ContenuV1::new();
+        let loup = Monstre::creer(
+            contenu.espece(&EspeceId::new("loup")).unwrap(),
+            Niveau::new(30).unwrap(),
+            ValeursInternes::default(),
+            false,
+        )
+        .unwrap();
+        let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Mage);
+        let mut partie = Partie::nouvelle(heros, loup);
+        let mer = ZoneId::new("mer-des-naufrages");
+        let ids = |zones: Vec<&Zone>| -> Vec<String> {
+            zones
+                .iter()
+                .map(|zone| zone.id().as_str().to_string())
+                .collect()
+        };
+        // Les indices jusqu'au second du Port : la mer est ouverte.
+        partie.indices_trouves = 12;
+        assert!(contenu.piste().zone_ouverte(&mer, 12));
+        let accessibles = ids(partie.zones_accessibles(contenu.zones(), contenu.piste()));
+        assert!(!accessibles.contains(&mer.as_str().to_string()));
+        assert_eq!(
+            ids(partie.zones_attendant_un_bateau(contenu.zones(), contenu.piste())),
+            [mer.as_str()]
+        );
+        partie.forge = Forge::restaurer(
+            true,
+            crate::amelioration::Ameliorations::default()
+                .avec_bateau(1)
+                .unwrap(),
+            None,
+        )
+        .unwrap();
+        let accessibles = ids(partie.zones_accessibles(contenu.zones(), contenu.piste()));
+        assert!(accessibles.contains(&mer.as_str().to_string()));
+        assert!(
+            partie
+                .zones_attendant_un_bateau(contenu.zones(), contenu.piste())
+                .is_empty()
+        );
     }
 
     /// Section 14.2 : la ressource de l'espèce, ou de la forme de base de sa

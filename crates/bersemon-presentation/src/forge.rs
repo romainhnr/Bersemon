@@ -27,6 +27,7 @@ pub fn effet(amelioration: Amelioration, niveau: u8) -> String {
         }
         EffetDAmelioration::Pieges(regles) => effet_des_pieges(&regles),
         EffetDAmelioration::Cour(regles) => effet_de_la_cour(&regles),
+        EffetDAmelioration::Bateau => "mène aux zones de mer".to_string(),
     }
 }
 

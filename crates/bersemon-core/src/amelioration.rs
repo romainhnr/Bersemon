@@ -36,18 +36,22 @@ pub enum Amelioration {
     /// Les machines (section 13.6).
     Pieges,
     Cour,
+    /// Un seul niveau : il mène aux zones de mer qui l'exigent (section
+    /// 9.1, étape 207).
+    Bateau,
 }
 
 impl Amelioration {
     /// Dans l'ordre de docs/contenu-v1.md, sections 9 puis 19, qui est aussi
     /// celui des affichages.
-    pub const TOUTES: [Amelioration; 6] = [
+    pub const TOUTES: [Amelioration; 7] = [
         Amelioration::Enclos,
         Amelioration::Filets,
         Amelioration::Equipe,
         Amelioration::Sac,
         Amelioration::Pieges,
         Amelioration::Cour,
+        Amelioration::Bateau,
     ];
 
     pub fn nom(self) -> &'static str {
@@ -58,6 +62,7 @@ impl Amelioration {
             Amelioration::Sac => "Sac",
             Amelioration::Pieges => "Pièges",
             Amelioration::Cour => "Cour d'entraînement",
+            Amelioration::Bateau => "Bateau",
         }
     }
 
@@ -68,7 +73,7 @@ impl Amelioration {
             | Amelioration::Sac
             | Amelioration::Pieges
             | Amelioration::Cour => 3,
-            Amelioration::Equipe => 1,
+            Amelioration::Equipe | Amelioration::Bateau => 1,
         }
     }
 
@@ -89,6 +94,7 @@ impl Amelioration {
             Amelioration::Cour => EffetDAmelioration::Cour(
                 regles_de_la_cour(niveau).expect("un niveau construit est au moins 1"),
             ),
+            Amelioration::Bateau => EffetDAmelioration::Bateau,
         }
     }
 }
@@ -114,6 +120,8 @@ pub enum EffetDAmelioration {
     ChanceDeCaptureEnPlus(u32),
     Pieges(ReglesDesPieges),
     Cour(ReglesDeLaCour),
+    /// Les zones de mer qui l'exigent deviennent accessibles.
+    Bateau,
 }
 
 /// Les niveaux atteints, 0 au départ.
@@ -125,6 +133,7 @@ pub struct Ameliorations {
     sac: u8,
     pieges: u8,
     cour: u8,
+    bateau: u8,
 }
 
 impl Ameliorations {
@@ -137,6 +146,7 @@ impl Ameliorations {
             sac: 0,
             pieges: 0,
             cour: 0,
+            bateau: 0,
         };
         ameliorations.verifier()
     }
@@ -156,6 +166,18 @@ impl Ameliorations {
         self.verifier()
     }
 
+    /// Reprise d'une sauvegarde : le bateau s'ajoute aux autres niveaux.
+    /// `None` au-delà du maximum.
+    pub fn avec_bateau(mut self, bateau: u8) -> Option<Self> {
+        self.bateau = bateau;
+        self.verifier()
+    }
+
+    /// Construit : les zones de mer qui l'exigent sont accessibles.
+    pub fn bateau(&self) -> bool {
+        self.bateau > 0
+    }
+
     fn verifier(self) -> Option<Self> {
         Amelioration::TOUTES
             .iter()
@@ -171,6 +193,7 @@ impl Ameliorations {
             Amelioration::Sac => self.sac,
             Amelioration::Pieges => self.pieges,
             Amelioration::Cour => self.cour,
+            Amelioration::Bateau => self.bateau,
         }
     }
 
@@ -190,6 +213,7 @@ impl Ameliorations {
             Amelioration::Sac => &mut self.sac,
             Amelioration::Pieges => &mut self.pieges,
             Amelioration::Cour => &mut self.cour,
+            Amelioration::Bateau => &mut self.bateau,
         };
         *niveau = (*niveau + 1).min(amelioration.niveau_max());
     }

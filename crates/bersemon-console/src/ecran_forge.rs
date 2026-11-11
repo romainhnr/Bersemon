@@ -36,7 +36,15 @@ pub fn choisir(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Opt
             "Constater le travail de Gunther".to_string(),
         ));
     }
+    // Le bateau ne se propose que quand une zone de mer l'attend (section
+    // 9.1).
+    let bateau_attendu = !partie
+        .zones_attendant_un_bateau(contenu.zones(), contenu.piste())
+        .is_empty();
     for amelioration in Amelioration::TOUTES {
+        if amelioration == Amelioration::Bateau && !bateau_attendu {
+            continue;
+        }
         if partie.forge().ameliorations().niveau(amelioration) < amelioration.niveau_max() {
             choix.push((
                 Choix::LancerAmelioration(amelioration),

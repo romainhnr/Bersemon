@@ -167,6 +167,9 @@ pub struct Zone {
     /// Ceux qui ne s'y montrent qu'une fois le Démiurge vaincu (section
     /// 9.9).
     rares_d_apres_la_fin: Vec<EspeceRare>,
+    /// Une zone de mer où l'on ne part qu'avec le bateau de Gunther (section
+    /// 9.1, étape 207).
+    exige_un_bateau: bool,
 }
 
 impl Zone {
@@ -229,7 +232,17 @@ impl Zone {
             meteos: Vec::new(),
             repartition: Repartition::DE_LA_CARTE,
             rares_d_apres_la_fin: Vec::new(),
+            exige_un_bateau: false,
         })
+    }
+
+    pub fn exigeant_un_bateau(mut self) -> Self {
+        self.exige_un_bateau = true;
+        self
+    }
+
+    pub fn exige_un_bateau(&self) -> bool {
+        self.exige_un_bateau
     }
 
     /// Vérifiés comme les autres espèces de la zone.

@@ -1442,6 +1442,7 @@ fn amelioration_en_texte(amelioration: Amelioration) -> &'static str {
         Amelioration::Sac => "sac",
         Amelioration::Pieges => "pieges",
         Amelioration::Cour => "cour",
+        Amelioration::Bateau => "bateau",
     }
 }
 

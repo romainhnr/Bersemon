@@ -608,3 +608,7 @@ La durée ne change pas au-delà du bruit, ce que visait la mise à l'échelle d
 
 Mesuré sur 100 parties par classe : 230 à 244 expéditions (médiane), comme à l'étape 205. Le joueur automatique traverse le Bourg en 1,6 expédition et le Bois en 1,1 : l'indice se trouve au bout de la première expédition menée au bout, et il part aussitôt pour la zone suivante, plus avancée. Il arrive au Bois au niveau 23, au-dessus de la zone (18 à 22), après avoir monté de niveau contre l'Abbesse. Un joueur qui veut capturer leurs espèces y restera davantage. Une partie de Mage sur 100 ne s'est pas terminée dans la limite de choix de l'outil.
 
+## 24. Mer des Naufrages, bateau et Grève des Ossements (étape 207)
+
+Le joueur automatique fait construire le bateau dès qu'une zone de mer l'attend, avant tout autre travail. Avec un premier coût de 24 Carapaces de crabe, 12 Écailles de sirène et 18 Plumes de goéland, il restait 34,3 expéditions au Port et arrivait en mer au niveau 42 ; ramené à 15, 6 et 9, mesuré sur 100 parties par classe : 238 à 244 expéditions (médiane), 27,9 au Port, 1,1 dans la Mer et 2,0 sur la Grève, qu'il traverse comme le Bourg et le Bois. Une partie de Guerrier sur 100 ne s'est pas terminée dans la limite de choix de l'outil.
+
