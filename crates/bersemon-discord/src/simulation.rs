@@ -1631,8 +1631,9 @@ fn malvoise_vend_et_loue_des_monstres_a_travers_les_ecrans_du_bot() {
     let partie = session.deroulement.partie().unwrap();
     assert!(partie.collection().monstre_loue().is_none());
     assert_eq!(partie.collection().equipe().len(), 2);
-    // Le Loup au niveau 3, 68 ; le Cerf blanc au niveau 36, 576.
-    assert_eq!(partie.argent(), 10_000 - 68 - 576);
+    // Le Loup au niveau 3, 68 ; le Cerf blanc au niveau 25, 400 : le
+    // maximum du Col redécoupé (étape 205).
+    assert_eq!(partie.argent(), 10_000 - 68 - 400);
     // Depuis la vente, Malvoise change le Loup acheté en crocs (section
     // 14.2).
     let version = joueurs.session(JOUEUR, &contenu).version;

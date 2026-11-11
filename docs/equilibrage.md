@@ -581,3 +581,26 @@ Depuis l'étape 193, chaque monstre sauvage abattu lâche un objet : sa ressourc
 | Étape 199 | 240, 240, 244, 250 | 41,5, 42,7, 27,9, 29,6 | 2,5, 2,6, 2,8, 2,8 |
 
 La progression revient à celle d'avant le butin certain, aux écarts de bruit près. Le joueur automatique n'obtient toujours pas l'équipe de 4, qui demande 2 Crocs de basilic et 2 Écailles de vouivre : il ne revient pas chercher ces ressources rares. Il n'emploie ni Dépeceur, ni parfum, ni la revente des ressources : un joueur qui s'en sert en réunit davantage.
+
+## 22. Carte redécoupée (étape 205)
+
+Les 16 zones existantes passent à leurs niveaux de la nouvelle carte (gamedesign.md, section 9.1), avec des trous que les zones des étapes suivantes combleront. Mesuré sur 100 parties par classe :
+
+| Version | Expéditions (médiane : Guerrier, Mage, Templier, Assassin) | Défaites (moyenne) | Objets forgés |
+|---|---|---|---|
+| Étape 199 | 240, 240, 244, 250 | 41,5, 42,7, 27,9, 29,6 | 2,5, 2,6, 2,8, 2,8 |
+| Étape 205 | 226, 244, 230, 224 | 35,8, 37,8, 19,5, 22,0 | 2,6, 2,5, 3,0, 2,9 |
+
+| Combat de fin de zone | Tentatives, étape 199 | Tentatives, étape 205 |
+|---|---|---|
+| Baron pendu (Vallée) | 3,7 | 2,2 |
+| Abbesse écorchée (Abbaye) | 4,5 | 3,8 |
+| Margrave de givre (Col) | 4,3 | 2,5 |
+| Amiral noyé (Port) | 3,4 | 1,8 |
+| Prévôt des fosses (Mines) | 4,1 | 3,7 |
+| Duchesse sanguine (Sylve) | 3,3 | 3,8 |
+| Sénéchal des orages (Pics) | 3,8 | 4,6 |
+| Roi sans visage (Puits) | 1,5 | 2,5 |
+
+La durée ne change pas au-delà du bruit, ce que visait la mise à l'échelle des rendements d'XP. Les zones suivies d'un trou portent la montée de niveau qui le traverse : Mines 23,2 expéditions, Gorge 23,6, Puits 27,2.
+

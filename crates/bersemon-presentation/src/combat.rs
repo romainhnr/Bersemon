@@ -705,7 +705,7 @@ mod tests {
         };
         assert_eq!(
             fiche("armure-hantee"),
-            "Évolution : Chevalier noir dès le niveau 18, en gagnant un niveau dans la zone Vallée des Brumes, ou avec une pierre des brumes"
+            "Évolution : Chevalier noir dès le niveau 12, en gagnant un niveau dans la zone Vallée des Brumes, ou avec une pierre des brumes"
         );
         assert_eq!(
             fiche("squelette"),

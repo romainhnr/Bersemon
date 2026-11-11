@@ -52,9 +52,9 @@ mod tests {
                 .unwrap()
         };
         assert_eq!(limite_d_obeissance([zone("lisiere")]), 12);
-        assert_eq!(limite_d_obeissance([zone("lisiere"), zone("marais")]), 18);
-        assert_eq!(limite_d_obeissance([zone("vallee"), zone("lisiere")]), 25);
-        assert_eq!(limite_d_obeissance([zone("abbaye")]), 32);
+        assert_eq!(limite_d_obeissance([zone("lisiere"), zone("marais")]), 15);
+        assert_eq!(limite_d_obeissance([zone("vallee"), zone("lisiere")]), 18);
+        assert_eq!(limite_d_obeissance([zone("abbaye")]), 24);
         assert_eq!(limite_d_obeissance([]), 5);
     }
 

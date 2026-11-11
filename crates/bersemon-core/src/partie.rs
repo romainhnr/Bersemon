@@ -5694,8 +5694,8 @@ pub(crate) mod tests {
                 ("loup", 3, 68),
                 ("corbeau", 3, 68),
                 ("vipere", 3, 68),
-                ("feu-follet", 8, 204),
-                ("armure-hantee", 8, 208),
+                ("feu-follet", 6, 152),
+                ("armure-hantee", 6, 156),
             ]
         );
         let offres = partie.offres_de_location(contenu.zones(), contenu.piste());
@@ -5711,7 +5711,7 @@ pub(crate) mod tests {
             .collect();
         assert_eq!(
             locations,
-            vec![("cerf-blanc", 20, 320), ("basilic", 20, 320)]
+            vec![("cerf-blanc", 13, 208), ("basilic", 13, 208)]
         );
     }
 
@@ -5780,7 +5780,7 @@ pub(crate) mod tests {
             )
         };
         let (monstre, placement, prix) = louer(&mut partie).unwrap();
-        assert_eq!((placement, prix), (Placement::Equipe(1), 320));
+        assert_eq!((placement, prix), (Placement::Equipe(1), 208));
         assert_eq!(monstre.expeditions_de_location(), Some(3));
         assert_eq!(
             partie.codex().etat(&EspeceId::new("cerf-blanc")),
@@ -5840,7 +5840,7 @@ pub(crate) mod tests {
                 .as_str(),
             "cerf-blanc"
         );
-        assert_eq!(partie.argent(), 5_000 - 2 * 320);
+        assert_eq!(partie.argent(), 5_000 - 2 * 208);
         assert_eq!(
             partie.rendre_le_monstre_loue(),
             Err(ErreurMarchand::AucunMonstreLoue)

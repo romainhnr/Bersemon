@@ -423,12 +423,12 @@ mod tests {
             jour_ou_nuit: None,
             meteo: None,
         };
-        let armure = creer(&contenu, "armure-hantee", 18);
+        let armure = creer(&contenu, "armure-hantee", 12);
         let vers = evolution_possible(&armure, &dans(&vallee), &contenu).unwrap();
         assert_eq!(vers.id().as_str(), "chevalier-noir");
         assert_eq!(evolution_possible(&armure, &dans(&marais), &contenu), None);
         assert_eq!(evolution_possible(&armure, &AU_CAMP, &contenu), None);
-        let jeune = creer(&contenu, "armure-hantee", 17);
+        let jeune = creer(&contenu, "armure-hantee", 11);
         assert_eq!(evolution_possible(&jeune, &dans(&vallee), &contenu), None);
     }
 

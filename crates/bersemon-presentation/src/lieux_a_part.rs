@@ -155,11 +155,11 @@ mod tests {
             .unwrap();
         assert_eq!(
             ligne_du_lieu(&lieux[0], calme),
-            "Filon écarlate (annexe, niveaux 56 à 59)"
+            "Filon écarlate (annexe, niveaux 38 à 41)"
         );
         assert_eq!(
             description_du_lieu(&lieux[0], calme),
-            "Annexe, niveaux 56 à 59"
+            "Annexe, niveaux 38 à 41"
         );
     }
 }

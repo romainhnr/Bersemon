@@ -567,9 +567,9 @@ impl ContenuV1 {
             HumainId::new("bourreau"),
             "Bourreau",
             vec![
-                (trouver("armure-hantee"), niveau(13)),
-                (trouver("feu-follet"), niveau(13)),
-                (trouver("basilic"), niveau(14)),
+                (trouver("armure-hantee"), niveau(10)),
+                (trouver("feu-follet"), niveau(10)),
+                (trouver("basilic"), niveau(11)),
             ],
             150,
             AVANT_LE_BOURREAU,
@@ -581,6 +581,8 @@ impl ContenuV1 {
             Some(objet("lame-de-milicien")),
             Some(objet("gambison")),
         )
+        // Au niveau de sa zone redécoupée (section 9.1, étape 205).
+        .avec_niveau_du_heros(niveau(12))
         .avec_ia(IaHumain::Relevee)
         .liberant_gunther(LIBERATION_DE_GUNTHER);
         // Un marchand mort par zone, dont le joueur donne l'âme à Malvoise
@@ -607,7 +609,7 @@ impl ContenuV1 {
             Soin::GrandePotion,
             Gardien::MortVivant {
                 espece: creer_espece(&MARCHAND_ZOMBIE),
-                niveau: niveau(13),
+                niveau: niveau(10),
             },
             AVANT_GRETE,
             APRES_GRETE,
@@ -633,7 +635,7 @@ impl ContenuV1 {
         let ansgar = Pecheur::new(
             ETAPE_D_ANSGAR,
             trouver("noye"),
-            niveau(13),
+            niveau(10),
             AVANT_ANSGAR,
             APRES_ANSGAR,
         )
@@ -662,7 +664,7 @@ impl ContenuV1 {
         let marais = Zone::new(
             ZoneId::new("marais"),
             "Marais des Pendus",
-            (niveau(8), niveau(13)),
+            (niveau(6), niveau(10)),
             5,
             3,
             vec![
@@ -675,7 +677,7 @@ impl ContenuV1 {
                 espece: trouver("basilic"),
                 pacifique: false,
             }],
-            expedition_automatique(2, 40..=120, 300..=600, 1..=2, 40..=80),
+            expedition_automatique(2, 30..=91, 170..=350, 1..=2, 40..=80),
             coffre(25..=50, capsules_de("marais")),
         )
         .and_then(|zone| zone.avec_monstre_cache(schnoz()))
@@ -689,7 +691,7 @@ impl ContenuV1 {
         let vallee = Zone::new(
             ZoneId::new("vallee"),
             "Vallée des Brumes",
-            (niveau(14), niveau(20)),
+            (niveau(9), niveau(13)),
             5,
             3,
             vec![
@@ -707,7 +709,7 @@ impl ContenuV1 {
                     pacifique: false,
                 },
             ],
-            expedition_automatique(3, 90..=220, 700..=1300, 1..=3, 80..=150),
+            expedition_automatique(3, 58..=142, 290..=540, 1..=3, 80..=150),
             coffre(50..=90, capsules_de("vallee")),
         )
         .and_then(|zone| zone.avec_monstre_cache(schnoz()))
@@ -724,9 +726,9 @@ impl ContenuV1 {
             HumainId::new("inquisiteur"),
             "Inquisiteur",
             vec![
-                (trouver("gargouille"), niveau(27)),
-                (trouver("goule"), niveau(27)),
-                (trouver("chimere"), niveau(28)),
+                (trouver("gargouille"), niveau(19)),
+                (trouver("goule"), niveau(19)),
+                (trouver("chimere"), niveau(20)),
             ],
             300,
             AVANT_L_INQUISITEUR,
@@ -738,12 +740,14 @@ impl ContenuV1 {
             Some(objet("grimoire-des-brumes")),
             Some(objet("robe-des-brumes")),
         )
+        // Au niveau de sa zone redécoupée (section 9.1, étape 205).
+        .avec_niveau_du_heros(niveau(17))
         .avec_ia(IaHumain::Relevee);
         // Ouverte par l'indice que laisse le Baron pendu (section 9.4).
         let abbaye = Zone::new(
             ZoneId::new("abbaye"),
             "Abbaye des Cendres",
-            (niveau(21), niveau(27)),
+            (niveau(15), niveau(19)),
             5,
             3,
             vec![
@@ -767,7 +771,7 @@ impl ContenuV1 {
                     pacifique: true,
                 },
             ],
-            expedition_automatique(4, 150..=320, 1300..=2200, 1..=3, 120..=220),
+            expedition_automatique(4, 106..=227, 650..=1100, 1..=3, 120..=220),
             coffre(90..=150, capsules_de("abbaye")),
         )
         .and_then(|zone| zone.avec_monstre_cache(schnoz()))
@@ -781,9 +785,9 @@ impl ContenuV1 {
             HumainId::new("porte-etendard"),
             "Porte-étendard",
             vec![
-                (trouver("wendigo"), niveau(36)),
-                (trouver("troll-des-cavernes"), niveau(36)),
-                (trouver("wyrm-de-givre"), niveau(37)),
+                (trouver("wendigo"), niveau(25)),
+                (trouver("troll-des-cavernes"), niveau(25)),
+                (trouver("wyrm-de-givre"), niveau(26)),
             ],
             400,
             AVANT_LE_PORTE_ETENDARD,
@@ -795,13 +799,15 @@ impl ContenuV1 {
             Some(objet("encensoir-maudit")),
             Some(objet("plates-consacrees")),
         )
+        // Au niveau de sa zone redécoupée (section 9.1, étape 205).
+        .avec_niveau_du_heros(niveau(24))
         .avec_ia(IaHumain::Relevee);
         // Ouvert par l'indice que laisse l'Abbesse ; ses neuf niveaux mènent
         // aux stades 3 du niveau 36 (sections 5.4 et 9.4).
         let col = Zone::new(
             ZoneId::new("col-du-givre-noir"),
             "Col du Givre-Noir",
-            (niveau(28), niveau(36)),
+            (niveau(21), niveau(25)),
             5,
             3,
             vec![
@@ -822,7 +828,7 @@ impl ContenuV1 {
                     pacifique: true,
                 },
             ],
-            expedition_automatique(5, 220..=450, 2200..=3400, 1..=3, 180..=320),
+            expedition_automatique(5, 158..=323, 1140..=1760, 1..=3, 180..=320),
             coffre(140..=220, capsules_de("col-du-givre-noir")),
         )
         .and_then(|zone| zone.avec_monstre_cache(schnoz()))
@@ -836,9 +842,9 @@ impl ContenuV1 {
             HumainId::new("pythie-de-sel"),
             "Pythie de sel",
             vec![
-                (trouver("momie-de-sel"), niveau(45)),
-                (trouver("ver-des-salines"), niveau(45)),
-                (trouver("sphinx-des-sables"), niveau(46)),
+                (trouver("momie-de-sel"), niveau(28)),
+                (trouver("ver-des-salines"), niveau(28)),
+                (trouver("sphinx-des-sables"), niveau(29)),
             ],
             500,
             AVANT_LA_PYTHIE,
@@ -850,13 +856,15 @@ impl ContenuV1 {
             Some(objet("grimoire-du-champion")),
             Some(objet("robe-des-cendres")),
         )
+        // Au niveau de sa zone redécoupée (section 9.1, étape 205).
+        .avec_niveau_du_heros(niveau(23))
         .avec_ia(IaHumain::Relevee);
         // Ouvert par l'indice que laisse le Margrave ; ses niveaux mènent la
         // Vouivre à son évolution du niveau 45 (sections 5.4 et 9.1).
         let desert = Zone::new(
             ZoneId::new("desert-de-sel"),
             "Désert de sel",
-            (niveau(37), niveau(45)),
+            (niveau(24), niveau(28)),
             5,
             3,
             vec![
@@ -875,7 +883,7 @@ impl ContenuV1 {
                     pacifique: true,
                 },
             ],
-            expedition_automatique(6, 280..=560, 3000..=4600, 1..=3, 230..=400),
+            expedition_automatique(6, 178..=355, 1210..=1850, 1..=3, 230..=400),
             coffre(180..=280, capsules_de("desert-de-sel")),
         )
         .and_then(|zone| zone.avec_monstre_cache(schnoz()))
@@ -892,8 +900,8 @@ impl ContenuV1 {
             HumainId::new("contrebandier"),
             "Contrebandier",
             vec![
-                (trouver("sirene-putride"), niveau(51)),
-                (trouver("hydre-des-marees"), niveau(52)),
+                (trouver("sirene-putride"), niveau(31)),
+                (trouver("hydre-des-marees"), niveau(32)),
             ],
             600,
             AVANT_LE_CONTREBANDIER,
@@ -905,7 +913,7 @@ impl ContenuV1 {
             Some(objet("crocs-du-champion")),
             Some(objet("manteau-de-cendre")),
         )
-        .avec_niveau_du_heros(niveau(51))
+        .avec_niveau_du_heros(niveau(31))
         .avec_ia(IaHumain::Relevee);
         // La seule zone de mer, où souffle le cyclone (section 9.7).
         let meteos_du_port = vec![Meteo::Pluie, Meteo::Tempete, Meteo::Cyclone];
@@ -913,7 +921,7 @@ impl ContenuV1 {
         let port = Zone::new(
             ZoneId::new("port-des-noyes"),
             "Port des Noyés",
-            (niveau(46), niveau(51)),
+            (niveau(27), niveau(31)),
             5,
             3,
             vec![
@@ -925,7 +933,7 @@ impl ContenuV1 {
                 espece: trouver("hydre-des-marees"),
                 pacifique: false,
             }],
-            expedition_automatique(7, 340..=650, 3800..=5600, 1..=3, 280..=460),
+            expedition_automatique(7, 203..=389, 1360..=2000, 1..=3, 280..=460),
             coffre(220..=340, capsules_de("port-des-noyes")),
         )
         .and_then(|zone| zone.avec_monstre_cache(schnoz()))
@@ -940,9 +948,9 @@ impl ContenuV1 {
             HumainId::new("contremaitre"),
             "Contremaître",
             vec![
-                (trouver("golem-de-fer-noir"), niveau(57)),
-                (trouver("mineur-possede"), niveau(57)),
-                (trouver("dragon-de-rouille"), niveau(58)),
+                (trouver("golem-de-fer-noir"), niveau(39)),
+                (trouver("mineur-possede"), niveau(39)),
+                (trouver("dragon-de-rouille"), niveau(40)),
             ],
             700,
             AVANT_LE_CONTREMAITRE,
@@ -954,14 +962,14 @@ impl ContenuV1 {
             Some(objet("hache-de-fer-noir")),
             Some(objet("cuirasse-des-abysses")),
         )
-        .avec_niveau_du_heros(niveau(57))
+        .avec_niveau_du_heros(niveau(39))
         .avec_ia(IaHumain::Relevee);
         let meteos_des_mines = vec![Meteo::Grele, Meteo::Tempete];
         // Ouvertes par l'indice que laisse l'Amiral noyé (section 9.4).
         let mines = Zone::new(
             ZoneId::new("mines-de-fer-noir"),
             "Mines de Fer-Noir",
-            (niveau(52), niveau(57)),
+            (niveau(35), niveau(39)),
             5,
             3,
             vec![
@@ -973,7 +981,7 @@ impl ContenuV1 {
                 espece: trouver("dragon-de-rouille"),
                 pacifique: false,
             }],
-            expedition_automatique(8, 400..=760, 4600..=6800, 1..=3, 330..=540),
+            expedition_automatique(8, 272..=516, 2120..=3130, 1..=3, 330..=540),
             coffre(260..=400, capsules_de("mines-de-fer-noir")),
         )
         .and_then(|zone| zone.avec_monstre_cache(schnoz()))
@@ -1007,7 +1015,7 @@ impl ContenuV1 {
             Zone::new(
                 ZoneId::new("epave-du-leviathan"),
                 "Épave du Léviathan",
-                (niveau(50), niveau(53)),
+                (niveau(30), niveau(33)),
                 3,
                 3,
                 port.especes().to_vec(),
@@ -1027,7 +1035,7 @@ impl ContenuV1 {
             Zone::new(
                 ZoneId::new("filon-ecarlate"),
                 "Filon écarlate",
-                (niveau(56), niveau(59)),
+                (niveau(38), niveau(41)),
                 3,
                 3,
                 mines.especes().to_vec(),
@@ -1050,8 +1058,8 @@ impl ContenuV1 {
             HumainId::new("chasseresse"),
             "Chasseresse",
             vec![
-                (trouver("mante-ecarlate"), niveau(62)),
-                (trouver("dryade-sanglante"), niveau(63)),
+                (trouver("mante-ecarlate"), niveau(47)),
+                (trouver("dryade-sanglante"), niveau(48)),
             ],
             800,
             AVANT_LA_CHASSERESSE,
@@ -1063,14 +1071,14 @@ impl ContenuV1 {
             Some(objet("dagues-de-fer-noir")),
             Some(objet("maille-de-fer-noir")),
         )
-        .avec_niveau_du_heros(niveau(62))
+        .avec_niveau_du_heros(niveau(47))
         .avec_ia(IaHumain::Relevee);
         // Ouverte par l'indice que laisse le Prévôt des fosses (section
         // 9.4).
         let sylve = Zone::new(
             ZoneId::new("sylve-ecarlate"),
             "Sylve écarlate",
-            (niveau(58), niveau(62)),
+            (niveau(43), niveau(47)),
             5,
             3,
             vec![
@@ -1082,7 +1090,7 @@ impl ContenuV1 {
                 espece: trouver("dryade-sanglante"),
                 pacifique: false,
             }],
-            expedition_automatique(9, 460..=870, 5600..=8200, 1..=3, 380..=620),
+            expedition_automatique(9, 345..=652, 3150..=4610, 1..=3, 380..=620),
             coffre(300..=460, capsules_de("sylve-ecarlate")),
         )
         .and_then(|zone| zone.avec_monstre_cache(schnoz()))
@@ -1097,9 +1105,9 @@ impl ContenuV1 {
             HumainId::new("fossoyeur"),
             "Fossoyeur",
             vec![
-                (trouver("rat-des-ossuaires"), niveau(67)),
-                (trouver("moine-psalmodiant"), niveau(67)),
-                (trouver("liche"), niveau(68)),
+                (trouver("rat-des-ossuaires"), niveau(53)),
+                (trouver("moine-psalmodiant"), niveau(53)),
+                (trouver("liche"), niveau(54)),
             ],
             900,
             AVANT_LE_FOSSOYEUR,
@@ -1111,7 +1119,7 @@ impl ContenuV1 {
             Some(objet("crosse-des-catacombes")),
             Some(objet("robe-de-grisou")),
         )
-        .avec_niveau_du_heros(niveau(67))
+        .avec_niveau_du_heros(niveau(53))
         .avec_ia(IaHumain::Relevee);
         let meteos_des_catacombes = vec![Meteo::Pluie, Meteo::Tempete];
         // Ouvertes par l'indice que laisse la Duchesse sanguine (section
@@ -1119,7 +1127,7 @@ impl ContenuV1 {
         let catacombes = Zone::new(
             ZoneId::new("catacombes-de-sainte-ombre"),
             "Catacombes de Sainte-Ombre",
-            (niveau(63), niveau(67)),
+            (niveau(50), niveau(53)),
             5,
             3,
             vec![
@@ -1131,7 +1139,7 @@ impl ContenuV1 {
                 espece: trouver("liche"),
                 pacifique: false,
             }],
-            expedition_automatique(10, 520..=980, 6600..=9600, 1..=3, 430..=700),
+            expedition_automatique(10, 412..=776, 4140..=6030, 1..=3, 430..=700),
             coffre(340..=520, capsules_de("catacombes-de-sainte-ombre")),
         )
         .and_then(|zone| zone.avec_monstre_cache(schnoz()))
@@ -1144,7 +1152,7 @@ impl ContenuV1 {
             Zone::new(
                 ZoneId::new("autel-des-ronces"),
                 "Autel des ronces",
-                (niveau(61), niveau(64)),
+                (niveau(46), niveau(49)),
                 3,
                 3,
                 sylve.especes().to_vec(),
@@ -1164,7 +1172,7 @@ impl ContenuV1 {
             Zone::new(
                 ZoneId::new("crypte-des-saints"),
                 "Crypte des saints",
-                (niveau(66), niveau(69)),
+                (niveau(52), niveau(55)),
                 3,
                 3,
                 catacombes.especes().to_vec(),
@@ -1186,9 +1194,9 @@ impl ContenuV1 {
             HumainId::new("capitaine-mercenaire"),
             "Capitaine mercenaire",
             vec![
-                (trouver("vautour-des-charniers"), niveau(72)),
-                (trouver("matin-de-guerre"), niveau(72)),
-                (trouver("griffon-cuirasse"), niveau(73)),
+                (trouver("vautour-des-charniers"), niveau(59)),
+                (trouver("matin-de-guerre"), niveau(59)),
+                (trouver("griffon-cuirasse"), niveau(60)),
             ],
             1000,
             AVANT_LE_CAPITAINE,
@@ -1200,14 +1208,14 @@ impl ContenuV1 {
             Some(objet("hache-du-bourreau-d-os")),
             Some(objet("plates-du-sanglier")),
         )
-        .avec_niveau_du_heros(niveau(72))
+        .avec_niveau_du_heros(niveau(59))
         .avec_ia(IaHumain::Relevee);
         let meteos_de_la_plaine = vec![Meteo::Tempete, Meteo::Canicule];
         // Ouverte par l'indice que laisse l'Évêque des os (section 9.4).
         let plaine = Zone::new(
             ZoneId::new("plaine-du-massacre"),
             "Plaine du Massacre",
-            (niveau(68), niveau(72)),
+            (niveau(56), niveau(59)),
             5,
             3,
             vec![
@@ -1219,7 +1227,7 @@ impl ContenuV1 {
                 espece: trouver("griffon-cuirasse"),
                 pacifique: false,
             }],
-            expedition_automatique(11, 590..=1100, 7800..=11200, 1..=3, 490..=780),
+            expedition_automatique(11, 485..=904, 5260..=7560, 1..=3, 490..=780),
             coffre(380..=580, capsules_de("plaine-du-massacre")),
         )
         .and_then(|zone| zone.avec_monstre_cache(schnoz()))
@@ -1232,7 +1240,7 @@ impl ContenuV1 {
             Zone::new(
                 ZoneId::new("tertre-des-heros"),
                 "Tertre des héros",
-                (niveau(71), niveau(74)),
+                (niveau(58), niveau(61)),
                 3,
                 3,
                 plaine.especes().to_vec(),
@@ -1255,9 +1263,9 @@ impl ContenuV1 {
             HumainId::new("archiviste"),
             "Archiviste",
             vec![
-                (trouver("automate-brise"), niveau(77)),
-                (trouver("bibliophage"), niveau(77)),
-                (trouver("archonte-foudroye"), niveau(78)),
+                (trouver("automate-brise"), niveau(66)),
+                (trouver("bibliophage"), niveau(66)),
+                (trouver("archonte-foudroye"), niveau(67)),
             ],
             1100,
             AVANT_L_ARCHIVISTE,
@@ -1269,14 +1277,14 @@ impl ContenuV1 {
             Some(objet("crosse-des-catacombes")),
             Some(objet("robe-de-ronces")),
         )
-        .avec_niveau_du_heros(niveau(77))
+        .avec_niveau_du_heros(niveau(66))
         .avec_ia(IaHumain::Relevee);
         let meteos_de_la_cite = vec![Meteo::Tempete, Meteo::Grele];
         // Ouverte par l'indice que laisse le Connétable boucher (section 9.4).
         let cite = Zone::new(
             ZoneId::new("haute-cite-dechue"),
             "Haute-Cité déchue",
-            (niveau(73), niveau(77)),
+            (niveau(63), niveau(66)),
             5,
             3,
             vec![
@@ -1288,7 +1296,7 @@ impl ContenuV1 {
                 espece: trouver("archonte-foudroye"),
                 pacifique: false,
             }],
-            expedition_automatique(12, 650..=1230, 9000..=12800, 1..=3, 550..=860),
+            expedition_automatique(12, 559..=1058, 6660..=9470, 1..=3, 550..=860),
             coffre(420..=640, capsules_de("haute-cite-dechue")),
         )
         .and_then(|zone| zone.avec_monstre_cache(schnoz()))
@@ -1301,7 +1309,7 @@ impl ContenuV1 {
             Zone::new(
                 ZoneId::new("bibliotheque-interdite"),
                 "Bibliothèque interdite",
-                (niveau(76), niveau(79)),
+                (niveau(65), niveau(68)),
                 3,
                 3,
                 cite.especes().to_vec(),
@@ -1323,9 +1331,9 @@ impl ContenuV1 {
             HumainId::new("pyromancien"),
             "Pyromancien",
             vec![
-                (trouver("forgeron-calcine"), niveau(82)),
-                (trouver("chien-des-scories"), niveau(82)),
-                (trouver("wyrm-de-magma"), niveau(83)),
+                (trouver("forgeron-calcine"), niveau(74)),
+                (trouver("chien-des-scories"), niveau(74)),
+                (trouver("wyrm-de-magma"), niveau(75)),
             ],
             1200,
             AVANT_LE_PYROMANCIEN,
@@ -1337,7 +1345,7 @@ impl ContenuV1 {
             Some(objet("sceptre-d-ether")),
             Some(objet("robe-des-archives")),
         )
-        .avec_niveau_du_heros(niveau(82))
+        .avec_niveau_du_heros(niveau(74))
         .avec_ia(IaHumain::Relevee);
         let meteos_de_la_gorge = vec![Meteo::Canicule, Meteo::Tempete];
         // Ouverte par l'indice que laisse le Chancelier aux mille yeux (section
@@ -1345,7 +1353,7 @@ impl ContenuV1 {
         let gorge = Zone::new(
             ZoneId::new("gorge-de-braise"),
             "Gorge de Braise",
-            (niveau(78), niveau(82)),
+            (niveau(71), niveau(74)),
             5,
             3,
             vec![
@@ -1357,7 +1365,7 @@ impl ContenuV1 {
                 espece: trouver("wyrm-de-magma"),
                 pacifique: false,
             }],
-            expedition_automatique(13, 710..=1360, 10300..=14500, 1..=3, 610..=940),
+            expedition_automatique(13, 643..=1232, 8460..=11910, 1..=3, 610..=940),
             coffre(460..=700, capsules_de("gorge-de-braise")),
         )
         .and_then(|zone| zone.avec_monstre_cache(schnoz()))
@@ -1370,7 +1378,7 @@ impl ContenuV1 {
             Zone::new(
                 ZoneId::new("coeur-du-volcan"),
                 "Cœur du volcan",
-                (niveau(81), niveau(84)),
+                (niveau(73), niveau(76)),
                 3,
                 3,
                 gorge.especes().to_vec(),
@@ -1391,9 +1399,9 @@ impl ContenuV1 {
             HumainId::new("heraut-de-l-orage"),
             "Héraut de l'orage",
             vec![
-                (trouver("belier-de-granit"), niveau(87)),
-                (trouver("aigle-tonnerre"), niveau(87)),
-                (trouver("geant-des-orages"), niveau(88)),
+                (trouver("belier-de-granit"), niveau(82)),
+                (trouver("aigle-tonnerre"), niveau(82)),
+                (trouver("geant-des-orages"), niveau(83)),
             ],
             1300,
             AVANT_LE_HERAUT,
@@ -1405,14 +1413,14 @@ impl ContenuV1 {
             Some(objet("marteau-du-griffon")),
             Some(objet("plates-de-la-cite")),
         )
-        .avec_niveau_du_heros(niveau(87))
+        .avec_niveau_du_heros(niveau(82))
         .avec_ia(IaHumain::Relevee);
         let meteos_des_pics = vec![Meteo::Tempete, Meteo::Grele];
         // Ouverts par l'indice que laisse le Prince de braise (section 9.4).
         let pics = Zone::new(
             ZoneId::new("pics-foudroyes"),
             "Pics Foudroyés",
-            (niveau(83), niveau(87)),
+            (niveau(79), niveau(82)),
             5,
             3,
             vec![
@@ -1424,7 +1432,7 @@ impl ContenuV1 {
                 espece: trouver("geant-des-orages"),
                 pacifique: false,
             }],
-            expedition_automatique(14, 770..=1490, 11700..=16300, 1..=3, 670..=1020),
+            expedition_automatique(14, 729..=1411, 10490..=14620, 1..=3, 670..=1020),
             coffre(500..=760, capsules_de("pics-foudroyes")),
         )
         .and_then(|zone| zone.avec_monstre_cache(schnoz()))
@@ -1437,7 +1445,7 @@ impl ContenuV1 {
             Zone::new(
                 ZoneId::new("aire-des-pegases"),
                 "Aire des pégases",
-                (niveau(86), niveau(89)),
+                (niveau(81), niveau(84)),
                 3,
                 3,
                 pics.especes().to_vec(),
@@ -1459,8 +1467,8 @@ impl ContenuV1 {
             HumainId::new("favorite"),
             "Favorite",
             vec![
-                (trouver("devoreur-de-chair"), niveau(92)),
-                (trouver("idole-de-chair"), niveau(93)),
+                (trouver("devoreur-de-chair"), niveau(90)),
+                (trouver("idole-de-chair"), niveau(91)),
             ],
             1400,
             AVANT_LA_FAVORITE,
@@ -1472,14 +1480,14 @@ impl ContenuV1 {
             Some(objet("dagues-foudroyees")),
             Some(objet("cuir-d-orage")),
         )
-        .avec_niveau_du_heros(niveau(92))
+        .avec_niveau_du_heros(niveau(90))
         .avec_ia(IaHumain::Relevee);
         let meteos_du_palais = vec![Meteo::Pluie, Meteo::Canicule];
         // Ouvert par l'indice que laisse le Sénéchal des orages (section 9.4).
         let palais = Zone::new(
             ZoneId::new("palais-de-chair"),
             "Palais de Chair",
-            (niveau(88), niveau(92)),
+            (niveau(87), niveau(90)),
             5,
             3,
             vec![
@@ -1491,7 +1499,7 @@ impl ContenuV1 {
                 espece: trouver("idole-de-chair"),
                 pacifique: false,
             }],
-            expedition_automatique(15, 830..=1620, 13200..=18200, 1..=3, 730..=1100),
+            expedition_automatique(15, 816..=1593, 12760..=17600, 1..=3, 730..=1100),
             coffre(540..=820, capsules_de("palais-de-chair")),
         )
         .and_then(|zone| zone.avec_monstre_cache(schnoz()))
@@ -1504,7 +1512,7 @@ impl ContenuV1 {
             Zone::new(
                 ZoneId::new("jardin-de-la-reine"),
                 "Jardin de la Reine",
-                (niveau(91), niveau(94)),
+                (niveau(89), niveau(92)),
                 3,
                 3,
                 palais.especes().to_vec(),
@@ -1546,7 +1554,7 @@ impl ContenuV1 {
         let puits = Zone::new(
             ZoneId::new("puits-du-monde"),
             "Puits du Monde",
-            (niveau(93), niveau(98)),
+            (niveau(95), niveau(98)),
             5,
             3,
             vec![
@@ -1558,7 +1566,7 @@ impl ContenuV1 {
                 espece: trouver("gardien-du-gouffre"),
                 pacifique: false,
             }],
-            expedition_automatique(16, 890..=1760, 14800..=20200, 1..=3, 790..=1180),
+            expedition_automatique(16, 899..=1778, 15110..=20630, 1..=3, 790..=1180),
             coffre(580..=880, capsules_de("puits-du-monde")),
         )
         .and_then(|zone| zone.avec_monstre_cache(schnoz()))
@@ -5397,7 +5405,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Feu, Type::Spectre],
         role: Role::Offensif,
         stats_de_base: [45, 30, 40, 70, 60, 75],
-        rendement_experience: 85,
+        rendement_experience: 65,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Eclaireur, Habilete::Sorcellerie],
         apprentissage: &[
@@ -5418,7 +5426,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Acier, Type::Spectre],
         role: Role::Offensif,
         stats_de_base: [60, 75, 85, 30, 50, 30],
-        rendement_experience: 95,
+        rendement_experience: 72,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Carapace, Habilete::Ferocite],
         apprentissage: &[
@@ -5428,7 +5436,7 @@ static ESPECES: [FicheEspece; 146] = [
         ],
         evolution: sous_condition(
             "chevalier-noir",
-            FicheCondition::Lieu("vallee", 18),
+            FicheCondition::Lieu("vallee", 12),
             "taille-d-acier",
         ),
     },
@@ -5438,7 +5446,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Insecte, Type::Tenebres],
         role: Role::Offensif,
         stats_de_base: [40, 35, 40, 65, 50, 75],
-        rendement_experience: 72,
+        rendement_experience: 47,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Sorcellerie, Habilete::Celerite],
         apprentissage: &[(1, "bourdonnement"), (4, "regard-funeste"), (8, "malefice")],
@@ -5450,7 +5458,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Spectre, Type::Combat],
         role: Role::Offensif,
         stats_de_base: [50, 80, 60, 30, 45, 55],
-        rendement_experience: 92,
+        rendement_experience: 60,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Ferocite, Habilete::Carapace],
         apprentissage: &[
@@ -5482,7 +5490,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Poison, Type::Dragon],
         role: Role::Offensif,
         stats_de_base: [75, 70, 65, 75, 60, 55],
-        rendement_experience: 170,
+        rendement_experience: 130,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Affinite, Habilete::Ferocite],
         apprentissage: &[
@@ -5499,7 +5507,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Feerique, Type::Vol],
         role: Role::Soutien,
         stats_de_base: [55, 40, 50, 85, 80, 90],
-        rendement_experience: 150,
+        rendement_experience: 97,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Volonte, Habilete::Instinct],
         apprentissage: &[
@@ -5515,7 +5523,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Dragon, Type::Vol],
         role: Role::Offensif,
         stats_de_base: [70, 80, 60, 80, 55, 55],
-        rendement_experience: 170,
+        rendement_experience: 110,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Affinite, Habilete::Ferocite],
         apprentissage: &[
@@ -5531,16 +5539,16 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Obscur],
         role: Role::Offensif,
         stats_de_base: [85, 85, 75, 90, 80, 65],
-        rendement_experience: 250,
+        rendement_experience: 162,
         rarete: Rarete::Apotre,
         habiletes: &[Habilete::Sorcellerie, Habilete::Volonte],
         apprentissage: &[
             (1, "corde-du-gibet"),
-            (5, "lamentation"),
-            (10, "sentence"),
-            (15, "trappe-du-gibet"),
-            (18, "etreinte-obscure"),
-            (21, "hurlement-des-abysses"),
+            (1, "lamentation"),
+            (3, "sentence"),
+            (8, "trappe-du-gibet"),
+            (11, "etreinte-obscure"),
+            (14, "hurlement-des-abysses"),
         ],
         evolution: None,
     },
@@ -5581,7 +5589,7 @@ static ESPECES: [FicheEspece; 146] = [
             (16, "jet-de-lave"),
             (16, "souffle-putride"),
         ],
-        evolution: par_niveau("wyverne-de-cendre", 36, "souffle-de-cendre"),
+        evolution: par_niveau("wyverne-de-cendre", 25, "souffle-de-cendre"),
     },
     FicheEspece {
         id: "crapaud-geant",
@@ -5601,7 +5609,7 @@ static ESPECES: [FicheEspece; 146] = [
             (16, "trombe"),
             (16, "deferlante"),
         ],
-        evolution: par_niveau("crapaud-roi", 36, "deluge-toxique"),
+        evolution: par_niveau("crapaud-roi", 25, "deluge-toxique"),
     },
     FicheEspece {
         id: "mandragore-ancienne",
@@ -5621,7 +5629,7 @@ static ESPECES: [FicheEspece; 146] = [
             (16, "hurlement-de-mandragore"),
             (16, "lianes-etrangleuses"),
         ],
-        evolution: par_niveau("arbre-pendu", 36, "racines-du-gibet"),
+        evolution: par_niveau("arbre-pendu", 25, "racines-du-gibet"),
     },
     FicheEspece {
         id: "chat-des-ombres",
@@ -5641,7 +5649,7 @@ static ESPECES: [FicheEspece; 146] = [
             (16, "griffe-d-ombre"),
             (16, "malefice"),
         ],
-        evolution: par_niveau("cait-sith", 36, "griffes-spectrales"),
+        evolution: par_niveau("cait-sith", 25, "griffes-spectrales"),
     },
     FicheEspece {
         id: "warg",
@@ -5659,7 +5667,7 @@ static ESPECES: [FicheEspece; 146] = [
             (16, "croc-noir"),
             (16, "coup-sournois"),
         ],
-        evolution: par_niveau("loup-garou", 36, "dechiquetage"),
+        evolution: par_niveau("loup-garou", 25, "dechiquetage"),
     },
     FicheEspece {
         id: "corbeau-des-gibets",
@@ -5703,7 +5711,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Insecte, Type::Tenebres],
         role: Role::Offensif,
         stats_de_base: [50, 44, 50, 84, 64, 96],
-        rendement_experience: 100,
+        rendement_experience: 65,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Sorcellerie, Habilete::Celerite],
         apprentissage: &[
@@ -5726,7 +5734,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Poison, Type::Dragon],
         role: Role::Offensif,
         stats_de_base: [90, 88, 80, 92, 75, 70],
-        rendement_experience: 238,
+        rendement_experience: 182,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Affinite, Habilete::Ferocite],
         apprentissage: &[
@@ -5746,7 +5754,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Feu, Type::Spectre],
         role: Role::Offensif,
         stats_de_base: [58, 38, 52, 90, 78, 96],
-        rendement_experience: 119,
+        rendement_experience: 91,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Eclaireur, Habilete::Sorcellerie],
         apprentissage: &[
@@ -5783,7 +5791,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Acier, Type::Spectre],
         role: Role::Offensif,
         stats_de_base: [75, 95, 105, 38, 62, 38],
-        rendement_experience: 133,
+        rendement_experience: 100,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Carapace, Habilete::Ferocite],
         apprentissage: &[
@@ -5801,7 +5809,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Spectre, Type::Combat],
         role: Role::Offensif,
         stats_de_base: [62, 100, 75, 38, 56, 69],
-        rendement_experience: 128,
+        rendement_experience: 84,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Ferocite, Habilete::Carapace],
         apprentissage: &[
@@ -5820,7 +5828,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Roche, Type::Vol],
         role: Role::Soutien,
         stats_de_base: [60, 80, 90, 30, 50, 40],
-        rendement_experience: 105,
+        rendement_experience: 74,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Carapace, Habilete::Ferocite],
         apprentissage: &[
@@ -5836,7 +5844,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Poison, Type::Tenebres],
         role: Role::Offensif,
         stats_de_base: [65, 78, 55, 40, 45, 57],
-        rendement_experience: 102,
+        rendement_experience: 72,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Depeceur, Habilete::Ferocite],
         apprentissage: &[
@@ -5853,7 +5861,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Vol, Type::Poison],
         role: Role::Offensif,
         stats_de_base: [50, 55, 45, 55, 45, 90],
-        rendement_experience: 100,
+        rendement_experience: 71,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Celerite, Habilete::Flair],
         apprentissage: &[
@@ -5870,7 +5878,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Feu, Type::Dragon],
         role: Role::Offensif,
         stats_de_base: [75, 80, 65, 85, 60, 55],
-        rendement_experience: 185,
+        rendement_experience: 131,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Affinite, Habilete::Ferocite],
         apprentissage: &[
@@ -5887,7 +5895,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Psychique, Type::Vol],
         role: Role::Soutien,
         stats_de_base: [70, 50, 60, 95, 90, 55],
-        rendement_experience: 180,
+        rendement_experience: 128,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Volonte, Habilete::Instinct],
         apprentissage: &[(1, "onde-psychique"), (12, "bourrasque"), (24, "jugement")],
@@ -5900,16 +5908,16 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Obscur],
         role: Role::Offensif,
         stats_de_base: [90, 75, 80, 100, 90, 75],
-        rendement_experience: 280,
+        rendement_experience: 198,
         rarete: Rarete::Apotre,
         habiletes: &[Habilete::Sorcellerie, Habilete::Volonte],
         apprentissage: &[
             (1, "lamentation"),
-            (8, "malefice"),
-            (15, "hurlement-des-abysses"),
-            (20, "bucher"),
-            (25, "flagellation"),
-            (28, "psaume-impie"),
+            (1, "malefice"),
+            (7, "hurlement-des-abysses"),
+            (12, "bucher"),
+            (17, "flagellation"),
+            (20, "psaume-impie"),
         ],
         evolution: None,
     },
@@ -5920,7 +5928,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Insecte, Type::Plante],
         role: Role::Offensif,
         stats_de_base: [70, 55, 65, 110, 85, 95],
-        rendement_experience: 140,
+        rendement_experience: 91,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Sorcellerie, Habilete::Celerite],
         apprentissage: &[
@@ -6012,7 +6020,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Glace, Type::Spectre],
         role: Role::Offensif,
         stats_de_base: [60, 85, 50, 45, 50, 70],
-        rendement_experience: 110,
+        rendement_experience: 79,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Ferocite, Habilete::Traqueur],
         apprentissage: &[
@@ -6029,7 +6037,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Sol, Type::Roche],
         role: Role::Soutien,
         stats_de_base: [90, 85, 80, 30, 50, 30],
-        rendement_experience: 112,
+        rendement_experience: 80,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Carapace, Habilete::Volonte],
         apprentissage: &[
@@ -6046,7 +6054,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Vol, Type::Electrique],
         role: Role::Offensif,
         stats_de_base: [55, 50, 45, 80, 50, 80],
-        rendement_experience: 108,
+        rendement_experience: 78,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Celerite, Habilete::Eclaireur],
         apprentissage: &[
@@ -6063,7 +6071,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Dragon, Type::Glace],
         role: Role::Offensif,
         stats_de_base: [80, 85, 70, 85, 65, 60],
-        rendement_experience: 195,
+        rendement_experience: 140,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Affinite, Habilete::Ferocite],
         apprentissage: &[
@@ -6080,7 +6088,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Glace, Type::Feerique],
         role: Role::Soutien,
         stats_de_base: [65, 45, 60, 95, 90, 90],
-        rendement_experience: 190,
+        rendement_experience: 137,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Volonte, Habilete::Instinct],
         apprentissage: &[
@@ -6097,16 +6105,16 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Obscur],
         role: Role::Offensif,
         stats_de_base: [95, 100, 90, 95, 85, 65],
-        rendement_experience: 300,
+        rendement_experience: 216,
         rarete: Rarete::Apotre,
         habiletes: &[Habilete::Ferocite, Habilete::Carapace],
         apprentissage: &[
             (1, "charge-spectrale"),
-            (10, "taille-d-acier"),
-            (18, "etreinte-obscure"),
-            (25, "blizzard"),
-            (30, "hurlement-des-abysses"),
-            (36, "linceul-de-givre"),
+            (1, "taille-d-acier"),
+            (7, "etreinte-obscure"),
+            (14, "blizzard"),
+            (19, "hurlement-des-abysses"),
+            (25, "linceul-de-givre"),
         ],
         evolution: None,
     },
@@ -6128,8 +6136,8 @@ static ESPECES: [FicheEspece; 146] = [
             (14, "fournaise"),
             (16, "jet-de-lave"),
             (16, "souffle-putride"),
-            (36, "souffle-de-cendre"),
-            (36, "furie-draconique"),
+            (25, "souffle-de-cendre"),
+            (25, "furie-draconique"),
         ],
         evolution: par_niveau("dragon-de-cendre", 70, "apocalypse-de-cendre"),
     },
@@ -6150,8 +6158,8 @@ static ESPECES: [FicheEspece; 146] = [
             (14, "lame-de-fond"),
             (16, "trombe"),
             (16, "deferlante"),
-            (36, "deluge-toxique"),
-            (36, "croc-de-venin"),
+            (25, "deluge-toxique"),
+            (25, "croc-de-venin"),
         ],
         evolution: par_niveau("crapaud-empereur", 70, "ecrasement-des-marais"),
     },
@@ -6172,8 +6180,8 @@ static ESPECES: [FicheEspece; 146] = [
             (14, "spores-putrides"),
             (16, "hurlement-de-mandragore"),
             (16, "lianes-etrangleuses"),
-            (36, "racines-du-gibet"),
-            (36, "frisson-d-outre-tombe"),
+            (25, "racines-du-gibet"),
+            (25, "frisson-d-outre-tombe"),
         ],
         evolution: par_niveau("chene-gibet", 70, "etreinte-du-gibet"),
     },
@@ -6194,8 +6202,8 @@ static ESPECES: [FicheEspece; 146] = [
             (14, "coup-de-grace"),
             (16, "griffe-d-ombre"),
             (16, "malefice"),
-            (36, "griffes-spectrales"),
-            (36, "charge-spectrale"),
+            (25, "griffes-spectrales"),
+            (25, "charge-spectrale"),
         ],
         evolution: par_niveau("roi-des-chats", 70, "griffe-des-neuf-vies"),
     },
@@ -6214,8 +6222,8 @@ static ESPECES: [FicheEspece; 146] = [
             (9, "curee"),
             (16, "croc-noir"),
             (16, "coup-sournois"),
-            (36, "dechiquetage"),
-            (36, "griffe-d-ombre"),
+            (25, "dechiquetage"),
+            (25, "griffe-d-ombre"),
         ],
         evolution: par_niveau("loup-de-l-eclipse", 70, "curee-de-l-eclipse"),
     },
@@ -6263,7 +6271,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Acier, Type::Son],
         role: Role::Soutien,
         stats_de_base: [65, 50, 80, 65, 75, 25],
-        rendement_experience: 108,
+        rendement_experience: 76,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Carapace, Habilete::Volonte],
         apprentissage: &[
@@ -6280,7 +6288,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Lumiere],
         role: Role::Offensif,
         stats_de_base: [65, 50, 60, 105, 80, 60],
-        rendement_experience: 180,
+        rendement_experience: 128,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Sorcellerie, Habilete::Volonte],
         apprentissage: &[
@@ -6334,14 +6342,14 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Son, Type::Poison],
         role: Role::Offensif,
         stats_de_base: [60, 78, 52, 72, 52, 76],
-        rendement_experience: 115,
+        rendement_experience: 73,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Celerite, Habilete::Instinct],
         apprentissage: &[
             (1, "crecelle"),
             (1, "croc-de-venin"),
-            (22, "tocsin"),
-            (32, "venin-noir"),
+            (5, "tocsin"),
+            (15, "venin-noir"),
         ],
         evolution: None,
     },
@@ -6351,14 +6359,14 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Lumiere, Type::Insecte],
         role: Role::Soutien,
         stats_de_base: [65, 50, 80, 75, 80, 40],
-        rendement_experience: 114,
+        rendement_experience: 72,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Carapace, Habilete::Volonte],
         apprentissage: &[
             (1, "bourdonnement"),
             (1, "rayon-solaire"),
-            (22, "nuee"),
-            (32, "aube-eclatante"),
+            (5, "nuee"),
+            (15, "aube-eclatante"),
         ],
         evolution: None,
     },
@@ -6368,14 +6376,14 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Spectre, Type::Roche],
         role: Role::Soutien,
         stats_de_base: [85, 72, 95, 40, 78, 20],
-        rendement_experience: 117,
+        rendement_experience: 74,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Carapace, Habilete::Ferocite],
         apprentissage: &[
             (1, "bandelettes"),
             (1, "chute-de-pierres"),
-            (22, "lamentation"),
-            (32, "eboulement"),
+            (5, "lamentation"),
+            (15, "eboulement"),
         ],
         evolution: None,
     },
@@ -6385,14 +6393,14 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Sol],
         role: Role::Offensif,
         stats_de_base: [95, 92, 68, 35, 55, 45],
-        rendement_experience: 116,
+        rendement_experience: 74,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Ferocite, Habilete::Traqueur],
         apprentissage: &[
             (1, "secousse"),
             (1, "etreinte"),
-            (22, "engloutissement"),
-            (32, "seisme"),
+            (5, "engloutissement"),
+            (15, "seisme"),
         ],
         evolution: None,
     },
@@ -6402,14 +6410,14 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Son, Type::Psychique],
         role: Role::Offensif,
         stats_de_base: [80, 70, 75, 100, 85, 55],
-        rendement_experience: 205,
+        rendement_experience: 130,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Sorcellerie, Habilete::Volonte],
         apprentissage: &[
             (1, "onde-psychique"),
             (1, "glas"),
-            (20, "carillon-funebre"),
-            (30, "jugement"),
+            (3, "carillon-funebre"),
+            (13, "jugement"),
         ],
         evolution: None,
     },
@@ -6419,14 +6427,14 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Lumiere, Type::Feu],
         role: Role::Soutien,
         stats_de_base: [75, 50, 65, 100, 95, 80],
-        rendement_experience: 200,
+        rendement_experience: 127,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Volonte, Habilete::Instinct],
         apprentissage: &[
             (1, "lueur-sacree"),
             (1, "brasier"),
-            (15, "rayon-solaire"),
-            (30, "flamme-blanche"),
+            (1, "rayon-solaire"),
+            (13, "flamme-blanche"),
         ],
         evolution: None,
     },
@@ -6438,7 +6446,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Dragon, Type::Vol],
         role: Role::Offensif,
         stats_de_base: [90, 100, 80, 100, 75, 75],
-        rendement_experience: 238,
+        rendement_experience: 154,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Affinite, Habilete::Ferocite],
         apprentissage: &[
@@ -6458,15 +6466,15 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Eau, Type::Acier],
         role: Role::Soutien,
         stats_de_base: [72, 78, 90, 30, 60, 30],
-        rendement_experience: 145,
+        rendement_experience: 87,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Carapace, Habilete::Ferocite],
         apprentissage: &[
             (1, "plongeon"),
             (1, "coup-de-garde"),
-            (25, "deferlante"),
-            (35, "taille-d-acier"),
-            (58, "pince-broyeuse"),
+            (5, "deferlante"),
+            (15, "taille-d-acier"),
+            (38, "pince-broyeuse"),
         ],
         evolution: None,
     },
@@ -6476,15 +6484,15 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Eau, Type::Spectre],
         role: Role::Offensif,
         stats_de_base: [58, 35, 48, 92, 70, 64],
-        rendement_experience: 145,
+        rendement_experience: 87,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Sorcellerie, Habilete::Instinct],
         apprentissage: &[
             (1, "lueur-trompeuse"),
             (1, "frisson-d-outre-tombe"),
-            (30, "lamentation"),
-            (40, "chant-des-noyes"),
-            (58, "maree-noire"),
+            (10, "lamentation"),
+            (20, "chant-des-noyes"),
+            (38, "maree-noire"),
         ],
         evolution: None,
     },
@@ -6494,16 +6502,16 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Vol, Type::Tenebres],
         role: Role::Offensif,
         stats_de_base: [61, 92, 48, 38, 47, 104],
-        rendement_experience: 145,
+        rendement_experience: 87,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Celerite, Habilete::Fortune],
         apprentissage: &[
             (1, "coup-de-bec"),
             (1, "morsure"),
-            (25, "pique"),
-            (35, "croc-noir"),
-            (45, "bec-funeste"),
-            (58, "rapine"),
+            (5, "pique"),
+            (15, "croc-noir"),
+            (25, "bec-funeste"),
+            (38, "rapine"),
         ],
         evolution: None,
     },
@@ -6513,15 +6521,15 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Eau, Type::Dragon],
         role: Role::Offensif,
         stats_de_base: [80, 85, 76, 88, 72, 64],
-        rendement_experience: 250,
+        rendement_experience: 149,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Affinite, Habilete::Ferocite],
         apprentissage: &[
             (1, "souffle-draconique"),
             (1, "lame-de-fond"),
-            (30, "furie-draconique"),
-            (40, "trombe"),
-            (60, "deluge-draconique"),
+            (10, "furie-draconique"),
+            (20, "trombe"),
+            (40, "deluge-draconique"),
         ],
         evolution: None,
     },
@@ -6531,14 +6539,14 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Eau, Type::Roche],
         role: Role::Soutien,
         stats_de_base: [80, 62, 112, 76, 99, 36],
-        rendement_experience: 245,
+        rendement_experience: 146,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Carapace, Habilete::Volonte],
         apprentissage: &[
             (1, "jet-d-encre"),
             (1, "chute-de-pierres"),
-            (35, "eboulement"),
-            (60, "maree-noire"),
+            (15, "eboulement"),
+            (40, "maree-noire"),
         ],
         evolution: None,
     },
@@ -6548,16 +6556,16 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Obscur],
         role: Role::Offensif,
         stats_de_base: [96, 103, 90, 93, 86, 62],
-        rendement_experience: 360,
+        rendement_experience: 215,
         rarete: Rarete::Apotre,
         habiletes: &[Habilete::Ferocite, Habilete::Carapace],
         apprentissage: &[
             (1, "etreinte-obscure"),
             (1, "lame-de-fond"),
-            (20, "hurlement-des-abysses"),
-            (35, "trombe"),
-            (45, "ancre-des-damnes"),
-            (52, "abime-liquide"),
+            (1, "hurlement-des-abysses"),
+            (15, "trombe"),
+            (25, "ancre-des-damnes"),
+            (32, "abime-liquide"),
         ],
         evolution: None,
     },
@@ -6567,15 +6575,15 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Acier, Type::Roche],
         role: Role::Soutien,
         stats_de_base: [76, 82, 90, 30, 55, 20],
-        rendement_experience: 160,
+        rendement_experience: 109,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Carapace, Habilete::Volonte],
         apprentissage: &[
             (1, "coup-de-garde"),
             (1, "chute-de-pierres"),
-            (30, "taille-d-acier"),
-            (40, "eboulement"),
-            (62, "marteau-de-forge"),
+            (12, "taille-d-acier"),
+            (22, "eboulement"),
+            (44, "marteau-de-forge"),
         ],
         evolution: None,
     },
@@ -6585,15 +6593,15 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Spectre, Type::Combat],
         role: Role::Offensif,
         stats_de_base: [67, 93, 59, 46, 54, 71],
-        rendement_experience: 160,
+        rendement_experience: 109,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Ferocite, Habilete::Traqueur],
         apprentissage: &[
             (1, "charge-spectrale"),
             (1, "frappe-d-os"),
-            (30, "corde-du-gibet"),
-            (50, "griffes-spectrales"),
-            (62, "coup-de-pioche"),
+            (12, "corde-du-gibet"),
+            (32, "griffes-spectrales"),
+            (44, "coup-de-pioche"),
         ],
         evolution: None,
     },
@@ -6603,15 +6611,15 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Feu, Type::Poison],
         role: Role::Offensif,
         stats_de_base: [52, 40, 49, 92, 55, 84],
-        rendement_experience: 160,
+        rendement_experience: 109,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Sorcellerie, Habilete::Celerite],
         apprentissage: &[
             (1, "crachat-de-braises"),
             (1, "spores-putrides"),
-            (30, "brasier"),
-            (40, "venin-noir"),
-            (62, "coup-de-grisou"),
+            (12, "brasier"),
+            (22, "venin-noir"),
+            (44, "coup-de-grisou"),
         ],
         evolution: None,
     },
@@ -6621,15 +6629,15 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Dragon, Type::Acier],
         role: Role::Offensif,
         stats_de_base: [78, 85, 80, 66, 66, 55],
-        rendement_experience: 275,
+        rendement_experience: 187,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Affinite, Habilete::Carapace],
         apprentissage: &[
             (1, "souffle-draconique"),
             (1, "coup-de-garde"),
-            (30, "furie-draconique"),
-            (40, "taille-d-acier"),
-            (64, "souffle-de-rouille"),
+            (12, "furie-draconique"),
+            (22, "taille-d-acier"),
+            (46, "souffle-de-rouille"),
         ],
         evolution: None,
     },
@@ -6639,14 +6647,14 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Roche, Type::Feerique],
         role: Role::Soutien,
         stats_de_base: [66, 50, 100, 82, 100, 42],
-        rendement_experience: 270,
+        rendement_experience: 183,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Volonte, Habilete::Instinct],
         apprentissage: &[
             (1, "poussiere-d-elfe"),
             (1, "chute-de-pierres"),
-            (35, "rayon-de-lune"),
-            (64, "eclat-de-gemme"),
+            (17, "rayon-de-lune"),
+            (46, "eclat-de-gemme"),
         ],
         evolution: None,
     },
@@ -6656,16 +6664,16 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Obscur],
         role: Role::Offensif,
         stats_de_base: [98, 108, 98, 84, 90, 62],
-        rendement_experience: 400,
+        rendement_experience: 272,
         rarete: Rarete::Apotre,
         habiletes: &[Habilete::Ferocite, Habilete::Volonte],
         apprentissage: &[
             (1, "etreinte-obscure"),
             (1, "chute-de-pierres"),
-            (20, "hurlement-des-abysses"),
-            (40, "seisme"),
-            (50, "chaine-du-prevot"),
-            (58, "gouffre-sans-fond"),
+            (2, "hurlement-des-abysses"),
+            (22, "seisme"),
+            (32, "chaine-du-prevot"),
+            (40, "gouffre-sans-fond"),
         ],
         evolution: None,
     },
@@ -6678,16 +6686,16 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Plante, Type::Poison],
         role: Role::Soutien,
         stats_de_base: [84, 74, 88, 62, 72, 15],
-        rendement_experience: 180,
+        rendement_experience: 135,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Carapace, Habilete::Sorcellerie],
         apprentissage: &[
             (1, "feuille-tranchante"),
             (1, "morsure-venimeuse"),
-            (30, "ronces"),
-            (40, "lianes-etrangleuses"),
-            (50, "croc-de-venin"),
-            (68, "etreinte-sanguine"),
+            (15, "ronces"),
+            (25, "lianes-etrangleuses"),
+            (35, "croc-de-venin"),
+            (53, "etreinte-sanguine"),
         ],
         evolution: None,
     },
@@ -6697,16 +6705,16 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Insecte, Type::Combat],
         role: Role::Offensif,
         stats_de_base: [62, 100, 60, 40, 48, 75],
-        rendement_experience: 180,
+        rendement_experience: 135,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Ferocite, Habilete::Celerite],
         apprentissage: &[
             (1, "bourdonnement"),
             (1, "frappe-d-os"),
-            (30, "nuee"),
-            (40, "epee-des-morts"),
-            (45, "faux-de-mante"),
-            (66, "dechiquetage"),
+            (15, "nuee"),
+            (25, "epee-des-morts"),
+            (30, "faux-de-mante"),
+            (51, "dechiquetage"),
         ],
         evolution: None,
     },
@@ -6716,15 +6724,15 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Normal, Type::Sol],
         role: Role::Offensif,
         stats_de_base: [85, 95, 70, 30, 45, 60],
-        rendement_experience: 180,
+        rendement_experience: 135,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Ferocite, Habilete::Volonte],
         apprentissage: &[
             (1, "ruade"),
             (1, "secousse"),
-            (30, "curee"),
-            (45, "charge-du-sanglier"),
-            (66, "seisme"),
+            (15, "curee"),
+            (30, "charge-du-sanglier"),
+            (51, "seisme"),
         ],
         evolution: None,
     },
@@ -6734,15 +6742,15 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Plante, Type::Psychique],
         role: Role::Offensif,
         stats_de_base: [78, 52, 74, 115, 88, 73],
-        rendement_experience: 305,
+        rendement_experience: 229,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Sorcellerie, Habilete::Affinite],
         apprentissage: &[
             (1, "feuille-tranchante"),
             (1, "onde-psychique"),
-            (35, "hurlement-de-mandragore"),
-            (45, "ronces-maudites"),
-            (68, "seve-ecarlate"),
+            (20, "hurlement-de-mandragore"),
+            (30, "ronces-maudites"),
+            (53, "seve-ecarlate"),
         ],
         evolution: None,
     },
@@ -6752,15 +6760,15 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Insecte, Type::Feerique],
         role: Role::Soutien,
         stats_de_base: [70, 45, 75, 95, 95, 70],
-        rendement_experience: 300,
+        rendement_experience: 225,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Instinct, Habilete::Volonte],
         apprentissage: &[
             (1, "bourdonnement"),
             (1, "poussiere-d-elfe"),
-            (35, "lumiere-d-aube"),
-            (45, "rayon-de-lune"),
-            (70, "aile-poudree"),
+            (20, "lumiere-d-aube"),
+            (30, "rayon-de-lune"),
+            (55, "aile-poudree"),
         ],
         evolution: None,
     },
@@ -6770,16 +6778,16 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Obscur],
         role: Role::Offensif,
         stats_de_base: [96, 92, 88, 112, 92, 65],
-        rendement_experience: 430,
+        rendement_experience: 322,
         rarete: Rarete::Apotre,
         habiletes: &[Habilete::Sorcellerie, Habilete::Ferocite],
         apprentissage: &[
             (1, "etreinte-obscure"),
             (1, "morsure"),
-            (20, "hurlement-des-abysses"),
-            (35, "ronces-maudites"),
-            (45, "baiser-de-sang"),
-            (60, "psaume-impie"),
+            (5, "hurlement-des-abysses"),
+            (20, "ronces-maudites"),
+            (30, "baiser-de-sang"),
+            (45, "psaume-impie"),
         ],
         evolution: None,
     },
@@ -6789,15 +6797,15 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Normal, Type::Poison],
         role: Role::Offensif,
         stats_de_base: [70, 90, 58, 40, 52, 85],
-        rendement_experience: 195,
+        rendement_experience: 154,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Celerite, Habilete::Pillard],
         apprentissage: &[
             (1, "griffure"),
             (1, "morsure-venimeuse"),
-            (30, "curee"),
-            (40, "croc-de-venin"),
-            (71, "peste-noire"),
+            (16, "curee"),
+            (26, "croc-de-venin"),
+            (57, "peste-noire"),
         ],
         evolution: None,
     },
@@ -6807,16 +6815,16 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Son, Type::Spectre],
         role: Role::Soutien,
         stats_de_base: [80, 45, 75, 85, 85, 15],
-        rendement_experience: 195,
+        rendement_experience: 154,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Volonte, Habilete::Sorcellerie],
         apprentissage: &[
             (1, "glas"),
             (1, "lueur-trompeuse"),
-            (30, "lamentation"),
-            (40, "tocsin"),
-            (50, "flamme-funebre"),
-            (71, "requiem"),
+            (16, "lamentation"),
+            (26, "tocsin"),
+            (36, "flamme-funebre"),
+            (57, "requiem"),
         ],
         evolution: None,
     },
@@ -6826,15 +6834,15 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Insecte, Type::Roche],
         role: Role::Offensif,
         stats_de_base: [70, 92, 85, 35, 55, 48],
-        rendement_experience: 195,
+        rendement_experience: 154,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Traqueur, Habilete::Carapace],
         apprentissage: &[
             (1, "bourdonnement"),
             (1, "griffe-de-pierre"),
-            (30, "chute-de-pierres"),
-            (40, "morsure-de-l-araignee"),
-            (71, "eboulement"),
+            (16, "chute-de-pierres"),
+            (26, "morsure-de-l-araignee"),
+            (57, "eboulement"),
         ],
         evolution: None,
     },
@@ -6844,15 +6852,15 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Psychique, Type::Spectre],
         role: Role::Offensif,
         stats_de_base: [66, 42, 62, 108, 90, 67],
-        rendement_experience: 330,
+        rendement_experience: 261,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Sorcellerie, Habilete::Volonte],
         apprentissage: &[
             (1, "onde-psychique"),
             (1, "lueur-trompeuse"),
-            (35, "flamme-funebre"),
-            (50, "malediction-mortelle"),
-            (72, "jugement"),
+            (21, "flamme-funebre"),
+            (36, "malediction-mortelle"),
+            (58, "jugement"),
         ],
         evolution: None,
     },
@@ -6862,15 +6870,15 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Roche, Type::Lumiere],
         role: Role::Soutien,
         stats_de_base: [85, 75, 110, 60, 100, 20],
-        rendement_experience: 325,
+        rendement_experience: 258,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Carapace, Habilete::Volonte],
         apprentissage: &[
             (1, "lueur-sacree"),
             (1, "griffe-de-pierre"),
-            (35, "lance-de-lumiere"),
-            (45, "chute-de-pierres"),
-            (74, "jugement-de-pierre"),
+            (21, "lance-de-lumiere"),
+            (31, "chute-de-pierres"),
+            (60, "jugement-de-pierre"),
         ],
         evolution: None,
     },
@@ -6880,16 +6888,16 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Obscur],
         role: Role::Offensif,
         stats_de_base: [100, 110, 98, 95, 90, 57],
-        rendement_experience: 465,
+        rendement_experience: 368,
         rarete: Rarete::Apotre,
         habiletes: &[Habilete::Volonte, Habilete::Carapace],
         apprentissage: &[
             (1, "etreinte-obscure"),
             (1, "frappe-d-os"),
-            (20, "hurlement-des-abysses"),
-            (35, "epee-des-morts"),
-            (50, "flagellation"),
-            (65, "ossuaire-sacre"),
+            (6, "hurlement-des-abysses"),
+            (21, "epee-des-morts"),
+            (36, "flagellation"),
+            (51, "ossuaire-sacre"),
         ],
         evolution: None,
     },
@@ -6902,16 +6910,16 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Normal, Type::Spectre],
         role: Role::Offensif,
         stats_de_base: [72, 86, 58, 40, 50, 68],
-        rendement_experience: 210,
+        rendement_experience: 172,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Celerite, Habilete::Ferocite],
         apprentissage: &[
             (1, "ruade"),
             (1, "charge-spectrale"),
-            (30, "secousse"),
-            (40, "griffes-spectrales"),
-            (50, "galop-funebre"),
-            (76, "charge-des-morts"),
+            (17, "secousse"),
+            (27, "griffes-spectrales"),
+            (37, "galop-funebre"),
+            (63, "charge-des-morts"),
         ],
         evolution: None,
     },
@@ -6921,16 +6929,16 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Vol, Type::Sol],
         role: Role::Offensif,
         stats_de_base: [70, 80, 56, 36, 52, 66],
-        rendement_experience: 210,
+        rendement_experience: 172,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Depeceur, Habilete::Pillard],
         apprentissage: &[
             (1, "coup-de-bec"),
             (1, "secousse"),
-            (30, "pique"),
-            (40, "bec-funeste"),
-            (50, "serres-de-poussiere"),
-            (76, "seisme"),
+            (17, "pique"),
+            (27, "bec-funeste"),
+            (37, "serres-de-poussiere"),
+            (63, "seisme"),
         ],
         evolution: None,
     },
@@ -6940,16 +6948,16 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Combat, Type::Acier],
         role: Role::Offensif,
         stats_de_base: [78, 86, 80, 30, 52, 46],
-        rendement_experience: 210,
+        rendement_experience: 172,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Ferocite, Habilete::Carapace],
         apprentissage: &[
             (1, "morsure"),
             (1, "coup-de-garde"),
-            (30, "taille-d-acier"),
-            (40, "epee-des-morts"),
-            (50, "crocs-d-acier"),
-            (76, "dechiquetage"),
+            (17, "taille-d-acier"),
+            (27, "epee-des-morts"),
+            (37, "crocs-d-acier"),
+            (63, "dechiquetage"),
         ],
         evolution: None,
     },
@@ -6959,15 +6967,15 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Vol, Type::Acier],
         role: Role::Offensif,
         stats_de_base: [75, 88, 78, 45, 60, 70],
-        rendement_experience: 355,
+        rendement_experience: 292,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Ferocite, Habilete::Affinite],
         apprentissage: &[
             (1, "coup-de-bec"),
             (1, "coup-de-garde"),
-            (35, "bec-funeste"),
-            (45, "taille-d-acier"),
-            (78, "plongeon-d-acier"),
+            (22, "bec-funeste"),
+            (32, "taille-d-acier"),
+            (65, "plongeon-d-acier"),
         ],
         evolution: None,
     },
@@ -6977,16 +6985,16 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Feu, Type::Feerique],
         role: Role::Soutien,
         stats_de_base: [75, 55, 70, 90, 95, 65],
-        rendement_experience: 350,
+        rendement_experience: 288,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Volonte, Habilete::Instinct],
         apprentissage: &[
             (1, "crachat-de-braises"),
             (1, "poussiere-d-elfe"),
-            (35, "lumiere-d-aube"),
-            (45, "brasier"),
-            (55, "rayon-de-lune"),
-            (80, "corne-de-cendre"),
+            (22, "lumiere-d-aube"),
+            (32, "brasier"),
+            (42, "rayon-de-lune"),
+            (67, "corne-de-cendre"),
         ],
         evolution: None,
     },
@@ -6996,16 +7004,16 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Obscur],
         role: Role::Offensif,
         stats_de_base: [100, 105, 98, 85, 90, 62],
-        rendement_experience: 500,
+        rendement_experience: 411,
         rarete: Rarete::Apotre,
         habiletes: &[Habilete::Ferocite, Habilete::Volonte],
         apprentissage: &[
             (1, "etreinte-obscure"),
             (1, "frappe-d-os"),
-            (20, "hurlement-des-abysses"),
-            (35, "dechiquetage"),
-            (50, "flagellation"),
-            (70, "boucherie"),
+            (7, "hurlement-des-abysses"),
+            (22, "dechiquetage"),
+            (37, "flagellation"),
+            (57, "boucherie"),
         ],
         evolution: None,
     },
@@ -7015,16 +7023,16 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Acier, Type::Electrique],
         role: Role::Soutien,
         stats_de_base: [78, 68, 86, 66, 58, 18],
-        rendement_experience: 225,
+        rendement_experience: 194,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Carapace, Habilete::Volonte],
         apprentissage: &[
             (1, "coup-de-garde"),
             (1, "etincelle"),
-            (30, "onde-de-choc"),
-            (40, "taille-d-acier"),
-            (50, "decharge-mecanique"),
-            (80, "foudre"),
+            (19, "onde-de-choc"),
+            (29, "taille-d-acier"),
+            (39, "decharge-mecanique"),
+            (69, "foudre"),
         ],
         evolution: None,
     },
@@ -7034,15 +7042,15 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Insecte, Type::Psychique],
         role: Role::Offensif,
         stats_de_base: [66, 55, 62, 102, 70, 45],
-        rendement_experience: 225,
+        rendement_experience: 194,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Sorcellerie, Habilete::Fouineur],
         apprentissage: &[
             (1, "bourdonnement"),
             (1, "onde-psychique"),
-            (30, "nuee"),
-            (45, "festin-d-encre"),
-            (80, "jugement"),
+            (19, "nuee"),
+            (34, "festin-d-encre"),
+            (69, "jugement"),
         ],
         evolution: None,
     },
@@ -7052,15 +7060,15 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Psychique, Type::Vol],
         role: Role::Offensif,
         stats_de_base: [58, 38, 52, 100, 66, 76],
-        rendement_experience: 225,
+        rendement_experience: 194,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Instinct, Habilete::Flair],
         apprentissage: &[
             (1, "regard-funeste"),
             (1, "onde-psychique"),
-            (30, "bourrasque"),
-            (40, "regard-hypnotique"),
-            (80, "rayon-d-ether"),
+            (19, "bourrasque"),
+            (29, "regard-hypnotique"),
+            (69, "rayon-d-ether"),
         ],
         evolution: None,
     },
@@ -7070,15 +7078,15 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Electrique, Type::Psychique],
         role: Role::Offensif,
         stats_de_base: [72, 48, 66, 105, 85, 72],
-        rendement_experience: 380,
+        rendement_experience: 327,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Sorcellerie, Habilete::Affinite],
         apprentissage: &[
             (1, "etincelle"),
             (1, "onde-psychique"),
-            (35, "onde-de-choc"),
-            (45, "eclair-de-l-archonte"),
-            (82, "jugement"),
+            (24, "onde-de-choc"),
+            (34, "eclair-de-l-archonte"),
+            (71, "jugement"),
         ],
         evolution: None,
     },
@@ -7088,15 +7096,15 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Son, Type::Feerique],
         role: Role::Soutien,
         stats_de_base: [70, 45, 70, 95, 95, 65],
-        rendement_experience: 375,
+        rendement_experience: 322,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Volonte, Habilete::Instinct],
         apprentissage: &[
             (1, "glas"),
             (1, "poussiere-d-elfe"),
-            (35, "tocsin"),
-            (45, "rayon-de-lune"),
-            (82, "chant-de-cristal"),
+            (24, "tocsin"),
+            (34, "rayon-de-lune"),
+            (71, "chant-de-cristal"),
         ],
         evolution: None,
     },
@@ -7106,16 +7114,16 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Obscur],
         role: Role::Offensif,
         stats_de_base: [96, 80, 90, 110, 98, 66],
-        rendement_experience: 530,
+        rendement_experience: 456,
         rarete: Rarete::Apotre,
         habiletes: &[Habilete::Sorcellerie, Habilete::Volonte],
         apprentissage: &[
             (1, "etreinte-obscure"),
             (1, "onde-psychique"),
-            (20, "hurlement-des-abysses"),
-            (35, "jugement"),
-            (50, "regard-des-mille-yeux"),
-            (75, "secret-interdit"),
+            (9, "hurlement-des-abysses"),
+            (24, "jugement"),
+            (39, "regard-des-mille-yeux"),
+            (64, "secret-interdit"),
         ],
         evolution: None,
     },
@@ -7127,16 +7135,16 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Feu, Type::Roche],
         role: Role::Soutien,
         stats_de_base: [82, 74, 92, 60, 60, 18],
-        rendement_experience: 240,
+        rendement_experience: 218,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Carapace, Habilete::Volonte],
         apprentissage: &[
             (1, "crachat-de-braises"),
             (1, "griffe-de-pierre"),
-            (30, "chute-de-pierres"),
-            (40, "brasier"),
-            (50, "coulee-de-lave"),
-            (86, "eboulement"),
+            (22, "chute-de-pierres"),
+            (32, "brasier"),
+            (42, "coulee-de-lave"),
+            (78, "eboulement"),
         ],
         evolution: None,
     },
@@ -7146,16 +7154,16 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Feu, Type::Tenebres],
         role: Role::Offensif,
         stats_de_base: [70, 90, 58, 45, 50, 75],
-        rendement_experience: 240,
+        rendement_experience: 218,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Ferocite, Habilete::Celerite],
         apprentissage: &[
             (1, "morsure"),
             (1, "crachat-de-braises"),
-            (30, "croc-noir"),
-            (40, "griffe-d-ombre"),
-            (50, "crocs-de-braise"),
-            (86, "rapine"),
+            (22, "croc-noir"),
+            (32, "griffe-d-ombre"),
+            (42, "crocs-de-braise"),
+            (78, "rapine"),
         ],
         evolution: None,
     },
@@ -7165,16 +7173,16 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Feu, Type::Acier],
         role: Role::Offensif,
         stats_de_base: [78, 90, 82, 30, 52, 46],
-        rendement_experience: 240,
+        rendement_experience: 218,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Ferocite, Habilete::Carapace],
         apprentissage: &[
             (1, "coup-de-garde"),
             (1, "crachat-de-braises"),
-            (30, "taille-d-acier"),
-            (40, "lame-rouillee"),
-            (50, "marteau-ardent"),
-            (86, "marteau-de-forge"),
+            (22, "taille-d-acier"),
+            (32, "lame-rouillee"),
+            (42, "marteau-ardent"),
+            (78, "marteau-de-forge"),
         ],
         evolution: None,
     },
@@ -7184,15 +7192,15 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Feu, Type::Dragon],
         role: Role::Offensif,
         stats_de_base: [80, 96, 76, 72, 64, 68],
-        rendement_experience: 405,
+        rendement_experience: 367,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Ferocite, Habilete::Affinite],
         apprentissage: &[
             (1, "crachat-de-braises"),
             (1, "souffle-draconique"),
-            (35, "brasier"),
-            (45, "furie-draconique"),
-            (88, "souffle-de-magma"),
+            (27, "brasier"),
+            (37, "furie-draconique"),
+            (80, "souffle-de-magma"),
         ],
         evolution: None,
     },
@@ -7202,15 +7210,15 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Feu, Type::Psychique],
         role: Role::Soutien,
         stats_de_base: [70, 50, 68, 92, 88, 64],
-        rendement_experience: 400,
+        rendement_experience: 362,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Sorcellerie, Habilete::Instinct],
         apprentissage: &[
             (1, "crachat-de-braises"),
             (1, "onde-psychique"),
-            (35, "jet-de-lave"),
-            (45, "festin-d-encre"),
-            (88, "flamme-astrale"),
+            (27, "jet-de-lave"),
+            (37, "festin-d-encre"),
+            (80, "flamme-astrale"),
         ],
         evolution: None,
     },
@@ -7220,16 +7228,16 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Obscur],
         role: Role::Offensif,
         stats_de_base: [100, 106, 96, 92, 90, 58],
-        rendement_experience: 565,
+        rendement_experience: 512,
         rarete: Rarete::Apotre,
         habiletes: &[Habilete::Ferocite, Habilete::Volonte],
         apprentissage: &[
             (1, "etreinte-obscure"),
             (1, "crachat-de-braises"),
-            (20, "hurlement-des-abysses"),
-            (35, "jet-de-lave"),
-            (50, "flagellation"),
-            (75, "couronne-de-braise"),
+            (12, "hurlement-des-abysses"),
+            (27, "jet-de-lave"),
+            (42, "flagellation"),
+            (67, "couronne-de-braise"),
         ],
         evolution: None,
     },
@@ -7239,16 +7247,16 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Vol, Type::Electrique],
         role: Role::Offensif,
         stats_de_base: [68, 86, 55, 50, 52, 82],
-        rendement_experience: 255,
+        rendement_experience: 242,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Traqueur, Habilete::Celerite],
         apprentissage: &[
             (1, "coup-de-bec"),
             (1, "etincelle"),
-            (30, "pique"),
-            (40, "bec-funeste"),
-            (50, "serres-foudroyantes"),
-            (90, "plongeon-d-acier"),
+            (25, "pique"),
+            (35, "bec-funeste"),
+            (45, "serres-foudroyantes"),
+            (85, "plongeon-d-acier"),
         ],
         evolution: None,
     },
@@ -7258,16 +7266,16 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Roche, Type::Combat],
         role: Role::Offensif,
         stats_de_base: [80, 90, 85, 30, 50, 46],
-        rendement_experience: 255,
+        rendement_experience: 242,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Ferocite, Habilete::Carapace],
         apprentissage: &[
             (1, "griffe-de-pierre"),
             (1, "frappe-d-os"),
-            (30, "chute-de-pierres"),
-            (40, "epee-des-morts"),
-            (50, "coup-de-cornes"),
-            (90, "dechiquetage"),
+            (25, "chute-de-pierres"),
+            (35, "epee-des-morts"),
+            (45, "coup-de-cornes"),
+            (85, "dechiquetage"),
         ],
         evolution: None,
     },
@@ -7277,16 +7285,16 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Electrique, Type::Spectre],
         role: Role::Soutien,
         stats_de_base: [64, 38, 60, 92, 74, 58],
-        rendement_experience: 255,
+        rendement_experience: 242,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Sorcellerie, Habilete::Instinct],
         apprentissage: &[
             (1, "etincelle"),
             (1, "lueur-trompeuse"),
-            (30, "onde-de-choc"),
-            (40, "flamme-funebre"),
-            (50, "feu-errant"),
-            (90, "foudre"),
+            (25, "onde-de-choc"),
+            (35, "flamme-funebre"),
+            (45, "feu-errant"),
+            (85, "foudre"),
         ],
         evolution: None,
     },
@@ -7296,15 +7304,15 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Electrique, Type::Combat],
         role: Role::Offensif,
         stats_de_base: [85, 98, 78, 58, 60, 55],
-        rendement_experience: 435,
+        rendement_experience: 412,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Ferocite, Habilete::Volonte],
         apprentissage: &[
             (1, "etincelle"),
             (1, "frappe-d-os"),
-            (35, "onde-de-choc"),
-            (45, "epee-des-morts"),
-            (92, "poing-du-tonnerre"),
+            (30, "onde-de-choc"),
+            (40, "epee-des-morts"),
+            (87, "poing-du-tonnerre"),
         ],
         evolution: None,
     },
@@ -7314,15 +7322,15 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Vol, Type::Feerique],
         role: Role::Soutien,
         stats_de_base: [70, 58, 66, 85, 90, 76],
-        rendement_experience: 430,
+        rendement_experience: 407,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Volonte, Habilete::Eclaireur],
         apprentissage: &[
             (1, "coup-de-bec"),
             (1, "poussiere-d-elfe"),
-            (35, "bourrasque"),
-            (45, "rayon-de-lune"),
-            (92, "ailes-celestes"),
+            (30, "bourrasque"),
+            (40, "rayon-de-lune"),
+            (87, "ailes-celestes"),
         ],
         evolution: None,
     },
@@ -7332,16 +7340,16 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Obscur],
         role: Role::Offensif,
         stats_de_base: [98, 82, 92, 110, 96, 64],
-        rendement_experience: 595,
+        rendement_experience: 564,
         rarete: Rarete::Apotre,
         habiletes: &[Habilete::Sorcellerie, Habilete::Volonte],
         apprentissage: &[
             (1, "etreinte-obscure"),
             (1, "etincelle"),
-            (20, "hurlement-des-abysses"),
-            (35, "onde-de-choc"),
-            (50, "foudre"),
-            (75, "tempete-noire"),
+            (15, "hurlement-des-abysses"),
+            (30, "onde-de-choc"),
+            (45, "foudre"),
+            (70, "tempete-noire"),
         ],
         evolution: None,
     },
@@ -7353,16 +7361,16 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Insecte, Type::Poison],
         role: Role::Soutien,
         stats_de_base: [84, 62, 86, 66, 74, 20],
-        rendement_experience: 270,
+        rendement_experience: 266,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Carapace, Habilete::Volonte],
         apprentissage: &[
             (1, "bourdonnement"),
             (1, "morsure-venimeuse"),
-            (30, "nuee"),
-            (40, "croc-de-venin"),
-            (50, "spore-de-chair"),
-            (94, "peste-noire"),
+            (28, "nuee"),
+            (38, "croc-de-venin"),
+            (48, "spore-de-chair"),
+            (92, "peste-noire"),
         ],
         evolution: None,
     },
@@ -7372,16 +7380,16 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Normal, Type::Tenebres],
         role: Role::Offensif,
         stats_de_base: [76, 92, 60, 40, 52, 72],
-        rendement_experience: 270,
+        rendement_experience: 266,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Ferocite, Habilete::Pillard],
         apprentissage: &[
             (1, "morsure"),
             (1, "griffure"),
-            (30, "curee"),
-            (40, "croc-noir"),
-            (50, "festin-de-chair"),
-            (94, "rapine"),
+            (28, "curee"),
+            (38, "croc-noir"),
+            (48, "festin-de-chair"),
+            (92, "rapine"),
         ],
         evolution: None,
     },
@@ -7391,16 +7399,16 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Combat, Type::Spectre],
         role: Role::Offensif,
         stats_de_base: [72, 92, 70, 40, 52, 64],
-        rendement_experience: 270,
+        rendement_experience: 266,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Ferocite, Habilete::Traqueur],
         apprentissage: &[
             (1, "frappe-d-os"),
             (1, "charge-spectrale"),
-            (30, "corde-du-gibet"),
-            (40, "griffes-spectrales"),
-            (50, "ecorchure"),
-            (94, "charge-des-morts"),
+            (28, "corde-du-gibet"),
+            (38, "griffes-spectrales"),
+            (48, "ecorchure"),
+            (92, "charge-des-morts"),
         ],
         evolution: None,
     },
@@ -7410,15 +7418,15 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Psychique, Type::Poison],
         role: Role::Offensif,
         stats_de_base: [78, 50, 70, 104, 88, 66],
-        rendement_experience: 460,
+        rendement_experience: 452,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Sorcellerie, Habilete::Affinite],
         apprentissage: &[
             (1, "onde-psychique"),
             (1, "morsure-venimeuse"),
-            (35, "regard-hypnotique"),
-            (45, "festin-d-encre"),
-            (96, "extase-charnelle"),
+            (33, "regard-hypnotique"),
+            (43, "festin-d-encre"),
+            (94, "extase-charnelle"),
         ],
         evolution: None,
     },
@@ -7428,15 +7436,15 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Plante, Type::Feerique],
         role: Role::Soutien,
         stats_de_base: [72, 50, 70, 90, 96, 66],
-        rendement_experience: 455,
+        rendement_experience: 447,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Volonte, Habilete::Instinct],
         apprentissage: &[
             (1, "feuille-tranchante"),
             (1, "poussiere-d-elfe"),
-            (35, "ronces"),
-            (45, "rayon-de-lune"),
-            (96, "floraison-sanglante"),
+            (33, "ronces"),
+            (43, "rayon-de-lune"),
+            (94, "floraison-sanglante"),
         ],
         evolution: None,
     },
@@ -7446,16 +7454,16 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Obscur],
         role: Role::Offensif,
         stats_de_base: [104, 90, 100, 104, 98, 48],
-        rendement_experience: 630,
+        rendement_experience: 620,
         rarete: Rarete::Apotre,
         habiletes: &[Habilete::Volonte, Habilete::Sorcellerie],
         apprentissage: &[
             (1, "etreinte-obscure"),
             (1, "morsure-venimeuse"),
-            (20, "hurlement-des-abysses"),
-            (35, "peste-noire"),
-            (50, "baiser-de-sang"),
-            (75, "couvee-immonde"),
+            (18, "hurlement-des-abysses"),
+            (33, "peste-noire"),
+            (48, "baiser-de-sang"),
+            (73, "couvee-immonde"),
         ],
         evolution: None,
     },
@@ -7465,7 +7473,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Roche, Type::Tenebres],
         role: Role::Offensif,
         stats_de_base: [76, 92, 82, 36, 54, 50],
-        rendement_experience: 285,
+        rendement_experience: 288,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Ferocite, Habilete::Carapace],
         apprentissage: &[
@@ -7484,7 +7492,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Son, Type::Psychique],
         role: Role::Soutien,
         stats_de_base: [68, 38, 64, 96, 80, 46],
-        rendement_experience: 285,
+        rendement_experience: 288,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Sorcellerie, Habilete::Instinct],
         apprentissage: &[
@@ -7503,7 +7511,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Sol, Type::Dragon],
         role: Role::Offensif,
         stats_de_base: [84, 94, 74, 40, 52, 48],
-        rendement_experience: 285,
+        rendement_experience: 288,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Ferocite, Habilete::Volonte],
         apprentissage: &[
@@ -7521,7 +7529,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Acier, Type::Tenebres],
         role: Role::Offensif,
         stats_de_base: [82, 94, 92, 44, 66, 50],
-        rendement_experience: 485,
+        rendement_experience: 490,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Carapace, Habilete::Ferocite],
         apprentissage: &[
@@ -7539,7 +7547,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Plante, Type::Lumiere],
         role: Role::Soutien,
         stats_de_base: [78, 50, 76, 92, 98, 56],
-        rendement_experience: 480,
+        rendement_experience: 485,
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Volonte, Habilete::Carapace],
         apprentissage: &[
@@ -7557,7 +7565,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Obscur],
         role: Role::Offensif,
         stats_de_base: [100, 98, 96, 102, 96, 60],
-        rendement_experience: 670,
+        rendement_experience: 677,
         rarete: Rarete::Apotre,
         habiletes: &[Habilete::Sorcellerie, Habilete::Volonte],
         apprentissage: &[
@@ -7639,7 +7647,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Acier, Type::Spectre],
         role: Role::Offensif,
         stats_de_base: [85, 120, 115, 45, 75, 60],
-        rendement_experience: 186,
+        rendement_experience: 140,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Carapace, Habilete::Ferocite],
         apprentissage: &[
@@ -7738,8 +7746,8 @@ static ESPECES: [FicheEspece; 146] = [
             (14, "fournaise"),
             (16, "jet-de-lave"),
             (16, "souffle-putride"),
-            (36, "souffle-de-cendre"),
-            (36, "furie-draconique"),
+            (25, "souffle-de-cendre"),
+            (25, "furie-draconique"),
             (70, "apocalypse-de-cendre"),
         ],
         evolution: None,
@@ -7761,8 +7769,8 @@ static ESPECES: [FicheEspece; 146] = [
             (14, "lame-de-fond"),
             (16, "trombe"),
             (16, "deferlante"),
-            (36, "deluge-toxique"),
-            (36, "croc-de-venin"),
+            (25, "deluge-toxique"),
+            (25, "croc-de-venin"),
             (70, "ecrasement-des-marais"),
         ],
         evolution: None,
@@ -7784,8 +7792,8 @@ static ESPECES: [FicheEspece; 146] = [
             (14, "spores-putrides"),
             (16, "hurlement-de-mandragore"),
             (16, "lianes-etrangleuses"),
-            (36, "racines-du-gibet"),
-            (36, "frisson-d-outre-tombe"),
+            (25, "racines-du-gibet"),
+            (25, "frisson-d-outre-tombe"),
             (70, "etreinte-du-gibet"),
         ],
         evolution: None,
@@ -7807,8 +7815,8 @@ static ESPECES: [FicheEspece; 146] = [
             (14, "coup-de-grace"),
             (16, "griffe-d-ombre"),
             (16, "malefice"),
-            (36, "griffes-spectrales"),
-            (36, "charge-spectrale"),
+            (25, "griffes-spectrales"),
+            (25, "charge-spectrale"),
             (70, "griffe-des-neuf-vies"),
         ],
         evolution: None,
@@ -7828,8 +7836,8 @@ static ESPECES: [FicheEspece; 146] = [
             (9, "curee"),
             (16, "croc-noir"),
             (16, "coup-sournois"),
-            (36, "dechiquetage"),
-            (36, "griffe-d-ombre"),
+            (25, "dechiquetage"),
+            (25, "griffe-d-ombre"),
             (70, "curee-de-l-eclipse"),
         ],
         evolution: None,
@@ -7861,7 +7869,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Acier, Type::Spectre],
         role: Role::Offensif,
         stats_de_base: [97, 137, 131, 51, 86, 68],
-        rendement_experience: 260,
+        rendement_experience: 196,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Carapace, Habilete::Ferocite],
         apprentissage: &[
@@ -7882,7 +7890,7 @@ static ESPECES: [FicheEspece; 146] = [
         types: &[Type::Insecte, Type::Plante],
         role: Role::Offensif,
         stats_de_base: [83, 65, 77, 131, 101, 113],
-        rendement_experience: 196,
+        rendement_experience: 127,
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Sorcellerie, Habilete::Celerite],
         apprentissage: &[
@@ -10189,7 +10197,7 @@ const QUETES: [FicheQuete; 12] = [
             etape: 3,
             objet: "Psautier de Frère Malvoise",
             gardien: "goule",
-            niveau: 27,
+            niveau: 19,
             rencontre: "Sous une dalle descellée du chœur, un psautier relié de cuir noir. Une goule, accroupie dessus, relève la tête et gronde.",
             prise: "Sur la garde du psautier, une main appliquée a écrit \"Frère Malvoise\". Vous le glissez dans votre sac.",
         },
@@ -10221,7 +10229,7 @@ const QUETES: [FicheQuete; 12] = [
             etape: 3,
             objet: "Page du Codex Mortis",
             gardien: "oeil-errant",
-            niveau: 77,
+            niveau: 66,
             rencontre: "Dans une salle de lecture éventrée, une page arrachée flotte au-dessus d'un pupitre, couverte d'une écriture qui bouge. Un œil errant se tourne vers vous.",
             prise: "L'écriture cesse de bouger dès que vous touchez la page. Vous la pliez dans votre sac.",
         },
@@ -10257,7 +10265,7 @@ const QUETES: [FicheQuete; 12] = [
             etape: 3,
             objet: "Marteau de Hautefer",
             gardien: "troll-des-cavernes",
-            niveau: 36,
+            niveau: 25,
             rencontre: "Dans les ruines d'une forge, sous la neige, un marteau repose sur une enclume fendue. Un troll des cavernes en a fait son oreiller ; il se lève, furieux.",
             prise: "Le manche du marteau porte une marque : trois traits et une flamme. Vous le rangez dans votre sac.",
         },
@@ -10289,7 +10297,7 @@ const QUETES: [FicheQuete; 12] = [
             etape: 3,
             objet: "Cœur de braise",
             gardien: "golem-de-magma",
-            niveau: 82,
+            niveau: 74,
             rencontre: "Au bord d'une coulée, une pierre rouge palpite comme un cœur. Un golem de magma la porte dans sa poitrine ouverte.",
             prise: "Arraché au golem, le cœur de braise continue de battre, tiède, presque doux. Vous l'enveloppez au fond de votre sac.",
         },
@@ -10321,7 +10329,7 @@ const QUETES: [FicheQuete; 12] = [
             etape: 3,
             objet: "Médaillon d'Edwin",
             gardien: "sirene-putride",
-            niveau: 51,
+            niveau: 31,
             rencontre: "Sur un ponton pourri, une sirène putride chante, un médaillon d'étain pendu à son cou.",
             prise: "Le médaillon est terni, mais le visage gravé ressemble à Ansgar, en plus jeune. Vous le glissez dans votre sac.",
         },
@@ -10353,7 +10361,7 @@ const QUETES: [FicheQuete; 12] = [
             etape: 2,
             objet: "Filet de l'équipage",
             gardien: "crabe-necrophage",
-            niveau: 53,
+            niveau: 33,
             rencontre: "Au fond de la cale noyée, un filet aux mailles luisantes est roulé contre la coque. Un crabe nécrophage s'y est fait un nid ; il claque des pinces.",
             prise: "Pas une maille du filet n'a cédé. Vous le roulez au fond de votre sac.",
         },
@@ -10605,11 +10613,11 @@ mod tests {
         assert_eq!(chances(0, &[salamandre, ("loup", 6)]), 71);
         assert_eq!(chances(0, &[salamandre, ("loup", 6), ("vipere", 5)]), 100);
         let salamandre = ("salamandre", 12);
-        assert_eq!(chances(1, &[salamandre]), 0);
-        assert_eq!(chances(1, &[salamandre, ("crapaud", 11)]), 34);
+        assert_eq!(chances(1, &[salamandre]), 6);
+        assert_eq!(chances(1, &[salamandre, ("crapaud", 11)]), 61);
         assert_eq!(
             chances(1, &[salamandre, ("crapaud", 11), ("mandragore", 10)]),
-            77
+            100
         );
     }
 
@@ -10847,9 +10855,14 @@ mod tests {
                 .map(|espece| espece.id().as_str().to_string())
                 .collect()
         };
-        assert_eq!(especes(1), vec!["loup", "corbeau", "vipere"]);
-        // Niveau 24 à l'étape 10 : jusqu'à l'Abbaye, sans le Col.
-        let etape_10 = especes(10);
+        // Niveau 6 à l'étape 1 : la Lisière et le Marais, redécoupé (étape
+        // 205).
+        assert_eq!(
+            especes(1),
+            vec!["loup", "corbeau", "vipere", "feu-follet", "armure-hantee"]
+        );
+        // Niveau 20 à l'étape 8 : jusqu'à l'Abbaye, sans le Col.
+        let etape_10 = especes(8);
         assert!(etape_10.contains(&"cloche-hurlante".to_string()));
         assert!(!etape_10.contains(&"wendigo".to_string()));
         assert_eq!(
@@ -10859,10 +10872,10 @@ mod tests {
                 .count(),
             1
         );
-        assert!(especes(12).contains(&"warg".to_string()));
-        // Le Désert de sel, dès le niveau 37 : à l'étape 17, niveau 38.
-        assert!(!especes(16).contains(&"crotale-des-salines".to_string()));
-        assert!(especes(17).contains(&"crotale-des-salines".to_string()));
+        assert!(especes(9).contains(&"warg".to_string()));
+        // Le Désert de sel, dès le niveau 24 : à l'étape 10, niveau 24.
+        assert!(!especes(9).contains(&"crotale-des-salines".to_string()));
+        assert!(especes(10).contains(&"crotale-des-salines".to_string()));
         assert!(
             tour.recit_du_gardien(10, "Basilic")
                 .contains("Basilic garde")
@@ -11388,21 +11401,23 @@ mod tests {
             niveaux,
             vec![
                 ("brigand", Classe::Assassin, 10),
-                ("bourreau", Classe::Guerrier, 15),
-                ("inquisiteur", Classe::Mage, 25),
-                ("porte-etendard", Classe::Templier, 35),
-                ("pythie-de-sel", Classe::Mage, 40),
+                // Depuis l'étape 205, au niveau de leur zone redécoupée,
+                // décalé comme elle.
+                ("bourreau", Classe::Guerrier, 12),
+                ("inquisiteur", Classe::Mage, 17),
+                ("porte-etendard", Classe::Templier, 24),
+                ("pythie-de-sel", Classe::Mage, 23),
                 // Au niveau maximal de leur zone, à part de leur équipement
                 // (étape 163).
-                ("contrebandier", Classe::Assassin, 51),
-                ("contremaitre", Classe::Guerrier, 57),
-                ("chasseresse", Classe::Assassin, 62),
-                ("fossoyeur", Classe::Mage, 67),
-                ("capitaine-mercenaire", Classe::Guerrier, 72),
-                ("archiviste", Classe::Mage, 77),
-                ("pyromancien", Classe::Mage, 82),
-                ("heraut-de-l-orage", Classe::Templier, 87),
-                ("favorite", Classe::Assassin, 92),
+                ("contrebandier", Classe::Assassin, 31),
+                ("contremaitre", Classe::Guerrier, 39),
+                ("chasseresse", Classe::Assassin, 47),
+                ("fossoyeur", Classe::Mage, 53),
+                ("capitaine-mercenaire", Classe::Guerrier, 59),
+                ("archiviste", Classe::Mage, 66),
+                ("pyromancien", Classe::Mage, 74),
+                ("heraut-de-l-orage", Classe::Templier, 82),
+                ("favorite", Classe::Assassin, 90),
                 ("chevalier-crane", Classe::Guerrier, 98),
             ]
         );
@@ -11441,7 +11456,7 @@ mod tests {
             .collect();
         // Le maximum du Marais et un niveau de plus, comme les humains
         // suivants (étape 117).
-        assert_eq!(niveaux, vec![13, 13, 14]);
+        assert_eq!(niveaux, vec![10, 10, 11]);
         assert_eq!(brigand.ia(), IaHumain::Simple);
         assert_eq!(bourreau.ia(), IaHumain::Relevee);
         assert!(contenu.zones()[2].humain().is_none());
@@ -11672,15 +11687,15 @@ mod tests {
     }
 
     #[test]
-    fn le_baron_pendu_obscur_attend_au_bout_de_la_vallee_au_niveau_20() {
+    fn le_baron_pendu_obscur_attend_au_bout_de_la_vallee_au_niveau_13() {
         let contenu = ContenuV1::new();
         let apotre = contenu.piste().apotres().next().unwrap();
-        assert_eq!(apotre.niveau(), niveau(20));
+        assert_eq!(apotre.niveau(), niveau(13));
         assert_eq!(apotre.zone().as_str(), "vallee");
         assert_eq!(apotre.espece().types().liste(), &[Type::Obscur]);
-        // Les quatre dernières de sa liste jusqu'au niveau 20, dont une seule
-        // attaque Obscur : Hurlement des abysses vient au niveau 21.
-        let baron = creer(&contenu, "baron-pendu", 20);
+        // Les quatre dernières de sa liste jusqu'à son niveau, dont une seule
+        // attaque Obscur : Hurlement des abysses vient au niveau suivant.
+        let baron = creer(&contenu, "baron-pendu", 13);
         let ids: Vec<&str> = baron
             .attaques()
             .liste()
@@ -11699,10 +11714,10 @@ mod tests {
     }
 
     #[test]
-    fn l_abbesse_obscure_attend_au_bout_de_l_abbaye_au_niveau_29() {
+    fn l_abbesse_obscure_attend_au_bout_de_l_abbaye_au_niveau_21() {
         let contenu = ContenuV1::new();
         let abbesse = contenu.piste().apotres().nth(1).unwrap();
-        assert_eq!(abbesse.niveau(), niveau(29));
+        assert_eq!(abbesse.niveau(), niveau(21));
         assert_eq!(abbesse.zone().as_str(), "abbaye");
         assert_eq!(abbesse.espece().types().liste(), &[Type::Obscur]);
         assert_eq!(abbesse.espece().rarete(), Rarete::Apotre);
@@ -11728,10 +11743,10 @@ mod tests {
     }
 
     #[test]
-    fn le_margrave_obscur_attend_au_bout_du_col_au_niveau_38() {
+    fn le_margrave_obscur_attend_au_bout_du_col_au_niveau_27() {
         let contenu = ContenuV1::new();
         let margrave = contenu.piste().apotres().nth(2).unwrap();
-        assert_eq!(margrave.niveau(), niveau(38));
+        assert_eq!(margrave.niveau(), niveau(27));
         assert_eq!(margrave.zone().as_str(), "col-du-givre-noir");
         assert_eq!(margrave.espece().types().liste(), &[Type::Obscur]);
         assert_eq!(margrave.espece().rarete(), Rarete::Apotre);
@@ -11752,7 +11767,7 @@ mod tests {
             ]
         );
         let col = &contenu.zones()[4];
-        assert_eq!(col.niveaux().1, niveau(36));
+        assert_eq!(col.niveaux().1, niveau(25));
         let porte_etendard = col.humain().unwrap();
         assert_eq!(porte_etendard.id().as_str(), "porte-etendard");
         assert_eq!(porte_etendard.argent(), 400);
@@ -11774,7 +11789,7 @@ mod tests {
         let contenu = ContenuV1::new();
         let desert = &contenu.zones()[5];
         assert_eq!(desert.id().as_str(), "desert-de-sel");
-        assert_eq!(desert.niveaux(), (niveau(37), niveau(45)));
+        assert_eq!(desert.niveaux(), (niveau(24), niveau(28)));
         let types = |id: &str| -> Vec<Type> {
             contenu
                 .espece(&EspeceId::new(id))
@@ -11815,9 +11830,9 @@ mod tests {
         assert_eq!(
             equipe,
             vec![
-                ("momie-de-sel".to_string(), 45),
-                ("ver-des-salines".to_string(), 45),
-                ("sphinx-des-sables".to_string(), 46),
+                ("momie-de-sel".to_string(), 28),
+                ("ver-des-salines".to_string(), 28),
+                ("sphinx-des-sables".to_string(), 29),
             ]
         );
         assert!(
@@ -11876,8 +11891,6 @@ mod tests {
         let dragon = contenu.espece(evolution.vers()).unwrap();
         assert_eq!(dragon.types().liste(), &[Type::Dragon, Type::Vol]);
         assert_eq!(dragon.rarete(), Rarete::Rare);
-        // Le Désert de sel mène la Vouivre à son niveau d'évolution.
-        assert_eq!(contenu.zones()[5].niveaux().1, niveau(45));
     }
 
     #[test]
@@ -12008,8 +12021,8 @@ mod tests {
             .collect();
         let port = &contenu.zones()[6];
         let mines = &contenu.zones()[7];
-        assert_eq!(port.niveaux(), (niveau(46), niveau(51)));
-        assert_eq!(mines.niveaux(), (niveau(52), niveau(57)));
+        assert_eq!(port.niveaux(), (niveau(27), niveau(31)));
+        assert_eq!(mines.niveaux(), (niveau(35), niveau(39)));
         let neuvieme = piste.indice_suivant(8, &vaincus[..3]).unwrap();
         assert_eq!(&neuvieme.zone, port.id());
         assert!(
@@ -12021,7 +12034,7 @@ mod tests {
             .apotre_en_attente(port.id(), 9, &vaincus[..3])
             .unwrap();
         assert_eq!(amiral.espece().id().as_str(), "amiral-noye");
-        assert_eq!(amiral.niveau(), niveau(53));
+        assert_eq!(amiral.niveau(), niveau(33));
         // Le dixième, au Port, attend la chute de l'Amiral.
         assert_eq!(piste.indice_suivant(9, &vaincus[..3]), None);
         let dixieme = piste.indice_suivant(9, &vaincus[..4]).unwrap();
@@ -12034,7 +12047,7 @@ mod tests {
             .apotre_en_attente(mines.id(), 11, &vaincus[..4])
             .unwrap();
         assert_eq!(prevot.espece().id().as_str(), "prevot-des-fosses");
-        assert_eq!(prevot.niveau(), niveau(59));
+        assert_eq!(prevot.niveau(), niveau(41));
         // Le douzième, aux Mines, attend la chute du Prévôt.
         assert_eq!(piste.indice_suivant(11, &vaincus[..4]), None);
         // Obscurs, ils combattent avec trois attaques Obscur et une de leur
@@ -12095,8 +12108,8 @@ mod tests {
             .collect();
         let sylve = &contenu.zones()[8];
         let catacombes = &contenu.zones()[9];
-        assert_eq!(sylve.niveaux(), (niveau(58), niveau(62)));
-        assert_eq!(catacombes.niveaux(), (niveau(63), niveau(67)));
+        assert_eq!(sylve.niveaux(), (niveau(43), niveau(47)));
+        assert_eq!(catacombes.niveaux(), (niveau(50), niveau(53)));
         let douzieme = piste.indice_suivant(11, &vaincus[..5]).unwrap();
         assert_eq!(douzieme.zone.as_str(), "mines-de-fer-noir");
         assert!(!piste.zone_ouverte(sylve.id(), 11));
@@ -12107,7 +12120,7 @@ mod tests {
             .apotre_en_attente(sylve.id(), 13, &vaincus[..5])
             .unwrap();
         assert_eq!(duchesse.espece().id().as_str(), "duchesse-sanguine");
-        assert_eq!(duchesse.niveau(), niveau(64));
+        assert_eq!(duchesse.niveau(), niveau(49));
         assert_eq!(piste.indice_suivant(13, &vaincus[..5]), None);
         let quatorzieme = piste.indice_suivant(13, &vaincus[..6]).unwrap();
         assert_eq!(&quatorzieme.zone, sylve.id());
@@ -12118,7 +12131,7 @@ mod tests {
             .apotre_en_attente(catacombes.id(), 15, &vaincus[..6])
             .unwrap();
         assert_eq!(eveque.espece().id().as_str(), "eveque-des-os");
-        assert_eq!(eveque.niveau(), niveau(69));
+        assert_eq!(eveque.niveau(), niveau(55));
         // Le seizième, aux Catacombes, attend la chute de l'Évêque.
         assert_eq!(piste.indice_suivant(15, &vaincus[..6]), None);
         let attaques = |apotre: &Apotre| -> Vec<String> {
@@ -12248,8 +12261,8 @@ mod tests {
         assert_eq!(piste.apotres_attendus(), 13);
         let palais = &contenu.zones()[14];
         let puits = &contenu.zones()[15];
-        assert_eq!(palais.niveaux(), (niveau(88), niveau(92)));
-        assert_eq!(puits.niveaux(), (niveau(93), niveau(98)));
+        assert_eq!(palais.niveaux(), (niveau(87), niveau(90)));
+        assert_eq!(puits.niveaux(), (niveau(95), niveau(98)));
         let vingt_quatrieme = piste.indice_suivant(23, &vaincus[..11]).unwrap();
         assert_eq!(vingt_quatrieme.zone.as_str(), "pics-foudroyes");
         assert!(!piste.zone_ouverte(palais.id(), 23));
@@ -12260,7 +12273,7 @@ mod tests {
             .apotre_en_attente(palais.id(), 25, &vaincus[..11])
             .unwrap();
         assert_eq!(reine.espece().id().as_str(), "reine-mere-de-chair");
-        assert_eq!(reine.niveau(), niveau(94));
+        assert_eq!(reine.niveau(), niveau(92));
         assert_eq!(piste.indice_suivant(25, &vaincus[..11]), None);
         let vingt_sixieme = piste.indice_suivant(25, &vaincus[..12]).unwrap();
         assert_eq!(&vingt_sixieme.zone, palais.id());
@@ -12338,8 +12351,8 @@ mod tests {
             .collect();
         let gorge = &contenu.zones()[12];
         let pics = &contenu.zones()[13];
-        assert_eq!(gorge.niveaux(), (niveau(78), niveau(82)));
-        assert_eq!(pics.niveaux(), (niveau(83), niveau(87)));
+        assert_eq!(gorge.niveaux(), (niveau(71), niveau(74)));
+        assert_eq!(pics.niveaux(), (niveau(79), niveau(82)));
         let vingtieme = piste.indice_suivant(19, &vaincus[..9]).unwrap();
         assert_eq!(vingtieme.zone.as_str(), "haute-cite-dechue");
         assert!(!piste.zone_ouverte(gorge.id(), 19));
@@ -12350,7 +12363,7 @@ mod tests {
             .apotre_en_attente(gorge.id(), 21, &vaincus[..9])
             .unwrap();
         assert_eq!(prince.espece().id().as_str(), "prince-de-braise");
-        assert_eq!(prince.niveau(), niveau(84));
+        assert_eq!(prince.niveau(), niveau(76));
         assert_eq!(piste.indice_suivant(21, &vaincus[..9]), None);
         let vingt_deuxieme = piste.indice_suivant(21, &vaincus[..10]).unwrap();
         assert_eq!(&vingt_deuxieme.zone, gorge.id());
@@ -12361,7 +12374,7 @@ mod tests {
             .apotre_en_attente(pics.id(), 23, &vaincus[..10])
             .unwrap();
         assert_eq!(senechal.espece().id().as_str(), "senechal-des-orages");
-        assert_eq!(senechal.niveau(), niveau(89));
+        assert_eq!(senechal.niveau(), niveau(84));
         // Le vingt-quatrième, dans les Pics, attend la chute du Sénéchal.
         assert_eq!(piste.indice_suivant(23, &vaincus[..10]), None);
         let attaques = |apotre: &Apotre| -> Vec<String> {
@@ -12426,8 +12439,8 @@ mod tests {
             .collect();
         let plaine = &contenu.zones()[10];
         let cite = &contenu.zones()[11];
-        assert_eq!(plaine.niveaux(), (niveau(68), niveau(72)));
-        assert_eq!(cite.niveaux(), (niveau(73), niveau(77)));
+        assert_eq!(plaine.niveaux(), (niveau(56), niveau(59)));
+        assert_eq!(cite.niveaux(), (niveau(63), niveau(66)));
         let seizieme = piste.indice_suivant(15, &vaincus[..7]).unwrap();
         assert_eq!(seizieme.zone.as_str(), "catacombes-de-sainte-ombre");
         assert!(!piste.zone_ouverte(plaine.id(), 15));
@@ -12438,7 +12451,7 @@ mod tests {
             .apotre_en_attente(plaine.id(), 17, &vaincus[..7])
             .unwrap();
         assert_eq!(connetable.espece().id().as_str(), "connetable-boucher");
-        assert_eq!(connetable.niveau(), niveau(74));
+        assert_eq!(connetable.niveau(), niveau(61));
         assert_eq!(piste.indice_suivant(17, &vaincus[..7]), None);
         let dix_huitieme = piste.indice_suivant(17, &vaincus[..8]).unwrap();
         assert_eq!(&dix_huitieme.zone, plaine.id());
@@ -12452,7 +12465,7 @@ mod tests {
             chancelier.espece().id().as_str(),
             "chancelier-aux-mille-yeux"
         );
-        assert_eq!(chancelier.niveau(), niveau(79));
+        assert_eq!(chancelier.niveau(), niveau(68));
         // Le vingtième, dans la Haute-Cité, attend la chute du Chancelier.
         assert_eq!(piste.indice_suivant(19, &vaincus[..8]), None);
         let attaques = |apotre: &Apotre| -> Vec<String> {
@@ -12555,45 +12568,45 @@ mod tests {
                 (
                     "epave-du-leviathan",
                     "port-des-noyes",
-                    (50, 53),
+                    (30, 33),
                     "nautile-des-abysses"
                 ),
-                ("filon-ecarlate", "mines-de-fer-noir", (56, 59), "gemmame"),
+                ("filon-ecarlate", "mines-de-fer-noir", (38, 41), "gemmame"),
                 (
                     "autel-des-ronces",
                     "sylve-ecarlate",
-                    (61, 64),
+                    (46, 49),
                     "phalene-d-aube"
                 ),
                 (
                     "crypte-des-saints",
                     "catacombes-de-sainte-ombre",
-                    (66, 69),
+                    (52, 55),
                     "ange-de-pierre"
                 ),
                 (
                     "tertre-des-heros",
                     "plaine-du-massacre",
-                    (71, 74),
+                    (58, 61),
                     "licorne-des-cendres"
                 ),
                 (
                     "bibliotheque-interdite",
                     "haute-cite-dechue",
-                    (76, 79),
+                    (65, 68),
                     "muse-de-cristal"
                 ),
-                ("coeur-du-volcan", "gorge-de-braise", (81, 84), "ifrit"),
+                ("coeur-du-volcan", "gorge-de-braise", (73, 76), "ifrit"),
                 (
                     "aire-des-pegases",
                     "pics-foudroyes",
-                    (86, 89),
+                    (81, 84),
                     "pegase-d-orage"
                 ),
                 (
                     "jardin-de-la-reine",
                     "palais-de-chair",
-                    (91, 94),
+                    (89, 92),
                     "lys-de-sang"
                 ),
                 (

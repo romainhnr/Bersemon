@@ -5259,7 +5259,7 @@ mod tests {
         assert!(combat.fuite_possible() && !combat.filet_possible());
         let zombie = &combat.adversaires()[0];
         assert_eq!(zombie.espece().id().as_str(), "marchand-zombie");
-        assert_eq!(zombie.niveau().valeur(), 13);
+        assert_eq!(zombie.niveau().valeur(), 10);
         let partie = deroulement.partie().unwrap();
         assert_eq!(
             partie.codex().etat(&EspeceId::new("marchand-zombie")),
@@ -7462,7 +7462,11 @@ mod tests {
     /// (16 PV), avec la Lisière et le Marais déjà explorés.
     fn partie_pour_les_expeditions(contenu: &ContenuV1) -> Partie {
         let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Mage);
-        let mut partie = Partie::nouvelle(heros, monstre_du_contenu(contenu, "salamandre", 13));
+        // Depuis l'étape 205, une expédition dans le Marais rapporte 170 à
+        // 350 XP : la Salamandre a déjà de quoi passer au niveau 14 avec 350.
+        let mut salamandre = monstre_du_contenu(contenu, "salamandre", 13);
+        salamandre.gagner_experience(300);
+        let mut partie = Partie::nouvelle(heros, salamandre);
         partie.prendre_monstre_rare(monstre_du_contenu(contenu, "loup", 3));
         partie.prendre_monstre_rare(monstre_du_contenu(contenu, "loup", 3));
         Partie::restaurer(EtatPartie {
@@ -8008,7 +8012,7 @@ mod tests {
 
         // 2 h de base, 1 h 30 à deux. 40 dégâts en deux parts de 20 : le
         // Loup (16 PV) tombe et la Salamandre (34 PV) encaisse 24. Elle gagne
-        // 600 XP et passe au niveau 14, où elle veut apprendre Fournaise ;
+        // 350 XP et passe au niveau 14, où elle veut apprendre Fournaise ;
         // l'expédition rapporte aussi une potion et 55 pièces d'argent.
         let evenements = repondre_a(
             &mut deroulement,
@@ -8016,7 +8020,7 @@ mod tests {
             &contenu,
             &depot,
             5_400,
-            vec![40, 600, 1, 55],
+            vec![40, 350, 1, 55],
         )
         .unwrap();
         let [
@@ -8259,7 +8263,7 @@ mod tests {
             &contenu,
             &depot,
             debut + 5_400,
-            vec![40, 600, 1, 55],
+            vec![40, 350, 1, 55],
         )
         .unwrap();
         let accomplies = quetes_accomplies(&evenements);
@@ -8734,7 +8738,7 @@ mod tests {
         assert!(combat.filet_possible() && combat.fuite_possible());
         let noye = &combat.adversaires()[0];
         assert_eq!(noye.espece().id().as_str(), "noye");
-        assert_eq!(noye.niveau().valeur(), 13);
+        assert_eq!(noye.niveau().valeur(), 10);
         let vus = jouer_le_combat(&mut deroulement, &contenu, &depot);
         assert!(vus.iter().any(|evenement| matches!(
             evenement,
