@@ -75,6 +75,9 @@ pub enum Vue {
     Marchand,
     /// Les monstres que le marchand rachète, avec leur prix.
     Vente,
+    /// Les monstres que Malvoise change en ressources, avec ce qu'il en
+    /// tirerait (section 14.2).
+    Transformation,
     /// Les monstres que Malvoise vend et loue (section 14.2).
     Achats,
     /// Les capsules d'attaque que Malvoise vend, en menus de 25 au plus
@@ -343,6 +346,9 @@ pub enum Cle {
     DonnerAme,
     /// Menu de monstres numéroté, avec leur prix.
     Vendre(u8),
+    /// Menu de monstres numéroté, avec les ressources que Malvoise en
+    /// tirerait.
+    Transformer(u8),
     /// Le monstre choisi dans la gestion.
     VendreCeMonstre(Emplacement),
     /// Une capsule d'habileté sur le monstre choisi (section 5.9).
@@ -653,6 +659,9 @@ impl Cle {
             Cle::DonnerAme if valeur? == BEHERIT => jouer(Choix::ForgerLeBeherit),
             Cle::DonnerAme => jouer(Choix::DonnerAme(MarchandId::new(valeur?))),
             Cle::Vendre(_) => jouer(Choix::Vendre(lire_emplacement(valeur?)?)),
+            Cle::Transformer(_) => {
+                jouer(Choix::TransformerEnRessources(lire_emplacement(valeur?)?))
+            }
             Cle::VendreCeMonstre(emplacement) => jouer(Choix::Vendre(*emplacement)),
             Cle::ChangerDHabilete(emplacement) => jouer(Choix::ChangerDHabilete(*emplacement)),
             Cle::DonnerBooster(emplacement) => match lire_objet_d_experience(valeur?) {
@@ -838,6 +847,7 @@ impl Cle {
             }
             Cle::Afficher(Vue::Marchand) => "vue:marchand".to_string(),
             Cle::Afficher(Vue::Vente) => "vue:vente".to_string(),
+            Cle::Afficher(Vue::Transformation) => "vue:transformation".to_string(),
             Cle::Afficher(Vue::Achats) => "vue:achats".to_string(),
             Cle::Afficher(Vue::Capsules) => "vue:capsules".to_string(),
             Cle::Afficher(Vue::Eclipse) => "vue:eclipse".to_string(),
@@ -938,6 +948,7 @@ impl Cle {
             Cle::AcheterCapsule(numero) => format!("acheter-capsule:{numero}"),
             Cle::DonnerAme => "donner-ame".to_string(),
             Cle::Vendre(numero) => format!("vendre:{numero}"),
+            Cle::Transformer(numero) => format!("transformer:{numero}"),
             Cle::ChangerDHabilete(emplacement) => {
                 format!("changer-habilete:{}", emplacement_en_texte(*emplacement))
             }
@@ -1076,6 +1087,7 @@ impl Cle {
             "vue:expeditions" => Cle::Afficher(Vue::Expeditions),
             "vue:marchand" => Cle::Afficher(Vue::Marchand),
             "vue:vente" => Cle::Afficher(Vue::Vente),
+            "vue:transformation" => Cle::Afficher(Vue::Transformation),
             "vue:achats" => Cle::Afficher(Vue::Achats),
             "vue:capsules" => Cle::Afficher(Vue::Capsules),
             "vue:eclipse" => Cle::Afficher(Vue::Eclipse),
@@ -1303,6 +1315,7 @@ impl Cle {
                         Cle::AcheterFilets(Filet::depuis_id(filet)?, nombre.parse().ok()?)
                     }
                     "vendre" => Cle::Vendre(numero()?),
+                    "transformer" => Cle::Transformer(numero()?),
                     "entrainer" => Cle::Entrainer(numero()?),
                     "reprendre" => Cle::Reprendre(position()?),
                     "vendre-monstre" => Cle::VendreCeMonstre(emplacement()?),
@@ -1863,6 +1876,7 @@ mod tests {
             Cle::Rappeler(ZoneId::new("marais")),
             Cle::Afficher(Vue::Marchand),
             Cle::Afficher(Vue::Vente),
+            Cle::Afficher(Vue::Transformation),
             Cle::Afficher(Vue::Attaques(Emplacement::Camp(29))),
             Cle::AcheterSoins,
             Cle::AcheterFilets(Filet::Chanvre, 5),
@@ -1871,6 +1885,7 @@ mod tests {
             Cle::AcheterCapsule(1),
             Cle::DonnerAme,
             Cle::Vendre(2),
+            Cle::Transformer(1),
             Cle::VendreCeMonstre(Emplacement::Equipe(2)),
             Cle::ChangerDHabilete(Emplacement::Camp(7)),
             Cle::DonnerBooster(Emplacement::Camp(59)),

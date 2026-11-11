@@ -7,7 +7,7 @@ use bersemon_core::contenu::ContenuV1;
 use bersemon_core::horodatage::Horodatage;
 use bersemon_core::marchand::{
     EXPEDITIONS_DE_LOCATION, OffreDeMonstre, PRIX_CAPSULE_D_HABILETE, prix_de_la_pierre,
-    prix_du_filet, prix_du_soin,
+    prix_du_filet, prix_du_soin, ressources_d_un_monstre,
 };
 use bersemon_core::objet_d_experience::ObjetDExperience;
 use bersemon_core::partie::Partie;
@@ -16,7 +16,8 @@ use bersemon_presentation::beherit::{FORGER_LE_BEHERIT, peut_forger_le_beherit};
 use bersemon_presentation::filets::filets;
 use bersemon_presentation::marchand::{
     capsules_en_vente, capsules_obtenues, etal as texte_de_l_etal, location_en_cours,
-    offre_d_achat, offre_de_location, offre_de_rachat, offre_de_ressources, ressources_a_vendre,
+    offre_d_achat, offre_de_location, offre_de_rachat, offre_de_ressources,
+    offre_de_transformation, ressources_a_vendre,
 };
 use bersemon_presentation::monstres::decrire_attaque;
 use bersemon_presentation::partie::argent;
@@ -250,6 +251,11 @@ pub fn vente(partie: &Partie) -> Question {
     lignes.extend(rangees(vec![
         bouton(Cle::Afficher(Vue::Achats), "Acheter ou louer", PRINCIPAL),
         bouton(
+            Cle::Afficher(Vue::Transformation),
+            "Changer en ressources",
+            DANGER,
+        ),
+        bouton(
             Cle::Afficher(Vue::Marchand),
             "Retour à Malvoise",
             SECONDAIRE,
@@ -261,6 +267,43 @@ pub fn vente(partie: &Partie) -> Question {
             "Malvoise rachète vos monstres et vos ressources : choisissez ce que vous vendez, son prix est indiqué dans le menu. Vous avez {}.",
             argent(partie.argent())
         ),
+        rangees: lignes,
+    }
+}
+
+/// Les monstres dont Malvoise tirerait des ressources, avec ce qu'il en
+/// tirerait ; la confirmation est demandée par le déroulement (section
+/// 14.2).
+pub fn transformation(partie: &Partie, contenu: &ContenuV1) -> Question {
+    if !partie.marchand_au_camp() {
+        return sans_marchand();
+    }
+    let collection = partie.collection();
+    let especes = contenu.especes();
+    let mut lignes = menus_de_monstres_decrits(
+        collection,
+        Cle::Transformer,
+        "Changer",
+        |emplacement| {
+            collection.monstre(emplacement).is_some_and(|monstre| {
+                !monstre.est_loue() && ressources_d_un_monstre(monstre, especes).is_some()
+            })
+        },
+        |monstre| offre_de_transformation(monstre, especes),
+    );
+    lignes.truncate(RANGEES_MAX - 1);
+    lignes.extend(rangees(vec![
+        bouton(Cle::Afficher(Vue::Vente), "Retour à la vente", SECONDAIRE),
+        retour(),
+    ]));
+    let texte = if lignes.len() > 1 {
+        "Malvoise change un monstre en ressources de sa famille : 2, plus 1 tous les 10 niveaux. Le monstre ne revient pas.".to_string()
+    } else {
+        "Malvoise ne tirerait rien de vos monstres : leur famille ne lâche pas de ressource."
+            .to_string()
+    };
+    Question {
+        texte,
         rangees: lignes,
     }
 }

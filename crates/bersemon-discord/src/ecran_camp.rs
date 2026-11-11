@@ -93,6 +93,7 @@ pub fn question(
         }
         Vue::Marchand => ecran_marchand::etal(partie, contenu, maintenant),
         Vue::Vente => ecran_marchand::vente(partie),
+        Vue::Transformation => ecran_marchand::transformation(partie, contenu),
         Vue::Achats => ecran_marchand::achats(partie, contenu),
         Vue::Capsules => ecran_marchand::capsules(partie, contenu),
         Vue::Eclipse => ecran_eclipse::eclipse(partie, contenu),

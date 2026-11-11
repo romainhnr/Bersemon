@@ -5,7 +5,10 @@
 use bersemon_core::capsule::Capsule;
 use bersemon_core::collection::Collection;
 use bersemon_core::combat::Cote;
-use bersemon_core::marchand::{EXPEDITIONS_DE_LOCATION, OffreDeMonstre, prix_de_revente};
+use bersemon_core::espece::Espece;
+use bersemon_core::marchand::{
+    EXPEDITIONS_DE_LOCATION, OffreDeMonstre, prix_de_revente, ressources_d_un_monstre,
+};
 use bersemon_core::monstre::Monstre;
 use bersemon_core::partie::Partie;
 use bersemon_core::ressource::Ressource;
@@ -155,10 +158,35 @@ pub fn offre_de_rachat(monstre: &Monstre) -> String {
 
 /// Équipe puis camp, numérotés à la suite comme la liste des monstres.
 pub fn liste_de_rachat(collection: &Collection) -> String {
+    liste_numerotee(collection, offre_de_rachat)
+}
+
+/// "Croc de loup (3)", ou "aucune ressource" : ce que Malvoise tirerait de
+/// ce monstre (section 14.2).
+pub fn offre_de_transformation(monstre: &Monstre, especes: &[Espece]) -> String {
+    match ressources_d_un_monstre(monstre, especes) {
+        Some((ressource, nombre)) => ressources(&ressource, nombre),
+        None => "aucune ressource".to_string(),
+    }
+}
+
+/// Chaque monstre de l'équipe puis du camp, numéroté à la suite, avec ce
+/// que Malvoise en tirerait.
+pub fn liste_de_transformation(collection: &Collection, especes: &[Espece]) -> String {
+    liste_numerotee(collection, |monstre| {
+        format!(
+            "{} : {}",
+            nom(monstre, Cote::Joueur),
+            offre_de_transformation(monstre, especes)
+        )
+    })
+}
+
+fn liste_numerotee(collection: &Collection, decrire: impl Fn(&Monstre) -> String) -> String {
     let equipe = collection.equipe();
     let mut lignes = vec!["Équipe :".to_string()];
     for (index, monstre) in equipe.iter().enumerate() {
-        lignes.push(format!("  {}. {}", index + 1, offre_de_rachat(monstre)));
+        lignes.push(format!("  {}. {}", index + 1, decrire(monstre)));
     }
     lignes.push("Camp :".to_string());
     if collection.camp().is_empty() {
@@ -168,7 +196,7 @@ pub fn liste_de_rachat(collection: &Collection) -> String {
         lignes.push(format!(
             "  {}. {}",
             equipe.len() + index + 1,
-            offre_de_rachat(monstre)
+            decrire(monstre)
         ));
     }
     lignes.join("\n")

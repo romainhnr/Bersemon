@@ -118,6 +118,9 @@ pub enum Choix {
     /// Au camp, chez le marchand, après confirmation, comme un relâcher
     /// (section 14.2).
     Vendre(Emplacement),
+    /// Au camp, chez Malvoise, après confirmation, comme une vente : le
+    /// monstre contre des ressources de sa famille (section 14.2).
+    TransformerEnRessources(Emplacement),
     /// Au camp, chez le marchand, sans confirmation : une capsule de
     /// `ContenuV1::capsules` (section 14.2).
     AcheterCapsule(AttaqueId),
@@ -422,6 +425,12 @@ pub enum Confirmation {
     Vendre {
         monstre: Monstre,
         prix: u32,
+    },
+    /// Le monstre laissé à Malvoise ne revient pas (section 14.2).
+    TransformerEnRessources {
+        monstre: Monstre,
+        ressource: Ressource,
+        nombre: u32,
     },
     /// La partie de ce héros serait effacée pour de bon (section 13.9).
     Suicide(Heros),
@@ -831,6 +840,12 @@ pub enum Evenement {
     MonstreVendu {
         monstre: Monstre,
         prix: u32,
+    },
+    /// Laissé à Malvoise, contre ses ressources, rangées au coffre.
+    MonstreTransforme {
+        monstre: Monstre,
+        ressource: Ressource,
+        nombre: u32,
     },
     /// Chez Malvoise, avec la place qu'il a prise (section 14.2).
     MonstreAchete {
@@ -1986,6 +2001,33 @@ impl EnJeu {
                     .vendre(*emplacement)
                     .map_err(ErreurChoix::Marchand)?;
                 evenements.push(Evenement::MonstreVendu { monstre, prix });
+                sauvegarder(&self.partie, contexte.depot, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::TransformerEnRessources(emplacement) => {
+                let especes = contexte.contenu.especes();
+                if !confirme {
+                    let (monstre, ressource, nombre) = self
+                        .partie
+                        .estimer_transformation(*emplacement, especes)
+                        .map_err(ErreurChoix::Marchand)?;
+                    return Ok(Reponse::a_confirmer(
+                        Confirmation::TransformerEnRessources {
+                            monstre,
+                            ressource,
+                            nombre,
+                        },
+                    ));
+                }
+                let (monstre, ressource, nombre) = self
+                    .partie
+                    .transformer_en_ressources(*emplacement, especes)
+                    .map_err(ErreurChoix::Marchand)?;
+                evenements.push(Evenement::MonstreTransforme {
+                    monstre,
+                    ressource,
+                    nombre,
+                });
                 sauvegarder(&self.partie, contexte.depot, evenements);
                 Ok(Reponse::Faite)
             }

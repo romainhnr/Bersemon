@@ -1017,6 +1017,17 @@ Décidés le 20/10/2026, pour les étapes 83 à 86 (gamedesign.md, section 14.2)
 | Écran du bot | Malvoise vend des monstres communs des zones que vous avez explorées, et loue des monstres rares pour 3 expéditions : un monstre loué ne fait que combattre, puis repart. Vous avez {argent}. |
 | Refus | Vous avez déjà un monstre loué. / Un monstre loué ne peut pas faire cela. / L'équipe et le camp sont pleins. / Malvoise ne propose pas ce monstre pour l'instant. / Vous n'avez pas de monstre loué. / Malvoise n'a encore aucun monstre à vendre : menez une expédition au bout. / Malvoise n'a encore aucun monstre à louer. |
 
+
+Depuis l'étape 200 (11/11/2026, textes proposés par Claude sans validation, Q124), Malvoise change un monstre en ressources (gamedesign.md, section 14.2) :
+
+| Moment | Texte |
+|---|---|
+| Confirmation | Laisser définitivement {monstre} à Malvoise, qui en tirera {ressources} ? |
+| Récit | Malvoise emporte {monstre} derrière son étal et revient avec {ressources}, que vous rangez au coffre. |
+| Refus | Malvoise ne tire rien de ce monstre : ni son espèce ni sa famille ne lâchent de ressource. |
+| Discord, écran | Malvoise change un monstre en ressources de sa famille : 2, plus 1 tous les 10 niveaux. Le monstre ne revient pas. / Malvoise ne tirerait rien de vos monstres : leur famille ne lâche pas de ressource. |
+| Libellés | Changer un monstre en ressources (console) ; Changer en ressources, Changer un monstre de l'équipe, Retour à la vente (Discord) ; {monstre} : {ressources}, ou aucune ressource |
+
 ## 23. Béhérit pourpre, Éclipse et Démiurge
 
 Décidés le 21/10/2026, pour les étapes 88 à 92 (gamedesign.md, section 9.4), contenu proposé par Claude et validé par l'utilisateur.

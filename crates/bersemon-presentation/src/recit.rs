@@ -432,6 +432,18 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             ),
             false,
         ),
+        Evenement::MonstreTransforme {
+            monstre,
+            ressource,
+            nombre,
+        } => (
+            format!(
+                "Malvoise emporte {} derrière son étal et revient avec {}, que vous rangez au coffre.",
+                nom_en_valeur(monstre, Cote::Joueur),
+                ressources(ressource, *nombre)
+            ),
+            false,
+        ),
         Evenement::MonstreVendu { monstre, prix } => (
             format!(
                 "Vous vendez {} à Malvoise pour {}.",

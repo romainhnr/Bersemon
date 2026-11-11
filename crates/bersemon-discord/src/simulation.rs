@@ -1633,6 +1633,36 @@ fn malvoise_vend_et_loue_des_monstres_a_travers_les_ecrans_du_bot() {
     assert_eq!(partie.collection().equipe().len(), 2);
     // Le Loup au niveau 3, 68 ; le Cerf blanc au niveau 36, 576.
     assert_eq!(partie.argent(), 10_000 - 68 - 576);
+    // Depuis la vente, Malvoise change le Loup acheté en crocs (section
+    // 14.2).
+    let version = joueurs.session(JOUEUR, &contenu).version;
+    joueurs
+        .afficher(JOUEUR, version, Vue::Vente, &contenu)
+        .unwrap();
+    cliquer_sur(&mut joueurs, Cle::Afficher(Vue::Transformation));
+    let affiche = afficher(&mut joueurs);
+    assert_eq!(
+        valeurs_des_menus(&affiche, |cle| matches!(cle, Cle::Transformer(_))),
+        ["e1"],
+        "seul le Loup acheté a une famille qui lâche une ressource"
+    );
+    let clic = choisir_dans(&affiche, |cle| matches!(cle, Cle::Transformer(_)), "e1").unwrap();
+    assert!(jouer(&mut joueurs, clic).is_empty());
+    let change = cliquer_sur(&mut joueurs, Cle::Oui);
+    assert!(
+        matches!(
+            &change[..],
+            [Evenement::MonstreTransforme { monstre, nombre: 2, .. }, ..]
+                if monstre.espece().id().as_str() == "loup"
+        ),
+        "{change:?}"
+    );
+    let partie = joueurs
+        .session(JOUEUR, &contenu)
+        .deroulement
+        .partie()
+        .unwrap();
+    assert_eq!(partie.collection().equipe().len(), 1);
     let _ = fs::remove_dir_all(dossier);
 }
 

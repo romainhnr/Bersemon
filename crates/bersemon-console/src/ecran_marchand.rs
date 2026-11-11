@@ -19,8 +19,8 @@ use bersemon_presentation::beherit::{FORGER_LE_BEHERIT, peut_forger_le_beherit};
 use bersemon_presentation::boosters::SERVICE_SHINY;
 use bersemon_presentation::filets::{liste_de_filets, offre_de_filet};
 use bersemon_presentation::marchand::{
-    capsules_en_vente, etal, offre_d_achat, offre_de_capsule, offre_de_location,
-    offre_de_ressources, ressources_a_vendre,
+    capsules_en_vente, etal, liste_de_transformation, offre_d_achat, offre_de_capsule,
+    offre_de_location, offre_de_ressources, ressources_a_vendre,
 };
 use bersemon_presentation::monstres::ligne_monstre;
 use bersemon_presentation::partie::{argent, collection as liste_des_monstres};
@@ -64,11 +64,12 @@ pub fn choisir(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Opt
         // Le retour d'un monstre loué n'est proposé que s'il y en a un.
         let loue = partie.collection().monstre_loue();
         println!("  13. Acheter des objets d'expérience");
+        println!("  14. Changer un monstre en ressources");
         if let Some((_, monstre)) = loue {
-            println!("  14. Rendre {} à Malvoise", monstre.nom());
+            println!("  15. Rendre {} à Malvoise", monstre.nom());
         }
         println!("  0. Retour au camp");
-        let dernier = if loue.is_some() { 14 } else { 13 };
+        let dernier = if loue.is_some() { 15 } else { 14 };
         let choix = match entree.choix(0, dernier)? {
             0 => return Some(None),
             1 => acheter_soins(partie, entree)?,
@@ -84,12 +85,33 @@ pub fn choisir(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Opt
             11 => louer_monstre(partie, contenu, entree)?,
             12 => rite(partie, contenu, entree)?,
             13 => acheter_objets_d_experience(partie, entree)?,
+            14 => transformer_en_ressources(partie, contenu, entree)?,
             _ => Some(Choix::RendreLeMonstreLoue),
         };
         if choix.is_some() {
             return Some(choix);
         }
     }
+}
+
+/// Avec ce que Malvoise tirerait de chaque monstre ; la confirmation est
+/// demandée par le déroulement (section 14.2).
+fn transformer_en_ressources(
+    partie: &Partie,
+    contenu: &ContenuV1,
+    entree: &mut Entree,
+) -> Option<Option<Choix>> {
+    println!();
+    println!(
+        "{}",
+        liste_de_transformation(partie.collection(), contenu.especes())
+    );
+    let emplacement = designer(
+        partie.collection(),
+        entree,
+        "Quel monstre laisser à Malvoise contre ses ressources ?",
+    )?;
+    Some(emplacement.map(Choix::TransformerEnRessources))
 }
 
 /// Un monstre, ou le héros (section 13.7).

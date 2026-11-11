@@ -51,7 +51,7 @@ use crate::legendaire::ZoneLegendaire;
 use crate::machines::{ErreurMachine, Machines, reste_avant_le_plafond};
 use crate::marchand::{
     EXPEDITIONS_DE_LOCATION, ErreurMarchand, OffreDeMonstre, PRIX_CAPSULE_D_HABILETE,
-    prix_de_la_pierre, prix_de_revente, prix_du_filet, prix_du_soin,
+    prix_de_la_pierre, prix_de_revente, prix_du_filet, prix_du_soin, ressources_d_un_monstre,
 };
 use crate::monstre::{
     Monstre, RapportExperience, choc_chromatique, tirer_shiny, tirer_valeurs_internes,
@@ -1529,6 +1529,42 @@ impl Partie {
         let prix = prix_de_revente(&monstre);
         self.coffre_du_camp.ajouter_argent(prix);
         Ok((monstre, prix))
+    }
+
+    /// Le monstre que Malvoise prendrait et les ressources qu'il en
+    /// tirerait, sans rien changer : de quoi demander confirmation. Refuse
+    /// ce que refuserait `transformer_en_ressources`.
+    pub fn estimer_transformation(
+        &self,
+        emplacement: Emplacement,
+        especes: &[Espece],
+    ) -> Result<(Monstre, Ressource, u32), ErreurMarchand> {
+        self.clone().transformer_en_ressources(emplacement, especes)
+    }
+
+    /// Définitive et soumise aux règles du relâcher, comme une vente
+    /// (section 14.2) : le monstre part, ses ressources vont au coffre.
+    pub fn transformer_en_ressources(
+        &mut self,
+        emplacement: Emplacement,
+        especes: &[Espece],
+    ) -> Result<(Monstre, Ressource, u32), ErreurMarchand> {
+        self.verifier_marchand()?;
+        let monstre = self
+            .collection
+            .monstre(emplacement)
+            .ok_or(ErreurMarchand::Collection(
+                ErreurCollection::EmplacementInexistant(emplacement),
+            ))?;
+        let (ressource, nombre) =
+            ressources_d_un_monstre(monstre, especes).ok_or(ErreurMarchand::SansRessource)?;
+        let monstre = self
+            .collection
+            .relacher(emplacement)
+            .map_err(ErreurMarchand::Collection)?;
+        self.coffre_du_camp
+            .ajouter_ressources(ressource.clone(), nombre);
+        Ok((monstre, ressource, nombre))
     }
 
     /// Au camp, sans confirmation ; la capsule va dans le coffre (sections
@@ -4528,6 +4564,58 @@ pub(crate) mod tests {
         assert_eq!(partie.estimer_vente(Emplacement::Equipe(0)), dernier);
         assert_eq!(partie.vendre(Emplacement::Equipe(0)), dernier);
         assert_eq!(partie.argent(), 68);
+    }
+
+    /// Section 14.2 : la ressource de l'espèce, ou de la forme de base de sa
+    /// famille, 2 plus 1 tous les 10 niveaux.
+    #[test]
+    fn malvoise_change_un_monstre_en_ressources_de_sa_famille() {
+        let contenu = crate::contenu::ContenuV1::new();
+        let creer = |id: &str, niveau: u8| {
+            Monstre::creer(
+                contenu.espece(&EspeceId::new(id)).unwrap(),
+                Niveau::new(niveau).unwrap(),
+                ValeursInternes::default(),
+                false,
+            )
+            .unwrap()
+        };
+        let heros = Heros::new(Nom::new("Aldric").unwrap(), Classe::Mage);
+        let mut partie = Partie::nouvelle(heros, creer("loup", 25));
+        partie
+            .collection
+            .accueillir_capture(creer("loup-garou", 40));
+        partie.collection.accueillir_capture(creer("schnoz", 10));
+        let especes = contenu.especes();
+        assert_eq!(
+            partie.estimer_transformation(Emplacement::Equipe(1), especes),
+            Err(ErreurMarchand::AucunMarchand)
+        );
+        partie.marchand_au_camp = true;
+        // Le Loup-garou ne lâche rien : sa famille, celle du Loup, donne ses
+        // crocs.
+        let (estime, ressource, nombre) = partie
+            .estimer_transformation(Emplacement::Equipe(1), especes)
+            .unwrap();
+        assert_eq!(estime.espece().id().as_str(), "loup-garou");
+        assert_eq!(ressource.id().as_str(), "croc-de-loup");
+        assert_eq!(nombre, 6);
+        assert_eq!(partie.collection().nombre_de_monstres(), 3);
+        assert_eq!(
+            partie.transformer_en_ressources(Emplacement::Equipe(1), especes),
+            Ok((estime, ressource.clone(), 6))
+        );
+        assert_eq!(partie.collection().nombre_de_monstres(), 2);
+        assert_eq!(
+            partie.coffre_du_camp().nombre_de_ressources(ressource.id()),
+            6
+        );
+        // Le Schnoz n'a ni ressource, ni famille qui en lâche.
+        assert_eq!(
+            partie.transformer_en_ressources(Emplacement::Equipe(1), especes),
+            Err(ErreurMarchand::SansRessource)
+        );
+        assert_eq!(partie.collection().nombre_de_monstres(), 2);
     }
 
     fn capsule(id: &str, type_attaque: Type) -> Capsule {

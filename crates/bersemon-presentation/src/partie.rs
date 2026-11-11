@@ -754,6 +754,15 @@ pub fn question_de_confirmation(confirmation: &Confirmation) -> String {
             monstre.nom(),
             argent(*prix)
         ),
+        Confirmation::TransformerEnRessources {
+            monstre,
+            ressource,
+            nombre,
+        } => format!(
+            "Laisser définitivement {} à Malvoise, qui en tirera {} ?",
+            monstre.nom(),
+            ressources(ressource, *nombre)
+        ),
         Confirmation::ChangerDHabilete { monstre, nouvelle } => format!(
             "Utiliser une capsule d'habileté sur {} ? Son habileté {} sera remplacée par {} : {}.",
             monstre.nom(),

@@ -10,6 +10,8 @@ use crate::filet::Filet;
 use crate::monstre::Monstre;
 use crate::niveau::Niveau;
 use crate::pierre::PierreDEvolution;
+use crate::ressource::Ressource;
+use crate::rite::forme_de_base;
 use crate::soin::Soin;
 
 /// En pièces d'argent (sections 14.4 et 14.5).
@@ -127,6 +129,25 @@ pub fn prix_de_revente(monstre: &Monstre) -> u32 {
     }
 }
 
+/// Ce qu'un monstre laissé à Malvoise rend au moins, en ressources, plus
+/// une par tranche de niveaux (proposé par Claude, Q124).
+pub const RESSOURCES_D_UN_MONSTRE: u32 = 2;
+pub const NIVEAUX_PAR_RESSOURCE: u32 = 10;
+
+/// Les ressources que Malvoise tire de ce monstre (section 14.2) : celle de
+/// son espèce, ou, pour une forme évoluée qui n'en lâche pas, celle de la
+/// forme de base de sa famille, de 2 au niveau 1 à 12 au niveau 100.
+/// `None` si ni l'espèce ni sa famille n'en lâchent.
+pub fn ressources_d_un_monstre(monstre: &Monstre, especes: &[Espece]) -> Option<(Ressource, u32)> {
+    let espece = monstre.espece();
+    let ressource = espece
+        .ressource()
+        .or_else(|| forme_de_base(espece, especes).ressource())?;
+    let nombre =
+        RESSOURCES_D_UN_MONSTRE + u32::from(monstre.niveau().valeur()) / NIVEAUX_PAR_RESSOURCE;
+    Some((ressource.clone(), nombre))
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ErreurMarchand {
     /// Aucun marchand ne s'est encore réfugié au camp (section 14.2).
@@ -161,6 +182,8 @@ pub enum ErreurMarchand {
     /// Un seul monstre loué à la fois.
     DejaUnMonstreLoue,
     AucunMonstreLoue,
+    /// Ni l'espèce du monstre ni sa famille ne lâchent de ressource.
+    SansRessource,
 }
 
 impl fmt::Display for ErreurMarchand {
@@ -190,6 +213,7 @@ impl fmt::Display for ErreurMarchand {
             ErreurMarchand::PlusDePlace => write!(f, "l'équipe et le camp sont pleins"),
             ErreurMarchand::DejaUnMonstreLoue => write!(f, "un monstre est déjà loué"),
             ErreurMarchand::AucunMonstreLoue => write!(f, "aucun monstre loué"),
+            ErreurMarchand::SansRessource => write!(f, "ce monstre ne donne aucune ressource"),
         }
     }
 }

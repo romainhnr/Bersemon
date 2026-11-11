@@ -128,6 +128,10 @@ pub fn erreur_marchand(erreur: &ErreurMarchand) -> String {
         ErreurMarchand::PlusDePlace => "L'équipe et le camp sont pleins.".to_string(),
         ErreurMarchand::DejaUnMonstreLoue => "Vous avez déjà un monstre loué.".to_string(),
         ErreurMarchand::AucunMonstreLoue => "Vous n'avez pas de monstre loué.".to_string(),
+        ErreurMarchand::SansRessource => {
+            "Malvoise ne tire rien de ce monstre : ni son espèce ni sa famille ne lâchent de ressource."
+                .to_string()
+        }
     }
 }
 
