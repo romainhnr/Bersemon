@@ -118,6 +118,7 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             numero,
             total: None,
         } => (format!("Étape {numero}."), true),
+        Evenement::EnChemin => ("En chemin vers l'étape suivante.".to_string(), true),
         Evenement::EntreeDansLaTour(recit) => (recit.clone(), false),
         Evenement::GardienDeLaTour(recit) => (recit.clone(), false),
         Evenement::ReposDansLaTour(recit) => (recit.clone(), true),

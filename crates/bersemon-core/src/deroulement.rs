@@ -478,6 +478,9 @@ pub enum Evenement {
         numero: u32,
         total: Option<u32>,
     },
+    /// Un coffre ou un monstre rare, en chemin entre deux étapes, sans en
+    /// prendre la place (section 9.2).
+    EnChemin,
     /// Le récit de l'entrée dans la Tour sans fond, au départ (section 9.5).
     EntreeDansLaTour(String),
     /// Le récit du gardien de la Tour, avant le combat annoncé.
@@ -3754,10 +3757,16 @@ impl EnExpedition {
         contexte: &mut Contexte<'_>,
         evenements: &mut Vec<Evenement>,
     ) -> Reponse {
-        evenements.push(Evenement::Etape {
-            numero: self.expedition.etapes_faites(),
-            total: (!self.expedition.est_sans_fin()).then_some(self.expedition.nombre_etapes()),
-        });
+        // Un coffre ou un monstre rare croisé en chemin, entre deux étapes,
+        // n'en est pas une (section 9.2).
+        if self.expedition.est_en_chemin() {
+            evenements.push(Evenement::EnChemin);
+        } else {
+            evenements.push(Evenement::Etape {
+                numero: self.expedition.etapes_faites(),
+                total: (!self.expedition.est_sans_fin()).then_some(self.expedition.nombre_etapes()),
+            });
+        }
         if self.en_groupe {
             if let Some(reponse) = self.preparer_le_combat_de_groupe(partie, &evenement, evenements)
             {
@@ -4435,30 +4444,46 @@ mod tests {
             Err(ErreurChoix::ZoneFermee)
         );
 
-        // Un coffre d'une potion et de 12 pièces d'argent, sans capsule.
-        let mut aleatoire = AleatoireScripte::new([81, 1, 12, 21, 100]);
-        let mut contexte = Contexte {
-            contenu: &contenu,
-            aleatoire: &mut aleatoire,
-            depot: &depot,
-            maintenant: Horodatage::depuis_secondes(0),
-        };
-        let evenements = deroulement
-            .repondre(
-                Choix::PartirEnExpedition(ZoneId::new("lisiere")),
-                &mut contexte,
-            )
-            .unwrap();
-        assert_eq!(
-            evenements,
-            vec![
-                Evenement::Depart("Lisière du Bois-Sombre".to_string()),
+        // La première étape est un combat (section 9.2).
+        let evenements = jouer_jusqu_entre_deux_etapes(
+            &mut deroulement,
+            Choix::PartirEnExpedition(ZoneId::new("lisiere")),
+            &contenu,
+            &depot,
+            2,
+        );
+        assert!(matches!(
+            &evenements[..],
+            [
+                Evenement::Depart(lisiere),
                 // Minuit UTC : le jour (section 9.6).
                 Evenement::JourOuNuitAuDepart(JourOuNuit::Jour),
                 Evenement::Etape {
                     numero: 1,
                     total: Some(5)
                 },
+                Evenement::Rencontre(_),
+                ..
+            ] if lisiere == "Lisière du Bois-Sombre"
+        ));
+        assert!(evenements.contains(&Evenement::Conseil(Conseil::PremierArretEntreDeuxEtapes)));
+        assert_eq!(deroulement.attente(), Attente::EntreDeuxEtapes);
+        let argent = deroulement.partie().unwrap().sac().argent();
+        // En chemin, un coffre d'une potion et de 12 pièces d'argent, sans
+        // capsule.
+        let evenements = repondre_a(
+            &mut deroulement,
+            Choix::ContinuerLExpedition,
+            &contenu,
+            &depot,
+            0,
+            vec![1, 1, 12, 21, 100],
+        )
+        .unwrap();
+        assert_eq!(
+            evenements,
+            vec![
+                Evenement::EnChemin,
                 Evenement::Coffre {
                     potions: 1,
                     argent: 12,
@@ -4470,15 +4495,22 @@ mod tests {
                     filets: None,
                     tresor: None,
                 },
-                Evenement::Conseil(Conseil::PremierArretEntreDeuxEtapes),
             ]
         );
         assert_eq!(deroulement.attente(), Attente::EntreDeuxEtapes);
 
-        // La Salamandre a tous ses PV : la potion serait perdue (Q53).
+        // Un monstre qui a tous ses PV : la potion serait perdue (Q53).
+        let plein = deroulement
+            .partie()
+            .unwrap()
+            .collection()
+            .equipe()
+            .iter()
+            .position(|monstre| !monstre.est_ko() && monstre.pv_actuels() == monstre.stats().pv)
+            .unwrap();
         repondre_sans_tirage(
             &mut deroulement,
-            Choix::UtiliserSoin(Soin::Potion, 0),
+            Choix::UtiliserSoin(Soin::Potion, plein),
             &contenu,
             &depot,
         )
@@ -4515,7 +4547,7 @@ mod tests {
         assert_eq!(deroulement.attente(), Attente::Camp);
         assert!(deroulement.expedition().is_none());
         // L'argent trouvé reste dans le sac (section 13.3).
-        assert_eq!(deroulement.partie().unwrap().sac().argent(), 12);
+        assert_eq!(deroulement.partie().unwrap().sac().argent(), argent + 12);
     }
 
     #[test]
@@ -4535,37 +4567,25 @@ mod tests {
         );
 
         // Le brigand déjà vaincu et l'âme de Bertrand portée, la Lisière ne
-        // finit que par des coffres : une potion et 10 pièces d'argent
-        // chacun, sans capsule.
-        let coffre = vec![81, 1, 10, 100, 100];
+        // compte que des combats ordinaires, que gagne une Salamandre de
+        // niveau 30 ; rien ne se passe en chemin. Le sac porte 50 pièces
+        // d'argent.
         let mut etat = etat_de(deroulement.partie().unwrap());
+        let mut forte = Partie::nouvelle(etat.heros.clone(), salamandre(&contenu, 30));
+        forte.prendre_monstre_rare(etat.collection.equipe()[1].clone());
+        etat.collection = forte.collection().clone();
+        etat.sac = Inventaire::new(50, 0, Vec::new());
         etat.humains_vaincus = vec![HumainId::new("brigand")];
         etat.ames_portees = vec![bertrand(&contenu)];
         // Les quêtes du moment déjà accomplies : leurs récompenses ne
-        // s'ajoutent pas à l'argent des coffres (section 13.12).
+        // s'ajoutent pas à l'argent (section 13.12).
         etat.quetes = JournalDesQuetes::tout_accompli(Horodatage::depuis_secondes(0));
         let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
         let lisiere = Choix::PartirEnExpedition(ZoneId::new("lisiere"));
-        repondre_a(
-            &mut deroulement,
-            lisiere,
-            &contenu,
-            &depot,
-            0,
-            coffre.clone(),
-        )
-        .unwrap();
+        franchir(&mut deroulement, lisiere, Vec::new(), &contenu, &depot, 1);
         for _ in 0..4 {
             let continuer = Choix::ContinuerLExpedition;
-            repondre_a(
-                &mut deroulement,
-                continuer,
-                &contenu,
-                &depot,
-                0,
-                coffre.clone(),
-            )
-            .unwrap();
+            franchir(&mut deroulement, continuer, vec![100], &contenu, &depot, 1);
         }
         assert_eq!(deroulement.attente(), Attente::Annonce(Annonce::Indice));
         let evenements =
@@ -4677,33 +4697,17 @@ mod tests {
         let contenu = ContenuV1::new();
         let depot = DepotMemoire::default();
         let mut deroulement = au_camp(partie_pour_les_expeditions(&contenu), &contenu, &depot);
-        // Trois coffres d'une potion et de 10 pièces d'argent, sans capsule.
-        let coffre = vec![81, 1, 10, 100, 100];
+        // Trois combats ordinaires, rien en chemin.
         let lisiere = Choix::PartirEnExpedition(ZoneId::new("lisiere"));
-        repondre_a(
-            &mut deroulement,
-            lisiere,
-            &contenu,
-            &depot,
-            0,
-            coffre.clone(),
-        )
-        .unwrap();
+        franchir(&mut deroulement, lisiere, Vec::new(), &contenu, &depot, 1);
         for _ in 0..2 {
             let continuer = Choix::ContinuerLExpedition;
-            repondre_a(
-                &mut deroulement,
-                continuer,
-                &contenu,
-                &depot,
-                0,
-                coffre.clone(),
-            )
-            .unwrap();
+            franchir(&mut deroulement, continuer, vec![100], &contenu, &depot, 1);
         }
-        // À l'étape 4, sans tirage de sa nature : le Loup du brigand, au
-        // niveau 7, non shiny, valeurs internes nulles, première habileté.
-        let tirages = vec![2, 0, 0, 0, 0, 0, 0, 0];
+        // Rien en chemin ; à l'étape 4, sans tirage de sa nature : le Loup du
+        // brigand, au niveau 7, non shiny, valeurs internes nulles, première
+        // habileté.
+        let tirages = vec![100, 2, 0, 0, 0, 0, 0, 0, 0];
         let evenements = repondre_a(
             &mut deroulement,
             Choix::ContinuerLExpedition,
@@ -5057,9 +5061,10 @@ mod tests {
         let mut etat = etat_de(&partie_pour_les_expeditions(&contenu));
         etat.marchand_au_camp = true;
         let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
-        // Le marchand zombie, fixe, ne tire rien.
+        // Le combat de la première étape est contre le gardien de l'âme, de
+        // 1 à 10 ; le marchand zombie, fixe, ne tire rien.
         let marais = Choix::PartirEnExpedition(ZoneId::new("marais"));
-        repondre_a(&mut deroulement, marais, &contenu, &depot, 0, vec![71]).unwrap();
+        repondre_a(&mut deroulement, marais, &contenu, &depot, 0, vec![10]).unwrap();
         let Attente::ActionDeCombat(combat) = deroulement.attente() else {
             panic!("combat attendu");
         };
@@ -5214,23 +5219,22 @@ mod tests {
         let depot = DepotMemoire::default();
         let mut deroulement = Deroulement::demarrer(Ok(Some(partie(&contenu))));
         repondre_sans_tirage(&mut deroulement, Choix::ReprendreLaPartie, &contenu, &depot).unwrap();
-        // Un coffre : une potion, 12 pièces d'argent et la première des trois
-        // capsules de la Lisière, Brasier.
-        let mut aleatoire = AleatoireScripte::new([81, 1, 12, 20, 0, 100]);
-        let mut contexte = Contexte {
-            contenu: &contenu,
-            aleatoire: &mut aleatoire,
-            depot: &depot,
-            maintenant: Horodatage::depuis_secondes(0),
-        };
-        let evenements = deroulement
-            .repondre(
-                Choix::PartirEnExpedition(ZoneId::new("lisiere")),
-                &mut contexte,
-            )
-            .unwrap();
+        let lisiere = Choix::PartirEnExpedition(ZoneId::new("lisiere"));
+        franchir(&mut deroulement, lisiere, Vec::new(), &contenu, &depot, 2);
+        assert_eq!(deroulement.attente(), Attente::EntreDeuxEtapes);
+        // En chemin, un coffre : une potion, 12 pièces d'argent et la
+        // première des trois capsules de la Lisière, Brasier.
+        let evenements = repondre_a(
+            &mut deroulement,
+            Choix::ContinuerLExpedition,
+            &contenu,
+            &depot,
+            0,
+            vec![1, 1, 12, 20, 0, 100],
+        )
+        .unwrap();
         assert!(matches!(
-            &evenements[3],
+            &evenements[1],
             Evenement::Coffre { capsule: Some(capsule), .. } if capsule.id().as_str() == "brasier"
         ));
         // La capsule est aussitôt dans le sac, et y reste au retour.
@@ -5336,17 +5340,20 @@ mod tests {
         let mut deroulement = Deroulement::demarrer(Ok(Some(pleine)));
         repondre_sans_tirage(&mut deroulement, Choix::ReprendreLaPartie, &contenu, &depot).unwrap();
 
-        // Un monstre rare, qui n'est pas le Schnoz : niveau 5, non shiny,
-        // valeurs internes, habileté.
-        let mut aleatoire = AleatoireScripte::new([96, 2, 5, 2, 0, 0, 0, 0, 0, 0, 0]);
-        let mut contexte = Contexte {
-            contenu: &contenu,
-            aleatoire: &mut aleatoire,
-            depot: &depot,
-            maintenant: Horodatage::depuis_secondes(0),
-        };
         let partir = Choix::PartirEnExpedition(ZoneId::new("lisiere"));
-        let evenements = deroulement.repondre(partir, &mut contexte).unwrap();
+        franchir(&mut deroulement, partir, Vec::new(), &contenu, &depot, 2);
+        assert_eq!(deroulement.attente(), Attente::EntreDeuxEtapes);
+        // En chemin, un monstre rare, qui n'est pas le Schnoz : niveau 5, non
+        // shiny, valeurs internes, habileté.
+        let evenements = repondre_a(
+            &mut deroulement,
+            Choix::ContinuerLExpedition,
+            &contenu,
+            &depot,
+            0,
+            vec![16, 2, 5, 2, 0, 0, 0, 0, 0, 0, 0],
+        )
+        .unwrap();
         assert!(matches!(
             evenements.last(),
             Some(Evenement::MonstreRarePacifique(cerf)) if cerf.nom() == "Cerf blanc"
@@ -5368,12 +5375,10 @@ mod tests {
         ));
         let evenements =
             repondre_sans_tirage(&mut deroulement, Choix::Oui, &contenu, &depot).unwrap();
+        // Le conseil du premier arrêt a suivi le combat de la première étape.
         assert!(matches!(
             &evenements[..],
-            [
-                Evenement::RelachePourLaCapture { capture, .. },
-                Evenement::Conseil(Conseil::PremierArretEntreDeuxEtapes),
-            ] if capture.nom() == "Cerf blanc"
+            [Evenement::RelachePourLaCapture { capture, .. }] if capture.nom() == "Cerf blanc"
         ));
         let camp = deroulement.partie().unwrap().collection().camp();
         assert_eq!(camp[0].nom(), "Cerf blanc");
@@ -5387,17 +5392,19 @@ mod tests {
         let mut deroulement = Deroulement::demarrer(Ok(Some(partie(&contenu))));
         repondre_sans_tirage(&mut deroulement, Choix::ReprendreLaPartie, &contenu, &depot).unwrap();
 
-        // Le monstre caché, une fois sur 20 : niveau 3, non shiny, valeurs
-        // internes, habileté.
-        let mut aleatoire = AleatoireScripte::new([96, 1, 3, 2, 0, 0, 0, 0, 0, 0, 1]);
-        let mut contexte = Contexte {
-            contenu: &contenu,
-            aleatoire: &mut aleatoire,
-            depot: &depot,
-            maintenant: Horodatage::depuis_secondes(0),
-        };
         let partir = Choix::PartirEnExpedition(ZoneId::new("lisiere"));
-        let evenements = deroulement.repondre(partir, &mut contexte).unwrap();
+        franchir(&mut deroulement, partir, Vec::new(), &contenu, &depot, 2);
+        // En chemin, de 16 à 20, un monstre rare : le monstre caché, une
+        // fois sur 20 ; niveau 3, non shiny, valeurs internes, habileté.
+        let evenements = repondre_a(
+            &mut deroulement,
+            Choix::ContinuerLExpedition,
+            &contenu,
+            &depot,
+            0,
+            vec![16, 1, 3, 2, 0, 0, 0, 0, 0, 0, 1],
+        )
+        .unwrap();
         assert!(matches!(
             evenements.last(),
             Some(Evenement::MonstreRarePacifique(schnoz)) if schnoz.nom() == "Schnoz"
@@ -5497,6 +5504,94 @@ mod tests {
     /// PV, retour au camp en mauvaise posture, le Marais à partir du niveau
     /// 12, la Vallée à partir du niveau 24, l'Abbaye à partir du niveau 34,
     /// toutes les captures possibles.
+    /// Répond `premier`, puis coup après coup avec un générateur, jusqu'à se
+    /// retrouver entre deux étapes ou au camp : de quoi jouer le combat
+    /// d'une étape (section 9.2). Rend les événements.
+    fn jouer_jusqu_entre_deux_etapes(
+        deroulement: &mut Deroulement,
+        premier: Choix,
+        contenu: &ContenuV1,
+        depot: &DepotMemoire,
+        graine: u64,
+    ) -> Vec<Evenement> {
+        let mut aleatoire = GenerateurAleatoire::new(graine);
+        let mut evenements = Vec::new();
+        let mut choix = premier;
+        loop {
+            let mut contexte = Contexte {
+                contenu,
+                aleatoire: &mut aleatoire,
+                depot,
+                maintenant: Horodatage::depuis_secondes(0),
+            };
+            evenements.extend(deroulement.repondre(choix, &mut contexte).unwrap());
+            if matches!(
+                deroulement.attente(),
+                Attente::EntreDeuxEtapes | Attente::Camp
+            ) {
+                return evenements;
+            }
+            choix = jouer_un_coup(deroulement, contenu);
+        }
+    }
+
+    /// Les tirages scriptés d'abord, puis ceux d'un générateur : de quoi
+    /// imposer ce qui se passe en chemin et laisser le combat se jouer.
+    struct ScriptePuisGenere {
+        scripte: std::collections::VecDeque<u32>,
+        generateur: GenerateurAleatoire,
+    }
+
+    impl Aleatoire for ScriptePuisGenere {
+        fn tirer(&mut self, plage: std::ops::RangeInclusive<u32>) -> u32 {
+            match self.scripte.pop_front() {
+                Some(tirage) => {
+                    assert!(plage.contains(&tirage), "{tirage} hors de {plage:?}");
+                    tirage
+                }
+                None => self.generateur.tirer(plage),
+            }
+        }
+    }
+
+    /// Répond `choix`, avec `scripte` pour premiers tirages, puis joue
+    /// sobrement jusqu'à se retrouver entre deux étapes, au camp ou devant
+    /// un indice : ni capture, ni attaque nouvelle, ni évolution, pour que
+    /// l'équipe ne change pas. Rend les événements.
+    fn franchir(
+        deroulement: &mut Deroulement,
+        choix: Choix,
+        scripte: Vec<u32>,
+        contenu: &ContenuV1,
+        depot: &DepotMemoire,
+        graine: u64,
+    ) -> Vec<Evenement> {
+        let mut aleatoire = ScriptePuisGenere {
+            scripte: scripte.into(),
+            generateur: GenerateurAleatoire::new(graine),
+        };
+        let mut evenements = Vec::new();
+        let mut choix = choix;
+        loop {
+            let mut contexte = Contexte {
+                contenu,
+                aleatoire: &mut aleatoire,
+                depot,
+                maintenant: Horodatage::depuis_secondes(0),
+            };
+            evenements.extend(deroulement.repondre(choix, &mut contexte).unwrap());
+            choix = match deroulement.attente() {
+                Attente::EntreDeuxEtapes | Attente::Camp | Attente::Annonce(Annonce::Indice) => {
+                    return evenements;
+                }
+                Attente::CaptureDesKo(_) => Choix::NePlusCapturer,
+                Attente::OubliAttaque { .. } => Choix::RenoncerALAttaque,
+                Attente::Evolution { .. } => Choix::NePasEvoluer,
+                _ => jouer_un_coup(deroulement, contenu),
+            };
+        }
+    }
+
     fn jouer_un_coup(deroulement: &Deroulement, contenu: &ContenuV1) -> Choix {
         let partie = deroulement.partie();
         match deroulement.attente() {
@@ -7782,23 +7877,52 @@ mod tests {
         let contenu = ContenuV1::new();
         let depot = DepotMemoire::default();
         // Le brigand déjà vaincu et l'âme de Bertrand portée, la Lisière ne
-        // finit que par des coffres de 10 pièces d'argent.
+        // compte que des combats ordinaires ; en chemin, des coffres de 10
+        // pièces d'argent.
         let mut etat = etat_de(&partie(&contenu));
+        etat.collection = crate::collection::Collection::new(salamandre(&contenu, 30));
         etat.humains_vaincus = vec![HumainId::new("brigand")];
         etat.ames_portees = vec![bertrand(&contenu)];
         let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
-        let coffre = vec![81, 1, 10, 100, 100];
+        let coffre = vec![1, 1, 10, 100, 100];
+        let coffres_ouverts = |evenements: &[Evenement]| {
+            quetes_accomplies(evenements)
+                .iter()
+                .any(|accomplie| accomplie.quete.objectif == Objectif::OuvrirDesCoffres)
+        };
+        // Les combats peuvent accomplir d'autres quêtes, qui paient aussi au
+        // coffre du camp.
+        let recompenses_de = |evenements: &[Evenement]| {
+            quetes_accomplies(evenements)
+                .iter()
+                .map(|accomplie| accomplie.recompense.argent())
+                .sum::<u32>()
+        };
+        let mut recompenses = 0;
         let lisiere = Choix::PartirEnExpedition(ZoneId::new("lisiere"));
+        let etape = franchir(&mut deroulement, lisiere, Vec::new(), &contenu, &depot, 1);
+        recompenses += recompenses_de(&etape);
+        let argent_du_sac = deroulement.partie().unwrap().sac().argent();
         let premier = repondre_a(
             &mut deroulement,
-            lisiere,
+            Choix::ContinuerLExpedition,
             &contenu,
             &depot,
             0,
             coffre.clone(),
         )
         .unwrap();
-        assert!(quetes_accomplies(&premier).is_empty());
+        assert!(!coffres_ouverts(&premier));
+        recompenses += recompenses_de(&premier);
+        let continuer = Choix::ContinuerLExpedition;
+        recompenses += recompenses_de(&franchir(
+            &mut deroulement,
+            continuer,
+            Vec::new(),
+            &contenu,
+            &depot,
+            1,
+        ));
         let second = repondre_a(
             &mut deroulement,
             Choix::ContinuerLExpedition,
@@ -7808,20 +7932,32 @@ mod tests {
             coffre.clone(),
         )
         .unwrap();
+        recompenses += recompenses_de(&second);
         let accomplies = quetes_accomplies(&second);
-        assert_eq!(accomplies.len(), 1);
-        assert_eq!(accomplies[0].quete, quete);
+        let accomplie = accomplies
+            .iter()
+            .find(|accomplie| accomplie.quete == quete)
+            .unwrap();
         // L'argent de 2 coffres de la Lisière, seule zone ouverte.
         let (minimum, maximum) = quete.argent_possible(&contenu.zones()[0]);
-        let argent = accomplies[0].recompense.argent();
+        let argent = accomplie.recompense.argent();
         assert!((minimum..=maximum).contains(&argent), "{argent}");
         // Au coffre dès maintenant, même en expédition ; le sac garde
         // l'argent des coffres ouverts.
         let partie = deroulement.partie().unwrap();
-        assert_eq!(partie.coffre_du_camp().argent(), argent);
-        assert_eq!(partie.sac().argent(), 20);
+        assert_eq!(partie.coffre_du_camp().argent(), recompenses);
+        assert_eq!(partie.sac().argent(), argent_du_sac + 20);
         // Accomplie, elle ne rapporte plus rien.
-        for _ in 0..3 {
+        for _ in 0..2 {
+            let continuer = Choix::ContinuerLExpedition;
+            recompenses += recompenses_de(&franchir(
+                &mut deroulement,
+                continuer,
+                Vec::new(),
+                &contenu,
+                &depot,
+                1,
+            ));
             let evenements = repondre_a(
                 &mut deroulement,
                 Choix::ContinuerLExpedition,
@@ -7831,14 +7967,29 @@ mod tests {
                 coffre.clone(),
             )
             .unwrap();
-            assert!(quetes_accomplies(&evenements).is_empty());
+            assert!(!coffres_ouverts(&evenements));
+            recompenses += recompenses_de(&evenements);
         }
-        repondre_sans_tirage(&mut deroulement, Choix::Poursuivre, &contenu, &depot).unwrap();
+        let continuer = Choix::ContinuerLExpedition;
+        recompenses += recompenses_de(&franchir(
+            &mut deroulement,
+            continuer,
+            Vec::new(),
+            &contenu,
+            &depot,
+            1,
+        ));
+        if deroulement.attente() == Attente::Annonce(Annonce::Indice) {
+            recompenses += recompenses_de(
+                &repondre_sans_tirage(&mut deroulement, Choix::Poursuivre, &contenu, &depot)
+                    .unwrap(),
+            );
+        }
         assert_eq!(deroulement.attente(), Attente::Camp);
-        // Le retour au camp sauvegarde la récompense et l'avancement : 2
-        // coffres sur 2 pour le jour, 5 sur 10 pour la semaine.
+        // Le retour au camp sauvegarde les récompenses et l'avancement : 2
+        // coffres sur 2 pour le jour, 4 sur 10 pour la semaine.
         let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
-        assert_eq!(sauvegarde.coffre_du_camp().argent(), argent);
+        assert_eq!(sauvegarde.coffre_du_camp().argent(), recompenses);
         let maintenant = Horodatage::depuis_secondes(0);
         let du_jour = sauvegarde
             .quetes()
@@ -7853,7 +8004,7 @@ mod tests {
             .into_iter()
             .find(|etat| etat.quete.objectif == Objectif::OuvrirDesCoffres)
             .unwrap();
-        assert_eq!((de_la_semaine.progres, de_la_semaine.accomplie), (5, false));
+        assert_eq!((de_la_semaine.progres, de_la_semaine.accomplie), (4, false));
     }
 
     #[test]
@@ -7965,15 +8116,16 @@ mod tests {
         let depot = DepotMemoire::default();
         let mut deroulement = Deroulement::demarrer(Ok(Some(partie(&contenu))));
         repondre_sans_tirage(&mut deroulement, Choix::ReprendreLaPartie, &contenu, &depot).unwrap();
-        // Combat (1), un monstre (1), la première espèce de la nuit (0),
-        // niveau 5 (5), non shiny (2), valeurs internes, habileté (0).
+        // La première étape, un combat : un monstre (1), la première espèce
+        // de la nuit (0), niveau 5 (5), non shiny (2), valeurs internes,
+        // habileté (0).
         let evenements = repondre_avec_tirages(
             &mut deroulement,
             Choix::PartirEnExpedition(ZoneId::new("lisiere")),
             &contenu,
             &depot,
             Horodatage::depuis_secondes(2 * 3_600),
-            vec![1, 1, 0, 5, 2, 0, 0, 0, 0, 0, 0, 0],
+            vec![1, 0, 5, 2, 0, 0, 0, 0, 0, 0, 0],
         )
         .unwrap();
         assert_eq!(
@@ -8008,14 +8160,21 @@ mod tests {
         etat.sac = Inventaire::default().avec_filets(Filet::Chanvre, 30);
         let mut deroulement = Deroulement::demarrer(Ok(Some(Partie::restaurer(etat).unwrap())));
         repondre_sans_tirage(&mut deroulement, Choix::ReprendreLaPartie, &contenu, &depot).unwrap();
-        // Un coffre d'une potion et de 12 pièces d'argent, sans capsule.
+        let lisiere = Choix::PartirEnExpedition(ZoneId::new("lisiere"));
+        franchir(&mut deroulement, lisiere, Vec::new(), &contenu, &depot, 2);
+        // Si le combat a laissé une ressource de trop, le joueur a déjà vidé
+        // le sac à 30 places.
+        assert_eq!(deroulement.attente(), Attente::EntreDeuxEtapes);
+        assert_eq!(deroulement.partie().unwrap().sac().places_prises(), 30);
+        // En chemin, un coffre d'une potion et de 12 pièces d'argent, sans
+        // capsule.
         repondre_avec_tirages(
             &mut deroulement,
-            Choix::PartirEnExpedition(ZoneId::new("lisiere")),
+            Choix::ContinuerLExpedition,
             &contenu,
             &depot,
             Horodatage::depuis_secondes(0),
-            vec![81, 1, 12, 21, 100],
+            vec![1, 1, 12, 21, 100],
         )
         .unwrap();
         assert_eq!(deroulement.attente(), Attente::SacPlein);
@@ -8065,14 +8224,15 @@ mod tests {
             .unwrap();
         let mut deroulement = Deroulement::demarrer(Ok(Some(partie(&contenu))));
         repondre_sans_tirage(&mut deroulement, Choix::ReprendreLaPartie, &contenu, &depot).unwrap();
-        // Un coffre d'une potion et de 12 pièces d'argent, sans capsule.
+        // La première étape, un combat : un monstre, la première espèce du
+        // moment, niveau 5, non shiny, valeurs internes, habileté.
         let evenements = repondre_avec_tirages(
             &mut deroulement,
             Choix::PartirEnExpedition(ZoneId::new("lisiere")),
             &contenu,
             &depot,
             maintenant,
-            vec![81, 1, 12, 21, 100],
+            vec![1, 0, 5, 2, 0, 0, 0, 0, 0, 0, 0],
         )
         .unwrap();
         assert!(evenements.contains(&Evenement::MeteoAuDepart(meteo)));
@@ -8319,26 +8479,19 @@ mod tests {
         let mut etat = etat_de(&partie_pour_les_expeditions(&contenu));
         etat.collection = crate::collection::Collection::new(salamandre(&contenu, 40));
         let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
-        // Un coffre d'une potion et de 25 pièces d'argent, sans capsule.
+        // La première étape, un combat ordinaire.
         let marais = Choix::PartirEnExpedition(ZoneId::new("marais"));
-        repondre_a(
-            &mut deroulement,
-            marais,
-            &contenu,
-            &depot,
-            0,
-            vec![81, 1, 25, 100, 100],
-        )
-        .unwrap();
-        // À l'étape 2, sans tirage de sa nature : le Noyé, au niveau 13, non
-        // shiny, valeurs internes nulles, première habileté.
+        franchir(&mut deroulement, marais, Vec::new(), &contenu, &depot, 1);
+        // Rien en chemin ; à l'étape 2, sans tirage de sa nature : le Noyé,
+        // au niveau 13, non shiny, valeurs internes nulles, première
+        // habileté.
         let evenements = repondre_a(
             &mut deroulement,
             Choix::ContinuerLExpedition,
             &contenu,
             &depot,
             0,
-            vec![2, 0, 0, 0, 0, 0, 0, 0],
+            vec![100, 2, 0, 0, 0, 0, 0, 0, 0],
         )
         .unwrap();
         assert!(matches!(
@@ -8370,11 +8523,11 @@ mod tests {
         let mut expedition = partie
             .partir_en_expedition(marais, contenu.piste())
             .unwrap();
-        expedition.etape_suivante(&mut AleatoireScripte::new([81, 1, 25, 100, 100]));
-        assert!(matches!(
-            expedition.etape_suivante(&mut AleatoireScripte::new([81, 1, 25, 100, 100])),
-            Some(EvenementExpedition::Coffre { .. })
-        ));
+        let mut aleatoire = GenerateurAleatoire::new(1);
+        while expedition.etapes_faites() < 2 {
+            let evenement = expedition.etape_suivante(&mut aleatoire).unwrap();
+            assert!(!matches!(evenement, EvenementExpedition::Pecheur { .. }));
+        }
     }
 
     /// Section 13.13 : la quête en cours, son objet attend à son étape,
@@ -8413,26 +8566,18 @@ mod tests {
         etat.marchand_au_camp = true;
         etat.quetes_du_camp.en_cours.push(id.clone());
         let mut deroulement = au_camp(Partie::restaurer(etat).unwrap(), &contenu, &depot);
-        // Un coffre d'une potion et de 25 pièces d'argent, sans capsule.
+        // La première étape, un combat ordinaire.
         let lisiere = Choix::PartirEnExpedition(ZoneId::new("lisiere"));
-        repondre_a(
-            &mut deroulement,
-            lisiere,
-            &contenu,
-            &depot,
-            0,
-            vec![81, 1, 25, 100, 100],
-        )
-        .unwrap();
-        // À l'étape 2, sans tirage de sa nature : le Loup, non shiny, valeurs
-        // internes nulles, première habileté.
+        franchir(&mut deroulement, lisiere, Vec::new(), &contenu, &depot, 1);
+        // Rien en chemin ; à l'étape 2, sans tirage de sa nature : le Loup,
+        // non shiny, valeurs internes nulles, première habileté.
         let evenements = repondre_a(
             &mut deroulement,
             Choix::ContinuerLExpedition,
             &contenu,
             &depot,
             0,
-            vec![2, 0, 0, 0, 0, 0, 0, 0],
+            vec![100, 2, 0, 0, 0, 0, 0, 0, 0],
         )
         .unwrap();
         assert!(

@@ -375,7 +375,10 @@ impl ExpeditionEnGroupe {
         let Some(expedition_de_l_invite) = invite.expedition_mut() else {
             return;
         };
-        expedition_de_l_invite.suivre_l_etape();
+        let en_chemin = hote
+            .expedition()
+            .is_some_and(|expedition| expedition.est_en_chemin());
+        expedition_de_l_invite.suivre_l_etape(en_chemin);
         let pour_l_invite = match &evenement {
             EvenementExpedition::Coffre { .. } => {
                 expedition_de_l_invite.tirer_un_coffre(&mut *contexte.aleatoire)

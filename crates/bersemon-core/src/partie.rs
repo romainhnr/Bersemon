@@ -4001,13 +4001,28 @@ pub(crate) mod tests {
             .collect()
     }
 
-    /// Expédition de 4 étapes, toutes des coffres.
+    /// Un loup de niveau 5 tire son shiny et ses valeurs internes.
+    const MONSTRE: [u32; 7] = [2, 0, 0, 0, 0, 0, 0];
+
+    /// L'étape suivante quand rien ne se passe en chemin (section 9.2) : un
+    /// combat, ou l'événement fixe de l'étape.
+    fn etape_sans_detour(expedition: &mut Expedition) -> Option<EvenementExpedition> {
+        let mut tirages = if expedition.etapes_faites() > 0 && !expedition.est_en_chemin() {
+            vec![100]
+        } else {
+            Vec::new()
+        };
+        tirages.extend(MONSTRE);
+        expedition.etape_suivante(&mut AleatoireScripte::new(tirages))
+    }
+
+    /// Expédition de 4 étapes, toutes des combats.
     fn expedition_complete(partie: &Partie, zone: &Zone, piste: &Piste) -> Expedition {
         let mut expedition = partie.partir_en_expedition(zone, piste).unwrap();
         for _ in 0..4 {
             assert!(matches!(
-                expedition.etape_suivante(&mut AleatoireScripte::new([81, 1, 100])),
-                Some(EvenementExpedition::Coffre { .. })
+                etape_sans_detour(&mut expedition),
+                Some(EvenementExpedition::Combat(_))
             ));
         }
         expedition
@@ -4107,23 +4122,25 @@ pub(crate) mod tests {
         )
         .unwrap();
         zones[0] = zones[0].clone().avec_marchand_mort(bertrand.clone());
-        // Le monstre du groupe, ou celui qui garde Bertrand, tire son shiny
-        // et ses valeurs internes.
-        let tirages = [71, 2, 0, 0, 0, 0, 0, 0];
-        let etape = |partie: &Partie| {
+        // L'âme se tire de 1 à 10 ; le monstre du groupe, ou celui qui garde
+        // Bertrand, tire son shiny et ses valeurs internes.
+        let etape = |partie: &Partie, tirages: Vec<u32>| {
             let mut expedition = partie.partir_en_expedition(&zones[0], &piste).unwrap();
             expedition.etape_suivante(&mut AleatoireScripte::new(tirages))
         };
         let mut partie = partie();
+        let mut ame = vec![10];
+        ame.extend(MONSTRE);
         assert!(matches!(
-            etape(&partie),
+            etape(&partie, ame),
             Some(EvenementExpedition::Ame { .. })
         ));
         partie.recueillir_ame(bertrand.clone());
         partie.recueillir_ame(bertrand);
         assert_eq!(partie.ames_portees().len(), 1);
+        // Recueillie, l'âme ne se tire plus.
         assert!(matches!(
-            etape(&partie),
+            etape(&partie, MONSTRE.to_vec()),
             Some(EvenementExpedition::Combat(_))
         ));
         // Portée, l'âme n'ajoute encore rien à l'étal.
@@ -4179,21 +4196,18 @@ pub(crate) mod tests {
         assert_eq!(partie.ames_a_retrouver().len(), 1);
         let mut expedition = partie.partir_en_expedition(&zones[0], &piste).unwrap();
         // L'étape de l'âme, tirée parmi celles qui précèdent la dernière (1 à
-        // 3 sur 4), puis la première étape, un coffre : sa nature et ses
-        // potions.
-        let mut aleatoire = AleatoireScripte::new([2, 81, 1, 100]);
+        // 3 sur 4), puis la première étape, un combat.
+        let mut premiere = vec![2];
+        premiere.extend(MONSTRE);
         assert!(matches!(
-            expedition.etape_suivante(&mut aleatoire),
-            Some(EvenementExpedition::Coffre { .. })
+            expedition.etape_suivante(&mut AleatoireScripte::new(premiere)),
+            Some(EvenementExpedition::Combat(_))
         ));
-        drop(aleatoire);
-        // À la deuxième, sans tirage de sa nature : seulement son gardien.
-        let mut aleatoire = AleatoireScripte::new([2, 0, 0, 0, 0, 0, 0]);
+        // À la deuxième, rien en chemin, puis son gardien.
         assert!(matches!(
-            expedition.etape_suivante(&mut aleatoire),
+            etape_sans_detour(&mut expedition),
             Some(EvenementExpedition::Ame { .. })
         ));
-        drop(aleatoire);
         partie.recueillir_ame(grete);
         assert!(partie.ames_a_retrouver().is_empty());
     }
@@ -4415,11 +4429,12 @@ pub(crate) mod tests {
             .coffre_du_camp
             .ajouter_capsule(capsule("a", Type::Normal));
         let mut expedition = partie.partir_en_expedition(&zones[0], &piste).unwrap();
-        // Un coffre, où seule la capsule b est nouvelle.
+        etape_sans_detour(&mut expedition);
+        // Un coffre en chemin, où seule la capsule b est nouvelle.
         let Some(EvenementExpedition::Coffre {
             capsule: Some(trouvee),
             ..
-        }) = expedition.etape_suivante(&mut AleatoireScripte::new([81, 1, 20, 100]))
+        }) = expedition.etape_suivante(&mut AleatoireScripte::new([1, 1, 20, 100]))
         else {
             panic!("un coffre avec une capsule était attendu");
         };
@@ -4431,7 +4446,7 @@ pub(crate) mod tests {
         let (zones, piste) = carte();
         let mut partie = partie();
         let mut expedition = partie.partir_en_expedition(&zones[0], &piste).unwrap();
-        expedition.etape_suivante(&mut AleatoireScripte::new([81, 1, 100]));
+        etape_sans_detour(&mut expedition);
         assert_eq!(partie.rentrer_au_camp(&expedition, &piste), None);
         assert!(!partie.est_exploree(&ZoneId::new("bois")));
         assert_eq!(partie.indices_trouves(), 0);
@@ -4444,10 +4459,11 @@ pub(crate) mod tests {
         partie.indices_trouves = 3;
         let mut expedition = partie.partir_en_expedition(&zones[1], &piste).unwrap();
         for _ in 0..3 {
-            expedition.etape_suivante(&mut AleatoireScripte::new([81, 1, 100]));
+            etape_sans_detour(&mut expedition);
         }
+        // Rien en chemin ; seul le shiny de l'Apôtre est tiré.
         let Some(EvenementExpedition::Apotre(apotre)) =
-            expedition.etape_suivante(&mut AleatoireScripte::new([2]))
+            expedition.etape_suivante(&mut AleatoireScripte::new([100, 2]))
         else {
             panic!("l'Apôtre devait attendre à la dernière étape");
         };
