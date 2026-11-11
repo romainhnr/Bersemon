@@ -70,8 +70,8 @@ use crate::recompenses_du_codex::{
 use crate::relations::Relations;
 use crate::ressource::{Ressource, RessourceId};
 use crate::rite::{
-    ApercuDuRite, DUREE_DU_RITE, ErreurRite, NaissanceDuRite, PLACES_DU_RITE, PRIX_DU_RITE,
-    RESSOURCES_DU_RITE, Rite, chances_d_attaque_d_oeuf, chances_shiny, forme_de_base,
+    ApercuDuRite, DUREE_DU_RITE, ErreurRite, NaissanceDuRite, PLACES_DU_RITE, PRIX_DU_RITE, Rite,
+    chances_d_attaque_d_oeuf, chances_shiny, forme_de_base,
 };
 use crate::soin::{EffetDuSoin, ErreurSoin, Soin};
 use crate::stats::ValeursInternes;
@@ -814,14 +814,8 @@ impl Partie {
         if self.collection.places_libres_au_camp() <= depuis_l_equipe {
             return Err(ErreurRite::AucunePlacePourLePetit);
         }
-        let ressources: Vec<(Ressource, u32)> = petit
-            .ressource()
-            .map(|ressource| vec![(ressource.clone(), RESSOURCES_DU_RITE)])
-            .unwrap_or_default();
-        let manquantes = self.ressources_manquantes(&ressources);
-        if !manquantes.is_empty() {
-            return Err(ErreurRite::RessourcesManquantes(manquantes));
-        }
+        // Le rite ne coûte que l'argent : les ressources de l'espèce du petit
+        // ne sont plus demandées (section 13.11).
         let argent = self.argent();
         if PRIX_DU_RITE > argent {
             return Err(ErreurRite::ArgentInsuffisant {
@@ -837,7 +831,6 @@ impl Partie {
         Ok(ApercuDuRite {
             parents,
             petit,
-            ressources,
             prix: PRIX_DU_RITE,
             duree: self.duree_du_rite(),
             shiny_sur,
@@ -861,7 +854,6 @@ impl Partie {
                 prix: apercu.prix,
                 argent: self.argent(),
             })?;
-        self.payer_ressources(&apercu.ressources);
         let mut parents = self
             .collection
             .retirer_pour_expedition(&[premier, second])
@@ -5027,23 +5019,11 @@ pub(crate) mod tests {
             partie.preparer_le_rite(Emplacement::Equipe(0), loup, especes),
             Err(ErreurRite::FamillesDifferentes)
         );
-        assert!(matches!(
-            partie.preparer_le_rite(loup, warg, especes),
-            Err(ErreurRite::RessourcesManquantes(_))
-        ));
-        let croc = contenu
-            .espece(&EspeceId::new("loup"))
-            .unwrap()
-            .ressource()
-            .unwrap()
-            .clone();
-        partie.coffre_du_camp.ajouter_ressources(croc.clone(), 4);
+        // Le rite ne demande que l'argent, sans ressource de l'espèce.
         let argent = partie.argent();
         let apercu = partie.lancer_le_rite(loup, warg, especes, a(0)).unwrap();
         assert_eq!(apercu.petit.id().as_str(), "loup");
-        assert_eq!(apercu.ressources, vec![(croc.clone(), 3)]);
         assert_eq!(partie.argent(), argent - 50);
-        assert_eq!(partie.coffre_du_camp().nombre_de_ressources(croc.id()), 1);
         // Les parents gardent leur place, et le petit a la sienne.
         assert_eq!(partie.collection().equipe().len(), 1);
         assert_eq!(partie.collection().places_reservees(), 3);
@@ -5156,13 +5136,10 @@ pub(crate) mod tests {
     fn le_rite_demande_malvoise_et_une_place_pour_le_petit() {
         let (mut partie, contenu) = chez_malvoise();
         let especes = contenu.especes();
-        // La Salamandre ne lâche pas de ressource : le rite ne coûte que
-        // l'argent.
         accueillir(&mut partie, &contenu, "salamandre", 5, [0; 6]);
         accueillir(&mut partie, &contenu, "salamandre", 6, [0; 6]);
         let (premier, second) = (Emplacement::Equipe(1), Emplacement::Equipe(2));
-        let apercu = partie.preparer_le_rite(premier, second, especes).unwrap();
-        assert!(apercu.ressources.is_empty());
+        assert!(partie.preparer_le_rite(premier, second, especes).is_ok());
         partie.marchand_au_camp = false;
         assert_eq!(
             partie.preparer_le_rite(premier, second, especes),

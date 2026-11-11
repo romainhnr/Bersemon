@@ -8,12 +8,10 @@ use bersemon_core::monstre::CHANCES_SHINY;
 use bersemon_core::partie::Partie;
 use bersemon_core::rite::{
     ApercuDuRite, DUREE_DU_RITE, ErreurRite, NIVEAU_DU_PETIT, NaissanceDuRite, PRIX_DU_RITE,
-    RESSOURCES_DU_RITE,
 };
 
 use crate::erreurs::{erreur_collection, erreur_marchand};
 use crate::expeditions_automatiques::duree;
-use crate::forge::cout;
 use crate::mise_en_valeur::important;
 use crate::monstres::{nom, nom_en_valeur};
 use crate::partie::argent;
@@ -23,20 +21,15 @@ pub const RITE_DU_SANG_MELE: &str = "Rite du sang mêlé";
 /// Le service, à l'étal, avec ce qu'il coûte et dure.
 pub fn service_du_rite() -> String {
     format!(
-        "{RITE_DU_SANG_MELE} : {RESSOURCES_DU_RITE} ressources de l'espèce du petit et {}, {}",
+        "{RITE_DU_SANG_MELE} : {}, {}",
         argent(PRIX_DU_RITE),
         duree(DUREE_DU_RITE)
     )
 }
 
-/// "Croc de loup (3) et 50 pièces d'argent", ou l'argent seul pour une
-/// espèce qui ne lâche pas de ressource.
+/// "50 pièces d'argent" : le rite ne demande plus de ressource.
 fn prix(apercu: &ApercuDuRite) -> String {
-    if apercu.ressources.is_empty() {
-        argent(apercu.prix)
-    } else {
-        format!("{} et {}", cout(&apercu.ressources), argent(apercu.prix))
-    }
+    argent(apercu.prix)
 }
 
 pub fn question_du_rite(apercu: &ApercuDuRite) -> String {
@@ -153,9 +146,6 @@ pub fn erreur_rite(erreur: &ErreurRite) -> String {
         ErreurRite::AucunePlacePourLePetit => {
             "Il faut une place libre au camp pour le petit.".to_string()
         }
-        ErreurRite::RessourcesManquantes(manquantes) => {
-            format!("Il vous manque {}.", cout(manquantes))
-        }
         ErreurRite::ArgentInsuffisant { prix, argent } => erreur_marchand(
             &bersemon_core::marchand::ErreurMarchand::ArgentInsuffisant {
                 prix: *prix,
@@ -196,7 +186,6 @@ mod tests {
         let assaut = loup.attaque_d_oeuf().unwrap().clone();
         let mut apercu = ApercuDuRite {
             parents: [creer("loup", "Croc"), creer("warg", "Bise")],
-            ressources: vec![(loup.ressource().unwrap().clone(), 3)],
             petit: loup,
             prix: 50,
             duree: DUREE_DU_RITE,
@@ -205,7 +194,7 @@ mod tests {
         };
         assert_eq!(
             question_du_rite(&apercu),
-            "Confier Croc et Bise à Malvoise pour le Rite du sang mêlé ? Il prendra Croc de loup (3) et 50 pièces d'argent. Dans 2 h, le petit naîtra, de l'espèce Loup, au niveau 1, avec la meilleure valeur interne de ses parents pour chaque stat. Il a 1 chance sur 4 de connaître Assaut de meute, l'attaque d'œuf de sa famille. D'ici là, les deux restent auprès de Malvoise."
+            "Confier Croc et Bise à Malvoise pour le Rite du sang mêlé ? Il prendra 50 pièces d'argent. Dans 2 h, le petit naîtra, de l'espèce Loup, au niveau 1, avec la meilleure valeur interne de ses parents pour chaque stat. Il a 1 chance sur 4 de connaître Assaut de meute, l'attaque d'œuf de sa famille. D'ici là, les deux restent auprès de Malvoise."
         );
         apercu.shiny_sur = 256;
         apercu.attaque_d_oeuf = Some((assaut, 1));
@@ -218,7 +207,7 @@ mod tests {
         );
         assert_eq!(
             service_du_rite(),
-            "Rite du sang mêlé : 3 ressources de l'espèce du petit et 50 pièces d'argent, 2 h"
+            "Rite du sang mêlé : 50 pièces d'argent, 2 h"
         );
     }
 }

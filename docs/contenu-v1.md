@@ -1155,17 +1155,17 @@ Décidé le 25/10/2026, pour les étapes 110 à 112 (gamedesign.md, section 13.1
 | Valeur | |
 |---|---|
 | Durée | 2 h réelles |
-| Coût | 3 ressources de l'espèce du petit et 50 pièces d'argent (l'argent seul pour une espèce qui ne lâche pas de ressource) |
+| Coût | 50 pièces d'argent ; depuis l'étape 182, plus aucune ressource (avant : 3 ressources de l'espèce du petit) |
 | Niveau du petit | 1 |
 | Valeurs internes du petit | pour chaque stat, la plus haute des deux parents |
 | Shiny du petit | 1 chance sur 512 comme un monstre sauvage ; 1 sur 256 avec un parent shiny ; à coup sûr avec deux (étape 114) |
 | Attaque d'œuf | 1 chance sur 4 ; à coup sûr si un parent la connaît (étape 114) |
 
-Textes proposés sans validation (gamedesign.md, Q105). {a} et {b} sont les parents, {petit} le nom du petit, {espèce} son espèce, {coût} les ressources et l'argent, {durée} le temps restant.
+Textes proposés sans validation (gamedesign.md, Q105). {a} et {b} sont les parents, {petit} le nom du petit, {espèce} son espèce, {coût} l'argent, {durée} le temps restant.
 
 | Moment | Texte |
 |---|---|
-| Service, à l'étal | Rite du sang mêlé : 3 ressources de l'espèce du petit et 50 pièces d'argent, 2 h |
+| Service, à l'étal | Rite du sang mêlé : 50 pièces d'argent, 2 h |
 | Confirmation | Confier {a} et {b} à Malvoise pour le Rite du sang mêlé ? Il prendra {coût}. Dans 2 h, le petit naîtra, de l'espèce {espèce}, au niveau 1, avec la meilleure valeur interne de ses parents pour chaque stat. D'ici là, les deux restent auprès de Malvoise. |
 | Rite lancé | Malvoise trace un cercle de sang autour de {a} et {b}, et entonne le Rite du sang mêlé. Le petit naîtra dans {durée}. |
 | État, à l'étal | Rite du sang mêlé : {a} et {b}, achevé dans {durée}. / ..., achevé, le petit attend. |

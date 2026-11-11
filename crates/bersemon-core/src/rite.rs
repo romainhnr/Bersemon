@@ -14,14 +14,10 @@ use crate::espece::Espece;
 use crate::horodatage::Horodatage;
 use crate::monstre::{CHANCES_SHINY, Monstre};
 use crate::niveau::Niveau;
-use crate::ressource::Ressource;
 
 /// Valeurs de docs/contenu-v1.md, section 28.
 pub const DUREE_DU_RITE: Duration = Duration::from_secs(2 * 60 * 60);
 pub const PRIX_DU_RITE: u32 = 50;
-/// De la ressource que lâche l'espèce du petit ; une espèce qui n'en lâche
-/// pas ne coûte que l'argent.
-pub const RESSOURCES_DU_RITE: u32 = 3;
 pub const NIVEAU_DU_PETIT: u8 = 1;
 /// Places du camp gardées pendant le rite : celles des deux parents, qui
 /// les gardent comme un monstre parti, et celle du petit à naître.
@@ -161,8 +157,6 @@ impl Rite {
 pub struct ApercuDuRite {
     pub parents: [Monstre; 2],
     pub petit: Espece,
-    /// Vide pour une espèce qui ne lâche pas de ressource.
-    pub ressources: Vec<(Ressource, u32)>,
     pub prix: u32,
     pub duree: Duration,
     /// 1 chance sur ce nombre que le petit soit shiny : 1 à coup sûr.
@@ -190,7 +184,6 @@ pub enum ErreurRite {
     FamillesDifferentes,
     /// Aucune place au camp à réserver au petit.
     AucunePlacePourLePetit,
-    RessourcesManquantes(Vec<(Ressource, u32)>),
     ArgentInsuffisant {
         prix: u32,
         argent: u32,
@@ -209,13 +202,6 @@ impl fmt::Display for ErreurRite {
                 write!(f, "les deux monstres ne sont pas de la même famille")
             }
             ErreurRite::AucunePlacePourLePetit => write!(f, "aucune place au camp pour le petit"),
-            ErreurRite::RessourcesManquantes(manquantes) => {
-                let liste: Vec<String> = manquantes
-                    .iter()
-                    .map(|(ressource, nombre)| format!("{nombre} {}", ressource.nom()))
-                    .collect();
-                write!(f, "il manque {}", liste.join(", "))
-            }
             ErreurRite::ArgentInsuffisant { prix, argent } => {
                 write!(f, "il faut {prix} pièces, le joueur en a {argent}")
             }
