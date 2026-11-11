@@ -185,6 +185,14 @@ Attaques apprises : Éclat astral (niv. 1), Lueur trompeuse (niv. 1), Rayon astr
 
 Seul monstre de type Stellaire. Dans toute zone, quand une étape tire un monstre rare, c'est le Schnoz une fois sur 20, au niveau de la zone ; il peut se rencontrer de nouveau.
 
+Depuis l'étape 202 (11/11/2026, demande de l'utilisateur ; nom, stats et attaque proposés par Claude sans validation, Q124), le Schnoz a une évolution secrète au niveau 100, que la fiche du codex ne mentionne qu'une fois la forme capturée :
+
+| Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP | Rareté |
+|---|---|---|---|---|---|---|
+| schnoz-primordial | Schnoz primordial | Stellaire | soutien | 85 / 75 / 85 / 135 / 130 / 150 (660) | 280 | rare |
+
+Attaques apprises : celles du Schnoz, et Genèse stellaire (Stellaire, spéciale, puissance 120, précision 90), son attaque d'évolution. Habiletés du Schnoz (Pillard, Fouineur). Il ne lâche pas de ressource. Au codex, il vient en dernier, après la Gorgone. Sprite : un Schnoz plus grand, couronné d'étoiles, indigo (doré en shiny).
+
 ## 3. Zones
 
 | Identifiant | Nom | Niveaux | Taille des groupes | Espèces | Monstre rare | Apôtre |

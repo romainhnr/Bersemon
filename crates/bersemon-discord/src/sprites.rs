@@ -36,7 +36,7 @@ const CASES_MAX: usize = 4;
 const COULEURS_MAX: usize = 63;
 
 /// Identifiant de l'espèce et texte de son sprite, dans l'ordre du codex.
-const SPRITES: [(&str, &str); 131] = [
+const SPRITES: [(&str, &str); 132] = [
     ("salamandre", include_str!("../sprites/salamandre.txt")),
     ("crapaud", include_str!("../sprites/crapaud.txt")),
     ("mandragore", include_str!("../sprites/mandragore.txt")),
@@ -417,6 +417,10 @@ const SPRITES: [(&str, &str); 131] = [
     ("dullahan", include_str!("../sprites/dullahan.txt")),
     ("augure", include_str!("../sprites/augure.txt")),
     ("gorgone", include_str!("../sprites/gorgone.txt")),
+    (
+        "schnoz-primordial",
+        include_str!("../sprites/schnoz-primordial.txt"),
+    ),
 ];
 
 /// Identifiant de l'espèce du combattant et texte de son sprite : les

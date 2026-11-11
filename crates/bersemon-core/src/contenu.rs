@@ -2607,7 +2607,7 @@ const ATTAQUES_DES_HEROS: [FicheAttaque; 40] = [
 ];
 
 /// Section 1 de docs/contenu-v1.md, dans le même ordre.
-const ATTAQUES: [FicheAttaque; 276] = [
+const ATTAQUES: [FicheAttaque; 277] = [
     fiche(
         "souffle-chaud",
         "Souffle chaud",
@@ -4691,6 +4691,16 @@ const ATTAQUES: [FicheAttaque; 276] = [
         Paralysie,
         30,
     ),
+    // L'attaque du Schnoz primordial, sa forme secrète du niveau 100
+    // (section 5.4, étape 202).
+    fiche(
+        "genese-stellaire",
+        "Genèse stellaire",
+        Type::Stellaire,
+        Speciale,
+        120,
+        90,
+    ),
 ];
 
 struct FicheCapsule {
@@ -5079,7 +5089,7 @@ const MARCHAND_ZOMBIE: FicheEspece = FicheEspece {
 /// Section 2 de docs/contenu-v1.md, dans l'ordre du codex : les monstres de
 /// départ, les communs, les rares, l'Apôtre, le monstre caché, puis les
 /// formes évoluées de la section 8.
-static ESPECES: [FicheEspece; 131] = [
+static ESPECES: [FicheEspece; 132] = [
     FicheEspece {
         id: "salamandre",
         nom: "Salamandre",
@@ -5359,7 +5369,9 @@ static ESPECES: [FicheEspece; 131] = [
             (1, "lueur-trompeuse"),
             (10, "rayon-astral"),
         ],
-        evolution: None,
+        // Sa forme secrète, que le codex tait jusqu'à sa capture (section
+        // 5.4, étape 202).
+        evolution: par_niveau("schnoz-primordial", 100, "genese-stellaire"),
     },
     // Premières évolutions par niveau, section 8 de docs/contenu-v1.md.
     FicheEspece {
@@ -7492,6 +7504,28 @@ static ESPECES: [FicheEspece; 131] = [
         ],
         evolution: None,
     },
+    // La forme secrète du Schnoz, au niveau 100 : plus forte que les
+    // légendaires, elle garde le rôle, la rareté et les habiletés du
+    // Schnoz ; son
+    // rendement d'XP vaut 1,4 fois le sien (section 5.4, étape 202,
+    // proposé par Claude, Q124).
+    FicheEspece {
+        id: "schnoz-primordial",
+        nom: "Schnoz primordial",
+        types: &[Type::Stellaire],
+        role: Role::Soutien,
+        stats_de_base: [85, 75, 85, 135, 130, 150],
+        rendement_experience: 280,
+        rarete: Rarete::Rare,
+        habiletes: &[Habilete::Pillard, Habilete::Fouineur],
+        apprentissage: &[
+            (1, "eclat-astral"),
+            (1, "lueur-trompeuse"),
+            (10, "rayon-astral"),
+            (100, "genese-stellaire"),
+        ],
+        evolution: None,
+    },
 ];
 
 /// Section 15 de docs/contenu-v1.md : la ligne est prête 2 h après avoir
@@ -7626,11 +7660,20 @@ fn creer_evolution(fiche: &FicheEvolution) -> Evolution {
         condition,
         AttaqueId::new(fiche.attaque),
     );
+    let evolution = if EVOLUTIONS_SECRETES.contains(&fiche.vers) {
+        evolution.en_secret()
+    } else {
+        evolution
+    };
     match substitution {
         Some(pierre) => evolution.avec_pierre_de_substitution(pierre),
         None => evolution,
     }
 }
+
+/// Les formes d'arrivée des évolutions que le codex tait jusqu'à leur
+/// capture (section 5.4).
+const EVOLUTIONS_SECRETES: [&str; 1] = ["schnoz-primordial"];
 
 /// Section 9 de docs/contenu-v1.md : amélioration, niveau atteint,
 /// ressources et durée en heures.
@@ -10179,13 +10222,13 @@ mod tests {
 
         let contenu = ContenuV1::new();
         let au_codex = especes_au_codex(contenu.especes());
-        assert_eq!(au_codex, 116);
+        assert_eq!(au_codex, 117);
         let seuils: Vec<u32> = contenu
             .recompenses_du_codex()
             .iter()
             .map(|recompense| recompense.palier.seuil(au_codex))
             .collect();
-        assert_eq!(seuils, vec![10, 20, 30, 40, 50, 116]);
+        assert_eq!(seuils, vec![10, 20, 30, 40, 50, 117]);
         let complet = contenu.recompenses_du_codex().last().unwrap();
         assert_eq!(complet.palier, PalierDuCodex::Complet);
         let sceau = complet.objet_unique.as_ref().unwrap();
@@ -10290,7 +10333,7 @@ mod tests {
     #[test]
     fn contenu_conforme_aux_regles() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.especes().len(), 131);
+        assert_eq!(contenu.especes().len(), 132);
         assert_eq!(contenu.zones().len(), 16);
         assert_eq!(contenu.annexes().len(), 10);
         assert_eq!(contenu.piste().indices().count(), 27);
@@ -10630,7 +10673,8 @@ mod tests {
                 "{nom}"
             );
         }
-        assert_eq!(evoluees, 23);
+        // Le Schnoz évolue depuis l'étape 202.
+        assert_eq!(evoluees, 24);
         assert_eq!(sauvages, vec!["warg", "chevalier-noir"]);
     }
 
@@ -10716,7 +10760,8 @@ mod tests {
             .filter(|espece| espece.types().liste().contains(&Type::Stellaire))
             .map(|espece| espece.id().as_str())
             .collect();
-        assert_eq!(stellaires, vec!["schnoz"]);
+        // Sa forme secrète du niveau 100 est la seule autre (étape 202).
+        assert_eq!(stellaires, vec!["schnoz", "schnoz-primordial"]);
     }
 
     #[test]

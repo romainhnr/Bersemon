@@ -717,6 +717,27 @@ mod tests {
         );
     }
 
+    /// Section 5.4 : l'évolution secrète du Schnoz ne se dit qu'une fois
+    /// le Schnoz primordial capturé.
+    #[test]
+    fn la_fiche_du_schnoz_tait_son_evolution_secrete() {
+        let contenu = ContenuV1::new();
+        let schnoz = contenu.espece(&EspeceId::new("schnoz")).unwrap();
+        let evolution = |codex: &Codex| {
+            crate::partie::fiche_d_espece(&schnoz, codex, &[], &contenu)
+                .into_iter()
+                .find(|ligne| ligne.starts_with("Évolution"))
+        };
+        let mut codex = Codex::default();
+        codex.noter_capture(&EspeceId::new("schnoz"));
+        assert_eq!(evolution(&codex), None);
+        codex.noter_capture(&EspeceId::new("schnoz-primordial"));
+        assert_eq!(
+            evolution(&codex).as_deref(),
+            Some("Évolution : Schnoz primordial au niveau 100")
+        );
+    }
+
     #[test]
     fn la_fiche_ne_devoile_ni_l_evolution_pas_capturee_ni_l_apotre_pas_abattu() {
         let contenu = ContenuV1::new();

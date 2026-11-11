@@ -71,6 +71,9 @@ pub struct Evolution {
     /// L'attaque d'évolution, dans la liste d'apprentissage de l'espèce
     /// d'arrivée, apprise au moment d'évoluer.
     attaque: AttaqueId,
+    /// Le codex ne la mentionne pas tant que la forme d'arrivée n'est pas
+    /// capturée, comme celle du Schnoz (section 5.4).
+    secrete: bool,
 }
 
 impl Evolution {
@@ -80,7 +83,17 @@ impl Evolution {
             condition,
             pierre_de_substitution: None,
             attaque,
+            secrete: false,
         }
+    }
+
+    pub fn en_secret(mut self) -> Self {
+        self.secrete = true;
+        self
+    }
+
+    pub fn est_secrete(&self) -> bool {
+        self.secrete
     }
 
     pub fn avec_pierre_de_substitution(mut self, pierre: PierreDEvolution) -> Self {

@@ -628,8 +628,13 @@ pub fn fiche_d_espece(
             decrire_attaque(&apprise.attaque)
         ));
     }
+    // Une évolution secrète ne se dit qu'une fois sa forme capturée (section
+    // 5.4).
     let evolution = espece.evolution().and_then(|evolution| {
         let vers = contenu.espece(evolution.vers())?;
+        if evolution.est_secrete() && codex.etat(vers.id()) != EtatCodex::Capturee {
+            return None;
+        }
         Some((vers, evolution.condition(), evolution.pierre()))
     });
     if let Some((vers, condition, pierre)) = evolution {
