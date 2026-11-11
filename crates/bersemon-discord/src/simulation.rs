@@ -1288,11 +1288,18 @@ fn le_demiurge_s_affronte_a_travers_les_ecrans_du_bot() {
     }));
     // Une équipe de fin de jeu, au maximum de ses valeurs internes, avec des
     // types qui frappent l'Obscur ; le Loup, à sacrifier, va au camp.
+    // 30 en Vitesse, pas 31 : à 31 partout, ils deviendraient shiny à la
+    // reprise et devraient apprendre le Choc chromatique (section 5.1).
+    let presque_maximales = ValeursInternes::new(bersemon_core::stats::Stats {
+        vitesse: 30,
+        ..*ValeursInternes::maximales().valeurs()
+    })
+    .unwrap();
     let creer = |id: &str, niveau: u8| {
         Monstre::creer(
             contenu.espece(&EspeceId::new(id)).unwrap(),
             Niveau::new(niveau).unwrap(),
-            ValeursInternes::maximales(),
+            presque_maximales,
             false,
         )
         .unwrap()

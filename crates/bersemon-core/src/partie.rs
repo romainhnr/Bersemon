@@ -1692,11 +1692,49 @@ impl Partie {
         if !self.sac.utiliser_booster(booster) && !self.coffre_du_camp.utiliser_booster(booster) {
             return Err(ErreurBooster::Aucun(booster));
         }
-        self.collection
+        let modifie = self
+            .collection
             .monstre_a_modifier(emplacement)
-            .expect("emplacement vérifié")
-            .recevoir_booster(booster);
+            .expect("emplacement vérifié");
+        modifie.recevoir_booster(booster);
+        // Un monstre dont toutes les valeurs internes atteignent 31 devient
+        // shiny, et apprend le Choc chromatique comme après le Philtre
+        // (section 5.1).
+        if modifie.valeurs_internes().sont_maximales() && !modifie.est_shiny() {
+            modifie.devenir_shiny();
+            self.enseigner_le_choc_chromatique(emplacement);
+        }
         Ok(monstre)
+    }
+
+    /// Tout monstre de l'équipe et du camp dont chaque valeur interne est à
+    /// 31 est shiny (section 5.1) : pour une sauvegarde où des boosters les
+    /// y ont menées avant la règle. Les légendaires, dont les valeurs sont
+    /// fixées à 31, n'en sont pas (section 9.10).
+    pub fn rendre_shiny_les_valeurs_maximales(&mut self) {
+        let a_rendre_shiny = |monstre: &Monstre| {
+            monstre.valeurs_internes().sont_maximales()
+                && !monstre.est_shiny()
+                && !self
+                    .decouvertes
+                    .legendaires_captures
+                    .contains(monstre.espece().id())
+        };
+        let emplacements: Vec<Emplacement> = (self.collection.equipe().iter().enumerate())
+            .filter(|(_, monstre)| a_rendre_shiny(monstre))
+            .map(|(position, _)| Emplacement::Equipe(position))
+            .chain(
+                (self.collection.camp().iter().enumerate())
+                    .filter(|(_, monstre)| a_rendre_shiny(monstre))
+                    .map(|(position, _)| Emplacement::Camp(position)),
+            )
+            .collect();
+        for emplacement in emplacements {
+            if let Some(monstre) = self.collection.monstre_a_modifier(emplacement) {
+                monstre.devenir_shiny();
+            }
+            self.enseigner_le_choc_chromatique(emplacement);
+        }
     }
 
     /// Ceux du sac et du coffre : au camp, ils servent tous (section 13.7).
@@ -3698,6 +3736,51 @@ pub(crate) mod tests {
         assert!(partie.collection().equipe()[1].a_l_habilete(Habilete::Pillard));
     }
 
+    /// Un monstre dont toutes les valeurs internes atteignent 31 devient
+    /// shiny et apprend le Choc chromatique (section 5.1).
+    #[test]
+    fn un_booster_qui_mene_tout_a_31_rend_shiny() {
+        let mut partie = partie();
+        let valeurs = ValeursInternes::new(Stats {
+            pv: 30,
+            attaque: 31,
+            defense: 31,
+            attaque_speciale: 31,
+            defense_speciale: 31,
+            vitesse: 31,
+        })
+        .unwrap();
+        let loup = Monstre::creer(espece("loup"), Niveau::new(5).unwrap(), valeurs, false).unwrap();
+        partie.prendre_monstre_rare(loup);
+        let emplacement = Emplacement::Equipe(1);
+        partie.trouver_booster(Booster::FioleDeSang);
+        partie
+            .donner_booster(emplacement, Booster::FioleDeSang)
+            .unwrap();
+        let loup = partie.collection().monstre(emplacement).unwrap();
+        assert!(loup.est_shiny());
+        assert!(loup.attaques().connait(choc_chromatique().id()));
+    }
+
+    /// Une sauvegarde peut garder un monstre à 31 partout qui n'est pas
+    /// shiny : il le devient à la reprise.
+    #[test]
+    fn a_la_reprise_les_valeurs_maximales_rendent_shiny() {
+        let mut partie = partie();
+        let loup = Monstre::creer(
+            espece("loup"),
+            Niveau::new(5).unwrap(),
+            ValeursInternes::maximales(),
+            false,
+        )
+        .unwrap();
+        partie.prendre_monstre_rare(loup);
+        assert!(!partie.collection().equipe()[1].est_shiny());
+        partie.rendre_shiny_les_valeurs_maximales();
+        assert!(partie.collection().equipe()[1].est_shiny());
+        assert!(!partie.collection().equipe()[0].est_shiny());
+    }
+
     fn loup_aux_valeurs(pv: u8) -> Monstre {
         let valeurs = ValeursInternes::new(Stats {
             pv,
@@ -5090,8 +5173,9 @@ pub(crate) mod tests {
         let apercu = partie.preparer_le_rite(premier, second, especes).unwrap();
         assert_eq!(apercu.shiny_sur, 512);
         assert_eq!(apercu.attaque_d_oeuf, Some((souffle.clone(), 4)));
-        // Un parent shiny : 1 chance sur 256. Le petit naît avec l'attaque
-        // d'œuf, tirée 1 fois sur 4.
+        // Un parent shiny a 31 partout : le petit, qui prend la meilleure
+        // valeur de ses parents, aussi, et naît shiny à coup sûr (section
+        // 5.1). Il naît avec l'attaque d'œuf, tirée 1 fois sur 4.
         let shiny = |partie: &mut Partie, emplacement: Emplacement| {
             let mut monstre = partie.collection.monstre(emplacement).unwrap().clone();
             monstre.devenir_shiny();
@@ -5102,14 +5186,14 @@ pub(crate) mod tests {
         let premier = Emplacement::Equipe(2);
         let second = Emplacement::Equipe(1);
         let apercu = partie.preparer_le_rite(premier, second, especes).unwrap();
-        assert_eq!(apercu.shiny_sur, 256);
+        assert_eq!(apercu.shiny_sur, 1);
         partie
             .lancer_le_rite(premier, second, especes, a(0))
             .unwrap();
         let naissance = partie
-            .accueillir_le_petit(especes, a(7_200), &mut AleatoireScripte::new([2, 1, 0]))
+            .accueillir_le_petit(especes, a(7_200), &mut AleatoireScripte::new([1, 0]))
             .unwrap();
-        assert!(!naissance.petit.est_shiny());
+        assert!(naissance.petit.est_shiny());
         assert_eq!(naissance.attaque_d_oeuf, Some(souffle.clone()));
         assert!(naissance.petit.attaques().liste().contains(&souffle));
         // Deux parents shiny, dont l'un connaît l'attaque d'œuf : shiny et

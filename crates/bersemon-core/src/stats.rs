@@ -146,6 +146,11 @@ impl ValeursInternes {
         })
     }
 
+    /// 31 dans chaque stat : un tel monstre est toujours shiny (section 5.1).
+    pub fn sont_maximales(&self) -> bool {
+        *self == Self::maximales()
+    }
+
     /// Tire chaque valeur uniformément de 0 à 31, dans l'ordre des champs de
     /// `Stats`.
     pub fn tirer(aleatoire: &mut dyn Aleatoire) -> Self {

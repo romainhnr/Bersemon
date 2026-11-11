@@ -1158,7 +1158,7 @@ Décidé le 25/10/2026, pour les étapes 110 à 112 (gamedesign.md, section 13.1
 | Coût | 50 pièces d'argent ; depuis l'étape 182, plus aucune ressource (avant : 3 ressources de l'espèce du petit) |
 | Niveau du petit | 1 |
 | Valeurs internes du petit | pour chaque stat, la plus haute des deux parents |
-| Shiny du petit | 1 chance sur 512 comme un monstre sauvage ; 1 sur 256 avec un parent shiny ; à coup sûr avec deux (étape 114) |
+| Shiny du petit | 1 chance sur 512 comme un monstre sauvage ; à coup sûr s'il a 31 dans chaque valeur interne, donc dès qu'un parent est shiny (étape 187 ; avant : 1 sur 256 avec un parent shiny, à coup sûr avec deux) |
 | Attaque d'œuf | 1 chance sur 4 ; à coup sûr si un parent la connaît (étape 114) |
 
 Textes proposés sans validation (gamedesign.md, Q105). {a} et {b} sont les parents, {petit} le nom du petit, {espèce} son espèce, {coût} l'argent, {durée} le temps restant.
@@ -1174,7 +1174,7 @@ Textes proposés sans validation (gamedesign.md, Q105). {a} et {b} sont les pare
 | Console | Quel premier parent confier à Malvoise ? ; Second parent, de la même famille : ; Aucun autre de vos monstres n'est de sa famille d'évolution. |
 | Discord | Rite du sang mêlé (Malvoise) ; Choisissez le second parent, de la même famille d'évolution que {a}. ; Lui unir un monstre de l'équipe / du camp ; Retour au monstre ; Accueillir le petit (Malvoise) ; Choisissez d'abord un monstre dans la gestion. ; à l'étal : {service} : bouton "Rite du sang mêlé (Malvoise)" de la gestion des monstres. |
 | Liste des monstres | 1 place du camp est gardée, pour un monstre absent ou à naître. / {n} places du camp sont gardées, pour des monstres absents ou à naître. |
-| Confirmation, ajouts de l'étape 114 | Il a 1 chance sur 4 de connaître {attaque}, l'attaque d'œuf de sa famille. / Il connaîtra {attaque}, l'attaque d'œuf de sa famille, que connaît un parent. / Avec un parent shiny, il a 1 chance sur 256 de l'être. / Ses deux parents sont shiny : il le sera aussi. |
+| Confirmation, ajouts de l'étape 114 | Il a 1 chance sur 4 de connaître {attaque}, l'attaque d'œuf de sa famille. / Il connaîtra {attaque}, l'attaque d'œuf de sa famille, que connaît un parent. / Depuis l'étape 187 : Il aura 31 dans chaque valeur interne : il naîtra shiny. |
 | Naissance, ajout de l'étape 114 | Il connaît {attaque}, l'attaque d'œuf de sa famille. |
 | Fiche du codex | Attaque d'œuf (Rite du sang mêlé) : {attaque} ({type}, {catégorie}, puissance {n}, précision {n} %) |
 | Refus | Malvoise accomplit déjà un rite : un seul à la fois. / Le rite n'unit que deux monstres d'une même famille d'évolution. / Il faut une place libre au camp pour le petit. / Il vous manque {ressources}. / Aucun rite n'est en cours. / Le rite n'est pas encore achevé. |

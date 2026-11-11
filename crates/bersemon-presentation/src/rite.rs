@@ -4,7 +4,6 @@
 
 use bersemon_core::combat::Cote;
 use bersemon_core::horodatage::Horodatage;
-use bersemon_core::monstre::CHANCES_SHINY;
 use bersemon_core::partie::Partie;
 use bersemon_core::rite::{
     ApercuDuRite, DUREE_DU_RITE, ErreurRite, NIVEAU_DU_PETIT, NaissanceDuRite, PRIX_DU_RITE,
@@ -66,10 +65,7 @@ fn chances_de_l_attaque_d_oeuf(apercu: &ApercuDuRite) -> String {
 /// monstre sauvage.
 fn chances_shiny(sur: u32) -> String {
     match sur {
-        1 => " Ses deux parents sont shiny : il le sera aussi.".to_string(),
-        sur if sur < CHANCES_SHINY => {
-            format!(" Avec un parent shiny, il a 1 chance sur {sur} de l'être.")
-        }
+        1 => " Il aura 31 dans chaque valeur interne : il naîtra shiny.".to_string(),
         _ => String::new(),
     }
 }
@@ -196,15 +192,11 @@ mod tests {
             question_du_rite(&apercu),
             "Confier Croc et Bise à Malvoise pour le Rite du sang mêlé ? Il prendra 50 pièces d'argent. Dans 2 h, le petit naîtra, de l'espèce Loup, au niveau 1, avec la meilleure valeur interne de ses parents pour chaque stat. Il a 1 chance sur 4 de connaître Assaut de meute, l'attaque d'œuf de sa famille. D'ici là, les deux restent auprès de Malvoise."
         );
-        apercu.shiny_sur = 256;
+        apercu.shiny_sur = 1;
         apercu.attaque_d_oeuf = Some((assaut, 1));
         assert!(question_du_rite(&apercu).contains(
-            "Il connaîtra Assaut de meute, l'attaque d'œuf de sa famille, que connaît un parent. Avec un parent shiny, il a 1 chance sur 256 de l'être."
+            "Il connaîtra Assaut de meute, l'attaque d'œuf de sa famille, que connaît un parent. Il aura 31 dans chaque valeur interne : il naîtra shiny."
         ));
-        apercu.shiny_sur = 1;
-        assert!(
-            question_du_rite(&apercu).contains("Ses deux parents sont shiny : il le sera aussi.")
-        );
         assert_eq!(
             service_du_rite(),
             "Rite du sang mêlé : 50 pièces d'argent, 2 h"

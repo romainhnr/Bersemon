@@ -1508,6 +1508,9 @@ pub(crate) fn vers_partie(
     if sauvegarde.version < VERSION_DU_CHOC_CHROMATIQUE {
         partie.enseigner_le_choc_chromatique_aux_shiny();
     }
+    // Un monstre aux valeurs internes toutes à 31 est shiny (section 5.1) :
+    // sans effet sur une partie qui suit déjà la règle.
+    partie.rendre_shiny_les_valeurs_maximales();
     Ok(partie)
 }
 

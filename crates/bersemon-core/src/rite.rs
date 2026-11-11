@@ -24,16 +24,24 @@ pub const NIVEAU_DU_PETIT: u8 = 1;
 pub const PLACES_DU_RITE: usize = 3;
 /// Un parent shiny double les chances du petit de l'être ; deux parents
 /// shiny le rendent shiny à coup sûr.
-pub const CHANCES_SHINY_AVEC_UN_PARENT_SHINY: u32 = 256;
 /// Sauf si un parent la connaît : il la transmet alors à coup sûr.
 pub const UNE_ATTAQUE_D_OEUF_SUR: u32 = 4;
 
 /// 1 chance sur ce nombre que le petit soit shiny : 1 s'il l'est à coup sûr.
+/// Il reçoit la meilleure valeur interne de ses parents pour chaque stat ;
+/// s'il a ainsi 31 partout, il naît shiny, comme tout monstre aux valeurs
+/// internes maximales (section 5.1). Un parent shiny, qui a 31 partout,
+/// donne donc toujours un petit shiny.
 pub fn chances_shiny(parents: &[Monstre; 2]) -> u32 {
-    match parents.iter().filter(|parent| parent.est_shiny()).count() {
-        0 => CHANCES_SHINY,
-        1 => CHANCES_SHINY_AVEC_UN_PARENT_SHINY,
-        _ => 1,
+    let [premier, second] = parents;
+    if premier
+        .valeurs_internes()
+        .meilleures(second.valeurs_internes())
+        .sont_maximales()
+    {
+        1
+    } else {
+        CHANCES_SHINY
     }
 }
 

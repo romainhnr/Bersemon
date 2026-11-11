@@ -87,13 +87,22 @@ pub fn effet_du_booster(booster: Booster) -> String {
 
 pub fn booster_donne(booster: Booster, avant: &Monstre, apres: &Monstre) -> String {
     let stat = booster.stat();
-    format!(
+    let mut texte = format!(
         "{} : valeur interne {} de {} à {}.",
         nom_en_valeur(apres, Cote::Joueur),
         de_la_stat(stat),
         avant.valeurs_internes().valeurs().de(stat),
         apres.valeurs_internes().valeurs().de(stat)
-    )
+    );
+    // Toutes ses valeurs internes à 31 : il devient shiny (section 5.1).
+    if apres.est_shiny() && !avant.est_shiny() {
+        texte.push_str(&format!(
+            " Toutes ses valeurs internes atteignent {} : {} devient shiny !",
+            ValeursInternes::MAX,
+            avant.nom()
+        ));
+    }
+    texte
 }
 
 pub fn refus_valeur_maximale(booster: Booster) -> String {
