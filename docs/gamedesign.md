@@ -4,7 +4,7 @@ Bersemon est le nom du projet et du jeu.
 
 Statut : document de référence du projet. Il décrit ce qui est décidé ; les points non tranchés sont regroupés dans la section 16 "Questions ouvertes et valeurs à définir", et l'historique des décisions dans la section 17.
 
-Dernière mise à jour : 06/11/2026
+Dernière mise à jour : 11/11/2026
 
 ## Sommaire
 
@@ -1508,6 +1508,26 @@ Les questions Q102 et suivantes ont été relevées le 25/10/2026 lors de la con
 
 Les questions Q103 et suivantes ont été relevées le 25/10/2026 lors de la conception des étapes 107 carnet de traque du codex et 108 Philtre chromatique.
 
+Les questions Q123 et suivantes ont été relevées le 11/11/2026 lors des retours de l'utilisateur, codés aux étapes 181 succès des Apôtres masqués, 182 rite sans ressources, 183 sprite du marchand zombie, 184 attaques en combat, 185 ordre du héros, 186 shiny en combat, 187 shiny par les valeurs internes, 188 capture des gardiens de la Tour, 189 fuite avant un combat, 190 raccourci de la Tour, 191 Tour à deux, 192 étapes des expéditions, 193 butin, 194 pierres de substitution et Chaîne de lien, 195 journal des zones, 196 objets d'expérience, 197 cannes à pêche et 198 échange de ressources, avec la sauvegarde en version 40.
+
+- Q123. (Étapes 181 à 198) Hypothèses retenues et valeurs proposées par Claude, à confirmer ou à changer :
+  - Succès (181) : seuls les Apôtres non abattus sont masqués ; le Démiurge, annoncé dès l'introduction, et les légendaires restent nommés.
+  - Sprite du marchand zombie (183) : dessiné par Claude, sans palette shiny, sans validation.
+  - Attaques en combat (184) : la console, sans couleur, ajoute l'efficacité en toutes lettres quand elle n'est pas normale.
+  - Shiny en combat (186) : une console Windows 10 ancienne peut mal afficher l'émoji étoile ; non vérifié sur ce poste.
+  - Shiny par les valeurs internes (187) : les Apôtres, le Démiurge et les légendaires, à 31 partout par leur rôle, gardent leur chance de 1 sur 512. Conséquence : au Rite du sang mêlé, un parent shiny donne toujours un petit shiny, et la chance de 1 sur 256 disparaît.
+  - Gardiens de la Tour (188) : le gardien capturé n'est pas dit sauvage et ne lâche pas de ressource.
+  - Fuite avant un combat (189) : en groupe, le gardien de la Tour n'a pas d'annonce, donc pas ce choix.
+  - Raccourci de la Tour (190) : un seul raccourci, remplacé par le suivant ; seulement seul, pas à deux.
+  - Tour à deux (191) : lecture retenue, celui qui mène commence l'étape et l'autre reste en renfort ; les gardiens des étapes 10 et 20, paires, sont donc menés par l'invité.
+  - Étapes des expéditions (192) : une expédition de 5 étapes compte 5 combats au lieu de 4 en moyenne, et un peu moins de coffres et de monstres rares ; non remesuré avec l'outil d'équilibrage.
+  - Butin (193) : le butin rare est le booster de la meilleure stat de base de l'espèce, à 5 % pour une espèce commune et 15 % pour une rare ; les chances de 1 et 30 % n'ont pas d'espèce ; les espèces qui reçoivent Dépeceur, Fortune et Flair sont choisies par Claude. Conséquence : les boosters, donc le shiny par les valeurs internes, deviennent bien plus courants.
+  - Pierres de substitution (194) : noms (sauf la Pierre chaude, proposée par l'utilisateur) ; le niveau requis reste dû ; 300 pièces d'argent chez Malvoise, ni dans les coffres ni à la pêche.
+  - Journal des zones et zones du codex (195) : les lieux pas encore découverts ne figurent pas au journal ; le Schnoz, caché partout, n'est compté nulle part.
+  - Objets d'expérience (196) : noms, valeurs (1000, 5000 et 20000 XP, et un niveau) et prix (100, 400, 1 200 et 1 500) ; vendus par Malvoise seulement.
+  - Cannes à pêche (197) : tables de prises et coûts ; une sauvegarde antérieure n'a aucune canne, et une ligne déjà à l'eau se relève comme avec la canne en argent.
+  - Échange de ressources (198) : une seule sorte de ressource par côté de l'offre, sans monstre et ressources ensemble, ni argent ; les ressources reçues vont au coffre du camp ; nombres proposés (1, 2, 3, 5, 10, 20, 50, 100, 200, 500 ou "Tout") ; pendant qu'une offre se compose, les boutons de défi laissent la place à ceux de l'offre ; textes proposés (docs/contenu-v1.md, section 13).
+
 Les questions Q122 et suivantes ont été relevées le 07/11/2026 lors de la conception des étapes 178 matières de la pêche, atelier d'Ansgar, appâts, parfums et évolution par échange dans le noyau, avec la sauvegarde en version 39, 179 écrans de la console, 180 écrans du bot Discord.
 
 - Q122. (Étapes 178 à 180) Choix de l'utilisateur : l'appât est l'action du tour et ne vaut que pour le prochain filet ; Ansgar fabrique sur le moment ; le parfum se met au camp avant de partir et vaut pour toute l'expédition ; un objet remplace l'échange, nommé Chaîne d'allégeance. Proposés par Claude sans validation, à confirmer ou à changer : les trois matières, leurs noms, leurs chances (60, 30 et 10 %), leur nombre par ligne (2 à 3) et leur prix (5, 10 et 30) ; les noms, multiplicateurs (x1,25, x1,5, x2) et recettes des appâts ; le parfum de charogne et sa recette, faite des seules matières de la pêche, quand la demande parlait aussi d'objets lâchés par les monstres, réservés ici au parfum d'une espèce (1 Ambre noir et 3 de sa ressource) ; le parfum porté plutôt que rangé, un seul à la fois ; ses effets (un monstre de plus par groupe, 3 niveaux de plus, 10 points de monstres rares en plus, ressource 1 fois sur 2, et 2 fois sur 3 pour une espèce rare, espèce attirée 1 fois sur 2), la valeur de 2 sur 3 étant proposée après la précision de l'utilisateur du 08/11/2026 (plus de chance pour les monstres rares de lâcher leur ressource rare, mais pas à coup sûr) ; les lieux qui ne prennent pas de parfum (Tour, Éclipse, Fosse) ; un appât refusé sans filet ou sur un monstre déjà appâté ; les trois espèces choisies pour l'échange, Dullahan, Augure et Gorgone, leurs types, leurs stats (500 au total), leurs attaques (Chevauchée sans tête, Présage funeste, Regard de pierre, plus Épée des morts, Maléfice et Éboulement) et leurs sprites ; l'évolution sans condition de niveau ; le don compté comme un échange ; le droit d'évoluer gardé tant que le monstre n'a pas évolué, et proposé aussi après un combat où il gagne un niveau ; la Chaîne vendue 500 pièces d'argent par Malvoise seulement, ni trouvée ni fabriquée. Non mesuré avec l'outil d'équilibrage, dont le joueur automatique ne pêche pas et n'utilise ni appât ni parfum. À juger en jouant : une ligne toutes les 2 h donne en moyenne 1,5 Vers de vase, 0,75 Chair de noyé et 0,25 Ambre noir, soit un parfum d'espèce toutes les 8 h environ.
@@ -2248,3 +2268,10 @@ Les questions Q104 et suivantes ont été relevées le 25/10/2026 lors de la con
 08/11/2026 (précision sur les parfums, étape 178) :
 
 - Précision de l'utilisateur : sous un parfum, les monstres rares ont plus de chance de lâcher leur ressource rare, mais pas à coup sûr. Claude avait retenu une ressource certaine ; elle tombe désormais 2 fois sur 3 pour une espèce rare, contre 1 sur 2 pour une commune et 1 sur 3 sans parfum (section 13.14). La valeur de 2 sur 3 est proposée par Claude (Q122).
+
+11/11/2026 (étapes 181 à 198, retours de l'utilisateur) :
+
+- Demandes de l'utilisateur, codées une par étape : succès qui ne dévoilent plus le nom des Apôtres (181, section 4.5) ; Rite du sang mêlé sans ressources (182, section 13.11) ; sprite du marchand zombie (183) ; type, catégorie (P ou S), puissance et précision de l'attaque en combat, sans fourchette de dégâts (184, section 10.6) ; ordre du héros qui prend le tour (185, section 4.2) ; rencontre d'un shiny mise en évidence par des étoiles (186, section 10.6) ; monstre à 31 partout toujours shiny, la chance de 1 sur 512 gardée (187, section 5.8) ; gardiens de la Tour capturables une fois KO (188, section 9.5) ; fuite avant un combat d'où l'on ne fuit pas (189, section 10.3) ; raccourci de la Tour (190, section 9.5) ; Tour à deux où chacun mène une étape à son tour (191, section 15.5) ; événements aléatoires entre les étapes, chaque étape étant un combat (192, section 9.2) ; butin certain, butin rare et trois habiletés, Dépeceur, Fortune et Flair (193, sections 5.9 et 14.3) ; pierres qui simulent les conditions d'évolution, et Chaîne d'allégeance renommée Chaîne de lien (194, section 5.4) ; journal des monstres par zone et zones d'apparition au codex (195, section 5.6) ; objets d'expérience (196, section 14.3) ; cannes à pêche en bois, en fer et en argent (197, section 13.8) ; don et échange de ressources entre joueurs (198, section 15.1).
+- Vérifié dans le code à la demande de l'utilisateur : le bonus de même type (STAB) s'applique, x1,5 arrondi à l'entier inférieur, quand le type de l'attaque est l'un de ceux de l'attaquant, après le pourcentage tiré et avant Affinité, les renforts et l'efficacité (section 10.4).
+- Sauvegarde en version 40.
+- Hypothèses retenues, à confirmer : Q123.

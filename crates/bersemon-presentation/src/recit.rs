@@ -732,7 +732,7 @@ pub fn objets_d_experience(objet: ObjetDExperience, nombre: u32) -> String {
     format!("{} ({nombre})", objet.nom())
 }
 
-/// "Éclat de mémoire : +1 000 XP" ; "Cœur de bataille : +1 niveau".
+/// "Éclat de mémoire : +1000 XP" ; "Cœur de bataille : +1 niveau".
 pub fn effet_d_un_objet_d_experience(objet: ObjetDExperience) -> String {
     match objet.effet() {
         EffetDExperience::Experience(gain) => format!("{} : +{gain} XP", objet.nom()),

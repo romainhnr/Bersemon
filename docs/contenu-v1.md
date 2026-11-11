@@ -2809,7 +2809,7 @@ Parfums, portés aussitôt préparés :
 | Parfum de charogne | 3 Chair de noyé et 2 Vers de vase | les hordes : un monstre de plus par groupe, 3 niveaux de plus, 10 points de monstres rares pris aux combats, ressource 1 fois sur 2 (2 fois sur 3 pour une espèce rare) |
 | Parfum de {espèce} | 1 Ambre noir et 3 de la ressource de l'espèce | les hordes, et l'espèce : 1 monstre sur 2 des groupes là où elle est commune, le monstre rare là où elle est rare |
 
-Chaîne d'allégeance (identifiant chaine-d-allegeance, objet d'évolution) : 500 pièces d'argent chez Malvoise ; ni dans les coffres ni à la pêche.
+Chaîne d'allégeance (identifiant chaine-d-allegeance, objet d'évolution) : 500 pièces d'argent chez Malvoise ; ni dans les coffres ni à la pêche. Renommée Chaîne de lien à l'étape 194 (11/11/2026, demande de l'utilisateur) : seuls le nom et les textes changent, l'identifiant reste chaine-d-allegeance ; les textes de cette section qui la nomment disent désormais "Chaîne de lien" (ou "chaîne de lien" au codex).
 
 Formes par échange, au codex après les légendaires. Elles gardent le rôle, la rareté et les habiletés de leur forme d'avant, n'ont pas de ressource, et leur rendement d'XP vaut 1,4 fois le sien. Condition : reçu d'un autre joueur, ou une Chaîne d'allégeance, à tout niveau. Stats dans l'ordre PV / Attaque / Défense / Attaque spéciale / Défense spéciale / Vitesse.
 
@@ -2843,3 +2843,41 @@ Textes. {cible} est le nom en combat du monstre adverse, {parfum} le nom du parf
 | Codex | Évolution : Gorgone une fois reçu d'un autre joueur, ou avec une chaîne d'allégeance |
 | Refus | Il vous manque : Vers de vase. / Vous portez déjà le {parfum} : il se répandra à votre prochaine expédition dans une zone. / Ce monstre a déjà un appât : lancez d'abord un filet. / Plus aucun appât de ce genre. |
 | Libellés | Préparer un appât ; Préparer un parfum ; Lancer un appât ; Prendre des appâts ; Ranger des appâts ; Acheter une Chaîne d'allégeance (500 pièces d'argent) |
+
+## 54. Objets d'expérience, pierres de substitution et cannes à pêche
+
+Décidé le 11/11/2026, pour les étapes 194, 196 et 197 (gamedesign.md, sections 5.4, 13.8 et 14.3). Demandes de l'utilisateur ; noms, valeurs, prix et textes proposés par Claude sans validation, sauf mention (Q123).
+
+Objets d'expérience (étape 196), vendus par Malvoise, dans cet ordre :
+
+| Objet | Effet | Prix (pièces d'argent) |
+|---|---|---|
+| Éclat de mémoire | +1000 XP | 100 |
+| Fiole de mémoire | +5000 XP | 400 |
+| Cristal de mémoire | +20000 XP | 1 200 |
+| Cœur de bataille | +1 niveau (juste l'XP du niveau suivant) | 1 500 |
+
+Textes : "Éclat de mémoire : +1000 XP" et "Cœur de bataille : +1 niveau" dans les listes ; "Éclat de mémoire (3)" au coffre ; menus Discord "Acheter un objet d'évolution ou d'expérience" et "Donner un booster ou un objet d'expérience" ; entrées de la console "Acheter des objets d'expérience" et "Donner un booster ou un objet d'expérience à un monstre".
+
+Pierres de substitution (étape 194), 300 pièces d'argent chez Malvoise, comme les autres pierres. Elles remplacent la condition particulière, pas le niveau requis :
+
+| Pierre | Condition remplacée | Espèces |
+|---|---|---|
+| Pierre de nuit | combat de nuit | Loup, Corbeau |
+| Pierre de soleil | combat de jour | Vipère |
+| Pierre d'orage | tempête | Fée noire |
+| Pierre de pluie | pluie | Fée-sorcière |
+| Pierre chaude (nom proposé par l'utilisateur) | canicule | Basilic |
+| Pierre des brumes | Vallée des Brumes | Armure hantée |
+
+Codex : "Évolution : Warg dès le niveau 16, après un combat de nuit, ou avec une pierre de nuit". Console : "Acheter des objets d'évolution (pierres 300 l'une, Chaîne de lien 500)".
+
+Cannes à pêche (étape 197), fabriquées par Ansgar, chacune demandant la précédente ; noms et durées choisis par l'utilisateur, coûts et tables proposés par Claude :
+
+| Canne | Durée de la ligne | Coût |
+|---|---|---|
+| Canne en bois | 30 min | 50 pièces d'argent |
+| Canne en fer | 1 h | 300 pièces d'argent et 5 Fragments d'armure |
+| Canne en argent | 2 h | 1 000 pièces d'argent et 3 Ambres noirs |
+
+Les tables de prises de chaque canne sont dans gamedesign.md, section 13.8. Libellés : "Lancer la ligne avec la canne en bois (30 min)" et "Fabriquer la canne suivante : " suivi de la canne et de son coût, dans la console ; "Lancer : canne en bois (30 min)" et "Fabriquer : canne en fer" sur Discord.
