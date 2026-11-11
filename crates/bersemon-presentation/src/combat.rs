@@ -102,23 +102,18 @@ pub fn etat(combat: &Combat, codex: &Codex) -> String {
     lignes.join("\n")
 }
 
-/// Ce qu'une attaque ferait au monstre adverse actif : dégâts estimés sans
-/// coup critique, précision, catégorie et effet (section 10.6).
+/// Une attaque proposée en combat : son type, sa catégorie (P pour
+/// physique, S pour spéciale), sa puissance, sa précision et son effet. Elle
+/// ne dit plus les dégâts estimés (section 10.6) : sur Discord, la couleur
+/// du bouton dit l'efficacité ; la console l'ajoute avec
+/// `efficacite_en_combat`.
 pub fn attaque_en_combat(combat: &Combat, index_attaque: usize) -> Option<String> {
     let monstre = combat.monstre(combat.actif(Cote::Joueur));
     let attaque = monstre.attaques().liste().get(index_attaque)?;
-    let apercu = combat.apercu_attaque(index_attaque)?;
-    let degats = if apercu.efficacite == Efficacite::Nulle {
-        "sans effet".to_string()
-    } else if apercu.degats_min == apercu.degats_max {
-        format!("{} dégâts", apercu.degats_max)
-    } else {
-        format!("{} à {} dégâts", apercu.degats_min, apercu.degats_max)
-    };
     let categorie = match attaque.categorie_pour(monstre) {
-        Categorie::Physique => "Phy",
+        Categorie::Physique => "P",
         // `categorie_pour` ne rend jamais la catégorie adaptative.
-        Categorie::Speciale | Categorie::Adaptative => "Spé",
+        Categorie::Speciale | Categorie::Adaptative => "S",
     };
     let effet = match attaque.effet() {
         Some(effet) => {
@@ -131,10 +126,27 @@ pub fn attaque_en_combat(combat: &Combat, index_attaque: usize) -> Option<String
         None => String::new(),
     };
     Some(format!(
-        "{} : {degats}, {} %, {categorie}{effet}",
+        "{} : {}, {categorie}, puissance {}, {} %{effet}",
         attaque.nom(),
+        attaque.type_attaque().nom(),
+        attaque.puissance(),
         attaque.precision()
     ))
+}
+
+/// Pour la console, sans couleur de bouton : " (très efficace)", " (peu
+/// efficace)" ou " (sans effet)" contre le monstre adverse actif ; rien pour
+/// une efficacité normale.
+pub fn efficacite_en_combat(combat: &Combat, index_attaque: usize) -> &'static str {
+    match combat
+        .apercu_attaque(index_attaque)
+        .map(|apercu| apercu.efficacite)
+    {
+        Some(Efficacite::Forte | Efficacite::TresForte) => " (très efficace)",
+        Some(Efficacite::Reduite | Efficacite::TresReduite) => " (peu efficace)",
+        Some(Efficacite::Nulle) => " (sans effet)",
+        Some(Efficacite::Normale) | None => "",
+    }
 }
 
 /// KO ou statut, à la suite des PV.
@@ -531,21 +543,27 @@ mod tests {
     }
 
     #[test]
-    fn une_attaque_dit_ses_degats_sa_precision_et_sa_categorie() {
+    fn une_attaque_dit_son_type_sa_categorie_et_sa_puissance() {
         let contenu = ContenuV1::new();
         let combat = Combat::new(
             vec![creer(&contenu, "salamandre", 5)],
             vec![creer(&contenu, "armure-hantee", 8)],
         )
         .unwrap();
-        // Souffle chaud, de type Normal, n'affecte pas un Spectre.
-        assert_eq!(
-            attaque_en_combat(&combat, 0).unwrap(),
-            "Souffle chaud : sans effet, 100 %, Spé"
+        let souffle = attaque_en_combat(&combat, 0).unwrap();
+        assert!(
+            souffle.starts_with("Souffle chaud : Normal, S, puissance "),
+            "{souffle}"
         );
+        assert!(!souffle.contains("dégâts"), "{souffle}");
+        // Souffle chaud, de type Normal, n'affecte pas un Spectre.
+        assert_eq!(efficacite_en_combat(&combat, 0), " (sans effet)");
         let braises = attaque_en_combat(&combat, 1).unwrap();
-        assert!(braises.starts_with("Crachat de braises : "), "{braises}");
-        assert!(braises.ends_with(" dégâts, 100 %, Spé"), "{braises}");
+        assert!(
+            braises.starts_with("Crachat de braises : Feu, S, puissance "),
+            "{braises}"
+        );
+        assert!(braises.ends_with(", 100 %"), "{braises}");
         assert_eq!(attaque_en_combat(&combat, 2), None);
     }
 

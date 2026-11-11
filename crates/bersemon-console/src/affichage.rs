@@ -13,7 +13,9 @@ use bersemon_core::partie::Partie;
 use bersemon_core::soin::Soins;
 use bersemon_core::zone::Zone;
 use bersemon_presentation::atelier::{liste_d_appats, nom_de_l_appat};
-use bersemon_presentation::combat::{attaque_de_trop, attaque_en_combat, ordre_et_bonus};
+use bersemon_presentation::combat::{
+    attaque_de_trop, attaque_en_combat, efficacite_en_combat, ordre_et_bonus,
+};
 use bersemon_presentation::filets::liste_de_filets;
 use bersemon_presentation::meteo::meteo_de_la_zone;
 use bersemon_presentation::monstres::{
@@ -74,8 +76,9 @@ pub fn sac(soins: &Soins) -> String {
     }
 }
 
-/// Chaque attaque du monstre actif, avec ses dégâts estimés contre le
-/// monstre adverse actif (section 10.6).
+/// Chaque attaque du monstre actif, avec son type, sa catégorie, sa
+/// puissance, et son efficacité contre le monstre adverse actif (section
+/// 10.6).
 pub fn liste_attaques(combat: &Combat) -> String {
     let monstre = combat.monstre(combat.actif(Cote::Joueur));
     let mut lignes: Vec<String> = monstre
@@ -86,7 +89,8 @@ pub fn liste_attaques(combat: &Combat) -> String {
         .map(|(position, attaque)| {
             let ligne = attaque_en_combat(combat, position)
                 .unwrap_or_else(|| decrire_attaque_de(monstre, attaque));
-            format!("  {}. {ligne}", position + 1)
+            let efficacite = efficacite_en_combat(combat, position);
+            format!("  {}. {ligne}{efficacite}", position + 1)
         })
         .collect();
     lignes.push("  0. Retour".to_string());

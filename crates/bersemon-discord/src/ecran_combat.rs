@@ -32,8 +32,8 @@ use crate::message::{
 /// Une rangée d'attaques, l'ordre du héros tant qu'il n'est pas donné
 /// (section 4.2), le filet et la fuite (absents face à un Apôtre, section
 /// 9.4), puis un menu pour changer de monstre et un pour les soins.
-/// Chaque attaque dit ses dégâts estimés, et sa couleur son efficacité
-/// (section 10.6).
+/// Chaque attaque dit son type, sa catégorie (P ou S) et sa puissance, et sa
+/// couleur son efficacité (section 10.6).
 pub fn action(combat: &Combat, partie: &Partie) -> Question {
     let actif = combat.actif(Cote::Joueur);
     let attaques = combat
