@@ -6691,11 +6691,10 @@ mod tests {
             .repondre(Choix::DescendreParLeRaccourci, &mut contexte)
             .unwrap();
         assert!(
-            evenements.iter().any(|evenement| *evenement
-                == Evenement::Etape {
-                    numero: 4,
-                    total: None
-                }),
+            evenements.contains(&Evenement::Etape {
+                numero: 4,
+                total: None
+            }),
             "{evenements:?}"
         );
     }
