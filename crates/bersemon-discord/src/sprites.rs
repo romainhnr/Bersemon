@@ -422,6 +422,13 @@ const SPRITES: [(&str, &str); 131] = [
 /// Identifiant de l'espèce du combattant et texte de son sprite : les
 /// classes des héros des joueurs, puis les humains de l'IA, ceux des zones
 /// puis ceux de la Fosse aux damnés (section 5.1).
+/// Les monstres qui combattent sans être au codex : le marchand zombie,
+/// Grete relevée d'entre les morts, jamais shiny (section 14.2).
+const SPRITES_HORS_CODEX: [(&str, &str); 1] = [(
+    "marchand-zombie",
+    include_str!("../sprites/marchand-zombie.txt"),
+)];
+
 const SPRITES_DES_HUMAINS: [(&str, &str); 29] = [
     (
         "heros-guerrier",
@@ -809,6 +816,7 @@ pub fn sprite(espece: &EspeceId) -> Option<Sprite> {
     let (_, texte) = SPRITES
         .iter()
         .chain(&SPRITES_DES_HUMAINS)
+        .chain(&SPRITES_HORS_CODEX)
         .find(|(id, _)| *id == espece.as_str())?;
     Sprite::lire(texte).ok()
 }
@@ -911,7 +919,11 @@ mod tests {
 
     #[test]
     fn chaque_sprite_dessine_se_lit() {
-        for (id, texte) in SPRITES.iter().chain(&SPRITES_DES_HUMAINS) {
+        for (id, texte) in SPRITES
+            .iter()
+            .chain(&SPRITES_DES_HUMAINS)
+            .chain(&SPRITES_HORS_CODEX)
+        {
             Sprite::lire(texte).unwrap_or_else(|erreur| panic!("{id} : {erreur}"));
         }
     }
@@ -977,6 +989,21 @@ mod tests {
         }
     }
 
+    /// Le marchand zombie, qui combat sans être au codex, a son sprite,
+    /// sans palette shiny : il ne l'est jamais.
+    #[test]
+    fn le_marchand_zombie_a_son_sprite() {
+        let zombie = sprite(&EspeceId::new("marchand-zombie")).unwrap();
+        assert!(!zombie.a_un_shiny());
+        let contenu = bersemon_core::contenu::ContenuV1::new();
+        assert!(
+            contenu
+                .especes()
+                .iter()
+                .all(|espece| espece.id().as_str() != "marchand-zombie")
+        );
+    }
+
     /// Pour voir les sprites hors de Discord : `cargo test -p bersemon-discord
     /// ecrire_les_png -- --ignored`, avec la variable BERSEMON_SPRITES qui
     /// donne le dossier où écrire chaque PNG, normal et shiny.
@@ -987,7 +1014,11 @@ mod tests {
             std::env::var("BERSEMON_SPRITES").expect("variable BERSEMON_SPRITES"),
         );
         std::fs::create_dir_all(&dossier).unwrap();
-        for (id, _) in SPRITES.iter().chain(&SPRITES_DES_HUMAINS) {
+        for (id, _) in SPRITES
+            .iter()
+            .chain(&SPRITES_DES_HUMAINS)
+            .chain(&SPRITES_HORS_CODEX)
+        {
             let espece = EspeceId::new(*id);
             let sprite = sprite(&espece).unwrap();
             let mut teintes: Vec<(bool, Option<CouleurDuHeros>)> = vec![(false, None)];

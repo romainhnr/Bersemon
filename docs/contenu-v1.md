@@ -1671,6 +1671,8 @@ Chaque espèce a un fichier texte, `crates/bersemon-discord/sprites/{identifiant
 
 Le bot rend le dessin en PNG de 144 x 144 pixels, chaque pixel devenant un carré de 6 x 6. Pour voir les sprites hors de Discord : `cargo test -p bersemon-discord ecrire_les_png -- --ignored`, avec la variable BERSEMON_SPRITES qui donne le dossier où écrire les PNG.
 
+Ajouté le 11/11/2026, pour l'étape 183 (demande de l'utilisateur) : le marchand zombie, Grete relevée d'entre les morts, qui combat sans être au codex, a son sprite (`marchand-zombie.txt`) : une herboriste morte-vivante, voûtée, bras tendus, sa hotte d'herbes au dos. Comme un humain de l'IA, il n'a pas de section `shiny`, puisqu'il ne l'est jamais. Dessin proposé par Claude sans validation (gamedesign.md, Q123).
+
 Conventions de dessin : contour sombre d'un pixel, lumière venue d'en haut à gauche (une teinte claire en haut, une sombre en bas et à droite), monstre tourné vers la gauche, posé vers le bas de la grille. Le shiny ne change que les couleurs, comme dans Pokémon.
 
 Espèces dessinées à l'étape 152, style validé par l'utilisateur : Salamandre, Crapaud, Mandragore, Chat noir, Loup. Les 60 autres à l'étape 154, sur le même modèle : les formes évoluées reprennent la silhouette et les couleurs de leur forme de base en plus imposant ; chaque shiny change de teinte, souvent vers la couleur complémentaire. Dessins et palettes proposés par Claude, à relire espèce par espèce (gamedesign.md, Q115). Un test vérifie que chaque espèce du contenu a son sprite, et qu'aucun sprite ne reste sans espèce : une espèce ajoutée plus tard demande son dessin.
