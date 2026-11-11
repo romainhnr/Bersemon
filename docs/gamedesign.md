@@ -134,6 +134,7 @@ L'objectif du jeu est de proposer des boucles de gameplay intéressantes et stim
   - le bonus s'ajoute, en pourcentage, à ceux de la classe, de l'équipement et de l'habileté (sections 4.3 et 5.9), et reste au monstre jusqu'à la fin du combat, même s'il sort puis revient ;
   - l'ordre se donne dans tous les combats, dès le premier, contre les Apôtres et les humains compris ; pas pendant le remplacement d'un monstre KO. Il ne joue pas sur les expéditions automatiques (hypothèses retenues, Q88) ;
   - l'utilisation d'objets en combat existe déjà : les soins sont l'action du tour (section 14.4).
+  - Remplacé le 11/11/2026, pour l'étape 185 (demande de l'utilisateur) : l'ordre prend le tour, comme un soin ou un filet. Le héros le donne au monstre actif à la place de son action, et l'adversaire agit ensuite ; le bonus vaut toujours jusqu'à la fin du combat, une fois par combat. En groupe, il prend le tour de celui qui le donne. En duel, c'est l'action du tour du joueur : elle passe avant les attaques, comme un changement de monstre, et l'autre ne la voit qu'une fois le tour joué. Les écrans ne changent pas : l'entrée "Ordre du héros" de la console et le bouton du bot jouent désormais le tour.
   - Écrans : la console ajoute "Ordre du héros" au menu de combat (étape 53), le bot Discord un bouton dans la rangée du filet et de la fuite (étape 54), tant que l'ordre n'est pas donné.
 - À terme, option hybride envisagée : le héros combat lui-même uniquement lorsque tous ses monstres sont KO. Retenue le 25/10/2026 (section 4.4).
 

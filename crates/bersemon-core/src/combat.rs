@@ -129,6 +129,9 @@ pub enum Action {
     /// 14.4).
     UtiliserSoin(Soin, usize),
     Fuir,
+    /// L'ordre du héros, au monstre actif : une fois par combat, il prend le
+    /// tour, et l'adversaire agit ensuite (section 4.2).
+    DonnerOrdre,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1168,8 +1171,8 @@ impl Combat {
         self.avec_ordre_du_cote(Cote::Joueur, ordre)
     }
 
-    /// L'ordre que le héros peut donner maintenant : un seul par combat,
-    /// avant de choisir l'action du tour.
+    /// L'ordre que le héros peut donner maintenant, comme action du tour :
+    /// un seul par combat.
     pub fn ordre_disponible(&self) -> Option<Ordre> {
         self.ordre_disponible_pour(Cote::Joueur)
     }
@@ -1186,24 +1189,13 @@ impl Combat {
         })
     }
 
-    /// Le monstre actif du joueur reçoit le bonus de l'ordre jusqu'à la fin
-    /// du combat. L'ordre ne prend pas le tour : le joueur choisit ensuite
-    /// l'action de son monstre, et l'adversaire n'agit pas entre-temps. Sans
+    /// Le monstre actif de ce côté reçoit le bonus de l'ordre jusqu'à la fin
+    /// du combat ; l'appelant a vérifié que l'ordre est disponible. Sans
     /// tirage.
-    pub fn donner_ordre(&mut self) -> Result<(Ordre, Combattant), ErreurCombat> {
-        self.donner_ordre_pour(Cote::Joueur)
-    }
-
-    /// En duel, chaque joueur donne l'ordre de son héros (section 15.3).
-    pub fn donner_ordre_pour(&mut self, cote: Cote) -> Result<(Ordre, Combattant), ErreurCombat> {
-        match self.phase {
-            Phase::ChoixAction => {}
-            Phase::Remplacement => return Err(ErreurCombat::RemplacementAttendu),
-            Phase::Termine(_) => return Err(ErreurCombat::CombatTermine),
-        }
+    fn appliquer_ordre(&mut self, cote: Cote) -> (Ordre, Combattant) {
         let ordre = self
             .ordre_disponible_pour(cote)
-            .ok_or(ErreurCombat::OrdreImpossible)?;
+            .expect("ordre vérifié avant le tour");
         let actif = self.actif(cote);
         match cote {
             Cote::Joueur => {
@@ -1212,7 +1204,7 @@ impl Combat {
             }
             Cote::Adversaire => self.regles[cote.position()].ordre_donne = Some(actif.index),
         }
-        Ok((ordre, actif))
+        (ordre, actif)
     }
 
     /// Le monstre de l'équipe qui a reçu l'ordre du héros.
@@ -1464,6 +1456,12 @@ impl Combat {
                 self.terminer_avec(Issue::Fuite, &mut evenements);
                 return Ok(evenements);
             }
+            // L'ordre prend le tour, comme un soin : l'adversaire agit
+            // ensuite (section 4.2).
+            Action::DonnerOrdre => {
+                self.appliquer_ordre(Cote::Joueur);
+                self.riposter(attaque_adversaire, false, aleatoire, &mut evenements);
+            }
         }
         self.finir_le_tour(&mut evenements);
         Ok(evenements)
@@ -1500,9 +1498,17 @@ impl Combat {
             (Cote::Adversaire, action_du_second),
         ];
         for (cote, action) in actions {
-            if let Action::Changer(index) = action {
-                self.envoyer(cote, index);
-                evenements.push(Evenement::MonstreEnvoye(self.actif(cote)));
+            match action {
+                Action::Changer(index) => {
+                    self.envoyer(cote, index);
+                    evenements.push(Evenement::MonstreEnvoye(self.actif(cote)));
+                }
+                // L'ordre prend le tour du joueur qui le donne ; le duel le
+                // raconte lui-même, avant le tour (section 15.3).
+                Action::DonnerOrdre => {
+                    self.appliquer_ordre(cote);
+                }
+                _ => {}
             }
         }
         let attaque = |action: Action| match action {
@@ -1532,7 +1538,7 @@ impl Combat {
     }
 
     /// L'action que ce côté peut choisir maintenant. En duel, seulement
-    /// attaquer ou changer de monstre.
+    /// attaquer, changer de monstre ou donner l'ordre du héros.
     pub fn verifier_action(&self, cote: Cote, action: Action) -> Result<(), ErreurCombat> {
         if !self.duel {
             return match cote {
@@ -1555,6 +1561,10 @@ impl Combat {
                 }
                 self.verifier_remplacant_pour(cote, index)
             }
+            Action::DonnerOrdre => self
+                .ordre_disponible_pour(cote)
+                .map(|_| ())
+                .ok_or(ErreurCombat::OrdreImpossible),
             Action::LancerFilet(_)
             | Action::LancerAppat(_)
             | Action::UtiliserSoin(..)
@@ -2102,7 +2112,13 @@ impl Combat {
             }
             Action::LancerAppat(_) if self.appat_pose().is_some() => Err(ErreurCombat::DejaAppate),
             Action::LancerAppat(_) if self.filets().est_vide() => Err(ErreurCombat::SansFilet),
-            Action::LancerFilet(_) | Action::LancerAppat(_) | Action::Fuir => Ok(()),
+            Action::DonnerOrdre if self.ordre_disponible().is_none() => {
+                Err(ErreurCombat::OrdreImpossible)
+            }
+            Action::LancerFilet(_)
+            | Action::LancerAppat(_)
+            | Action::Fuir
+            | Action::DonnerOrdre => Ok(()),
         }
     }
 
@@ -3577,15 +3593,17 @@ mod tests {
         assert_eq!(combat.soins().nombre(Soin::Potion), 2);
         assert_eq!(combat.soins_du_membre(Membre::Hote).nombre(Soin::Potion), 0);
         assert_eq!(combat.ordre_disponible(), Some(Ordre::Incantation));
-        assert_eq!(combat.donner_ordre(), Ok((Ordre::Incantation, j(1))));
+        // L'ordre de l'invité prend son tour ; l'adversaire riposte.
+        tour(&mut combat, Action::DonnerOrdre, &[2, 100]);
         assert!(combat.a_recu_l_ordre(1));
         assert_eq!(combat.ordre_disponible(), None);
         // L'invité soigne avec sa potion ; l'adversaire riposte (critique et
         // pourcentage de dégâts).
+        // La potion tire ses PV rendus : le monstre a perdu des PV.
         let evenements = tour(
             &mut combat,
             Action::UtiliserSoin(Soin::Potion, 1),
-            &[2, 100],
+            &[50, 2, 100],
         );
         assert!(matches!(
             evenements[0],
@@ -3825,8 +3843,10 @@ mod tests {
             .avec_bonus_du_joueur(bonus_d_attaque())
             .avec_ordre(Ordre::CriDeGuerre);
         assert_eq!(combat.ordre_disponible(), Some(Ordre::CriDeGuerre));
-        // L'ordre ne fait aucun tirage et ne prend pas le tour.
-        assert_eq!(combat.donner_ordre(), Ok((Ordre::CriDeGuerre, j(0))));
+        // L'ordre ne fait aucun tirage, mais prend le tour : l'adversaire
+        // agit ensuite (section 4.2).
+        let evenements = tour(&mut combat, Action::DonnerOrdre, &[2, 100]);
+        assert_eq!(evenements[0], lancee(a(0), coup()));
         assert_eq!(combat.phase(), Phase::ChoixAction);
         assert!(combat.a_recu_l_ordre(0));
         // 10 d'Attaque, +10 % de bonus du joueur et +20 % d'ordre.
@@ -3834,7 +3854,10 @@ mod tests {
         assert_eq!(combat.stats_en_combat(j(1)).attaque, 11);
         assert_eq!(combat.stats_en_combat(a(0)).attaque, 10);
         assert_eq!(combat.ordre_disponible(), None);
-        assert_eq!(combat.donner_ordre(), Err(ErreurCombat::OrdreImpossible));
+        assert_eq!(
+            combat.jouer_tour(Action::DonnerOrdre, &mut AleatoireScripte::new([])),
+            Err(ErreurCombat::OrdreImpossible)
+        );
         tour(&mut combat, Action::Changer(1), &[2, 100]);
         tour(&mut combat, Action::Changer(0), &[2, 100]);
         assert_eq!(combat.stats_en_combat(j(0)).attaque, 13);
@@ -3873,7 +3896,10 @@ mod tests {
     fn sans_ordre_le_heros_ne_peut_rien_donner() {
         let mut combat = combat(vec![rapide()], vec![lent()]);
         assert_eq!(combat.ordre_disponible(), None);
-        assert_eq!(combat.donner_ordre(), Err(ErreurCombat::OrdreImpossible));
+        assert_eq!(
+            combat.jouer_tour(Action::DonnerOrdre, &mut AleatoireScripte::new([])),
+            Err(ErreurCombat::OrdreImpossible)
+        );
     }
 
     #[test]
@@ -3884,11 +3910,12 @@ mod tests {
         assert_eq!(combat.phase(), Phase::Remplacement);
         assert_eq!(combat.ordre_disponible(), None);
         assert_eq!(
-            combat.donner_ordre(),
+            combat.jouer_tour(Action::DonnerOrdre, &mut AleatoireScripte::new([])),
             Err(ErreurCombat::RemplacementAttendu)
         );
         combat.remplacer(1).unwrap();
-        assert_eq!(combat.donner_ordre(), Ok((Ordre::Incantation, j(1))));
+        tour(&mut combat, Action::DonnerOrdre, &[2, 100]);
+        assert!(combat.a_recu_l_ordre(1));
     }
 
     #[test]

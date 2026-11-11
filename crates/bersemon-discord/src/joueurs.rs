@@ -619,7 +619,12 @@ impl Joueurs {
         let resultat = match &choix {
             Choix::Combat(action) => en_cours.duel.choisir(cote, *action, maintenant, aleatoire),
             Choix::Remplacer(index) => en_cours.duel.remplacer(cote, *index, maintenant),
-            Choix::DonnerOrdre => en_cours.duel.donner_ordre(cote),
+            Choix::DonnerOrdre => en_cours.duel.choisir(
+                cote,
+                bersemon_core::combat::Action::DonnerOrdre,
+                maintenant,
+                aleatoire,
+            ),
             _ => {
                 return Err(Refus::Choix {
                     choix,
@@ -1674,9 +1679,10 @@ mod tests {
             repondre(&mut joueurs, 1, partir, &contenu),
             Err(Refus::Choix { .. })
         ));
+        // L'ordre du héros est l'action du tour : Aldric attend Ysolde.
         repondre(&mut joueurs, 1, Choix::DonnerOrdre, &contenu).unwrap();
         let vu = joueurs.session(2, &contenu).duel.clone().unwrap();
-        assert_eq!(vu.duel.recit(Cote::Adversaire).len(), 1);
+        assert!(vu.duel.a_choisi(Cote::Joueur));
         assert_eq!(
             en_duel(&mut joueurs, 1, ActionDeDuel::RevenirAuCamp, &contenu),
             Err(Refus::Duel(ErreurDeDefi::DuelPasFini))

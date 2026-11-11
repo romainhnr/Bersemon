@@ -5,7 +5,7 @@
 //! combat commun se joue ici.
 
 use crate::aleatoire::Aleatoire;
-use crate::combat::{Combat, Issue, Membre, Phase};
+use crate::combat::{Action, Combat, Cote, ErreurCombat, Issue, Membre, Phase};
 use crate::contenu::ContenuV1;
 use crate::deroulement::{Attente, Choix, Contexte, Deroulement, ErreurChoix, Evenement};
 use crate::expedition::{ErreurExpedition, EvenementExpedition};
@@ -231,9 +231,13 @@ impl ExpeditionEnGroupe {
             }
         };
         let tour = match (combat.phase(), choix) {
-            (Phase::ChoixAction, Choix::DonnerOrdre) => {
+            // L'ordre prend le tour de celui qui le donne ; il est raconté
+            // avant la riposte de l'adversaire (section 4.2).
+            (Phase::ChoixAction, Choix::DonnerOrdre | Choix::Combat(Action::DonnerOrdre)) => {
                 au_tour_de(Some(combat.membre_actif()))?;
-                let (ordre, cible) = combat.donner_ordre().map_err(ErreurChoix::Combat)?;
+                let ordre = combat
+                    .ordre_disponible()
+                    .ok_or(ErreurChoix::Combat(ErreurCombat::OrdreImpossible))?;
                 let heros = deroulements[position(membre)]
                     .partie()
                     .map(|partie| partie.heros().nom().as_str().to_string())
@@ -241,12 +245,15 @@ impl ExpeditionEnGroupe {
                 let evenement = Evenement::OrdreDonne {
                     heros,
                     ordre,
-                    monstre: combat.monstre(cible).clone(),
+                    monstre: combat.monstre(combat.actif(Cote::Joueur)).clone(),
                 };
+                let tour = combat
+                    .jouer_tour(Action::DonnerOrdre, &mut *contexte.aleatoire)
+                    .map_err(ErreurChoix::Combat)?;
                 for recit in recits.iter_mut() {
                     recit.push(evenement.clone());
                 }
-                return Ok(());
+                Ok(tour)
             }
             (Phase::ChoixAction, Choix::Combat(action)) => {
                 au_tour_de(Some(combat.membre_actif()))?;
@@ -866,10 +873,11 @@ mod tests {
         let recits = table
             .repondre(&mut groupe, actif, Choix::DonnerOrdre)
             .unwrap();
+        // L'ordre prend le tour : la riposte de l'adversaire le suit.
         assert!(
             recits
                 .iter()
-                .all(|recit| matches!(recit[..], [Evenement::OrdreDonne { .. }]))
+                .all(|recit| matches!(recit[..], [Evenement::OrdreDonne { .. }, _, ..]))
         );
     }
 }

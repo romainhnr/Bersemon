@@ -3157,22 +3157,28 @@ impl EnExpedition {
         contexte: &mut Contexte<'_>,
         evenements: &mut Vec<Evenement>,
     ) -> Result<Reponse, ErreurChoix> {
-        if *choix == Choix::DonnerOrdre {
-            let resultat = combat.donner_ordre();
-            let reponse = match resultat {
-                Ok((ordre, cible)) => {
-                    evenements.push(Evenement::OrdreDonne {
-                        heros: partie.heros().nom().as_str().to_string(),
-                        ordre,
-                        monstre: combat.monstre(cible).clone(),
-                    });
-                    Ok(Reponse::Faite)
-                }
-                Err(erreur) => Err(ErreurChoix::Combat(erreur)),
-            };
-            self.moment = Moment::Combat(combat);
-            return reponse;
-        }
+        // L'ordre du héros est l'action du tour : il est raconté avant la
+        // riposte de l'adversaire (section 4.2).
+        let action_d_ordre = Choix::Combat(Action::DonnerOrdre);
+        let choix = if matches!(
+            choix,
+            Choix::DonnerOrdre | Choix::Combat(Action::DonnerOrdre)
+        ) {
+            if combat.phase() == Phase::ChoixAction {
+                let Some(ordre) = combat.ordre_disponible() else {
+                    self.moment = Moment::Combat(combat);
+                    return Err(ErreurChoix::Combat(ErreurCombat::OrdreImpossible));
+                };
+                evenements.push(Evenement::OrdreDonne {
+                    heros: partie.heros().nom().as_str().to_string(),
+                    ordre,
+                    monstre: combat.monstre(combat.actif(Cote::Joueur)).clone(),
+                });
+            }
+            &action_d_ordre
+        } else {
+            choix
+        };
         let resultat = match (combat.phase(), choix) {
             (Phase::ChoixAction, Choix::Combat(action)) => {
                 if let Action::UtiliserSoin(soin, index) = *action {
@@ -5037,12 +5043,20 @@ mod tests {
             combat.adversaires()[0].espece().id().as_str(),
             "marchand-zombie"
         );
-        // L'ordre du héros, sans tirage, ne prend pas le tour.
-        let evenements =
-            repondre_sans_tirage(&mut deroulement, Choix::DonnerOrdre, &contenu, &depot).unwrap();
+        // L'ordre du héros prend le tour : le marchand zombie agit ensuite.
+        let mut aleatoire = GenerateurAleatoire::new(3);
+        let mut contexte = Contexte {
+            contenu: &contenu,
+            aleatoire: &mut aleatoire,
+            depot: &depot,
+            maintenant: Horodatage::depuis_secondes(0),
+        };
+        let evenements = deroulement
+            .repondre(Choix::DonnerOrdre, &mut contexte)
+            .unwrap();
         assert!(matches!(
             evenements.as_slice(),
-            [Evenement::OrdreDonne { ordre: Ordre::Incantation, monstre, .. }]
+            [Evenement::OrdreDonne { ordre: Ordre::Incantation, monstre, .. }, _, ..]
                 if monstre.espece().id().as_str() == "salamandre"
         ));
         let Attente::ActionDeCombat(combat) = deroulement.attente() else {

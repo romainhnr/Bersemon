@@ -209,9 +209,24 @@ impl Duel {
         self.pret_depuis[position(cote)] = Some(maintenant);
         if let [Some(premiere), Some(seconde)] = self.actions {
             self.actions = [None; 2];
+            // L'ordre d'un héros prend son tour ; il est raconté avant les
+            // attaques (section 4.2).
+            let ordres: Vec<EvenementDeDuel> =
+                [(Cote::Joueur, premiere), (Cote::Adversaire, seconde)]
+                    .into_iter()
+                    .filter(|(_, action)| *action == Action::DonnerOrdre)
+                    .filter_map(|(cote, _)| {
+                        let ordre = self.combat.ordre_disponible_pour(cote)?;
+                        Some(EvenementDeDuel::OrdreDonne {
+                            ordre,
+                            cible: self.combat.actif(cote),
+                        })
+                    })
+                    .collect();
             let evenements = self
                 .combat
                 .jouer_tour_en_duel(premiere, seconde, aleatoire)?;
+            self.publier(ordres);
             self.publier(evenements.into_iter().map(EvenementDeDuel::Combat));
             self.noter_qui_attend(maintenant);
         }
@@ -229,17 +244,6 @@ impl Duel {
         self.recits[position(cote)].clear();
         self.publier(evenements.into_iter().map(EvenementDeDuel::Combat));
         self.noter_qui_attend(maintenant);
-        Ok(())
-    }
-
-    /// Avant de choisir son action ; l'autre le voit aussitôt.
-    pub fn donner_ordre(&mut self, cote: Cote) -> Result<(), ErreurDuel> {
-        if self.a_choisi(cote) {
-            return Err(ErreurDuel::ActionDejaChoisie);
-        }
-        let (ordre, cible) = self.combat.donner_ordre_pour(cote)?;
-        self.recits[position(cote)].clear();
-        self.publier([EvenementDeDuel::OrdreDonne { ordre, cible }]);
         Ok(())
     }
 
@@ -508,29 +512,41 @@ mod tests {
     }
 
     #[test]
-    fn l_ordre_se_donne_avant_de_choisir_et_l_abandon_a_tout_moment() {
+    fn l_ordre_prend_le_tour_et_l_abandon_se_fait_a_tout_moment() {
         let combat = Combat::duel(vec![lent()], vec![lent()])
             .unwrap()
             .avec_ordre_du_cote(Cote::Adversaire, Ordre::BouclierDeFoi);
         let mut duel = Duel::new(combat).unwrap();
+        let mut sans_tirage = AleatoireScripte::new([]);
         assert_eq!(
-            duel.donner_ordre(Cote::Joueur),
+            duel.choisir(Cote::Joueur, Action::DonnerOrdre, a(0), &mut sans_tirage),
             Err(ErreurDuel::Combat(ErreurCombat::OrdreImpossible))
         );
-        duel.donner_ordre(Cote::Adversaire).unwrap();
+        // L'ordre est l'action du tour du second joueur ; seul le premier
+        // attaque (critique et pourcentage de dégâts).
+        duel.choisir(
+            Cote::Adversaire,
+            Action::DonnerOrdre,
+            a(0),
+            &mut sans_tirage,
+        )
+        .unwrap();
+        let mut tirages = AleatoireScripte::new([2, 100]);
+        duel.choisir(Cote::Joueur, Action::Attaquer(0), a(0), &mut tirages)
+            .unwrap();
         assert_eq!(
-            duel.recit(Cote::Joueur),
-            [EvenementDeDuel::OrdreDonne {
+            duel.recit(Cote::Joueur)[0],
+            EvenementDeDuel::OrdreDonne {
                 ordre: Ordre::BouclierDeFoi,
                 cible: adversaire(0),
-            }]
+            }
         );
         assert_eq!(
-            duel.recit(Cote::Adversaire),
-            [EvenementDeDuel::OrdreDonne {
+            duel.recit(Cote::Adversaire)[0],
+            EvenementDeDuel::OrdreDonne {
                 ordre: Ordre::BouclierDeFoi,
                 cible: joueur(0),
-            }]
+            }
         );
         assert_eq!(
             duel.vu_par(Cote::Joueur)
@@ -538,9 +554,6 @@ mod tests {
                 .defense,
             12
         );
-        let mut sans_tirage = AleatoireScripte::new([]);
-        duel.choisir(Cote::Joueur, Action::Attaquer(0), a(0), &mut sans_tirage)
-            .unwrap();
         duel.abandonner(Cote::Adversaire).unwrap();
         assert_eq!(duel.vainqueur(), Some(Cote::Joueur));
         assert_eq!(
