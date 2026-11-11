@@ -3,7 +3,7 @@
 
 use bersemon_core::heros::Heros;
 use bersemon_core::partie::Partie;
-use bersemon_core::succes::{CouleurDuHeros, ErreurSucces, Succes};
+use bersemon_core::succes::{ConditionDeSucces, CouleurDuHeros, ErreurSucces, Succes};
 
 /// Au-delà, l'annonce compte les succès pour tenir dans un message Discord.
 const SUCCES_DETAILLES_AU_PLUS: usize = 3;
@@ -105,17 +105,19 @@ pub fn bilan_des_succes(partie: &Partie, succes: &[Succes]) -> String {
 }
 
 /// Une ligne par succès, obtenu ou non : "Fléau du Baron : abattre le
-/// Baron pendu (obtenu)".
+/// Baron pendu (obtenu)". Le succès d'un Apôtre que le joueur n'a pas
+/// encore abattu tait son nom, comme le carnet de traque : "??? : abattre
+/// ???".
 pub fn lignes_des_succes(partie: &Partie, succes: &[Succes]) -> Vec<String> {
     succes
         .iter()
         .map(|un| {
-            let obtenu = if partie.succes_obtenus().contains(un.id()) {
-                " (obtenu)"
-            } else {
-                ""
-            };
-            format!("{} : {}{obtenu}", un.titre(), un.description())
+            let obtenu = partie.succes_obtenus().contains(un.id());
+            if !obtenu && matches!(un.condition(), ConditionDeSucces::ApotreAbattu(_)) {
+                return "??? : abattre ???".to_string();
+            }
+            let mention = if obtenu { " (obtenu)" } else { "" };
+            format!("{} : {}{mention}", un.titre(), un.description())
         })
         .collect()
 }
@@ -161,6 +163,33 @@ mod tests {
             nom_et_titre(&heros, contenu.succes()),
             "Aldric, Fléau du Baron"
         );
+    }
+
+    /// Le succès d'un Apôtre non abattu ne dévoile pas son nom.
+    #[test]
+    fn les_succes_taisent_les_apotres_non_abattus() {
+        use bersemon_core::catalogue::Catalogue;
+        let contenu = ContenuV1::new();
+        let depart = bersemon_core::monstre::Monstre::creer(
+            contenu
+                .espece(&bersemon_core::espece::EspeceId::new("crapaud"))
+                .unwrap(),
+            bersemon_core::niveau::Niveau::new(5).unwrap(),
+            bersemon_core::stats::ValeursInternes::default(),
+            false,
+        )
+        .unwrap();
+        let partie = Partie::nouvelle(
+            Heros::new(Nom::new("Aldric").unwrap(), Classe::Guerrier),
+            depart,
+        );
+        let lignes = lignes_des_succes(&partie, contenu.succes());
+        assert!(lignes.contains(&"??? : abattre ???".to_string()));
+        assert!(
+            lignes.iter().all(|ligne| !ligne.contains("Baron")),
+            "{lignes:?}"
+        );
+        assert!(lignes.iter().any(|ligne| ligne.contains("Démiurge")));
     }
 
     /// Au-delà de 3 succès d'un coup, l'annonce les compte.
