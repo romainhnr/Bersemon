@@ -1,0 +1,52 @@
+# Impératrice des ronces
+palette
+o 1b1420
+a 6a8a4a
+e 46602e
+f 90b26a
+g 3a7a3a
+i 245024
+h 5aa050
+r d04060
+m d8c8d8
+p 5a3a2a
+k 1b1420
+z c0e040
+shiny
+o 1b1420
+a a06ab0
+e 6e4480
+f c494d4
+g 7a3a6a
+i 502448
+h a05a90
+r f0d040
+m e8e0c8
+p 2a2a3a
+k 1b1420
+z fff0a0
+dessin
+........................
+..z.........z........z..
+.zoz.......zoz......zoz.
+zoeoz....zzorozz...zoeoz
+zofeoz..zooopoooz.zofeoz
+zofaeozzorpoooprozofaeoz
+zofaaeozopopopopoofaaeoz
+zofaaaeozoommmooofaaaeoz
+zofaaaaeoommmmmofaaaaeoz
+zofaaaaaeomkmkmfaaaaaeoz
+zoeeaaaaaemmmmmaaaaaeeoz
+.zooeeeaaeommmaaaeeeooz.
+..zzoooeehhhhhieeooozz..
+....zzzohggggggiozzz....
+......zohgggrggioz......
+......zohggggggroz......
+.....zorggggggggioz.....
+.....zohggggggggioz.....
+....zohggggggggggioz....
+....zohgggrggggggioz....
+....zohgggggggggrioz....
+...zoiiiiiiiiiiiiiioz...
+....zooooooooooooooz....
+.....zzzzzzzzzzzzzz.....

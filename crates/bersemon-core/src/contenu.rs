@@ -2607,7 +2607,7 @@ const ATTAQUES_DES_HEROS: [FicheAttaque; 40] = [
 ];
 
 /// Section 1 de docs/contenu-v1.md, dans le même ordre.
-const ATTAQUES: [FicheAttaque; 277] = [
+const ATTAQUES: [FicheAttaque; 285] = [
     fiche(
         "souffle-chaud",
         "Souffle chaud",
@@ -4701,6 +4701,72 @@ const ATTAQUES: [FicheAttaque; 277] = [
         120,
         90,
     ),
+    // Les attaques d'évolution des formes de stade 4, au niveau 70
+    // (section 5.4, étape 203).
+    fiche(
+        "apocalypse-de-cendre",
+        "Apocalypse de cendre",
+        Type::Feu,
+        Speciale,
+        110,
+        90,
+    ),
+    fiche(
+        "ecrasement-des-marais",
+        "Écrasement des marais",
+        Type::Eau,
+        Physique,
+        110,
+        90,
+    ),
+    fiche(
+        "etreinte-du-gibet",
+        "Étreinte du gibet",
+        Type::Plante,
+        Speciale,
+        100,
+        100,
+    ),
+    fiche(
+        "griffe-des-neuf-vies",
+        "Griffe des neuf vies",
+        Type::Tenebres,
+        Physique,
+        110,
+        95,
+    ),
+    fiche(
+        "curee-de-l-eclipse",
+        "Curée de l'Éclipse",
+        Type::Combat,
+        Physique,
+        110,
+        90,
+    ),
+    fiche(
+        "presage-ultime",
+        "Présage ultime",
+        Type::Psychique,
+        Speciale,
+        110,
+        90,
+    ),
+    fiche(
+        "marche-de-l-abime",
+        "Marche de l'abîme",
+        Type::Spectre,
+        Physique,
+        110,
+        90,
+    ),
+    fiche(
+        "couronne-d-epines",
+        "Couronne d'épines",
+        Type::Plante,
+        Speciale,
+        110,
+        90,
+    ),
 ];
 
 struct FicheCapsule {
@@ -5089,7 +5155,7 @@ const MARCHAND_ZOMBIE: FicheEspece = FicheEspece {
 /// Section 2 de docs/contenu-v1.md, dans l'ordre du codex : les monstres de
 /// départ, les communs, les rares, l'Apôtre, le monstre caché, puis les
 /// formes évoluées de la section 8.
-static ESPECES: [FicheEspece; 132] = [
+static ESPECES: [FicheEspece; 140] = [
     FicheEspece {
         id: "salamandre",
         nom: "Salamandre",
@@ -5743,7 +5809,7 @@ static ESPECES: [FicheEspece; 132] = [
             (25, "ronces-maudites"),
             (25, "lianes-etrangleuses"),
         ],
-        evolution: None,
+        evolution: par_niveau("imperatrice-des-ronces", 70, "couronne-d-epines"),
     },
     // Monstres aquatiques, qui ne se trouvent qu'à la pêche, section 15 de
     // docs/contenu-v1.md (étape 62).
@@ -5942,7 +6008,7 @@ static ESPECES: [FicheEspece; 132] = [
             (36, "souffle-de-cendre"),
             (36, "furie-draconique"),
         ],
-        evolution: None,
+        evolution: par_niveau("dragon-de-cendre", 70, "apocalypse-de-cendre"),
     },
     FicheEspece {
         id: "crapaud-roi",
@@ -5964,7 +6030,7 @@ static ESPECES: [FicheEspece; 132] = [
             (36, "deluge-toxique"),
             (36, "croc-de-venin"),
         ],
-        evolution: None,
+        evolution: par_niveau("crapaud-empereur", 70, "ecrasement-des-marais"),
     },
     FicheEspece {
         id: "arbre-pendu",
@@ -5986,7 +6052,7 @@ static ESPECES: [FicheEspece; 132] = [
             (36, "racines-du-gibet"),
             (36, "frisson-d-outre-tombe"),
         ],
-        evolution: None,
+        evolution: par_niveau("chene-gibet", 70, "etreinte-du-gibet"),
     },
     FicheEspece {
         id: "cait-sith",
@@ -6008,7 +6074,7 @@ static ESPECES: [FicheEspece; 132] = [
             (36, "griffes-spectrales"),
             (36, "charge-spectrale"),
         ],
-        evolution: None,
+        evolution: par_niveau("roi-des-chats", 70, "griffe-des-neuf-vies"),
     },
     FicheEspece {
         id: "loup-garou",
@@ -6028,7 +6094,7 @@ static ESPECES: [FicheEspece; 132] = [
             (36, "dechiquetage"),
             (36, "griffe-d-ombre"),
         ],
-        evolution: None,
+        evolution: par_niveau("loup-de-l-eclipse", 70, "curee-de-l-eclipse"),
     },
     // Les deux formes du Démiurge, section 23 de docs/contenu-v1.md (étape
     // 90) ; combat final au niveau 100 depuis l'étape 162, aux stats bien
@@ -7462,7 +7528,7 @@ static ESPECES: [FicheEspece; 132] = [
             (18, "taille-d-acier"),
             (18, "frisson-d-outre-tombe"),
         ],
-        evolution: None,
+        evolution: par_niveau("chevalier-de-l-abime", 70, "marche-de-l-abime"),
     },
     FicheEspece {
         id: "augure",
@@ -7482,7 +7548,7 @@ static ESPECES: [FicheEspece; 132] = [
             (16, "bec-funeste"),
             (16, "bourrasque"),
         ],
-        evolution: None,
+        evolution: par_niveau("oracle-noir", 70, "presage-ultime"),
     },
     FicheEspece {
         id: "gorgone",
@@ -7523,6 +7589,188 @@ static ESPECES: [FicheEspece; 132] = [
             (1, "lueur-trompeuse"),
             (10, "rayon-astral"),
             (100, "genese-stellaire"),
+        ],
+        evolution: None,
+    },
+    // Les formes de stade 4, au niveau 70 : celles des quatre familles de
+    // départ, puis du Loup, du Corbeau, de l'Armure hantée et de la Fée
+    // noire. Elles gardent le rôle, la rareté, les habiletés et les attaques
+    // de leur stade 3, vont à 570 de stats de base dans les mêmes
+    // proportions, et leur rendement d'XP vaut 1,4 fois le sien (section
+    // 5.4, étape 203, proposé par Claude, Q124).
+    FicheEspece {
+        id: "dragon-de-cendre",
+        nom: "Dragon de cendre",
+        types: &[Type::Feu, Type::Dragon],
+        role: Role::Offensif,
+        stats_de_base: [87, 79, 79, 128, 93, 104],
+        rendement_experience: 168,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Affinite, Habilete::Sorcellerie],
+        apprentissage: &[
+            (1, "souffle-chaud"),
+            (3, "crachat-de-braises"),
+            (7, "souffle-draconique"),
+            (10, "flamme-vive"),
+            (14, "fournaise"),
+            (16, "jet-de-lave"),
+            (16, "souffle-putride"),
+            (36, "souffle-de-cendre"),
+            (36, "furie-draconique"),
+            (70, "apocalypse-de-cendre"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "crapaud-empereur",
+        nom: "Crapaud-empereur",
+        types: &[Type::Eau, Type::Poison],
+        role: Role::Offensif,
+        stats_de_base: [107, 125, 101, 65, 83, 89],
+        rendement_experience: 172,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Ferocite, Habilete::Carapace],
+        apprentissage: &[
+            (1, "charge-gluante"),
+            (3, "plongeon"),
+            (7, "coup-de-langue"),
+            (10, "langue-venimeuse"),
+            (14, "lame-de-fond"),
+            (16, "trombe"),
+            (16, "deferlante"),
+            (36, "deluge-toxique"),
+            (36, "croc-de-venin"),
+            (70, "ecrasement-des-marais"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "chene-gibet",
+        nom: "Chêne-gibet",
+        types: &[Type::Plante, Type::Spectre],
+        role: Role::Soutien,
+        stats_de_base: [129, 81, 128, 81, 116, 35],
+        rendement_experience: 173,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Carapace, Habilete::Volonte],
+        apprentissage: &[
+            (1, "coup-de-racine"),
+            (3, "feuille-tranchante"),
+            (7, "secousse"),
+            (10, "ronces"),
+            (14, "spores-putrides"),
+            (16, "hurlement-de-mandragore"),
+            (16, "lianes-etrangleuses"),
+            (36, "racines-du-gibet"),
+            (36, "frisson-d-outre-tombe"),
+            (70, "etreinte-du-gibet"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "roi-des-chats",
+        nom: "Roi des chats",
+        types: &[Type::Tenebres, Type::Spectre],
+        role: Role::Offensif,
+        stats_de_base: [76, 130, 64, 76, 67, 157],
+        rendement_experience: 168,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Celerite, Habilete::Traqueur],
+        apprentissage: &[
+            (1, "griffure"),
+            (3, "coup-sournois"),
+            (7, "feulement"),
+            (10, "morsure"),
+            (14, "coup-de-grace"),
+            (16, "griffe-d-ombre"),
+            (16, "malefice"),
+            (36, "griffes-spectrales"),
+            (36, "charge-spectrale"),
+            (70, "griffe-des-neuf-vies"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "loup-de-l-eclipse",
+        nom: "Loup de l'Éclipse",
+        types: &[Type::Combat, Type::Tenebres],
+        role: Role::Offensif,
+        stats_de_base: [101, 131, 89, 53, 77, 119],
+        rendement_experience: 191,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Depeceur, Habilete::Fouineur],
+        apprentissage: &[
+            (1, "griffure"),
+            (4, "morsure"),
+            (9, "curee"),
+            (16, "croc-noir"),
+            (16, "coup-sournois"),
+            (36, "dechiquetage"),
+            (36, "griffe-d-ombre"),
+            (70, "curee-de-l-eclipse"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "oracle-noir",
+        nom: "Oracle noir",
+        types: &[Type::Vol, Type::Tenebres, Type::Psychique],
+        role: Role::Offensif,
+        stats_de_base: [80, 86, 74, 124, 86, 120],
+        rendement_experience: 179,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Pillard, Habilete::Fortune],
+        apprentissage: &[
+            (1, "coup-de-bec"),
+            (1, "presage-funeste"),
+            (1, "malefice"),
+            (4, "pique"),
+            (8, "regard-funeste"),
+            (16, "bec-funeste"),
+            (16, "bourrasque"),
+            (70, "presage-ultime"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "chevalier-de-l-abime",
+        nom: "Chevalier de l'abîme",
+        types: &[Type::Acier, Type::Spectre],
+        role: Role::Offensif,
+        stats_de_base: [97, 137, 131, 51, 86, 68],
+        rendement_experience: 260,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Carapace, Habilete::Ferocite],
+        apprentissage: &[
+            (1, "coup-de-garde"),
+            (1, "chevauchee-sans-tete"),
+            (1, "epee-des-morts"),
+            (8, "lame-rouillee"),
+            (11, "charge-spectrale"),
+            (18, "taille-d-acier"),
+            (18, "frisson-d-outre-tombe"),
+            (70, "marche-de-l-abime"),
+        ],
+        evolution: None,
+    },
+    FicheEspece {
+        id: "imperatrice-des-ronces",
+        nom: "Impératrice des ronces",
+        types: &[Type::Insecte, Type::Plante],
+        role: Role::Offensif,
+        stats_de_base: [83, 65, 77, 131, 101, 113],
+        rendement_experience: 196,
+        rarete: Rarete::Commune,
+        habiletes: &[Habilete::Sorcellerie, Habilete::Celerite],
+        apprentissage: &[
+            (1, "bourdonnement"),
+            (4, "regard-funeste"),
+            (8, "malefice"),
+            (12, "nuee"),
+            (12, "sentence"),
+            (25, "ronces-maudites"),
+            (25, "lianes-etrangleuses"),
+            (70, "couronne-d-epines"),
         ],
         evolution: None,
     },
@@ -10222,13 +10470,13 @@ mod tests {
 
         let contenu = ContenuV1::new();
         let au_codex = especes_au_codex(contenu.especes());
-        assert_eq!(au_codex, 117);
+        assert_eq!(au_codex, 125);
         let seuils: Vec<u32> = contenu
             .recompenses_du_codex()
             .iter()
             .map(|recompense| recompense.palier.seuil(au_codex))
             .collect();
-        assert_eq!(seuils, vec![10, 20, 30, 40, 50, 117]);
+        assert_eq!(seuils, vec![10, 20, 30, 40, 50, 125]);
         let complet = contenu.recompenses_du_codex().last().unwrap();
         assert_eq!(complet.palier, PalierDuCodex::Complet);
         let sceau = complet.objet_unique.as_ref().unwrap();
@@ -10333,7 +10581,7 @@ mod tests {
     #[test]
     fn contenu_conforme_aux_regles() {
         let contenu = ContenuV1::new();
-        assert_eq!(contenu.especes().len(), 132);
+        assert_eq!(contenu.especes().len(), 140);
         assert_eq!(contenu.zones().len(), 16);
         assert_eq!(contenu.annexes().len(), 10);
         assert_eq!(contenu.piste().indices().count(), 27);
@@ -10673,8 +10921,9 @@ mod tests {
                 "{nom}"
             );
         }
-        // Le Schnoz évolue depuis l'étape 202.
-        assert_eq!(evoluees, 24);
+        // Le Schnoz évolue depuis l'étape 202, les stades 3 des familles de
+        // départ et de quatre autres depuis l'étape 203.
+        assert_eq!(evoluees, 32);
         assert_eq!(sauvages, vec!["warg", "chevalier-noir"]);
     }
 

@@ -1,0 +1,46 @@
+# Roi des chats
+palette
+o 0c0a10
+b 25202e
+c 15111b
+d 3a3446
+w e8e8f0
+y 7af0c0
+r 8a4a5a
+m 7a5ab0
+z b060f0
+shiny
+o 0c0a10
+b d8d0c0
+c a49c8c
+d f4eee4
+w 2a2430
+y f05080
+r c07a8a
+m f0c040
+z fff0a0
+dessin
+..zoz.....zoz....z......
+.zocoz...zocoz..zoz..z..
+.zoccozzzodcoz.zomozzoz.
+..zodcooodbcoz..zozzomoz
+..zodbdddbbcoz...z..zoz.
+..zodbbbbbbcoz.....zooz.
+..zodbbbbbbbcoz...zodcoz
+..zodyybbyybcoz...zodcoz
+..zocbbbbbbbcozzz.zocbco
+.zorocbbbbbcocoooz.zodco
+..zozocccbbbdbddcozzodco
+...z.zooodbbbbbbbcozodco
+..z...zodwwwbbbbbbcoocbc
+.zoz.zodbwwwbbbbbbbcoodc
+zomozzodwwwwwbbbbbbcodbc
+.zoz.zodbwwwbbbbbbbcodco
+..zz.zodbwwwbbbbbbbbdbco
+..zozzocbbbbbbbbbbbbbcoz
+.zomozzodbbbbbbbbbcbbcoz
+..zoz.zodbbbbbbbbcodcoz.
+...z..zodbccbbcccodbcoz.
+......zodcoodcooooccozoz
+......zoccooccozzzoozomo
+.......zoozzooz...zz.zoz

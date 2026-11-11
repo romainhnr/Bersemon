@@ -1,0 +1,48 @@
+# Chêne-gibet
+palette
+o 1b1420
+b 5a4a3e
+c 3a2e26
+d 7e6c5c
+g 4a6a4a
+i 2e462e
+p a08850
+y 90f0c0
+k 1b1420
+z 60e0c0
+shiny
+o 1b1420
+b c8c0d0
+c 908aa0
+d eae6f0
+g a03a3a
+i 6a2424
+p 3a3a4a
+y ff60a0
+k 1b1420
+z fff0a0
+dessin
+....zzozzzoggioz.zzozz..
+...zooioooigggiozooiooz.
+..zoggggiooiiiozoggggioz
+.zoigggggioodcooigggggio
+..zoiigiiozodcozoiigiioz
+...zocidcozodcozoddicoz.
+....zodbbcoodcoodbbcoz..
+....zodcbbcodcodbbcoz...
+....zococbbdbbdbbccoz...
+...zopozocbbbbbccoopoz..
+...zopozzodbbbcoozopoz..
+...zopozzodbbbcozzopoz..
+...zopozzodbbbcozzopoz..
+...zopozzodybycozopopoz.
+..zopopozodbbbcozzopoz..
+...zopozzodbbbcoz.zoz...
+....zoz.zodkkkcoz..z....
+.....z..zodkkkcoz.......
+........zodbbbcoz.......
+........zodbbbcoz.......
+.......zodbbbbcoz.......
+.......zodbbbbbcoz......
+......zocccccccccoz.....
+.......zoooooooooz......

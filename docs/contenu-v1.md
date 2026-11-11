@@ -2902,3 +2902,22 @@ Cannes à pêche (étape 197), fabriquées par Ansgar, chacune demandant la pré
 | Canne en argent | 2 h | 1 000 pièces d'argent et 3 Ambres noirs |
 
 Les tables de prises de chaque canne sont dans gamedesign.md, section 13.8. Libellés : "Lancer la ligne avec la canne en bois (30 min)" et "Fabriquer la canne suivante : " suivi de la canne et de son coût, dans la console ; "Lancer : canne en bois (30 min)" et "Fabriquer : canne en fer" sur Discord.
+
+## 55. Formes de stade 4
+
+Décidé le 11/11/2026, pour l'étape 203 (gamedesign.md, section 5.4). Choix de l'utilisateur : un stade 4 pour les quatre familles de départ et quelques familles emblématiques. Familles retenues, noms, stats, attaques et sprites proposés par Claude sans validation (Q124).
+
+Chaque forme évolue de son stade 3 au niveau 70, et apprend alors son attaque d'évolution. Elle garde le rôle, la rareté, les habiletés et les attaques de son stade 3 ; ses stats de base vont à 570 dans les mêmes proportions ; son rendement d'XP vaut 1,4 fois le sien. Elle ne vit pas à l'état sauvage et ne lâche pas de ressource : Malvoise la change en ressources de sa famille. Au codex, elles viennent en dernier, après le Schnoz primordial, dans l'ordre du tableau.
+
+| Identifiant | Nom | Évolue de | Types | Rôle | Stats de base (total) | Rendement d'XP | Attaque d'évolution |
+|---|---|---|---|---|---|---|---|
+| dragon-de-cendre | Dragon de cendre | Wyverne de cendre | Feu, Dragon | offensif | 87 / 79 / 79 / 128 / 93 / 104 (570) | 168 | Apocalypse de cendre (Feu, spéciale, 110, précision 90) |
+| crapaud-empereur | Crapaud-empereur | Crapaud-roi | Eau, Poison | offensif | 107 / 125 / 101 / 65 / 83 / 89 (570) | 172 | Écrasement des marais (Eau, physique, 110, précision 90) |
+| chene-gibet | Chêne-gibet | Arbre-pendu | Plante, Spectre | soutien | 129 / 81 / 128 / 81 / 116 / 35 (570) | 173 | Étreinte du gibet (Plante, spéciale, 100, précision 100) |
+| roi-des-chats | Roi des chats | Cait sith | Ténèbres, Spectre | offensif | 76 / 130 / 64 / 76 / 67 / 157 (570) | 168 | Griffe des neuf vies (Ténèbres, physique, 110, précision 95) |
+| loup-de-l-eclipse | Loup de l'Éclipse | Loup-garou | Combat, Ténèbres | offensif | 101 / 131 / 89 / 53 / 77 / 119 (570) | 191 | Curée de l'Éclipse (Combat, physique, 110, précision 90) |
+| oracle-noir | Oracle noir | Augure | Vol, Ténèbres, Psychique | offensif | 80 / 86 / 74 / 124 / 86 / 120 (570) | 179 | Présage ultime (Psychique, spéciale, 110, précision 90) |
+| chevalier-de-l-abime | Chevalier de l'abîme | Dullahan | Acier, Spectre | offensif | 97 / 137 / 131 / 51 / 86 / 68 (570) | 260 | Marche de l'abîme (Spectre, physique, 110, précision 90) |
+| imperatrice-des-ronces | Impératrice des ronces | Reine des ronces | Insecte, Plante | offensif | 83 / 65 / 77 / 131 / 101 / 113 (570) | 196 | Couronne d'épines (Plante, spéciale, 110, précision 90) |
+
+Sprites : ceux du stade 3, entourés d'une aura de la couleur de la famille (dorée en shiny). Le Chevalier de l'abîme est un clin d'oeil aux chevaliers déchus des jeux Souls, sous un nom propre à l'univers.
