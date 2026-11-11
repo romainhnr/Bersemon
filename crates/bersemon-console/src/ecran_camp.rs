@@ -34,7 +34,7 @@ use bersemon_presentation::quetes::ecran_des_quetes;
 use bersemon_presentation::quetes_du_camp::avis_des_quetes_du_camp;
 use bersemon_presentation::recompenses_du_codex::{progression_du_codex, reclamer};
 use bersemon_presentation::rite::rite_acheve;
-use bersemon_presentation::tour::destination_de_la_tour;
+use bersemon_presentation::tour::{depart_par_le_raccourci, destination_de_la_tour};
 
 use crate::affichage;
 use crate::ecran_coffre;
@@ -259,6 +259,11 @@ fn carte(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Option<Op
         println!("  {dernier}. {ligne}");
         dernier
     });
+    let raccourci = depart_par_le_raccourci(partie, contenu).map(|(lieu, reprise)| {
+        dernier += 1;
+        println!("  {dernier}. {lieu} : {reprise}");
+        dernier
+    });
     let fosse = partie.fosse_ouverte(contenu.fosse()).then(|| {
         dernier += 1;
         println!(
@@ -291,6 +296,7 @@ fn carte(partie: &Partie, contenu: &ContenuV1, entree: &mut Entree) -> Option<Op
         numero if Some(numero) == tour => {
             Some(Some(Choix::PartirEnExpedition(contenu.tour().id().clone())))
         }
+        numero if Some(numero) == raccourci => Some(Some(Choix::DescendreParLeRaccourci)),
         numero if Some(numero) == fosse => Some(Some(Choix::EntrerDansLaFosse)),
         numero if Some(numero) == eclipse && partie.beherit() == EtatDuBeherit::Forge => {
             choisir_le_sacrifice(partie, entree)

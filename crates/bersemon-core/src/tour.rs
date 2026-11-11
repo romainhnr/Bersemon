@@ -57,6 +57,10 @@ struct Etage {
 pub struct RecordsDeLaTour {
     pub seul: u32,
     pub a_deux: u32,
+    /// L'étape franchie où le joueur a activé son raccourci, seul ; 0 sans
+    /// raccourci. La descente suivante peut reprendre à l'étape d'après
+    /// (section 9.5).
+    pub raccourci: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

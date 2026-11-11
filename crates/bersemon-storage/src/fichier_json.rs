@@ -487,6 +487,7 @@ mod tests {
             records_de_la_tour: RecordsDeLaTour {
                 seul: 23,
                 a_deux: 31,
+                raccourci: 12,
             },
             rite: Some(Rite::new(
                 [creer("loup", 5), creer("loup", 9)],
@@ -1363,7 +1364,8 @@ mod tests {
             relue.records_de_la_tour(),
             RecordsDeLaTour {
                 seul: 23,
-                a_deux: 31
+                a_deux: 31,
+                raccourci: 12,
             }
         );
         // Avant la version 26, pas de Tour sans fond (section 9.5).

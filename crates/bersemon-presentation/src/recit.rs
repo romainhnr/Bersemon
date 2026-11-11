@@ -121,6 +121,12 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
         Evenement::EntreeDansLaTour(recit) => (recit.clone(), false),
         Evenement::GardienDeLaTour(recit) => (recit.clone(), false),
         Evenement::ReposDansLaTour(recit) => (recit.clone(), true),
+        Evenement::RaccourciActive(etape) => (
+            format!(
+                "Vous gravez un repère sur la paroi : la prochaine fois, vous pourrez reprendre la descente après l'étape {etape}."
+            ),
+            false,
+        ),
         Evenement::NouveauRecordDeLaTour(etape) => (
             important(&format!(
                 "Nouveau record dans la Tour sans fond : étape {etape}."

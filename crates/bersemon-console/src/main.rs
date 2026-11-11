@@ -90,7 +90,7 @@ fn demander(
         }
         Attente::EntreDeuxEtapes => {
             let partie = deroulement.partie().expect(PARTIE_EN_JEU);
-            ecran_expedition::entre_deux_etapes(partie, entree)
+            ecran_expedition::entre_deux_etapes(partie, deroulement.raccourci_activable(), entree)
         }
         Attente::MonstreRare(_) => ecran_expedition::monstre_rare(entree),
         Attente::ActionDeCombat(combat) => {

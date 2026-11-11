@@ -2614,6 +2614,28 @@ impl Partie {
         self.records_de_la_tour
     }
 
+    /// Seul, par le raccourci activé : la descente reprend à l'étape qui
+    /// suit (section 9.5). Sans raccourci, la Tour se refuse comme fermée.
+    pub fn descendre_par_le_raccourci(
+        &self,
+        tour: &TourSansFond,
+        zones: &[Zone],
+    ) -> Result<Expedition, ErreurExpedition> {
+        let raccourci = self.records_de_la_tour.raccourci;
+        if raccourci == 0 {
+            return Err(ErreurExpedition::ZoneFermee);
+        }
+        Ok(self
+            .preparer_la_descente(tour, zones, false)?
+            .depuis_le_raccourci(raccourci))
+    }
+
+    /// Entre deux étapes de la Tour, seul : la dernière étape franchie
+    /// devient le raccourci, à la place du précédent (section 9.5).
+    pub(crate) fn activer_le_raccourci(&mut self, franchies: u32) {
+        self.records_de_la_tour.raccourci = franchies;
+    }
+
     /// Garde la dernière étape franchie si elle bat le record, seul ou à
     /// deux (section 9.5). Rend vrai pour un nouveau record.
     pub(crate) fn noter_record_de_la_tour(&mut self, etapes: u32, a_deux: bool) -> bool {

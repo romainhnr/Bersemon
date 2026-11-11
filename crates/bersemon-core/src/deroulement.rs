@@ -287,6 +287,12 @@ pub enum Choix {
     /// Au camp, affronter le prochain palier de la Fosse aux damnés
     /// (section 9.8) : son adversaire est présenté d'abord.
     EntrerDansLaFosse,
+    /// Au camp, descendre seul dans la Tour sans fond par le raccourci
+    /// activé (section 9.5).
+    DescendreParLeRaccourci,
+    /// Entre deux étapes de la Tour, seul : la dernière étape franchie
+    /// devient le raccourci (section 9.5).
+    ActiverLeRaccourci,
     /// Dans la Fosse aux damnés, le héros jette son arme : c'est une défaite,
     /// sans conséquence (section 9.8).
     Abandonner,
@@ -653,6 +659,8 @@ pub enum Evenement {
     },
     /// Nom de la zone menée jusqu'au bout.
     ZoneExploree(String),
+    /// Le raccourci de la Tour, à cette étape franchie (section 9.5).
+    RaccourciActive(u32),
     /// Ce que le joueur a jeté de son sac, qui débordait (section 13.3).
     ObjetsJetes(Inventaire),
     /// Le joueur fuit avant un combat annoncé, d'où l'on ne fuit pas : il
@@ -1125,6 +1133,15 @@ impl Deroulement {
             Etat::EnJeu(jeu) => jeu.expedition.as_ref().map(|en_cours| &en_cours.expedition),
             _ => None,
         }
+    }
+
+    /// Entre deux étapes de la Tour, seul : l'étape que prendrait le
+    /// raccourci, par `Choix::ActiverLeRaccourci` (section 9.5).
+    pub fn raccourci_activable(&self) -> Option<u32> {
+        let Etat::EnJeu(jeu) = &self.etat else {
+            return None;
+        };
+        jeu.expedition.as_ref()?.raccourci_activable(&jeu.partie)
     }
 
     fn en_jeu_mut(&mut self) -> Option<&mut EnJeu> {
@@ -1634,6 +1651,20 @@ impl EnJeu {
                 let expedition = self
                     .partie
                     .descendre_dans_la_tour(contexte.contenu.tour(), contexte.contenu.zones())
+                    .map_err(|erreur| match erreur {
+                        ErreurExpedition::ZoneFermee => ErreurChoix::ZoneFermee,
+                        ErreurExpedition::EquipeVide => ErreurChoix::EquipeVide,
+                        ErreurExpedition::SacTropPlein { exces } => {
+                            ErreurChoix::SacTropPlein { exces }
+                        }
+                    })?;
+                self.lancer(expedition, contexte, evenements);
+                Ok(Reponse::Faite)
+            }
+            Choix::DescendreParLeRaccourci => {
+                let expedition = self
+                    .partie
+                    .descendre_par_le_raccourci(contexte.contenu.tour(), contexte.contenu.zones())
                     .map_err(|erreur| match erreur {
                         ErreurExpedition::ZoneFermee => ErreurChoix::ZoneFermee,
                         ErreurExpedition::EquipeVide => ErreurChoix::EquipeVide,
@@ -3103,8 +3134,28 @@ impl EnExpedition {
                 Ok(Reponse::Faite)
             }
             Choix::RentrerAuCamp => Ok(Reponse::RetourAuCamp),
+            Choix::ActiverLeRaccourci => {
+                let etape = self
+                    .raccourci_activable(partie)
+                    .ok_or(ErreurChoix::HorsDePropos)?;
+                partie.activer_le_raccourci(etape);
+                evenements.push(Evenement::RaccourciActive(etape));
+                Ok(Reponse::Faite)
+            }
             _ => Err(ErreurChoix::HorsDePropos),
         }
+    }
+
+    /// Entre deux étapes de la Tour, seul : la dernière étape franchie, que
+    /// le raccourci peut prendre s'il ne la garde pas déjà (section 9.5).
+    fn raccourci_activable(&self, partie: &Partie) -> Option<u32> {
+        let franchies = self.expedition.etapes_franchies();
+        (matches!(self.moment, Moment::EntreDeuxEtapes)
+            && self.expedition.est_sans_fin()
+            && !self.en_groupe
+            && franchies > 0
+            && franchies != partie.records_de_la_tour().raccourci)
+            .then_some(franchies)
     }
 
     /// L'argent ne prend pas de place : il ne se jette pas.
@@ -6581,6 +6632,71 @@ mod tests {
                 &depot
             ),
             Err(ErreurChoix::ZoneFermee)
+        );
+    }
+
+    /// Section 9.5 : entre deux étapes, seul, la dernière étape franchie
+    /// devient le raccourci ; la descente suivante peut reprendre à l'étape
+    /// d'après.
+    #[test]
+    fn le_raccourci_de_la_tour_fait_reprendre_la_descente() {
+        let contenu = ContenuV1::new();
+        let depot = DepotMemoire::default();
+        let tour = contenu.tour().id().clone();
+        let mut deroulement = au_camp(partie_pour_la_tour(&contenu), &contenu, &depot);
+        assert_eq!(
+            repondre_sans_tirage(
+                &mut deroulement,
+                Choix::DescendreParLeRaccourci,
+                &contenu,
+                &depot
+            ),
+            Err(ErreurChoix::ZoneFermee)
+        );
+        let mut aleatoire = GenerateurAleatoire::new(5);
+        let mut choix = Choix::PartirEnExpedition(tour);
+        for _ in 0..5_000 {
+            let mut contexte = Contexte {
+                contenu: &contenu,
+                aleatoire: &mut aleatoire,
+                depot: &depot,
+                maintenant: Horodatage::depuis_secondes(0),
+            };
+            deroulement.repondre(choix, &mut contexte).unwrap();
+            if deroulement.raccourci_activable() == Some(3) {
+                break;
+            }
+            choix = jouer_un_coup(&deroulement, &contenu);
+        }
+        let evenements = repondre_sans_tirage(
+            &mut deroulement,
+            Choix::ActiverLeRaccourci,
+            &contenu,
+            &depot,
+        )
+        .unwrap();
+        assert_eq!(evenements, vec![Evenement::RaccourciActive(3)]);
+        // Déjà le raccourci : il ne se propose plus à cette étape.
+        assert_eq!(deroulement.raccourci_activable(), None);
+        repondre_sans_tirage(&mut deroulement, Choix::RentrerAuCamp, &contenu, &depot).unwrap();
+        let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
+        assert_eq!(sauvegarde.records_de_la_tour().raccourci, 3);
+        let mut contexte = Contexte {
+            contenu: &contenu,
+            aleatoire: &mut aleatoire,
+            depot: &depot,
+            maintenant: Horodatage::depuis_secondes(0),
+        };
+        let evenements = deroulement
+            .repondre(Choix::DescendreParLeRaccourci, &mut contexte)
+            .unwrap();
+        assert!(
+            evenements.iter().any(|evenement| *evenement
+                == Evenement::Etape {
+                    numero: 4,
+                    total: None
+                }),
+            "{evenements:?}"
         );
     }
 

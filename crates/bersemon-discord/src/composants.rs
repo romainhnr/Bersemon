@@ -266,6 +266,8 @@ pub enum Cle {
     Relacher(Emplacement),
     Continuer,
     Rentrer,
+    /// Entre deux étapes de la Tour, seul (section 9.5).
+    ActiverLeRaccourci,
     /// Menu des soins et des monstres à soigner, entre deux étapes.
     Soin,
     /// Menu de l'équipe : le monstre choisi passe en tête (Q55).
@@ -478,6 +480,9 @@ pub const ECLIPSE: &str = "eclipse";
 /// La valeur de la Fosse aux damnés dans le menu des expéditions (section
 /// 9.8).
 pub const FOSSE: &str = "fosse-aux-damnes";
+/// La valeur du départ dans la Tour par le raccourci, dans le menu des
+/// expéditions (section 9.5).
+pub const RACCOURCI: &str = "tour-par-le-raccourci";
 
 /// La valeur qui forge le Béhérit dans le menu des âmes de l'étal.
 pub const BEHERIT: &str = "beherit";
@@ -508,6 +513,7 @@ impl Cle {
             // départ (section 9.4).
             Cle::Partir if valeur? == ECLIPSE => Some(Commande::Afficher(Vue::Eclipse)),
             Cle::Partir if valeur? == FOSSE => jouer(Choix::EntrerDansLaFosse),
+            Cle::Partir if valeur? == RACCOURCI => jouer(Choix::DescendreParLeRaccourci),
             Cle::Partir | Cle::PartirAilleurs => {
                 jouer(Choix::PartirEnExpedition(ZoneId::new(valeur?)))
             }
@@ -540,6 +546,7 @@ impl Cle {
             Cle::Relacher(emplacement) => gerer(ActionDeGestion::Relacher(*emplacement)),
             Cle::Continuer => jouer(Choix::ContinuerLExpedition),
             Cle::Rentrer => jouer(Choix::RentrerAuCamp),
+            Cle::ActiverLeRaccourci => jouer(Choix::ActiverLeRaccourci),
             Cle::Soin => {
                 let (soin, index) = lire_soin_et_position(valeur?)?;
                 jouer(Choix::UtiliserSoin(soin, index))
@@ -788,6 +795,7 @@ impl Cle {
             }
             Cle::Continuer => "continuer".to_string(),
             Cle::Rentrer => "rentrer".to_string(),
+            Cle::ActiverLeRaccourci => "raccourci".to_string(),
             Cle::Soin => "soin".to_string(),
             Cle::EnTete => "en-tete".to_string(),
             Cle::Prendre => "prendre".to_string(),
@@ -1035,6 +1043,7 @@ impl Cle {
             "ne-pas-evoluer" => Cle::NePasEvoluer,
             "continuer" => Cle::Continuer,
             "rentrer" => Cle::Rentrer,
+            "raccourci" => Cle::ActiverLeRaccourci,
             "soin" => Cle::Soin,
             "en-tete" => Cle::EnTete,
             "prendre" => Cle::Prendre,
@@ -1464,6 +1473,7 @@ mod tests {
             Cle::Relacher(Emplacement::Camp(0)),
             Cle::Continuer,
             Cle::Rentrer,
+            Cle::ActiverLeRaccourci,
             Cle::Soin,
             Cle::EnTete,
             Cle::Prendre,

@@ -62,6 +62,23 @@ pub fn records_de_la_tour(
     )
 }
 
+/// Le départ par le raccourci, s'il est activé : "Tour sans fond, par le
+/// raccourci" et "Reprendre à l'étape 13" (section 9.5).
+pub fn depart_par_le_raccourci(partie: &Partie, contenu: &ContenuV1) -> Option<(String, String)> {
+    let raccourci = partie.records_de_la_tour().raccourci;
+    (partie.tour_ouverte(contenu.tour()) && raccourci > 0).then(|| {
+        (
+            format!("{}, par le raccourci", contenu.tour().nom()),
+            format!("Reprendre à l'étape {}", raccourci + 1),
+        )
+    })
+}
+
+/// Entre deux étapes : "Activer le raccourci à l'étape 12".
+pub fn activer_le_raccourci(etape: u32) -> String {
+    format!("Activer le raccourci à l'étape {etape}")
+}
+
 fn record(partie: &Partie) -> String {
     match partie.records_de_la_tour().seul {
         0 => "descendre le plus loin possible".to_string(),
@@ -124,6 +141,7 @@ mod tests {
             records_de_la_tour: RecordsDeLaTour {
                 seul: record,
                 a_deux: 0,
+                raccourci: record.saturating_sub(1),
             },
             rite: None,
             paliers_du_codex: Vec::new(),
@@ -146,7 +164,8 @@ mod tests {
             records_de_la_tour(
                 RecordsDeLaTour {
                     seul: 23,
-                    a_deux: 0
+                    a_deux: 0,
+                    raccourci: 0,
                 },
                 &seul,
                 &[]
@@ -169,6 +188,23 @@ mod tests {
         assert_eq!(
             description_de_la_tour(&partie(&contenu, true, 13), &contenu).as_deref(),
             Some("Sans fin ; record, étape 13")
+        );
+    }
+
+    /// Section 9.5 : le départ par le raccourci reprend à l'étape qui suit.
+    #[test]
+    fn le_raccourci_se_propose_une_fois_active() {
+        let contenu = ContenuV1::new();
+        assert_eq!(
+            depart_par_le_raccourci(&partie(&contenu, true, 0), &contenu),
+            None
+        );
+        assert_eq!(
+            depart_par_le_raccourci(&partie(&contenu, true, 13), &contenu),
+            Some((
+                "Tour sans fond, par le raccourci".to_string(),
+                "Reprendre à l'étape 13".to_string()
+            ))
         );
     }
 }

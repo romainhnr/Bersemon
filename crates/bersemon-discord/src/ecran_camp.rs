@@ -54,10 +54,10 @@ use bersemon_presentation::rite::{rite_acheve, service_du_rite};
 use bersemon_presentation::succes::{
     bilan_des_succes, couleur_du_heros, lignes_des_succes, titre_du_heros, trophees_du_camp,
 };
-use bersemon_presentation::tour::description_de_la_tour;
+use bersemon_presentation::tour::{depart_par_le_raccourci, description_de_la_tour};
 
 use crate::composants::{
-    AUCUN, Cle, ECLIPSE, FOSSE, RETIRER, Vue, booster_en_texte, emplacement_en_texte,
+    AUCUN, Cle, ECLIPSE, FOSSE, RACCOURCI, RETIRER, Vue, booster_en_texte, emplacement_en_texte,
 };
 use crate::echanges::TableauDesEchanges;
 use crate::message::{
@@ -168,6 +168,13 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
             libelle: contenu.tour().nom().to_string(),
             valeur: contenu.tour().id().as_str().to_string(),
             description: Some(description),
+        });
+    }
+    if let Some((libelle, reprise)) = depart_par_le_raccourci(partie, contenu) {
+        zones.push(OptionDeMenu {
+            libelle,
+            valeur: RACCOURCI.to_string(),
+            description: Some(reprise),
         });
     }
     // La Fosse aux damnés suit la Tour, une fois le brigand vaincu (section

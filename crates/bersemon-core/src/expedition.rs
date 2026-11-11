@@ -311,6 +311,20 @@ impl Expedition {
         }
     }
 
+    /// Par le raccourci, la descente reprend après l'étape `franchies`, déjà
+    /// franchie lors d'une descente précédente (section 9.5).
+    pub(crate) fn depuis_le_raccourci(mut self, franchies: u32) -> Self {
+        if let Some(descente) = &self.descente {
+            self.etapes_faites = franchies;
+            self.zone = descente.tour.zone_de_l_etape(
+                franchies + 1,
+                descente.a_deux,
+                descente.capsules.clone(),
+            );
+        }
+        self
+    }
+
     /// La Tour sans fond, si l'expédition y descend.
     pub fn tour(&self) -> Option<&TourSansFond> {
         self.descente.as_ref().map(|descente| &descente.tour)

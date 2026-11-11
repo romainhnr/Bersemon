@@ -482,7 +482,9 @@ fn question_de_la_partie(
             }
             vue => ecran_camp::question(partie(), vue, contenu, maintenant),
         },
-        Attente::EntreDeuxEtapes => ecran_expedition::entre_deux_etapes(partie()),
+        Attente::EntreDeuxEtapes => {
+            ecran_expedition::entre_deux_etapes(partie(), session.deroulement.raccourci_activable())
+        }
         Attente::MonstreRare(_) => ecran_expedition::monstre_rare(),
         Attente::Prise(monstre) => ecran_peche::prise(monstre),
         Attente::PlaceManquante(capture) => {

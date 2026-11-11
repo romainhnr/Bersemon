@@ -4170,6 +4170,7 @@ fn quetes_et_succes_a_travers_les_ecrans_du_bot() {
         records_de_la_tour: RecordsDeLaTour {
             seul: 50,
             a_deux: 0,
+            raccourci: 0,
         },
         rite: None,
         paliers_du_codex: Vec::new(),

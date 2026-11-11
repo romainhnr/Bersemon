@@ -53,7 +53,7 @@ use bersemon_core::zone::{Zone, ZoneId};
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 39;
+pub(crate) const VERSION: u64 = 40;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -233,6 +233,10 @@ pub(crate) struct SauvegardeV14 {
     record_seul_dans_la_tour: u32,
     #[serde(default)]
     record_a_deux_dans_la_tour: u32,
+    /// Depuis la version 40 (section 9.5) : l'étape du raccourci de la Tour,
+    /// 0 sans raccourci.
+    #[serde(default)]
+    raccourci_dans_la_tour: u32,
     /// Depuis la version 28 (section 13.11) : les parents confiés à
     /// Malvoise, absent sans rite en cours.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -917,6 +921,7 @@ pub(crate) fn depuis_partie(partie: &Partie) -> SauvegardeV14 {
         beherit: beherit_en_texte(partie.beherit()).map(str::to_string),
         record_seul_dans_la_tour: partie.records_de_la_tour().seul,
         record_a_deux_dans_la_tour: partie.records_de_la_tour().a_deux,
+        raccourci_dans_la_tour: partie.records_de_la_tour().raccourci,
         rite: partie.rite().map(|rite| RiteV28 {
             parents: rite.parents().iter().map(depuis_monstre).collect(),
             fin: rite.fin().secondes(),
@@ -1419,6 +1424,8 @@ pub(crate) fn vers_partie(
         RecordsDeLaTour {
             seul: sauvegarde.record_seul_dans_la_tour,
             a_deux: sauvegarde.record_a_deux_dans_la_tour,
+            // Avant la version 40, pas de raccourci : le champ vaut 0.
+            raccourci: sauvegarde.raccourci_dans_la_tour,
         }
     };
     // Avant la version 28, pas de rite (section 13.11).

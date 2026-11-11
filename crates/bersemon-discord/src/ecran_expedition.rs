@@ -12,6 +12,7 @@ use bersemon_presentation::partie::{
     FUIR_AVANT_LE_COMBAT, annonce as texte_d_annonce, place_manquante as texte_de_place_manquante,
     sac_en_expedition,
 };
+use bersemon_presentation::tour::activer_le_raccourci;
 
 use bersemon_core::inventaire::Objet;
 use bersemon_presentation::sac::{question_du_sac_plein, sortes_a_jeter};
@@ -26,7 +27,7 @@ use crate::message::{
 /// Continuer, rentrer, soigner un monstre ou mettre un monstre en tête :
 /// c'est lui qui commencera le prochain combat (Q55). Le contenu du sac est
 /// rappelé : une défaite le ferait perdre (section 9.3).
-pub fn entre_deux_etapes(partie: &Partie) -> Question {
+pub fn entre_deux_etapes(partie: &Partie, raccourci: Option<u32>) -> Question {
     let equipe = partie.collection().equipe();
     let heros = partie.heros().combattant();
     let mut lignes: Vec<String> = equipe
@@ -35,10 +36,20 @@ pub fn entre_deux_etapes(partie: &Partie) -> Question {
         .collect();
     // Le héros suit l'équipe : il combat quand elle est KO (section 4.4).
     lignes.push(ligne_du_heros(&heros));
-    let mut rangees_de_l_etape = rangees(vec![
+    let mut boutons = vec![
         bouton(Cle::Continuer, "Continuer l'expédition", PRINCIPAL),
         bouton(Cle::Rentrer, "Rentrer au camp", SECONDAIRE),
-    ]);
+    ];
+    // Dans la Tour, seul : la dernière étape franchie peut devenir le
+    // raccourci (section 9.5).
+    if let Some(etape) = raccourci {
+        boutons.push(bouton(
+            Cle::ActiverLeRaccourci,
+            &activer_le_raccourci(etape),
+            SECONDAIRE,
+        ));
+    }
+    let mut rangees_de_l_etape = rangees(boutons);
     rangees_de_l_etape.extend(menu(
         Cle::Soin,
         "Utiliser un soin",

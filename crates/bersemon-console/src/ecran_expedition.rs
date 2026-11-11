@@ -11,6 +11,7 @@ use bersemon_presentation::partie::{
     place_manquante as place_manquante_texte,
 };
 use bersemon_presentation::sac::{question_du_sac_plein, sortes_a_jeter};
+use bersemon_presentation::tour::activer_le_raccourci;
 
 use crate::affichage;
 use crate::ecran_combat::choisir_soin;
@@ -37,7 +38,11 @@ pub fn sac_plein(partie: &Partie, entree: &mut Entree) -> Option<Choix> {
 
 /// Rend `None` si l'entrée est fermée. Le contenu du sac est rappelé : une
 /// défaite le ferait perdre (section 9.3).
-pub fn entre_deux_etapes(partie: &Partie, entree: &mut Entree) -> Option<Choix> {
+pub fn entre_deux_etapes(
+    partie: &Partie,
+    raccourci: Option<u32>,
+    entree: &mut Entree,
+) -> Option<Choix> {
     loop {
         println!();
         println!("{}", affichage::equipe_en_expedition(partie));
@@ -49,7 +54,14 @@ pub fn entre_deux_etapes(partie: &Partie, entree: &mut Entree) -> Option<Choix> 
         );
         println!("  3. Changer l'ordre de l'équipe");
         println!("  4. Rentrer au camp");
-        match entree.choix(1, 4)? {
+        // Dans la Tour, seul : la dernière étape franchie peut devenir le
+        // raccourci (section 9.5).
+        if let Some(etape) = raccourci {
+            println!("  5. {}", activer_le_raccourci(etape));
+        }
+        let dernier = if raccourci.is_some() { 5 } else { 4 };
+        match entree.choix(1, dernier)? {
+            5 => return Some(Choix::ActiverLeRaccourci),
             1 => return Some(Choix::ContinuerLExpedition),
             2 => {
                 if let Some(soin) = choisir_soin(partie.sac().soins(), entree)? {
