@@ -1,0 +1,32 @@
+# Icône d'attaque Ténèbres, physique
+palette
+o 1b1420
+b 4a3c3c
+c 2e2424
+d 6e5c5c
+w f0d8a0
+dessin
+........................
+..oooooooooooooooooooo..
+.oddddddddddddddddddddo.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbwwwbbbbbbbbbco.
+.odbbbbbwwwbbbbbbbbbbco.
+.odbbbbwwwbbbbbbbbbbbco.
+.odbbbwwwwbbbbbbbbbbbco.
+.odbbwwwwwbbbbbbbbbbbco.
+.odbbwwwwwbbbbbbbbbbbco.
+.odbbwwwwwbbbbbbbbbbbco.
+.odbbwwwwwbbbbbbbbbbbco.
+.odbbwwwwwwbbbbbbbbbbco.
+.odbbwwwwwwwbbbbbbbbbco.
+.odbbbwwwwwwwwbbbwbbbco.
+.odbbbbwwwwwwwwwwbbbbco.
+.odbbbbbwwwwwwwwbbbbbco.
+.odbbbbbbwwwwwwbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odccccccccccccccccccco.
+..oooooooooooooooooooo..
+........................

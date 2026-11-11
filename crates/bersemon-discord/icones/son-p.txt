@@ -1,0 +1,32 @@
+# Icône d'attaque Son, physique
+palette
+o 1b1420
+b 3aa89a
+c 2a7c72
+d 68ccc0
+w f4fffc
+dessin
+........................
+..oooooooooooooooooooo..
+.oddddddddddddddddddddo.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbwwwwwwwwbbbco.
+.odbbbbbbbwwwwwwwwbbbco.
+.odbbbbbbbwwbbbbwwbbbco.
+.odbbbbbbbwwbbbbwwbbbco.
+.odbbbbbbbwwbbbbwwbbbco.
+.odbbbbbbbwwbbbbwwbbbco.
+.odbbbbbbbwwbbbbwwbbbco.
+.odbbbbbbbwwbbbbwwbbbco.
+.odbbbbwwwwbbbwwwwbbbco.
+.odbbbwwwwwbbwwwwwbbbco.
+.odbbbwwwwwbbwwwwwbbbco.
+.odbbbbwwwbbbbwwwbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odccccccccccccccccccco.
+..oooooooooooooooooooo..
+........................

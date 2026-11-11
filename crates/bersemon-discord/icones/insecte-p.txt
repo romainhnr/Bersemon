@@ -1,0 +1,32 @@
+# Icône d'attaque Insecte, physique
+palette
+o 1b1420
+b 8fae2b
+c 68801c
+d b0cc50
+w 1e2a08
+dessin
+........................
+..oooooooooooooooooooo..
+.oddddddddddddddddddddo.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbwbbbbbbwbbbbbco.
+.odbbbbbbwbbbbwbbbbbbco.
+.odbbbbbbbwwwwbbbbbbbco.
+.odbbbbbbwwwwwwbbbbbbco.
+.odbbbwbwwwwwwwwbwbbbco.
+.odbbbbwwwwwwwwwwbbbbco.
+.odbbbbbwwwbbwwwbbbbbco.
+.odbbbwbwwwbbwwwbwbbbco.
+.odbbbbwwwwbbwwwwbbbbco.
+.odbbbbbwwwbbwwwbbbbbco.
+.odbbbwbwwwbbwwwbwbbbco.
+.odbbbbwwwwwwwwwwbbbbco.
+.odbbbbbbwwwwwwbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odccccccccccccccccccco.
+..oooooooooooooooooooo..
+........................

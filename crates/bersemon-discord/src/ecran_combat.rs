@@ -14,7 +14,9 @@ use bersemon_core::soin::Soins;
 use bersemon_core::types::Efficacite;
 use bersemon_presentation::arene::annonce_du_palier;
 use bersemon_presentation::atelier::{effet_de_l_appat, nom_de_l_appat};
-use bersemon_presentation::combat::{attaque_de_trop, attaque_en_combat, etat, ordre_et_bonus};
+use bersemon_presentation::combat::{
+    attaque_de_trop, attaque_en_combat_abregee, etat, ordre_et_bonus, type_et_categorie_en_combat,
+};
 use bersemon_presentation::filets::nom_du_filet;
 use bersemon_presentation::monstres::{
     decrire_attaque_de, ligne_du_heros, ligne_monstre, nom, nom_en_combat,
@@ -24,16 +26,17 @@ use bersemon_presentation::soins::nom_du_soin;
 use poise::serenity_prelude as serenity;
 
 use crate::composants::{Cle, soin_et_position_en_texte};
+use crate::emotes::IconeDAttaque;
 use crate::message::{
-    DANGER, OPTIONS_PAR_MENU, OptionDeMenu, PRINCIPAL, Question, SECONDAIRE, SUCCES, bouton, menu,
-    rangees,
+    DANGER, OPTIONS_PAR_MENU, OptionDeMenu, PRINCIPAL, Question, SECONDAIRE, SUCCES, bouton,
+    bouton_d_attaque, menu, rangees,
 };
 
 /// Une rangée d'attaques, l'ordre du héros tant qu'il n'est pas donné
 /// (section 4.2), le filet et la fuite (absents face à un Apôtre, section
 /// 9.4), puis un menu pour changer de monstre et un pour les soins.
-/// Chaque attaque dit son type, sa catégorie (P ou S) et sa puissance, et sa
-/// couleur son efficacité (section 10.6).
+/// Chaque attaque dit sa puissance et sa précision ; son icône, son type et
+/// sa catégorie (étape 210) ; sa couleur, son efficacité (section 10.6).
 pub fn action(combat: &Combat, partie: &Partie) -> Question {
     let actif = combat.actif(Cote::Joueur);
     let attaques = combat
@@ -43,12 +46,20 @@ pub fn action(combat: &Combat, partie: &Partie) -> Question {
         .iter()
         .enumerate()
         .map(|(index, attaque)| {
-            let libelle =
-                attaque_en_combat(combat, index).unwrap_or_else(|| attaque.nom().to_string());
+            let libelle = attaque_en_combat_abregee(combat, index)
+                .unwrap_or_else(|| attaque.nom().to_string());
             let style = combat
                 .apercu_attaque(index)
                 .map_or(SECONDAIRE, style_d_attaque);
-            bouton(Cle::Attaquer(index), &libelle, style)
+            match type_et_categorie_en_combat(combat, index) {
+                Some((type_attaque, categorie)) => bouton_d_attaque(
+                    Cle::Attaquer(index),
+                    &libelle,
+                    style,
+                    IconeDAttaque::new(type_attaque, categorie),
+                ),
+                None => bouton(Cle::Attaquer(index), &libelle, style),
+            }
         })
         .collect();
     let mut lignes = rangees(attaques);

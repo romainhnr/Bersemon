@@ -1,0 +1,32 @@
+# Icône d'attaque Dragon, physique
+palette
+o 1b1420
+b 5a3fc0
+c 3e2a8e
+d 8068e0
+w f8f0ff
+dessin
+........................
+..oooooooooooooooooooo..
+.oddddddddddddddddddddo.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbwbbbbbbbbbbbbbco.
+.odbbbbwwbbbbbbbbbbbbco.
+.odbbbbbwwwbbbbbbbbbbco.
+.odbbbbbwwwwwwbbbbbbbco.
+.odbbbbwwwwwwwwwbbbbbco.
+.odbbbwwwbbwwwwwwbbbbco.
+.odbbbwwwbbwwwwwwwbbbco.
+.odbbbwwwwwwwwwwwwwbbco.
+.odbbbwwwwwwwwwwwwwwbco.
+.odbbbwwwwwwwbbbbbbbbco.
+.odbbbwwwwwwwwbbbbbbbco.
+.odbbbwwwwwwwwwbbbbbbco.
+.odbbbbwwwwwwwwwbbbbbco.
+.odbbbbbbwwwwwwbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odccccccccccccccccccco.
+..oooooooooooooooooooo..
+........................

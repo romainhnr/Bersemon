@@ -1,0 +1,32 @@
+# Icône d'attaque Psychique, physique
+palette
+o 1b1420
+b e05a98
+c a83e70
+d f088b8
+w fff0f8
+dessin
+........................
+..oooooooooooooooooooo..
+.oddddddddddddddddddddo.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbwwwwwwbbbbbbco.
+.odbbbbwwwwwwwwwwbbbbco.
+.odbbbwwwwbbbbwwwwbbbco.
+.odbbwwwwbbwwbbwwwwbbco.
+.odbwwwwbbwwwwbbwwwwbco.
+.odbwwwwbbwwwwbbwwwwbco.
+.odbbwwwwbbwwbbwwwwbbco.
+.odbbbwwwwbbbbwwwwbbbco.
+.odbbbbwwwwwwwwwwbbbbco.
+.odbbbbbbwwwwwwbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odccccccccccccccccccco.
+..oooooooooooooooooooo..
+........................

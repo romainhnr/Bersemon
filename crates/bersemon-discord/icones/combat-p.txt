@@ -1,0 +1,32 @@
+# Icône d'attaque Combat, physique
+palette
+o 1b1420
+b c0392b
+c 8e2a20
+d e05a48
+w fbf3ea
+dessin
+........................
+..oooooooooooooooooooo..
+.oddddddddddddddddddddo.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbwwbwwbwwbbbbbco.
+.odbbbbwwwbwwbwwwbbbbco.
+.odbbbwwwwbwwbwwwwbbbco.
+.odbbbwwwwbwwbwwwwbbbco.
+.odbbbwwwwwwwwwwwwbbbco.
+.odbbbwwwwwwwwwwwwbbbco.
+.odbbbwwbbbbbwwwwwbbbco.
+.odbbbwwwwwwwwwwwbbbbco.
+.odbbbwwwwwwwwwwwbbbbco.
+.odbbbbwwwwwwwwwbbbbbco.
+.odbbbbbwwwwwwwbbbbbbco.
+.odbbbbbwwwwwwwbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odccccccccccccccccccco.
+..oooooooooooooooooooo..
+........................

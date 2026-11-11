@@ -952,6 +952,24 @@ impl Sprite {
 /// chaque sprite dans l'ordre de son fichier. Une case vide reste
 /// transparente.
 pub fn png_cote_a_cote(cases: &[Option<Case<'_>>]) -> Vec<u8> {
+    png_a_l_echelle(cases, ECHELLE)
+}
+
+/// Une icône d'attaque, téléversée comme émoji : agrandie 5 fois, 120
+/// pixels de côté, sous les 128 que Discord recommande (étape 210).
+pub fn png_d_icone(icone: &Sprite) -> Vec<u8> {
+    png_a_l_echelle(
+        &[Some(Case {
+            sprite: icone,
+            shiny: false,
+            couleur: None,
+            retourne: false,
+        })],
+        5,
+    )
+}
+
+fn png_a_l_echelle(cases: &[Option<Case<'_>>], echelle: usize) -> Vec<u8> {
     debug_assert!(cases.len() <= CASES_MAX, "au plus {CASES_MAX} sprites");
     let largeur = cases.len() * COTE + cases.len().saturating_sub(1) * ECART;
     let mut grille = vec![vec![0_u8; largeur]; COTE];
@@ -978,21 +996,21 @@ pub fn png_cote_a_cote(cases: &[Option<Case<'_>>]) -> Vec<u8> {
             }
         }
     }
-    let mut lignes = Vec::with_capacity(COTE * ECHELLE * (largeur * ECHELLE + 1));
+    let mut lignes = Vec::with_capacity(COTE * echelle * (largeur * echelle + 1));
     for ligne in &grille {
         let pixels: Vec<u8> = ligne
             .iter()
-            .flat_map(|indice| std::iter::repeat_n(*indice, ECHELLE))
+            .flat_map(|indice| std::iter::repeat_n(*indice, echelle))
             .collect();
-        for _ in 0..ECHELLE {
+        for _ in 0..echelle {
             // Filtre 0 : la ligne telle quelle.
             lignes.push(0);
             lignes.extend_from_slice(&pixels);
         }
     }
     let mut ihdr = Vec::with_capacity(13);
-    ihdr.extend_from_slice(&((largeur * ECHELLE) as u32).to_be_bytes());
-    ihdr.extend_from_slice(&((COTE * ECHELLE) as u32).to_be_bytes());
+    ihdr.extend_from_slice(&((largeur * echelle) as u32).to_be_bytes());
+    ihdr.extend_from_slice(&((COTE * echelle) as u32).to_be_bytes());
     // 8 bits par pixel, couleurs à palette, sans entrelacement.
     ihdr.extend_from_slice(&[8, 3, 0, 0, 0]);
     let mut png = vec![0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a];

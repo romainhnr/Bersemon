@@ -37,6 +37,8 @@ cargo run -p bersemon-discord
 
 Ces variables ne valent que pour ce terminal. Le bot affiche "Bersemon est connecté à Discord." une fois prêt. Ctrl+C arrête le bot.
 
+Au démarrage, le bot téléverse ses 46 icônes d'attaque (le type et la catégorie de chaque attaque en combat) comme émojis de son application, nommés `bersemon_feu_p`, `bersemon_feu_s`, etc., s'il ne les a pas déjà : rien n'est à faire à la main, et ces émojis ne prennent aucune place dans les serveurs. Ils se voient dans le portail développeur, page de l'application, onglet Emojis. Le bot affiche "Icônes des attaques : 46 sur 46" quand tout est prêt ; en cas d'échec, il le signale et les boutons gardent des émojis Unicode. Pour les téléverser à la main, ou les voir hors de Discord, `cargo test -p bersemon-discord ecrire_les_icones -- --ignored`, avec la variable `BERSEMON_ICONES` qui donne le dossier où écrire les PNG ; leurs noms de fichier sont ceux que le bot cherche.
+
 Pour jouer en message privé, lancer le bot sans `BERSEMON_SERVEUR_DE_TEST` (dans un terminal où elle a déjà été définie : `Remove-Item Env:BERSEMON_SERVEUR_DE_TEST`). Au démarrage, le bot efface alors les commandes qu'un lancement en mode test a laissées dans ses serveurs, pour que `/bersemon` n'y apparaisse pas en double. La commande globale peut mettre jusqu'à une heure à apparaître en message privé.
 
 ## 3. Jouer

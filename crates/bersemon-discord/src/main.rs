@@ -20,6 +20,7 @@ mod ecran_expeditions_automatiques;
 mod ecran_groupe;
 mod ecran_marchand;
 mod ecran_peche;
+mod emotes;
 mod formulaires;
 mod groupes;
 mod horloge;
@@ -106,6 +107,10 @@ async fn main() {
                 }
                 // Le premier tour annonce aussitôt les retours survenus
                 // pendant que le bot était éteint (section 12.7).
+                // Les icônes des attaques se préparent à côté : en attendant,
+                // les boutons prennent des émojis Unicode (étape 210).
+                let http = Arc::clone(&contexte.http);
+                tokio::spawn(async move { emotes::preparer(&http).await });
                 tokio::spawn(messages_prives::annoncer_les_retours(
                     Arc::clone(&contexte.http),
                     Arc::clone(&donnees.joueurs),

@@ -1,0 +1,32 @@
+# Icône d'attaque Féérique, physique
+palette
+o 1b1420
+b f0a0c8
+c c07498
+d f8c8e0
+w 5a1a40
+dessin
+........................
+..oooooooooooooooooooo..
+.oddddddddddddddddddddo.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbwwwbbbbbbbbwwwbbco.
+.odbwwwwwbbbbbbwwwwwbco.
+.odbwwwwwwbwwbwwwwwwbco.
+.odbwwwwwwbwwbwwwwwwbco.
+.odbbwwwwwbwwbwwwwwbbco.
+.odbbbwwwwbwwbwwwwbbbco.
+.odbbbbwwwbwwbwwwbbbbco.
+.odbbbwwwwbwwbwwwwbbbco.
+.odbbwwwwwbwwbwwwwwbbco.
+.odbbwwwwbbwwbbwwwwbbco.
+.odbbbwwbbbwwbbbwwbbbco.
+.odbbbbbbbbwwbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odccccccccccccccccccco.
+..oooooooooooooooooooo..
+........................

@@ -8,7 +8,7 @@ use bersemon_core::contenu::METAMORPHOSE_DU_DEMIURGE;
 use bersemon_core::heros::Ordre;
 use bersemon_core::monstre::{Monstre, RapportExperience};
 use bersemon_core::statut::Statut;
-use bersemon_core::types::Efficacite;
+use bersemon_core::types::{Efficacite, Type};
 
 use crate::atelier::appat_lance;
 use crate::equipement::decrire_bonus;
@@ -122,18 +122,58 @@ pub fn etat(combat: &Combat, codex: &Codex) -> String {
 }
 
 /// Une attaque proposée en combat : son type, sa catégorie (P pour
-/// physique, S pour spéciale), sa puissance, sa précision et son effet. Elle
-/// ne dit plus les dégâts estimés (section 10.6) : sur Discord, la couleur
-/// du bouton dit l'efficacité ; la console l'ajoute avec
-/// `efficacite_en_combat`.
+/// physique, S pour spéciale), sa puissance, sa précision et son effet,
+/// "Morsure : Ténèbres, P, 60, 100 %". Elle ne dit ni les dégâts estimés
+/// (section 10.6), ni le mot "puissance", qui prenait de la place pour rien
+/// (étape 210) : sur Discord, la couleur du bouton dit l'efficacité ; la
+/// console l'ajoute avec `efficacite_en_combat`.
 pub fn attaque_en_combat(combat: &Combat, index_attaque: usize) -> Option<String> {
-    let monstre = combat.monstre(combat.actif(Cote::Joueur));
-    let attaque = monstre.attaques().liste().get(index_attaque)?;
-    let categorie = match attaque.categorie_pour(monstre) {
+    let (attaque, categorie, effet) = attaque_et_categorie(combat, index_attaque)?;
+    let categorie = match categorie {
         Categorie::Physique => "P",
         // `categorie_pour` ne rend jamais la catégorie adaptative.
         Categorie::Speciale | Categorie::Adaptative => "S",
     };
+    Some(format!(
+        "{} : {}, {categorie}, {}, {} %{effet}",
+        attaque.nom(),
+        attaque.type_attaque().nom(),
+        attaque.puissance(),
+        attaque.precision()
+    ))
+}
+
+/// Pour un bouton dont une icône dit le type et la catégorie (Discord,
+/// étape 210) : le nom, la puissance, la précision et l'effet seuls,
+/// "Morsure 60, 100 %", pour tenir sur un téléphone.
+pub fn attaque_en_combat_abregee(combat: &Combat, index_attaque: usize) -> Option<String> {
+    let (attaque, _, effet) = attaque_et_categorie(combat, index_attaque)?;
+    Some(format!(
+        "{} {}, {} %{effet}",
+        attaque.nom(),
+        attaque.puissance(),
+        attaque.precision()
+    ))
+}
+
+/// Le type de l'attaque et sa catégorie pour le monstre actif : physique ou
+/// spéciale, jamais adaptative (section 5.1).
+pub fn type_et_categorie_en_combat(
+    combat: &Combat,
+    index_attaque: usize,
+) -> Option<(Type, Categorie)> {
+    let (attaque, categorie, _) = attaque_et_categorie(combat, index_attaque)?;
+    Some((attaque.type_attaque(), categorie))
+}
+
+/// L'attaque du monstre actif du joueur, sa catégorie pour lui, et son
+/// effet à la suite de la précision (", poison 30 %").
+fn attaque_et_categorie(
+    combat: &Combat,
+    index_attaque: usize,
+) -> Option<(&Attaque, Categorie, String)> {
+    let monstre = combat.monstre(combat.actif(Cote::Joueur));
+    let attaque = monstre.attaques().liste().get(index_attaque)?;
     let effet = match attaque.effet() {
         Some(effet) => {
             let statut = match effet.statut() {
@@ -144,13 +184,7 @@ pub fn attaque_en_combat(combat: &Combat, index_attaque: usize) -> Option<String
         }
         None => String::new(),
     };
-    Some(format!(
-        "{} : {}, {categorie}, puissance {}, {} %{effet}",
-        attaque.nom(),
-        attaque.type_attaque().nom(),
-        attaque.puissance(),
-        attaque.precision()
-    ))
+    Some((attaque, attaque.categorie_pour(monstre), effet))
 }
 
 /// Pour la console, sans couleur de bouton : " (très efficace)", " (peu
@@ -593,16 +627,23 @@ mod tests {
         )
         .unwrap();
         let souffle = attaque_en_combat(&combat, 0).unwrap();
-        assert!(
-            souffle.starts_with("Souffle chaud : Normal, S, puissance "),
-            "{souffle}"
+        // Sans le mot "puissance" depuis l'étape 210.
+        assert_eq!(souffle, "Souffle chaud : Normal, S, 40, 100 %");
+        assert_eq!(
+            attaque_en_combat_abregee(&combat, 0).unwrap(),
+            "Souffle chaud 40, 100 %"
         );
+        assert_eq!(
+            type_et_categorie_en_combat(&combat, 0),
+            Some((Type::Normal, Categorie::Speciale))
+        );
+        assert_eq!(attaque_en_combat_abregee(&combat, 2), None);
         assert!(!souffle.contains("dégâts"), "{souffle}");
         // Souffle chaud, de type Normal, n'affecte pas un Spectre.
         assert_eq!(efficacite_en_combat(&combat, 0), " (sans effet)");
         let braises = attaque_en_combat(&combat, 1).unwrap();
         assert!(
-            braises.starts_with("Crachat de braises : Feu, S, puissance "),
+            braises.starts_with("Crachat de braises : Feu, S, 40, "),
             "{braises}"
         );
         assert!(braises.ends_with(", 100 %"), "{braises}");

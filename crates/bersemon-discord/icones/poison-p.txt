@@ -1,0 +1,32 @@
+# Icône d'attaque Poison, physique
+palette
+o 1b1420
+b 8e44ad
+c 67307e
+d b06ccc
+w f4e8ff
+dessin
+........................
+..oooooooooooooooooooo..
+.oddddddddddddddddddddo.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbwwwwwwbbbbbbco.
+.odbbbbwwwwwwwwwwbbbbco.
+.odbbbwwwwwwwwwwwwbbbco.
+.odbbbwwwwwwwwwwwwbbbco.
+.odbbbwwwbbwwbbwwwbbbco.
+.odbbbwwbbbwwbbbwwbbbco.
+.odbbbwwwbbwwbbwwwbbbco.
+.odbbbwwwwwwwwwwwwbbbco.
+.odbbbbwwwwbbwwwwbbbbco.
+.odbbbbbwwwwwwwwbbbbbco.
+.odbbbbbwbwbbwbwbbbbbco.
+.odbbbbbwwwwwwwwbbbbbco.
+.odbbbbbbwwwwwwbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odccccccccccccccccccco.
+..oooooooooooooooooooo..
+........................

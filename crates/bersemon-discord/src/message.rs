@@ -22,6 +22,7 @@ use poise::serenity_prelude as serenity;
 use crate::composants::{Cle, Composant, Vue};
 use crate::duels::erreur_de_defi;
 use crate::echanges::erreur_d_offre;
+use crate::emotes::{self, IconeDAttaque};
 use crate::groupes::erreur_d_invitation;
 use crate::joueurs::{Refus, Session};
 use crate::sprites;
@@ -49,6 +50,9 @@ pub struct Bouton {
     pub cle: Cle,
     pub libelle: String,
     pub style: serenity::ButtonStyle,
+    /// Une attaque en combat : son type et sa catégorie, en émoji (étape
+    /// 210).
+    pub icone: Option<IconeDAttaque>,
 }
 
 #[derive(Clone)]
@@ -190,9 +194,17 @@ impl Message {
                     boutons
                         .iter()
                         .map(|bouton| {
-                            serenity::CreateButton::new(self.identifiant(&bouton.cle))
-                                .label(couper(&bouton.libelle, LIBELLE_MAX))
-                                .style(bouton.style)
+                            let cree = serenity::CreateButton::new(self.identifiant(&bouton.cle))
+                                .style(bouton.style);
+                            let Some(icone) = bouton.icone else {
+                                return cree.label(couper(&bouton.libelle, LIBELLE_MAX));
+                            };
+                            let (emoji, lettre) = emotes::emoji(icone);
+                            let libelle = match lettre {
+                                Some(lettre) => format!("{lettre} {}", bouton.libelle),
+                                None => bouton.libelle.clone(),
+                            };
+                            cree.emoji(emoji).label(couper(&libelle, LIBELLE_MAX))
                         })
                         .collect(),
                 ),
@@ -543,6 +555,20 @@ pub fn bouton(cle: Cle, libelle: &str, style: serenity::ButtonStyle) -> Bouton {
         cle,
         libelle: libelle.to_string(),
         style,
+        icone: None,
+    }
+}
+
+/// Le bouton d'une attaque, dont l'icône dit le type et la catégorie.
+pub fn bouton_d_attaque(
+    cle: Cle,
+    libelle: &str,
+    style: serenity::ButtonStyle,
+    icone: IconeDAttaque,
+) -> Bouton {
+    Bouton {
+        icone: Some(icone),
+        ..bouton(cle, libelle, style)
     }
 }
 
