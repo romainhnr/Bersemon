@@ -17,8 +17,8 @@ use bersemon_core::tour::TourSansFond;
 use crate::arene;
 use crate::atelier;
 use crate::boosters::{
-    HEROS_NE_SHINY, HEROS_RENDU_SHINY, PHILTRE_RAMASSE, booster_donne, boosters,
-    monstre_rendu_shiny, philtres_chromatiques,
+    HEROS_NE_SHINY, HEROS_RENDU_SHINY, booster_donne, boosters, monstre_rendu_shiny,
+    philtres_chromatiques,
 };
 use crate::combat::{ordre_donne, rapport_experience, remplacement, renoncement};
 use crate::equipement::{nom_de_place, objet_et_bonus};
@@ -155,6 +155,7 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             pierre,
             booster,
             filets: filets_trouves,
+            objet_d_experience,
             tresor,
         } => {
             let mut contenu = vec![potions(*nombre)];
@@ -174,12 +175,16 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
             if let Some((filet, nombre)) = filets_trouves {
                 contenu.push(filets(*filet, *nombre));
             }
+            if let Some(objet) = objet_d_experience {
+                contenu.push(objets_d_experience(*objet, 1));
+            }
             // Le trésor d'un coffre d'annexe (section 9.9).
             contenu.extend(tresor.map(|tresor| match tresor {
                 Tresor::PhiltreChromatique => philtres_chromatiques(1),
                 Tresor::Pierre(pierre) => pierres(pierre, 1),
                 Tresor::Booster(booster) => boosters(booster, 1),
                 Tresor::CapsuleDHabilete => capsules_d_habilete(1),
+                Tresor::ObjetDExperience(objet) => objets_d_experience(objet, 1),
             }));
             (
                 format!("Vous trouvez un coffre : {}.", enumerer(&contenu)),
@@ -331,7 +336,7 @@ fn raconter_un(evenement: &Evenement, precedent: Option<&Evenement>) -> Recit {
         ),
         Evenement::Epilogue(epilogue) => (epilogue.clone(), true),
         Evenement::AmeDApotreRecueillie(recit) => (recit.clone(), false),
-        Evenement::PhiltreChromatiqueRamasse => (PHILTRE_RAMASSE.to_string(), false),
+        Evenement::ObjetDExperienceRamasse(objet) => (objet_ramasse(*objet), false),
         Evenement::BeheritForge(recit) => (recit.clone(), true),
         Evenement::Sacrifice(recit) => (important(recit), true),
         Evenement::RecompenseDuDemiurge => (RECOMPENSE_DU_DEMIURGE.to_string(), false),
@@ -753,6 +758,19 @@ pub fn objets_d_experience(objet: ObjetDExperience, nombre: u32) -> String {
     format!("{} ({nombre})", objet.nom())
 }
 
+/// Après l'âme d'un Apôtre vaincu, à la place de l'ancien Philtre
+/// chromatique (sections 9.4 et 14.3, étape 211).
+pub fn objet_ramasse(objet: ObjetDExperience) -> String {
+    let article = match objet {
+        ObjetDExperience::Fiole => "une",
+        ObjetDExperience::Eclat | ObjetDExperience::Cristal | ObjetDExperience::Coeur => "un",
+    };
+    format!(
+        "Dans la poussière de sa dépouille luit {article} {}, que vous ramassez.",
+        objet.nom()
+    )
+}
+
 /// "Éclat de mémoire : +1000 XP" ; "Cœur de bataille : +1 niveau".
 pub fn effet_d_un_objet_d_experience(objet: ObjetDExperience) -> String {
     match objet.effet() {
@@ -839,6 +857,7 @@ mod tests {
             pierre: None,
             booster: None,
             filets: None,
+            objet_d_experience: None,
             tresor: None,
         }])[0];
         assert_eq!(
@@ -854,6 +873,7 @@ mod tests {
             pierre: None,
             booster: None,
             filets: None,
+            objet_d_experience: None,
             tresor: None,
         }])[0];
         assert_eq!(sans_argent.texte, "Vous trouvez un coffre : 1 potion.");
@@ -866,6 +886,7 @@ mod tests {
             pierre: None,
             booster: None,
             filets: None,
+            objet_d_experience: None,
             tresor: None,
         }])[0];
         assert_eq!(
@@ -881,6 +902,7 @@ mod tests {
             pierre: None,
             booster: None,
             filets: None,
+            objet_d_experience: None,
             tresor: None,
         }])[0];
         assert_eq!(
@@ -896,6 +918,7 @@ mod tests {
             pierre: Some(bersemon_core::pierre::PierreDEvolution::Lune),
             booster: None,
             filets: None,
+            objet_d_experience: None,
             tresor: None,
         }])[0];
         assert_eq!(
@@ -911,6 +934,7 @@ mod tests {
             pierre: None,
             booster: Some(bersemon_core::booster::Booster::EcorceDeFer),
             filets: None,
+            objet_d_experience: None,
             tresor: None,
         }])[0];
         assert_eq!(

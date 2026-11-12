@@ -16,6 +16,7 @@ use crate::jour_et_nuit::{BONUS_DE_LA_NUIT, JourOuNuit};
 use crate::legendaire::Legendaire;
 use crate::meteo::Meteo;
 use crate::monstre::Monstre;
+use crate::objet_d_experience::ObjetDExperience;
 use crate::parfum::{POINTS_DE_RARES_EN_PLUS, Parfum};
 use crate::peche::Pecheur;
 use crate::pierre::PierreDEvolution;
@@ -44,6 +45,10 @@ const PREMIER_TIRAGE_DES_BOOSTERS: u32 = 21;
 /// filet lesté de 42 à 46 (docs/contenu-v1.md, section 26).
 const TIRAGES_DES_FILETS: [(std::ops::RangeInclusive<u32>, Filet, u32); 2] =
     [(27..=41, Filet::Chanvre, 2), (42..=46, Filet::Leste, 1)];
+/// Depuis l'étape 211, le même tirage donne un objet d'expérience de 62 à
+/// 76, 15 coffres sur 100, à la mesure de la zone (section 14.3, hypothèse
+/// retenue, Q125).
+const TIRAGES_DES_OBJETS_D_EXPERIENCE: std::ops::RangeInclusive<u32> = 62..=76;
 
 /// Un coffre sur 5 d'une zone contient la carte de son annexe, tant
 /// qu'elle n'est pas ouverte et une fois l'humain gardien vaincu (section
@@ -58,6 +63,8 @@ pub enum Tresor {
     Pierre(PierreDEvolution),
     Booster(Booster),
     CapsuleDHabilete,
+    /// Depuis l'étape 211 (section 14.3).
+    ObjetDExperience(ObjetDExperience),
 }
 
 /// Contenu des coffres propre à chaque zone (section 14.5).
@@ -140,6 +147,8 @@ pub enum EvenementExpedition {
         booster: Option<Booster>,
         /// Des filets de capture, et leur nombre (section 11.2).
         filets: Option<(Filet, u32)>,
+        /// Depuis l'étape 211 (section 14.3).
+        objet_d_experience: Option<ObjetDExperience>,
         /// Dans une zone annexe, à coup sûr (section 9.9).
         tresor: Option<Tresor>,
         /// La carte qui ouvre l'annexe de la zone (section 9.9).
@@ -706,6 +715,9 @@ impl Expedition {
             .iter()
             .find(|(tirages, _, _)| tirages.contains(&tirage))
             .map(|(_, filet, nombre)| (*filet, *nombre));
+        let objet_d_experience = TIRAGES_DES_OBJETS_D_EXPERIENCE
+            .contains(&tirage)
+            .then(|| ObjetDExperience::d_un_coffre(self.zone.niveaux().1.valeur()));
         let tresor = self.zone.coffre().tirer_un_tresor(aleatoire);
         let carte = self
             .carte
@@ -718,6 +730,7 @@ impl Expedition {
             pierre,
             booster,
             filets,
+            objet_d_experience,
             tresor,
             carte,
         }
@@ -832,6 +845,7 @@ mod tests {
                 pierre: None,
                 booster: None,
                 filets: None,
+                objet_d_experience: None,
                 tresor: None,
                 carte: None,
             })
@@ -1101,6 +1115,26 @@ mod tests {
         assert_eq!(filets(47), None);
     }
 
+    /// Section 14.3, étape 211 : le même tirage donne un objet
+    /// d'expérience de 62 à 76, un Éclat dans une zone de niveau 5.
+    #[test]
+    fn un_coffre_sur_7_contient_un_objet_d_experience() {
+        let objet = |tirage: u32| {
+            let mut expedition = Expedition::partir(zone(false));
+            etape_de_combat(&mut expedition);
+            match expedition.etape_suivante(&mut AleatoireScripte::new([1, 1, tirage])) {
+                Some(EvenementExpedition::Coffre {
+                    objet_d_experience, ..
+                }) => objet_d_experience,
+                autre => panic!("{autre:?}"),
+            }
+        };
+        assert_eq!(objet(61), None);
+        assert_eq!(objet(62), Some(ObjetDExperience::Eclat));
+        assert_eq!(objet(76), Some(ObjetDExperience::Eclat));
+        assert_eq!(objet(77), None);
+    }
+
     /// Sans monstre rare dans la zone, rien ne se passe en chemin : l'étape
     /// suit.
     #[test]
@@ -1209,6 +1243,7 @@ mod tests {
                 pierre: None,
                 booster: None,
                 filets: None,
+                objet_d_experience: None,
                 tresor: None,
                 carte: None,
             })

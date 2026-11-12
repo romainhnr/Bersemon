@@ -39,6 +39,7 @@ use crate::inventaire::Inventaire;
 use crate::jour_et_nuit::{Activite, JourOuNuit};
 use crate::meteo::Meteo;
 use crate::niveau::Niveau;
+use crate::objet_d_experience::ObjetDExperience;
 use crate::peche::{ParametresPeche, Pecheur};
 use crate::pierre::PierreDEvolution;
 use crate::quete_du_camp::{
@@ -495,7 +496,7 @@ pub const METAMORPHOSE_DU_DEMIURGE: &str =
 const EPILOGUE_DU_DEMIURGE: &str = "Le Démiurge se disloque dans un hurlement qui fait trembler le ciel. Le soleil noir pâlit, et le jour revient sur le royaume. Votre vengeance est accomplie ; mais d'autres choses rôdent encore au bord des bois.";
 
 /// Les Philtres chromatiques ramassés après l'épilogue du Démiurge.
-pub const RECOMPENSE_DU_DEMIURGE: &str = "Dans les cendres du Démiurge reposent trois Philtres chromatiques, aux reflets changeants. Vous les ramassez.";
+pub const RECOMPENSE_DU_DEMIURGE: &str = "Dans les cendres du Démiurge repose un Philtre chromatique, aux reflets changeants. Vous le ramassez.";
 
 const AVANT_LE_BARON: &str = "Au fond de la Vallée, la brume se déchire sur un gibet dressé contre le ciel. Le Baron pendu, Apôtre du Démiurge, s'y balance encore, puis ouvre les yeux. Il n'y aura pas de fuite.";
 
@@ -10814,9 +10815,11 @@ fn creer_recompenses_du_codex() -> Vec<RecompenseDuCodex> {
             PalierDuCodex::Especes(20),
             Inventaire::new(500, 0, Vec::new()).avec_filets(Filet::Chaines, 5),
         ),
+        // Des objets d'expérience à la place du Philtre chromatique depuis
+        // l'étape 211 (section 14.3).
         recompense(
             PalierDuCodex::Especes(30),
-            Inventaire::default().avec_philtres_chromatiques(1),
+            Inventaire::default().avec_objets_d_experience(ObjetDExperience::Cristal, 2),
         ),
         recompense(
             PalierDuCodex::Especes(40),
@@ -10825,7 +10828,9 @@ fn creer_recompenses_du_codex() -> Vec<RecompenseDuCodex> {
         recompense(PalierDuCodex::Especes(50), boosters),
         RecompenseDuCodex {
             palier: PalierDuCodex::Complet,
-            objets: Inventaire::default().avec_philtres_chromatiques(3),
+            objets: Inventaire::default()
+                .avec_philtres_chromatiques(1)
+                .avec_objets_d_experience(ObjetDExperience::Coeur, 3),
             objet_unique: Some(creer_objet(&SCEAU_DU_BESTIAIRE)),
         },
     ]
@@ -11497,14 +11502,17 @@ fn coffre(argent: RangeInclusive<u32>, capsules: Vec<Capsule>) -> ParametresCoff
 }
 
 /// Section 44 de docs/contenu-v1.md : le trésor de chaque coffre d'une
-/// annexe, avec son poids sur 100 (section 9.9). Le Philtre chromatique
-/// reste rare.
+/// annexe, avec son poids sur 100 (section 9.9). Depuis l'étape 211, le
+/// Philtre chromatique y est plus rare, et des objets d'expérience y
+/// entrent (section 14.3, valeurs proposées par Claude, Q125).
 fn tresors_d_annexe() -> Vec<(Tresor, u32)> {
     let mut tresors = vec![
-        (Tresor::PhiltreChromatique, 5),
-        (Tresor::CapsuleDHabilete, 35),
-        (Tresor::Pierre(PierreDEvolution::Braise), 15),
-        (Tresor::Pierre(PierreDEvolution::Lune), 15),
+        (Tresor::PhiltreChromatique, 3),
+        (Tresor::CapsuleDHabilete, 30),
+        (Tresor::Pierre(PierreDEvolution::Braise), 13),
+        (Tresor::Pierre(PierreDEvolution::Lune), 12),
+        (Tresor::ObjetDExperience(ObjetDExperience::Cristal), 10),
+        (Tresor::ObjetDExperience(ObjetDExperience::Coeur), 2),
     ];
     tresors.extend(Booster::TOUS.map(|booster| (Tresor::Booster(booster), 5)));
     tresors
@@ -11860,7 +11868,7 @@ const QUETES: [FicheQuete; 12] = [
             prise: "Sur la garde du psautier, une main appliquée a écrit \"Frère Malvoise\". Vous le glissez dans votre sac.",
         },
         argent: 400,
-        objets: |objets| objets.avec_philtres_chromatiques(1),
+        objets: |objets| objets.avec_objets_d_experience(ObjetDExperience::Fiole, 2),
         texte_de_la_demande: "\"L'Abbaye des Cendres est ouverte, dis-tu ? J'y ai été moine. Frère Malvoise, archiviste. J'ai caché sous les dalles du chœur un psautier noté de ma main. Les goules rôdent là où l'on enterre mal : rapporte-le-moi.\"",
         texte_de_la_remise: "Malvoise tourne les pages sans un mot, puis s'arrête sur un nom : Isaure. \"Ma sœur. Elle chantait au chœur quand l'Abbesse a commencé à écorcher les novices. Je n'ai rien fait. J'ai fui avec mes livres.\"",
     },
@@ -11928,7 +11936,7 @@ const QUETES: [FicheQuete; 12] = [
             prise: "Le manche du marteau porte une marque : trois traits et une flamme. Vous le rangez dans votre sac.",
         },
         argent: 600,
-        objets: |objets| objets.avec_philtres_chromatiques(1),
+        objets: |objets| objets.avec_objets_d_experience(ObjetDExperience::Fiole, 2),
         texte_de_la_demande: "\"Mon village était au pied du Col : Hautefer. Les trolls l'ont pris, l'hiver où les Apôtres sont venus. Le marteau de mon père est resté sur l'enclume. S'il y est encore, rapporte-le-moi.\"",
         texte_de_la_remise: "Gunther soupèse le marteau et rit pour la première fois. \"La marque de Hautefer. Mon père, et son père avant lui.\" Il le pend au-dessus de l'enclume. \"Il ne servira qu'aux beaux ouvrages.\"",
     },
@@ -11992,7 +12000,7 @@ const QUETES: [FicheQuete; 12] = [
             prise: "Le médaillon est terni, mais le visage gravé ressemble à Ansgar, en plus jeune. Vous le glissez dans votre sac.",
         },
         argent: 800,
-        objets: |objets| objets.avec_philtres_chromatiques(1),
+        objets: |objets| objets.avec_objets_d_experience(ObjetDExperience::Fiole, 2),
         texte_de_la_demande: "\"Le Port des Noyés. Edwin y a embarqué il y a vingt ans. Il portait un médaillon d'étain où j'avais gravé mon visage, tant bien que mal. Si la mer rend les noyés, elle rend peut-être aussi ce qu'ils portaient.\"",
         texte_de_la_remise: "Ansgar serre le médaillon dans son poing, longtemps. \"Elle l'avait, la sirène ? Alors il n'est pas resté seul, au fond.\" Il le porte désormais à son cou.",
     },
@@ -12876,6 +12884,21 @@ mod tests {
         assert!(recits[10].starts_with("L'âme du Sénéchal des orages"));
         assert!(recits[11].starts_with("L'âme de la Reine-mère de chair"));
         assert!(recits[12].starts_with("L'âme du Roi sans visage"));
+        // Avec son âme, un objet d'expérience à la mesure de son rang, à la
+        // place du Philtre chromatique depuis l'étape 211 (section 14.3).
+        use ObjetDExperience::{Coeur, Cristal, Fiole};
+        let objets: Vec<ObjetDExperience> = contenu
+            .piste()
+            .apotres()
+            .map(|apotre| ObjetDExperience::d_un_apotre(apotre.niveau().valeur()))
+            .collect();
+        assert_eq!(
+            objets,
+            [
+                Fiole, Fiole, Fiole, Fiole, Cristal, Cristal, Cristal, Cristal, Cristal, Coeur,
+                Coeur, Coeur, Coeur
+            ]
+        );
     }
 
     #[test]
@@ -14228,10 +14251,10 @@ mod tests {
                     })
                     .any(|espece| espece.id() == rare.espece.id());
                 assert!(!ailleurs, "{}", rare.espece.nom());
-                // Le Philtre chromatique, 5 fois sur 100.
+                // Le Philtre chromatique, 3 fois sur 100 depuis l'étape 211.
                 let tresors = zone.coffre().tresors();
                 assert_eq!(tresors.iter().map(|(_, poids)| poids).sum::<u32>(), 100);
-                assert!(tresors.contains(&(Tresor::PhiltreChromatique, 5)));
+                assert!(tresors.contains(&(Tresor::PhiltreChromatique, 3)));
                 assert!(!annexe.decouverte().is_empty());
                 let (min, max) = zone.niveaux();
                 (

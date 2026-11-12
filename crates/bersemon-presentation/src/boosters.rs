@@ -10,9 +10,6 @@ use bersemon_core::stats::{Stat, ValeursInternes};
 use crate::mise_en_valeur::important;
 use crate::monstres::nom_en_valeur;
 
-/// Après l'âme d'un Apôtre vaincu (section 9.4).
-pub const PHILTRE_RAMASSE: &str = "Dans la poussière de sa dépouille roule une fiole aux reflets changeants : un Philtre chromatique. Vous le ramassez.";
-
 /// Le libellé du service, à l'étal de Malvoise, qui rend aussi le héros
 /// shiny (section 13.7).
 pub const SERVICE_SHINY: &str = "Rendre un monstre ou votre héros shiny (1 Philtre chromatique)";

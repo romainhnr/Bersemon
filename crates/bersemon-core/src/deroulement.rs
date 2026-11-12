@@ -532,6 +532,8 @@ pub enum Evenement {
         booster: Option<Booster>,
         /// Ils vont dans le sac (section 11.2).
         filets: Option<(Filet, u32)>,
+        /// Il va dans le sac (section 14.3, étape 211).
+        objet_d_experience: Option<ObjetDExperience>,
         /// Dans une zone annexe, il va dans le sac (section 9.9).
         tresor: Option<Tresor>,
     },
@@ -672,9 +674,9 @@ pub enum Evenement {
         experience: u32,
         emplacement: Emplacement,
     },
-    /// Après l'âme : le Philtre chromatique que laisse l'Apôtre, qui va dans le sac
-    /// (section 14.3).
-    PhiltreChromatiqueRamasse,
+    /// Après l'âme : l'objet d'expérience que laisse l'Apôtre, qui va dans le
+    /// sac ; un Philtre chromatique avant l'étape 211 (section 14.3).
+    ObjetDExperienceRamasse(ObjetDExperience),
     /// Toute l'équipe est KO : retour au camp, tout le sac perdu (section
     /// 9.3).
     Defaite {
@@ -3798,11 +3800,11 @@ impl EnExpedition {
                     partie.noter_demiurge_vaincu(&apotre);
                     evenements.push(Evenement::RecompenseDuDemiurge);
                 } else {
-                    partie.noter_apotre_vaincu(&apotre);
+                    let objet = partie.noter_apotre_vaincu(&apotre);
                     evenements.push(Evenement::AmeDApotreRecueillie(
                         apotre.recit_de_l_ame().to_string(),
                     ));
-                    evenements.push(Evenement::PhiltreChromatiqueRamasse);
+                    evenements.extend(objet.map(Evenement::ObjetDExperienceRamasse));
                 }
             }
             // Capturé, le légendaire ne revient plus (section 9.10).
@@ -3954,10 +3956,14 @@ impl EnExpedition {
                 pierre,
                 booster,
                 filets,
+                objet_d_experience,
                 tresor,
                 carte,
             } => {
                 let argent_du_pillard = partie.ouvrir_coffre(potions, argent, capsule.clone());
+                if let Some(objet) = objet_d_experience {
+                    partie.trouver_objet_d_experience(objet);
+                }
                 if let Some(tresor) = tresor {
                     partie.trouver_tresor(tresor);
                 }
@@ -3982,6 +3988,7 @@ impl EnExpedition {
                     pierre,
                     booster,
                     filets,
+                    objet_d_experience,
                     tresor,
                 });
                 if let Some(annexe) = carte.and_then(|id| {
@@ -4681,6 +4688,7 @@ mod tests {
                     pierre: None,
                     booster: None,
                     filets: None,
+                    objet_d_experience: None,
                     tresor: None,
                 },
             ]
@@ -6633,7 +6641,8 @@ mod tests {
         )));
         let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
         assert_eq!(sauvegarde.beherit(), EtatDuBeherit::DemiurgeVaincu);
-        assert_eq!(sauvegarde.sac().philtres_chromatiques(), 3);
+        // Un seul Philtre chromatique depuis l'étape 211 (section 14.3).
+        assert_eq!(sauvegarde.sac().philtres_chromatiques(), 1);
         assert!(!sauvegarde.est_exploree(&eclipse));
         for forme in ["demiurge", "demiurge-eveille"] {
             assert_eq!(
@@ -7312,8 +7321,8 @@ mod tests {
             Evenement::AmeDApotreRecueillie(texte) if texte.contains("Baron pendu")
         ));
         assert_eq!(sauvegarde.ames_d_apotres(), sauvegarde.apotres_vaincus());
-        // Chacun laisse aussi un Philtre chromatique, juste après son âme (section
-        // 14.3).
+        // Chacun laisse aussi un objet d'expérience, juste après son âme :
+        // une Fiole pour les premiers (section 14.3, étape 211).
         let apres_les_ames: Vec<&Evenement> = vus
             .windows(2)
             .filter(|paire| matches!(paire[0], Evenement::AmeDApotreRecueillie(_)))
@@ -7322,9 +7331,9 @@ mod tests {
         assert_eq!(
             apres_les_ames,
             vec![
-                &Evenement::PhiltreChromatiqueRamasse,
-                &Evenement::PhiltreChromatiqueRamasse,
-                &Evenement::PhiltreChromatiqueRamasse
+                &Evenement::ObjetDExperienceRamasse(ObjetDExperience::Fiole),
+                &Evenement::ObjetDExperienceRamasse(ObjetDExperience::Fiole),
+                &Evenement::ObjetDExperienceRamasse(ObjetDExperience::Fiole)
             ]
         );
         let collection = sauvegarde.collection();

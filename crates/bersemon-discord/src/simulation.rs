@@ -1455,7 +1455,7 @@ fn le_demiurge_s_affronte_a_travers_les_ecrans_du_bot() {
     let session = joueurs.session(JOUEUR, &contenu);
     let partie = session.deroulement.partie().unwrap();
     assert_eq!(partie.beherit(), EtatDuBeherit::DemiurgeVaincu);
-    assert_eq!(partie.sac().philtres_chromatiques(), 3);
+    assert_eq!(partie.sac().philtres_chromatiques(), 1);
     let camp = afficher(&mut joueurs);
     assert!(
         camp.texte

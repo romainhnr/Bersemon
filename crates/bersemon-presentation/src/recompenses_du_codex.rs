@@ -115,7 +115,7 @@ mod tests {
         let complet = recompenses.last().unwrap();
         assert!(
             recompense_reclamee(complet).starts_with(
-                "Récompense du codex complet, au coffre : 3 Philtres chromatiques. Le talisman Sceau du bestiaire ("
+                "Récompense du codex complet, au coffre : Cœur de bataille (3) et 1 Philtre chromatique. Le talisman Sceau du bestiaire ("
             ),
             "{}",
             recompense_reclamee(complet)

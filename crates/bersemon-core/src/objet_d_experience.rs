@@ -51,6 +51,29 @@ impl ObjetDExperience {
         }
     }
 
+    /// Celui d'un coffre, selon le niveau maximal de sa zone (section 14.3,
+    /// étape 211) : l'Éclat jusqu'au Port, la Fiole jusqu'à la Haute-Cité,
+    /// le Cristal au-delà (hypothèse retenue, Q125).
+    pub fn d_un_coffre(niveau_maximal_de_la_zone: u8) -> ObjetDExperience {
+        match niveau_maximal_de_la_zone {
+            0..=31 => ObjetDExperience::Eclat,
+            32..=66 => ObjetDExperience::Fiole,
+            _ => ObjetDExperience::Cristal,
+        }
+    }
+
+    /// Celui que laisse un Apôtre vaincu, à la place de son ancien Philtre
+    /// chromatique (section 9.4, étape 211) : la Fiole pour les quatre
+    /// premiers, le Cristal jusqu'au Chancelier, puis le Cœur de bataille
+    /// (hypothèse retenue, Q125).
+    pub fn d_un_apotre(niveau_de_l_apotre: u8) -> ObjetDExperience {
+        match niveau_de_l_apotre {
+            0..=35 => ObjetDExperience::Fiole,
+            36..=70 => ObjetDExperience::Cristal,
+            _ => ObjetDExperience::Coeur,
+        }
+    }
+
     /// En pièces d'argent, chez Malvoise (hypothèse retenue, Q123).
     pub fn prix(self) -> u32 {
         match self {
@@ -85,3 +108,23 @@ impl fmt::Display for ErreurObjetDExperience {
 }
 
 impl std::error::Error for ErreurObjetDExperience {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Section 14.3, étape 211 : l'objet d'un coffre suit le niveau de sa
+    /// zone.
+    #[test]
+    fn l_objet_d_un_coffre_suit_le_niveau_de_la_zone() {
+        assert_eq!(ObjetDExperience::d_un_coffre(7), ObjetDExperience::Eclat);
+        assert_eq!(ObjetDExperience::d_un_coffre(31), ObjetDExperience::Eclat);
+        assert_eq!(ObjetDExperience::d_un_coffre(35), ObjetDExperience::Fiole);
+        assert_eq!(ObjetDExperience::d_un_coffre(66), ObjetDExperience::Fiole);
+        assert_eq!(ObjetDExperience::d_un_coffre(70), ObjetDExperience::Cristal);
+        assert_eq!(
+            ObjetDExperience::d_un_coffre(100),
+            ObjetDExperience::Cristal
+        );
+    }
+}

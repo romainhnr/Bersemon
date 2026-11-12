@@ -277,6 +277,11 @@ impl Inventaire {
         self
     }
 
+    pub fn avec_objets_d_experience(mut self, objet: ObjetDExperience, nombre: u32) -> Self {
+        self.ajouter_objets_d_experience(objet, nombre);
+        self
+    }
+
     /// Rend `false` sans rien changer s'il n'y en a pas.
     pub(crate) fn utiliser_philtre_chromatique(&mut self) -> bool {
         self.retirer(&Objet::PhiltresChromatiques(1)).is_ok()
@@ -519,6 +524,11 @@ impl Inventaire {
         for objet in autre.objets_de_quete {
             self.ajouter_objet_de_quete(objet);
         }
+        // Trouvés dans le sac ou reçus en récompense depuis l'étape 211 :
+        // ils se rangent et se versent au coffre comme le reste.
+        for (objet, nombre) in autre.objets_d_experience {
+            self.ajouter_objets_d_experience(objet, nombre);
+        }
     }
 
     /// Retire l'objet et le rend, seul dans un inventaire, sans rien changer
@@ -732,6 +742,22 @@ mod tests {
 
     fn capsule(id: &str) -> Capsule {
         Capsule::new(attaque(id, Type::Normal, Categorie::Physique, 40, 100), 150)
+    }
+
+    /// Étape 211 : les objets d'expérience du sac se rangent au coffre, et
+    /// une récompense qui en contient les y verse.
+    #[test]
+    fn les_objets_d_experience_se_versent_comme_le_reste() {
+        let mut coffre = Inventaire::default().avec_objets_d_experience(ObjetDExperience::Fiole, 1);
+        coffre.ajouter(
+            Inventaire::default()
+                .avec_objets_d_experience(ObjetDExperience::Fiole, 2)
+                .avec_objets_d_experience(ObjetDExperience::Coeur, 1),
+        );
+        assert_eq!(
+            coffre.objets_d_experience(),
+            [(ObjetDExperience::Fiole, 3), (ObjetDExperience::Coeur, 1)]
+        );
     }
 
     #[test]

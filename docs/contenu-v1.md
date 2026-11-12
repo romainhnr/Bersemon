@@ -838,7 +838,8 @@ Textes proposés sans validation (gamedesign.md, Q93), sauf ceux du Philtre chro
 | Booster donné | {monstre} : valeur interne de {stat} de {avant} à {après}. |
 | Refus, valeur déjà au maximum | La valeur interne de {stat} de {monstre} est déjà à 31. |
 | Refus, pas de booster | Vous n'avez pas de {booster}. |
-| Philtre laissé par un Apôtre, après son âme | Dans la poussière de sa dépouille roule une fiole aux reflets changeants : un Philtre chromatique. Vous le ramassez. |
+| Philtre laissé par un Apôtre, après son âme, jusqu'à l'étape 210 | Dans la poussière de sa dépouille roule une fiole aux reflets changeants : un Philtre chromatique. Vous le ramassez. |
+| Objet d'expérience laissé par un Apôtre, après son âme, depuis l'étape 211 | Dans la poussière de sa dépouille luit une Fiole de mémoire, que vous ramassez. (un Cristal de mémoire, un Cœur de bataille) |
 | Objet pêché | Vous remontez une Fiole de sang. Vous la rangez dans le coffre. / Vous remontez une fiole scellée : un Philtre chromatique. Vous le rangez dans le coffre. |
 | Service, à l'étal | Rendre un monstre shiny (1 Philtre chromatique) |
 | Confirmation | Faire rendre {monstre} shiny par Malvoise contre un Philtre chromatique ? Ses valeurs internes passeront toutes à 31. |
@@ -1079,7 +1080,7 @@ Quand la première forme tombe :
 
 > Le Démiurge se disloque dans un hurlement qui fait trembler le ciel. Le soleil noir pâlit, et le jour revient sur le royaume. Votre vengeance est accomplie ; mais d'autres choses rôdent encore au bord des bois.
 
-> Dans les cendres du Démiurge reposent trois Philtres chromatiques, aux reflets changeants. Vous les ramassez. (Réécrit le 25/10/2026, étape 108.)
+> Dans les cendres du Démiurge repose un Philtre chromatique, aux reflets changeants. Vous le ramassez. (Réécrit le 25/10/2026, étape 108 ; un seul Philtre depuis l'étape 211.)
 
 Textes proposés sans validation (gamedesign.md, Q99) :
 
@@ -1314,10 +1315,10 @@ Décidé le 25/10/2026, pour l'étape 115 (gamedesign.md, section 5.6). Paliers,
 |---|---|
 | 10 espèces capturées | 10 filets lestés et 300 pièces d'argent |
 | 20 espèces capturées | 5 filets de chaînes et 500 pièces d'argent |
-| 30 espèces capturées | 1 Philtre chromatique |
+| 30 espèces capturées | 2 Cristaux de mémoire (1 Philtre chromatique jusqu'à l'étape 210) |
 | 40 espèces capturées | 3 capsules d'habileté |
 | 50 espèces capturées | 1 booster de chaque sorte (6) |
-| Codex complet (53 espèces depuis l'étape 135, 51 avant) | 3 Philtres chromatiques, et le Sceau du bestiaire dans l'équipement du héros |
+| Codex complet (170 espèces depuis l'étape 209) | 1 Philtre chromatique et 3 Cœurs de bataille (3 Philtres jusqu'à l'étape 210), et le Sceau du bestiaire dans l'équipement du héros |
 
 Sceau du bestiaire (identifiant sceau-du-bestiaire) : talisman, +5 % à l'Attaque, la Défense, l'Attaque spéciale, la Défense spéciale et la Vitesse. Unique, il ne se fabrique pas.
 
@@ -1874,6 +1875,8 @@ Annexes (gamedesign.md, section 9.9). Trois étapes, combat 60 %, coffre 30 %, m
 | filon-ecarlate | Filon écarlate | Mines de Fer-Noir | 56 à 59 | Gemmâme (pacifique) | 340 à 500 |
 
 Trésor d'un coffre d'annexe, tiré selon son poids sur 100 : Philtre chromatique 5, capsule d'habileté 35, Pierre de braise 15, Pierre de lune 15, chacun des six boosters 5.
+
+Depuis l'étape 211 : Philtre chromatique 3, capsule d'habileté 30, Pierre de braise 13, Pierre de lune 12, Cristal de mémoire 10, Cœur de bataille 2, chacun des six boosters 5.
 
 Équipement (gamedesign.md, section 4.3). Bonus aux monstres : +12 % d'Attaque et d'Attaque spéciale pour les armes du palier 5 ; +20 % puis +25 % de Défense et de Défense spéciale pour les armures des paliers 4 et 5. Chaque arme donne l'attaque principale de son palier, celle de sa classe et celle du second type de sa classe (section 41). Niveau de combat : 45 avec l'arme et l'armure du palier 4, 55 au palier 5.
 
@@ -2724,15 +2727,15 @@ Décidé le 06/11/2026, pour les étapes 175 à 177 (gamedesign.md, section 13.1
 | Identifiant | Personnage | Quête | Ouverture | Demande | Récompense |
 |---|---|---|---|---|---|
 | lueur-du-crane | Malvoise | La lueur du crâne | Marais des Pendus ouvert | 15 Cendre de feu follet | 150 pièces d'argent, 3 potions |
-| psautier-de-malvoise | Malvoise | Le psautier de Frère Malvoise | Abbaye des Cendres ouverte | Psautier de Frère Malvoise, Abbaye, étape 3, gardé par une Goule de niveau 27 | 400, 1 Philtre chromatique |
+| psautier-de-malvoise | Malvoise | Le psautier de Frère Malvoise | Abbaye des Cendres ouverte | Psautier de Frère Malvoise, Abbaye, étape 3, gardé par une Goule de niveau 27 | 400, 2 Fioles de mémoire (1 Philtre chromatique jusqu'à l'étape 210) |
 | prieres-pour-isaure | Malvoise | Des prières pour Isaure | Catacombes de Sainte-Ombre ouvertes | 18 Chapelet d'os | 1 000, 3 capsules d'habileté |
 | page-du-codex-mortis | Malvoise | La page du Codex Mortis | Haute-Cité déchue ouverte | Page du Codex Mortis, Haute-Cité, étape 3, gardée par un Œil errant de niveau 77 | 3 000, 1 Philtre chromatique ; rite en 1 h 30 |
 | tenailles-neuves | Gunther | Des tenailles neuves | Vallée des Brumes ouverte | 18 Fragment d'armure | 200, 1 Moelle de bête, 1 Écorce de fer |
-| marteau-de-hautefer | Gunther | Le marteau de Hautefer | Col du Givre-Noir ouvert | Marteau de Hautefer, Col, étape 3, gardé par un Troll des cavernes de niveau 36 | 600, 1 Philtre chromatique |
+| marteau-de-hautefer | Gunther | Le marteau de Hautefer | Col du Givre-Noir ouvert | Marteau de Hautefer, Col, étape 3, gardé par un Troll des cavernes de niveau 36 | 600, 2 Fioles de mémoire (1 Philtre chromatique jusqu'à l'étape 210) |
 | lame-pour-konrad | Gunther | Une lame pour Konrad | Mines de Fer-Noir ouvertes | 24 Éclat de fer noir | 1 200, 3 capsules d'habileté |
 | coeur-de-braise | Gunther | Le cœur de braise | Gorge de Braise ouverte | Cœur de braise, Gorge, étape 3, gardé par un Golem de magma de niveau 82 | 3 000, 1 Philtre chromatique ; travaux 25 % plus courts |
 | leurres-de-plumes | Ansgar | Des leurres de plumes | Marais des Pendus ouvert | 15 Plume de corbeau | 150, 5 filets de chanvre |
-| medaillon-d-edwin | Ansgar | Le médaillon d'Edwin | Port des Noyés ouvert | Médaillon d'Edwin, Port, étape 3, gardé par une Sirène putride de niveau 51 | 800, 1 Philtre chromatique |
+| medaillon-d-edwin | Ansgar | Le médaillon d'Edwin | Port des Noyés ouvert | Médaillon d'Edwin, Port, étape 3, gardé par une Sirène putride de niveau 51 | 800, 2 Fioles de mémoire (1 Philtre chromatique jusqu'à l'étape 210) |
 | barque-pour-edwin | Ansgar | Une barque pour Edwin | Mines de Fer-Noir ouvertes | 24 Carapace de crabe | 1 200, 3 capsules d'habileté |
 | filet-de-l-equipage | Ansgar | Le filet de l'équipage | Épave du Léviathan ouverte | Filet de l'équipage, Épave, étape 2, gardé par un Crabe nécrophage de niveau 53 | 3 000, 1 Philtre chromatique ; ligne en 1 h 30 |
 
@@ -2905,6 +2908,8 @@ Objets d'expérience (étape 196), vendus par Malvoise, dans cet ordre :
 | Fiole de mémoire | +5000 XP | 400 |
 | Cristal de mémoire | +20000 XP | 1 200 |
 | Cœur de bataille | +1 niveau (juste l'XP du niveau suivant) | 1 500 |
+
+Depuis l'étape 211, ils se trouvent aussi dans les coffres (tirage de 62 à 76 sur 100 : un Éclat de mémoire si la zone ne dépasse pas le niveau 31, une Fiole de mémoire jusqu'au niveau 66, un Cristal de mémoire au-delà), dans les trésors des annexes (Cristal 10, Cœur 2 sur 100), et en récompense : Apôtres (Fiole pour les quatre premiers, Cristal du Prévôt au Chancelier, Cœur du Prince au Roi sans visage), palier de 30 espèces du codex (2 Cristaux), codex complet (3 Cœurs), deuxième quête de chaque personnage (2 Fioles). Au coffre trouvé : "Vous trouvez un coffre : 2 potions, 140 pièces d'argent et Fiole de mémoire (1)."
 
 Textes : "Éclat de mémoire : +1000 XP" et "Cœur de bataille : +1 niveau" dans les listes ; "Éclat de mémoire (3)" au coffre ; menus Discord "Acheter un objet d'évolution ou d'expérience" et "Donner un booster ou un objet d'expérience" ; entrées de la console "Acheter des objets d'expérience" et "Donner un booster ou un objet d'expérience à un monstre".
 

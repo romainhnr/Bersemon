@@ -2751,7 +2751,14 @@ impl Partie {
             Tresor::Pierre(pierre) => self.trouver_pierre(pierre),
             Tresor::Booster(booster) => self.trouver_booster(booster),
             Tresor::CapsuleDHabilete => self.trouver_capsule_d_habilete(),
+            Tresor::ObjetDExperience(objet) => self.trouver_objet_d_experience(objet),
         }
+    }
+
+    /// Il va dans le sac, sans y prendre de place, faute de pouvoir l'en
+    /// jeter, et se perd avec lui (section 14.3, hypothèse retenue, Q125).
+    pub fn trouver_objet_d_experience(&mut self, objet: ObjetDExperience) {
+        self.sac.ajouter_objets_d_experience(objet, 1);
     }
 
     /// La Tour sans fond s'ouvre quand la Lisière est menée au bout
@@ -3208,14 +3215,18 @@ impl Partie {
 
     /// Après la victoire, l'Apôtre ne réapparaît plus ; il ne se capture
     /// pas, mais sa fiche s'ouvre au codex et le joueur garde son âme
-    /// (section 9.4). Il laisse aussi un Philtre chromatique, qui va dans le sac
-    /// (section 14.3).
-    pub fn noter_apotre_vaincu(&mut self, apotre: &Apotre) {
-        if !self.est_vaincu(apotre) {
+    /// (section 9.4). La première fois, il laisse aussi un objet
+    /// d'expérience, qui va dans le sac et que la fonction rend ; un Philtre
+    /// chromatique avant l'étape 211 (section 14.3).
+    pub fn noter_apotre_vaincu(&mut self, apotre: &Apotre) -> Option<ObjetDExperience> {
+        let objet = (!self.est_vaincu(apotre)).then(|| {
             self.apotres_vaincus.push(apotre.espece().id().clone());
-            self.sac.ajouter_philtres_chromatiques(1);
-        }
+            let objet = ObjetDExperience::d_un_apotre(apotre.niveau().valeur());
+            self.sac.ajouter_objets_d_experience(objet, 1);
+            objet
+        });
         self.codex.noter_capture(apotre.espece().id());
+        objet
     }
 
     /// Rend `true` si le conseil n'avait encore jamais été montré : c'est le
@@ -6254,7 +6265,14 @@ pub(crate) mod tests {
             .remettre(Personnage::Malvoise, quetes, zones, piste)
             .unwrap();
         assert!(!partie.possede_l_objet_de_quete(&psautier));
-        assert_eq!(partie.coffre_du_camp.philtres_chromatiques(), 1);
+        // Deux Fioles de mémoire à la place du Philtre depuis l'étape 211.
+        assert_eq!(partie.coffre_du_camp.philtres_chromatiques(), 0);
+        assert_eq!(
+            partie
+                .coffre_du_camp
+                .nombre_d_objets_d_experience(ObjetDExperience::Fiole),
+            2
+        );
     }
 
     /// Section 13.13 : la dernière quête de Gunther raccourcit ses travaux
