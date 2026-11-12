@@ -398,6 +398,19 @@ fn illustration(
             .collection()
             .monstre(emplacement)
             .map(|monstre| Illustration::Seul(Portrait::de(monstre))),
+        // Les personnages du camp, sur leurs écrans (étape 216).
+        (
+            Attente::Camp,
+            Vue::Marchand
+            | Vue::Vente
+            | Vue::Transformation
+            | Vue::Achats
+            | Vue::Locations
+            | Vue::Capsules
+            | Vue::Rite(_),
+        ) => Some(personnage("personnage-malvoise")),
+        (Attente::Camp, Vue::Forge | Vue::Machines) => Some(personnage("personnage-gunther")),
+        (Attente::Camp, Vue::Peche) => Some(personnage("personnage-ansgar")),
         // Le héros, sur son écran et ceux qui en partent, avec sa couleur
         // (section 4.5).
         (Attente::Camp, Vue::Heros | Vue::Equipement | Vue::Succes(_) | Vue::Trophees) => {
@@ -409,6 +422,14 @@ fn illustration(
         }
         _ => None,
     }
+}
+
+fn personnage(id: &str) -> Illustration {
+    Illustration::Seul(Portrait {
+        espece: EspeceId::new(id),
+        shiny: false,
+        couleur: None,
+    })
 }
 
 /// Les combattants actifs, celui du joueur à gauche, vus par le joueur.

@@ -623,6 +623,23 @@ const SPRITES_HORS_CODEX: [(&str, &str); 1] = [(
     include_str!("../sprites/marchand-zombie.txt"),
 )];
 
+/// Les personnages du camp, sans palette shiny, montrés sur leurs écrans
+/// (étape 216).
+const SPRITES_DU_CAMP: [(&str, &str); 3] = [
+    (
+        "personnage-malvoise",
+        include_str!("../sprites/camp/malvoise.txt"),
+    ),
+    (
+        "personnage-gunther",
+        include_str!("../sprites/camp/gunther.txt"),
+    ),
+    (
+        "personnage-ansgar",
+        include_str!("../sprites/camp/ansgar.txt"),
+    ),
+];
+
 const SPRITES_DES_HUMAINS: [(&str, &str); 29] = [
     (
         "heros-guerrier",
@@ -1029,6 +1046,7 @@ pub fn sprite(espece: &EspeceId) -> Option<Sprite> {
         .iter()
         .chain(&SPRITES_DES_HUMAINS)
         .chain(&SPRITES_HORS_CODEX)
+        .chain(&SPRITES_DU_CAMP)
         .find(|(id, _)| *id == espece.as_str())?;
     Sprite::lire(texte).ok()
 }
@@ -1135,6 +1153,7 @@ mod tests {
             .iter()
             .chain(&SPRITES_DES_HUMAINS)
             .chain(&SPRITES_HORS_CODEX)
+            .chain(&SPRITES_DU_CAMP)
         {
             Sprite::lire(texte).unwrap_or_else(|erreur| panic!("{id} : {erreur}"));
         }
@@ -1267,6 +1286,7 @@ mod tests {
             .iter()
             .chain(&SPRITES_DES_HUMAINS)
             .chain(&SPRITES_HORS_CODEX)
+            .chain(&SPRITES_DU_CAMP)
         {
             let espece = EspeceId::new(*id);
             let sprite = sprite(&espece).unwrap();

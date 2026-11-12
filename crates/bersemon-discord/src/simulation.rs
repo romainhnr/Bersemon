@@ -1017,6 +1017,15 @@ fn le_sprite_suit_la_fiche_ouverte_au_camp() {
         sprite(&mut joueurs, Vue::Equipement, &[]),
         Some("heros-mage".to_string())
     );
+    // Les personnages du camp, sur leurs écrans (étape 216).
+    for (vue, personnage) in [
+        (Vue::Marchand, "personnage-malvoise"),
+        (Vue::Achats, "personnage-malvoise"),
+        (Vue::Forge, "personnage-gunther"),
+        (Vue::Peche, "personnage-ansgar"),
+    ] {
+        assert_eq!(sprite(&mut joueurs, vue, &[]), Some(personnage.to_string()));
+    }
     let salamandre = Some("salamandre".to_string());
     assert_eq!(
         sprite(
