@@ -1,50 +1,44 @@
 # Requin noir
 palette
 o 1b1420
-b 4e353a
-c 342226
-d 6d5056
-m a18199
-r 505fa3
-g b0b5c3
-k 1b1420
-w 70614b
-x 564a35
-z b19577
+b 3e3e4e
+c 282832
+d 5c5c70
+w c8c8d4
+v 9a9aa8
+e e8f0ff
+r a82a30
 shiny
 o 1b1420
-b 425b51
-c 2b3d36
-d 5c7c6f
-m 8ab6a6
-r ba5fa8
-g b0b5c3
-k 1b1420
-w 70614b
-x 564a35
-z b19577
+b 4e493e
+c 322f28
+d 706a5c
+w d4d0c8
+v a8a49a
+e fff0e8
+r 2aa87c
 dessin
 ........................
-........o...............
-.......omooooo..........
-........omdrddoo........
-........ocbbbbcco.......
-........ocbbkkkooooo....
-o........ocdooomdrddoo..
-mooooo..ocbdo.ocbbbbcco.
-omdrddooocbco.ocbbkkko..
-ocbbbbccocdo...ocdooo...
-ocbbkkkocbdo...ocdo.....
-.ocdoooocbco...ocdo.....
-.ocdo..ocdo....ocdo.....
-.ocdo..ocdo....ocdo.....
-.ocdo..ocbdo...ocdo.....
-.ocbdo.ocbdo..ocbco.....
-..ocbdooocdooocbdo......
-..ocbdocdbbdddbbco......
-...ocbdbbbbbbbbdoo......
-.ooocbbbbbbbbbbbczoooo..
-oxzzzccbbbbbbbccwwzzzzo.
-xwwwwwwcccccccwwwwwwwwxo
-oxxxxwwwwwwwwwwwwwxxxxo.
-.ooooxxxxxxxxxxxxxoooo..
+........................
+........................
+........................
+........................
+........................
+........................
+........................
+.........o..............
+........oco.............
+.......ocbco............
+......ocbbco.........oo.
+....oocbbbcoo.......occo
+..ooccbbbbbccooo...ocbco
+.occbbbbbbbbbbccooocbbco
+ocbebbbbbbbbbbbbbccbbbco
+obbbbbbbbbbbbbbbbbbbbbco
+obbbbbbddbbbbbbbbbbbbco.
+orwrwrbbbdddbbbbbbbbbco.
+.orrrrbbvwwwddddbbbbbcco
+..owwwwwwwwwwwwwwvbbcbbc
+...ovwwwwwwwwwwwvccoocbc
+....ooooccoocwwcooo..occ
+........oo..occo......oo

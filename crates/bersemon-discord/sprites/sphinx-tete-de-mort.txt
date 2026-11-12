@@ -1,48 +1,44 @@
 # Sphinx tête-de-mort
 palette
 o 1b1420
-a b09153
-e 7c6a52
-f d3ac51
-g 7c5631
-b 73604d
-c 4f4338
-d 977a54
-k 1b1420
-y c7b032
+b 5a4232
+c 3a2a20
+d 7a5c44
+y e8b830
+w efe2b8
+k 1a1410
+a 6a5444
 shiny
 o 1b1420
-a 4a70b0
-e 495772
-f 4d92d2
-g 97335f
-b 484f60
-c 313742
-d 546284
-k 1b1420
-y b036cd
+b 32565a
+c 20383a
+d 44727a
+y 3097e8
+w b8d5ef
+k 10191a
+a 44656a
 dessin
-............o...........
-........o..oyo..o.......
-..o....oco..o..oco...o..
-.oeo....oco...oco...oeo.
-.ofeo...occo.occo..ofeo.
-.ofaeo...ocoooco.oofaeo.
-.ofaaeoo..ocbco.offaaeo.
-ofaagggeo.okbboofagggeo.
-ofaagkgaeoobbbofaagkgaeo
-ofaagggaaeodbcfaaagggaeo
-ofaaaaaaaaedbcaaaaaaaaeo
-oeaaaaaaaaedbcaaaaaaaaeo
-.oeaaaaaaaedbcaaaaaaeeo.
-..oeeaaeaaedbcaaeaaeoo..
-...ooeeofaedbcaeofeo....
-.....offaaedbcaafeo.....
-....oeaaaaedbcaaaaeo....
-...o.ofaaeocbcaaaeo..o..
-..oyoofaeo.ocoeaaeo.oyo.
-...o.oeeo...o.oeaeo..o..
-......oo.......oeo......
-................o.......
 ........................
 ........................
+........................
+........................
+........................
+........................
+........................
+........................
+........................
+..........a..a..........
+.oooo.....oaao.....oooo.
+obbbboo..owwwwo..oobbbbo
+obbbbbboowkwwkwoobbbbbbo
+obybbbbbowwkkwwobbbbbybo
+obbybbbbbbwwwwbbbbbybbbo
+obbbybbbbbcyycbbbbybbbbo
+.obbbbybbbckkcbbybbbbbo.
+..obbbbbbbcyycbbbbbbbo..
+...obbbbbbckkcbbbbbbo...
+..odddbbbbcyycbbbbdddo..
+.oddyddbbbckkcbbbddyddo.
+.odyyydddocyycodddyyydo.
+.oddyyddoockkcooddyyddo.
+..oddddo..occo..oddddo..

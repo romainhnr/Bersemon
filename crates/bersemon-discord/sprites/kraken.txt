@@ -1,52 +1,42 @@
 # Kraken
 palette
 o 1b1420
-b d75f5c
-c 9b4d4b
-d ee7e79
-a 891836
-e 5b0d21
-s be3771
-u 803356
-v e94489
-k 1b1420
-y f38f4d
-z 3eeadb
+b a83a5a
+c 7a2440
+d d0607c
+s f0a0b4
+y f0e040
+k 1a1010
 shiny
 o 1b1420
-b 394b57
-c 24323c
-d 526876
-a 10d773
-e 117c4b
-s 6dbb53
-u 4e7f43
-v 84e067
-k 1b1420
-y f38f4d
-z 3eeadb
+b 3aa867
+c 247a44
+d 60d092
+s a0f0c4
+y 4085f0
+k 101a17
 dessin
 ........................
 ........................
-...................o....
-.......ooooo......ozo...
-....ooocddddoo.....o.o..
-...oacdabbabdao.....ozo.
-...oabbabbabbado.....o..
-..ocabbacbabbabdo.....o.
-..ocaacccccabaado....ozo
-.ocbbaceeecabbabdo....o.
-.ocbbcceeeccbbabdo......
-.ocbbaceeecabbabduoo....
-.ocbbacccccabbauvsvvo...
-.ocbbabbcbbabbausskyo...
-..ocbaabaabaabusssssuo..
-..ocbbabbabbabbusssvsoo.
-...ocbabbabbabcuususosso
-....ocabbabbacososoosoos
-.....oocccccooososooso.o
-.......ooooo.ossoso.oso.
-.............oso.osooso.
-.............oso.oso.oso
-..............o..oso..o.
-..................o.....
+........................
+.........oooooo.........
+.......oobbbbbboo.......
+......obbdddbbbbbo......
+.....obddbbbbbbbbco.....
+....obddbbbbbbbbbbco....
+....obdbbbbbbbbbbbco....
+....obbbbbbbbbbbbbco....
+....obyyybbbbbyyybco....
+....obykkbbbbbbkkybco...
+.....obbbbbbbbbbbbco....
+....oocbbbbbbbbbbcco....
+...obbocbbbbbbbbcobbo...
+..obsbobbcbbbbcbbobsbo..
+.obsbobsbobbbbobsbobsbo.
+.obboobbobsbbsbobboobbo.
+.obsbobsbobbobbobsbobsbo
+..obboobbobsosbobboobbo.
+...obsobsbobobobsbosbo..
+...obboobbobbobbobboo...
+....obsoobsobosbosbo....
+.....obboobooobobbo.....
