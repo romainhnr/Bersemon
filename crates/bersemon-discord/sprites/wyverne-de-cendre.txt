@@ -1,46 +1,82 @@
 # Wyverne de cendre
 palette
 o 1b1420
-a 5a4a4a
-e 3a2e2e
-f 7e6a6a
-b 4a4046
-c 2e282c
-d 6a5e64
-y ffb030
-j ff6a20
+a 2e2c30
+b 4b484e
+c 6e6a72
+d a29fa5
+e 3c0f19
+f 601a19
+g 8c3a26
+h cd7a5d
+i f07a1c
+j f8c23c
+k a39a86
+l d6cdb6
+m efe8d6
+n fffaf0
 shiny
 o 1b1420
-a c8c0b8
-e 948c84
-f ece6e0
-b b0a8a0
-c 7c746c
-d d8d0c8
-y 60e0ff
-j 40a0ff
+a 72392c
+b b67d4a
+c d8c8a0
+d e5dcc4
+e 172543
+f 27436b
+g 3a6a9c
+h 78b5c8
+i 3c9af0
+j 7cd4f8
+k bba369
+l b6bfd6
+m d6ddef
+n f0f5ff
 dessin
-.............oeooo......
-.............oeffeooo...
-............ofeaaaffeoo.
-....o.o.....oeeaaaaaafeo
-...ococo....oeaaaaaaaeo.
-..oddco....ofeaaaaaeeo..
-.odybbco...ofeaaaaeeo...
-odbbbbbco..ofeaaaeeeo...
-occbbbco..ofeeaaaeaaeo..
-joocccbco.oeeaaaeeaaeeo.
-ojoooodcooooeeeaeeeeoo..
-.o...ocbdddddddceooo....
-......odbbbbbjbbco......
-......odbbbbbbbbbco.....
-......odbbbbbbbjbco.....
-......ocbbbjbbbbbco.....
-.......ocbbbbbbbbco.....
-........ocbcccbbcbco....
-.........ocooodcocbco...
-.........oco.odcoocbco..
-.........oco.odco.ocbco.
-........occcocccco.occo.
-.........ooo.oooo...oo..
-........................
+.............o.....................oo...........
+............olo............o....oooccoo.........
+...........omlo..o........omoooocccchhho........
+...........olkooolo.......omogdccbhhhhhho.......
+..........omllomllo.....oogddddchhhhhhhhho......
+.........ommkollko....ooggdddcccchhhhhhggho.....
+......oooommlolkko...oggggdcccbbbccccchggghoo...
+....oodddllllllko....oggggdcbbchhhbbbbbcccchho..
+...odddddddkkkko......ogggdcbhbchggghggggbbbcco.
+..odddddccccckko......ogggdcchhbdggggggggggfffo.
+.odddojccccccbo.......ogggdccbhgbdgggggggggffeo.
+ojdddcccccccbbo........ogfdccbhggbdggggggggffeo.
+oddcccccccbbbao........oggdbcbggggbdgggggggffeo.
+oacccaacbbbbaao........ofddbhbgggggbcfgggggfffo.
+ocaaabbbbbaaaao.........odcbhdggggggbcfffgffffeo
+.onbnbaaaaaddbo.........odcbhdbggggffacfffffffeo
+..ooooooodddccao........odcbggbggggffffceffffeeo
+.........oddccbo........odcbggcgggffffeebefffeeo
+.........oddcjcao.......odbbggdgggffffeeeoeefeeo
+.........oddcccco......oodbgggdbgfffffeeo.oeeeeo
+..........odcccccoo.ooodddbgggfbgfffeeeo...ooeeo
+..........oddccccddodddddcbggffcffffeeeo.....oo.
+...........odccjcbdddddddcbggfeeeeffeeo.........
+...........occccbbbcdddddcbggfeaaaeeeo..........
+............occcbbbbccddccbgffeaccaeeo..........
+.............obcbbbbbbbdcbbffeeacccao...........
+..............obbbbbabaccccafeacccbbo...........
+...............obbbaaaacccjcaeaccbbao...........
+...............odaaaaadddccjcaccbbbao...........
+...............oddaajddddcccccbjbbbadoo.........
+................odccdjdcccbccbbbbbaadddo........
+................oddcdddcccbbbbbbbbaaddddo.......
+................occddcdddabbbbbbaaaccccddo......
+.................occdddccbabbbbbaaabjccccco.....
+..................obcdcccbabaaaaaaabbcccccbo....
+...................oddccbbaaaaaaaoooabccccbo....
+...................odccbbaaaaabaao..oobcjccao...
+..................oddccbooooocbaao....oaccbbo...
+..................oddcbbo....obaao.....oabbbao..
+..................oddcbo....occaao......oabbbo..
+..................oddcbo....ocbaao.......oabaao.
+..................oddcbo....ocbao.........obaaio
+...................occbao...ocaao..........oiiio
+...................odcbao..occao..........oiiiio
+...................oocbao..obbao..........oiiiio
+..................ommcmamoombamo...........oiiio
+...................oooooo..oooo............oiiio
+............................................ooo.

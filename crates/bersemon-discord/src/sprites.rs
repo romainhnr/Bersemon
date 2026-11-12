@@ -1,7 +1,8 @@
 //! Sprites des monstres et des humains (section 5.1) : pour chaque espèce,
-//! chaque classe de héros et chaque humain de l'IA, une grille de 24 x 24
+//! chaque classe de héros et chaque humain de l'IA, une grille de 48 x 48
 //! pixels avec sa palette, écrite en texte dans
-//! `crates/bersemon-discord/sprites/`. Le bot la rend en PNG agrandi, joint
+//! `crates/bersemon-discord/sprites/`. Les icônes des attaques, au même
+//! format, gardent une grille de 24 x 24. Le bot la rend en PNG agrandi, joint
 //! à son message, seule ou à côté d'autres. Le PNG est écrit à la main, sans
 //! crate : une image à palette, non compressée, suffit pour quelques
 //! dizaines de kilo-octets.
@@ -9,7 +10,7 @@
 //! Format d'un fichier : des lignes de commentaire qui commencent par `#`,
 //! puis `palette`, une couleur par ligne (`b 8a8a92` : un caractère et sa
 //! couleur en hexadécimal), `shiny`, les mêmes caractères avec leurs couleurs
-//! shiny, et enfin `dessin`, 24 lignes de 24 caractères, où `.` est
+//! shiny, et enfin `dessin`, 48 lignes de 48 caractères, où `.` est
 //! transparent. Un humain de l'IA, jamais shiny, n'a pas de section
 //! `shiny` ; un héros de joueur, qui peut l'être, en a une. Un héros a aussi,
 //! entre `shiny` et `dessin`, une palette par couleur du héros (`cendre`,
@@ -21,14 +22,20 @@ use std::fmt;
 use bersemon_core::espece::EspeceId;
 use bersemon_core::succes::CouleurDuHeros;
 
-/// Côté de la grille, en pixels.
-pub const COTE: usize = 24;
-/// Chaque pixel de la grille devient un carré de 6 x 6 : 144 pixels de côté
-/// sur Discord.
-pub const ECHELLE: usize = 6;
+/// Côté de la grille d'un sprite, en pixels (étape 218).
+pub const COTE: usize = 48;
+/// Côté de la grille d'une icône d'attaque, et des sprites d'avant l'étape
+/// 218.
+pub const COTE_D_ICONE: usize = 24;
+/// Côté d'un sprite sur Discord, en pixels : chaque pixel d'une grille de
+/// 48 devient un carré de 3 x 3.
+pub const COTE_AFFICHE: usize = 144;
+/// Côté d'une icône d'attaque téléversée comme émoji, sous les 128 pixels
+/// que Discord recommande (étape 210).
+const COTE_D_ICONE_AFFICHE: usize = 120;
 const TRANSPARENT: char = '.';
-/// Écart entre deux sprites d'une même image, en pixels de la grille.
-const ECART: usize = 4;
+/// Écart entre deux sprites d'une même image, en pixels de l'image.
+const ECART: usize = 24;
 /// Une image en montre au plus quatre, les quatre classes au choix de la
 /// classe ; avec 63 couleurs chacun, ils tiennent dans les 256 couleurs d'un
 /// PNG à palette, l'indice 0 restant transparent.
@@ -760,7 +767,10 @@ impl fmt::Display for ErreurSprite {
                 )
             }
             ErreurSprite::TropDeCouleurs => write!(f, "plus de {COULEURS_MAX} couleurs"),
-            ErreurSprite::TailleIncorrecte => write!(f, "le dessin doit faire {COTE} x {COTE}"),
+            ErreurSprite::TailleIncorrecte => write!(
+                f,
+                "le dessin doit faire {COTE} x {COTE}, ou {COTE_D_ICONE} x {COTE_D_ICONE}"
+            ),
             ErreurSprite::CaractereSansCouleur(caractere) => {
                 write!(f, "caractère sans couleur : {caractere}")
             }
@@ -780,7 +790,7 @@ pub struct Sprite {
     /// Pour un héros de joueur : ses couleurs, chacune avec sa palette
     /// (section 4.5).
     couleurs: Vec<(CouleurDuHeros, Palette)>,
-    /// `COTE` lignes de `COTE` caractères.
+    /// Un carré de `COTE` ou de `COTE_D_ICONE` caractères de côté.
     dessin: Vec<Vec<char>>,
     /// Le dessin de la couleur royale, qui couronne le héros.
     couronne: Option<Vec<Vec<char>>>,
@@ -874,8 +884,12 @@ impl Sprite {
         if palette.len() > COULEURS_MAX {
             return Err(ErreurSprite::TropDeCouleurs);
         }
+        let cote = dessin.len();
+        if cote != COTE && cote != COTE_D_ICONE {
+            return Err(ErreurSprite::TailleIncorrecte);
+        }
         for grille in std::iter::once(&dessin).chain(couronne.iter()) {
-            if grille.len() != COTE || grille.iter().any(|ligne| ligne.len() != COTE) {
+            if grille.len() != cote || grille.iter().any(|ligne| ligne.len() != cote) {
                 return Err(ErreurSprite::TailleIncorrecte);
             }
             if let Some(sans_couleur) = grille
@@ -893,6 +907,11 @@ impl Sprite {
             dessin,
             couronne,
         })
+    }
+
+    /// Le côté de la grille, en pixels.
+    fn cote(&self) -> usize {
+        self.dessin.len()
     }
 
     #[cfg(test)]
@@ -948,27 +967,28 @@ impl Sprite {
 /// chaque sprite dans l'ordre de son fichier. Une case vide reste
 /// transparente.
 pub fn png_cote_a_cote(cases: &[Option<Case<'_>>]) -> Vec<u8> {
-    png_a_l_echelle(cases, ECHELLE)
+    png_de_cote(cases, COTE_AFFICHE)
 }
 
-/// Une icône d'attaque, téléversée comme émoji : agrandie 5 fois, 120
-/// pixels de côté, sous les 128 que Discord recommande (étape 210).
+/// Une icône d'attaque, téléversée comme émoji (étape 210).
 pub fn png_d_icone(icone: &Sprite) -> Vec<u8> {
-    png_a_l_echelle(
+    png_de_cote(
         &[Some(Case {
             sprite: icone,
             shiny: false,
             couleur: None,
             retourne: false,
         })],
-        5,
+        COTE_D_ICONE_AFFICHE,
     )
 }
 
-fn png_a_l_echelle(cases: &[Option<Case<'_>>], echelle: usize) -> Vec<u8> {
+/// Chaque case fait `cote` pixels de côté dans l'image, quelle que soit la
+/// grille de son sprite, dont chaque pixel devient un carré.
+fn png_de_cote(cases: &[Option<Case<'_>>], cote: usize) -> Vec<u8> {
     debug_assert!(cases.len() <= CASES_MAX, "au plus {CASES_MAX} sprites");
-    let largeur = cases.len() * COTE + cases.len().saturating_sub(1) * ECART;
-    let mut grille = vec![vec![0_u8; largeur]; COTE];
+    let largeur = cases.len() * cote + cases.len().saturating_sub(1) * ECART;
+    let mut image = vec![vec![0_u8; largeur]; cote];
     let mut plte = vec![0, 0, 0];
     let mut trns = vec![0];
     for (position, case) in cases.iter().enumerate() {
@@ -981,32 +1001,38 @@ fn png_a_l_echelle(cases: &[Option<Case<'_>>], echelle: usize) -> Vec<u8> {
             plte.extend_from_slice(couleur);
             trns.push(255);
         }
-        let gauche = position * (COTE + ECART);
-        for (ligne, caracteres) in grille.iter_mut().zip(case.sprite.dessin(case.couleur)) {
-            for (x, c) in caracteres.iter().enumerate() {
-                let Some(rang) = palette.iter().position(|(k, _)| k == c) else {
-                    continue;
+        let dessin = case.sprite.dessin(case.couleur);
+        let grille = case.sprite.cote();
+        debug_assert!(
+            cote % grille == 0,
+            "{cote} pixels pour une grille de {grille}"
+        );
+        let echelle = cote / grille;
+        let gauche = position * (cote + ECART);
+        for (y, ligne) in image.iter_mut().enumerate() {
+            for x in 0..cote {
+                let colonne = x / echelle;
+                let colonne = if case.retourne {
+                    grille - 1 - colonne
+                } else {
+                    colonne
                 };
-                let x = if case.retourne { COTE - 1 - x } else { x };
-                ligne[gauche + x] = (premier + rang) as u8;
+                let caractere = dessin[y / echelle][colonne];
+                if let Some(rang) = palette.iter().position(|(k, _)| *k == caractere) {
+                    ligne[gauche + x] = (premier + rang) as u8;
+                }
             }
         }
     }
-    let mut lignes = Vec::with_capacity(COTE * echelle * (largeur * echelle + 1));
-    for ligne in &grille {
-        let pixels: Vec<u8> = ligne
-            .iter()
-            .flat_map(|indice| std::iter::repeat_n(*indice, echelle))
-            .collect();
-        for _ in 0..echelle {
-            // Filtre 0 : la ligne telle quelle.
-            lignes.push(0);
-            lignes.extend_from_slice(&pixels);
-        }
+    let mut lignes = Vec::with_capacity(cote * (largeur + 1));
+    for ligne in &image {
+        // Filtre 0 : la ligne telle quelle.
+        lignes.push(0);
+        lignes.extend_from_slice(ligne);
     }
     let mut ihdr = Vec::with_capacity(13);
-    ihdr.extend_from_slice(&((largeur * echelle) as u32).to_be_bytes());
-    ihdr.extend_from_slice(&((COTE * echelle) as u32).to_be_bytes());
+    ihdr.extend_from_slice(&(largeur as u32).to_be_bytes());
+    ihdr.extend_from_slice(&(cote as u32).to_be_bytes());
     // 8 bits par pixel, couleurs à palette, sans entrelacement.
     ihdr.extend_from_slice(&[8, 3, 0, 0, 0]);
     let mut png = vec![0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a];
@@ -1216,8 +1242,8 @@ mod tests {
 
     /// Chaque monstre a son propre dessin (étape 213, demande de
     /// l'utilisateur) : deux sprites de monstres, même l'un retourné,
-    /// diffèrent par au moins 120 cases sur 576. Une copie recolorée n'en
-    /// diffère d'aucune ; les plus proches, deux chevaux, de 147.
+    /// diffèrent par au moins 5 cases sur 24, soit 480 sur 2 304. Une copie
+    /// recolorée n'en diffère d'aucune.
     #[test]
     fn chaque_monstre_a_son_propre_dessin() {
         let dessins: Vec<(&str, Vec<Vec<char>>)> = SPRITES
@@ -1227,6 +1253,12 @@ mod tests {
             .collect();
         for (rang, (un, dessin)) in dessins.iter().enumerate() {
             for (autre, autre_dessin) in &dessins[rang + 1..] {
+                let cote = dessin.len();
+                // Deux grilles de tailles différentes ne se comparent pas :
+                // l'une des deux est d'avant l'étape 218.
+                if autre_dessin.len() != cote {
+                    continue;
+                }
                 let differences = |retourne: bool| -> usize {
                     dessin
                         .iter()
@@ -1236,7 +1268,7 @@ mod tests {
                                 .iter()
                                 .enumerate()
                                 .filter(|(x, c)| {
-                                    let x = if retourne { COTE - 1 - x } else { *x };
+                                    let x = if retourne { cote - 1 - x } else { *x };
                                     autre_ligne[x] != **c
                                 })
                                 .count()
@@ -1244,7 +1276,7 @@ mod tests {
                         .sum()
                 };
                 assert!(
-                    differences(false).min(differences(true)) >= 120,
+                    differences(false).min(differences(true)) >= cote * cote * 5 / 24,
                     "{un} et {autre}"
                 );
             }
@@ -1371,7 +1403,7 @@ mod tests {
                 retourne: false,
             }),
         ]);
-        let largeur = (2 * COTE + ECART) * ECHELLE;
+        let largeur = 2 * COTE_AFFICHE + ECART;
         assert_eq!(&png[16..20], &(largeur as u32).to_be_bytes());
         assert_eq!(&png[20..24], &144_u32.to_be_bytes());
         // PLTE : le transparent, la couleur shiny du premier, puis celle du
@@ -1384,13 +1416,14 @@ mod tests {
         let debut = 8 + 25 + 21 + 15 + 8 + 2 + 5;
         assert_eq!(&png[debut - 4 - 2 - 5..debut - 2 - 5], b"IDAT");
         let ligne = &png[debut + 1..debut + 1 + largeur];
-        let colonne = |x: usize| ligne[x * ECHELLE];
+        let echelle = COTE_AFFICHE / COTE;
+        let colonne = |x: usize| ligne[x * echelle];
         // Le premier, retourné, a son pixel au bord droit de sa case ; le
         // second, au bord gauche de la sienne.
         assert_eq!(colonne(0), 0);
         assert_eq!(colonne(COTE - 1), 1);
         assert_eq!(colonne(COTE), 0);
-        assert_eq!(colonne(COTE + ECART), 2);
+        assert_eq!(ligne[COTE_AFFICHE + ECART], 2);
         // Une case vide reste transparente.
         let seul = png_cote_a_cote(&[
             None,
