@@ -1,46 +1,40 @@
 # Mammouth fantôme
 palette
 o 1b1420
-b 676c7c
-c 434651
-d 9295a2
-a afb0ae
-e 767774
-f e6e6e5
-w ffffff
-y a2bac4
+b 8ca0b8
+c 6a7e98
+d b0c4d8
+w f0ead8
+e 70f0ff
 shiny
 o 1b1420
-b 60595e
-c 3d383c
-d 8a8388
-a adadc4
-e 61618d
-f f5f4f8
-w ffffff
-y e9e2d6
+b d3abc8
+c a587a1
+d ffd0f0
+w fff6ff
+e efe6ff
 dessin
 ........................
 ........................
-...........oo...........
-..........ofeoo...oo....
-.oo.....oofaafeooofeo...
-oaao...oaaaaaaafffaaeo..
-oaaao..oaaaaaaaaaaaaeo..
-.oaao..oaaaaaaaaaaaaeo..
-.oaaaooaaaeeeeeeeeeeeeo.
-..oaaooaaddddddddddddco.
-..oaaadaabbbbbbbbbbbbbco
-.odbaabaabbbbbbbbbbbbbco
-.odybbbbbbbbbbbbbbbbbbbc
-ocbbbbbbbbbbbbbbbbbbbbco
-.odbbbbbbbbbbbbbbbbbbbco
-.ocbbbbbbbbbbbbbbbbbbco.
-.owccwcbbbbbbbbbbbbbbbco
-.owoowodbbbbbbbbbbbbbbco
-owo.owodbbbcbbbccbbbbbco
-owo.owodbbcodbcoodbbbbco
-.o...oodbbcodbcoodbbbbco
-......odbbcodbcoodbbccco
-......occccocccoocccooo.
-.......oooo.ooo..ooo....
+........................
+........................
+........................
+........................
+........ooooooooo.......
+......oobbbbbbbbboo.....
+.....obbdddbbbbbbbboo...
+....obbdbbbbbbbbbbbbbo..
+...obbdbbbbbbbbbbbbbbbo.
+...obbbbbbbbbbbbbbbbbbco
+..obbebbbbbbbbbbbbbbbbco
+..obbbbbbbbbbbbbbbbbbbco
+.obbbbbbbbbbbbbbbbbbbbco
+owwbbbbbbbbbbbbbbbbbbcco
+woowbbbbcbbbbbbbbbbbbcco
+wo.obbbcbbbbbbbbbbbbccco
+owoobbbcbbccbbbbbccbcco.
+.owwobbcbbccbbbbbccbcco.
+..oobbccobbcooooobbcbco.
+...obbcoobbco...obbcoco.
+....ooo.obbco...obbcoo..
+.......occcco..occcco...

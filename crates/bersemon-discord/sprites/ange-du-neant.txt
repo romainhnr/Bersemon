@@ -1,48 +1,48 @@
 # Ange du néant
 palette
 o 1b1420
-a 2b302b
-e 1b1f1a
-f 3e463e
-b 8aa48d
-c 6b7c6a
-d 92c592
-m 7e7fb1
-y 65be8f
-p 3d827d
+y fff0a0
+b 2a2234
+c 1a1422
+d 44384e
+p e8dcd8
+k 1a1010
+w f8f8ff
+l c8b0ff
+r 3e2e50
 shiny
 o 1b1420
-a a3b19a
-e 7f8978
-f b2b2b2
-b 2d3b2e
-c 1c241d
-d 435145
-m 6a6a92
-y 6134a1
-p a19334
+y a0ccff
+b 313422
+c 202214
+d 494e38
+p d8e8e7
+k 101a17
+w fffdf8
+l ffffb0
+r 4a502e
 dessin
 ........................
 ........................
-...o.....o.ooo......o...
-..oeo...oyoyyyo....oeo..
-..oefo.oyoooooyo..oefo..
-..oeafoooommmoo.ooeaafo.
-.oeaoaffommmmmooefaoafo.
-.oeaaaaafmpmpmoeaaaaaeo.
-..oeaaaaammmmmeaaaaaeo..
-...oeoaaaammmeaaaoafo...
-...oeaaaacdddddaaaafo...
-..oeaaaamcbbbbmeaaaafo..
-..oeeeemmcbcbbmmeeeeeo..
-...oooomcbbcbbbmooooo...
-......omcbbcbbbmo.......
-.....ommcbbcbbbmmo......
-.....omocbbcbbbdmo......
-......oocbbcbbbdo.......
-.......ocbbcbbbdo.......
-......ocbbbcbbbbdo......
-......ocbbbcbbbbdo......
-......occcccccccco......
-.......oooooooooo.......
 ........................
+.........ooooo..........
+........oyyyyyo.........
+oo.....oyoooooyo.....oo.
+bbo.....oyyyyyo.....obbo
+bbbo.....opppo.....obbbo
+dbbbo...opkpkpo...obbbdo
+odbbbo..opppppo..obbbdo.
+oddbbboo.opppo.oobbbddo.
+.oddbbbborrrrrobbbbddoo.
+..oddbbbbrrrrrbbbbddolwo
+...oddbbrrrrrrrbbddoolo.
+....oddrrrrrrrrrddo.olo.
+.....orrrrrrrrrrroooolo.
+.....orrrrrrrrrrrrppplo.
+.....orrrrrrrrrrrrooolo.
+.....orrrrrrrrrrrro..o..
+....orrrrrrrrrrrrro.....
+....orrrrrrrrrrrrrro....
+....orrrrrrrrrrrrrro....
+...orrrrrrrrrrrrrrrro...
+...occcccccccccccccco...
