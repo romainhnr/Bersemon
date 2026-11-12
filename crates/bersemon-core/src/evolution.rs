@@ -280,12 +280,12 @@ mod tests {
             None
         );
         let vers = evolution_possible(&salamandre(&contenu, 16), &AU_CAMP, &contenu).unwrap();
-        assert_eq!(vers.id().as_str(), "lezard-de-braise");
+        assert_eq!(vers.id().as_str(), "athanor");
         assert!(evolution_possible(&salamandre(&contenu, 40), &AU_CAMP, &contenu).is_some());
         // Sa forme évoluée n'évolue pas encore (section 5.4).
-        let mut lezard = salamandre(&contenu, 16);
-        faire_evoluer(&mut lezard, vers);
-        assert_eq!(evolution_possible(&lezard, &AU_CAMP, &contenu), None);
+        let mut athanor = salamandre(&contenu, 16);
+        faire_evoluer(&mut athanor, vers);
+        assert_eq!(evolution_possible(&athanor, &AU_CAMP, &contenu), None);
     }
 
     #[test]
@@ -311,13 +311,13 @@ mod tests {
         let pv = monstre.pv_actuels();
         let vers = evolution_possible(&monstre, &AU_CAMP, &contenu).unwrap();
         faire_evoluer(&mut monstre, vers);
-        assert_eq!(monstre.espece().id().as_str(), "lezard-de-braise");
+        assert_eq!(monstre.espece().id().as_str(), "athanor");
         assert_eq!(monstre.nom(), "Braise");
         assert_eq!(monstre.niveau(), niveau(16));
         assert_eq!(monstre.experience(), experience);
         assert_eq!(monstre.valeurs_internes(), &valeurs);
         assert!(!monstre.est_shiny());
-        // Seconde habileté de la Salamandre, seconde du Lézard de braise.
+        // Seconde habileté de la Salamandre, seconde de l'Athanor.
         assert_eq!(monstre.habilete(), Some(Habilete::Sorcellerie));
         assert_eq!(monstre.pv_actuels(), pv + monstre.stats().pv - pv_max);
     }
@@ -387,7 +387,7 @@ mod tests {
     fn n_apprend_pas_une_attaque_deja_connue() {
         let contenu = ContenuV1::new();
         let espece = contenu.espece(&EspeceId::new("salamandre")).unwrap();
-        let vers = contenu.espece(&EspeceId::new("lezard-de-braise")).unwrap();
+        let vers = contenu.espece(&EspeceId::new("athanor")).unwrap();
         let jet = vers
             .attaque_apprise(&AttaqueId::new("jet-de-lave"))
             .unwrap()
@@ -425,7 +425,7 @@ mod tests {
         };
         let armure = creer(&contenu, "armure-hantee", 12);
         let vers = evolution_possible(&armure, &dans(&vallee), &contenu).unwrap();
-        assert_eq!(vers.id().as_str(), "chevalier-noir");
+        assert_eq!(vers.id().as_str(), "gisant");
         assert_eq!(evolution_possible(&armure, &dans(&marais), &contenu), None);
         assert_eq!(evolution_possible(&armure, &AU_CAMP, &contenu), None);
         let jeune = creer(&contenu, "armure-hantee", 11);
@@ -445,7 +445,7 @@ mod tests {
         let squelette = creer(&contenu, "squelette", 20);
         assert_eq!(evolution_possible(&squelette, &AU_CAMP, &contenu), None);
         let vers = evolution_possible(&squelette, &apres_le_baron, &contenu).unwrap();
-        assert_eq!(vers.id().as_str(), "chevalier-squelette");
+        assert_eq!(vers.id().as_str(), "ankou");
         let jeune = creer(&contenu, "squelette", 19);
         assert_eq!(evolution_possible(&jeune, &apres_le_baron, &contenu), None);
     }
@@ -469,7 +469,7 @@ mod tests {
             None
         );
         let vers = evolution_possible(&loup, &en_expedition(JourOuNuit::Nuit), &contenu).unwrap();
-        assert_eq!(vers.id().as_str(), "warg");
+        assert_eq!(vers.id().as_str(), "faux-agneau");
         let jeune = creer(&contenu, "loup", 15);
         assert_eq!(
             evolution_possible(&jeune, &en_expedition(JourOuNuit::Nuit), &contenu),
@@ -478,14 +478,14 @@ mod tests {
         let corbeau = creer(&contenu, "corbeau", 16);
         let vers =
             evolution_possible(&corbeau, &en_expedition(JourOuNuit::Nuit), &contenu).unwrap();
-        assert_eq!(vers.id().as_str(), "corbeau-des-gibets");
+        assert_eq!(vers.id().as_str(), "bec-de-peste");
         let vipere = creer(&contenu, "vipere", 16);
         assert_eq!(
             evolution_possible(&vipere, &en_expedition(JourOuNuit::Nuit), &contenu),
             None
         );
         let vers = evolution_possible(&vipere, &en_expedition(JourOuNuit::Jour), &contenu).unwrap();
-        assert_eq!(vers.id().as_str(), "aspic");
+        assert_eq!(vers.id().as_str(), "tentateur");
     }
 
     #[test]
@@ -555,6 +555,6 @@ mod tests {
             None
         );
         let vers = evolution_possible(&basilic, &sous(Some(Meteo::Canicule)), &contenu).unwrap();
-        assert_eq!(vers.id().as_str(), "basilic-royal");
+        assert_eq!(vers.id().as_str(), "cocatrix");
     }
 }

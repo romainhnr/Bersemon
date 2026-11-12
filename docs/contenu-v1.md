@@ -113,7 +113,7 @@ Attaques apprises :
 
 - Salamandre, uniquement des attaques spéciales : Souffle chaud (niv. 1), Crachat de braises (niv. 3), Souffle draconique (niv. 7), Flamme vive (niv. 10), Fournaise (niv. 14).
 - Crapaud, uniquement des attaques physiques : Charge gluante (niv. 1), Plongeon (niv. 3), Coup de langue (niv. 7), Langue venimeuse (niv. 10), Lame de fond (niv. 14).
-- Mandragore, des attaques des deux catégories et deux effets de statut, pour user l'adversaire : Coup de racine (niv. 1), Feuille tranchante (niv. 3), Secousse (niv. 7), Ronces (niv. 10), Spores putrides (niv. 14). Depuis l'étape 117 (gamedesign.md, section 5.3), Secousse remplace le Cri strident au niveau 7, pour la Mandragore comme pour la Mandragore ancienne et l'Arbre-pendu, qui suivent cette liste.
+- Mandragore, des attaques des deux catégories et deux effets de statut, pour user l'adversaire : Coup de racine (niv. 1), Feuille tranchante (niv. 3), Secousse (niv. 7), Ronces (niv. 10), Spores putrides (niv. 14). Depuis l'étape 117 (gamedesign.md, section 5.3), Secousse remplace le Cri strident au niveau 7, pour la Mandragore comme pour la Main de gloire et l'Arbre-pendu, qui suivent cette liste.
 - Chat noir, surtout des attaques physiques : Griffure (niv. 1), Coup sournois (niv. 3), Feulement (niv. 7), Morsure (niv. 10), Coup de grâce (niv. 14). Griffure et Morsure sont aussi celles du Loup.
 
 Depuis l'étape 201 (11/11/2026), une fois le Démiurge vaincu, chaque monstre de départ se montre aussi, rare et pacifique, dans deux annexes (gamedesign.md, section 9.9) : Salamandre au Cœur du volcan et au Filon écarlate, Crapaud à l'Épave du Léviathan et aux Racines du monde, Mandragore à l'Autel des ronces et au Jardin de la Reine, Chat noir à la Crypte des saints et à la Bibliothèque interdite.
@@ -477,10 +477,10 @@ Changé le 11/11/2026, pour l'étape 193 (gamedesign.md, sections 5.9 et 14.3 ; 
 
 | Espèce | Habiletés possibles depuis l'étape 193 |
 |---|---|
-| Loup, Warg, Loup-garou | Dépeceur, Fouineur (au lieu de Traqueur, Fouineur) |
+| Loup, Faux-agneau, Loup-garou | Dépeceur, Fouineur (au lieu de Traqueur, Fouineur) |
 | Goule | Dépeceur, Férocité (au lieu d'Instinct, Férocité) |
 | Vautour des charniers | Dépeceur, Pillard (au lieu de Traqueur, Pillard) |
-| Corbeau, Corbeau des gibets, Augure | Pillard, Fortune (au lieu de Pillard, Éclaireur) |
+| Corbeau, Bec-de-peste, Augure | Pillard, Fortune (au lieu de Pillard, Éclaireur) |
 | Goéland charognard | Célérité, Fortune (au lieu de Célérité, Traqueur) |
 | Chauve-souris de crypte | Célérité, Flair (au lieu de Célérité, Éclaireur) |
 | Œil errant | Instinct, Flair (au lieu d'Instinct, Éclaireur) |
@@ -517,21 +517,21 @@ Chaque forme évoluée garde le rôle, la rareté et les habiletés de sa forme 
 
 | Forme de base | Identifiant | Évolution | Condition | Types | Stats de base (total) | Rendement d'XP | Attaque d'évolution | Autre attaque, au même niveau |
 |---|---|---|---|---|---|---|---|---|
-| Salamandre | lezard-de-braise | Lézard de braise | niveau 16 | Feu | 60 / 50 / 55 / 92 / 70 / 83 (410) | 86 | Jet de lave | Souffle putride |
-| Crapaud | crapaud-geant | Crapaud géant | niveau 16 | Eau | 72 / 88 / 70 / 45 / 58 / 67 (400) | 88 | Trombe | Déferlante |
-| Mandragore | mandragore-ancienne | Mandragore ancienne | niveau 16 | Plante | 90 / 58 / 90 / 58 / 84 / 30 (410) | 89 | Hurlement de mandragore | Lianes étrangleuses |
-| Chat noir | chat-des-ombres | Chat des ombres | niveau 16 | Ténèbres | 52 / 92 / 45 / 50 / 48 / 113 (400) | 86 | Griffe d'ombre | Maléfice |
-| Loup | warg | Warg | niveau 16 | Normal, Ténèbres | 65 / 80 / 58 / 38 / 52 / 75 (368) | 98 | Croc noir | Coup sournois |
-| Corbeau | corbeau-des-gibets | Corbeau des gibets | niveau 16 | Vol, Ténèbres | 55 / 72 / 48 / 58 / 48 / 90 (371) | 92 | Bec funeste | Bourrasque |
-| Vipère | aspic | Aspic | niveau 16 | Poison | 52 / 64 / 52 / 64 / 58 / 80 (370) | 95 | Venin noir | Croc de venin |
+| Salamandre | athanor | Athanor | niveau 16 | Feu | 60 / 50 / 55 / 92 / 70 / 83 (410) | 86 | Jet de lave | Souffle putride |
+| Crapaud | crapaudine | Crapaudine | niveau 16 | Eau | 72 / 88 / 70 / 45 / 58 / 67 (400) | 88 | Trombe | Déferlante |
+| Mandragore | main-de-gloire | Main de gloire | niveau 16 | Plante | 90 / 58 / 90 / 58 / 84 / 30 (410) | 89 | Hurlement de mandragore | Lianes étrangleuses |
+| Chat noir | monte-en-l-air | Monte-en-l'air | niveau 16 | Ténèbres | 52 / 92 / 45 / 50 / 48 / 113 (400) | 86 | Griffe d'ombre | Maléfice |
+| Loup | faux-agneau | Faux-agneau | niveau 16 | Normal, Ténèbres | 65 / 80 / 58 / 38 / 52 / 75 (368) | 98 | Croc noir | Coup sournois |
+| Corbeau | bec-de-peste | Bec-de-peste | niveau 16 | Vol, Ténèbres | 55 / 72 / 48 / 58 / 48 / 90 (371) | 92 | Bec funeste | Bourrasque |
+| Vipère | tentateur | Tentateur | niveau 16 | Poison | 52 / 64 / 52 / 64 / 58 / 80 (370) | 95 | Venin noir | Croc de venin |
 | Fée noire | fee-sorciere | Fée-sorcière | niveau 12 (type Insecte) | Insecte, Ténèbres | 50 / 44 / 50 / 84 / 64 / 96 (388) | 100 | Nuée | Sentence |
-| Basilic | basilic-royal | Basilic royal | niveau 22 (type Dragon) | Poison, Dragon | 90 / 88 / 80 / 92 / 75 / 70 (495) | 238 | Regard de mort | Furie draconique |
+| Basilic | cocatrix | Cocatrix | niveau 22 (type Dragon) | Poison, Dragon | 90 / 88 / 80 / 92 / 75 / 70 (495) | 238 | Regard de mort | Furie draconique |
 | Feu follet | lanterne-des-morts | Lanterne des morts | Pierre de braise | Feu, Spectre | 58 / 38 / 52 / 90 / 78 / 96 (412) | 119 | Flamme funèbre | Brasier |
-| Cerf blanc | cerf-de-lune | Cerf de lune | Pierre de lune | Normal, Féérique | 85 / 75 / 75 / 82 / 88 / 95 (500) | 210 | Rayon de lune | aucune |
-| Armure hantée | chevalier-noir | Chevalier noir | niveau 18, dans la Vallée des Brumes | Acier, Spectre | 75 / 95 / 105 / 38 / 62 / 38 (413) | 133 | Taille d'acier | Frisson d'outre-tombe |
-| Squelette | chevalier-squelette | Chevalier squelette | niveau 20, Baron pendu vaincu | Spectre, Combat | 62 / 100 / 75 / 38 / 56 / 69 (400) | 128 | Épée des morts | Coup de garde |
+| Cerf blanc | cerf-candelabre | Cerf-candélabre | Pierre de lune | Normal, Féérique | 85 / 75 / 75 / 82 / 88 / 95 (500) | 210 | Rayon de lune | aucune |
+| Armure hantée | gisant | Gisant | niveau 18, dans la Vallée des Brumes | Acier, Spectre | 75 / 95 / 105 / 38 / 62 / 38 (413) | 133 | Taille d'acier | Frisson d'outre-tombe |
+| Squelette | ankou | Ankou | niveau 20, Baron pendu vaincu | Spectre, Combat | 62 / 100 / 75 / 38 / 56 / 69 (400) | 128 | Épée des morts | Coup de garde |
 
-Attaques apprises : celles de la forme de base, aux mêmes niveaux, puis l'attaque d'évolution et l'autre attaque au niveau de la condition ; au niveau 1 pour une évolution par pierre. Exemple, Lézard de braise : Souffle chaud (niv. 1), Crachat de braises (niv. 3), Souffle draconique (niv. 7), Flamme vive (niv. 10), Fournaise (niv. 14), Jet de lave (niv. 16), Souffle putride (niv. 16).
+Attaques apprises : celles de la forme de base, aux mêmes niveaux, puis l'attaque d'évolution et l'autre attaque au niveau de la condition ; au niveau 1 pour une évolution par pierre. Exemple, Athanor : Souffle chaud (niv. 1), Crachat de braises (niv. 3), Souffle draconique (niv. 7), Flamme vive (niv. 10), Fournaise (niv. 14), Jet de lave (niv. 16), Souffle putride (niv. 16).
 
 Deuxième évolution décidée le 19/10/2026, pour les étapes 44 à 47 (gamedesign.md, section 5.4), contenu validé par l'utilisateur :
 
@@ -545,26 +545,26 @@ Stades suivants, nommés seulement, à coder avec des zones au-delà du niveau 2
 
 | Lignée | Deuxième évolution | Troisième évolution |
 |---|---|---|
-| Salamandre, Lézard de braise | Wyverne de cendre (Feu, Dragon), niveau 36 | Dragon de feu, niveau 70 |
-| Crapaud, Crapaud géant | Crapaud-roi (Eau, Poison), niveau 36 | aucune |
-| Mandragore, Mandragore ancienne | Arbre-pendu (Plante, Spectre), niveau 36 | aucune |
-| Chat noir, Chat des ombres | Cait sith (Ténèbres, Spectre), niveau 36 | aucune |
-| Loup, Warg | Loup-garou (Combat, Ténèbres), niveau 36 | aucune |
+| Salamandre, Athanor | Wyverne de cendre (Feu, Dragon), niveau 36 | Dragon de feu, niveau 70 |
+| Crapaud, Crapaudine | Crapaud-chaudron (Eau, Poison), niveau 36 | aucune |
+| Mandragore, Main de gloire | Arbre-pendu (Plante, Spectre), niveau 36 | aucune |
+| Chat noir, Monte-en-l'air | Cait sith (Ténèbres, Spectre), niveau 36 | aucune |
+| Loup, Faux-agneau | Loup-garou (Combat, Ténèbres), niveau 36 | aucune |
 | Fée noire, Fée-sorcière | Reine des ronces, niveau 25, codée à l'étape 47 | aucune |
 
-La Vouivre évoluera une fois, en Dragon des brumes, au niveau 45. L'Elfe, le Baron pendu, le Schnoz et le marchand zombie n'évoluent pas ; les autres espèces s'arrêtent à leur première évolution.
+La Vouivre évoluera une fois, en Mélusine, au niveau 45. L'Elfe, le Baron pendu, le Schnoz et le marchand zombie n'évoluent pas ; les autres espèces s'arrêtent à leur première évolution.
 
 Textes, avec le nom affiché du monstre et le nom de l'espèce. Proposition, après un combat :
 
-> Salamandre peut évoluer en Lézard de braise. Faire évoluer Salamandre ?
+> Salamandre peut évoluer en Athanor. Faire évoluer Salamandre ?
 
 Les réponses sont "Évoluer" et "Pas maintenant". Au camp, la confirmation :
 
-> Faire évoluer Salamandre en Lézard de braise ? L'évolution est définitive.
+> Faire évoluer Salamandre en Athanor ? L'évolution est définitive.
 
 Après l'évolution, suivi de l'attaque apprise, comme à la montée de niveau, puis du rappel :
 
-> Salamandre évolue en Lézard de braise !
+> Salamandre évolue en Athanor !
 
 > D'autres attaques peuvent s'apprendre au camp.
 
@@ -924,9 +924,9 @@ Zone :
 
 | Identifiant | Nom | Niveaux | Taille des groupes | Espèces | Monstres rares | Humain | Apôtre |
 |---|---|---|---|---|---|---|---|
-| col-du-givre-noir | Col du Givre-Noir | 28 à 36 | 1 à 3 | Wendigo, Troll des cavernes, Harpie des orages, Gargouille, Warg, Chevalier noir | Wyrm de givre (hostile), Sylphe des neiges (pacifique) | Porte-étendard | Margrave de givre |
+| col-du-givre-noir | Col du Givre-Noir | 28 à 36 | 1 à 3 | Wendigo, Troll des cavernes, Harpie des orages, Gargouille, Faux-agneau, Gisant | Wyrm de givre (hostile), Sylphe des neiges (pacifique) | Porte-étendard | Margrave de givre |
 
-Le Warg et le Chevalier noir sont des formes évoluées sauvages, une exception propre à cette zone (gamedesign.md, section 5.4) : ils lâchent la ressource de leur forme de base (Croc de loup, Fragment d'armure). Pas de marchand mort.
+Le Faux-agneau et le Gisant sont des formes évoluées sauvages, une exception propre à cette zone (gamedesign.md, section 5.4) : ils lâchent la ressource de leur forme de base (Croc de loup, Fragment d'armure). Pas de marchand mort.
 
 Expédition automatique : durée de base 5 h, dégâts 220 à 450, XP 2200 à 3400, potions 1 à 3, argent 180 à 320. Coffres : 1 à 2 potions et 140 à 220 pièces d'argent ; capsules Blizzard (500), Séisme (450) et Onde de choc (450).
 
@@ -998,13 +998,13 @@ Stades 3, au niveau 36 (gamedesign.md, section 5.4). Chacun garde le rôle, la r
 
 | Forme | Identifiant | Évolution | Types | Stats de base (total) | Rendement d'XP | Attaque d'évolution | Autre attaque, au même niveau |
 |---|---|---|---|---|---|---|---|
-| Lézard de braise | wyverne-de-cendre | Wyverne de cendre | Feu, Dragon | 75 / 68 / 68 / 110 / 80 / 90 (491) | 120 | Souffle de cendre | Furie draconique |
-| Crapaud géant | crapaud-roi | Crapaud-roi | Eau, Poison | 90 / 105 / 85 / 55 / 70 / 75 (480) | 123 | Déluge toxique | Croc de venin |
-| Mandragore ancienne | arbre-pendu | Arbre-pendu | Plante, Spectre | 110 / 70 / 110 / 70 / 100 / 30 (490) | 124 | Racines du gibet | Frisson d'outre-tombe |
-| Chat des ombres | cait-sith | Cait sith | Ténèbres, Spectre | 65 / 112 / 55 / 65 / 58 / 135 (490) | 120 | Griffes spectrales | Charge spectrale |
-| Warg | loup-garou | Loup-garou | Combat, Ténèbres | 85 / 110 / 75 / 45 / 65 / 100 (480) | 137 | Déchiquetage | Griffe d'ombre |
+| Athanor | wyverne-de-cendre | Wyverne de cendre | Feu, Dragon | 75 / 68 / 68 / 110 / 80 / 90 (491) | 120 | Souffle de cendre | Furie draconique |
+| Crapaudine | crapaud-chaudron | Crapaud-chaudron | Eau, Poison | 90 / 105 / 85 / 55 / 70 / 75 (480) | 123 | Déluge toxique | Croc de venin |
+| Main de gloire | arbre-pendu | Arbre-pendu | Plante, Spectre | 110 / 70 / 110 / 70 / 100 / 30 (490) | 124 | Racines du gibet | Frisson d'outre-tombe |
+| Monte-en-l'air | cait-sith | Cait sith | Ténèbres, Spectre | 65 / 112 / 55 / 65 / 58 / 135 (490) | 120 | Griffes spectrales | Charge spectrale |
+| Faux-agneau | loup-garou | Loup-garou | Combat, Ténèbres | 85 / 110 / 75 / 45 / 65 / 100 (480) | 137 | Déchiquetage | Griffe d'ombre |
 
-Le Dragon de feu (stade 4, niveau 70) et le Dragon des brumes (Vouivre, niveau 45) restent seulement nommés. Le Dragon des brumes est codé à l'étape 143 (section 40).
+Le Dragon de feu (stade 4, niveau 70) et la Mélusine (Vouivre, niveau 45) restent seulement nommés. La Mélusine est codé à l'étape 143 (section 40).
 
 ## 22. Achat et location de monstres
 
@@ -1164,7 +1164,7 @@ Depuis l'étape 204 (11/11/2026, textes, noms, stats et attaques proposés par C
 | Entrée, avant le gardien de l'étape 50 | Les marches cessent au bord d'un gouffre sans lumière : les Abysses. Seules les bêtes les plus terribles rôdent ici, et plus bas vous attend la Main du Démiurge, cinq Apôtres élevés au rang de dieux. |
 | Étape, à partir de la 50 | Étape {numéro}, dans les Abysses. |
 | Gardien de l'étape 40 | Un rempart barre l'escalier. Il bouge : {monstre}, un géant de pierre et d'acier, lève un bouclier haut comme une tour. Il n'y aura pas de fuite. |
-| Gardien de l'étape 50 | Sur le seuil, un chevalier en armure noire traîne une épée immense dans la pierre. Le gouffre le ronge depuis des siècles : {monstre} se met en garde. Il n'y aura pas de fuite. |
+| Gardien de l'étape 50 | Sur le seuil, un cor sonne dans le noir. Un cavalier d'acier couronné de bois de cerf mène la chasse des morts, et le gouffre le ronge depuis des siècles : {monstre} se met en garde. Il n'y aura pas de fuite. |
 | Cardinal du Vide (60) | Une voix sans bouche résonne sous votre crâne. {monstre}, premier de la Main du Démiurge, pose sur vous des yeux qui ne se ferment jamais. Il n'y aura pas de fuite. |
 | Dame des supplices (70) | Une femme drapée de chaînes sourit dans l'ombre, et chaque blessure de vos monstres se met à brûler. {monstre}, deuxième de la Main du Démiurge, s'avance. Il n'y aura pas de fuite. |
 | Bouffon écorché (80) | Un rire aigre roule dans le gouffre. {monstre}, troisième de la Main du Démiurge, danse sur des jambes sans peau. Il n'y aura pas de fuite. |
@@ -1180,7 +1180,7 @@ Depuis l'étape 204 (11/11/2026, textes, noms, stats et attaques proposés par C
 | seigneur-pestilence | Seigneur Pestilence | Poison, Insecte | offensif | Apôtre | 130 / 120 / 120 / 90 / 110 / 50 (620) | 700 | Peste noire, Faux de mante, Déluge toxique, Fléau grouillant (Poison, physique, 120, précision 90) |
 | aile-de-l-eclipse | Aile de l'Éclipse | Vol, Ténèbres | offensif | Apôtre | 100 / 125 / 90 / 125 / 90 / 130 (660) | 750 | Plongeon d'acier, Ouragan céleste, Griffe d'ombre, Éclipse totale (Ténèbres, spéciale, 120, précision 90) |
 
-Habiletés : Carapace et Volonté pour le Colosse, Sorcellerie et Volonté pour le Cardinal, Férocité et Célérité pour la Dame, Instinct et Sorcellerie pour le Bouffon, Carapace et Férocité pour le Seigneur, Affinité et Célérité pour l'Aile. Sprites : le Colosse reprend le Chevalier noir aux couleurs de la pierre ; chaque Élu reprend un Apôtre (Évêque des os, Duchesse sanguine, Abbesse écorchée, Reine-mère de chair, Sénéchal des orages), recoloré et entouré d'une aura rouge (dorée en shiny).
+Habiletés : Carapace et Volonté pour le Colosse, Sorcellerie et Volonté pour le Cardinal, Férocité et Célérité pour la Dame, Instinct et Sorcellerie pour le Bouffon, Carapace et Férocité pour le Seigneur, Affinité et Célérité pour l'Aile. Sprites : le Colosse reprend le Gisant aux couleurs de la pierre ; chaque Élu reprend un Apôtre (Évêque des os, Duchesse sanguine, Abbesse écorchée, Reine-mère de chair, Sénéchal des orages), recoloré et entouré d'une aura rouge (dorée en shiny).
 ## 26. Filets de capture
 
 Décidés le 25/10/2026, pour les étapes 103 à 106 (gamedesign.md, sections 9.2, 11.2, 13.5 et 14.2), valeurs proposées par Claude et validées par l'utilisateur, à ajuster en jouant.
@@ -1338,7 +1338,7 @@ Décidé le 25/10/2026, pour les étapes 118 à 120 (gamedesign.md, section 9.6)
 | Moment | Durée | Attaques renforcées (+20 %) | Espèces qui ne sortent qu'à ce moment |
 |---|---|---|---|
 | Jour | 2 h | Lumière, Feu, Plante | Vipère, Cloche hurlante, Harpie des orages |
-| Nuit | 1 h | Ténèbres, Spectre, Poison | Loup, Feu follet, Fée noire, Goule, Chauve-souris de crypte, Troll des cavernes, Wendigo, Warg |
+| Nuit | 1 h | Ténèbres, Spectre, Poison | Loup, Feu follet, Fée noire, Goule, Chauve-souris de crypte, Troll des cavernes, Wendigo, Faux-agneau |
 
 De nuit : monstres des groupes sauvages et monstres rares à 2 niveaux de plus, XP des monstres vaincus et argent des coffres à +25 %.
 
@@ -1350,9 +1350,9 @@ Espèces par zone et par moment :
 | Marais des Pendus | Armure hantée, Vipère, Corbeau | Feu follet, Armure hantée, Corbeau |
 | Vallée des Brumes | Squelette, Armure hantée | Fée noire, Squelette, Armure hantée |
 | Abbaye des Cendres | Squelette, Gargouille, Cloche hurlante | Squelette, Gargouille, Goule, Chauve-souris de crypte |
-| Col du Givre-Noir | Harpie des orages, Gargouille, Chevalier noir | Wendigo, Troll des cavernes, Gargouille, Warg, Chevalier noir |
+| Col du Givre-Noir | Harpie des orages, Gargouille, Gisant | Wendigo, Troll des cavernes, Gargouille, Faux-agneau, Gisant |
 
-Évolutions selon le moment, au niveau 16 : Loup en Warg, de nuit ; Corbeau en Corbeau des gibets, de nuit ; Vipère en Aspic, de jour.
+Évolutions selon le moment, au niveau 16 : Loup en Faux-agneau, de nuit ; Corbeau en Bec-de-peste, de nuit ; Vipère en Tentateur, de jour.
 
 Textes :
 
@@ -1363,7 +1363,7 @@ Textes :
 | Départ de jour | Il fait jour. Les créatures de la nuit se terrent. |
 | Départ de nuit | La nuit est tombée. Les bêtes rôdent plus fortes, et d'autres sortent de l'ombre. |
 | Compteur d'étapes | [Étape : 2/5] Jour / [Étape : 2/5] Nuit |
-| Condition d'évolution, à la fiche | Warg dès le niveau 16, après un combat de nuit / Aspic dès le niveau 16, après un combat de jour |
+| Condition d'évolution, à la fiche | Faux-agneau dès le niveau 16, après un combat de nuit / Tentateur dès le niveau 16, après un combat de jour |
 | Fiche d'une espèce capturée | Ne sort que la nuit. / Ne sort que le jour. |
 
 ## 32. Météo
@@ -1381,7 +1381,7 @@ Décidé le 25/10/2026, pour les étapes 121 à 123 (gamedesign.md, section 9.7)
 
 Chaque zone a 1 chance sur 3, par créneau de 30 minutes, d'avoir une de ses météos ; sinon, temps calme.
 
-Évolutions selon la météo (étape 124) : Fée noire en Fée-sorcière au niveau 12, sous la tempête ; Fée-sorcière en Reine des ronces au niveau 25, sous la pluie ; Basilic en Basilic royal au niveau 22, sous la canicule. À la fiche : "Basilic royal dès le niveau 22, après un combat sous la canicule" ("dans le cyclone" pour le cyclone).
+Évolutions selon la météo (étape 124) : Fée noire en Fée-sorcière au niveau 12, sous la tempête ; Fée-sorcière en Reine des ronces au niveau 25, sous la pluie ; Basilic en Cocatrix au niveau 22, sous la canicule. À la fiche : "Cocatrix dès le niveau 22, après un combat sous la canicule" ("dans le cyclone" pour le cyclone).
 
 Textes :
 
@@ -1632,7 +1632,7 @@ Décidée le 26/10/2026, pour l'étape 140 (gamedesign.md, section 5.6). Libell�
 | Ligne | Texte |
 |---|---|
 | Attaques apprises | Attaques apprises : / puis une ligne par attaque : "niv. 1 : Griffure (Normal, physique, puissance 40, précision 100 %)", et pour l'attaque d'évolution, sur la page de l'espèce d'arrivée : "niv. 16 (en évoluant depuis Loup) : Croc noir (Ténèbres, physique, puissance 75, précision 95 %)", depuis l'étape 150 ("(évolution)" avant ; "???" pour une espèce de départ pas encore capturée) |
-| Évolution | Évolution : Warg dès le niveau 16, après un combat de nuit. / Évolution : ??? dès le niveau 16, après un combat de nuit (espèce d'arrivée pas encore capturée). / Évolution : ???, condition inconnue (Apôtre pas encore abattu) |
+| Évolution | Évolution : Faux-agneau dès le niveau 16, après un combat de nuit. / Évolution : ??? dès le niveau 16, après un combat de nuit (espèce d'arrivée pas encore capturée). / Évolution : ???, condition inconnue (Apôtre pas encore abattu) |
 | Capsules | Capsules d'attaque possibles : / puis une ligne par capsule : "Sentence (Ténèbres, spéciale, puissance 80, précision 95 %)" ; ou "Capsules d'attaque possibles : aucune" |
 
 L'attaque d'œuf et le moment de sortie suivent, comme avant.
@@ -1643,7 +1643,7 @@ Décidée le 26/10/2026, pour l'étape 142 (gamedesign.md, section 14.4) : panac
 
 Textes proposés sans validation (gamedesign.md, Q113) : Panacée ; 1 panacée, 3 panacées ; La panacée ; rend tous les PV max et guérit le poison ou la paralysie ; {monstre} récupère {pv} PV. ; {monstre} récupère {pv} PV et guérit du poison. (ou de la paralysie) ; La panacée guérit {monstre} du poison. (ou de la paralysie, quand il a tous ses PV) ; {monstre} a déjà tous ses PV, sans poison ni paralysie : la panacée serait perdue. L'utiliser quand même ? ; Vous n'avez plus de panacée. Sur Discord, le menu de l'étal : "Acheter des soins", options "5 potions : 100 pièces d'argent", avec l'effet du soin en description.
 
-## 40. Désert de sel et Dragon des brumes
+## 40. Désert de sel et Mélusine
 
 Décidés le 26/10/2026, pour l'étape 143 (gamedesign.md, sections 5.3, 5.4, 9.1 et 9.4). La place de la zone, ses niveaux, le nombre et les types de ses espèces, l'humain qui annonce la suite, les services et l'évolution de la Vouivre sont des choix de l'utilisateur ; le reste est proposé par Claude sans validation (gamedesign.md, Q113).
 
@@ -1667,9 +1667,9 @@ Espèces (stats dans l'ordre PV / Attaque / Défense / Attaque spéciale / Défe
 | ver-des-salines | Ver des salines | Sol | offensif | 95 / 92 / 68 / 35 / 55 / 45 (390) | 116 | commune | Férocité, Traqueur | Secousse (1), Étreinte (1), Engloutissement (22), Séisme (32) |
 | sphinx-des-sables | Sphinx des sables | Son, Psychique | offensif | 80 / 70 / 75 / 100 / 85 / 55 (465) | 205 | rare, hostile | Sorcellerie, Volonté | Onde psychique (1), Glas (1), Carillon funèbre (20), Jugement (30) |
 | phenix-blanc | Phénix blanc | Lumière, Feu | soutien | 75 / 50 / 65 / 100 / 95 / 80 (465) | 200 | rare, pacifique | Volonté, Instinct | Lueur sacrée (1), Brasier (1), Rayon solaire (15), Flamme blanche (30) |
-| dragon-des-brumes | Dragon des brumes | Dragon, Vol | offensif | 90 / 100 / 80 / 100 / 75 / 75 (520) | 238 | rare | Affinité, Férocité | celles de la Vouivre, puis Souffle des brumes (45, attaque d'évolution) et Bec funeste (45) |
+| melusine | Mélusine | Dragon, Vol | offensif | 90 / 100 / 80 / 100 / 75 / 75 (520) | 238 | rare | Affinité, Férocité | celles de la Vouivre, puis Souffle des brumes (45, attaque d'évolution) et Bec funeste (45) |
 
-La Vouivre évolue en Dragon des brumes au niveau 45. Au codex, ces espèces viennent après le Taureau d'airain, dans l'ordre du tableau. Les espèces du Désert n'évoluent pas.
+La Vouivre évolue en Mélusine au niveau 45. Au codex, ces espèces viennent après le Taureau d'airain, dans l'ordre du tableau. Les espèces du Désert n'évoluent pas.
 
 Attaques nouvelles :
 
@@ -1696,7 +1696,7 @@ Attaques d'œuf, sur le modèle de la section 28 :
 | Sphinx des sables | enigme-du-sphinx | Énigme du sphinx | Psychique | S | 80 | 100 | |
 | Phénix blanc | aile-d-aurore | Aile d'aurore | Lumière | S | 80 | 100 | |
 
-Le Dragon des brumes est de la famille de la Vouivre, dont il garde l'attaque d'œuf, Piqué draconique.
+La Mélusine est de la famille de la Vouivre, dont il garde l'attaque d'œuf, Piqué draconique.
 
 Ressources : Sonnette de crotale (sonnette-de-crotale), Élytre solaire (elytre-solaire), Bandelette de sel (bandelette-de-sel) et Anneau de ver (anneau-de-ver), 5 pièces d'argent chacune, Griffe de sphinx (griffe-de-sphinx), 15. Ressource rare des pièges dans cette zone : la Griffe de sphinx.
 
@@ -1802,7 +1802,7 @@ Le Schnoz se cache dans les deux, comme partout. Pas de marchand mort ni de pêc
 | Port des Noyés | 7 h, 340 à 650, 3800 à 5600, 1 à 3, 280 à 460 | 220 à 340 | Marée noire, Pince broyeuse, Chant des noyés (600) |
 | Mines de Fer-Noir | 8 h, 400 à 760, 4600 à 6800, 1 à 3, 330 à 540 | 260 à 400 | Marteau de forge, Coup de grisou, Coup de pioche (650) |
 
-Espèces (stats dans l'ordre PV / Attaque / Défense / Attaque spéciale / Défense spéciale / Vitesse). Au codex, elles viennent après le Dragon des brumes, dans l'ordre du tableau. Aucune n'évolue.
+Espèces (stats dans l'ordre PV / Attaque / Défense / Attaque spéciale / Défense spéciale / Vitesse). Au codex, elles viennent après la Mélusine, dans l'ordre du tableau. Aucune n'évolue.
 
 | Identifiant | Nom | Types | Rôle | Stats de base (total) | Rendement d'XP | Rareté | Habiletés | Attaques apprises |
 |---|---|---|---|---|---|---|---|---|
@@ -2867,9 +2867,9 @@ Formes par échange, au codex après les légendaires. Elles gardent le rôle, l
 
 | Forme d'avant | Identifiant | Évolution | Types | Stats de base (total) | Rendement d'XP | Attaque d'évolution (niv. 1) | Autre attaque (niv. 1) |
 |---|---|---|---|---|---|---|---|
-| Chevalier noir | dullahan | Dullahan | Acier, Spectre | 85 / 120 / 115 / 45 / 75 / 60 (500) | 186 | Chevauchée sans tête | Épée des morts |
-| Corbeau des gibets | augure | Augure | Vol, Ténèbres, Psychique | 70 / 75 / 65 / 110 / 75 / 105 (500) | 128 | Présage funeste | Maléfice |
-| Aspic | gorgone | Gorgone | Poison, Roche | 80 / 70 / 95 / 95 / 85 / 75 (500) | 133 | Regard de pierre | Éboulement |
+| Gisant | dullahan | Dullahan | Acier, Spectre | 85 / 120 / 115 / 45 / 75 / 60 (500) | 186 | Chevauchée sans tête | Épée des morts |
+| Bec-de-peste | augure | Augure | Vol, Ténèbres, Psychique | 70 / 75 / 65 / 110 / 75 / 105 (500) | 128 | Présage funeste | Maléfice |
+| Tentateur | gorgone | Gorgone | Poison, Roche | 80 / 70 / 95 / 95 / 85 / 75 (500) | 133 | Regard de pierre | Éboulement |
 
 Attaques nouvelles, sans capsule :
 
@@ -2924,7 +2924,7 @@ Pierres de substitution (étape 194), 300 pièces d'argent chez Malvoise, comme 
 | Pierre chaude (nom proposé par l'utilisateur) | canicule | Basilic |
 | Pierre des brumes | Vallée des Brumes | Armure hantée |
 
-Codex : "Évolution : Warg dès le niveau 16, après un combat de nuit, ou avec une pierre de nuit". Console : "Acheter des objets d'évolution (pierres 300 l'une, Chaîne de lien 500)".
+Codex : "Évolution : Faux-agneau dès le niveau 16, après un combat de nuit, ou avec une pierre de nuit". Console : "Acheter des objets d'évolution (pierres 300 l'une, Chaîne de lien 500)".
 
 Cannes à pêche (étape 197), fabriquées par Ansgar, chacune demandant la précédente ; noms et durées choisis par l'utilisateur, coûts et tables proposés par Claude :
 
@@ -2944,16 +2944,16 @@ Chaque forme évolue de son stade 3 au niveau 70, et apprend alors son attaque d
 
 | Identifiant | Nom | Évolue de | Types | Rôle | Stats de base (total) | Rendement d'XP | Attaque d'évolution |
 |---|---|---|---|---|---|---|---|
-| dragon-de-cendre | Dragon de cendre | Wyverne de cendre | Feu, Dragon | offensif | 87 / 79 / 79 / 128 / 93 / 104 (570) | 168 | Apocalypse de cendre (Feu, spéciale, 110, précision 90) |
-| crapaud-empereur | Crapaud-empereur | Crapaud-roi | Eau, Poison | offensif | 107 / 125 / 101 / 65 / 83 / 89 (570) | 172 | Écrasement des marais (Eau, physique, 110, précision 90) |
-| chene-gibet | Chêne-gibet | Arbre-pendu | Plante, Spectre | soutien | 129 / 81 / 128 / 81 / 116 / 35 (570) | 173 | Étreinte du gibet (Plante, spéciale, 100, précision 100) |
-| roi-des-chats | Roi des chats | Cait sith | Ténèbres, Spectre | offensif | 76 / 130 / 64 / 76 / 67 / 157 (570) | 168 | Griffe des neuf vies (Ténèbres, physique, 110, précision 95) |
+| ouroboros | Ouroboros | Wyverne de cendre | Feu, Dragon | offensif | 87 / 79 / 79 / 128 / 93 / 104 (570) | 168 | Apocalypse de cendre (Feu, spéciale, 110, précision 90) |
+| bombarde-des-marais | Bombarde des marais | Crapaud-chaudron | Eau, Poison | offensif | 107 / 125 / 101 / 65 / 83 / 89 (570) | 172 | Écrasement des marais (Eau, physique, 110, précision 90) |
+| chene-bourreau | Chêne-bourreau | Arbre-pendu | Plante, Spectre | soutien | 129 / 81 / 128 / 81 / 116 / 35 (570) | 173 | Étreinte du gibet (Plante, spéciale, 100, précision 100) |
+| chat-a-neuf-queues | Chat à neuf queues | Cait sith | Ténèbres, Spectre | offensif | 76 / 130 / 64 / 76 / 67 / 157 (570) | 168 | Griffe des neuf vies (Ténèbres, physique, 110, précision 95) |
 | loup-de-l-eclipse | Loup de l'Éclipse | Loup-garou | Combat, Ténèbres | offensif | 101 / 131 / 89 / 53 / 77 / 119 (570) | 191 | Curée de l'Éclipse (Combat, physique, 110, précision 90) |
-| oracle-noir | Oracle noir | Augure | Vol, Ténèbres, Psychique | offensif | 80 / 86 / 74 / 124 / 86 / 120 (570) | 179 | Présage ultime (Psychique, spéciale, 110, précision 90) |
-| chevalier-de-l-abime | Chevalier de l'abîme | Dullahan | Acier, Spectre | offensif | 97 / 137 / 131 / 51 / 86 / 68 (570) | 260 | Marche de l'abîme (Spectre, physique, 110, précision 90) |
-| imperatrice-des-ronces | Impératrice des ronces | Reine des ronces | Insecte, Plante | offensif | 83 / 65 / 77 / 131 / 101 / 113 (570) | 196 | Couronne d'épines (Plante, spéciale, 110, précision 90) |
+| morrigane | Morrigane | Augure | Vol, Ténèbres, Psychique | offensif | 80 / 86 / 74 / 124 / 86 / 120 (570) | 179 | Présage ultime (Psychique, spéciale, 110, précision 90) |
+| hellequin | Hellequin | Dullahan | Acier, Spectre | offensif | 97 / 137 / 131 / 51 / 86 / 68 (570) | 260 | Marche de l'abîme (Spectre, physique, 110, précision 90) |
+| carabosse | Carabosse | Reine des ronces | Insecte, Plante | offensif | 83 / 65 / 77 / 131 / 101 / 113 (570) | 196 | Couronne d'épines (Plante, spéciale, 110, précision 90) |
 
-Sprites : d'abord ceux du stade 3, entourés d'une aura de la couleur de la famille (dorée en shiny) ; dessinés à part depuis l'étape 213. Le Chevalier de l'abîme est un clin d'oeil aux chevaliers déchus des jeux Souls, sous un nom propre à l'univers.
+Sprites : d'abord ceux du stade 3, entourés d'une aura de la couleur de la famille (dorée en shiny) ; dessinés à part depuis l'étape 213. Jusqu'à l'étape 216, le stade 4 de l'Armure hantée était le Chevalier de l'abîme, clin d'oeil aux chevaliers déchus des jeux Souls ; Hellequin le remplace à l'étape 217 (section 57).
 
 ## 56. Zones entre les Apôtres
 
@@ -3178,3 +3178,38 @@ Attaques apprises :
 - Mangeur d'étoiles : morsure (niv. 1), souffle-draconique (niv. 1), croc-noir (niv. 28), furie-draconique (niv. 38), griffe-d-ombre (niv. 48), rapine (niv. 95).
 - Spectre hurlant : lueur-trompeuse (niv. 1), glas (niv. 1), lamentation (niv. 28), tocsin (niv. 38), malediction-mortelle (niv. 48), requiem (niv. 95).
 - Ange du néant : lueur-sacree (niv. 1), regard-funeste (niv. 1), malefice (niv. 33), eclat-du-zenith (niv. 43), sentence (niv. 53), aube-eclatante (niv. 96).
+
+## 57. Évolutions remaniées
+
+Décidé le 12/11/2026, pour l'étape 217 (gamedesign.md, section 5.4). Demande de l'utilisateur : une forme évoluée ne doit pas être la précédente en plus gros, mais mêler deux idées. Liste proposée par Claude, acceptée par l'utilisateur avant le code, à relire (Q126).
+
+Chaque nouvelle forme tient la place de l'ancienne : mêmes types, stats, rôle, rareté, habiletés, attaques, condition d'évolution, rendement d'XP et place au codex. Les tableaux des sections 8, 21, 40, 53 et 55 portent désormais les nouveaux noms et identifiants. Une sauvegarde antérieure à la version 45 passe de l'ancien identifiant au nouveau à la reprise.
+
+| Lignée | Ancienne forme | Identifiant | Nouvelle forme | Mélange |
+|---|---|---|---|---|
+| Salamandre, stade 2 | Lézard de braise | athanor | Athanor | La salamandre, esprit du feu des alchimistes, et leur fourneau : elle porte sur le dos un four de brique et de cuivre où couve sa braise. |
+| Salamandre, stade 4 | Dragon de cendre | ouroboros | Ouroboros | La wyverne et le serpent qui se mord la queue, emblème du Grand Oeuvre : un dragon enroulé en anneau, la queue entre les crocs. |
+| Crapaud, stade 2 | Crapaud géant | crapaudine | Crapaudine | Le crapaud et la pierre de crapaud des légendes, gemme logée dans sa tête. |
+| Crapaud, stade 3 | Crapaud-roi | crapaud-chaudron | Crapaud-chaudron | Le crapaud et le chaudron des sorcières : son dos creux est une marmite de fonte où bout un brouet verdâtre. |
+| Crapaud, stade 4 | Crapaud-empereur | bombarde-des-marais | Bombarde des marais | Le crapaud et la bombarde, canon de siège : cerclé de fer, la gueule en fût, il crache des boulets de vase. |
+| Mandragore, stade 2 | Mandragore ancienne | main-de-gloire | Main de gloire | La mandragore et la main de gloire, main de pendu changée en chandelier, dont le nom vient de "mandragore" : une racine en forme de main, une flamme au bout de chaque doigt. |
+| Mandragore, stade 4 | Chêne-gibet | chene-bourreau | Chêne-bourreau | L'arbre aux pendus et le bourreau : un chêne encagoulé, une hache pour branche maîtresse, des cordes à ses rameaux. |
+| Chat noir, stade 2 | Chat des ombres | monte-en-l-air | Monte-en-l'air | Le chat noir et le cambrioleur, dit monte-en-l'air : masque, cape, butin dans la gueule. |
+| Chat noir, stade 4 | Roi des chats | chat-a-neuf-queues | Chat à neuf queues | Le chat et le fouet du même nom : neuf queues en lanières, une par vie. |
+| Loup, stade 2 | Warg | faux-agneau | Faux-agneau | Le loup et la brebis : un loup caché sous une toison tachée de sang, cornes de bélier comprises. |
+| Corbeau, stade 2 | Corbeau des gibets | bec-de-peste | Bec-de-peste | Le corbeau et le médecin de peste : masque à long bec, chapeau, manteau ciré. |
+| Corbeau, stade 4 | Oracle noir | morrigane | Morrigane | L'augure et la Morrigan, déesse corneille qui annonce les morts de la bataille : une femme aux ailes de corbeau. |
+| Vipère, stade 2 | Aspic | tentateur | Tentateur | La vipère et le serpent du jardin, enroulé autour de la pomme qu'il offre. |
+| Armure hantée, stade 2 | Chevalier noir | gisant | Gisant | L'armure hantée et le gisant, chevalier sculpté sur son tombeau : il se relève, sa dalle pour bouclier. |
+| Armure hantée, stade 4 | Chevalier de l'abîme | hellequin | Hellequin | Le cavalier sans tête et le meneur de la Mesnie Hellequin, la Chasse sauvage : bois de cerf, cor de chasse, monture spectrale. |
+| Fée noire, stade 4 | Impératrice des ronces | carabosse | Carabosse | La reine des ronces et la fée Carabosse des contes : vieille fée bossue, fuseau en main, ailes de phalène et robe d'épines. |
+| Squelette, stade 2 | Chevalier squelette | ankou | Ankou | Le squelette et l'Ankou breton, valet de la mort : chapeau large, manteau, faux. |
+| Cerf blanc, stade 2 | Cerf de lune | cerf-candelabre | Cerf-candélabre | Le cerf blanc et le candélabre : des cierges à flamme pâle brûlent au bout de ses bois. |
+| Basilic, stade 2 | Basilic royal | cocatrix | Cocatrix | Le basilic et le coq, né d'un oeuf de coq couvé par un crapaud : crête, bec, ailes, queue de serpent. |
+| Vouivre, stade 2 | Dragon des brumes | melusine | Mélusine | La vouivre et la fée Mélusine : femme au-dessus de la taille, serpent ailé au-dessous. |
+
+Formes gardées, déjà des mélanges : Wyverne de cendre, Arbre-pendu, Cait sith, Loup-garou, Loup de l'Éclipse, Augure, Gorgone, Lanterne des morts, Dullahan, Fée-sorcière, Reine des ronces, Schnoz primordial.
+
+Texte changé : l'annonce du gardien de l'étape 50 de la Tour sans fond, Hellequin.
+
+> Sur le seuil, un cor sonne dans le noir. Un cavalier d'acier couronné de bois de cerf mène la chasse des morts, et le gouffre le ronge depuis des siècles : Hellequin se met en garde. Il n'y aura pas de fuite.

@@ -1482,6 +1482,32 @@ mod tests {
         assert!(!relue.collection().equipe()[1].attaques().connait(&choc));
     }
 
+    /// Une sauvegarde antérieure à la version 45 porte encore les formes
+    /// évoluées remplacées à l'étape 217 : son codex passe à la forme qui
+    /// tient leur place, comme ses monstres et son parfum (section 5.4).
+    #[test]
+    fn les_especes_remplacees_passent_a_leur_nouvelle_forme() {
+        let mut valeur: serde_json::Value = serde_json::from_str(&texte_de_partie()).unwrap();
+        valeur["version"] = 44.into();
+        valeur["codex"]["rencontrees"]
+            .as_array_mut()
+            .unwrap()
+            .push("warg".into());
+        valeur["codex"]["capturees"]
+            .as_array_mut()
+            .unwrap()
+            .push("chevalier-noir".into());
+        let relue = charger_texte(&valeur.to_string()).unwrap().unwrap();
+        let etat = |id: &str| relue.codex().etat(&EspeceId::new(id));
+        assert_eq!(etat("faux-agneau"), EtatCodex::Rencontree);
+        assert_eq!(etat("gisant"), EtatCodex::Capturee);
+        // Réécrite, elle ne porte plus que les nouveaux identifiants.
+        let texte = serde_json::to_string(&format::depuis_partie(&relue)).unwrap();
+        for ancien in ["\"warg\"", "\"chevalier-noir\""] {
+            assert!(!texte.contains(ancien), "{ancien}");
+        }
+    }
+
     /// Les succès, le titre et la couleur du héros, les quêtes et les objets
     /// de quête se relisent ; un titre sans son succès est oublié, comme un
     /// objet de quête disparu du jeu (sections 4.5 et 13.13).

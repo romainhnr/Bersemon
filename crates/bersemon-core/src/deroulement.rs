@@ -5901,7 +5901,7 @@ mod tests {
             panic!("confirmation attendue");
         };
         assert_eq!(monstre.espece().id().as_str(), "salamandre");
-        assert_eq!(vers.id().as_str(), "lezard-de-braise");
+        assert_eq!(vers.id().as_str(), "athanor");
         let evenements =
             repondre_sans_tirage(&mut deroulement, Choix::Oui, &contenu, &depot).unwrap();
         let [
@@ -5915,7 +5915,7 @@ mod tests {
             panic!("évolution attendue : {evenements:?}");
         };
         assert_eq!(avant.espece().id().as_str(), "salamandre");
-        assert_eq!(apres.espece().id().as_str(), "lezard-de-braise");
+        assert_eq!(apres.espece().id().as_str(), "athanor");
         // Elle connaît déjà 4 attaques : l'attaque d'évolution est à choisir,
         // et la partie est sauvegardée avec ce choix en attente.
         let Attente::OubliAttaque { nouvelle, .. } = deroulement.attente() else {
@@ -5924,8 +5924,8 @@ mod tests {
         assert_eq!(nouvelle.id().as_str(), "jet-de-lave");
         let sauvegarde = depot.sauvegardes.borrow().last().cloned().unwrap();
         assert_eq!(sauvegarde.attaques_a_choisir().len(), 1);
-        let lezard = EspeceId::new("lezard-de-braise");
-        assert_eq!(sauvegarde.codex().etat(&lezard), EtatCodex::Capturee);
+        let athanor = EspeceId::new("athanor");
+        assert_eq!(sauvegarde.codex().etat(&athanor), EtatCodex::Capturee);
         repondre_sans_tirage(&mut deroulement, Choix::OublierAttaque(0), &contenu, &depot).unwrap();
         assert_eq!(deroulement.attente(), Attente::Camp);
         let monstre = &deroulement.partie().unwrap().collection().equipe()[0];
@@ -6439,7 +6439,7 @@ mod tests {
             let choix = match deroulement.attente() {
                 Attente::Evolution { monstre, vers } => {
                     propositions.push(monstre.niveau().valeur());
-                    assert_eq!(vers.id().as_str(), "lezard-de-braise");
+                    assert_eq!(vers.id().as_str(), "athanor");
                     if propositions.len() == 1 {
                         Choix::NePasEvoluer
                     } else {
@@ -6469,9 +6469,9 @@ mod tests {
         assert_eq!(propositions, vec![16, 17]);
         let partie = deroulement.partie().unwrap();
         let monstre = &partie.collection().equipe()[0];
-        assert_eq!(monstre.espece().id().as_str(), "lezard-de-braise");
-        let lezard = EspeceId::new("lezard-de-braise");
-        assert_eq!(partie.codex().etat(&lezard), EtatCodex::Capturee);
+        assert_eq!(monstre.espece().id().as_str(), "athanor");
+        let athanor = EspeceId::new("athanor");
+        assert_eq!(partie.codex().etat(&athanor), EtatCodex::Capturee);
     }
 
     #[test]
@@ -7833,7 +7833,7 @@ mod tests {
         let mut partie = partie_de(monstre_du_contenu(&contenu, "loup", 10));
         partie
             .collection_mut()
-            .accueillir_capture(monstre_du_contenu(&contenu, "warg", 20));
+            .accueillir_capture(monstre_du_contenu(&contenu, "faux-agneau", 20));
         let mut etat = etat_de(&partie);
         etat.marchand_au_camp = true;
         etat.coffre_du_camp =

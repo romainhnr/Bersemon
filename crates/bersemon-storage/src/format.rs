@@ -54,7 +54,7 @@ use bersemon_core::zone::{Zone, ZoneId};
 
 /// À augmenter à chaque changement du format, avec une conversion depuis
 /// les versions précédentes.
-pub(crate) const VERSION: u64 = 44;
+pub(crate) const VERSION: u64 = 45;
 
 /// La version de la sauvegarde qui sépare le sac du coffre du camp.
 const VERSION_DU_COFFRE: u64 = 7;
@@ -114,6 +114,45 @@ const VERSION_DU_SAC: u64 = 30;
 /// chromatique, et où le héros peut être shiny (sections 4.1 et 5.1).
 const VERSION_DU_CHOC_CHROMATIQUE: u64 = 35;
 
+/// Les formes évoluées remplacées à l'étape 217 (section 5.4) : l'ancien
+/// identifiant et celui de la forme qui tient sa place dans la lignée, avec
+/// les mêmes types, stats et attaques. Une sauvegarde antérieure à la
+/// version 45 les porte encore : ses monstres, son codex et son parfum
+/// passent à la nouvelle forme à la reprise.
+const ESPECES_REMPLACEES: [(&str, &str); 20] = [
+    ("lezard-de-braise", "athanor"),
+    ("dragon-de-cendre", "ouroboros"),
+    ("crapaud-geant", "crapaudine"),
+    ("crapaud-roi", "crapaud-chaudron"),
+    ("crapaud-empereur", "bombarde-des-marais"),
+    ("mandragore-ancienne", "main-de-gloire"),
+    ("chene-gibet", "chene-bourreau"),
+    ("chat-des-ombres", "monte-en-l-air"),
+    ("roi-des-chats", "chat-a-neuf-queues"),
+    ("warg", "faux-agneau"),
+    ("corbeau-des-gibets", "bec-de-peste"),
+    ("oracle-noir", "morrigane"),
+    ("aspic", "tentateur"),
+    ("chevalier-noir", "gisant"),
+    ("chevalier-de-l-abime", "hellequin"),
+    ("imperatrice-des-ronces", "carabosse"),
+    ("chevalier-squelette", "ankou"),
+    ("cerf-de-lune", "cerf-candelabre"),
+    ("basilic-royal", "cocatrix"),
+    ("dragon-des-brumes", "melusine"),
+];
+
+/// L'espèce que désigne aujourd'hui un identifiant lu dans une sauvegarde.
+/// Aucun ancien identifiant n'est celui d'une espèce actuelle : la
+/// conversion vaut pour toutes les versions.
+fn espece_lue(id: &str) -> EspeceId {
+    let actuel = ESPECES_REMPLACEES
+        .iter()
+        .find(|(ancien, _)| *ancien == id)
+        .map_or(id, |(_, nouveau)| nouveau);
+    EspeceId::new(actuel)
+}
+
 /// Ce que reçoit, au coffre, une partie qui reprend une sauvegarde
 /// antérieure aux filets (hypothèse retenue, Q102).
 const FILETS_DES_SAUVEGARDES_ANTERIEURES: u32 = 10;
@@ -144,7 +183,8 @@ const GEOLIER_DE_GUNTHER: &str = "bourreau";
 /// d'un monstre, la version 25 le Béhérit pourpre, la version 26 les records
 /// de la Tour sans fond, la version 27 les filets de capture, la version 28
 /// le Rite du sang mêlé, la version 29 les récompenses du codex réclamées,
-/// la version 30 l'amélioration du sac. Une sauvegarde d'une version précédente se lit avec cette
+/// la version 30 l'amélioration du sac ; la version 45 remplace vingt formes
+/// évoluées par d'autres (étape 217). Une sauvegarde d'une version précédente se lit avec cette
 /// structure : les champs ajoutés y prennent leur valeur de début de
 /// partie.
 #[derive(Debug, Serialize, Deserialize)]
@@ -313,7 +353,7 @@ fn depuis_parfum(parfum: Option<&Parfum>) -> Option<ParfumV39> {
 fn vers_parfum(parfum: Option<ParfumV39>, catalogue: &dyn Catalogue) -> Option<Parfum> {
     match parfum?.espece {
         None => Some(Parfum::Charogne),
-        Some(id) => catalogue.espece(&EspeceId::new(&id)).map(Parfum::Espece),
+        Some(id) => catalogue.espece(&espece_lue(&id)).map(Parfum::Espece),
     }
 }
 
@@ -1422,10 +1462,10 @@ pub(crate) fn vers_partie(
     }
     let mut codex = Codex::default();
     for espece in &sauvegarde.codex.rencontrees {
-        codex.noter_rencontre(&EspeceId::new(espece.as_str()));
+        codex.noter_rencontre(&espece_lue(espece));
     }
     for espece in &sauvegarde.codex.capturees {
-        codex.noter_capture(&EspeceId::new(espece.as_str()));
+        codex.noter_capture(&espece_lue(espece));
     }
     // La victoire sur un Apôtre ouvre désormais sa fiche, comme une capture
     // (section 5.6).
@@ -1842,7 +1882,7 @@ fn vers_monstre(
     catalogue: &dyn Catalogue,
 ) -> Result<Monstre, ErreurSauvegarde> {
     let espece = catalogue
-        .espece(&EspeceId::new(monstre.espece.as_str()))
+        .espece(&espece_lue(&monstre.espece))
         .ok_or_else(|| ErreurSauvegarde::EspeceInconnue(monstre.espece.clone()))?;
     // Une attaque hors de la liste de l'espèce vient d'une capsule de son
     // type (section 13.10), c'est l'attaque d'œuf de sa famille (section
@@ -2026,5 +2066,24 @@ mod tests_des_zones_ajoutees {
         assert_eq!(indices_apres_les_zones_ajoutees(42, 18), 19);
         assert_eq!(indices_apres_les_zones_ajoutees(42, 24), 28);
         assert_eq!(indices_apres_les_zones_ajoutees(43, 32), 34);
+    }
+}
+
+#[cfg(test)]
+mod tests_des_especes_remplacees {
+    use super::*;
+    use bersemon_core::contenu::ContenuV1;
+
+    /// Section 5.4 : chaque forme remplacée à l'étape 217 mène à une espèce
+    /// du jeu, et aucun ancien identifiant n'en désigne encore une.
+    #[test]
+    fn chaque_espece_remplacee_mene_a_une_espece_du_jeu() {
+        let contenu = ContenuV1::new();
+        for (ancien, nouveau) in ESPECES_REMPLACEES {
+            assert!(contenu.espece(&EspeceId::new(ancien)).is_none(), "{ancien}");
+            assert!(contenu.espece(&espece_lue(ancien)).is_some(), "{ancien}");
+            assert_eq!(espece_lue(ancien).as_str(), nouveau);
+        }
+        assert_eq!(espece_lue("loup").as_str(), "loup");
     }
 }

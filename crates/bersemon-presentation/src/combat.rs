@@ -736,7 +736,7 @@ mod tests {
             .collect();
         assert_eq!(
             suite[0],
-            "Évolution : Warg dès le niveau 16, après un combat de nuit, ou avec une pierre de nuit"
+            "Évolution : Faux-agneau dès le niveau 16, après un combat de nuit, ou avec une pierre de nuit"
         );
         assert_eq!(suite[1], "Capsules d'attaque possibles :");
         assert!(
@@ -752,7 +752,7 @@ mod tests {
         let fiche_du_basilic = fiche_complete(&basilic);
         assert!(
             fiche_du_basilic.contains(
-                &"Évolution : Basilic royal dès le niveau 22, après un combat sous la canicule, ou avec une pierre chaude"
+                &"Évolution : Cocatrix dès le niveau 22, après un combat sous la canicule, ou avec une pierre chaude"
                     .to_string()
             ),
             "{fiche_du_basilic:?}"
@@ -766,15 +766,15 @@ mod tests {
         };
         assert_eq!(
             fiche("armure-hantee"),
-            "Évolution : Chevalier noir dès le niveau 12, en gagnant un niveau dans la zone Vallée des Brumes, ou avec une pierre des brumes"
+            "Évolution : Gisant dès le niveau 12, en gagnant un niveau dans la zone Vallée des Brumes, ou avec une pierre des brumes"
         );
         assert_eq!(
             fiche("squelette"),
-            "Évolution : Chevalier squelette dès le niveau 20, une fois l'Apôtre Baron pendu vaincu"
+            "Évolution : Ankou dès le niveau 20, une fois l'Apôtre Baron pendu vaincu"
         );
         assert_eq!(
             fiche("cerf-blanc"),
-            "Évolution : Cerf de lune avec une pierre de lune"
+            "Évolution : Cerf-candélabre avec une pierre de lune"
         );
     }
 
@@ -815,28 +815,28 @@ mod tests {
             "Évolution : ??? dès le niveau 16, après un combat de nuit, ou avec une pierre de nuit"
         );
         // Rencontrée ne suffit pas : il faut l'avoir capturée.
-        codex.noter_rencontre(&EspeceId::new("warg"));
+        codex.noter_rencontre(&EspeceId::new("faux-agneau"));
         assert_eq!(
             evolution("loup", &codex, &[]),
             "Évolution : ??? dès le niveau 16, après un combat de nuit, ou avec une pierre de nuit"
         );
-        codex.noter_capture(&EspeceId::new("warg"));
+        codex.noter_capture(&EspeceId::new("faux-agneau"));
         assert_eq!(
             evolution("loup", &codex, &[]),
-            "Évolution : Warg dès le niveau 16, après un combat de nuit, ou avec une pierre de nuit"
+            "Évolution : Faux-agneau dès le niveau 16, après un combat de nuit, ou avec une pierre de nuit"
         );
         assert_eq!(
             evolution("squelette", &codex, &[]),
             "Évolution : ???, condition inconnue"
         );
-        codex.noter_capture(&EspeceId::new("chevalier-squelette"));
+        codex.noter_capture(&EspeceId::new("ankou"));
         assert_eq!(
             evolution("squelette", &codex, &[EspeceId::new("abbesse-ecorchee")]),
-            "Évolution : Chevalier squelette, condition inconnue"
+            "Évolution : Ankou, condition inconnue"
         );
         assert_eq!(
             evolution("squelette", &codex, &[EspeceId::new("baron-pendu")]),
-            "Évolution : Chevalier squelette dès le niveau 20, une fois l'Apôtre Baron pendu vaincu"
+            "Évolution : Ankou dès le niveau 20, une fois l'Apôtre Baron pendu vaincu"
         );
     }
 
@@ -847,32 +847,32 @@ mod tests {
             let espece = contenu.espece(&EspeceId::new(id)).unwrap();
             crate::partie::fiche_d_espece(&espece, &Codex::default(), &[], &contenu)
         };
-        let warg = fiche("warg");
-        let evolution: Vec<&String> = warg
+        let faux_agneau = fiche("faux-agneau");
+        let evolution: Vec<&String> = faux_agneau
             .iter()
             .filter(|ligne| ligne.contains("(en évoluant depuis"))
             .collect();
-        assert_eq!(evolution.len(), 1, "{warg:?}");
+        assert_eq!(evolution.len(), 1, "{faux_agneau:?}");
         // Le Loup, pas encore capturé, reste caché.
         assert!(
             evolution[0].starts_with("  niv. 16 (en évoluant depuis ???) : Croc noir ("),
-            "{warg:?}"
+            "{faux_agneau:?}"
         );
         let mut codex = Codex::default();
         codex.noter_capture(&EspeceId::new("loup"));
-        let warg = crate::partie::fiche_d_espece(
-            &contenu.espece(&EspeceId::new("warg")).unwrap(),
+        let faux_agneau = crate::partie::fiche_d_espece(
+            &contenu.espece(&EspeceId::new("faux-agneau")).unwrap(),
             &codex,
             &[],
             &contenu,
         );
         assert!(
-            warg.iter()
+            faux_agneau.iter()
                 .any(|ligne| ligne.starts_with("  niv. 16 (en évoluant depuis Loup) : Croc noir (")),
-            "{warg:?}"
+            "{faux_agneau:?}"
         );
         // Le Loup n'évolue de rien : aucune attaque d'évolution sur sa page,
-        // pas même celle du Warg.
+        // pas même celle du Faux-agneau.
         let loup = fiche("loup");
         assert!(!loup.iter().any(|ligne| ligne.contains("en évoluant")));
         assert!(!loup.iter().any(|ligne| ligne.contains("Croc noir")));

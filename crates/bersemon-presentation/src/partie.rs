@@ -745,7 +745,7 @@ pub fn fiche_d_espece(
     fiche
 }
 
-/// Après le nom de l'espèce d'arrivée : "Lézard de braise au niveau 16".
+/// Après le nom de l'espèce d'arrivée : "Athanor au niveau 16".
 pub fn condition_d_evolution(condition: &ConditionEvolution, catalogue: &dyn Catalogue) -> String {
     match condition {
         ConditionEvolution::Niveau(niveau) => format!("au niveau {}", niveau.valeur()),

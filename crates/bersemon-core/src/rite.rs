@@ -238,7 +238,7 @@ mod tests {
             forme_de_base(&espece, especes).id().as_str().to_string()
         };
         assert_eq!(base("salamandre"), "salamandre");
-        assert_eq!(base("lezard-de-braise"), "salamandre");
+        assert_eq!(base("athanor"), "salamandre");
         assert_eq!(base("loup"), "loup");
     }
 

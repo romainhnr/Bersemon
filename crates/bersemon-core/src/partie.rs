@@ -3837,20 +3837,20 @@ pub(crate) mod tests {
         );
     }
 
-    /// Section 5.4 : reçu d'un autre joueur, l'Aspic évolue au camp sans
+    /// Section 5.4 : reçu d'un autre joueur, le Tentateur évolue au camp sans
     /// Chaîne de lien ; sinon, il lui en faut une, consommée.
     #[test]
-    fn l_aspic_evolue_par_echange_ou_avec_une_chaine() {
+    fn le_tentateur_evolue_par_echange_ou_avec_une_chaine() {
         let contenu = crate::contenu::ContenuV1::new();
-        let aspic = Monstre::creer(
-            contenu.espece(&EspeceId::new("aspic")).unwrap(),
+        let tentateur = Monstre::creer(
+            contenu.espece(&EspeceId::new("tentateur")).unwrap(),
             Niveau::new(20).unwrap(),
             ValeursInternes::default(),
             false,
         )
         .unwrap();
         let mut seul = partie();
-        seul.collection.accueillir_capture(aspic.clone());
+        seul.collection.accueillir_capture(tentateur.clone());
         let chaine = PierreDEvolution::ChaineDeLien;
         assert_eq!(
             seul.estimer_evolution(Emplacement::Equipe(1), &contenu),
@@ -3875,7 +3875,7 @@ pub(crate) mod tests {
         );
         // Reçu d'un autre joueur : sans chaîne.
         let mut autre = partie();
-        let recu = autre.preparer_monstre_recu(aspic, &Nom::new("Ysolde").unwrap());
+        let recu = autre.preparer_monstre_recu(tentateur, &Nom::new("Ysolde").unwrap());
         assert!(recu.evolue_par_echange());
         autre.collection.accueillir_capture(recu);
         let (_, vers, pierre) = autre
@@ -5506,17 +5506,26 @@ pub(crate) mod tests {
     fn le_rite_du_sang_mele_donne_un_petit_de_la_forme_de_base() {
         let (mut partie, contenu) = chez_malvoise();
         let especes = contenu.especes();
-        // Le crapaud de départ, puis un Loup et un Warg, de la même famille.
+        // Le crapaud de départ, puis un Loup et un Faux-agneau, de la même
+        // famille.
         accueillir(&mut partie, &contenu, "loup", 10, [31, 2, 20, 0, 5, 9]);
-        accueillir(&mut partie, &contenu, "warg", 20, [4, 30, 6, 12, 5, 28]);
-        let (loup, warg) = (Emplacement::Equipe(1), Emplacement::Equipe(2));
+        accueillir(
+            &mut partie,
+            &contenu,
+            "faux-agneau",
+            20,
+            [4, 30, 6, 12, 5, 28],
+        );
+        let (loup, faux_agneau) = (Emplacement::Equipe(1), Emplacement::Equipe(2));
         assert_eq!(
             partie.preparer_le_rite(Emplacement::Equipe(0), loup, especes),
             Err(ErreurRite::FamillesDifferentes)
         );
         // Le rite ne demande que l'argent, sans ressource de l'espèce.
         let argent = partie.argent();
-        let apercu = partie.lancer_le_rite(loup, warg, especes, a(0)).unwrap();
+        let apercu = partie
+            .lancer_le_rite(loup, faux_agneau, especes, a(0))
+            .unwrap();
         assert_eq!(apercu.petit.id().as_str(), "loup");
         assert_eq!(partie.argent(), argent - 50);
         // Les parents gardent leur place, et le petit a la sienne.

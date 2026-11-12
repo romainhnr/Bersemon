@@ -863,7 +863,7 @@ mod tests {
             )
             .unwrap()
         };
-        let apres = creer("lezard-de-braise");
+        let apres = creer("athanor");
         let attaque = apres.attaques().liste()[0].clone();
         let recits = raconter(&[
             Evenement::Evolution {
@@ -876,7 +876,7 @@ mod tests {
         assert_eq!(
             recits[0].texte,
             format!(
-                "**Salamandre** évolue en **Lézard de braise** !\n**Lézard de braise** apprend {}.\nD'autres attaques peuvent s'apprendre au camp.",
+                "**Salamandre** évolue en **Athanor** !\n**Athanor** apprend {}.\nD'autres attaques peuvent s'apprendre au camp.",
                 attaque.nom()
             )
         );

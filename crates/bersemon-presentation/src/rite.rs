@@ -181,7 +181,7 @@ mod tests {
         let loup = contenu.espece(&EspeceId::new("loup")).unwrap();
         let assaut = loup.attaque_d_oeuf().unwrap().clone();
         let mut apercu = ApercuDuRite {
-            parents: [creer("loup", "Croc"), creer("warg", "Bise")],
+            parents: [creer("loup", "Croc"), creer("faux-agneau", "Bise")],
             petit: loup,
             prix: 50,
             duree: DUREE_DU_RITE,

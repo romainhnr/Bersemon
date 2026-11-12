@@ -459,7 +459,7 @@ const AVANT_LE_GARDIEN: &str = "Les marches débouchent sur un palier plus large
 /// proposés par Claude, Q124).
 const ENTREE_DANS_LES_ABYSSES: &str = "Les marches cessent au bord d'un gouffre sans lumière : les Abysses. Seules les bêtes les plus terribles rôdent ici, et plus bas vous attend la Main du Démiurge, cinq Apôtres élevés au rang de dieux.";
 const AVANT_LE_COLOSSE: &str = "Un rempart barre l'escalier. Il bouge : {monstre}, un géant de pierre et d'acier, lève un bouclier haut comme une tour. Il n'y aura pas de fuite.";
-const AVANT_LE_CHEVALIER: &str = "Sur le seuil, un chevalier en armure noire traîne une épée immense dans la pierre. Le gouffre le ronge depuis des siècles : {monstre} se met en garde. Il n'y aura pas de fuite.";
+const AVANT_LE_HELLEQUIN: &str = "Sur le seuil, un cor sonne dans le noir. Un cavalier d'acier couronné de bois de cerf mène la chasse des morts, et le gouffre le ronge depuis des siècles : {monstre} se met en garde. Il n'y aura pas de fuite.";
 const ELUS_DE_LA_MAIN: [(&str, &str); 5] = [
     (
         "cardinal-du-vide",
@@ -904,8 +904,8 @@ impl ContenuV1 {
                 trouver("troll-des-cavernes"),
                 trouver("harpie-des-orages"),
                 trouver("gargouille"),
-                trouver("warg"),
-                trouver("chevalier-noir"),
+                trouver("faux-agneau"),
+                trouver("gisant"),
             ],
             vec![
                 EspeceRare {
@@ -2336,7 +2336,7 @@ impl ContenuV1 {
             ENTREE_DANS_LES_ABYSSES,
         )
         .avec_gardien_attitre(40, attitre("colosse-du-rempart", AVANT_LE_COLOSSE))
-        .avec_gardien_attitre(50, attitre("chevalier-de-l-abime", AVANT_LE_CHEVALIER))
+        .avec_gardien_attitre(50, attitre("hellequin", AVANT_LE_HELLEQUIN))
         .avec_elus(
             ELUS_DE_LA_MAIN
                 .iter()
@@ -3997,7 +3997,7 @@ const ATTAQUES: [FicheAttaque; 336] = [
         80,
         100,
     ),
-    // Attaques du Désert de sel et du Dragon des brumes (section 40).
+    // Attaques du Désert de sel et de la Mélusine (section 40).
     avec_effet(
         fiche("crecelle", "Crécelle", Type::Son, Speciale, 60, 100),
         Paralysie,
@@ -5987,7 +5987,7 @@ static ESPECES: [FicheEspece; 190] = [
             (10, "flamme-vive"),
             (14, "fournaise"),
         ],
-        evolution: par_niveau("lezard-de-braise", 16, "jet-de-lave"),
+        evolution: par_niveau("athanor", 16, "jet-de-lave"),
     },
     FicheEspece {
         id: "crapaud",
@@ -6005,7 +6005,7 @@ static ESPECES: [FicheEspece; 190] = [
             (10, "langue-venimeuse"),
             (14, "lame-de-fond"),
         ],
-        evolution: par_niveau("crapaud-geant", 16, "trombe"),
+        evolution: par_niveau("crapaudine", 16, "trombe"),
     },
     FicheEspece {
         id: "mandragore",
@@ -6023,7 +6023,7 @@ static ESPECES: [FicheEspece; 190] = [
             (10, "ronces"),
             (14, "spores-putrides"),
         ],
-        evolution: par_niveau("mandragore-ancienne", 16, "hurlement-de-mandragore"),
+        evolution: par_niveau("main-de-gloire", 16, "hurlement-de-mandragore"),
     },
     FicheEspece {
         id: "chat-noir",
@@ -6041,7 +6041,7 @@ static ESPECES: [FicheEspece; 190] = [
             (10, "morsure"),
             (14, "coup-de-grace"),
         ],
-        evolution: par_niveau("chat-des-ombres", 16, "griffe-d-ombre"),
+        evolution: par_niveau("monte-en-l-air", 16, "griffe-d-ombre"),
     },
     FicheEspece {
         id: "loup",
@@ -6053,7 +6053,7 @@ static ESPECES: [FicheEspece; 190] = [
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Depeceur, Habilete::Fouineur],
         apprentissage: &[(1, "griffure"), (4, "morsure"), (9, "curee")],
-        evolution: par_niveau_au_moment("warg", 16, JourOuNuit::Nuit, "croc-noir"),
+        evolution: par_niveau_au_moment("faux-agneau", 16, JourOuNuit::Nuit, "croc-noir"),
     },
     FicheEspece {
         id: "corbeau",
@@ -6065,7 +6065,7 @@ static ESPECES: [FicheEspece; 190] = [
         rarete: Rarete::Commune,
         habiletes: &[Habilete::Pillard, Habilete::Fortune],
         apprentissage: &[(1, "coup-de-bec"), (4, "pique"), (8, "regard-funeste")],
-        evolution: par_niveau_au_moment("corbeau-des-gibets", 16, JourOuNuit::Nuit, "bec-funeste"),
+        evolution: par_niveau_au_moment("bec-de-peste", 16, JourOuNuit::Nuit, "bec-funeste"),
     },
     FicheEspece {
         id: "vipere",
@@ -6081,7 +6081,7 @@ static ESPECES: [FicheEspece; 190] = [
             (3, "regard-petrifiant"),
             (9, "etreinte"),
         ],
-        evolution: par_niveau_au_moment("aspic", 16, JourOuNuit::Jour, "venin-noir"),
+        evolution: par_niveau_au_moment("tentateur", 16, JourOuNuit::Jour, "venin-noir"),
     },
     FicheEspece {
         id: "feu-follet",
@@ -6119,7 +6119,7 @@ static ESPECES: [FicheEspece; 190] = [
             (11, "charge-spectrale"),
         ],
         evolution: sous_condition(
-            "chevalier-noir",
+            "gisant",
             FicheCondition::Lieu("vallee", 12),
             "taille-d-acier",
         ),
@@ -6151,7 +6151,7 @@ static ESPECES: [FicheEspece; 190] = [
             (11, "charge-spectrale"),
         ],
         evolution: sous_condition(
-            "chevalier-squelette",
+            "ankou",
             FicheCondition::ApotreVaincu("baron-pendu", 20),
             "epee-des-morts",
         ),
@@ -6166,7 +6166,7 @@ static ESPECES: [FicheEspece; 190] = [
         rarete: Rarete::Rare,
         habiletes: &[Habilete::Volonte, Habilete::Instinct],
         apprentissage: &[(1, "coup-de-bois"), (5, "ruade"), (8, "lumiere-d-aube")],
-        evolution: par_pierre("cerf-de-lune", PierreDEvolution::Lune, "rayon-de-lune"),
+        evolution: par_pierre("cerf-candelabre", PierreDEvolution::Lune, "rayon-de-lune"),
     },
     FicheEspece {
         id: "basilic",
@@ -6183,7 +6183,7 @@ static ESPECES: [FicheEspece; 190] = [
             (10, "souffle-putride"),
             (13, "croc-de-venin"),
         ],
-        evolution: par_niveau_sous_la_meteo("basilic-royal", 22, Meteo::Canicule, "regard-de-mort"),
+        evolution: par_niveau_sous_la_meteo("cocatrix", 22, Meteo::Canicule, "regard-de-mort"),
     },
     FicheEspece {
         id: "elfe",
@@ -6215,7 +6215,7 @@ static ESPECES: [FicheEspece; 190] = [
             (8, "pique"),
             (12, "furie-draconique"),
         ],
-        evolution: par_niveau("dragon-des-brumes", 45, "souffle-des-brumes"),
+        evolution: par_niveau("melusine", 45, "souffle-des-brumes"),
     },
     FicheEspece {
         id: "baron-pendu",
@@ -6256,8 +6256,8 @@ static ESPECES: [FicheEspece; 190] = [
     },
     // Premières évolutions par niveau, section 8 de docs/contenu-v1.md.
     FicheEspece {
-        id: "lezard-de-braise",
-        nom: "Lézard de braise",
+        id: "athanor",
+        nom: "Athanor",
         types: &[Type::Feu],
         role: Role::Offensif,
         stats_de_base: [60, 50, 55, 92, 70, 83],
@@ -6276,8 +6276,8 @@ static ESPECES: [FicheEspece; 190] = [
         evolution: par_niveau("wyverne-de-cendre", 25, "souffle-de-cendre"),
     },
     FicheEspece {
-        id: "crapaud-geant",
-        nom: "Crapaud géant",
+        id: "crapaudine",
+        nom: "Crapaudine",
         types: &[Type::Eau],
         role: Role::Offensif,
         stats_de_base: [72, 88, 70, 45, 58, 67],
@@ -6293,11 +6293,11 @@ static ESPECES: [FicheEspece; 190] = [
             (16, "trombe"),
             (16, "deferlante"),
         ],
-        evolution: par_niveau("crapaud-roi", 25, "deluge-toxique"),
+        evolution: par_niveau("crapaud-chaudron", 25, "deluge-toxique"),
     },
     FicheEspece {
-        id: "mandragore-ancienne",
-        nom: "Mandragore ancienne",
+        id: "main-de-gloire",
+        nom: "Main de gloire",
         types: &[Type::Plante],
         role: Role::Soutien,
         stats_de_base: [90, 58, 90, 58, 84, 30],
@@ -6316,8 +6316,8 @@ static ESPECES: [FicheEspece; 190] = [
         evolution: par_niveau("arbre-pendu", 25, "racines-du-gibet"),
     },
     FicheEspece {
-        id: "chat-des-ombres",
-        nom: "Chat des ombres",
+        id: "monte-en-l-air",
+        nom: "Monte-en-l'air",
         types: &[Type::Tenebres],
         role: Role::Offensif,
         stats_de_base: [52, 92, 45, 50, 48, 113],
@@ -6336,8 +6336,8 @@ static ESPECES: [FicheEspece; 190] = [
         evolution: par_niveau("cait-sith", 25, "griffes-spectrales"),
     },
     FicheEspece {
-        id: "warg",
-        nom: "Warg",
+        id: "faux-agneau",
+        nom: "Faux-agneau",
         types: &[Type::Normal, Type::Tenebres],
         role: Role::Offensif,
         stats_de_base: [65, 80, 58, 38, 52, 75],
@@ -6354,8 +6354,8 @@ static ESPECES: [FicheEspece; 190] = [
         evolution: par_niveau("loup-garou", 25, "dechiquetage"),
     },
     FicheEspece {
-        id: "corbeau-des-gibets",
-        nom: "Corbeau des gibets",
+        id: "bec-de-peste",
+        nom: "Bec-de-peste",
         types: &[Type::Vol, Type::Tenebres],
         role: Role::Offensif,
         stats_de_base: [55, 72, 48, 58, 48, 90],
@@ -6372,8 +6372,8 @@ static ESPECES: [FicheEspece; 190] = [
         evolution: par_echange("augure", "presage-funeste"),
     },
     FicheEspece {
-        id: "aspic",
-        nom: "Aspic",
+        id: "tentateur",
+        nom: "Tentateur",
         types: &[Type::Poison],
         role: Role::Offensif,
         stats_de_base: [52, 64, 52, 64, 58, 80],
@@ -6413,8 +6413,8 @@ static ESPECES: [FicheEspece; 190] = [
         ),
     },
     FicheEspece {
-        id: "basilic-royal",
-        nom: "Basilic royal",
+        id: "cocatrix",
+        nom: "Cocatrix",
         types: &[Type::Poison, Type::Dragon],
         role: Role::Offensif,
         stats_de_base: [90, 88, 80, 92, 75, 70],
@@ -6452,8 +6452,8 @@ static ESPECES: [FicheEspece; 190] = [
         evolution: None,
     },
     FicheEspece {
-        id: "cerf-de-lune",
-        nom: "Cerf de lune",
+        id: "cerf-candelabre",
+        nom: "Cerf-candélabre",
         types: &[Type::Normal, Type::Feerique],
         role: Role::Soutien,
         stats_de_base: [85, 75, 75, 82, 88, 95],
@@ -6470,8 +6470,8 @@ static ESPECES: [FicheEspece; 190] = [
     },
     // Évolutions par lieu et par événement (étape 40).
     FicheEspece {
-        id: "chevalier-noir",
-        nom: "Chevalier noir",
+        id: "gisant",
+        nom: "Gisant",
         types: &[Type::Acier, Type::Spectre],
         role: Role::Offensif,
         stats_de_base: [75, 95, 105, 38, 62, 38],
@@ -6488,8 +6488,8 @@ static ESPECES: [FicheEspece; 190] = [
         evolution: par_echange("dullahan", "chevauchee-sans-tete"),
     },
     FicheEspece {
-        id: "chevalier-squelette",
-        nom: "Chevalier squelette",
+        id: "ankou",
+        nom: "Ankou",
         types: &[Type::Spectre, Type::Combat],
         role: Role::Offensif,
         stats_de_base: [62, 100, 75, 38, 56, 69],
@@ -6624,7 +6624,7 @@ static ESPECES: [FicheEspece; 190] = [
             (25, "ronces-maudites"),
             (25, "lianes-etrangleuses"),
         ],
-        evolution: par_niveau("imperatrice-des-ronces", 70, "couronne-d-epines"),
+        evolution: par_niveau("carabosse", 70, "couronne-d-epines"),
     },
     // Monstres aquatiques, qui ne se trouvent qu'à la pêche, section 15 de
     // docs/contenu-v1.md (étape 62).
@@ -6823,11 +6823,11 @@ static ESPECES: [FicheEspece; 190] = [
             (25, "souffle-de-cendre"),
             (25, "furie-draconique"),
         ],
-        evolution: par_niveau("dragon-de-cendre", 70, "apocalypse-de-cendre"),
+        evolution: par_niveau("ouroboros", 70, "apocalypse-de-cendre"),
     },
     FicheEspece {
-        id: "crapaud-roi",
-        nom: "Crapaud-roi",
+        id: "crapaud-chaudron",
+        nom: "Crapaud-chaudron",
         types: &[Type::Eau, Type::Poison],
         role: Role::Offensif,
         stats_de_base: [90, 105, 85, 55, 70, 75],
@@ -6845,7 +6845,7 @@ static ESPECES: [FicheEspece; 190] = [
             (25, "deluge-toxique"),
             (25, "croc-de-venin"),
         ],
-        evolution: par_niveau("crapaud-empereur", 70, "ecrasement-des-marais"),
+        evolution: par_niveau("bombarde-des-marais", 70, "ecrasement-des-marais"),
     },
     FicheEspece {
         id: "arbre-pendu",
@@ -6867,7 +6867,7 @@ static ESPECES: [FicheEspece; 190] = [
             (25, "racines-du-gibet"),
             (25, "frisson-d-outre-tombe"),
         ],
-        evolution: par_niveau("chene-gibet", 70, "etreinte-du-gibet"),
+        evolution: par_niveau("chene-bourreau", 70, "etreinte-du-gibet"),
     },
     FicheEspece {
         id: "cait-sith",
@@ -6889,7 +6889,7 @@ static ESPECES: [FicheEspece; 190] = [
             (25, "griffes-spectrales"),
             (25, "charge-spectrale"),
         ],
-        evolution: par_niveau("roi-des-chats", 70, "griffe-des-neuf-vies"),
+        evolution: par_niveau("chat-a-neuf-queues", 70, "griffe-des-neuf-vies"),
     },
     FicheEspece {
         id: "loup-garou",
@@ -7125,8 +7125,8 @@ static ESPECES: [FicheEspece; 190] = [
     // La Vouivre évolue au niveau 45 (section 5.4) ; son rendement d'XP
     // vaut 1,4 fois le sien.
     FicheEspece {
-        id: "dragon-des-brumes",
-        nom: "Dragon des brumes",
+        id: "melusine",
+        nom: "Mélusine",
         types: &[Type::Dragon, Type::Vol],
         role: Role::Offensif,
         stats_de_base: [90, 100, 80, 100, 75, 75],
@@ -8343,7 +8343,7 @@ static ESPECES: [FicheEspece; 190] = [
             (18, "taille-d-acier"),
             (18, "frisson-d-outre-tombe"),
         ],
-        evolution: par_niveau("chevalier-de-l-abime", 70, "marche-de-l-abime"),
+        evolution: par_niveau("hellequin", 70, "marche-de-l-abime"),
     },
     FicheEspece {
         id: "augure",
@@ -8363,7 +8363,7 @@ static ESPECES: [FicheEspece; 190] = [
             (16, "bec-funeste"),
             (16, "bourrasque"),
         ],
-        evolution: par_niveau("oracle-noir", 70, "presage-ultime"),
+        evolution: par_niveau("morrigane", 70, "presage-ultime"),
     },
     FicheEspece {
         id: "gorgone",
@@ -8414,8 +8414,8 @@ static ESPECES: [FicheEspece; 190] = [
     // proportions, et leur rendement d'XP vaut 1,4 fois le sien (section
     // 5.4, étape 203, proposé par Claude, Q124).
     FicheEspece {
-        id: "dragon-de-cendre",
-        nom: "Dragon de cendre",
+        id: "ouroboros",
+        nom: "Ouroboros",
         types: &[Type::Feu, Type::Dragon],
         role: Role::Offensif,
         stats_de_base: [87, 79, 79, 128, 93, 104],
@@ -8437,8 +8437,8 @@ static ESPECES: [FicheEspece; 190] = [
         evolution: None,
     },
     FicheEspece {
-        id: "crapaud-empereur",
-        nom: "Crapaud-empereur",
+        id: "bombarde-des-marais",
+        nom: "Bombarde des marais",
         types: &[Type::Eau, Type::Poison],
         role: Role::Offensif,
         stats_de_base: [107, 125, 101, 65, 83, 89],
@@ -8460,8 +8460,8 @@ static ESPECES: [FicheEspece; 190] = [
         evolution: None,
     },
     FicheEspece {
-        id: "chene-gibet",
-        nom: "Chêne-gibet",
+        id: "chene-bourreau",
+        nom: "Chêne-bourreau",
         types: &[Type::Plante, Type::Spectre],
         role: Role::Soutien,
         stats_de_base: [129, 81, 128, 81, 116, 35],
@@ -8483,8 +8483,8 @@ static ESPECES: [FicheEspece; 190] = [
         evolution: None,
     },
     FicheEspece {
-        id: "roi-des-chats",
-        nom: "Roi des chats",
+        id: "chat-a-neuf-queues",
+        nom: "Chat à neuf queues",
         types: &[Type::Tenebres, Type::Spectre],
         role: Role::Offensif,
         stats_de_base: [76, 130, 64, 76, 67, 157],
@@ -8527,8 +8527,8 @@ static ESPECES: [FicheEspece; 190] = [
         evolution: None,
     },
     FicheEspece {
-        id: "oracle-noir",
-        nom: "Oracle noir",
+        id: "morrigane",
+        nom: "Morrigane",
         types: &[Type::Vol, Type::Tenebres, Type::Psychique],
         role: Role::Offensif,
         stats_de_base: [80, 86, 74, 124, 86, 120],
@@ -8548,8 +8548,8 @@ static ESPECES: [FicheEspece; 190] = [
         evolution: None,
     },
     FicheEspece {
-        id: "chevalier-de-l-abime",
-        nom: "Chevalier de l'abîme",
+        id: "hellequin",
+        nom: "Hellequin",
         types: &[Type::Acier, Type::Spectre],
         role: Role::Offensif,
         stats_de_base: [97, 137, 131, 51, 86, 68],
@@ -8569,8 +8569,8 @@ static ESPECES: [FicheEspece; 190] = [
         evolution: None,
     },
     FicheEspece {
-        id: "imperatrice-des-ronces",
-        nom: "Impératrice des ronces",
+        id: "carabosse",
+        nom: "Carabosse",
         types: &[Type::Insecte, Type::Plante],
         role: Role::Offensif,
         stats_de_base: [83, 65, 77, 131, 101, 113],
@@ -11097,8 +11097,8 @@ const RESSOURCES: [(&str, &str, &str); 109] = [
     ("wyrm-de-givre", "ecaille-de-wyrm", "Écaille de wyrm"),
     // Formes évoluées sauvages du Col : la ressource de leur forme de base
     // (section 5.4).
-    ("warg", "croc-de-loup", "Croc de loup"),
-    ("chevalier-noir", "fragment-d-armure", "Fragment d'armure"),
+    ("faux-agneau", "croc-de-loup", "Croc de loup"),
+    ("gisant", "fragment-d-armure", "Fragment d'armure"),
     ("cloche-hurlante", "eclat-de-bronze", "Éclat de bronze"),
     (
         "crotale-des-salines",
@@ -11271,7 +11271,7 @@ const ACTIVITES: [(&str, Activite); 28] = [
     ("chauve-souris-de-crypte", Activite::Nocturne),
     ("troll-des-cavernes", Activite::Nocturne),
     ("wendigo", Activite::Nocturne),
-    ("warg", Activite::Nocturne),
+    ("faux-agneau", Activite::Nocturne),
     ("vipere", Activite::Diurne),
     ("cloche-hurlante", Activite::Diurne),
     ("harpie-des-orages", Activite::Diurne),
@@ -12548,7 +12548,7 @@ mod tests {
                 .count(),
             1
         );
-        assert!(especes(9).contains(&"warg".to_string()));
+        assert!(especes(9).contains(&"faux-agneau".to_string()));
         // Le Désert de sel, dès le niveau 24 : à l'étape 10, niveau 24.
         assert!(!especes(9).contains(&"crotale-des-salines".to_string()));
         assert!(especes(10).contains(&"crotale-des-salines".to_string()));
@@ -12859,7 +12859,7 @@ mod tests {
         // Le Schnoz évolue depuis l'étape 202, les stades 3 des familles de
         // départ et de quatre autres depuis l'étape 203.
         assert_eq!(evoluees, 32);
-        assert_eq!(sauvages, vec!["warg", "chevalier-noir"]);
+        assert_eq!(sauvages, vec!["faux-agneau", "gisant"]);
     }
 
     #[test]
@@ -13160,7 +13160,7 @@ mod tests {
     #[test]
     fn la_famille_de_la_mandragore_apprend_secousse_au_niveau_7() {
         let contenu = ContenuV1::new();
-        for id in ["mandragore", "mandragore-ancienne", "arbre-pendu"] {
+        for id in ["mandragore", "main-de-gloire", "arbre-pendu"] {
             let espece = contenu.espece(&EspeceId::new(id)).unwrap();
             let au_niveau_7: Vec<&str> = espece
                 .apprentissage()
@@ -13207,13 +13207,13 @@ mod tests {
             ),
             (
                 "col-du-givre-noir",
-                &["harpie-des-orages", "gargouille", "chevalier-noir"],
+                &["harpie-des-orages", "gargouille", "gisant"],
                 &[
                     "wendigo",
                     "troll-des-cavernes",
                     "gargouille",
-                    "warg",
-                    "chevalier-noir",
+                    "faux-agneau",
+                    "gisant",
                 ],
             ),
             (
@@ -13465,7 +13465,7 @@ mod tests {
         assert_eq!(porte_etendard.argent(), 400);
         // Les stades 3 du niveau 36 s'atteignent dans le Col (section 5.4).
         let wyverne = contenu
-            .espece(&EspeceId::new("lezard-de-braise"))
+            .espece(&EspeceId::new("athanor"))
             .and_then(|espece| espece.evolution().cloned())
             .unwrap();
         assert_eq!(wyverne.vers().as_str(), "wyverne-de-cendre");
@@ -13574,7 +13574,7 @@ mod tests {
             .espece(&EspeceId::new("vouivre"))
             .and_then(|espece| espece.evolution().cloned())
             .unwrap();
-        assert_eq!(evolution.vers().as_str(), "dragon-des-brumes");
+        assert_eq!(evolution.vers().as_str(), "melusine");
         assert_eq!(
             evolution.condition(),
             &ConditionEvolution::Niveau(niveau(45))
