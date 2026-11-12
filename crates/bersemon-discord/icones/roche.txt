@@ -1,0 +1,32 @@
+# Icône du type Roche
+palette
+o 1b1420
+b 9c9488
+c 726a5e
+d bdb6aa
+w 2a241c
+dessin
+........................
+..oooooooooooooooooooo..
+.oddddddddddddddddddddo.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbwwwwbbbbbbbco.
+.odbbbbbbwwwwwwbbbbbbco.
+.odbbbbbbwwwwwwbbbbbbco.
+.odbbbbbbbwwwwbbbbbbbco.
+.odbbbbwwwwbbwwwwbbbbco.
+.odbbbwwwwwwbwwwwwbbbco.
+.odbbbwwwwwwbwwwwwbbbco.
+.odbbbbwwwwbbbwwwbbbbco.
+.odbbwwwwbbwwwwbbwwbbco.
+.odbwwwwwwbwwwwwwbwwbco.
+.odbwwwwwwbwwwwwwbwwbco.
+.odbbwwwwbbbwwwwbwwbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odccccccccccccccccccco.
+..oooooooooooooooooooo..
+........................

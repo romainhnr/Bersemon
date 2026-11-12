@@ -1,0 +1,32 @@
+# Icône du type Sol
+palette
+o 1b1420
+b c8a050
+c 967534
+d e0c078
+w 3a2a14
+dessin
+........................
+..oooooooooooooooooooo..
+.oddddddddddddddddddddo.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbwwbbbbbbbbbbbco.
+.odbbbbwwwwbbbbbbbbbbco.
+.odbbbwwwwwwbbwwbbbbbco.
+.odbbwwwwwwwwbwwwbbbbco.
+.odbwwwwwwwwwwbwwwbbbco.
+.odbwwwwwwwwwwwbwwwbbco.
+.odbwwwwwwwwwwwwwwwwbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbwwwwwwwwwwwwwwwwbco.
+.odbwwwwwwwwwwwwwwwwbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbwwwwwwwwwwwwwwwwbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odccccccccccccccccccco.
+..oooooooooooooooooooo..
+........................

@@ -1,0 +1,32 @@
+# Icône du type Feu
+palette
+o 1b1420
+b e8702a
+c b0501a
+d f8a060
+w fff2c8
+dessin
+........................
+..oooooooooooooooooooo..
+.oddddddddddddddddddddo.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbwbbbbbbbbbco.
+.odbbbbbbbwwbbbbbbbbbco.
+.odbbbbbbbwwwbbbbbbbbco.
+.odbbbbbbwwwwbbbwbbbbco.
+.odbbbbbbwwwwwbbwwbbbco.
+.odbbbbbwwwwwwbwwwbbbco.
+.odbbbbwwwwwwwwwwwbbbco.
+.odbbbbwwwwbwwwwwwbbbco.
+.odbbbwwwwbbbwwwwwbbbco.
+.odbbbwwwbbbbbwwwwbbbco.
+.odbbbwwwbbbbbwwwwbbbco.
+.odbbbwwwwbbbwwwwbbbbco.
+.odbbbbwwwwwwwwwbbbbbco.
+.odbbbbbwwwwwwwbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odccccccccccccccccccco.
+..oooooooooooooooooooo..
+........................

@@ -1,12 +1,13 @@
-//! Icônes des attaques en combat (section 10.6, étape 210) : une par type
-//! et par catégorie, carrée pour une attaque physique, ronde pour une
-//! spéciale. Sur les boutons, elles remplacent le type et la catégorie
-//! écrits, que l'écran d'un téléphone coupait. Le bot les téléverse lui-même
-//! comme émojis de son application, au démarrage ; tant qu'il ne les a pas,
-//! un émoji Unicode du type et la lettre P ou S en tiennent lieu.
+//! Icônes des attaques en combat (section 10.6) : depuis l'étape 214, une
+//! par type, en émoji du bouton, et un émoji Unicode pour la catégorie en
+//! tête du libellé. Un bouton n'a qu'un émoji, et son libellé est du texte
+//! brut, où une émote personnalisée ne s'affiche pas : type et catégorie ne
+//! peuvent pas être deux émotes du bot. Le bot téléverse ses icônes comme
+//! émojis de son application, au démarrage ; tant qu'il n'a pas celle d'un
+//! type, un émoji Unicode en tient lieu.
 
 use std::collections::HashMap;
-use std::sync::OnceLock;
+use std::sync::RwLock;
 
 use bersemon_core::attaque::Categorie;
 use bersemon_core::types::Type;
@@ -31,99 +32,59 @@ impl IconeDAttaque {
         }
     }
 
-    /// Le nom de l'émoji d'application : Discord n'y admet que des lettres
-    /// sans accent, des chiffres et des soulignés, de 2 à 32 caractères.
-    pub fn nom(self) -> String {
-        format!(
-            "bersemon_{}_{}",
-            identifiant(self.type_attaque),
-            self.lettre().to_lowercase()
-        )
-    }
-
-    fn lettre(self) -> &'static str {
-        if self.physique { "P" } else { "S" }
-    }
-
-    /// Le fichier de l'icône, au format des sprites.
-    fn fichier(self) -> String {
-        format!(
-            "{}-{}",
-            identifiant(self.type_attaque),
-            self.lettre().to_lowercase()
-        )
-    }
-
-    /// Le PNG à téléverser, de 120 pixels de côté.
-    pub fn png(self) -> Vec<u8> {
-        let fichier = self.fichier();
-        let texte = ICONES
-            .iter()
-            .find(|(nom, _)| *nom == fichier)
-            .map(|(_, texte)| *texte)
-            .expect("une icône par type et par catégorie");
-        png_d_icone(&Sprite::lire(texte).expect("icône lisible"))
-    }
-
-    /// Les 46 icônes : chaque type, physique puis spéciale.
-    pub fn toutes() -> impl Iterator<Item = IconeDAttaque> {
-        Type::TOUS.into_iter().flat_map(|type_attaque| {
-            [true, false].map(|physique| IconeDAttaque {
-                type_attaque,
-                physique,
-            })
-        })
+    /// L'émoji Unicode de la catégorie, en tête du libellé : des épées
+    /// croisées pour une attaque physique, des étincelles pour une spéciale.
+    pub fn categorie(self) -> &'static str {
+        if self.physique {
+            "\u{2694}\u{FE0F}"
+        } else {
+            "\u{2728}"
+        }
     }
 }
 
+/// Le nom de l'émoji d'application : Discord n'y admet que des lettres
+/// sans accent, des chiffres et des soulignés, de 2 à 32 caractères.
+fn nom_de_l_icone(type_attaque: Type) -> String {
+    format!("bersemon_{}", identifiant(type_attaque))
+}
+
+/// Le PNG à téléverser, de 120 pixels de côté.
+fn png_du_type(type_attaque: Type) -> Vec<u8> {
+    let fichier = identifiant(type_attaque);
+    let texte = ICONES
+        .iter()
+        .find(|(nom, _)| *nom == fichier)
+        .map(|(_, texte)| *texte)
+        .expect("une icône par type");
+    png_d_icone(&Sprite::lire(texte).expect("icône lisible"))
+}
+
 /// Fichiers de crates/bersemon-discord/icones, dessinés par Claude (Q125).
-const ICONES: [(&str, &str); 46] = [
-    ("acier-p", include_str!("../icones/acier-p.txt")),
-    ("acier-s", include_str!("../icones/acier-s.txt")),
-    ("combat-p", include_str!("../icones/combat-p.txt")),
-    ("combat-s", include_str!("../icones/combat-s.txt")),
-    ("dragon-p", include_str!("../icones/dragon-p.txt")),
-    ("dragon-s", include_str!("../icones/dragon-s.txt")),
-    ("eau-p", include_str!("../icones/eau-p.txt")),
-    ("eau-s", include_str!("../icones/eau-s.txt")),
-    ("electrique-p", include_str!("../icones/electrique-p.txt")),
-    ("electrique-s", include_str!("../icones/electrique-s.txt")),
-    ("feerique-p", include_str!("../icones/feerique-p.txt")),
-    ("feerique-s", include_str!("../icones/feerique-s.txt")),
-    ("feu-p", include_str!("../icones/feu-p.txt")),
-    ("feu-s", include_str!("../icones/feu-s.txt")),
-    ("glace-p", include_str!("../icones/glace-p.txt")),
-    ("glace-s", include_str!("../icones/glace-s.txt")),
-    ("humain-p", include_str!("../icones/humain-p.txt")),
-    ("humain-s", include_str!("../icones/humain-s.txt")),
-    ("insecte-p", include_str!("../icones/insecte-p.txt")),
-    ("insecte-s", include_str!("../icones/insecte-s.txt")),
-    ("lumiere-p", include_str!("../icones/lumiere-p.txt")),
-    ("lumiere-s", include_str!("../icones/lumiere-s.txt")),
-    ("normal-p", include_str!("../icones/normal-p.txt")),
-    ("normal-s", include_str!("../icones/normal-s.txt")),
-    ("obscur-p", include_str!("../icones/obscur-p.txt")),
-    ("obscur-s", include_str!("../icones/obscur-s.txt")),
-    ("plante-p", include_str!("../icones/plante-p.txt")),
-    ("plante-s", include_str!("../icones/plante-s.txt")),
-    ("poison-p", include_str!("../icones/poison-p.txt")),
-    ("poison-s", include_str!("../icones/poison-s.txt")),
-    ("psychique-p", include_str!("../icones/psychique-p.txt")),
-    ("psychique-s", include_str!("../icones/psychique-s.txt")),
-    ("roche-p", include_str!("../icones/roche-p.txt")),
-    ("roche-s", include_str!("../icones/roche-s.txt")),
-    ("sol-p", include_str!("../icones/sol-p.txt")),
-    ("sol-s", include_str!("../icones/sol-s.txt")),
-    ("son-p", include_str!("../icones/son-p.txt")),
-    ("son-s", include_str!("../icones/son-s.txt")),
-    ("spectre-p", include_str!("../icones/spectre-p.txt")),
-    ("spectre-s", include_str!("../icones/spectre-s.txt")),
-    ("stellaire-p", include_str!("../icones/stellaire-p.txt")),
-    ("stellaire-s", include_str!("../icones/stellaire-s.txt")),
-    ("tenebres-p", include_str!("../icones/tenebres-p.txt")),
-    ("tenebres-s", include_str!("../icones/tenebres-s.txt")),
-    ("vol-p", include_str!("../icones/vol-p.txt")),
-    ("vol-s", include_str!("../icones/vol-s.txt")),
+const ICONES: [(&str, &str); 23] = [
+    ("acier", include_str!("../icones/acier.txt")),
+    ("combat", include_str!("../icones/combat.txt")),
+    ("dragon", include_str!("../icones/dragon.txt")),
+    ("eau", include_str!("../icones/eau.txt")),
+    ("electrique", include_str!("../icones/electrique.txt")),
+    ("feerique", include_str!("../icones/feerique.txt")),
+    ("feu", include_str!("../icones/feu.txt")),
+    ("glace", include_str!("../icones/glace.txt")),
+    ("humain", include_str!("../icones/humain.txt")),
+    ("insecte", include_str!("../icones/insecte.txt")),
+    ("lumiere", include_str!("../icones/lumiere.txt")),
+    ("normal", include_str!("../icones/normal.txt")),
+    ("obscur", include_str!("../icones/obscur.txt")),
+    ("plante", include_str!("../icones/plante.txt")),
+    ("poison", include_str!("../icones/poison.txt")),
+    ("psychique", include_str!("../icones/psychique.txt")),
+    ("roche", include_str!("../icones/roche.txt")),
+    ("sol", include_str!("../icones/sol.txt")),
+    ("son", include_str!("../icones/son.txt")),
+    ("spectre", include_str!("../icones/spectre.txt")),
+    ("stellaire", include_str!("../icones/stellaire.txt")),
+    ("tenebres", include_str!("../icones/tenebres.txt")),
+    ("vol", include_str!("../icones/vol.txt")),
 ];
 
 fn identifiant(type_attaque: Type) -> &'static str {
@@ -207,76 +168,97 @@ fn unicode(type_attaque: Type) -> &'static str {
     }
 }
 
-/// Les émojis de l'application, par nom, trouvés ou téléversés au démarrage.
-static EMOTES: OnceLock<HashMap<String, serenity::EmojiId>> = OnceLock::new();
+/// Les icônes de type disponibles, par nom, à mesure que le démarrage les
+/// trouve ou les téléverse : chacune sert dès qu'elle est là (étape 214).
+static EMOTES: RwLock<Vec<(String, serenity::EmojiId)>> = RwLock::new(Vec::new());
 
-/// L'émoji du bouton, et, faute d'icône, la lettre de la catégorie à mettre
-/// devant le libellé.
-pub fn emoji(icone: IconeDAttaque) -> (serenity::ReactionType, Option<&'static str>) {
-    emoji_parmi(icone, EMOTES.get())
-}
-
-fn emoji_parmi(
-    icone: IconeDAttaque,
-    emotes: Option<&HashMap<String, serenity::EmojiId>>,
-) -> (serenity::ReactionType, Option<&'static str>) {
-    let nom = icone.nom();
-    match emotes.and_then(|emotes| emotes.get(&nom)) {
-        Some(id) => (
-            serenity::ReactionType::Custom {
-                animated: false,
-                id: *id,
-                name: Some(nom),
-            },
-            None,
-        ),
-        None => (
-            serenity::ReactionType::Unicode(unicode(icone.type_attaque).to_string()),
-            Some(icone.lettre()),
-        ),
+/// L'émoji du bouton : l'icône du type, ou son émoji Unicode tant que le bot
+/// ne l'a pas.
+pub fn emoji(icone: IconeDAttaque) -> serenity::ReactionType {
+    match EMOTES.read() {
+        Ok(emotes) => emoji_parmi(icone.type_attaque, &emotes),
+        Err(_) => emoji_parmi(icone.type_attaque, &[]),
     }
 }
 
-/// Au démarrage : retrouve les émojis de l'application et téléverse les
-/// icônes qui manquent. Un échec laisse les émojis Unicode, sans empêcher le
-/// bot de jouer.
+fn emoji_parmi(
+    type_attaque: Type,
+    emotes: &[(String, serenity::EmojiId)],
+) -> serenity::ReactionType {
+    let nom = nom_de_l_icone(type_attaque);
+    match emotes.iter().find(|(present, _)| *present == nom) {
+        Some((_, id)) => serenity::ReactionType::Custom {
+            animated: false,
+            id: *id,
+            name: Some(nom),
+        },
+        None => serenity::ReactionType::Unicode(unicode(type_attaque).to_string()),
+    }
+}
+
+fn retenir(nom: String, id: serenity::EmojiId) {
+    if let Ok(mut emotes) = EMOTES.write() {
+        emotes.push((nom, id));
+    }
+}
+
+/// Au démarrage : retrouve les icônes déjà téléversées, qui servent aussitôt,
+/// puis téléverse celles qui manquent, une à une. Un échec laisse les émojis
+/// Unicode, sans empêcher le bot de jouer.
 pub async fn preparer(http: &serenity::Http) {
     let existants = match http.get_application_emojis().await {
         Ok(existants) => existants,
         Err(erreur) => {
-            eprintln!("Icônes des attaques indisponibles, émojis Unicode à la place : {erreur}.");
+            eprintln!("Icônes des types indisponibles, émojis Unicode à la place : {erreur}.");
             return;
         }
     };
-    let mut emotes: HashMap<String, serenity::EmojiId> = existants
-        .into_iter()
-        .map(|emoji| (emoji.name, emoji.id))
-        .collect();
+    let noms: Vec<String> = Type::TOUS.into_iter().map(nom_de_l_icone).collect();
+    let mut disponibles = 0;
+    let mut anciennes = 0;
+    for emoji in existants {
+        if noms.contains(&emoji.name) {
+            retenir(emoji.name, emoji.id);
+            disponibles += 1;
+        } else if emoji.name.starts_with("bersemon_")
+            && (emoji.name.ends_with("_p") || emoji.name.ends_with("_s"))
+        {
+            anciennes += 1;
+        }
+    }
+    println!(
+        "Icônes des types : {disponibles} sur {} déjà téléversées.",
+        noms.len()
+    );
+    if anciennes > 0 {
+        println!(
+            "{anciennes} icônes d'avant l'étape 214 (bersemon_..._p et _s) ne servent plus : elles peuvent être supprimées dans le portail développeur, onglet Emojis."
+        );
+    }
     let mut televersees = 0;
-    for icone in IconeDAttaque::toutes() {
-        let nom = icone.nom();
-        if emotes.contains_key(&nom) {
+    for type_attaque in Type::TOUS {
+        let nom = nom_de_l_icone(type_attaque);
+        if EMOTES
+            .read()
+            .is_ok_and(|emotes| emotes.iter().any(|(present, _)| *present == nom))
+        {
             continue;
         }
-        let image = format!("data:image/png;base64,{}", base64(&icone.png()));
+        let image = format!(
+            "data:image/png;base64,{}",
+            base64(&png_du_type(type_attaque))
+        );
         let corps = HashMap::from([("name", nom.clone()), ("image", image)]);
         match http.create_application_emoji(&corps).await {
             Ok(emoji) => {
-                emotes.insert(nom, emoji.id);
+                retenir(nom, emoji.id);
                 televersees += 1;
             }
             Err(erreur) => eprintln!("Icône {nom} non téléversée : {erreur}."),
         }
     }
-    let disponibles = IconeDAttaque::toutes()
-        .filter(|icone| emotes.contains_key(&icone.nom()))
-        .count();
-    println!(
-        "Icônes des attaques : {disponibles} sur {} ({televersees} téléversées).",
-        ICONES.len()
-    );
-    if EMOTES.set(emotes).is_err() {
-        eprintln!("Icônes des attaques déjà préparées.");
+    if televersees > 0 {
+        println!("Icônes des types : {televersees} téléversées.");
     }
 }
 
@@ -304,49 +286,50 @@ mod tests {
     use super::*;
 
     #[test]
-    fn chaque_type_a_ses_deux_icones_lisibles_et_distinctes() {
-        let toutes: Vec<IconeDAttaque> = IconeDAttaque::toutes().collect();
-        assert_eq!(toutes.len(), ICONES.len());
-        for icone in &toutes {
-            let nom = icone.nom();
+    fn chaque_type_a_son_icone_lisible_et_distincte() {
+        assert_eq!(ICONES.len(), Type::TOUS.len());
+        let mut images = Vec::new();
+        for type_attaque in Type::TOUS {
+            let nom = nom_de_l_icone(type_attaque);
             assert!(
                 (2..=32).contains(&nom.len())
                     && nom.chars().all(|c| c.is_ascii_alphanumeric() || c == '_'),
                 "{nom}"
             );
+            let png = png_du_type(type_attaque);
             // Discord refuse un émoji de plus de 256 Kio.
-            assert!(icone.png().len() < 256 * 1024, "{nom}");
-        }
-        for type_attaque in Type::TOUS {
-            let physique = IconeDAttaque::new(type_attaque, Categorie::Physique);
-            let speciale = IconeDAttaque::new(type_attaque, Categorie::Speciale);
-            assert_ne!(physique.png(), speciale.png(), "{type_attaque:?}");
+            assert!(png.len() < 256 * 1024, "{nom}");
+            assert!(!images.contains(&png), "{nom}");
+            images.push(png);
         }
     }
 
     #[test]
-    fn sans_icone_un_emoji_unicode_et_la_lettre_de_la_categorie() {
+    fn l_icone_du_type_ou_son_emoji_unicode_et_la_categorie_en_emoji() {
         let icone = IconeDAttaque::new(Type::Feu, Categorie::Speciale);
-        assert_eq!(icone.nom(), "bersemon_feu_s");
-        let (emoji, lettre) = emoji_parmi(icone, None);
+        assert_eq!(nom_de_l_icone(Type::Feu), "bersemon_feu");
         assert_eq!(
-            emoji,
+            emoji_parmi(Type::Feu, &[]),
             serenity::ReactionType::Unicode("\u{1F525}".to_string())
         );
-        assert_eq!(lettre, Some("S"));
-        let emotes = HashMap::from([("bersemon_feu_s".to_string(), serenity::EmojiId::new(42))]);
-        let (emoji, lettre) = emoji_parmi(icone, Some(&emotes));
+        let emotes = [("bersemon_feu".to_string(), serenity::EmojiId::new(42))];
         assert_eq!(
-            emoji,
+            emoji_parmi(Type::Feu, &emotes),
             serenity::ReactionType::Custom {
                 animated: false,
                 id: serenity::EmojiId::new(42),
-                name: Some("bersemon_feu_s".to_string()),
+                name: Some("bersemon_feu".to_string()),
             }
         );
-        assert_eq!(lettre, None);
-        let physique = IconeDAttaque::new(Type::Combat, Categorie::Physique);
-        assert_eq!(emoji_parmi(physique, Some(&emotes)).1, Some("P"));
+        assert_eq!(
+            emoji_parmi(Type::Combat, &emotes),
+            serenity::ReactionType::Unicode("\u{1F44A}".to_string())
+        );
+        assert_eq!(icone.categorie(), "\u{2728}");
+        assert_eq!(
+            IconeDAttaque::new(Type::Feu, Categorie::Physique).categorie(),
+            "\u{2694}\u{FE0F}"
+        );
     }
 
     #[test]
@@ -368,8 +351,12 @@ mod tests {
             std::env::var("BERSEMON_ICONES").expect("variable BERSEMON_ICONES"),
         );
         std::fs::create_dir_all(&dossier).unwrap();
-        for icone in IconeDAttaque::toutes() {
-            std::fs::write(dossier.join(format!("{}.png", icone.nom())), icone.png()).unwrap();
+        for type_attaque in Type::TOUS {
+            std::fs::write(
+                dossier.join(format!("{}.png", nom_de_l_icone(type_attaque))),
+                png_du_type(type_attaque),
+            )
+            .unwrap();
         }
     }
 }

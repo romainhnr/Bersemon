@@ -199,12 +199,11 @@ impl Message {
                             let Some(icone) = bouton.icone else {
                                 return cree.label(couper(&bouton.libelle, LIBELLE_MAX));
                             };
-                            let (emoji, lettre) = emotes::emoji(icone);
-                            let libelle = match lettre {
-                                Some(lettre) => format!("{lettre} {}", bouton.libelle),
-                                None => bouton.libelle.clone(),
-                            };
-                            cree.emoji(emoji).label(couper(&libelle, LIBELLE_MAX))
+                            // L'icône du type en émoji, la catégorie en tête
+                            // du libellé (étape 214).
+                            let libelle = format!("{} {}", icone.categorie(), bouton.libelle);
+                            cree.emoji(emotes::emoji(icone))
+                                .label(couper(&libelle, LIBELLE_MAX))
                         })
                         .collect(),
                 ),

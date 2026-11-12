@@ -1,0 +1,32 @@
+# Icône du type Vol
+palette
+o 1b1420
+b 7f9fe0
+c 5a78b8
+d a8c0f0
+w ffffff
+dessin
+........................
+..oooooooooooooooooooo..
+.oddddddddddddddddddddo.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbwwbbco.
+.odbbbbbbbbbbbbwwwwbbco.
+.odbbbbbbbbbbwwwwwwbbco.
+.odbbbbbbbbwwwwwwwwbbco.
+.odbbbbbbwwwwwwwwwbbbco.
+.odbbbbbwwwwwwwwwwbbbco.
+.odbbbbwwwwwwwwwwbbbbco.
+.odbbbwwwwwwwwwwbbbbbco.
+.odbbwwwwwwwwwbbbbbbbco.
+.odbbwwwwwwwwbbbbbbbbco.
+.odbbbwwwwwwbbbbbbbbbco.
+.odbbbbwwwwbbbbbbbbbbco.
+.odbbbbbwwwbbbbbbbbbbco.
+.odbbbbbbwwbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odccccccccccccccccccco.
+..oooooooooooooooooooo..
+........................

@@ -1,0 +1,32 @@
+# Icône du type Plante
+palette
+o 1b1420
+b 4caf50
+c 34803a
+d 78d07a
+w f0fff0
+dessin
+........................
+..oooooooooooooooooooo..
+.oddddddddddddddddddddo.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbwwbbco.
+.odbbbbbbbbbbbwwwwwbbco.
+.odbbbbbbbbwwwwwwwwbbco.
+.odbbbbbbwwwwwwwwwbbbco.
+.odbbbbbwwwwwbwwwwbbbco.
+.odbbbbwwwwwbwwwwwbbbco.
+.odbbbwwwwwbwwwwwbbbbco.
+.odbbbwwwwbwwwwwbbbbbco.
+.odbbbwwwbwwwwwbbbbbbco.
+.odbbbwwbwwwwwbbbbbbbco.
+.odbbbbwwwwwwwbbbbbbbco.
+.odbbbbwbwwwwbbbbbbbbco.
+.odbbbwbbbbbbbbbbbbbbco.
+.odbbwbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odccccccccccccccccccco.
+..oooooooooooooooooooo..
+........................

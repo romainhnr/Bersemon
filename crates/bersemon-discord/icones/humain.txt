@@ -1,0 +1,32 @@
+# Icône du type Humain
+palette
+o 1b1420
+b b08868
+c 86644a
+d d0a888
+w 2a1a10
+dessin
+........................
+..oooooooooooooooooooo..
+.oddddddddddddddddddddo.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbwwwwbbbbbbbco.
+.odbbbbbbwwwwwwbbbbbbco.
+.odbbbbbwwwwwwwwbbbbbco.
+.odbbbbbwwwwwwwwbbbbbco.
+.odbbbbbwwwwwwwwbbbbbco.
+.odbbbbbbwwwwwwbbbbbbco.
+.odbbbbbbbwwwwbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbwwwwwwwwwwbbbbco.
+.odbbbwwwwwwwwwwwwbbbco.
+.odbbwwwwwwwwwwwwwwbbco.
+.odbbwwwwwwwwwwwwwwbbco.
+.odbbwwwwwwwwwwwwwwbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odccccccccccccccccccco.
+..oooooooooooooooooooo..
+........................

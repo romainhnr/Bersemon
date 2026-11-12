@@ -1,0 +1,32 @@
+# Icône du type Spectre
+palette
+o 1b1420
+b 6c5b9e
+c 4c3f74
+d 9080c0
+w f0ecff
+dessin
+........................
+..oooooooooooooooooooo..
+.oddddddddddddddddddddo.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbwwwwwwbbbbbbco.
+.odbbbbbwwwwwwwwbbbbbco.
+.odbbbbwwwwwwwwwwbbbbco.
+.odbbbbwwbbwwbbwwbbbbco.
+.odbbbbwwbbwwbbwwbbbbco.
+.odbbbbwwwwwwwwwwbbbbco.
+.odbbbbwwwwwwwwwwbbbbco.
+.odbbbbwwwwbbwwwwbbbbco.
+.odbbbbwwwwwwwwwwbbbbco.
+.odbbbbwwwwwwwwwwbbbbco.
+.odbbbbwwwwwwwwwwbbbbco.
+.odbbbbwwwbwwbwwwbbbbco.
+.odbbbbwbbbwwbbbwbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odbbbbbbbbbbbbbbbbbbco.
+.odccccccccccccccccccco.
+..oooooooooooooooooooo..
+........................
