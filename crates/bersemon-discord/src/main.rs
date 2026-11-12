@@ -6,6 +6,7 @@
 mod commandes;
 mod composants;
 mod configuration;
+mod decor;
 mod duels;
 mod echanges;
 mod ecran_accueil;

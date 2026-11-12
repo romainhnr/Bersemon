@@ -25,6 +25,7 @@ use bersemon_core::zone::Zone;
 
 use crate::atelier::liste_d_appats;
 use crate::boosters::{QUESTION_SHINY_DU_HEROS, boosters, philtres_chromatiques, question_shiny};
+use crate::emojis;
 use crate::expeditions_automatiques::question_de_rappel;
 use crate::filets::liste_de_filets;
 use crate::forge::{
@@ -339,6 +340,36 @@ pub fn ligne_des_ames(partie: &Partie) -> String {
 /// Tour sans fond (section 9.5), suivi du moment et de la météo de
 /// l'expédition dans une zone de la carte (sections 9.6 et 9.7) :
 /// "[Étape : 2/5] Nuit, pluie".
+/// Pour Discord (étape 215) : le compteur, le moment et la météo, chacun
+/// avec son émoji.
+pub fn compteur_d_etapes_illustre(expedition: &Expedition) -> String {
+    let mut compteur = if expedition.est_sans_fin() {
+        format!("{} Étape {}", emojis::DEPART, expedition.etapes_faites())
+    } else {
+        format!(
+            "{} Étape {}/{}",
+            emojis::DEPART,
+            expedition.etapes_faites(),
+            expedition.nombre_etapes()
+        )
+    };
+    if let Some(moment) = expedition.jour_ou_nuit() {
+        compteur.push_str(&format!(
+            "   {} {}",
+            emojis::emoji_du_moment(moment),
+            jour_et_nuit::nom(moment)
+        ));
+    }
+    if let Some(meteo) = expedition.meteo() {
+        compteur.push_str(&format!(
+            "   {} {}",
+            emojis::emoji_de_la_meteo(meteo),
+            meteo::nom(meteo)
+        ));
+    }
+    format!("**{compteur}**")
+}
+
 pub fn compteur_d_etapes(expedition: &Expedition) -> String {
     let compteur = if expedition.est_sans_fin() {
         format!("[Étape : {}]", expedition.etapes_faites())
@@ -457,16 +488,24 @@ pub fn en_tete_du_camp(partie: &Partie, succes: &[Succes]) -> String {
 
 /// Pour Discord : les ressources s'y comptent par sortes, pour que le camp
 /// tienne dans un message quand le joueur a de tout (section 13.3). Leur
-/// détail est à l'écran du coffre.
+/// détail est à l'écran du coffre. Chaque ligne a son émoji (étape 215).
 pub fn en_tete_abrege_du_camp(partie: &Partie, succes: &[Succes]) -> String {
+    // Les lignes des âmes et du parfum commencent par un saut de ligne.
+    let illustrer = |emoji: &str, ligne: String| match ligne.strip_prefix('\n') {
+        Some(texte) => format!("\n{emoji} {texte}"),
+        None => ligne,
+    };
     format!(
-        "Camp de base ({}).\nSac ({}) : {}. Coffre du camp : {}.{}{}",
+        "{} Camp de base ({}).\n{} Sac ({}) : {}.\n{} Coffre du camp : {}.{}{}",
+        emojis::CAMP,
         heros_du_camp(partie.heros(), succes),
+        emojis::SAC,
         crate::sac::places(partie),
         contenu_detaille(partie.sac(), false),
+        emojis::COFFRE_DU_CAMP,
         contenu_detaille(partie.coffre_du_camp(), false),
-        ligne_des_ames(partie),
-        ligne_du_parfum(partie)
+        illustrer(emojis::AME, ligne_des_ames(partie)),
+        illustrer(emojis::PARFUM, ligne_du_parfum(partie))
     )
 }
 

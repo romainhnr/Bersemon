@@ -66,6 +66,26 @@ const ETOILES: &str = "\u{2B50}\u{2B50}\u{2B50}";
 /// monstre adverse actif, avec ses types si son espèce est capturée
 /// (section 10.6), toujours pour un héros, et ceux qui attendent.
 pub fn etat(combat: &Combat, codex: &Codex) -> String {
+    etat_avec(combat, codex, "", "")
+}
+
+/// Pour Discord (étape 215) : le même état, l'équipe et l'adversaire
+/// précédés de leur émoji.
+pub fn etat_illustre(combat: &Combat, codex: &Codex) -> String {
+    etat_avec(
+        combat,
+        codex,
+        &format!("{} ", crate::emojis::MONSTRE),
+        &format!("{} ", crate::emojis::COMBAT),
+    )
+}
+
+fn etat_avec(
+    combat: &Combat,
+    codex: &Codex,
+    devant_l_equipe: &str,
+    devant_l_adversaire: &str,
+) -> String {
     let actif_joueur = combat.actif(Cote::Joueur);
     let repere = |index: usize| {
         if index == actif_joueur.index {
@@ -74,7 +94,7 @@ pub fn etat(combat: &Combat, codex: &Codex) -> String {
             " "
         }
     };
-    let mut lignes = vec!["Votre équipe :".to_string()];
+    let mut lignes = vec![format!("{devant_l_equipe}Votre équipe :")];
     for (index, monstre) in combat.equipe().iter().enumerate() {
         lignes.push(format!(
             "  {} {}",
@@ -94,7 +114,7 @@ pub fn etat(combat: &Combat, codex: &Codex) -> String {
         types_connus(codex, monstre.espece())
     };
     lignes.push(format!(
-        "En face : {} ({}, niv. {}) : {}/{} PV{}",
+        "{devant_l_adversaire}En face : {} ({}, niv. {}) : {}/{} PV{}",
         nom_en_combat(combat, adversaire),
         types,
         monstre.niveau().valeur(),

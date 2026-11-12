@@ -13,6 +13,7 @@ pub mod boosters;
 pub mod combat;
 pub mod duels;
 pub mod echanges;
+pub mod emojis;
 pub mod equipement;
 pub mod erreurs;
 pub mod expeditions_automatiques;

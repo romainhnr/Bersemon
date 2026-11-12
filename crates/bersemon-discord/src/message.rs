@@ -15,11 +15,12 @@ use bersemon_core::horodatage::Horodatage;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::succes::CouleurDuHeros;
 use bersemon_presentation::erreurs::erreur_de_choix;
-use bersemon_presentation::partie::{compteur_d_etapes, question_de_confirmation};
-use bersemon_presentation::recit::raconter;
+use bersemon_presentation::partie::{compteur_d_etapes_illustre, question_de_confirmation};
+use bersemon_presentation::recit::raconter_illustre;
 use poise::serenity_prelude as serenity;
 
 use crate::composants::{Cle, Composant, Vue};
+use crate::decor;
 use crate::duels::erreur_de_defi;
 use crate::echanges::erreur_d_offre;
 use crate::emotes::{self, IconeDAttaque};
@@ -197,13 +198,23 @@ impl Message {
                             let cree = serenity::CreateButton::new(self.identifiant(&bouton.cle))
                                 .style(bouton.style);
                             let Some(icone) = bouton.icone else {
-                                return cree.label(couper(&bouton.libelle, LIBELLE_MAX));
+                                let libelle = decor::decorer(&bouton.cle, &bouton.libelle);
+                                return cree.label(couper(&libelle, LIBELLE_MAX));
                             };
                             // L'icône du type en émoji, la catégorie en tête
-                            // du libellé (étape 214).
+                            // du libellé (étape 214). Sans l'icône, l'émoji
+                            // Unicode du type va dans le libellé : Discord n'y
+                            // refuse rien (étape 215).
                             let libelle = format!("{} {}", icone.categorie(), bouton.libelle);
-                            cree.emoji(emotes::emoji(icone))
-                                .label(couper(&libelle, LIBELLE_MAX))
+                            match emotes::emoji(icone) {
+                                Some(emoji) => {
+                                    cree.emoji(emoji).label(couper(&libelle, LIBELLE_MAX))
+                                }
+                                None => cree.label(couper(
+                                    &format!("{} {libelle}", emotes::unicode_du_type(icone)),
+                                    LIBELLE_MAX,
+                                )),
+                            }
                         })
                         .collect(),
                 ),
@@ -229,7 +240,10 @@ impl Message {
                             self.identifiant(&menu.cle),
                             serenity::CreateSelectMenuKind::String { options },
                         )
-                        .placeholder(couper(&menu.indication, TEXTE_D_OPTION_MAX)),
+                        .placeholder(couper(
+                            &decor::decorer(&menu.cle, &menu.indication),
+                            TEXTE_D_OPTION_MAX,
+                        )),
                     )
                 }
             })
@@ -256,7 +270,7 @@ pub fn message(
     contenu: &ContenuV1,
     maintenant: Horodatage,
 ) -> Message {
-    let recits = raconter(evenements);
+    let recits = raconter_illustre(evenements);
     let question = question(session, contenu, maintenant);
     let composer = |depuis: usize| {
         let mut texte = String::new();
@@ -280,7 +294,7 @@ pub fn message(
         // En expédition, le compteur d'étapes est toujours en haut
         // (section 9.2).
         if let Some(expedition) = session.deroulement.expedition() {
-            texte = format!("{}\n\n{texte}", compteur_d_etapes(expedition));
+            texte = format!("{}\n\n{texte}", compteur_d_etapes_illustre(expedition));
         }
         echapper_les_debuts_de_ligne(&texte)
     };

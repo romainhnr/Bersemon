@@ -4,7 +4,7 @@
 //! brut, où une émote personnalisée ne s'affiche pas : type et catégorie ne
 //! peuvent pas être deux émotes du bot. Le bot téléverse ses icônes comme
 //! émojis de son application, au démarrage ; tant qu'il n'a pas celle d'un
-//! type, un émoji Unicode en tient lieu.
+//! type, un émoji Unicode en tient lieu, dans le libellé (étape 215).
 
 use std::collections::HashMap;
 use std::sync::RwLock;
@@ -172,28 +172,32 @@ fn unicode(type_attaque: Type) -> &'static str {
 /// trouve ou les téléverse : chacune sert dès qu'elle est là (étape 214).
 static EMOTES: RwLock<Vec<(String, serenity::EmojiId)>> = RwLock::new(Vec::new());
 
-/// L'émoji du bouton : l'icône du type, ou son émoji Unicode tant que le bot
-/// ne l'a pas.
-pub fn emoji(icone: IconeDAttaque) -> serenity::ReactionType {
-    match EMOTES.read() {
-        Ok(emotes) => emoji_parmi(icone.type_attaque, &emotes),
-        Err(_) => emoji_parmi(icone.type_attaque, &[]),
-    }
+/// L'émoji du bouton : l'icône du type, si le bot l'a ; sinon, l'émoji
+/// Unicode du type va dans le libellé (`unicode_du_type`).
+pub fn emoji(icone: IconeDAttaque) -> Option<serenity::ReactionType> {
+    EMOTES
+        .read()
+        .ok()
+        .and_then(|emotes| emoji_parmi(icone.type_attaque, &emotes))
+}
+
+pub fn unicode_du_type(icone: IconeDAttaque) -> &'static str {
+    unicode(icone.type_attaque)
 }
 
 fn emoji_parmi(
     type_attaque: Type,
     emotes: &[(String, serenity::EmojiId)],
-) -> serenity::ReactionType {
+) -> Option<serenity::ReactionType> {
     let nom = nom_de_l_icone(type_attaque);
-    match emotes.iter().find(|(present, _)| *present == nom) {
-        Some((_, id)) => serenity::ReactionType::Custom {
+    emotes
+        .iter()
+        .find(|(present, _)| *present == nom)
+        .map(|(_, id)| serenity::ReactionType::Custom {
             animated: false,
             id: *id,
             name: Some(nom),
-        },
-        None => serenity::ReactionType::Unicode(unicode(type_attaque).to_string()),
-    }
+        })
 }
 
 fn retenir(nom: String, id: serenity::EmojiId) {
@@ -308,23 +312,18 @@ mod tests {
     fn l_icone_du_type_ou_son_emoji_unicode_et_la_categorie_en_emoji() {
         let icone = IconeDAttaque::new(Type::Feu, Categorie::Speciale);
         assert_eq!(nom_de_l_icone(Type::Feu), "bersemon_feu");
-        assert_eq!(
-            emoji_parmi(Type::Feu, &[]),
-            serenity::ReactionType::Unicode("\u{1F525}".to_string())
-        );
+        assert_eq!(emoji_parmi(Type::Feu, &[]), None);
+        assert_eq!(unicode_du_type(icone), "\u{1F525}");
         let emotes = [("bersemon_feu".to_string(), serenity::EmojiId::new(42))];
         assert_eq!(
             emoji_parmi(Type::Feu, &emotes),
-            serenity::ReactionType::Custom {
+            Some(serenity::ReactionType::Custom {
                 animated: false,
                 id: serenity::EmojiId::new(42),
                 name: Some("bersemon_feu".to_string()),
-            }
+            })
         );
-        assert_eq!(
-            emoji_parmi(Type::Combat, &emotes),
-            serenity::ReactionType::Unicode("\u{1F44A}".to_string())
-        );
+        assert_eq!(emoji_parmi(Type::Combat, &emotes), None);
         assert_eq!(icone.categorie(), "\u{2728}");
         assert_eq!(
             IconeDAttaque::new(Type::Feu, Categorie::Physique).categorie(),

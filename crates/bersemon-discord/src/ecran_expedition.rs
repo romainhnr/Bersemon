@@ -60,7 +60,8 @@ pub fn entre_deux_etapes(partie: &Partie, raccourci: Option<u32>) -> Question {
     rangees_de_l_etape.extend(menu(Cle::EnTete, "Mettre en tête de l'équipe", suivants));
     Question {
         texte: format!(
-            "Votre équipe :\n{}\n{}\n\nQue faire ?",
+            "{} Votre équipe :\n{}\n{}\n\nQue faire ?",
+            bersemon_presentation::emojis::MONSTRE,
             lignes.join("\n"),
             sac_en_expedition(partie)
         ),

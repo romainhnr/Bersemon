@@ -15,8 +15,10 @@ use bersemon_core::types::Efficacite;
 use bersemon_presentation::arene::annonce_du_palier;
 use bersemon_presentation::atelier::{effet_de_l_appat, nom_de_l_appat};
 use bersemon_presentation::combat::{
-    attaque_de_trop, attaque_en_combat_abregee, etat, ordre_et_bonus, type_et_categorie_en_combat,
+    attaque_de_trop, attaque_en_combat_abregee, etat_illustre, ordre_et_bonus,
+    type_et_categorie_en_combat,
 };
+use bersemon_presentation::emojis::{FILET, devant};
 use bersemon_presentation::filets::nom_du_filet;
 use bersemon_presentation::monstres::{
     decrire_attaque_de, ligne_du_heros, ligne_monstre, nom, nom_en_combat,
@@ -129,10 +131,13 @@ pub fn action(combat: &Combat, partie: &Partie) -> Question {
             .collect();
         lignes.extend(menu(Cle::LancerAppat, "Lancer un appât", appats));
     }
-    let mut texte = etat(combat, partie.codex());
+    let mut texte = etat_illustre(combat, partie.codex());
     if combat.filet_possible() {
         texte.push('\n');
-        texte.push_str(&places_pour_une_capture(partie.collection()));
+        texte.push_str(&devant(
+            FILET,
+            &places_pour_une_capture(partie.collection()),
+        ));
     }
     Question {
         texte: format!("{texte}\n\nQue faire ?"),
@@ -226,7 +231,7 @@ pub fn remplacement(combat: &Combat, codex: &Codex) -> Question {
         })
         .collect();
     Question {
-        texte: format!("{}\n\nQuel monstre envoyer ?", etat(combat, codex)),
+        texte: format!("{}\n\nQuel monstre envoyer ?", etat_illustre(combat, codex)),
         rangees: rangees(boutons),
     }
 }
@@ -249,7 +254,7 @@ pub fn capture(combat: &Combat, collection: &Collection) -> Question {
     Question {
         texte: format!(
             "Capturer un monstre KO ?\n{}",
-            places_pour_une_capture(collection)
+            devant(FILET, &places_pour_une_capture(collection))
         ),
         rangees: rangees(boutons),
     }

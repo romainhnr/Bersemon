@@ -5,7 +5,7 @@
 use bersemon_core::combat::Phase;
 use bersemon_core::horodatage::Horodatage;
 use bersemon_core::partie::Partie;
-use bersemon_presentation::combat::etat;
+use bersemon_presentation::combat::etat_illustre;
 use bersemon_presentation::duels::{cote_apres_le_combat, en_attente, issue_du_duel, raconter};
 
 use crate::composants::Cle;
@@ -41,7 +41,7 @@ pub fn question(vu: &DuelVu, partie: &Partie, maintenant: Horodatage) -> Questio
         };
     }
     if vu.duel.attend_l_autre(vu.cote) {
-        paragraphes.push(etat(&combat, partie.codex()));
+        paragraphes.push(etat_illustre(&combat, partie.codex()));
         paragraphes.push(en_attente(&vu.adversaire));
         let mut boutons = vec![bouton(Cle::Actualiser, "Actualiser", PRINCIPAL)];
         if vu.duel.forfait_possible(vu.cote, maintenant) {

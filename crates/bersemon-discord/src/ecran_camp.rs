@@ -17,6 +17,7 @@ use bersemon_core::equipement::PlaceDEquipement;
 use bersemon_core::espece::Espece;
 use bersemon_core::habilete::autre_habilete;
 use bersemon_core::horodatage::Horodatage;
+use bersemon_core::jour_et_nuit::JourOuNuit;
 use bersemon_core::marchand::prix_de_revente;
 use bersemon_core::monstre::Monstre;
 use bersemon_core::objet_d_experience::ObjetDExperience;
@@ -27,6 +28,7 @@ use bersemon_core::stats::ValeursInternes;
 use bersemon_presentation::arene::description_de_la_fosse;
 use bersemon_presentation::beherit::description_de_l_eclipse;
 use bersemon_presentation::boosters::{boosters, effet_du_booster};
+use bersemon_presentation::emojis::{self, devant, emoji_du_moment};
 use bersemon_presentation::equipement::{
     decrire_bonus, etat_de_l_equipement, fiche_du_heros, nom_de_place, objet_et_bonus,
 };
@@ -290,7 +292,10 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
     // celui de toute l'expédition (section 9.6).
     let mut en_tete = vec![
         en_tete_abrege_du_camp(partie, contenu.succes()),
-        moment_present(maintenant),
+        devant(
+            emoji_du_moment(JourOuNuit::a(maintenant)),
+            &moment_present(maintenant),
+        ),
     ];
     en_tete.extend(ames_d_apotres(partie, contenu));
     en_tete.extend(expeditions_rentrees(partie, maintenant));
@@ -301,8 +306,9 @@ fn principale(partie: &Partie, contenu: &ContenuV1, maintenant: Horodatage) -> Q
     en_tete.extend(avis_des_quetes_du_camp(partie, contenu));
     Question {
         texte: format!(
-            "{}\nVotre équipe :\n{}",
+            "{}\n{} Votre équipe :\n{}",
             en_tete.join("\n"),
+            emojis::MONSTRE,
             equipe.join("\n")
         ),
         rangees: lignes,

@@ -8,7 +8,7 @@ use bersemon_core::deroulement::Attente;
 use bersemon_core::groupe::DELAI_D_ABSENCE;
 use bersemon_core::horodatage::Horodatage;
 use bersemon_core::partie::Partie;
-use bersemon_presentation::combat::etat;
+use bersemon_presentation::combat::etat_illustre;
 use bersemon_presentation::groupe::{
     RAMENER_LE_GROUPE, descente_avec, en_attente_du_compagnon, veut_continuer, vous_attendez,
 };
@@ -55,7 +55,7 @@ pub fn question(
                 rangees: question.rangees,
             });
         }
-        paragraphes.push(etat(combat, partie.codex()));
+        paragraphes.push(etat_illustre(combat, partie.codex()));
         paragraphes.push(en_attente_du_compagnon(&vu.compagnon));
         boutons.push(bouton(Cle::Actualiser, "Actualiser", PRINCIPAL));
     } else if attente == Attente::AttenteDuGroupe {

@@ -3962,7 +3962,12 @@ fn la_tour_sans_fond_et_le_classement_de_ses_records() {
     );
     let clic = choisir_dans(&camp, |cle| *cle == Cle::Partir, "tour-sans-fond").unwrap();
     let affiche = executer_le_clic(&mut joueurs, JOUEUR, clic, &contenu);
-    assert!(affiche.texte.contains("[Étape : 1]"), "{}", affiche.texte);
+    // Le compteur illustré depuis l'étape 215, sans fin dans la Tour.
+    assert!(
+        affiche.texte.contains("\u{1F9ED} Étape 1") && !affiche.texte.contains("Étape 1/"),
+        "{}",
+        affiche.texte
+    );
     assert!(
         affiche.texte.contains("tour engloutie"),
         "{}",
@@ -4015,7 +4020,7 @@ fn une_annexe_ouverte_se_propose_dans_le_menu_des_lieux_a_part() {
     )
     .unwrap();
     let affiche = executer_le_clic(&mut joueurs, JOUEUR, clic, &contenu);
-    assert!(affiche.texte.contains("/3]"), "{}", affiche.texte);
+    assert!(affiche.texte.contains("Étape 1/3"), "{}", affiche.texte);
     let _ = fs::remove_dir_all(dossier);
 }
 
@@ -4681,7 +4686,7 @@ fn quetes_et_succes_a_travers_les_ecrans_du_bot() {
     let camp = afficher(&mut joueurs);
     assert!(
         camp.texte
-            .starts_with("Camp de base (Aldric, Ombre de la Tour ; Mage)."),
+            .starts_with("\u{1F3D5}\u{FE0F} Camp de base (Aldric, Ombre de la Tour ; Mage)."),
         "{}",
         camp.texte
     );

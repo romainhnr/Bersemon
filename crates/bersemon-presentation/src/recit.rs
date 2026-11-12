@@ -21,6 +21,7 @@ use crate::boosters::{
     philtres_chromatiques,
 };
 use crate::combat::{ordre_donne, rapport_experience, remplacement, renoncement};
+use crate::emojis::{devant, emoji_d_evenement, emoji_de_combat};
 use crate::equipement::{nom_de_place, objet_et_bonus};
 use crate::erreurs::erreur_sauvegarde;
 use crate::expeditions_automatiques;
@@ -77,6 +78,43 @@ pub fn raconter(evenements: &[Evenement]) -> Vec<Recit> {
     let mut precedent = None;
     for evenement in evenements {
         recits.push(raconter_un(evenement, precedent));
+        precedent = Some(evenement);
+    }
+    recits
+}
+
+/// Pour Discord (étape 215) : le même récit, chaque événement précédé de
+/// son émoji, et chaque ligne d'un combat du sien.
+pub fn raconter_illustre(evenements: &[Evenement]) -> Vec<Recit> {
+    let mut recits = Vec::new();
+    let mut precedent = None;
+    for evenement in evenements {
+        let recit = match evenement {
+            Evenement::Combat { evenements, combat } => Recit {
+                texte: evenements
+                    .iter()
+                    .map(|du_tour| {
+                        devant(
+                            emoji_de_combat(du_tour),
+                            &crate::combat::evenement(du_tour, combat),
+                        )
+                    })
+                    .collect::<Vec<String>>()
+                    .join("\n"),
+                nouveau_paragraphe: false,
+            },
+            _ => {
+                let recit = raconter_un(evenement, precedent);
+                match emoji_d_evenement(evenement) {
+                    Some(emoji) => Recit {
+                        texte: devant(emoji, &recit.texte),
+                        ..recit
+                    },
+                    None => recit,
+                }
+            }
+        };
+        recits.push(recit);
         precedent = Some(evenement);
     }
     recits
@@ -844,6 +882,28 @@ mod tests {
         );
         assert!(recits[0].nouveau_paragraphe);
         assert_eq!(recits[1].texte, "**Loup** n'évolue pas pour l'instant.");
+    }
+
+    /// Étape 215 : pour Discord, chaque événement a son émoji.
+    #[test]
+    fn le_recit_illustre_met_un_emoji_devant_chaque_evenement() {
+        let coffre = Evenement::Coffre {
+            potions: 2,
+            argent: 15,
+            argent_du_pillard: 0,
+            capsule: None,
+            capsule_d_habilete: false,
+            pierre: None,
+            booster: None,
+            filets: None,
+            objet_d_experience: None,
+            tresor: None,
+        };
+        let illustre = &raconter_illustre(&[coffre.clone(), Evenement::RetourAuCamp]);
+        let simple = &raconter(&[coffre, Evenement::RetourAuCamp]);
+        assert_eq!(illustre[0].texte, format!("\u{1F4E6} {}", simple[0].texte));
+        assert!(illustre[1].texte.starts_with("\u{1F3D5}\u{FE0F} "));
+        assert_eq!(illustre[1].nouveau_paragraphe, simple[1].nouveau_paragraphe);
     }
 
     #[test]
