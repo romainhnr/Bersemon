@@ -1,50 +1,50 @@
-# Seigneur Pestilence
+# Seigneur pestilence
 palette
 o 1b1420
-a 344326
-e 202916
-b 87bf61
-c 658948
-d a6e080
-r 4f730e
-k 1b1420
-y 24ee76
-g 2bd152
-z e01030
+g 7a8a4a
+h 5a6a34
+l 9aaa64
+r c8a070
+e ff4030
+k 1a1a10
+p e8a0a0
+w f0e8c0
+f 2a2a20
+y c8d040
 shiny
 o 1b1420
-a 26342d
-e 16201b
-b 67a598
-c 46776d
-d 85cdbe
-r 90901d
-k 1b1420
-y d7ff3d
-g cbddd4
-z fff0a0
+g 4a4d8a
+h 34346a
+l 6469aa
+r 70b2c8
+e 30ffd1
+k 10131a
+p a0e8d2
+w c0d6f0
+f 20232a
+y 4063d0
 dessin
-..z......z.zoz.z........
-.zoz....zozogozoz.......
-zoroz..zogooooogoz......
-orrroz.zogggggggoz......
-zoroz...zooddcooz.......
-zogoz...zodbbbcoz.......
-zogoz...zodkbkcoz.......
-zogoz.zzoodbbbcoozz.....
-zogozzoodddrrrddcooz....
-zogozoddbbbbbbbbbdcoz...
-zogoodbbbbbbbbbbbbbcoz..
-zogodydbbbbbbcbbbbbccoz.
-zogdbdbbbbbbcydbbbcydcoz
-zogdbbbcccbbbdbbbbbdbcoz
-zogdbbcrrrdbbbbbbbbbbcoz
-zogdbbbckdbbbbbbcccbbcoz
-zogcbbbbdbbbbbbcrrrdbcoz
-zogocbbbbbbcccbbckdbcoz.
-.zoaacbbbbcrrrdbbdbcaeoz
-.zoaaaccbbbckdbbbccaaeoz
-.zoaaaaaccccdccccaaaaeoz
-.zoaaaaaaaaacaaaaaaaaeoz
-.zoeeeeeeeeeeeeeeeeeeeoz
-..zoooooooooooooooooooz.
+........................
+........................
+........................
+........................
+...f....f......f........
+.f...f.oo...foo...f.....
+......ollo..ollo........
+.....olggloolgglo.......
+.....olgggggggglo.......
+....oggggggggggggo......
+....ogegggggggeggoo.....
+...ogggggggggggggggo....
+..oppgggggggggggggggo...
+.oppppkgggggggggggggo...
+..oppowwgggggygggggggo..
+...oowgggggggggygggggoo.
+....oggggygggggggggggggo
+...oggggggggggyggggggggh
+...ogggggggggggggggggghh
+...ohgggggyggggggggghhho
+....ohhggggggggggghhhoor
+.....ohhhhhhhhhhhhooooro
+......orrorrorrorro.oro.
+.....orrrorrorrorrroro..

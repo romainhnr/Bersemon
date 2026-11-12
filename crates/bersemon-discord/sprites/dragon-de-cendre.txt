@@ -1,48 +1,46 @@
 # Dragon de cendre
 palette
 o 1b1420
-a 5a4a4a
-e 3a2e2e
-f 7e6a6a
-b 4a4046
-c 2e282c
-d 6a5e64
-y ffb030
-j ff6a20
-z ff7a30
+b 5a5250
+c 3a3434
+d 7a7270
+w b8b0a8
+e ff8030
+f ffb040
+r e04820
+g d8d0c8
 shiny
 o 1b1420
-a c8c0b8
-e 948c84
-f ece6e0
-b b0a8a0
-c 7c746c
-d d8d0c8
-y 60e0ff
-j 40a0ff
-z fff0a0
+b 505a59
+c 343a38
+d 707a79
+w a8b5b8
+e 30edff
+f 40c8ff
+r 20e0ce
+g c8d5d8
 dessin
-............zoeooozzz...
-............zoeffeooozz.
-....z.z....zofeaaaffeooz
-...zozoz...zoeeaaaaaafeo
-..zococoz..zoeaaaaaaaeoz
-.zoddcoz..zofeaaaaaeeoz.
-zodybbcoz.zofeaaaaeeoz..
-odbbbbbcozzofeaaaeeeoz..
-occbbbcozzofeeaaaeaaeoz.
-joocccbcozoeeaaaeeaaeeoz
-ojoooodcooooeeeaeeeeooz.
-zozzzocbdddddddceooozz..
-.z...zodbbbbbjbbcozz....
-.....zodbbbbbbbbbcoz....
-.....zodbbbbbbbjbcoz....
-.....zocbbbjbbbbbcoz....
-......zocbbbbbbbbcoz....
-.......zocbcccbbcbcoz...
-........zocooodcocbcoz..
-........zocozodcoocbcoz.
-........zocozodcozocbcoz
-.......zocccoccccozoccoz
-........zooozooooz.zooz.
-.........zzz.zzzz...zz..
+........................
+........................
+........................
+........................
+..............oo....oo..
+.............obbo..obbo.
+............obdbo.obdbo.
+...........obddboobddbo.
+..........obdddbobdddbo.
+...oo.....obddddbbdddbo.
+..oggo.....obdddbddddbo.
+.ogbbgo.....obddbdddbo..
+obbbebbo.....obbbbbbo...
+rbbbbbbbo...obbbbbbo....
+rrbbbbbbbooobbbbbbbo....
+orroobbbbbbbbbbbbbbbo...
+.oo..oobbbbwwwwbbbbbbo..
+.......obbwwwwwwbbbbbbf.
+........obwwwwwwbbbbbbbf
+........obbwwwwbbbboobbf
+........obbbbbbbbbo..off
+.........obbcoobbco.....
+.........obbcoobbco.....
+........occccocccco.....

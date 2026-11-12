@@ -1216,6 +1216,43 @@ mod tests {
         );
     }
 
+    /// Chaque monstre a son propre dessin (étape 213, demande de
+    /// l'utilisateur) : deux sprites de monstres, même l'un retourné,
+    /// diffèrent par au moins 120 cases sur 576. Une copie recolorée n'en
+    /// diffère d'aucune ; les plus proches, deux chevaux, de 147.
+    #[test]
+    fn chaque_monstre_a_son_propre_dessin() {
+        let dessins: Vec<(&str, Vec<Vec<char>>)> = SPRITES
+            .iter()
+            .chain(&SPRITES_HORS_CODEX)
+            .map(|(id, texte)| (*id, Sprite::lire(texte).unwrap().dessin))
+            .collect();
+        for (rang, (un, dessin)) in dessins.iter().enumerate() {
+            for (autre, autre_dessin) in &dessins[rang + 1..] {
+                let differences = |retourne: bool| -> usize {
+                    dessin
+                        .iter()
+                        .zip(autre_dessin)
+                        .map(|(ligne, autre_ligne)| {
+                            ligne
+                                .iter()
+                                .enumerate()
+                                .filter(|(x, c)| {
+                                    let x = if retourne { COTE - 1 - x } else { *x };
+                                    autre_ligne[x] != **c
+                                })
+                                .count()
+                        })
+                        .sum()
+                };
+                assert!(
+                    differences(false).min(differences(true)) >= 120,
+                    "{un} et {autre}"
+                );
+            }
+        }
+    }
+
     /// Pour voir les sprites hors de Discord : `cargo test -p bersemon-discord
     /// ecrire_les_png -- --ignored`, avec la variable BERSEMON_SPRITES qui
     /// donne le dossier où écrire chaque PNG, normal et shiny.

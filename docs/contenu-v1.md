@@ -2953,11 +2953,11 @@ Chaque forme évolue de son stade 3 au niveau 70, et apprend alors son attaque d
 | chevalier-de-l-abime | Chevalier de l'abîme | Dullahan | Acier, Spectre | offensif | 97 / 137 / 131 / 51 / 86 / 68 (570) | 260 | Marche de l'abîme (Spectre, physique, 110, précision 90) |
 | imperatrice-des-ronces | Impératrice des ronces | Reine des ronces | Insecte, Plante | offensif | 83 / 65 / 77 / 131 / 101 / 113 (570) | 196 | Couronne d'épines (Plante, spéciale, 110, précision 90) |
 
-Sprites : ceux du stade 3, entourés d'une aura de la couleur de la famille (dorée en shiny). Le Chevalier de l'abîme est un clin d'oeil aux chevaliers déchus des jeux Souls, sous un nom propre à l'univers.
+Sprites : d'abord ceux du stade 3, entourés d'une aura de la couleur de la famille (dorée en shiny) ; dessinés à part depuis l'étape 213. Le Chevalier de l'abîme est un clin d'oeil aux chevaliers déchus des jeux Souls, sous un nom propre à l'univers.
 
 ## 56. Zones entre les Apôtres
 
-Décidé le 11/11/2026, à partir de l'étape 206 (gamedesign.md, section 9.1). Demande de l'utilisateur : 1 à 3 zones entre deux Apôtres. Zones, noms, espèces, stats, attaques, ressources, textes et sprites proposés par Claude sans validation (Q124). Chaque zone compte 5 étapes et des groupes de 1 à 3 monstres ; elle n'a ni humain, ni marchand mort, ni capsule d'attaque dans ses coffres ; son indice se trouve au bout de la première expédition menée au bout, et ouvre la zone suivante. Ses espèces ne vivent que là ; leurs sprites reprennent ceux d'espèces existantes, recolorés et retournés, en attendant mieux.
+Décidé le 11/11/2026, à partir de l'étape 206 (gamedesign.md, section 9.1). Demande de l'utilisateur : 1 à 3 zones entre deux Apôtres. Zones, noms, espèces, stats, attaques, ressources, textes et sprites proposés par Claude sans validation (Q124). Chaque zone compte 5 étapes et des groupes de 1 à 3 monstres ; elle n'a ni humain, ni marchand mort, ni capsule d'attaque dans ses coffres ; son indice se trouve au bout de la première expédition menée au bout, et ouvre la zone suivante. Ses espèces ne vivent que là ; chacune a son propre sprite, dessiné à part à l'étape 213 (avant, ceux d'espèces existantes, recolorés et retournés).
 
 ### Bourg des Lamentations (12 à 16)
 
