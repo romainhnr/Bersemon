@@ -4,7 +4,7 @@ Bersemon est le nom du projet et du jeu.
 
 Statut : document de référence du projet. Il décrit ce qui est décidé ; les points non tranchés sont regroupés dans la section 16 "Questions ouvertes et valeurs à définir", et l'historique des décisions dans la section 17.
 
-Dernière mise à jour : 11/11/2026
+Dernière mise à jour : 12/11/2026
 
 ## Sommaire
 
@@ -228,7 +228,7 @@ Chaque monstre possède :
   - Sur Discord, le sprite est joint au message, agrandi six fois (144 pixels de côté) : l'adversaire actif en combat, en duel ou en groupe ; le monstre rare pacifique, la prise de la pêche et la capture qui attend une place ; le monstre qui vient de rejoindre l'équipe ou le camp ; au camp, l'espèce de la fiche ouverte du codex et le monstre choisi dans la gestion. Un monstre shiny montre son sprite shiny ; la fiche du codex, le sprite normal.
   - La console reste textuelle : elle n'affiche aucun sprite.
   - Depuis l'étape 183 (11/11/2026, demande de l'utilisateur), le marchand zombie, qui combat sans être au codex, a aussi son sprite, sans palette shiny (docs/contenu-v1.md, section 42).
-  - Décidé le 11/11/2026, pour l'étape 213 (demande de l'utilisateur) : chaque monstre a son propre dessin, jamais un sprite existant recoloré ou retourné. Les 62 sprites qui l'étaient (le Schnoz primordial, les huit stades 4, le Colosse du rempart et les cinq Élus, les 44 espèces des zones entre les Apôtres, et, d'avant, l'Augure, la Gorgone et le Dullahan) sont redessinés par Claude, chacun avec sa palette shiny. Un test vérifie que deux sprites de monstres, même l'un retourné, diffèrent par au moins 120 cases sur 576.
+  - Décidé le 12/11/2026, pour l'étape 213 (demande de l'utilisateur) : chaque monstre a son propre dessin, jamais un sprite existant recoloré ou retourné. Les 62 sprites qui l'étaient (le Schnoz primordial, les huit stades 4, le Colosse du rempart et les cinq Élus, les 44 espèces des zones entre les Apôtres, et, d'avant, l'Augure, la Gorgone et le Dullahan) sont redessinés par Claude, chacun avec sa palette shiny. Un test vérifie que deux sprites de monstres, même l'un retourné, diffèrent par au moins 120 cases sur 576.
 - Décidé le 26/10/2026, pour les étapes 158 à 160 (choix de l'utilisateur) : tout monstre shiny, et lui seul, peut connaître le Choc chromatique, une attaque Stellaire de puissance 80 et de précision 100, sans effet. Sa catégorie s'adapte au monstre qui l'utilise : physique si son Attaque dépasse son Attaque spéciale, spéciale sinon, à égalité comprise, d'après ses stats hors bonus de combat. Le Stellaire est neutre contre presque tout, très efficace contre l'Obscur (Apôtres, Démiurge) et peu efficace contre l'Humain (section 5.2) ; seul le Schnoz en a le bonus de type. Valeurs dans docs/contenu-v1.md, section 43.
   - Elle prend une des 4 places, comme toute attaque. Un monstre qui naît shiny (sauvage, Apôtre, monstre de départ, acheté, loué, pêché, né d'un rite) la connaît d'office, à la place de la plus ancienne de ses attaques, la première de sa liste, s'il en connaît déjà 4.
   - Un monstre rendu shiny par le Philtre chromatique l'apprend s'il a une place libre ; sinon le joueur choisit l'attaque à oublier ou y renonce, comme à la montée de niveau.
@@ -2333,3 +2333,11 @@ Les questions Q104 et suivantes ont été relevées le 25/10/2026 lors de la con
 - Claude a proposé le reste : noms, stats, attaques, textes et sprites des nouvelles espèces et des onze nouvelles zones (le Bourg des Lamentations, le Bois des Farfadets, la Mer des Naufrages, la Grève des Ossements, les Champs de Pavots noirs, les Remparts de Grisval, la Forêt pétrifiée, le Sanctuaire d'Asphodèle, le Glacier des Âmes, le Cimetière des Géants et la Faille du Néant), le coût du bateau, les références aux oeuvres citées par des noms propres au jeu.
 - Sauvegarde en versions 41 à 44.
 - Hypothèses retenues, à confirmer : Q124.
+
+11 et 12/11/2026 (étapes 210 à 213, troisième série de retours de l'utilisateur) :
+
+- Demandes de l'utilisateur : retirer le mot "puissance" des attaques en combat, et remplacer le type et la catégorie par une image ou une émote, le libellé étant coupé sur téléphone (210, section 10.6) ; rendre le Philtre chromatique plus rare, entre 3 et 6 donnés par partie, le reste au hasard (211, section 14.3) ; trouver des objets d'expérience dans les coffres et en recevoir en récompense (211, section 14.3) ; ne plus reprendre de sprites existants pour de nouveaux monstres, chaque monstre devant être unique (213, section 5.1).
+- Claude a proposé le reste : 46 icônes, une par type et par catégorie, que le bot téléverse comme émojis de son application, avec un repli sur des émojis Unicode ; 5 Philtres sûrs par partie, et des objets d'expérience à la place des autres ; un objet d'expérience dans 15 coffres sur 100 ; 62 sprites redessinés, et un test d'unicité des dessins.
+- Corrigé en codant : les objets d'expérience du sac se perdaient au rangement et dans les récompenses versées au coffre.
+- Pas de changement de sauvegarde.
+- Hypothèses retenues, à confirmer : Q125.
