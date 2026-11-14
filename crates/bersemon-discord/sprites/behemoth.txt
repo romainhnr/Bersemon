@@ -1,46 +1,86 @@
 # Béhémoth
 palette
 o 1b1420
-b 6a5038
-c 463424
-d 8a6e52
-a 7a7a80
-e 505058
-f a0a0a8
-w f0ece0
-y e02020
+a 3a2a1c
+b 5e4630
+c 86684a
+d ae906c
+e 45434a
+f 66646c
+g 8b8990
+h b1afb4
+i 6e6558
+j a39a86
+k d6cdb6
+l efe8d6
+m fffaf0
+n dc4448
+p f88a84
+q 5a8a4a
 shiny
 o 1b1420
-b 3a4a3a
-c 243024
-d 566a56
-a c8a040
-e 8a6a20
-f f0d070
-w f0ece0
-y 40c0ff
+a 1c2a3a
+b 30465e
+c 4a6886
+d 6c90ae
+e 6e5c31
+f 957d43
+g b79d5f
+h cbb88b
+i 8f7840
+j bba369
+k b6bfd6
+l d6ddef
+m f0f5ff
+n a8ec5c
+p e8ffb0
+q 8a6aa8
 dessin
-........................
-........................
-...........oo...........
-..........ofeoo...oo....
-.oo.....oofaafeooofeo...
-oaao...oaaaaaaafffaaeo..
-oaaao..oaaaaaaaaaaaaeo..
-.oaao..oaaaaaaaaaaaaeo..
-.oaaaooaaaeeeeeeeeeeeeo.
-..oaaooaaddddddddddddco.
-..oaaadaabbbbbbbbbbbbbco
-.odbaabaabbbbbbbbbbbbbco
-.odybbbbbbbbbbbbbbbbbbbc
-ocbbbbbbbbbbbbbbbbbbbbco
-.odbbbbbbbbbbbbbbbbbbbco
-.ocbbbbbbbbbbbbbbbbbbco.
-.owccwcbbbbbbbbbbbbbbbco
-.owoowodbbbbbbbbbbbbbbco
-owo.owodbbbcbbbccbbbbbco
-owo.owodbbcodbcoodbbbbco
-.o...oodbbcodbcoodbbbbco
-......odbbcodbcoodbbccco
-......occccocccoocccooo.
-.......oooo.ooo..ooo....
+................................................
+................................................
+................................................
+..........................ooooooooo.............
+........................oohhhhhhhhhoo...........
+......................oohhqhhhhhhqhhho..........
+.....................ohhhhhhhhehhhhhhho.........
+....................ohhhehhhgggghhhhhhho........
+...o...............ohhhhgggggggggggggggho.......
+..olo.............ohhhhggggggggggggfegggho......
+..ollo............ohhggggggggggggggggggqggo.....
+..olllo.........oohhggggggfffffffffggggfggfo....
+..ollklo.ooooo.oddgggffffffffffffffffgggfffo....
+..olkkkkodddddoddddfffffeeeeeeeeffffffffeffeo...
+...okkjjkddddddddddddddddddddddddeeeeeeffffeo...
+...oljjiijddddddddddddddddddddddddddddeefffeo...
+...okjjiddddddccccddddddddddddddddddcdcceeeeo...
+..odkjddddddccccccbdddddddddddddccccccccceeebo..
+..oddddddddcocccccbddddddddcccccccccccccccccbo..
+.odddddddooocccccbbdddddccccccccccccccccccccbao.
+.odddddddcpncccccbbaddcccccccccccccccccccccbbao.
+odddddddcccccccccbbaccacccccccccccaccccccccbbbo.
+oddddddcccccccccbbbacccccccccccccccccccccccbbbao
+oddddccccccccccbbbbaccccccccccccccccccccccbbbbao
+oddddcccccccccbbbbbaccccccccccccccccccccbbbbbbao
+odddccccccccccbbbbaaccccccccacccccccccccbbbbbaao
+odocccccccccbbbbbbaacccccccccccccccccbbbbbbbbaao
+oddocccccccbbbbbbbaacccccccccccccccbbbbbabbbbaao
+oddccccccbbbbbbbaaaccccccccccccbbbbbbbbbbbbbbaao
+.occcccccbbbbbbbaaaccccccccbbbbbbbdddabbbbbbaaao
+.occccbbbbbbbbaaaadcacccbbbbbbbbddddddcabbbbaaao
+omocbbbbmbbbmaaaaaccabbbabbbbbbbdddccccabbbaaaao
+.omobbbmaaaamaaaccccbabbbbbbbbbddddccccbaaaaaao.
+.omoooamaaaamddcccbbbabbbbbbbbbdddccccbbaaaaaao.
+.omo.omoooomdddcccbaaabbbbbbbbbdddcccbbaaaaaao..
+..omommo..omddcccbbaabbbaaaaaaaddccccbaaaaaaao..
+...ommmoooomddcccbbaaaaaaaaaaaaadccccbaaaaaaao..
+....ooommmmoddcccbaaaaaaaaaaaaaadccccbaabbaaao..
+.......oooooddcccbaacbbaaaooooooddccbbaabbaaao..
+...........oddcccbaacbbbaao....oddccbbaabbaaao..
+...........oddcccbaacbbbaao....oddccbbaabbaaao..
+...........odccccbaacbbbaao....odcccbbaabbaaao..
+...........odcccbbaacbbaaao....odcccbbaabbaaao..
+...........odcccbbaabbbaaao....odcccbbaabbaaao..
+...........occcbbaaabbaaaao....occcbbaaabaaaao..
+...........olclblalobaaaao.....olclblalbaaaao...
+............oobbaoo.oaaao.......oobbaoooaaao....
+..............ooo....ooo..........ooo...ooo.....

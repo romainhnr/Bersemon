@@ -1,50 +1,102 @@
 # Léviathan
 palette
 o 1b1420
-e 1a3a5a
-f 0e2440
-b 1e4a6a
-c 123048
-d 2e6a90
-a 60a0c0
-r b02030
-w e8f0f0
-y f0e040
-g 80c0d0
+a 0c1e3a
+b 183864
+c 2c5c94
+d 5a8cc0
+e a0c8ec
+f 325479
+g 5c94b9
+h b8d4e0
+i d3e9ea
+j 0c3a4a
+k 18707a
+l 30a8a8
+m 78d8d0
+n 1c3a6a
+p 2e5c98
+q 4a88c8
+r 84bce8
+s d0ecfc
+t 6e6558
+u a39a86
+v d6cdb6
+w efe8d6
+x fffaf0
+y f6e789
 shiny
 o 1b1420
-e 1a3a5a
-f 0e2440
-b 7a2a3a
-c 521a26
-d a04a5a
-a e0a040
-r 40e0a0
-w e8f0f0
-y 60ffff
-g f0c060
+a 3a0c1e
+b 641838
+c 942c5c
+d c05a8c
+e eca0c8
+f 733f67
+g b07198
+h e0c8d4
+i ebdce2
+j 7a1a12
+k c83a16
+l f07a1c
+m f8c23c
+n 6a4c1c
+p 986a2e
+q c88a4a
+r e8b084
+s fce0d0
+t 8f7840
+u bba369
+v b6bfd6
+w d6ddef
+x f0f5ff
+y 8998f6
 dessin
-........o...............
-.......ogoo.............
-.......ogogoo...........
-.....oogoogogoo.........
-o..ooddgogoogogoo.......
-booddbbbdgogoogogoo.....
-bwodbybbbcogogoogogo....
-bbwbbbbbbbcoogdgoogo....
-brrrbbbbbcoodbbgcgo.....
-bboccbbbbbddbbcadgoo....
-bwoooccbdbbcbbbdbbdco...
-oo...oodbbcadbbbbbbcco..
-......odbbbdbbbbbbcadco.
-......ocbbbbbccbbbbdbco.
-.......ocbbbcoocbbbbbcwo
-........occco..ocbbbcoo.
-.........ooo....ocbbcdco
-.................odcadco
-......ooooooooooocbbdbbc
-..ooooeweeeeeeeeeedbbbcw
-.oeweeeeeeeeeeeeeeccbcco
-ofeeeeeeeeeeeeeeeeeeceef
-.offffeeeeeeeeeeeeeffffo
-..oooofffffffffffffoooo.
+................................................
+..................o.............................
+.................ovo............................
+................owvo.....o......................
+................owuo...oovo.....................
+...............owwuo.oovvo......................
+...........oooovvvwoowwvuo......................
+........oooddddvuvvvwwvuo.......................
+.......odddddddddduuvvuuo.......................
+......odddddddoddddcuuuo........................
+.....odddddoooccccccctdoo.......................
+....odddddccoycccccccbbddo......................
+...odddddccccccccccccbadddo...ooooo.............
+...odddcccccccccccbbbbacdddooommmllo............
+...odccccccccbbbbbbbbbaccccmmmmlljko............
+...occccccccbbbbbbbbbaaccccmmmmljko.............
+...occcccabbbbbbbbbbaacccccmmmjjkko.............
+...obxxcxcxxcxbbbaaaahcccccmmjllko..............
+....obbbbbccbbaaaohiihgccccmjllkko..............
+.....oxaaxbxbbaoo.oiihhccccmmllljo..............
+.....obaaaaaaaao...oihggcccbmlllko.........o....
+......ooooaaaao....obhhfccbemlllkko.......olo...
+..........oooo.....oibbbccbbmllkkklo.....ollo...
+....................ohhgfbbbmllkkjjko...omlko...
+....................oihgfbbbmmjjjjoooooommko....
+....................oihgfbbbmmlkjooodddmmlko....
+...................obbbbfbbbbmlkodddddlllkko....
+...................oihhgcbbbamlldddddddklko.....
+..................odihhgccbbamllldddddddckco....
+..................oiihggccbeajllklcddddccccbo...
+..................obbbbcccbbamjjjkkcddcccccbo...
+..................oihhgcccbballkjjjbbccccccbao..
+.................oiihggcccbbalkkkcbbaccccccbao..
+.................oiihgcccbbbaldcccbaoocccccbao..
+.................obbbbcccbbbaddcccbaoodccccbbo..
+.........ooooo...oihhgcccbbbaddccbbao.odccbbbao.
+.......oorrrrroo.oihhgcccebaaddccbaao.odcbbbbao.
+.....oorrrrsrrrrooihhgcccbbarddccbaooooddbbbbao.
+....orrrrsrrrrrrrrbbbbcccbbarddccbarrrordcbbaao.
+...orrrrrrrqqqqqrrihhgccbbbardcccbarrrrrdcbbaao.
+..orrrrqqqqqqqqqqqihhgccbbbaqdccbbaqqqqrccbaaapo
+.orrrqqqqqqqqqqqqqhhggcbbbaaqccbbaaqqqqqqcbaappo
+orrrqqqqqqqqqqppspdgggcbbbaaqqbbbaspqqqqqqbappno
+oqqqqqqqqpppppppppccccbbbaappppppppppppppppppnno
+oqpppppppppppppppppcbcbbbaapppppppppppppppnnnno.
+.ooooppnnnnnnnnnnnnnbbbaaannnnnnnnnnnnnnnnnooo..
+.....oooooooooooooooooaaooooooooooooooooooo.....
+......................oo........................
