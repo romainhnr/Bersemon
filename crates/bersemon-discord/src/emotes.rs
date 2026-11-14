@@ -292,6 +292,11 @@ mod tests {
     #[test]
     fn chaque_type_a_son_icone_lisible_et_distincte() {
         assert_eq!(ICONES.len(), Type::TOUS.len());
+        // Une icône garde une grille de 24, la moitié de celle d'un sprite.
+        for (nom, texte) in ICONES {
+            let icone = Sprite::lire(texte).unwrap_or_else(|erreur| panic!("{nom} : {erreur}"));
+            assert_eq!(icone.cote(), crate::sprites::COTE_D_ICONE, "{nom}");
+        }
         let mut images = Vec::new();
         for type_attaque in Type::TOUS {
             let nom = nom_de_l_icone(type_attaque);

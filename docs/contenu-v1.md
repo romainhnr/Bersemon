@@ -1748,9 +1748,9 @@ Chaque espèce a un fichier texte, `crates/bersemon-discord/sprites/{identifiant
 - des lignes de commentaire, qui commencent par `#` (le nom de l'espèce) ;
 - `palette`, puis une couleur par ligne : un caractère et sa couleur en hexadécimal, par exemple `b 8a8a92` ;
 - `shiny`, puis les mêmes caractères avec leurs couleurs shiny ;
-- `dessin`, puis 24 lignes de 24 caractères ; `.` est transparent.
+- `dessin`, puis 48 lignes de 48 caractères ; `.` est transparent (24 lignes de 24 caractères jusqu'à l'étape 217, et encore pour les icônes d'attaque).
 
-Le bot rend le dessin en PNG de 144 x 144 pixels, chaque pixel devenant un carré de 6 x 6. Pour voir les sprites hors de Discord : `cargo test -p bersemon-discord ecrire_les_png -- --ignored`, avec la variable BERSEMON_SPRITES qui donne le dossier où écrire les PNG.
+Le bot rend le dessin en PNG de 144 x 144 pixels, chaque pixel devenant un carré de 3 x 3 (de 6 x 6 pour une grille de 24). Pour voir les sprites hors de Discord : `cargo test -p bersemon-discord ecrire_les_png -- --ignored`, avec la variable BERSEMON_SPRITES qui donne le dossier où écrire les PNG.
 
 Ajouté le 11/11/2026, pour l'étape 183 (demande de l'utilisateur) : le marchand zombie, Grete relevée d'entre les morts, qui combat sans être au codex, a son sprite (`marchand-zombie.txt`) : une herboriste morte-vivante, voûtée, bras tendus, sa hotte d'herbes au dos. Comme un humain de l'IA, il n'a pas de section `shiny`, puisqu'il ne l'est jamais. Dessin proposé par Claude sans validation (gamedesign.md, Q123).
 
@@ -1765,7 +1765,18 @@ Humains, décidé le 26/10/2026 pour les étapes 155 à 157 (gamedesign.md, sect
 
 Les 4 classes et les 5 humains du récit sont dessinés à l'étape 156, style validé par l'utilisateur ; les 10 adversaires de la Fosse à l'étape 157, sur le même modèle. Dessins et couleurs proposés par Claude (gamedesign.md, Q116).
 
-Images composées : en combat, les deux combattants actifs face à face, celui du joueur à gauche et retourné, avec un écart de 4 pixels de la grille (312 x 144 pixels) ; au choix de la classe, les quatre classes côte à côte (648 x 144 pixels). Chaque sprite garde sa palette, d'au plus 63 couleurs.
+Images composées : en combat, les deux combattants actifs face à face, celui du joueur à gauche et retourné, avec un écart de 24 pixels de l'image (312 x 144 pixels) ; au choix de la classe, les quatre classes côte à côte (648 x 144 pixels). Chaque sprite garde sa palette, d'au plus 63 couleurs.
+
+Refonte en 48 x 48, décidée le 12/11/2026 pour l'étape 218 (gamedesign.md, section 5.1), à la demande de l'utilisateur : des sprites plus crédibles et plus réalistes. Les 223 sprites sont redessinés par Claude sur une grille de 48 x 48, quatre fois plus détaillée, pour la même taille affichée : les 190 espèces, le marchand zombie, les 4 classes (palettes `shiny`, `cendre`, `sang`, `abime`, `nacre`, `royale`, et dessin `couronne`), les 25 humains et les 3 personnages du camp. Les conventions de dessin ne changent pas. Dessins proposés sans validation (gamedesign.md, Q126).
+
+Les dessins sont produits par des scripts Python, dans `outils/sprites` :
+
+- `dessin.py` : les formes pleines (ellipse, polygone, forme lisse, membre, trait), leur ombrage d'après une lumière venue d'en haut à gauche, le contour sombre, les cinq tons de chaque matière et l'écriture du fichier texte ;
+- `matieres.py` : les rampes de couleurs partagées (os, acier, feu, pierre...) ; `commun.py` : les morceaux d'anatomie partagés (aile, jambes, tête d'humain...) ;
+- `lot_01.py` à `lot_25.py` : les monstres, dans l'ordre où ils ont été dessinés ; `lot_h1.py` à `lot_h3.py` : les héros, les humains et le camp ;
+- `atelier.py` : `python3 atelier.py lot_04` rend une planche de contrôle du lot (dans le dossier de la variable BERSEMON_PLANCHES, ou `outils/sprites/rendu`), `python3 atelier.py lot_04 publier` écrit les fichiers texte du dépôt. Un dessin trop grand pour la grille est réduit pas à pas.
+
+Ces scripts demandent Python 3 et Pillow ; le jeu ne dépend pas d'eux. Le fichier texte reste la référence : un sprite retouché à la main serait écrasé par une nouvelle publication de son lot.
 
 ## 43. Choc chromatique et héros shiny
 

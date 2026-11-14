@@ -24,8 +24,7 @@ use bersemon_core::succes::CouleurDuHeros;
 
 /// Côté de la grille d'un sprite, en pixels (étape 218).
 pub const COTE: usize = 48;
-/// Côté de la grille d'une icône d'attaque, et des sprites d'avant l'étape
-/// 218.
+/// Côté de la grille d'une icône d'attaque (étape 210).
 pub const COTE_D_ICONE: usize = 24;
 /// Côté d'un sprite sur Discord, en pixels : chaque pixel d'une grille de
 /// 48 devient un carré de 3 x 3.
@@ -910,7 +909,7 @@ impl Sprite {
     }
 
     /// Le côté de la grille, en pixels.
-    fn cote(&self) -> usize {
+    pub(crate) fn cote(&self) -> usize {
         self.dessin.len()
     }
 
@@ -1160,7 +1159,9 @@ mod tests {
             .chain(&SPRITES_HORS_CODEX)
             .chain(&SPRITES_DU_CAMP)
         {
-            Sprite::lire(texte).unwrap_or_else(|erreur| panic!("{id} : {erreur}"));
+            let sprite = Sprite::lire(texte).unwrap_or_else(|erreur| panic!("{id} : {erreur}"));
+            // Seules les icônes d'attaque gardent une grille de 24.
+            assert_eq!(sprite.cote(), COTE, "{id}");
         }
     }
 
@@ -1253,12 +1254,6 @@ mod tests {
             .collect();
         for (rang, (un, dessin)) in dessins.iter().enumerate() {
             for (autre, autre_dessin) in &dessins[rang + 1..] {
-                let cote = dessin.len();
-                // Deux grilles de tailles différentes ne se comparent pas :
-                // l'une des deux est d'avant l'étape 218.
-                if autre_dessin.len() != cote {
-                    continue;
-                }
                 let differences = |retourne: bool| -> usize {
                     dessin
                         .iter()
@@ -1268,7 +1263,7 @@ mod tests {
                                 .iter()
                                 .enumerate()
                                 .filter(|(x, c)| {
-                                    let x = if retourne { cote - 1 - x } else { *x };
+                                    let x = if retourne { COTE - 1 - x } else { *x };
                                     autre_ligne[x] != **c
                                 })
                                 .count()
@@ -1276,7 +1271,7 @@ mod tests {
                         .sum()
                 };
                 assert!(
-                    differences(false).min(differences(true)) >= cote * cote * 5 / 24,
+                    differences(false).min(differences(true)) >= 480,
                     "{un} et {autre}"
                 );
             }
