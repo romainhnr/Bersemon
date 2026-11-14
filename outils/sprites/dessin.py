@@ -250,6 +250,7 @@ class Toile:
         # gris mele a cette couleur.
         self.decalage_shiny = 0.5
         self.teinte_shiny = "c8a040"
+        self.shiny_fixe = False
         self.mat("o", "1b1420", "1b1420")
 
     # -- matieres
@@ -260,7 +261,10 @@ class Toile:
             return list(c) if isinstance(c, (list, tuple)) else rampe(c)
         normal = tons(base)
         if shiny is None:
-            shiny = [shiny_auto(c, self.decalage_shiny, self.teinte_shiny) for c in normal]
+            # Un humain garde sa peau, son cuir et son acier : seules les
+            # matieres qui disent leur couleur shiny en changent.
+            shiny = normal if self.shiny_fixe else [
+                shiny_auto(c, self.decalage_shiny, self.teinte_shiny) for c in normal]
         m = {"normal": normal, "shiny": tons(shiny)}
         for v, c in variantes.items():
             m[v] = tons(c)
@@ -398,38 +402,44 @@ class Toile:
         return self
 
     # -- sorties
-    def _cles(self):
-        utilises = sorted({v for v in self.pix.values()},
-                          key=lambda v: (self.ordre.index(v[0]), v[1]))
+    def _cles(self, autre=None):
+        valeurs = set(self.pix.values())
+        if autre is not None:
+            valeurs |= set(autre.pix.values())
+        utilises = sorted(valeurs, key=lambda v: (self.ordre.index(v[0]), v[1]))
         cles = {}
         libres = iter(CARACTERES)
         for v in utilises:
             cles[v] = "o" if v[0] == "o" else next(libres)
         return cles
 
-    def grille(self):
-        cles = self._cles()
+    def grille(self, cles=None):
+        cles = cles or self._cles()
         return ["".join(cles[self.pix[(x, y)]] if (x, y) in self.pix else "."
                         for x in range(self.n)) for y in range(self.n)]
 
-    def texte(self, titre, variantes=("shiny",), autre_dessin=None):
-        cles = self._cles()
+    def texte(self, titre, variantes=("shiny",), autre=None):
+        """Le fichier texte du sprite. `autre` : (nom, toile) d'un second
+        dessin de memes matieres, ecrit apres le premier (la couronne du
+        heros). Une matiere sans couleur pour une variante garde la sienne."""
+        cles = self._cles(autre[1] if autre else None)
         out = [f"# {titre}"]
         for v in ("normal",) + tuple(variantes):
             out.append("palette" if v == "normal" else v)
             for (m, t), c in cles.items():
-                out.append(f"{c} {self.matieres[m][v][t]}")
+                tons = self.matieres[m].get(v, self.matieres[m]["normal"])
+                out.append(f"{c} {tons[t]}")
         out.append("dessin")
-        out += self.grille()
-        if autre_dessin is not None:
-            out.append(autre_dessin[0])
-            out += autre_dessin[1]
+        out += self.grille(cles)
+        if autre is not None:
+            out.append(autre[0])
+            out += autre[1].grille(cles)
         return "\n".join(out) + "\n"
 
     def image(self, variante="normal", echelle=3):
         from PIL import Image
         im = Image.new("RGBA", (self.n, self.n), (0, 0, 0, 0))
         for (x, y), (m, t) in self.pix.items():
-            c = self.matieres[m][variante][t]
+            c = self.matieres[m].get(variante, self.matieres[m]["normal"])[t]
             im.putpixel((x, y), tuple(int(c[i:i + 2], 16) for i in (0, 2, 4)) + (255,))
         return im.resize((self.n * echelle, self.n * echelle), Image.NEAREST)

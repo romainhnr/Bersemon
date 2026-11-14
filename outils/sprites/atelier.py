@@ -43,6 +43,8 @@ def construire(ident):
 
 
 def planche(ids, sortie, cols=6, echelle=3, variante="normal", fond=(70, 90, 70)):
+    import commun
+    commun.COURONNE[0] = variante == "royale"
     c = 48 * echelle
     h = c + 12
     rows = (len(ids) + cols - 1) // cols
@@ -62,13 +64,21 @@ def planche(ids, sortie, cols=6, echelle=3, variante="normal", fond=(70, 90, 70)
 
 def publier(ids):
     """Ecrit les sprites dans le depot."""
+    import commun
     for ident in ids:
         titre, dossier, f, opts = SPRITES[ident]
         t = construire(ident)
         variantes = opts.get("variantes", ("shiny",))
+        autre = None
+        if opts.get("couronne"):
+            # Le heros couronne : le meme dessin, la couronne en plus.
+            commun.COURONNE[0] = True
+            autre = ("couronne", construire(ident))
+            commun.COURONNE[0] = False
         chemin = os.path.join(DEPOT, dossier, opts.get("fichier", ident) + ".txt")
         with open(chemin, "w", encoding="utf-8", newline="\n") as sortie:
-            sortie.write(t.texte(titre, variantes))
+            sortie.write(t.texte(titre, variantes, autre))
+
 
 if __name__ == "__main__":
     import atelier as A
@@ -84,4 +94,10 @@ if __name__ == "__main__":
     os.makedirs(SORTIE, exist_ok=True)
     A.planche(ids, os.path.join(SORTIE, "planche.png"), cols=min(4, len(ids)), echelle=6)
     A.planche(ids, os.path.join(SORTIE, "planche-shiny.png"), cols=min(8, len(ids)), variante="shiny")
+    for variante in ("cendre", "sang", "abime", "nacre", "royale"):
+        heros = [i for i in ids if A.SPRITES[i][3].get("couronne")]
+        if heros:
+            A.planche(heros, os.path.join(SORTIE, f"planche-{variante}.png"), cols=len(heros), variante=variante)
+    import commun
+    commun.COURONNE[0] = False
     print("ok", len(ids))
